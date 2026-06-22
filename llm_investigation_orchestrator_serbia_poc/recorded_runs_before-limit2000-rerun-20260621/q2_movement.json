@@ -1,0 +1,382 @@
+{
+  "id": "q2_movement",
+  "question": "האם ניתן לזהות דפוס של תנועת כוחות או הגברת נוכחות בזמן ובמרחב?",
+  "title": "תנועת כוחות והגברת נוכחות",
+  "recorded_at_utc": "2026-06-21T18:40:36.363707Z",
+  "elapsed_ms": 32285,
+  "source": "live_hermes_run",
+  "result": {
+    "run_id": "run_a9862488a9344d39bf2df5e0599429ac",
+    "answer": "כן — יש דפוס מרחבי ברור: עיקר האירועים מרוכז בצפון מיטרוביצה, בזבצ׳אן, בלפוסאביץ׳ ובזובין פוטוק, עם מוקדים בולטים גם ב-LOC-001, LOC-025, LOC-036, LOC-040, LOC-048, LOC-068, LOC-079, LOC-140, LOC-141 ו-LOC-147. בציר הזמן יש ריכוז חד ב-2026-09-14 עד 2026-09-19, עם שיא ב-2026-09-16 וב-2026-09-17, ולאחר מכן ירידה חדה ב-2026-09-20 וב-2026-09-21. לעומת זאת, חלוקת השעות די שטוחה יחסית; יש רק נטייה קלה לשעות לילה-בוקר מוקדמות ולשעות הערב, בלי פסגה חדה שמצביעה לבדה על תנועתיות חריגה. כלומר, יש אינדיקציה חזקה להגברת נוכחות מרחבית-זמנית, אבל עדיין חסר פירוק לרשומות גולמיות כדי להבחין בין תנועה ממשית לבין ריבוי דיווחים על אותה נוכחות.\n\nמזהי ראיות: תוצאה אגרגטיבית ללא מזהי אירועים",
+    "event_ids": [
+      "LOC-001",
+      "LOC-025",
+      "LOC-036",
+      "LOC-040",
+      "LOC-048",
+      "LOC-068",
+      "LOC-079",
+      "LOC-140",
+      "LOC-141",
+      "LOC-147"
+    ],
+    "recommended_view": "map",
+    "view_reason": "המוקדים המרחביים הם העיקר",
+    "investigation_steps": [
+      {
+        "tool": "classify_question_intent",
+        "bridge_summary": "זהו צעד פתיחה לסיווג שאלת האנליסט ובחירת מסלול עבודה. השאלה עוסקת בזיהוי דפוס מרחבי-זמני של תנועת כוחות או הגברת נוכחות, ולכן צריך לקבוע אם נכון להתחיל באגרגציה מרחבית או בחקירה של רצף אירועים.",
+        "observed_clue": "נקודת הפתיחה של החקירה היא השאלה \"האם ניתן לזהות דפוס של תנועת כוחות או הגברת נוכחות בזמן ובמרחב?\".",
+        "decision": "לפני בחירת כלי נתונים, הסוכן מסווג את סוג הבקשה כדי לבחור מסלול עבודה ותקציב מתאים.",
+        "expected_value": "לקבל מצב עבודה, תקציב כלים, משפחות כלים מותרות וחסומות, ורמז לתצוגה.",
+        "rationale": "לפני בחירת כלי נתונים, הסוכן מסווג את סוג הבקשה כדי לבחור מסלול עבודה ותקציב מתאים.",
+        "action": "סיווג כוונת השאלה \"האם ניתן לזהות דפוס של תנועת כוחות או הגברת נוכחות בזמן ובמרחב?\".",
+        "result": "הכוונה סווגה כ-investigation; מצב עבודה investigation; תקציב כלים 30; תצוגה מומלצת map; סיבה: הבקשה עוסקת בזיהוי דפוסי תנועה ונוכחות במרחב ובזמן, כלומר חקירה של קשרים ותבניות ולא רק שליפה פשוטה..",
+        "technical": {
+          "tool": "classify_question_intent",
+          "arguments": {
+            "question": "האם ניתן לזהות דפוס של תנועת כוחות או הגברת נוכחות בזמן ובמרחב?",
+            "step_bridge": "זהו צעד פתיחה לסיווג שאלת האנליסט ובחירת מסלול עבודה. השאלה עוסקת בזיהוי דפוס מרחבי-זמני של תנועת כוחות או הגברת נוכחות, ולכן צריך לקבוע אם נכון להתחיל באגרגציה מרחבית או בחקירה של רצף אירועים."
+          },
+          "is_error": false,
+          "timestamp_utc": "2026-06-21T18:40:10.073336+00:00"
+        }
+      },
+      {
+        "tool": "aggregate_events",
+        "bridge_summary": "החקירה זוהתה כמרחבית-זמנית, ולכן אני מחלץ קודם את מוקדי הריכוז לפי מיקום כדי לזהות איפה תנועת הכוחות או הנוכחות בולטת ביותר.",
+        "observed_clue": "השלב הקודם צמצם את מרחב החיפוש; מזה הסוכן עבר לבדוק את ממד הקיבוץ location.",
+        "decision": "הסוכן מקבץ לפי ממד הקיבוץ location כדי לזהות ריכוזים או חריגות שלא בולטים באירוע יחיד.",
+        "expected_value": "לקבל תמונת התפלגות שתכוון לחיפוש ממוקד יותר.",
+        "rationale": "הסוכן מקבץ לפי ממד הקיבוץ location כדי לזהות ריכוזים או חריגות שלא בולטים באירוע יחיד.",
+        "action": "קיבוץ אירועים לפי location עם מסננים {\"top_n\": 10, \"limit\": 500}.",
+        "result": "נכללו 10000 אירועים; קבוצות: בית ספר 59=90, צומת מקומי 20=90, כפר סמוך 127=86, תחנת דלק 28=85, כיכר מרכזית 16=85, בית ספר 120=84, תחנת דלק 121=83, ציר גישה 48=82, תחנת דלק 5=82, אזור גשר איבר=82.",
+        "technical": {
+          "tool": "aggregate_events",
+          "arguments": {
+            "group_by": "location",
+            "top_n": 10,
+            "limit": 500,
+            "step_bridge": "החקירה זוהתה כמרחבית-זמנית, ולכן אני מחלץ קודם את מוקדי הריכוז לפי מיקום כדי לזהות איפה תנועת הכוחות או הנוכחות בולטת ביותר."
+          },
+          "is_error": false,
+          "timestamp_utc": "2026-06-21T18:40:18.011965+00:00"
+        },
+        "map_locations": [
+          {
+            "location_id": "LOC-079",
+            "location_name": "בית ספר 59",
+            "latitude": 42.887,
+            "longitude": 20.872,
+            "municipality": null,
+            "count": 90
+          },
+          {
+            "location_id": "LOC-040",
+            "location_name": "צומת מקומי 20",
+            "latitude": 43.111,
+            "longitude": 20.815,
+            "municipality": null,
+            "count": 90
+          },
+          {
+            "location_id": "LOC-147",
+            "location_name": "כפר סמוך 127",
+            "latitude": 43.091,
+            "longitude": 20.785,
+            "municipality": null,
+            "count": 86
+          },
+          {
+            "location_id": "LOC-048",
+            "location_name": "תחנת דלק 28",
+            "latitude": 43.115,
+            "longitude": 20.821,
+            "municipality": null,
+            "count": 85
+          },
+          {
+            "location_id": "LOC-036",
+            "location_name": "כיכר מרכזית 16",
+            "latitude": 43.095,
+            "longitude": 20.815,
+            "municipality": null,
+            "count": 85
+          },
+          {
+            "location_id": "LOC-140",
+            "location_name": "בית ספר 120",
+            "latitude": 42.902,
+            "longitude": 20.707,
+            "municipality": null,
+            "count": 84
+          },
+          {
+            "location_id": "LOC-141",
+            "location_name": "תחנת דלק 121",
+            "latitude": 42.9,
+            "longitude": 20.858,
+            "municipality": null,
+            "count": 83
+          },
+          {
+            "location_id": "LOC-068",
+            "location_name": "ציר גישה 48",
+            "latitude": 42.899,
+            "longitude": 20.86,
+            "municipality": null,
+            "count": 82
+          },
+          {
+            "location_id": "LOC-025",
+            "location_name": "תחנת דלק 5",
+            "latitude": 42.912,
+            "longitude": 20.84,
+            "municipality": null,
+            "count": 82
+          },
+          {
+            "location_id": "LOC-001",
+            "location_name": "אזור גשר איבר",
+            "latitude": 42.883,
+            "longitude": 20.848,
+            "municipality": null,
+            "count": 82
+          }
+        ]
+      },
+      {
+        "tool": "aggregate_events",
+        "bridge_summary": "במקביל אני בודק את ההתפלגות לפי תאריך כדי לראות אם יש עלייה או ריכוז בזמן, לצד המוקדים המרחביים.",
+        "observed_clue": "השלב הקודם צמצם את מרחב החיפוש; מזה הסוכן עבר לבדוק את ממד הקיבוץ date.",
+        "decision": "הסוכן מקבץ לפי ממד הקיבוץ date כדי לזהות ריכוזים או חריגות שלא בולטים באירוע יחיד.",
+        "expected_value": "לקבל תמונת התפלגות שתכוון לחיפוש ממוקד יותר.",
+        "rationale": "הסוכן מקבץ לפי ממד הקיבוץ date כדי לזהות ריכוזים או חריגות שלא בולטים באירוע יחיד.",
+        "action": "קיבוץ אירועים לפי date עם מסננים {\"top_n\": 10, \"limit\": 500}.",
+        "result": "נכללו 10000 אירועים; קבוצות: 2026-09-16=2537, 2026-09-17=2077, 2026-09-14=1858, 2026-09-15=1501, 2026-09-18=1187, 2026-09-19=618, 2026-09-20=138, 2026-09-12=37, 2026-09-13=35, 2026-09-21=12.",
+        "technical": {
+          "tool": "aggregate_events",
+          "arguments": {
+            "group_by": "date",
+            "top_n": 10,
+            "limit": 500,
+            "step_bridge": "במקביל אני בודק את ההתפלגות לפי תאריך כדי לראות אם יש עלייה או ריכוז בזמן, לצד המוקדים המרחביים."
+          },
+          "is_error": false,
+          "timestamp_utc": "2026-06-21T18:40:18.240542+00:00"
+        }
+      },
+      {
+        "tool": "aggregate_events",
+        "bridge_summary": "השלב הבא בודק אם הריכוזים נפרשים על פני רשות רחבה אחת או כמה ריכוזים אזוריים, כדי להבין את המרחב שמאחורי מוקדי המיקום.",
+        "observed_clue": "השלב הקודם צמצם את מרחב החיפוש; מזה הסוכן עבר לבדוק את ממד הקיבוץ municipality.",
+        "decision": "הסוכן מקבץ לפי ממד הקיבוץ municipality כדי לזהות ריכוזים או חריגות שלא בולטים באירוע יחיד.",
+        "expected_value": "לקבל תמונת התפלגות שתכוון לחיפוש ממוקד יותר.",
+        "rationale": "הסוכן מקבץ לפי ממד הקיבוץ municipality כדי לזהות ריכוזים או חריגות שלא בולטים באירוע יחיד.",
+        "action": "קיבוץ אירועים לפי municipality עם מסננים {\"limit\": 500, \"top_n\": 10, \"sort_by\": \"count\", \"sort_order\": \"desc\"}.",
+        "result": "נכללו 10000 אירועים; קבוצות: צפון מיטרוביצה=2947, זבצ׳אן=2518, לפוסאביץ׳=2420, זובין פוטוק=1898, פרישטינה=93, טירנה=44, בריסל=40, בלגרד=33, נובי פאזאר=4, פק=2.",
+        "technical": {
+          "tool": "aggregate_events",
+          "arguments": {
+            "group_by": "municipality",
+            "limit": 500,
+            "top_n": 10,
+            "step_bridge": "השלב הבא בודק אם הריכוזים נפרשים על פני רשות רחבה אחת או כמה ריכוזים אזוריים, כדי להבין את המרחב שמאחורי מוקדי המיקום.",
+            "sort_by": "count",
+            "sort_order": "desc"
+          },
+          "is_error": false,
+          "timestamp_utc": "2026-06-21T18:40:23.984551+00:00"
+        },
+        "map_locations": [
+          {
+            "location_id": "צפון מיטרוביצה",
+            "location_name": "צפון מיטרוביצה",
+            "latitude": 42.892272727272726,
+            "longitude": 20.865318181818182,
+            "municipality": "צפון מיטרוביצה",
+            "count": 2947
+          },
+          {
+            "location_id": "זבצ׳אן",
+            "location_name": "זבצ׳אן",
+            "latitude": 42.906486486486486,
+            "longitude": 20.84,
+            "municipality": "זבצ׳אן",
+            "count": 2518
+          },
+          {
+            "location_id": "לפוסאביץ׳",
+            "location_name": "לפוסאביץ׳",
+            "latitude": 43.103342857142856,
+            "longitude": 20.803171428571428,
+            "municipality": "לפוסאביץ׳",
+            "count": 2420
+          },
+          {
+            "location_id": "זובין פוטוק",
+            "location_name": "זובין פוטוק",
+            "latitude": 42.91358620689655,
+            "longitude": 20.689206896551724,
+            "municipality": "זובין פוטוק",
+            "count": 1898
+          },
+          {
+            "location_id": "פרישטינה",
+            "location_name": "פרישטינה",
+            "latitude": 42.663,
+            "longitude": 21.157,
+            "municipality": "פרישטינה",
+            "count": 93
+          },
+          {
+            "location_id": "טירנה",
+            "location_name": "טירנה",
+            "latitude": 41.331,
+            "longitude": 19.8,
+            "municipality": "טירנה",
+            "count": 44
+          },
+          {
+            "location_id": "בריסל",
+            "location_name": "בריסל",
+            "latitude": 50.862,
+            "longitude": 4.334,
+            "municipality": "בריסל",
+            "count": 40
+          },
+          {
+            "location_id": "בלגרד",
+            "location_name": "בלגרד",
+            "latitude": 44.812,
+            "longitude": 20.455,
+            "municipality": "בלגרד",
+            "count": 33
+          },
+          {
+            "location_id": "נובי פאזאר",
+            "location_name": "נובי פאזאר",
+            "latitude": 43.136,
+            "longitude": 20.509,
+            "municipality": "נובי פאזאר",
+            "count": 4
+          },
+          {
+            "location_id": "פק",
+            "location_name": "פק",
+            "latitude": 42.648,
+            "longitude": 20.276,
+            "municipality": "פק",
+            "count": 2
+          }
+        ]
+      },
+      {
+        "tool": "aggregate_events",
+        "bridge_summary": "אני בודק את חלוקת השעות כדי להבחין אם הנוכחות מתגברת בשעות מסוימות, מה שיכול להעיד על תנועה ולא רק על נוכחות סטטית.",
+        "observed_clue": "השלב הקודם צמצם את מרחב החיפוש; מזה הסוכן עבר לבדוק את ממד הקיבוץ hour.",
+        "decision": "הסוכן מקבץ לפי ממד הקיבוץ hour כדי לזהות ריכוזים או חריגות שלא בולטים באירוע יחיד.",
+        "expected_value": "לקבל תמונת התפלגות שתכוון לחיפוש ממוקד יותר.",
+        "rationale": "הסוכן מקבץ לפי ממד הקיבוץ hour כדי לזהות ריכוזים או חריגות שלא בולטים באירוע יחיד.",
+        "action": "קיבוץ אירועים לפי hour עם מסננים {\"limit\": 500, \"top_n\": 24, \"sort_by\": \"count\", \"sort_order\": \"desc\"}.",
+        "result": "נכללו 10000 אירועים; קבוצות: 05:00=467, 00:00=467, 19:00=459, 01:00=441, 09:00=439, 21:00=438, 12:00=431, 10:00=429, 13:00=427, 18:00=424, 23:00=422, 14:00=418.",
+        "technical": {
+          "tool": "aggregate_events",
+          "arguments": {
+            "group_by": "hour",
+            "limit": 500,
+            "top_n": 24,
+            "step_bridge": "אני בודק את חלוקת השעות כדי להבחין אם הנוכחות מתגברת בשעות מסוימות, מה שיכול להעיד על תנועה ולא רק על נוכחות סטטית.",
+            "sort_by": "count",
+            "sort_order": "desc"
+          },
+          "is_error": false,
+          "timestamp_utc": "2026-06-21T18:40:24.219304+00:00"
+        }
+      }
+    ],
+    "events": [
+      {
+        "event": "tool.started",
+        "run_id": "run_a9862488a9344d39bf2df5e0599429ac",
+        "timestamp": 1782067208.5136645,
+        "tool": "mcp_serbia_events_poc_classify_question_intent",
+        "preview": null
+      },
+      {
+        "event": "tool.completed",
+        "run_id": "run_a9862488a9344d39bf2df5e0599429ac",
+        "timestamp": 1782067210.0744581,
+        "tool": "mcp_serbia_events_poc_classify_question_intent",
+        "duration": 1.56,
+        "error": false
+      },
+      {
+        "event": "tool.started",
+        "run_id": "run_a9862488a9344d39bf2df5e0599429ac",
+        "timestamp": 1782067217.7909467,
+        "tool": "mcp_serbia_events_poc_aggregate_events",
+        "preview": null
+      },
+      {
+        "event": "tool.started",
+        "run_id": "run_a9862488a9344d39bf2df5e0599429ac",
+        "timestamp": 1782067217.790965,
+        "tool": "mcp_serbia_events_poc_aggregate_events",
+        "preview": null
+      },
+      {
+        "event": "tool.completed",
+        "run_id": "run_a9862488a9344d39bf2df5e0599429ac",
+        "timestamp": 1782067218.2420497,
+        "tool": "mcp_serbia_events_poc_aggregate_events",
+        "duration": 0.224,
+        "error": false
+      },
+      {
+        "event": "tool.completed",
+        "run_id": "run_a9862488a9344d39bf2df5e0599429ac",
+        "timestamp": 1782067218.2421536,
+        "tool": "mcp_serbia_events_poc_aggregate_events",
+        "duration": 0.45,
+        "error": false
+      },
+      {
+        "event": "tool.started",
+        "run_id": "run_a9862488a9344d39bf2df5e0599429ac",
+        "timestamp": 1782067223.4972494,
+        "tool": "mcp_serbia_events_poc_aggregate_events",
+        "preview": null
+      },
+      {
+        "event": "tool.started",
+        "run_id": "run_a9862488a9344d39bf2df5e0599429ac",
+        "timestamp": 1782067223.497269,
+        "tool": "mcp_serbia_events_poc_aggregate_events",
+        "preview": null
+      },
+      {
+        "event": "tool.completed",
+        "run_id": "run_a9862488a9344d39bf2df5e0599429ac",
+        "timestamp": 1782067224.2212505,
+        "tool": "mcp_serbia_events_poc_aggregate_events",
+        "duration": 0.493,
+        "error": false
+      },
+      {
+        "event": "tool.completed",
+        "run_id": "run_a9862488a9344d39bf2df5e0599429ac",
+        "timestamp": 1782067224.2213573,
+        "tool": "mcp_serbia_events_poc_aggregate_events",
+        "duration": 0.723,
+        "error": false
+      }
+    ],
+    "usage": {
+      "input_tokens": 68734,
+      "output_tokens": 2011,
+      "total_tokens": 70745
+    },
+    "performance_log": "20260621T184036Z-run_a9862488a9344d39bf2df5e0599429ac.json"
+  }
+}

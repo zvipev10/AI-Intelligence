@@ -1,0 +1,12 @@
+entity_id,entity_name,aliases,type,known_affiliation,reliability_note
+E-101,Orin Logistics,"OrinLog; OLX; Orin Freight",commercial_company,Nominally civilian,"Often appears in legitimate port cargo records"
+E-102,Kamal Rafiq,"K. Rafiq; KR-17; Rafiq Trading",person,Unknown,"Previously linked to shell companies but no confirmed operational role"
+E-103,North Crescent Group,"NCG; Crescent North; Blue Crescent",network,Suspected illicit procurement,"Uses humanitarian and construction cover stories"
+E-104,Haddan Works,"Haddan; HW-4",industrial_site,Unknown,"Produces agricultural machinery and metal components"
+E-105,Meridian Relief Office,"MRO; Meridian Aid",ngo,Humanitarian,"Usually legitimate, but occasionally used as a meeting cover"
+E-106,Unit Sandglass,"Sandglass; SG cell",cell,Suspected NCG logistics cell,"Reported in two prior investigations"
+E-107,Rafiq Maritime Services,"RMS; Rafiq Marine",commercial_company,Unknown,"Shares phone contact with Kamal Rafiq in older records"
+E-108,Border Fuel Cooperative,"BFC; Fuel Coop",commercial_company,Local fuel supplier,"Frequent cross-border fuel movements"
+E-109,Lina Voss,"L. Voss; LV-9",person,Unknown,"Broker mentioned in two procurement reports"
+E-110,Arden Customs Liaison,"ACL",government_office,Arden state,"Official customs coordination channel"
+

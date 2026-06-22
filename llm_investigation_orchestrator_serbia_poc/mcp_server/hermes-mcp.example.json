@@ -1,0 +1,13 @@
+{
+  "mcp_servers": {
+    "serbia-events-poc": {
+      "command": "/opt/serbia-poc/venv/bin/python",
+      "args": ["/opt/serbia-poc/mcp_server/server.py"],
+      "env": {
+        "INTELLIGENCE_POC_DATA": "/opt/serbia-poc/data/serbia_kosovo_events_projection.csv",
+        "INTELLIGENCE_POC_LOCATIONS": "/opt/serbia-poc/data/serbia_kosovo_locations.json",
+        "INTELLIGENCE_POC_AUDIT": "/opt/serbia-poc/mcp_audit.jsonl"
+      }
+    }
+  }
+}

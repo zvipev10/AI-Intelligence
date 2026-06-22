@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Invoice Tester</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, sans-serif;
+      background: #f2f2f7;
+      padding: 24px 16px;
+      min-height: 100vh;
+    }
+    h1 { font-size: 22px; font-weight: 700; margin-bottom: 6px; color: #1c1c1e; }
+    p.subtitle { font-size: 14px; color: #6e6e73; margin-bottom: 24px; }
+    .card {
+      background: white;
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 16px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+    label {
+      font-size: 13px;
+      font-weight: 600;
+      color: #6e6e73;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: block;
+      margin-bottom: 8px;
+    }
+    input[type="text"] {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #e5e5ea;
+      border-radius: 10px;
+      font-size: 14px;
+      color: #1c1c1e;
+      background: #f9f9f9;
+    }
+    select {
+      width: 100%;
+      max-width: 260px;
+      padding: 8px 10px;
+      border: 1px solid #e5e5ea;
+      border-radius: 10px;
+      font-size: 14px;
+      color: #1c1c1e;
+      background: #f9f9f9;
+    }
+    .file-area {
+      border: 2px dashed #c7c7cc;
+      border-radius: 12px;
+      padding: 32px 16px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+    .file-area.has-file { border-color: #34c759; background: #f0fff4; }
+    .file-area input { display: none; }
+    .file-icon { font-size: 36px; margin-bottom: 8px; }
+    .file-label { font-size: 15px; font-weight: 600; color: #007aff; margin-bottom: 4px; }
+    .file-hint { font-size: 13px; color: #8e8e93; }
+    .file-list { margin-top: 12px; text-align: left; }
+    .file-item {
+      font-size: 13px;
+      color: #34c759;
+      font-weight: 600;
+      padding: 4px 0;
+      border-bottom: 1px solid #f0fff4;
+    }
+    button {
+      width: 100%;
+      padding: 16px;
+      background: #007aff;
+      color: white;
+      border: none;
+      border-radius: 14px;
+      font-size: 17px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .spinner { display: none; text-align: center; padding: 16px; color: #8e8e93; font-size: 15px; }
+    .summary {
+      display: none;
+      background: white;
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 16px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+    .summary h2 { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+    .summary p { font-size: 14px; color: #6e6e73; }
+    .result-card {
+      background: white;
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 12px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+    .result-card.success { border-left: 4px solid #34c759; }
+    .result-card.error { border-left: 4px solid #ff3b30; }
+    .result-filename {
+      font-size: 13px;
+      color: #8e8e93;
+      margin-bottom: 12px;
+      font-weight: 500;
+    }
+    .field {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid #f2f2f7;
+      font-size: 15px;
+    }
+    .field:last-child { border-bottom: none; }
+    .field-name { color: #6e6e73; }
+    .field-value { font-weight: 600; color: #1c1c1e; text-align: right; max-width: 60%; }
+    .null-value { color: #c7c7cc; font-style: italic; font-weight: 400; }
+    .confidence {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .high { background: #d4edda; color: #155724; }
+    .medium { background: #fff3cd; color: #856404; }
+    .low { background: #f8d7da; color: #721c24; }
+    .error-msg { font-size: 14px; color: #ff3b30; }
+    pre { font-size: 12px; background: #f2f2f7; padding: 12px; border-radius: 8px; overflow-x: auto; white-space: pre-wrap; word-break: break-all; }
+  </style>
+</head>
+<body>
+
+  <h1>Invoice Processor</h1>
+  <p class="subtitle">Upload one or more invoices to extract data using AI</p>
+
+  <div class="card">
+    <label>API URL</label>
+    <input type="text" id="apiUrl"
+      value="https://llm-test-production.up.railway.app/api/invoices/upload" />
+  </div>
+
+  <div class="card">
+    <label>Invoice Files</label>
+    <div class="file-area" id="fileArea" onclick="document.getElementById('fileInput').click()">
+      <input type="file" id="fileInput" accept=".pdf,.jpg,.jpeg,.png,.webp"
+        multiple onchange="handleFiles(this)" />
+      <div class="file-icon">📄</div>
+      <div class="file-label">Tap to choose files</div>
+      <div class="file-hint">PDF, JPG, PNG or WEBP · Max 10MB each · Up to 20 files</div>
+      <div class="file-list" id="fileList"></div>
+    </div>
+  </div>
+
+  <button id="sendBtn" onclick="sendRequest()" disabled>Upload & Extract</button>
+  <button id="saveBtn" onclick="saveResults()" style="display:none; margin-top: 10px;">Save Results</button>
+
+  <div class="spinner" id="spinner">⏳ Processing invoices...</div>
+
+  <div class="summary" id="summary"></div>
+
+  <div id="results"></div>
+
+  <script>
+    let morningCategories = [];
+
+    function getSiblingEndpoint(uploadUrl, endpoint) {
+      return uploadUrl.replace(/\/upload\/?$/, endpoint);
+    }
+
+    async function fetchExistingInvoices(uploadUrl) {
+      const response = await fetch(getSiblingEndpoint(uploadUrl, '/list'));
+      const data = await response.json();
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to load existing invoices');
+      }
+      return data.invoices || [];
+    }
+
+    async function loadMorningCategories(uploadUrl) {
+      const response = await fetch(getSiblingEndpoint(uploadUrl, '/morning/accounting-classifications'));
+      const data = await response.json();
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to load Morning categories');
+      }
+      morningCategories = data.options || [];
+    }
+
+    function updateResultCategory(resultIndex, select) {
+      const result = window.currentUploadResults?.[resultIndex];
+      if (!result?.success) return;
+
+      const selected = morningCategories.find(category => category.id === select.value);
+      result.data.morningCategoryId = selected?.id || null;
+      result.data.morningCategoryName = selected?.name || null;
+      result.data.morningCategoryCode = selected?.code ?? null;
+    }
+
+    function categorySelectHtml(selectedId, resultIndex) {
+      const options = [
+        '<option value="">Choose category</option>',
+        ...morningCategories.map(category => {
+          const selected = category.id === selectedId ? ' selected' : '';
+          const label = `${category.name || category.title || category.id}${category.code ? ` (${category.code})` : ''}`;
+          return `<option value="${category.id}"${selected}>${label}</option>`;
+        })
+      ].join('');
+
+      return `<select onchange="updateResultCategory(${resultIndex}, this)">${options}</select>`;
+    }
+
+    async function saveResults() {
+      const url = document.getElementById('apiUrl').value.trim();
+      const results = window.currentUploadResults || [];
+      const newInvoices = results
+        .filter(result => result.success)
+        .map(result => ({
+          ...result.data,
+          fileName: result.filename,
+          mimeType: result.mimeType,
+          fileData: result.fileData
+        }));
+
+      if (!newInvoices.length) return;
+
+      document.getElementById('saveBtn').disabled = true;
+      try {
+        const existingInvoices = await fetchExistingInvoices(url);
+        const invoices = [...existingInvoices, ...newInvoices];
+
+        const response = await fetch(getSiblingEndpoint(url, '/save-batch'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ invoices })
+        });
+        const data = await response.json();
+        if (!data.success) throw new Error(data.error || 'Save failed');
+        alert(data.message || 'Saved');
+      } catch (err) {
+        alert(err.message);
+      } finally {
+        document.getElementById('saveBtn').disabled = false;
+      }
+    }
+
+    function handleFiles(input) {
+      const files = Array.from(input.files);
+      if (!files.length) return;
+
+      const list = document.getElementById('fileList');
+      list.innerHTML = files.map(f =>
+        `<div class="file-item">✓ ${f.name}</div>`
+      ).join('');
+
+      document.getElementById('fileArea').classList.add('has-file');
+      document.getElementById('sendBtn').disabled = false;
+    }
+
+    async function sendRequest() {
+      const url = document.getElementById('apiUrl').value.trim();
+      const fileInput = document.getElementById('fileInput');
+      const files = Array.from(fileInput.files);
+      if (!url || !files.length) return;
+
+      document.getElementById('sendBtn').disabled = true;
+      document.getElementById('spinner').style.display = 'block';
+      document.getElementById('summary').style.display = 'none';
+      document.getElementById('saveBtn').style.display = 'none';
+      document.getElementById('results').innerHTML = '';
+
+      try {
+        await loadMorningCategories(url);
+
+        const formData = new FormData();
+        files.forEach(file => formData.append('invoices', file));
+
+        const response = await fetch(url, { method: 'POST', body: formData });
+        const data = await response.json();
+
+        showResults(data);
+      } catch (err) {
+        document.getElementById('results').innerHTML = `
+          <div class="result-card error">
+            <h2>❌ Network Error</h2>
+            <pre>${err.message}</pre>
+          </div>`;
+      } finally {
+        document.getElementById('spinner').style.display = 'none';
+        document.getElementById('sendBtn').disabled = false;
+      }
+    }
+
+    function showResults(data) {
+      if (!data.success) {
+        document.getElementById('results').innerHTML = `
+          <div class="result-card error">
+            <h2>❌ Error</h2>
+            <pre>${JSON.stringify(data, null, 2)}</pre>
+          </div>`;
+        return;
+      }
+
+      window.currentUploadResults = data.results;
+      const succeeded = data.results.filter(r => r.success).length;
+      const failed = data.results.filter(r => !r.success).length;
+
+      const summary = document.getElementById('summary');
+      summary.style.display = 'block';
+      document.getElementById('saveBtn').style.display = succeeded > 0 ? 'block' : 'none';
+      summary.innerHTML = `
+        <h2>✅ Processed ${data.total} file${data.total > 1 ? 's' : ''}</h2>
+        <p>${succeeded} succeeded${failed > 0 ? ` · ${failed} failed` : ''}</p>
+      `;
+
+      document.getElementById('results').innerHTML = data.results.map((r, index) => {
+        if (!r.success) {
+          return `
+            <div class="result-card error">
+              <div class="result-filename">📄 ${r.filename}</div>
+              <p class="error-msg">❌ ${r.error}</p>
+            </div>`;
+        }
+
+        const d = r.data;
+        const conf = d.confidence || 'low';
+        const fmt = (v) => v !== null && v !== undefined
+          ? v : '<span class="null-value">not found</span>';
+        const fmtAmount = (v, currency) => v !== null
+          ? (currency && currency !== 'null' ? currency + ' ' : '') + v
+          : '<span class="null-value">not found</span>';
+
+        return `
+          <div class="result-card success">
+            <div class="result-filename">📄 ${r.filename}</div>
+            <div class="field">
+              <span class="field-name">Vendor</span>
+              <span class="field-value">${fmt(d.vendorName)}</span>
+            </div>
+            <div class="field">
+              <span class="field-name">Morning Category</span>
+              <span class="field-value">${categorySelectHtml(d.morningCategoryId, index)}</span>
+            </div>
+            <div class="field">
+              <span class="field-name">Date</span>
+              <span class="field-value">${fmt(d.date)}</span>
+            </div>
+            <div class="field">
+              <span class="field-name">Total with VAT</span>
+              <span class="field-value">${fmtAmount(d.totalWithVat, d.currency)}</span>
+            </div>
+            <div class="field">
+              <span class="field-name">Total without VAT</span>
+              <span class="field-value">${fmtAmount(d.totalWithoutVat, d.currency)}</span>
+            </div>
+            <div class="field">
+              <span class="field-name">Confidence</span>
+              <span class="field-value">
+                <span class="confidence ${conf}">${conf}</span>
+              </span>
+            </div>
+          </div>`;
+      }).join('');
+    }
+  </script>
+
+</body>
+</html>

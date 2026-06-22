@@ -1,0 +1,11 @@
+location_id,location_name,latitude,longitude,type,notes
+L-201,Port Selka,34.120,35.810,port,"Main commercial port; handles containers and fuel"
+L-202,East Selka Warehouse Belt,34.155,35.870,industrial_area,"Warehouses 8-14 are near the old rail spur"
+L-203,Haddan Crossing,34.420,36.105,border_crossing,"Minor border crossing; normally low traffic after midnight"
+L-204,Route 17 Checkpoint,34.310,36.010,checkpoint,"Controls road access between Selka and Haddan Crossing"
+L-205,Kavrin Market,34.250,35.950,town_center,"Dense civilian activity; frequent traffic disruptions"
+L-206,Old Quarry Road,34.365,36.060,rural_road,"Unlit road parallel to Route 17"
+L-207,Haddan Works Yard,34.390,36.080,industrial_site,"Adjacent to Old Quarry Road"
+L-208,Meridian Relief Office Selka,34.145,35.840,office,"Near Port Selka customs district"
+L-209,North Ridge Fuel Depot,34.455,36.130,fuel_depot,"Serves legal agricultural traffic"
+

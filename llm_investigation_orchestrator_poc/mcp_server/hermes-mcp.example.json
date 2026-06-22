@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "intelligence-events-poc": {
+      "command": "/opt/intelligence-poc/venv/bin/python",
+      "args": ["/opt/intelligence-poc/mcp_server/server.py"],
+      "env": {
+        "INTELLIGENCE_POC_DATA": "/opt/intelligence-poc/data/events_he_large.csv"
+      }
+    }
+  }
+}

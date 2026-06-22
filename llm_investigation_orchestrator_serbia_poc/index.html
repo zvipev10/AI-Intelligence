@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>סביבת חקירה מונחית סוכן</title>
+  <link rel="stylesheet" href="./vendor/maplibre-gl.css">
+  <link rel="stylesheet" href="./styles.css?v=20">
+</head>
+<body>
+  <a class="help-button" href="./help.html" target="_blank" rel="noopener" aria-label="פתח עזרה">?</a>
+  <header class="app-header">
+    <div>
+      <h1>סביבת חקירה מונחית סוכן</h1>
+      <p>חקירה בשפה טבעית מעל אירועים גולמיים, עם מעבר ישיר למקורות הראיה.</p>
+    </div>
+    <div class="header-status"><span class="status-dot"></span><span id="datasetStatus">טוען נתונים</span><span class="status-divider">|</span><span id="agentStatus">בודק חיבור לסוכן</span></div>
+  </header>
+
+  <main class="workspace">
+    <aside class="conversation-panel">
+      <div class="panel-heading">
+        <div><span class="eyebrow">חקירה פעילה</span><h2>שיחה עם הסוכן</h2></div>
+        <button id="resetButton" class="quiet-button" type="button">חקירה חדשה</button>
+      </div>
+      <div id="conversation" class="conversation" aria-live="polite">
+        <article class="message assistant-message">
+          <div class="message-label">סוכן חקירה</div>
+          <p>אפשר להתחיל בשאלה פתוחה. אשתמש בכלי החיפוש, הזמן והמפה כדי לבנות תשובה שניתן לבדוק מול האירועים הגולמיים.</p>
+        </article>
+      </div>
+      <div id="suggestions" class="suggestions">
+        <button type="button" data-prompt="האם הטענה על חציית גבול מגובה במקור אמין?">האם הטענה על חציית גבול מגובה במקור אמין?</button>
+        <button type="button" data-prompt="איפה יש ריכוזי דיווחים מרכזיים בצפון קוסובו?">איפה יש ריכוזי דיווחים מרכזיים בצפון קוסובו?</button>
+      </div>
+      <form id="promptForm" class="prompt-form">
+        <button id="recordedButton" class="recorded-button" type="button" title="שאלות מוקלטות" aria-label="שאלות מוקלטות">+</button>
+        <textarea id="promptInput" rows="2" aria-label="שאלת חקירה" placeholder="כתוב שאלת חקירה..."></textarea>
+        <button id="sendButton" type="submit">שלח</button>
+      </form>
+    </aside>
+
+    <div class="panel-resizer" data-resizer="left" role="separator" aria-label="שינוי רוחב שיחה ותצוגה"></div>
+
+    <section class="result-panel">
+      <div class="result-header">
+        <div>
+          <span class="eyebrow">תמונת מצב</span>
+          <h2 id="resultTitle">טרם בוצעה חקירה</h2>
+          <p id="resultSubtitle">תוצאות, המחשות וראיות יופיעו כאן לאחר השאלה הראשונה.</p>
+        </div>
+        <div id="resultCount" class="result-count">0 אירועים</div>
+      </div>
+      <nav class="view-tabs" aria-label="תצוגות תוצאה">
+        <button class="view-tab active" data-view="map" type="button">מפה</button>
+        <button class="view-tab" data-view="timeline" type="button">ציר זמן</button>
+        <button class="view-tab" data-view="evidence" type="button">אירועים גולמיים</button>
+      </nav>
+      <div id="viewRecommendation" class="view-recommendation" aria-live="polite" hidden></div>
+      <div class="view-stack">
+        <section id="mapView" class="view-pane active"><div id="map" class="map-canvas"></div></section>
+        <section id="timelineView" class="view-pane"><div id="timeline" class="timeline empty-state">לא נבחרו אירועים להצגה.</div></section>
+        <section id="evidenceView" class="view-pane">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>זמן</th><th>מקור</th><th>אמינות</th><th>ודאות</th><th>גורם</th><th>מיקום</th><th>תקציר</th></tr></thead>
+              <tbody id="evidenceRows"><tr><td colspan="7" class="empty-cell">לא נבחרו אירועים להצגה.</td></tr></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <div class="panel-resizer" data-resizer="right" role="separator" aria-label="שינוי רוחב תצוגה והסברי מודל"></div>
+
+    <aside class="activity-panel">
+      <div id="activityEmpty" class="activity-empty">לא הופעלו כלים עדיין.</div>
+      <ol id="activityList" class="activity-list"></ol>
+      <section class="context-card">
+        <h3>הקשר החקירה</h3>
+        <dl id="contextState">
+          <div><dt>אזור</dt><dd>לא הוגדר</dd></div>
+          <div><dt>חלון זמן</dt><dd>לא הוגדר</dd></div>
+          <div><dt>גורמים במיקוד</dt><dd>לא הוגדרו</dd></div>
+        </dl>
+      </section>
+    </aside>
+  </main>
+
+  <div id="recordedModal" class="modal-backdrop" hidden>
+    <section class="recorded-modal" role="dialog" aria-modal="true" aria-labelledby="recordedModalTitle">
+      <div class="recorded-modal-header">
+        <div>
+          <span class="eyebrow">דמו מהיר</span>
+          <h2 id="recordedModalTitle">שאלות מוקלטות</h2>
+        </div>
+        <button id="recordedClose" class="quiet-button" type="button">סגור</button>
+      </div>
+      <p class="recorded-modal-note">בחירה בשאלה תציג ריצה מוקלטת מתוך תוצר אמיתי של הסוכן. הצעדים יופיעו בהדרגה, כל כ-2 שניות.</p>
+      <div id="recordedList" class="recorded-list"></div>
+    </section>
+  </div>
+
+  <script src="./vendor/maplibre-gl.js"></script>
+  <script src="./app.js?v=33"></script>
+</body>
+</html>

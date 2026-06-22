@@ -1,0 +1,32 @@
+node_modules/
+dist/
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+invoices.db
+invoices.db-shm
+invoices.db-wal
+
+# Local Codex/runtime metadata
+.agents/
+.tools/
+
+# Local Hermes/VM credentials and generated configs
+.hermes-api.json
+**/.hermes-api.json
+**/.hermes-api.remote.tmp.json
+*.key
+*.pem
+
+# Runtime logs and large generated traces
+**/mcp_audit.jsonl
+**/performance_logs/
+**/__pycache__/
+**/*.pyc
+
+# Generated deployment/archive artifacts
+*.tgz
+*.zip
+deploy_serbia_ui_*/

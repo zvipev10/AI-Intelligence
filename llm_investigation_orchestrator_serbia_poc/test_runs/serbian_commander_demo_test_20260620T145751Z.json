@@ -1,0 +1,125 @@
+{
+  "session_id": "serbian-commander-demo-20260620T145751Z",
+  "results": [
+    {
+      "id": "q1_friction_hotspots",
+      "prompt": "באילו אזורים בצפון קוסובו יש ריכוז חריג של דיווחים על מחאות, חסימות, נוכחות כוחות או אירועים ביטחוניים?",
+      "expected": "Identify major hotspots in North Kosovo, especially North Mitrovica, Zvecan, Leposavic, Zubin Potok, preferably with location aggregation/map.",
+      "status": 200,
+      "elapsed_ms": 49328.333,
+      "run_id": "run_302a3798e9354de280b66205d3c534f2",
+      "performance_log": "20260620T145840Z-run_302a3798e9354de280b66205d3c534f2.json",
+      "recommended_view": "map",
+      "view_reason": "מוקדים מרחביים בולטים",
+      "ids": [
+        "LOC-009",
+        "LOC-012",
+        "LOC-030",
+        "LOC-036",
+        "LOC-074",
+        "LOC-082",
+        "LOC-117",
+        "LOC-122",
+        "LOC-141",
+        "LOC-145"
+      ],
+      "tool_sequence": [
+        "classify_question_intent",
+        "resolve_location",
+        "aggregate_events"
+      ],
+      "step_count": 3,
+      "answer": "בצפון קוסובו, הריכוז הגבוה ביותר בדיווחים המסוננים נמצא ב־תחנת משטרה אזורית (LOC-009, 11), אחריה צומת מקומי 97 (LOC-117, 9), ציר גישה 102 (LOC-122, 8) ותחנת דלק 62 (LOC-082, 8). ברמת משנה בולטים גם תחנת דלק 10 (LOC-030, 7), ציר גישה 125 (LOC-145, 7), אזור מיוער 54 (LOC-074, 7), תחנת דלק 121 (LOC-141, 7), כיכר מרכזית 16 (LOC-036, 7) ואזור מיוער סמוך לכפר (LOC-012, 7).\nמזהי ראיות: תוצאה אגרגטיבית ללא מזהי אירועים",
+      "error": null
+    },
+    {
+      "id": "q2_force_movement_time_space",
+      "prompt": "האם ניתן לראות דפוס של תנועה או הגברת נוכחות של כוחות לפי זמן ומיקום?",
+      "expected": "Identify movement/increased presence over time and space, mention security vehicles, checkpoints, patrols, actors, and timeline/map evidence.",
+      "status": 200,
+      "elapsed_ms": 68367.961,
+      "run_id": "run_00093377af624730a74918f7b010e8e5",
+      "performance_log": "20260620T145949Z-run_00093377af624730a74918f7b010e8e5.json",
+      "recommended_view": "evidence",
+      "view_reason": "אימות מקורות ודיווחים",
+      "ids": [
+        "LOC-009",
+        "LOC-053",
+        "LOC-093",
+        "LOC-117",
+        "LOC-122",
+        "LOC-141",
+        "LOC-144"
+      ],
+      "tool_sequence": [
+        "classify_question_intent",
+        "resolve_location",
+        "aggregate_events",
+        "aggregate_events",
+        "aggregate_events",
+        "aggregate_events"
+      ],
+      "step_count": 6,
+      "answer": "כן, יש דפוס מרחבי־זמני חלקי: בחתך הכללי יש ריכוז חזק בשעות הבוקר המוקדמות עד 09:00 (04:00–09:00), ובחתך של מונחי כוחות/מחסום/תנועה השיא עובר ל־07:00 ואז 11:00 ו־18:00, עם המשך נוכחות גם ב־04:00–06:00 (למשל סביב LOC-009, LOC-053, LOC-144, LOC-141, LOC-093, LOC-122, LOC-117). מבחינת מיקום, הריכוזים הבולטים הם סביב תחנת המשטרה והצמתים/מחסומים בצפון מיטרוביצה וזבצ׳אן, ובמיוחד LOC-009, LOC-053, LOC-144, LOC-117 ו־LOC-122, כלומר צירי גישה ונקודות בדיקה ולא מוקד יחיד. זה מרמז יותר על תנועה/היערכות סביב צירים ומחסומים מאשר על נוכחות קבועה במקום אחד, אבל הבדיקה כאן אגרגטיבית ולא ממצה לגמרי. מזהי ראיות: תוצאה אגרגטיבית ללא מזהי אירועים",
+      "error": null
+    },
+    {
+      "id": "q3_kfor_role",
+      "prompt": "האם KFOR מגביר נוכחות, מציב חיץ, מאבטח צירים, או מאפשר למשטרת קוסובו לפעול?",
+      "expected": "Assess KFOR as patrol/buffer/stabilizer; distinguish noise and misidentification from stronger evidence.",
+      "status": 200,
+      "elapsed_ms": 28452.809,
+      "run_id": "run_97d5f763f74a4e6fb4fbe8b4de25995f",
+      "performance_log": "20260620T150017Z-run_97d5f763f74a4e6fb4fbe8b4de25995f.json",
+      "recommended_view": "evidence",
+      "view_reason": "צריך לראות את הרשומות הגולמיות",
+      "ids": [
+        "REC-001351",
+        "REC-002219",
+        "REC-003141",
+        "REC-014461",
+        "REC-044036",
+        "REC-086881",
+        "REC-093706",
+        "REC-098694"
+      ],
+      "tool_sequence": [
+        "classify_question_intent",
+        "search_events",
+        "search_events",
+        "search_events"
+      ],
+      "step_count": 4,
+      "answer": "כן, בעיקר כמגביר נוכחות וכחיץ על צירים: כמה רשומות מתארות את KFOR כמי שמגביר נוכחות כדי למנוע חיכוך ישיר, ובאחרות יש תנועה ביטחונית או חסימה קצרה של כביש/ציר. לגבי \"מאפשר למשטרת קוסובו לפעול\" יש רק אינדיקציות עקיפות לשיתוף פעולה או קריאה לשיתוף פעולה, לא תיעוד מבצעי חד-משמעי; רוב הרשומות כאן גם מסומנות כ־disputed או unverified.\n\nמזהי ראיות: REC-093706, REC-003141, REC-014461, REC-044036, REC-002219, REC-086881, REC-001351, REC-098694",
+      "error": null
+    },
+    {
+      "id": "q4_shooting_explosion_noise",
+      "prompt": "האם יש אירועי ירי או פיצוץ אמיתיים, או שמדובר בזיקוקים, שמועות, סרטונים ישנים ודיווחים מוגזמים?",
+      "expected": "Separate shooting/explosion indications from rumors, old videos, fireworks/benign alternatives; recommend cross-check with injuries, KFOR, police, evacuation.",
+      "status": 200,
+      "elapsed_ms": 50014.903,
+      "run_id": "run_318f7b2c1a3b4669afe7e7ff3f0e1a88",
+      "performance_log": "20260620T150107Z-run_318f7b2c1a3b4669afe7e7ff3f0e1a88.json",
+      "recommended_view": "evidence",
+      "view_reason": "בדיקת מקורות גולמיים",
+      "ids": [
+        "REC-009647",
+        "REC-030007",
+        "REC-042504",
+        "REC-055467",
+        "REC-062634",
+        "REC-069352"
+      ],
+      "tool_sequence": [
+        "classify_question_intent",
+        "search_events",
+        "search_events",
+        "get_events"
+      ],
+      "step_count": 4,
+      "answer": "יש כאן כמה דיווחי ירי מסומנים כ־confirmed, אבל גם בהם הנוסח הוא “נשמעו קולות שנשמעו כמו ירי” ולא אימות עצמאי של אש חיה; בצד של פיצוצים, רוב הרשומות הן נמוכות־אמינות ומלוות במפורש בחלופות כמו זיקוקים, תקלה אזרחית, או דיווח קודם. בנוסף, יש רשומת וידאו שמציינת במפורש שהסרטון ישן או לא קשור לאירועים הנוכחיים, כך שהתמונה הכוללת נוטה יותר לשילוב של שמועות, הגזמה ודיווחים לא מאומתים מאשר לראיות חד־משמעיות לפיצוץ או ירי אמיתיים.\n\nמזהי ראיות: REC-009647, REC-055467, REC-030007, REC-069352, REC-062634, REC-042504",
+      "error": null
+    }
+  ]
+}
