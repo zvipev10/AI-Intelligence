@@ -172,6 +172,7 @@ const state = {
   window: null,
   actors: [],
   aggregateLocations: [],
+  aggregateTimeline: [],
   map: null,
   mapReady: false,
   markers: [],
@@ -333,6 +334,57 @@ function collectAggregateLocations(result) {
   const idsInAnswer = new Set((result.answer || "").match(/\bL-\d{3}\b/g) || []);
   if (idsInAnswer.size) locations = locations.filter(item => idsInAnswer.has(item.location_id));
   return locations;
+}
+
+function parseAggregateGroupsFromText(text) {
+  const match = String(text || "").match(/קבוצות:\s*(.+?)(?:\.|$)/);
+  if (!match) return [];
+  return match[1].split(",").map(part => {
+    const item = part.trim();
+    const separator = item.lastIndexOf("=");
+    if (separator === -1) return null;
+    const label = item.slice(0, separator).trim();
+    const count = Number(item.slice(separator + 1).trim());
+    if (!label || !Number.isFinite(count)) return null;
+    return { label, count };
+  }).filter(Boolean);
+}
+
+function collectAggregateTimeline(result) {
+  const items = [];
+  (result.investigation_steps || []).forEach(step => {
+    if (step.tool !== "aggregate_events") return;
+    const groupBy = step.technical?.arguments?.group_by;
+    if (!["date", "hour"].includes(groupBy)) return;
+    const groups = step.aggregate_groups || parseAggregateGroupsFromText(step.result);
+    groups.forEach(group => {
+      const label = group.label || group.key;
+      const count = Number(group.count || 0);
+      if (!label || !Number.isFinite(count)) return;
+      let sortKey = label;
+      let timeLabel = label;
+      if (groupBy === "date") {
+        sortKey = `${label}T00:00:00Z`;
+        timeLabel = label;
+      } else if (groupBy === "hour") {
+        const hour = String(label).match(/\d{1,2}/)?.[0] || "0";
+        sortKey = Number(hour);
+        timeLabel = `${String(hour).padStart(2, "0")}:00`;
+      }
+      items.push({
+        group_by: groupBy,
+        label,
+        timeLabel,
+        count,
+        sortKey,
+        summary: `${count.toLocaleString("he-IL")} אירועים בקבוצת ${label}`
+      });
+    });
+  });
+  const priority = items.some(item => item.group_by === "date") ? "date" : "hour";
+  return items
+    .filter(item => item.group_by === priority)
+    .sort((a, b) => a.sortKey > b.sortKey ? 1 : a.sortKey < b.sortKey ? -1 : 0);
 }
 
 function initMap() {
@@ -516,6 +568,7 @@ function applyHermesResult(result, prompt, options = {}) {
   const evidence = new Set([...(result.event_ids || []), ...idsFromAnswer]);
   state.current = state.events.filter(event => evidence.has(event.event_id));
   state.aggregateLocations = collectAggregateLocations(result);
+  state.aggregateTimeline = collectAggregateTimeline(result);
   state.actors = [...new Set(state.current.map(event => event.entity_or_actor).filter(actor => actor && actor !== "לא ידוע"))];
   const locations = state.current.length
     ? [...new Set(state.current.map(event => event.location_name))]
@@ -550,7 +603,7 @@ function applyHermesResult(result, prompt, options = {}) {
     "ממצאי חקירת הסוכן",
     state.current.length
       ? "הראיות שהסוכן ציטט מוצגות במפה, בציר הזמן ובטבלה."
-      : (state.aggregateLocations.length ? "התוצאה האגרגטיבית מוצגת לפי מיקומים על המפה ובטבלה." : "הסוכן השיב, אך לא נמצאו בתשובה מזהי אירועים שניתן לקשר לתצוגה.")
+      : (state.aggregateLocations.length || state.aggregateTimeline.length ? "התוצאה האגרגטיבית מוצגת לפי מיקומים, זמן או טבלה." : "הסוכן השיב, אך לא נמצאו בתשובה מזהי אירועים שניתן לקשר לתצוגה.")
   );
   const inferred = inferRecommendedView(prompt, result.answer);
   activateView(result.recommended_view || inferred.view, {
@@ -726,7 +779,7 @@ function showResult(title, subtitle) {
   resultSubtitle.textContent = subtitle;
   resultCount.textContent = state.current.length
     ? `${state.current.length} אירועים`
-    : `${state.aggregateLocations.length} מיקומים`;
+    : (state.aggregateTimeline.length ? `${state.aggregateTimeline.length} נקודות זמן` : `${state.aggregateLocations.length} מיקומים`);
   renderAllViews();
 }
 
@@ -850,6 +903,17 @@ function renderMap() {
 
 function renderTimeline() {
   const timeline = document.getElementById("timeline");
+  if (!state.current.length && state.aggregateTimeline.length) {
+    timeline.className = "timeline";
+    timeline.innerHTML = state.aggregateTimeline.map(item => `
+      <article class="timeline-item">
+        <span class="timeline-dot"></span>
+        <div class="timeline-time">${escapeHtml(item.timeLabel)}</div>
+        <div class="timeline-title">אגרגציה לפי ${item.group_by === "date" ? "תאריך" : "שעה"} · ${item.count.toLocaleString("he-IL")} אירועים</div>
+        <div class="timeline-summary">${escapeHtml(item.summary)}</div>
+      </article>`).join("");
+    return;
+  }
   if (!state.current.length) { timeline.className = "timeline empty-state"; timeline.textContent = "לא נבחרו אירועים להצגה."; return; }
   timeline.className = "timeline";
   timeline.innerHTML = [...state.current].sort((a, b) => a.date - b.date).map(event => `
@@ -889,6 +953,7 @@ function resetInvestigation() {
   state.window = null;
   state.actors = [];
   state.aggregateLocations = [];
+  state.aggregateTimeline = [];
   state.history = [];
   state.investigationId = createInvestigationId();
   state.investigationState = null;

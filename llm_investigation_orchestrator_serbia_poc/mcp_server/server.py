@@ -21,6 +21,7 @@ SERVER_NAME = "serbia-events-poc"
 SERVER_VERSION = "0.2.0"
 DEFAULT_LIMIT = 2000
 MAX_LIMIT = 2000
+MIN_COVERAGE_LIMIT = 2000
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 DATA_PATH = Path(os.environ.get("INTELLIGENCE_POC_DATA", BASE_DIR / "data" / "serbia_kosovo_events_projection.csv"))
@@ -184,6 +185,11 @@ def bounded_limit(value: Any) -> int:
         return max(1, min(int(value or DEFAULT_LIMIT), MAX_LIMIT))
     except (TypeError, ValueError):
         return DEFAULT_LIMIT
+
+
+def coverage_limit(value: Any) -> int:
+    """Use maximum bounded coverage for investigative retrieval, even if the model asks for a small sample."""
+    return max(MIN_COVERAGE_LIMIT, bounded_limit(value))
 
 
 def sort_order_desc(arguments: dict[str, Any]) -> bool:
@@ -838,7 +844,8 @@ def trace_semantic_clues(arguments: dict[str, Any]) -> dict[str, Any]:
     location_ids = set(arguments.get("location_ids") or [])
     source_types = set(arguments.get("source_types") or [])
     include_negated = bool(arguments.get("include_negated", False))
-    limit = bounded_limit(arguments.get("limit", MAX_LIMIT))
+    requested_limit = arguments.get("limit", MAX_LIMIT)
+    limit = coverage_limit(requested_limit)
     normalized_clues = [(clue, normalize_text(clue)) for clue in clues]
     matches = []
     for event in EVENTS:
@@ -915,6 +922,9 @@ def trace_semantic_clues(arguments: dict[str, Any]) -> dict[str, Any]:
         "total_matches": len(matches),
         "returned": len(selected),
         "truncated": len(matches) > len(selected),
+        "requested_limit": requested_limit,
+        "effective_limit": limit,
+        "coverage_policy": "max_coverage_default",
         "recommended_next_seeds": recommended_next_seeds,
         "new_clues_to_trace": list(dict.fromkeys(new_clues + llm_expanded_clues))[:8],
         "llm_expanded_clues": llm_expanded_clues,
@@ -933,7 +943,8 @@ def find_related_events(arguments: dict[str, Any]) -> dict[str, Any]:
     after_hours = max(0, min(float(arguments.get("after_hours", 12)), 168))
     distance_km = max(0, min(float(arguments.get("distance_km", 25)), 500))
     source_types = set(arguments.get("source_types") or [])
-    limit = bounded_limit(arguments.get("limit", MAX_LIMIT))
+    requested_limit = arguments.get("limit", MAX_LIMIT)
+    limit = coverage_limit(requested_limit)
     informative_seed_actors = [seed["entity_or_actor"] for seed in seeds if is_informative_actor(seed["entity_or_actor"])]
     seed_entities = set().union(*(canonical_entity_ids(actor) for actor in informative_seed_actors))
     seed_identifiers = {
@@ -1087,6 +1098,9 @@ def find_related_events(arguments: dict[str, Any]) -> dict[str, Any]:
         "total_candidates": len(ranked),
         "returned": len(selected),
         "truncated": len(ranked) > len(selected),
+        "requested_limit": requested_limit,
+        "effective_limit": limit,
+        "coverage_policy": "max_coverage_default",
         "recommended_next_seeds": recommended_next_seeds,
         "new_clues_to_trace": new_clues[:8],
         "llm_rerank": {
@@ -1135,7 +1149,8 @@ def compare_location_claims(arguments: dict[str, Any]) -> dict[str, Any]:
     end = parse_time(arguments.get("end_time"))
     location_ids = set(arguments.get("location_ids") or [])
     source_types = set(arguments.get("source_types") or [])
-    limit = bounded_limit(arguments.get("limit", 100))
+    requested_limit = arguments.get("limit", 100)
+    limit = coverage_limit(requested_limit)
     if seed_events:
         window_hours = max(1, min(float(arguments.get("time_window_hours", 24)), 168))
         if not start:
@@ -1276,6 +1291,9 @@ def compare_location_claims(arguments: dict[str, Any]) -> dict[str, Any]:
         "conflict_group_count": len(conflict_groups),
         "returned": len(selected_groups),
         "truncated": len(conflict_groups) > len(selected_groups),
+        "requested_limit": requested_limit,
+        "effective_limit": limit,
+        "coverage_policy": "max_coverage_default",
         "conflict_groups": selected_groups,
         "llm_assessment": {
             "assessment": str((llm_assessment or {}).get("assessment") or "")[:900],
@@ -1457,12 +1475,16 @@ def filter_event_matches(arguments: dict[str, Any]) -> list[tuple[int, dict[str,
 def search_events(arguments: dict[str, Any]) -> dict[str, Any]:
     matches = filter_event_matches(arguments)
     total = len(matches)
-    limit = bounded_limit(arguments.get("limit"))
+    requested_limit = arguments.get("limit")
+    limit = coverage_limit(requested_limit)
     selected = matches[:limit]
     return {
         "total": total,
         "returned": len(selected),
         "truncated": total > len(selected),
+        "requested_limit": requested_limit,
+        "effective_limit": limit,
+        "coverage_policy": "max_coverage_default",
         "sort_by": arguments.get("sort_by") or ("score" if arguments.get("keywords") else "timestamp"),
         "sort_order": arguments.get("sort_order") or ("desc" if str(arguments.get("sort_by") or "").casefold() in {"score", "match_score", "relevance"} else "asc"),
         "event_ids": [event["event_id"] for _, event in selected],
@@ -1576,7 +1598,7 @@ def find_actor_history(arguments: dict[str, Any]) -> dict[str, Any]:
         "location_ids": arguments.get("location_ids") or [],
         "source_types": arguments.get("source_types") or [],
         "night_only": arguments.get("night_only", False),
-        "limit": arguments.get("limit", DEFAULT_LIMIT),
+        "limit": coverage_limit(arguments.get("limit", DEFAULT_LIMIT)),
     }
     result = search_events(forwarded)
     result["requested_actors"] = actors
@@ -1888,7 +1910,7 @@ TOOLS = [
     {
         "name": "search_events",
         "title": "Search intelligence events",
-        "description": "Search the synthetic event dataset using deterministic filters. Use location IDs from resolve_location and ISO-8601 UTC timestamps. Returns explicit event IDs and evidence rows. Supports explicit sorting by timestamp, relevance score, or event_id. For broad investigative or high-coverage searches, use limit=2000 unless the user explicitly asked for a small sample/TOP-N or the call is only validating selected records. If truncated=true, do not treat returned rows as exhaustive.",
+        "description": "Search the synthetic event dataset using deterministic filters. Use location IDs from resolve_location and ISO-8601 UTC timestamps. Returns explicit event IDs and evidence rows. Supports explicit sorting by timestamp, relevance score, or event_id. Coverage is mandatory by default: broad searches are normalized to the maximum bounded coverage limit of 2000 even if a smaller limit is supplied. If truncated=true, do not treat returned rows as exhaustive; narrow filters or report the coverage gap.",
         "inputSchema": with_step_bridge({
             "type": "object",
             "properties": {
@@ -1904,7 +1926,7 @@ TOOLS = [
                 "match_all_keywords": {"type": "boolean"},
                 "sort_by": {"type": "string", "enum": ["timestamp", "score", "event_id"], "description": "Sort returned raw rows. Use timestamp asc for earliest events; use score desc for relevance-ranked keyword searches."},
                 "sort_order": {"type": "string", "enum": ["asc", "desc"]},
-                "limit": {"type": "integer", "minimum": 1, "maximum": MAX_LIMIT, "description": "Maximum returned rows. For broad discovery use 2000. Use values below 500 only for explicit small samples, TOP-N, or focused validation."},
+                "limit": {"type": "integer", "minimum": 1, "maximum": MAX_LIMIT, "description": "Requested maximum returned rows. Broad retrieval is normalized to 2000 by coverage policy; smaller values are not proof of absence."},
             },
             "additionalProperties": False,
         }),
@@ -1939,7 +1961,7 @@ TOOLS = [
     {
         "name": "find_actor_history",
         "title": "Find actor history",
-        "description": "Find prior or subsequent appearances of actors with optional time, location, source, and night filters. Known entity aliases are expanded automatically and returned explicitly. For investigative seed selection, avoid low limits on broad actor searches; narrow with time/location/source filters or use limit=2000.",
+        "description": "Find prior or subsequent appearances of actors with optional time, location, source, and night filters. Known entity aliases are expanded automatically and returned explicitly. Coverage is mandatory by default: broad actor searches are normalized to 2000; narrow with time/location/source filters when totals are still too large.",
         "inputSchema": with_step_bridge({
             "type": "object",
             "properties": {
@@ -1948,7 +1970,7 @@ TOOLS = [
                 "location_ids": {"type": "array", "items": {"type": "string"}},
                 "source_types": {"type": "array", "items": {"type": "string"}},
                 "night_only": {"type": "boolean"},
-                "limit": {"type": "integer", "minimum": 1, "maximum": MAX_LIMIT, "description": "Maximum returned rows. For broad actor history use 2000; low values are samples when total is higher."},
+                "limit": {"type": "integer", "minimum": 1, "maximum": MAX_LIMIT, "description": "Requested maximum returned rows. Broad actor history is normalized to 2000 by coverage policy."},
             },
             "required": ["actors"], "additionalProperties": False,
         }),
@@ -2056,7 +2078,7 @@ TOOLS = [
                     "type": "boolean",
                     "description": "Defaults to false. Set true only for contradiction or alternative checks, not for main-chain discovery.",
                 },
-                "limit": {"type": "integer", "minimum": 1, "maximum": MAX_LIMIT, "description": "Maximum returned clue matches. For broad clue tracing use 2000; use low values only for explicit samples or focused validation."},
+                "limit": {"type": "integer", "minimum": 1, "maximum": MAX_LIMIT, "description": "Requested maximum returned clue matches. Broad clue tracing is normalized to 2000 by coverage policy."},
             },
             "additionalProperties": False,
         }),
@@ -2065,7 +2087,7 @@ TOOLS = [
     {
         "name": "find_related_events",
         "title": "Expand from seed evidence",
-        "description": "Rank events related to seed evidence through explicit entity aliases, shared identifiers, operational semantic clues, temporal proximity, geographic proximity, and optional source-type filtering. Unknown actors such as 'לא ידוע' are not treated as evidence bridges. Every candidate includes linkage reasons and weights. With MCP sampling, the tool may rerank only the deterministic top candidates; it cannot introduce outside event IDs. Returns up to 3 recommended_next_seeds and new_clues_to_trace for bounded frontier expansion. Default and broad-investigation limit is 2000. In investigation mode, do not use low limits such as 20, 150, or 500 for broad expansion; if total_candidates is much larger than returned, treat results as a sample and either narrow by source/time/location or run follow-up expansions before drawing conclusions.",
+        "description": "Rank events related to seed evidence through explicit entity aliases, shared identifiers, operational semantic clues, temporal proximity, geographic proximity, and optional source-type filtering. Unknown actors such as 'לא ידוע' are not treated as evidence bridges. Every candidate includes linkage reasons and weights. With MCP sampling, the tool may rerank only the deterministic top candidates; it cannot introduce outside event IDs. Returns up to 3 recommended_next_seeds and new_clues_to_trace for bounded frontier expansion. Coverage is mandatory by default: broad expansion is normalized to 2000 even if a smaller limit is supplied; if total_candidates is larger than returned, treat results as incomplete and narrow or report the gap.",
         "inputSchema": with_step_bridge({
             "type": "object",
             "properties": {
@@ -2079,7 +2101,7 @@ TOOLS = [
                 "before_hours": {"type": "number", "minimum": 0, "maximum": 168},
                 "after_hours": {"type": "number", "minimum": 0, "maximum": 168},
                 "distance_km": {"type": "number", "minimum": 0, "maximum": 500},
-                "limit": {"type": "integer", "minimum": 1, "maximum": MAX_LIMIT, "description": "Maximum returned candidates. Default is 2000. Use 2000 for broad investigative expansion; low values are samples."},
+                "limit": {"type": "integer", "minimum": 1, "maximum": MAX_LIMIT, "description": "Requested maximum returned candidates. Broad expansion is normalized to 2000 by coverage policy."},
             },
             "required": ["seed_event_ids"], "additionalProperties": False,
         }),
@@ -2099,7 +2121,7 @@ TOOLS = [
                 "location_ids": {"type": "array", "items": {"type": "string"}},
                 "source_types": {"type": "array", "items": {"type": "string"}},
                 "time_window_hours": {"type": "number", "minimum": 1, "maximum": 168, "description": "Used around seed events when start/end are not supplied."},
-                "limit": {"type": "integer", "minimum": 1, "maximum": MAX_LIMIT, "description": "Maximum conflict groups and per-group sample rows returned."},
+                "limit": {"type": "integer", "minimum": 1, "maximum": MAX_LIMIT, "description": "Requested maximum conflict groups. Broad comparison is normalized to 2000 by coverage policy."},
             },
             "additionalProperties": False,
         }),

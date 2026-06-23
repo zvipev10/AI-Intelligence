@@ -15,6 +15,39 @@ Then open `http://127.0.0.1:8769/`.
 
 The local UI serves static assets and forwards investigation runs through the same Hermes gateway pattern used by the original POC. A separate Hermes deployment/configuration is still required before this POC can run end-to-end against a remote agent.
 
+## Hermes API Configuration
+
+The UI gateway always reads its runtime Hermes connection settings from:
+
+```text
+.hermes-api.json
+```
+
+The real `.hermes-api.json` file is intentionally not committed because it contains the Hermes API key and, for local development, the VM SSH key path. Use the committed examples as templates:
+
+```text
+.hermes-api.local.example.json
+.hermes-api.vm.example.json
+```
+
+For local development on the Codex/Windows machine, copy `.hermes-api.local.example.json` to `.hermes-api.json` and fill in the VM address, SSH key path, and API key. In this mode the same `server.py` uses SSH/Paramiko to reach the Hermes API listening on the VM loopback address.
+
+For deployment on the Hermes VM, copy `.hermes-api.vm.example.json` to `/opt/serbia-poc-ui/.hermes-api.json` and fill in the API key. In this mode the same `server.py` uses `"transport": "direct"` and talks to Hermes locally at `127.0.0.1:8642`, without SSH.
+
+The public bind address is also runtime configuration, not a separate code fork. Locally the server defaults to `127.0.0.1`. On the VM, the systemd service should set:
+
+```text
+POC_UI_HOST=0.0.0.0
+```
+
+So the intended split is:
+
+```text
+same server.py
+different .hermes-api.json
+different POC_UI_HOST value
+```
+
 ## Data Projection
 
 The source dataset is retained unchanged under `data/north_kosovo_attachment_inspect/`.
