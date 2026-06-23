@@ -170,9 +170,9 @@ th { position: sticky; top: 0; z-index: 1; background: #202530; }
   .panel-resizer { display: none; }
   .conversation-panel { min-height: 620px; }
   .result-panel { min-height: 680px; }
-  #evidenceView { overflow: hidden; }
-  .table-wrap { width: 100%; max-width: 100%; height: 100%; overflow-x: auto; overflow-y: auto; direction: ltr; -webkit-overflow-scrolling: touch; }
-  .table-wrap table { width: max-content; min-width: 920px; table-layout: fixed; direction: rtl; }
+  #evidenceView { overflow: hidden; min-width: 0; }
+  .table-wrap { display: block; width: 100%; max-width: 100%; min-width: 0; height: 100%; overflow-x: scroll; overflow-y: auto; direction: ltr; -webkit-overflow-scrolling: touch; touch-action: pan-x pan-y; }
+  .table-wrap table { width: 1025px; min-width: 1025px; table-layout: fixed; direction: rtl; }
   .table-wrap th, .table-wrap td { padding: 7px; overflow-wrap: anywhere; }
   .table-wrap th:nth-child(1), .table-wrap td:nth-child(1) { width: 145px; }
   .table-wrap th:nth-child(2), .table-wrap td:nth-child(2) { width: 110px; }
