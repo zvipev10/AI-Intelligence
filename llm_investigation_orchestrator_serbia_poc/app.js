@@ -168,9 +168,6 @@ const state = {
   events: [],
   current: [],
   stage: 0,
-  region: null,
-  window: null,
-  actors: [],
   aggregateLocations: [],
   aggregateTimeline: [],
   map: null,
@@ -178,83 +175,12 @@ const state = {
   markers: [],
   history: [],
   investigationId: createInvestigationId(),
-  investigationState: null,
   recordedQuestions: [],
-  busy: false
+  busy: false,
+  activeAssistantMessage: null,
+  activeActivityList: null,
+  activeActivityEmpty: null
 };
-
-function buildInvestigationState(result, prompt) {
-  const prev = state.investigationState || {
-    turn: 0,
-    confirmed_event_ids: [],
-    confirmed_actors: [],
-    entities_resolved: {},
-    open_leads: [],
-    current_hypothesis: null,
-    confidence: null,
-    gaps: []
-  };
-
-  // Accumulate confirmed event IDs across turns (union, preserve order)
-  const existingIds = new Set(prev.confirmed_event_ids);
-  const newIds = (result.event_ids || []).concat(
-    ((result.answer || "").match(EVENT_ID_PATTERN) || [])
-  );
-  newIds.forEach(id => existingIds.add(id));
-  const confirmed_event_ids = [...existingIds];
-
-  // Accumulate actors
-  const existingActors = new Set(prev.confirmed_actors);
-  state.actors.forEach(actor => existingActors.add(actor));
-  const confirmed_actors = [...existingActors];
-
-  // Accumulate entity resolutions from audit steps
-  const entities_resolved = { ...prev.entities_resolved };
-  (result.investigation_steps || []).forEach(step => {
-    if (step.tool === "resolve_entity" && step.result) {
-      // Extract "canonical ← aliases" patterns reported in audit summary
-      const match = step.result.match(/ישות\s+(\S+).*?כינויים:\s*(.+)/);
-      if (match) entities_resolved[match[1]] = match[2].split(",").map(s => s.trim());
-    }
-  });
-
-  // Extract hypothesis — look for the first sentence after "השערה" or "ההשערה"
-  let current_hypothesis = prev.current_hypothesis;
-  const hypoMatch = (result.answer || "").match(/(?:ההשערה|השערה)[^\n:：]*[:\n]\s*([^\n.]{20,200})/i);
-  if (hypoMatch) current_hypothesis = hypoMatch[1].trim();
-
-  // Extract confidence level
-  let confidence = prev.confidence;
-  const confMatch = (result.answer || "").match(/(?:רמת ביטחון|ביטחון)[^\n:：]*[:\n]?\s*(גבוהה|בינונית|נמוכה)/i);
-  if (confMatch) confidence = confMatch[1];
-
-  // Extract gaps from challenge_hypothesis audit steps
-  const gaps = [...prev.gaps];
-  (result.investigation_steps || []).forEach(step => {
-    if (step.tool === "challenge_hypothesis" && step.result) {
-      const gapMatch = step.result.match(/פערים:\s*(.+)/);
-      if (gapMatch) {
-        gapMatch[1].split(";").map(s => s.trim()).filter(Boolean).forEach(gap => {
-          if (!gaps.includes(gap)) gaps.push(gap);
-        });
-      }
-    }
-  });
-
-  // Open leads: carry forward previous, trim if list grows too long
-  const open_leads = prev.open_leads.slice(-5);
-
-  return {
-    turn: prev.turn + 1,
-    confirmed_event_ids,
-    confirmed_actors,
-    entities_resolved,
-    open_leads,
-    current_hypothesis,
-    confidence,
-    gaps
-  };
-}
 
 const conversation = document.getElementById("conversation");
 const suggestions = document.getElementById("suggestions");
@@ -263,8 +189,6 @@ const promptInput = document.getElementById("promptInput");
 const resultTitle = document.getElementById("resultTitle");
 const resultSubtitle = document.getElementById("resultSubtitle");
 const resultCount = document.getElementById("resultCount");
-const activityList = document.getElementById("activityList");
-const activityEmpty = document.getElementById("activityEmpty");
 const sendButton = document.getElementById("sendButton");
 const recordedButton = document.getElementById("recordedButton");
 const recordedModal = document.getElementById("recordedModal");
@@ -419,6 +343,66 @@ function appendMessage(role, html) {
   article.innerHTML = `<div class="message-label">${role === "user" ? "אנליסט" : "סוכן חקירה"}</div>${html}`;
   conversation.appendChild(article);
   conversation.scrollTop = conversation.scrollHeight;
+  return article;
+}
+
+function startAssistantResearchMessage(message = "Hermes מנתח את הבקשה ומפעיל כלי חקירה...") {
+  const article = document.createElement("article");
+  article.className = "message assistant-message";
+  article.innerHTML = `
+    <div class="message-label">סוכן חקירה</div>
+    <section class="research-process research-process-live">
+      <h3>תהליך המחקר</h3>
+      <div class="activity-empty">${escapeHtml(message)}</div>
+      <ol class="activity-list"></ol>
+    </section>`;
+  conversation.appendChild(article);
+  state.activeAssistantMessage = article;
+  state.activeActivityEmpty = article.querySelector(".activity-empty");
+  state.activeActivityList = article.querySelector(".activity-list");
+  conversation.scrollTop = conversation.scrollHeight;
+  return article;
+}
+
+function ensureAssistantResearchMessage(message) {
+  if (!state.activeAssistantMessage || !state.activeActivityList || !state.activeActivityEmpty) {
+    startAssistantResearchMessage(message);
+  }
+}
+
+function setActiveResearchMessage(message) {
+  ensureAssistantResearchMessage(message);
+  state.activeActivityList.innerHTML = "";
+  state.activeActivityEmpty.hidden = false;
+  state.activeActivityEmpty.textContent = message;
+}
+
+function finalizeAssistantMessage(answer, options = {}) {
+  ensureAssistantResearchMessage();
+  const article = state.activeAssistantMessage;
+  const existingList = state.activeActivityList;
+  const stepsCount = existingList ? existingList.children.length : 0;
+  const research = article.querySelector(".research-process");
+  const details = document.createElement("details");
+  details.className = "research-steps-toggle";
+  details.innerHTML = `<summary>תהליך המחקר${stepsCount ? ` · ${stepsCount} צעדים` : ""}</summary>`;
+  if (existingList && stepsCount) {
+    details.appendChild(existingList);
+  } else {
+    const empty = document.createElement("div");
+    empty.className = "activity-empty";
+    empty.textContent = "לא התקבל פירוט צעדי מחקר.";
+    details.appendChild(empty);
+  }
+  if (research) research.replaceWith(details);
+  const answerBody = document.createElement("div");
+  answerBody.className = "answer-body";
+  answerBody.innerHTML = options.html ? answer : answerHtml(answer);
+  article.appendChild(answerBody);
+  state.activeAssistantMessage = null;
+  state.activeActivityList = null;
+  state.activeActivityEmpty = null;
+  conversation.scrollTop = conversation.scrollHeight;
 }
 
 const TOOL_LABELS = {
@@ -450,10 +434,11 @@ function formatTechnical(technical, fallbackTool) {
 }
 
 function addActivity(tool, detail, result, options = {}) {
-  activityEmpty.hidden = true;
+  ensureAssistantResearchMessage();
+  state.activeActivityEmpty.hidden = true;
   const item = document.createElement("li");
   item.className = "activity-item";
-  const stepNumber = options.stepNumber || activityList.children.length + 1;
+  const stepNumber = options.stepNumber || state.activeActivityList.children.length + 1;
   const cleanTool = String(tool || "").replace(/^\d+\.\s*/, "");
   const bridgeSummary = options.bridgeSummary || options.rationale || "הסוכן ממשיך לצעד זה כדי לצמצם את השאלה לפי ההקשר שנאסף עד עכשיו.";
   const technical = formatTechnical(options.technical, cleanTool);
@@ -484,7 +469,8 @@ function addActivity(tool, detail, result, options = {}) {
       <summary>פרטים טכניים</summary>
       <pre>${escapeHtml(technical)}</pre>
     </details>`;
-  activityList.appendChild(item);
+  state.activeActivityList.appendChild(item);
+  conversation.scrollTop = conversation.scrollHeight;
 }
 
 function setSuggestions(items) {
@@ -545,7 +531,8 @@ function inferRecommendedView(prompt, answer) {
 }
 
 function renderActivitySteps(steps) {
-  activityList.innerHTML = "";
+  ensureAssistantResearchMessage();
+  state.activeActivityList.innerHTML = "";
   (steps || []).forEach((step, index) => {
     const explanation = step.model_explanation || {};
     addActivity(step.tool, step.action, step.result, {
@@ -569,15 +556,6 @@ function applyHermesResult(result, prompt, options = {}) {
   state.current = state.events.filter(event => evidence.has(event.event_id));
   state.aggregateLocations = collectAggregateLocations(result);
   state.aggregateTimeline = collectAggregateTimeline(result);
-  state.actors = [...new Set(state.current.map(event => event.entity_or_actor).filter(actor => actor && actor !== "לא ידוע"))];
-  const locations = state.current.length
-    ? [...new Set(state.current.map(event => event.location_name))]
-    : state.aggregateLocations.map(item => item.location_name);
-  state.region = locations.length ? locations.join(" · ") : "לא זוהה מתוך התשובה";
-  if (state.current.length) {
-    const ordered = [...state.current].sort((a, b) => a.date - b.date);
-    state.window = `${ordered[0].timestamp_utc} עד ${ordered[ordered.length - 1].timestamp_utc}`;
-  } else state.window = "לא זוהה מתוך התשובה";
 
   if (!options.keepRenderedSteps) renderActivitySteps(result.investigation_steps || []);
   if (!options.keepRenderedSteps && !(result.investigation_steps || []).length) {
@@ -598,7 +576,7 @@ function applyHermesResult(result, prompt, options = {}) {
     addActivity("Hermes", `שאלת החקירה שנשלחה: ${prompt}`, `התקבלה תשובה בריצה ${result.run_id}, ללא יומן כלי מפורט.`);
   }
 
-  appendMessage("assistant", answerHtml(result.answer));
+  finalizeAssistantMessage(result.answer);
   showResult(
     "ממצאי חקירת הסוכן",
     state.current.length
@@ -611,19 +589,14 @@ function applyHermesResult(result, prompt, options = {}) {
     reason: result.view_reason || inferred.reason
   });
   setSuggestions(["אילו הסברים תמימים יכולים להתאים לאותן ראיות?", "מה חסר כדי להעלות את רמת הביטחון?", "הצג את רצף האירועים לפי סדר הזמן"]);
-  state.investigationState = buildInvestigationState(result, prompt);
-  updateContext();
 }
 
 async function replayRecordedResult(result, prompt) {
-  activityList.innerHTML = "";
-  activityEmpty.hidden = false;
-  activityEmpty.textContent = "מציג ריצה מוקלטת...";
+  setActiveResearchMessage("מציג ריצה מוקלטת...");
   const steps = result.investigation_steps || [];
   const delay = Number(result.replay_delay_ms || 2000);
   for (let index = 0; index < steps.length; index += 1) {
     const step = steps[index];
-    activityEmpty.hidden = true;
     addActivity(step.tool, step.action, step.result, {
       stepNumber: index + 1,
       bridgeSummary: step.bridge_summary,
@@ -652,9 +625,8 @@ async function runRecordedQuestion(recordedId) {
     appendMessage("user", `<p>${escapeHtml(prompt)}</p>`);
     await replayRecordedResult(result, prompt);
   } catch (error) {
-    activityEmpty.hidden = true;
     addActivity("recorded_replay", "טעינת שאלה מוקלטת", error.message, { isError: true });
-    appendMessage("assistant", `<p>לא הצלחתי להציג את השאלה המוקלטת.</p><div class="answer-callout">${escapeHtml(error.message)}</div>`);
+    finalizeAssistantMessage(`<p>לא הצלחתי להציג את השאלה המוקלטת.</p><div class="answer-callout">${escapeHtml(error.message)}</div>`, { html: true });
   } finally {
     state.busy = false;
     sendButton.disabled = false;
@@ -700,13 +672,11 @@ async function runPrompt(prompt) {
   const clientStarted = performance.now();
   let firstLiveStepAt = null;
   appendMessage("user", `<p>${escapeHtml(clean)}</p>`);
+  startAssistantResearchMessage();
   state.busy = true;
   sendButton.disabled = true;
   sendButton.textContent = "חוקר...";
   suggestions.innerHTML = "";
-  activityList.innerHTML = "";
-  activityEmpty.hidden = false;
-  activityEmpty.textContent = "Hermes מנתח את הבקשה ומפעיל כלי חקירה...";
   let liveStepCount = 0;
   let progressTimer = null;
   const pollLiveSteps = async () => {
@@ -719,7 +689,6 @@ async function runPrompt(prompt) {
         if (!firstLiveStepAt) firstLiveStepAt = performance.now();
         liveStepCount = steps.length;
         renderActivitySteps(steps);
-        activityEmpty.hidden = true;
       }
     } catch (error) {
       // Live progress is best-effort; the final investigation response still drives completion.
@@ -732,8 +701,7 @@ async function runPrompt(prompt) {
       body: JSON.stringify({
         prompt: clean,
         history: state.history,
-        investigation_id: state.investigationId,
-        investigation_state: state.investigationState
+        investigation_id: state.investigationId
       })
     });
     progressTimer = setInterval(pollLiveSteps, 1800);
@@ -761,9 +729,8 @@ async function runPrompt(prompt) {
       }).catch(() => {});
     }
   } catch (error) {
-    activityEmpty.hidden = true;
     addActivity("connection_error", "לא ניתן היה להשלים ריצת Hermes.", error.message);
-    appendMessage("assistant", `<p>לא הצלחתי להשלים את ריצת הסוכן האמיתית.</p><div class="answer-callout">${escapeHtml(error.message)}</div>`);
+    finalizeAssistantMessage(`<p>לא הצלחתי להשלים את ריצת הסוכן האמיתית.</p><div class="answer-callout">${escapeHtml(error.message)}</div>`, { html: true });
     agentStatus.textContent = "Hermes אינו זמין";
     agentStatus.className = "agent-error";
   } finally {
@@ -803,10 +770,9 @@ function activateView(view, options = {}) {
   }
 }
 
-function setPanelWidths(chatWidth, resultWidth, activityWidth) {
+function setPanelWidths(chatWidth, resultWidth) {
   workspace.style.setProperty("--chat-width", `${Math.round(chatWidth)}px`);
   workspace.style.setProperty("--result-width", `${Math.round(resultWidth)}px`);
-  workspace.style.setProperty("--activity-width", `${Math.round(activityWidth)}px`);
   if (state.map) setTimeout(() => state.map.resize(), 0);
 }
 
@@ -818,43 +784,27 @@ function initPanelResizers() {
       handle.classList.add("dragging");
       const chat = document.querySelector(".conversation-panel");
       const result = document.querySelector(".result-panel");
-      const activity = document.querySelector(".activity-panel");
       const start = {
         chat: chat.getBoundingClientRect(),
-        result: result.getBoundingClientRect(),
-        activity: activity.getBoundingClientRect(),
+        result: result.getBoundingClientRect()
       };
-      const min = { chat: 220, result: 340, activity: 220 };
+      const min = { chat: 240, result: 420 };
 
       const onMove = moveEvent => {
+        const boundary = moveEvent.clientX;
         let chatWidth = start.chat.width;
         let resultWidth = start.result.width;
-        let activityWidth = start.activity.width;
-        const boundary = moveEvent.clientX;
-        if (handle.dataset.resizer === "left") {
-          const chatOnRight = start.chat.left > start.result.left;
-          const unionLeft = Math.min(start.chat.left, start.result.left);
-          const unionRight = Math.max(start.chat.right, start.result.right);
-          if (chatOnRight) {
-            resultWidth = Math.max(min.result, boundary - unionLeft);
-            chatWidth = Math.max(min.chat, unionRight - boundary);
-          } else {
-            chatWidth = Math.max(min.chat, boundary - unionLeft);
-            resultWidth = Math.max(min.result, unionRight - boundary);
-          }
+        const chatOnRight = start.chat.left > start.result.left;
+        const unionLeft = Math.min(start.chat.left, start.result.left);
+        const unionRight = Math.max(start.chat.right, start.result.right);
+        if (chatOnRight) {
+          resultWidth = Math.max(min.result, boundary - unionLeft);
+          chatWidth = Math.max(min.chat, unionRight - boundary);
         } else {
-          const activityOnRight = start.activity.left > start.result.left;
-          const unionLeft = Math.min(start.activity.left, start.result.left);
-          const unionRight = Math.max(start.activity.right, start.result.right);
-          if (activityOnRight) {
-            resultWidth = Math.max(min.result, boundary - unionLeft);
-            activityWidth = Math.max(min.activity, unionRight - boundary);
-          } else {
-            activityWidth = Math.max(min.activity, boundary - unionLeft);
-            resultWidth = Math.max(min.result, unionRight - boundary);
-          }
+          chatWidth = Math.max(min.chat, boundary - unionLeft);
+          resultWidth = Math.max(min.result, unionRight - boundary);
         }
-        setPanelWidths(chatWidth, resultWidth, activityWidth);
+        setPanelWidths(chatWidth, resultWidth);
       };
 
       const onUp = upEvent => {
@@ -937,35 +887,22 @@ function renderEvidence() {
     <tr><td dir="ltr">${event.timestamp_utc}</td><td>${event.source_type}</td><td>${event.source_reliability_label || event.source_reliability || "-"}</td><td>${event.certainty_level || "-"}</td><td>${event.entity_or_actor}</td><td>${event.location_name}</td><td>${event.event_summary}</td></tr>`).join("");
 }
 
-function updateContext() {
-  const context = document.getElementById("contextState");
-  context.innerHTML = `
-    <div><dt>אזור</dt><dd>${state.region || "לא הוגדר"}</dd></div>
-    <div><dt>חלון זמן</dt><dd>${state.window || "לא הוגדר"}</dd></div>
-    <div><dt>גורמים במיקוד</dt><dd>${state.actors.length ? state.actors.join(" · ") : "לא הוגדרו"}</dd></div>
-    <div><dt>מזהה חקירה</dt><dd dir="ltr">${state.investigationId}</dd></div>`;
-}
-
 function resetInvestigation() {
   state.current = [];
   state.stage = 0;
-  state.region = null;
-  state.window = null;
-  state.actors = [];
   state.aggregateLocations = [];
   state.aggregateTimeline = [];
   state.history = [];
   state.investigationId = createInvestigationId();
-  state.investigationState = null;
+  state.activeAssistantMessage = null;
+  state.activeActivityList = null;
+  state.activeActivityEmpty = null;
   conversation.innerHTML = '<article class="message assistant-message"><div class="message-label">סוכן חקירה</div><p>אפשר להתחיל בשאלה פתוחה. אשתמש בכלי החיפוש, הזמן והמפה כדי לבנות תשובה שניתן לבדוק מול האירועים הגולמיים.</p></article>';
-  activityList.innerHTML = "";
-  activityEmpty.hidden = false;
   resultTitle.textContent = "טרם בוצעה חקירה";
   resultSubtitle.textContent = "תוצאות, המחשות וראיות יופיעו כאן לאחר השאלה הראשונה.";
   resultCount.textContent = "0 אירועים";
   activateView("map");
   setSuggestions(["אילו דיווחים על חסימות הופיעו ראשונים?", "האם הטענה על חציית גבול מגובה במקור אמין?", "איפה יש ריכוזי דיווחים מרכזיים?"]);
-  updateContext();
   renderAllViews();
   if (state.map) setTimeout(() => state.map.resize(), 0);
 }
