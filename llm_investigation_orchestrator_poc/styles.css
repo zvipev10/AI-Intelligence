@@ -149,6 +149,7 @@ th { position: sticky; top: 0; z-index: 1; background: #202530; }
 }
 @media (max-width: 760px) {
   html, body { height: auto; min-height: 100%; overflow: auto; }
+  .help-button { position: absolute; top: 12px; left: 12px; width: 32px; height: 32px; }
   .app-header { align-items: flex-start; padding: 12px 14px; }
   .app-header p { display: none; }
   .workspace { height: auto; overflow: visible; display: flex; flex-direction: column; padding: 8px; }
