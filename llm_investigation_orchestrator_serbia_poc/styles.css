@@ -170,4 +170,9 @@ th { position: sticky; top: 0; z-index: 1; background: #202530; }
   .panel-resizer { display: none; }
   .conversation-panel { min-height: 620px; }
   .result-panel { min-height: 680px; }
+  #evidenceView { overflow: hidden; }
+  .table-wrap { width: 100%; max-width: 100%; overflow-x: auto; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  .table-wrap table { width: max-content; min-width: 760px; table-layout: auto; }
+  .table-wrap th, .table-wrap td { padding: 7px; overflow-wrap: anywhere; }
+  .table-wrap th:nth-child(7), .table-wrap td:nth-child(7) { min-width: 230px; }
 }
