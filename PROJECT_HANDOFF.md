@@ -1,44 +1,184 @@
-# Project Handoff
+# AI Intelligence Project Handoff For Claude
 
-Last updated: 2026-06-20
+Last updated: 2026-06-24
+
+This file is the primary handoff document for continuing the project in another assistant/chat. It captures the current repository state, deployed state, architecture, important files, known risks, and the exact context needed to avoid rediscovering old decisions.
+
+## One-Line Summary
+
+The project contains two intelligence-analysis POCs. The active work is the Serbia/North Kosovo POC: a Hebrew analyst UI backed by a Hermes orchestrator model and MCP tools over a 10,000-record synthetic event corpus, with map/timeline/evidence visualizations, recorded demo replays, and agent-step explainability embedded inside the chat answer.
+
+## Repository And Git State
+
+GitHub repository:
+
+- https://github.com/zvipev10/AI-Intelligence
+
+Current active branch:
+
+- `app-v2-agent-steps-in-chat`
+- Branch URL: https://github.com/zvipev10/AI-Intelligence/tree/app-v2-agent-steps-in-chat
+- PR creation URL: https://github.com/zvipev10/AI-Intelligence/pull/new/app-v2-agent-steps-in-chat
+
+Main branch at time of handoff:
+
+- `main` / `origin/main`: `39110d1 Require model evidence IDs for retrieval answers`
+
+Active branch head at time of handoff:
+
+- `e8de1f5 Keep mobile evidence scroller RTL`
+
+Recent v2 branch commits, newest first:
+
+```text
+e8de1f5 Keep mobile evidence scroller RTL
+9b8cd94 Refresh fifth demo recording
+74d596a Broaden mobile evidence overflow media query
+2e18302 Force mobile evidence table overflow
+0eb99c9 Restore mobile evidence horizontal scroll
+10c4683 Use card layout for mobile evidence view
+9bdbd33 Fix mobile evidence table overflow
+6634253 Embed agent research steps in chat
+```
+
+Important dirty working-tree note:
+
+- `llm_investigation_orchestrator_serbia_poc/recorded_runs/q2_movement.json` is modified locally and was deliberately not committed in the latest work.
+- Do not include it in unrelated commits unless the user explicitly asks to refresh question 2 recording.
 
 ## Active POCs
 
-There are two related local POCs in this workspace:
+Cargo / previous POC:
 
-- Cargo / previous POC: `llm_investigation_orchestrator_poc`
-- Serbia / North Kosovo POC: `llm_investigation_orchestrator_serbia_poc`
+- Directory: `llm_investigation_orchestrator_poc`
+- Local UI: `http://127.0.0.1:8768/`
+- Purpose: original cargo/cross-inference scenario, including the hidden object `OF-4482`.
 
-Local UI ports used in the project:
+Serbia / North Kosovo POC:
 
-- Cargo POC UI: `http://127.0.0.1:8768/`
-- Serbia POC UI: `http://127.0.0.1:8769/`
+- Directory: `llm_investigation_orchestrator_serbia_poc`
+- Local UI: `http://127.0.0.1:8769/`
+- VM UI: `http://151.145.93.180:8769/`
+- Purpose: scenario-portability demo without cargo-specific concepts, based on 10,000 raw North Kosovo escalation records.
 
-Both POCs use the same broad architecture:
+## Current Deployed State On Hermes VM
 
-1. Analyst asks a Hebrew question in the UI.
-2. Local gateway sends the question, history and investigation state to Hermes.
-3. Hermes runs the main orchestrator model.
-4. The model calls MCP tools.
-5. MCP tools query local/remote CSV-backed event data and return structured results.
-6. The model summarizes the investigation.
-7. The UI shows chat answer, map/timeline/evidence view and step explanations.
-8. Tool calls are also written to an audit log so the UI can show what the agent actually did.
+VM:
 
-## Important Components
+- Host: `151.145.93.180`
+- User: `ubuntu`
+- SSH key normally used locally: `C:\Users\e054922\Downloads\oracle.key`
 
-Main Serbia files:
+Current Serbia UI deployment:
 
-- `llm_investigation_orchestrator_serbia_poc/server.py`
-- `llm_investigation_orchestrator_serbia_poc/app.js`
-- `llm_investigation_orchestrator_serbia_poc/styles.css`
+- Path: `/opt/serbia-poc-ui`
+- Service: `serbia-poc-ui.service`
+- Verified active on 2026-06-24.
+- `index.html` currently serves:
+  - `styles.css?v=27`
+  - `app.js?v=35`
+
+Current Serbia MCP/Hermes deployment:
+
+- MCP path: `/opt/serbia-poc/mcp_server/server.py`
+- Hermes gateway service: `hermes-gateway.service`
+- Verified active on 2026-06-24.
+- Hermes local API port on VM: `127.0.0.1:8642`
+
+Useful VM checks:
+
+```bash
+systemctl is-active serbia-poc-ui.service
+systemctl is-active hermes-gateway.service
+grep -n 'styles.css?v=\|app.js?v=' /opt/serbia-poc-ui/index.html
+grep -n 'research-steps-toggle\|orientation: portrait\|direction: rtl' /opt/serbia-poc-ui/styles.css | head -10
+```
+
+Deploy UI files manually from local Windows workspace:
+
+```powershell
+scp -o ConnectTimeout=8 -i "C:\Users\e054922\Downloads\oracle.key" -o StrictHostKeyChecking=no llm_investigation_orchestrator_serbia_poc/index.html ubuntu@151.145.93.180:/tmp/index.html
+scp -o ConnectTimeout=8 -i "C:\Users\e054922\Downloads\oracle.key" -o StrictHostKeyChecking=no llm_investigation_orchestrator_serbia_poc/app.js ubuntu@151.145.93.180:/tmp/app.js
+scp -o ConnectTimeout=8 -i "C:\Users\e054922\Downloads\oracle.key" -o StrictHostKeyChecking=no llm_investigation_orchestrator_serbia_poc/styles.css ubuntu@151.145.93.180:/tmp/styles.css
+ssh -o ConnectTimeout=8 -i "C:\Users\e054922\Downloads\oracle.key" -o StrictHostKeyChecking=no ubuntu@151.145.93.180 "cp /tmp/index.html /opt/serbia-poc-ui/index.html && cp /tmp/app.js /opt/serbia-poc-ui/app.js && cp /tmp/styles.css /opt/serbia-poc-ui/styles.css && sudo systemctl restart serbia-poc-ui.service && systemctl is-active serbia-poc-ui.service"
+```
+
+Deploy a refreshed recorded run, example q5:
+
+```powershell
+scp -o ConnectTimeout=8 -i "C:\Users\e054922\Downloads\oracle.key" -o StrictHostKeyChecking=no llm_investigation_orchestrator_serbia_poc/recorded_runs/q5_assessment.json ubuntu@151.145.93.180:/tmp/q5_assessment.json
+ssh -o ConnectTimeout=8 -i "C:\Users\e054922\Downloads\oracle.key" -o StrictHostKeyChecking=no ubuntu@151.145.93.180 "cp /tmp/q5_assessment.json /opt/serbia-poc-ui/recorded_runs/q5_assessment.json && sudo systemctl restart serbia-poc-ui.service"
+```
+
+## Architecture
+
+High-level flow:
+
+```text
+Hebrew analyst question
+  -> browser UI
+  -> local/VM Python gateway server.py
+  -> Hermes API
+  -> main orchestrator model
+  -> MCP tools in mcp_server/server.py
+  -> CSV/JSON event data
+  -> tool audit records
+  -> final model answer
+  -> UI chat + embedded research process + map/timeline/evidence view
+```
+
+Runtime configuration split:
+
+- Same `server.py` is used locally and on the VM.
+- Local Windows development uses `.hermes-api.json` with SSH transport to VM.
+- VM deployment uses `.hermes-api.json` with direct transport to local Hermes API.
+
+Committed config templates:
+
+- `llm_investigation_orchestrator_serbia_poc/.hermes-api.local.example.json`
+- `llm_investigation_orchestrator_serbia_poc/.hermes-api.vm.example.json`
+
+The real `.hermes-api.json` is intentionally uncommitted because it contains secrets and local key paths.
+
+## Key Files
+
+Serbia UI and gateway:
+
 - `llm_investigation_orchestrator_serbia_poc/index.html`
+- `llm_investigation_orchestrator_serbia_poc/styles.css`
+- `llm_investigation_orchestrator_serbia_poc/app.js`
+- `llm_investigation_orchestrator_serbia_poc/server.py`
 - `llm_investigation_orchestrator_serbia_poc/help.html`
+
+Serbia MCP:
+
 - `llm_investigation_orchestrator_serbia_poc/mcp_server/server.py`
+- `llm_investigation_orchestrator_serbia_poc/mcp_server/smoke_client.py`
+- `llm_investigation_orchestrator_serbia_poc/mcp_server/regression_quality.py`
+- `llm_investigation_orchestrator_serbia_poc/mcp_server/benchmark_tools.py`
+- `llm_investigation_orchestrator_serbia_poc/mcp_server/remote_deploy_serbia.py`
+- `llm_investigation_orchestrator_serbia_poc/mcp_server/remote_deploy_ui.py`
+
+Serbia data:
+
 - `llm_investigation_orchestrator_serbia_poc/data/serbia_kosovo_events_projection.csv`
 - `llm_investigation_orchestrator_serbia_poc/data/serbia_kosovo_locations.json`
+- `llm_investigation_orchestrator_serbia_poc/data/serbia_kosovo_evaluator_labels.csv`
 
-Main Cargo files:
+Recorded demo runs:
+
+- `llm_investigation_orchestrator_serbia_poc/recorded_runs/real_hotspots_20260621.json`
+- `llm_investigation_orchestrator_serbia_poc/recorded_runs/q2_movement.json`
+- `llm_investigation_orchestrator_serbia_poc/recorded_runs/q3_stabilizer.json`
+- `llm_investigation_orchestrator_serbia_poc/recorded_runs/q4_violence_noise.json`
+- `llm_investigation_orchestrator_serbia_poc/recorded_runs/q5_assessment.json`
+
+Performance logs:
+
+- `llm_investigation_orchestrator_serbia_poc/performance_logs/`
+- `llm_investigation_orchestrator_poc/performance_logs/`
+
+Cargo POC files:
 
 - `llm_investigation_orchestrator_poc/server.py`
 - `llm_investigation_orchestrator_poc/app.js`
@@ -47,131 +187,116 @@ Main Cargo files:
 - `llm_investigation_orchestrator_poc/help.html`
 - `llm_investigation_orchestrator_poc/mcp_server/server.py`
 
-Special MCP tools to remember:
+Original direct-model benchmark POC:
 
-- `classify_question_intent`: first-step tool that classifies the analyst question as simple lookup, aggregation, timeline, or investigation. It returns mode, tool budget and recommended view hint.
-- `plan_next_investigation_step`: investigation-control tool. It does not replace the model brain; it gives bounded next-step guidance so the model does not jump too early to a conclusion.
-- `compare_location_claims`: Serbia tool for comparing location-related reports using visible reliability/certainty fields, useful for detecting suspicious location dispersion or information noise.
+- `llm_cross_reference_benchmark/`
+- `llm_cross_reference_benchmark_he/`
 
-## Recent Implemented Changes
+## Version 2.0 UI Changes
 
-Serbia POC:
+Implemented on branch `app-v2-agent-steps-in-chat`.
 
-- Added/used `municipality` aggregation support in `aggregate_events`.
-- Updated UI/server mapping so aggregate results by `location` or `municipality` can be shown on the map when coordinates exist.
-- Added general model instructions for geographic questions:
-  - For geo hotspot questions, use both municipality/area aggregation and precise location aggregation when useful.
-  - For violence/shooting/explosion questions, separate confirmed events from information noise, old videos, rumor, civilian explanations and weak reports.
-- Added certainty/reliability exposure in the visible Serbia DB projection.
-- Added `compare_location_claims` to help compare conflicting location reports.
-- Updated help page in Hebrew with:
-  - richer Serbia story;
-  - military/security-ish source types such as force-movement observations, SIGINT/communications indications, drone/helicopter reports, alerts, police activity and emergency sources;
-  - architecture diagram;
-  - MCP tools section;
-  - separate descriptions of `classify_question_intent` and `plan_next_investigation_step`.
-- Removed these help sections per user request:
-  - `הנחיות ופרומפטים חשובים`
-  - `הקשר בין המטרה לפתרון`
-  - `מה רואים במסך`
-  - `אמינות ופירוש`
+What changed:
 
-Both POCs:
+- Removed the right-side `הקשר החקירה` section from the Serbia UI.
+- Removed frontend `investigation_state` construction and sending.
+- Moved agent work explanations into the chat answer itself.
+- While the agent is running, steps appear live/open inside the active `סוכן חקירה` message.
+- When the final answer arrives, steps collapse under `תהליך המחקר` at the top of that same answer, similar to the existing collapsible event IDs.
+- The result/map/timeline/evidence panel remains separate.
+- Mobile evidence table was kept as a horizontally scrollable table, not cards.
+- Current mobile table scroller:
+  - `styles.css?v=27`
+  - `overflow-x: scroll`
+  - table fixed width in portrait
+  - both scroller and table set to `direction: rtl`
 
-- Dark mode and Google/Noto-style fonts were already applied earlier.
-- Resizable UI panels exist.
-- Last UI tweak: aligned analyst input textarea and `שלח` button font size with chat message size:
-  - normal: `13px`
-  - medium screens: `12px`
-  - bumped CSS cache version to `styles.css?v=19` in both `index.html` files.
+Important UI implementation points:
 
-Serbia classifier fix after latest UI run:
+- Active assistant message state lives in `app.js`:
+  - `activeAssistantMessage`
+  - `activeActivityList`
+  - `activeActivityEmpty`
+- Relevant functions:
+  - `startAssistantResearchMessage`
+  - `ensureAssistantResearchMessage`
+  - `setActiveResearchMessage`
+  - `finalizeAssistantMessage`
+  - `renderActivitySteps`
+  - `applyHermesResult`
+  - `replayRecordedResult`
 
-- The UI question `תמיין לפי זמן את האירועים המרכזיים כדי לקבל תמונה` did not choose timeline because `classify_question_intent` recognized `לפי` as retrieval but did not recognize `תמיין לפי זמן` / `לפי זמן` as timeline intent.
-- Fixed `llm_investigation_orchestrator_serbia_poc/mcp_server/server.py` timeline terms to include `לפי זמן`, `מיין לפי זמן`, `תמיין לפי זמן`, `מיון לפי זמן`, `סדר לפי זמן`, etc.
-- Fixed `llm_investigation_orchestrator_serbia_poc/server.py` fallback view detection to include `לפי זמן`, `מיין`, `תמיין`, `כרונולוג`.
-- Local classifier now returns `intent: timeline_retrieval` and `recommended_view_hint: timeline` for that exact question.
-- Deployed updated Serbia MCP to Hermes successfully; config backup: `/home/ubuntu/.hermes/config.yaml.before-serbia-poc-1781980166`.
+## Serbia MCP Tools
 
-Follow-up change: make `classify_question_intent` truly LLM-based via MCP sampling:
+The MCP server exposes these tools:
 
-- User asked to implement option 1: change Hermes configuration and tool code so the MCP tool itself uses an LLM through MCP sampling.
-- Updated `llm_investigation_orchestrator_serbia_poc/mcp_server/server.py`:
-  - On initialize, the MCP server records whether the client supports `sampling`.
-  - `classify_question_intent` now calls `sampling/createMessage` when sampling is available.
-  - The sampling prompt returns JSON only with `intent`, `recommended_mode`, `recommended_view_hint`, `confidence`, and `reason`.
-  - The tool normalizes that model result into the stable contract: `recommended_mode`, `tool_budget`, `allowed_tool_families`, `blocked_tool_families`, and `recommended_view_hint`.
-  - `classification_source` is now `mcp_sampling` when sampling succeeds, `deterministic_fallback` when sampling is unavailable/fails, and `model_override` only for legacy hidden compatibility.
-- Updated `llm_investigation_orchestrator_serbia_poc/server.py`:
-  - The main prompt now tells the orchestrator to call `classify_question_intent` first and not send manual `model_intent` fields.
-- Updated `llm_investigation_orchestrator_serbia_poc/mcp_server/remote_deploy_serbia.py`:
-  - Serbia MCP config now sets `sampling: { enabled: true }`.
-- Updated `llm_investigation_orchestrator_serbia_poc/mcp_server/smoke_client.py`:
-  - Local smoke client now mocks `sampling/createMessage` and asserts `classification_source == "mcp_sampling"`.
-- Updated Serbia help page to describe MCP sampling inside `classify_question_intent`.
-- Local smoke test passed with mocked MCP sampling.
-- Deployed updated Serbia MCP to Hermes successfully; config backup: `/home/ubuntu/.hermes/config.yaml.before-serbia-poc-1781981612`.
-- Remote verification shows the MCP config has `sampling: { enabled: true }` and the smoke test returns `classification_source: mcp_sampling`.
-- Full end-to-end UI/API run currently fails because Hermes provider auth on the VM is missing: `No Codex credentials stored. Run hermes auth to authenticate. Run hermes model to re-authenticate.`
+```text
+classify_question_intent
+plan_next_investigation_step
+search_events
+get_events
+resolve_location
+resolve_event_reference
+find_actor_history
+aggregate_events
+explain_linkage
+build_event_sequence
+resolve_entity
+trace_identifier
+trace_semantic_clues
+find_related_events
+compare_location_claims
+challenge_hypothesis
+```
 
-After user completed Hermes auth on the VM:
+Special tools:
 
-- Verified Hermes gateway is active and Serbia MCP still has `sampling: { enabled: true }`.
-- Ran end-to-end local UI/API test with:
-  - `תמיין לפי זמן את האירועים המרכזיים כדי לקבל תמונה`
-- Result:
-  - `recommended_view: timeline`
-  - `view_reason: הסדר כרונולוגי ברור`
-  - performance log: `llm_investigation_orchestrator_serbia_poc/performance_logs/20260620T190519Z-run_bb7928d5f6804f30909a6805225c7b4d.json`
-  - remote MCP audit confirms `classification_source: mcp_sampling`.
-- Note: The model returned a reasonable clarification because the query had no subject/event anchor; this is expected. The visualization choice and MCP sampling path worked.
+- `classify_question_intent`: first-step intent classifier. Uses MCP sampling when available and falls back to deterministic classification.
+- `plan_next_investigation_step`: bounded process-control tool that suggests concrete next steps; it does not replace the orchestrator model's analytical brain.
+- `compare_location_claims`: compares visible location-report conflicts using visible reliability/certainty fields only. It does not know hidden truth labels.
 
-Preparation before converting more tools to LLM/hybrid tools:
+Hybrid LLM/sampling tools:
 
-- Careful backup was created before tool-conversion work:
-  - `backups/serbia-poc-before-llm-tools-20260620-221618.zip`
-  - Verified to contain the Serbia MCP server, UI gateway, help page, visible event projection and evaluator labels.
-- Added regression quality gate:
-  - `llm_investigation_orchestrator_serbia_poc/mcp_server/regression_quality.py`
-- The gate covers the first three quality layers agreed with the user:
-  1. MCP/tool contract tests for all 16 tools.
-  2. Full structured-output snapshots for baseline comparison.
-  3. Oracle-label quality metrics from `data/serbia_kosovo_evaluator_labels.csv`.
-- Current baseline run:
-  - `llm_investigation_orchestrator_serbia_poc/test_runs/regression_quality_20260620T192453Z.json`
-  - Result: 16 tools covered, 28 calls, 0 failures.
-- Compare-mode verification run:
-  - `llm_investigation_orchestrator_serbia_poc/test_runs/regression_quality_20260620T192505Z.json`
-  - Compared against the baseline and all event-returning calls had event Jaccard 1.0.
-- Run command with bundled Python:
-  - `& "C:\Users\e054922\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe" "llm_investigation_orchestrator_serbia_poc\mcp_server\regression_quality.py"`
-- Compare after a tool change:
-  - `& "C:\Users\e054922\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe" "llm_investigation_orchestrator_serbia_poc\mcp_server\regression_quality.py" --compare "llm_investigation_orchestrator_serbia_poc\test_runs\regression_quality_20260620T192453Z.json"`
-- Existing `smoke_client.py` remains the focused check for MCP sampling and still verifies `classification_source == "mcp_sampling"`. The broader regression harness records classification source but accepts deterministic fallback in local mode, because the live Hermes sampling path was already verified separately.
+- `classify_question_intent`
+- `resolve_event_reference`
+- `trace_semantic_clues`
+- `find_related_events`
+- `compare_location_claims`
+- `challenge_hypothesis`
 
-Hybrid MCP tool conversion implemented after the backup:
+Design rule:
 
-- Updated `llm_investigation_orchestrator_serbia_poc/mcp_server/server.py` with a shared `sample_json_task` helper for bounded MCP sampling inside tools.
-- Converted selected tools to hybrid behavior while preserving deterministic retrieval:
-  - `resolve_event_reference`: sampling turns a vague event reference into bounded visible search phrases; DB matching remains deterministic and no hidden labels are used.
-  - `trace_semantic_clues`: sampling suggests follow-up clues, but they are not silently merged into the current retrieval. This avoids broadening the result set without an explicit next step.
-  - `find_related_events`: deterministic scoring still finds candidates; sampling can rerank only the deterministic top candidates and cannot introduce outside event IDs.
-  - `compare_location_claims`: deterministic grouping still finds conflict groups; sampling adds a cautious textual assessment only.
-  - `challenge_hypothesis`: deterministic profiling still finds evidence/alternatives/gaps; sampling adds competing hypotheses and disproof tests based only on returned evidence.
-- Updated MCP tool descriptions so the orchestrator sees these hybrid constraints.
-- Updated `smoke_client.py` with task-aware sampling mocks and assertions for new `llm_*` fields.
-- Updated `help.html` to explain hybrid MCP-sampling tools in Hebrew.
-- Final local validation:
-  - `py_compile` passed for server, smoke client and regression harness.
-  - `smoke_client.py` passed and confirmed sampling sources for classification, semantic clue expansion, related rerank, geographic assessment and hypothesis challenge.
-  - Regression compare run: `llm_investigation_orchestrator_serbia_poc/test_runs/regression_quality_20260620T194033Z.json`
-  - Result: 16 tools, 28 calls, 0 failures.
-  - Event stability: all event-returning calls kept Jaccard 1.0 except `resolve_event_reference`, which intentionally changed from 0 results to 20 candidates for vague natural-language references.
-  - Resolver label check looked reasonable: tactical/Zvecan candidates were all military-related with average relevance about 3.5; false border-crossing candidates were disinformation-heavy.
+- Deterministic retrieval remains the source of event candidates.
+- LLM sampling may classify, rerank, summarize, or suggest bounded follow-up clues.
+- LLM sampling must not silently invent event IDs outside deterministic candidate sets.
 
-## Demo Questions For Serbia POC
+## Data Policy
 
-Current compact demo questions:
+Visible runtime data:
+
+- `serbia_kosovo_events_projection.csv`
+- `serbia_kosovo_locations.json`
+
+Evaluation-only hidden labels:
+
+- `serbia_kosovo_evaluator_labels.csv`
+
+Important: do not expose evaluator labels to the orchestrator, MCP runtime, UI, or prompt. They contain scenario IDs, ground truth, misleading labels, and other information that would unfairly help the model.
+
+The visible DB projection intentionally contains only what an analyst could see:
+
+- canonical event IDs
+- timestamps
+- source type/reliability/certainty as visible fields
+- actor/entity
+- location
+- raw event summary
+
+## Recorded Demo Questions
+
+The demo uses five recorded questions available through the `+` button in the UI.
+
+Current compact questions:
 
 1. `איפה נמצאים מוקדי החיכוך העיקריים בצפון קוסובו, ומה המוקדים המדויקים בתוך כל אזור?`
 2. `האם ניתן לזהות דפוס של תנועת כוחות או הגברת נוכחות בזמן ובמרחב?`
@@ -179,115 +304,198 @@ Current compact demo questions:
 4. `האם הדיווחים על ירי ופיצוצים נראים כמו אירועים אמיתיים או כמו רעש מידע?`
 5. `על בסיס כל מה שמצאת, האם מדובר באכיפה נקודתית או בדפוס הסלמה רחב יותר בצפון קוסובו?`
 
-Additional tactical demo question tested:
+Latest q5 recording:
 
-`מה באמת קרה באירוע הטקטי ליד זבצ׳אן?`
+- File: `llm_investigation_orchestrator_serbia_poc/recorded_runs/q5_assessment.json`
+- Created: 2026-06-23
+- Source: `live_hermes_run_local_rerun_v2`
+- Live run ID: `run_c071179942ba4a1d85cf991a6403a0dc`
+- Runtime: about 56.4 seconds
+- Steps: 4
+- Event/location IDs: 30
+- Recommended view: `evidence`
+- Deployed to VM and verified through `/api/recorded-run?id=q5_assessment`
 
-Observed result:
+Note on q2:
 
-- The answer was analytically useful: it concluded that the pattern around Zvecan looked more like security vehicle movement, temporary blockages and rumor/noise than verified combat or confirmed shooting.
-- Evidence IDs included:
-  - `REC-046497`
-  - `REC-007201`
-  - `REC-063208`
-  - `REC-039571`
-  - `REC-035775`
-  - `REC-050682`
-  - `REC-013084`
-  - `REC-038800`
-  - `REC-028612`
-  - `REC-016386`
-- But the model recommended `evidence`, not `timeline`.
-- Better demo phrasing if timeline is desired:
-  - `מה באמת קרה באירוע הטקטי ליד זבצ׳אן? תציג את ההתרחשות כרצף זמן ותבדיל בין אירועים מאומתים, דיווחי ירי לא מאומתים ורעש מידע.`
+- Local `q2_movement.json` has uncommitted modifications. Treat it as pending/user-generated unless explicitly asked to commit or revert.
 
-## Performance Notes
+## Running Locally
 
-The bottleneck is mostly model orchestration/summarization, not DB query execution.
+From repo root:
 
-Example Serbia run for the Zvecan tactical question:
+```powershell
+cd llm_investigation_orchestrator_serbia_poc
+$env:PYTHONIOENCODING='utf-8'
+python server.py 8769
+```
 
-- Performance log: `llm_investigation_orchestrator_serbia_poc/performance_logs/20260620T164622Z-run_7884fb0e30084a0fb62132347585f954.json`
-- Total server wait: about 209 seconds.
-- Tool calls: 33.
-- Tool execution total: about 7.3 seconds.
-- Slowest tool: `find_related_events`, about 2.6 seconds.
-- Model orchestration gap: about 200 seconds.
+Open:
 
-Earlier Cargo POC performance work:
+```text
+http://127.0.0.1:8769/
+```
 
-- Response-time logs were removed from the UI and written to per-run files under each POC's `performance_logs` directory.
-- Polling was optimized to avoid a new SSH connection per status request.
+If using the Codex bundled Python:
 
-## Known Behavioral Issues / Watch Items
+```powershell
+& "C:\Users\e054922\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe" "llm_investigation_orchestrator_serbia_poc\server.py" 8769
+```
 
-- The model sometimes chooses `evidence` for questions that are demo-friendly as `timeline`, because it interprets the user intent as source validation rather than chronological reconstruction.
-- For timeline demos, use natural but explicit wording like `תציג כרצף זמן`.
-- Broad investigation questions can trigger many tool calls and slow model reasoning.
-- Tool execution is usually fast; end-to-end latency is dominated by model orchestration and final synthesis.
-- In very large corpora, unrestricted recursive expansion is risky. The current approach uses bounded tools and model-guided expansion rather than a huge all-paths graph search.
+Current local status endpoint was verified as:
+
+```json
+{"mode": "hermes", "configured": true, "build": "serbia-poc-1"}
+```
+
+## Verification Commands
+
+Syntax check for UI JS:
+
+```powershell
+& "C:\Users\e054922\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe" --check llm_investigation_orchestrator_serbia_poc/app.js
+```
+
+MCP smoke test:
+
+```powershell
+$env:PYTHONIOENCODING='utf-8'
+python llm_investigation_orchestrator_serbia_poc/mcp_server/smoke_client.py
+```
+
+Regression quality gate:
+
+```powershell
+$env:PYTHONIOENCODING='utf-8'
+python llm_investigation_orchestrator_serbia_poc/mcp_server/regression_quality.py
+```
+
+Regression compare against a baseline:
+
+```powershell
+$env:PYTHONIOENCODING='utf-8'
+python llm_investigation_orchestrator_serbia_poc/mcp_server/regression_quality.py --compare llm_investigation_orchestrator_serbia_poc/test_runs/regression_quality_20260620T192453Z.json
+```
+
+Benchmark all tools:
+
+```powershell
+$env:PYTHONIOENCODING='utf-8'
+python llm_investigation_orchestrator_serbia_poc/mcp_server/benchmark_tools.py --rounds 3
+```
+
+## Performance Reality
+
+The slow part is not the DB tools. It is usually model orchestration and final synthesis.
+
+Observed pattern from prior logs:
+
+- Tool execution can be milliseconds to a few seconds.
+- End-to-end runs can be 50-200+ seconds.
+- Large investigation prompts and final answer synthesis dominate latency.
+
+For demos:
+
+- Prefer recorded questions via the `+` button.
+- Recorded replay uses real model answers captured from prior runs.
+- Steps replay progressively, so the UI feels interactive without waiting for a live Hermes run.
+
+## Current Known Issues / Watch Items
+
+1. Mobile evidence scroller
+   - Current state: horizontal scroll works and is set RTL.
+   - Recent user feedback: scroller was perfect but looked LTR; fixed by setting `.table-wrap` direction to RTL.
+   - If user still dislikes behavior, next likely fix is JS-assisted scroll/drag rather than pure CSS.
+
+2. Dirty q2 recording
+   - `recorded_runs/q2_movement.json` is modified locally.
+   - Do not accidentally commit it.
+
+3. Model may choose `evidence` instead of `timeline`
+   - If timeline is desired, ask explicitly: `תציג כרצף זמן`, `סדר לפי זמן`, or `ציר זמן`.
+
+4. Broad live runs are slow
+   - Use recorded demo for presentations.
+   - If real live demo is required, choose narrower questions.
+
+5. Hidden/evaluator fields
+   - Do not put `serbia_kosovo_evaluator_labels.csv` into runtime prompts/tools.
+
+6. Git branch discipline
+   - Active UI 2.0 changes are on `app-v2-agent-steps-in-chat`.
+   - Main does not yet include these v2 changes.
 
 ## Cargo POC Context
 
 Cargo POC goal:
 
-- Show that an LLM/agent can discover hidden cross-inference behavior in diverse simulated operational data.
-- First POC used a direct model over a simulated DB.
-- Second POC uses an agentic orchestration model with tools and visual presentation choices: map, timeline, raw/evidence.
+- Demonstrate that a model can discover hidden cross-inference behavior in diverse simulated operational data.
 
-Important hidden cargo behavior previously discussed:
+Important cargo hidden behavior:
 
 - Target object was `OF-4482`.
-- Earlier challenge: second POC often found only partial chain or chose enough evidence without returning all supporting events.
-- Tools/instructions were expanded with semantic clue tracing, bounded seed expansion, larger limits, and `plan_next_investigation_step`.
-- Be careful not to overfit cargo-specific language in shared instructions.
+- Earlier problem: the second POC often found only a partial chain or stopped after it had enough evidence, without returning all supporting records.
+- Tools/instructions were expanded with semantic clue tracing, bounded seed expansion, larger coverage defaults, and `plan_next_investigation_step`.
 
-## Serbia POC Context
+Do not overfit Serbia instructions back into cargo, and do not reintroduce cargo-specific words into Serbia prompts/tools.
 
-Serbia POC goal:
+## Serbia Demo Story
 
-- Open a clean new POC based on the current architecture but without cargo-specific dependencies.
-- No DB structure or core logic change was desired; the visible DB projection should not reveal hidden scenario labels or fields that unintentionally help the model.
-- The demo narrative: a Serbian intelligence officer analyzes 10,000 raw records about several days of escalation in North Kosovo.
-- Intelligence questions:
-  - Is Kosovo doing local enforcement or a broader northern operation?
-  - Is the international force stabilizing the area or limiting Serbian freedom of action?
-  - Is there significant force movement over time and space?
-  - Are shooting, roadblock, border-crossing and explosion reports reliable or disinformation/noise?
-  - Do point events connect into an evolving scenario that requires decision?
+The demo narrative:
 
-## Deployment Notes
+- A Serbian intelligence officer receives 10,000 raw records about several days of escalation in North Kosovo.
+- The analyst is not asking for a news summary, but for structured intelligence sensemaking:
+  - local enforcement or broader northern operation?
+  - is the international force stabilizing or constraining Serbian freedom of action?
+  - is there significant force movement over time and space?
+  - are shooting/explosion/border/roadblock reports reliable or information noise?
+  - do point events connect into an evolving scenario requiring a decision?
 
-Serbia Hermes deployment was set up earlier and the local UI gateway was restarted on port `8769`.
+The value of the POC:
 
-Known status from earlier:
+- Natural-language analyst questions.
+- Agentic tool orchestration.
+- Data-grounded evidence retrieval.
+- Model-generated reasoning bridges for each step.
+- Visual recommendation: map, timeline, or raw evidence.
+- Recorded replay for demo speed.
 
-- Serbia local gateway status returned:
-  - `{"mode":"hermes","configured":true,"build":"serbia-poc-1"}`
-- Serbia MCP deployment had 16 tools and included `compare_location_claims`.
-- Hermes config backup created earlier:
-  - `/home/ubuntu/.hermes/config.yaml.before-serbia-poc-1781971559`
+## Suggested First Message To Claude
 
-Remote deploy or SSH actions require approval/escalation because network access is restricted.
+Use this in a new Claude chat:
 
-## How To Continue In A New Chat
+```text
+Read PROJECT_HANDOFF.md first. Continue work on the Serbia/North Kosovo POC in llm_investigation_orchestrator_serbia_poc. The active branch is app-v2-agent-steps-in-chat. Do not commit the existing dirty q2_movement.json unless explicitly asked. Current VM UI is http://151.145.93.180:8769/ and local UI is http://127.0.0.1:8769/.
+```
 
-Suggested first instruction in the new chat:
+## File Review Order For Claude
 
-`Read PROJECT_HANDOFF.md and continue working on the Serbia POC. The local app is in llm_investigation_orchestrator_serbia_poc and should run on port 8769.`
+For UI work:
 
-If the next task is UI-only, inspect:
+1. `llm_investigation_orchestrator_serbia_poc/index.html`
+2. `llm_investigation_orchestrator_serbia_poc/styles.css`
+3. `llm_investigation_orchestrator_serbia_poc/app.js`
+4. `llm_investigation_orchestrator_serbia_poc/server.py`
 
-- `llm_investigation_orchestrator_serbia_poc/styles.css`
-- `llm_investigation_orchestrator_serbia_poc/app.js`
-- `llm_investigation_orchestrator_serbia_poc/index.html`
+For agent/tool behavior:
 
-If the next task is agent behavior, inspect:
+1. `llm_investigation_orchestrator_serbia_poc/server.py`
+2. `llm_investigation_orchestrator_serbia_poc/mcp_server/server.py`
+3. `llm_investigation_orchestrator_serbia_poc/mcp_server/smoke_client.py`
+4. `llm_investigation_orchestrator_serbia_poc/mcp_server/regression_quality.py`
 
-- `llm_investigation_orchestrator_serbia_poc/server.py`
-- `llm_investigation_orchestrator_serbia_poc/mcp_server/server.py`
+For demo/recorded replay:
 
-If the next task is performance, inspect:
+1. `llm_investigation_orchestrator_serbia_poc/recorded_runs/`
+2. `llm_investigation_orchestrator_serbia_poc/server.py`
+3. `llm_investigation_orchestrator_serbia_poc/app.js`
 
-- `llm_investigation_orchestrator_serbia_poc/performance_logs`
-- `llm_investigation_orchestrator_poc/performance_logs`
+## Final Sanity Checklist Before Any Future Handoff
+
+- Run `git status --short --branch`.
+- Check which branch is active.
+- Do not commit unrelated dirty recorded-run files.
+- Verify VM `styles.css?v=` and `app.js?v=` after UI deploy.
+- Verify `serbia-poc-ui.service` after VM deploy.
+- If MCP changed, run smoke/regression before deploy.
+- If recorded run changed, verify `/api/recorded-run?id=<id>` on the VM.
