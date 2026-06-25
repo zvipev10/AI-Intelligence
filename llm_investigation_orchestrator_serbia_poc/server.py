@@ -793,7 +793,24 @@ class HermesClient:
             else:
                 action = f'קלט: {json.dumps(public_args(args), ensure_ascii=False)}.'
                 outcome = f'פלט: {json.dumps(result, ensure_ascii=False)}.'
-            steps.append({
+            # Collect event_ids for per-step visualization
+            step_event_ids = []
+            if tool in {"search_events", "find_actor_history", "trace_identifier", "trace_semantic_clues", "find_related_events"}:
+                step_event_ids = result.get("event_ids") or []
+            elif tool in {"resolve_event_reference"}:
+                step_event_ids = result.get("event_ids") or []
+            elif tool == "get_events":
+                step_event_ids = [item.get("event_id") for item in result.get("events") or [] if item.get("event_id")]
+            elif tool == "build_event_sequence":
+                for route_item in (result.get("route") or []):
+                    step_event_ids.extend(route_item.get("event_ids") or [])
+            elif tool == "compare_location_claims":
+                for group in (result.get("conflict_groups") or []):
+                    step_event_ids.extend(group.get("event_ids") or [])
+            elif tool == "challenge_hypothesis":
+                step_event_ids = (result.get("alternative_event_ids") or []) + (args.get("supporting_event_ids") or [])
+
+            step_dict = {
                 "tool": tool,
                 "bridge_summary": bridge_summary,
                 "observed_clue": observed_clue,
@@ -808,7 +825,10 @@ class HermesClient:
                     "is_error": bool(record.get("is_error")),
                     "timestamp_utc": record.get("timestamp_utc"),
                 },
-            })
+            }
+            if step_event_ids:
+                step_dict["event_ids"] = list(dict.fromkeys(step_event_ids))  # deduplicate, preserve order
+            steps.append(step_dict)
             if tool == "aggregate_events" and result.get("group_by") in {"location", "municipality"}:
                 steps[-1]["map_locations"] = [
                     {

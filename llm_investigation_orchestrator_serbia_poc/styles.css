@@ -140,6 +140,13 @@ th { position: sticky; top: 0; z-index: 1; background: #202530; }
 .activity-expected { color: #d0bcff; }
 .activity-detail { color: var(--muted); }
 .activity-result { color: var(--ink); font-weight: 700; }
+.activity-card-actions { display: flex; align-items: center; gap: 7px; margin-right: auto; }
+.step-show-btn { padding: 3px 9px; border-radius: 999px; border: 1px solid var(--blue); background: transparent; color: var(--blue); font-size: 10px; font-weight: 800; cursor: pointer; transition: background .15s, color .15s; white-space: nowrap; }
+.step-show-btn:hover { background: var(--blue); color: #fff; }
+#step-view-banner { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 14px; background: rgba(88, 166, 255, .1); border-bottom: 1px solid var(--blue); font-size: 12px; color: var(--ink); }
+#step-view-banner strong { color: var(--blue); }
+#step-view-return { padding: 4px 12px; border-radius: 999px; border: 1px solid var(--blue); background: transparent; color: var(--blue); font-size: 11px; font-weight: 800; cursor: pointer; white-space: nowrap; }
+#step-view-return:hover { background: var(--blue); color: #fff; }
 .activity-technical { margin-top: 9px; border-top: 1px solid var(--line); padding-top: 8px; }
 .activity-technical summary { color: var(--blue); cursor: pointer; font-size: 10px; font-weight: 800; user-select: none; }
 .activity-technical summary:hover { text-decoration: underline; }

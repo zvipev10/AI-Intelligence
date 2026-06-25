@@ -179,7 +179,9 @@ const state = {
   busy: false,
   activeAssistantMessage: null,
   activeActivityList: null,
-  activeActivityEmpty: null
+  activeActivityEmpty: null,
+  lastResult: null,
+  lastPrompt: null
 };
 
 const conversation = document.getElementById("conversation");
@@ -433,6 +435,76 @@ function formatTechnical(technical, fallbackTool) {
   return JSON.stringify(payload, null, 2);
 }
 
+function showStepResult(step) {
+  const eventIds = step.event_ids || [];
+  const mapLocations = step.map_locations || [];
+  const aggregateGroups = step.aggregate_groups || [];
+  const label = humanToolLabel(String(step.tool || "").replace(/^\d+\.\s*/, ""));
+
+  // Build a synthetic result object compatible with applyHermesResult's visualization path
+  const evidence = new Set(eventIds);
+  state.current = state.events.filter(event => evidence.has(event.event_id));
+
+  if (mapLocations.length) {
+    state.aggregateLocations = mapLocations.filter(item => {
+      const hasKnown = Boolean(LOCATIONS[item.location_id]);
+      const hasCoords = item.latitude != null && item.longitude != null;
+      return hasKnown || hasCoords;
+    });
+  } else {
+    state.aggregateLocations = [];
+  }
+
+  if (aggregateGroups.length) {
+    state.aggregateTimeline = aggregateGroups.map(group => ({
+      group_by: step.technical?.arguments?.group_by || "date",
+      label: group.label || group.key,
+      timeLabel: group.label || group.key,
+      count: Number(group.count || 0),
+      sortKey: group.key || group.label,
+      summary: `${Number(group.count || 0).toLocaleString("he-IL")} אירועים`
+    }));
+  } else {
+    state.aggregateTimeline = [];
+  }
+
+  const hasData = state.current.length || state.aggregateLocations.length || state.aggregateTimeline.length;
+  showResult(
+    `צעד: ${label}`,
+    hasData
+      ? `מציג ${state.current.length ? state.current.length + " רשומות" : ""}${state.aggregateLocations.length ? " מיקומים" : ""}${state.aggregateTimeline.length ? " ציר זמן" : ""} מהצעד הזה.`
+      : "הצעד הזה לא החזיר נתונים שניתן להציג בתצוגה."
+  );
+
+  if (state.aggregateTimeline.length) {
+    activateView("timeline", { automatic: true, reason: "צעד עם נתוני זמן" });
+  } else if (state.aggregateLocations.length || state.current.some(e => e.location_id)) {
+    activateView("map", { automatic: true, reason: "צעד עם נתוני מיקום" });
+  } else {
+    activateView("evidence", { automatic: true, reason: "צעד עם רשומות" });
+  }
+
+  // Show return-to-final button
+  const existing = document.getElementById("step-view-banner");
+  if (!existing) {
+    const banner = document.createElement("div");
+    banner.id = "step-view-banner";
+    banner.innerHTML = `<span>מציג צעד: <strong>${escapeHtml(label)}</strong></span><button type="button" id="step-view-return">חזור לתשובה הסופית ←</button>`;
+    const resultPanel = document.getElementById("result-panel") || document.querySelector(".result-panel");
+    if (resultPanel) resultPanel.prepend(banner);
+  } else {
+    existing.querySelector("strong").textContent = label;
+  }
+  const returnBtn = document.getElementById("step-view-return");
+  if (returnBtn) {
+    returnBtn.onclick = () => {
+      const banner = document.getElementById("step-view-banner");
+      if (banner) banner.remove();
+      applyHermesResult(state.lastResult, state.lastPrompt, { keepRenderedSteps: true, restoreOnly: true });
+    };
+  }
+}
+
 function addActivity(tool, detail, result, options = {}) {
   ensureAssistantResearchMessage();
   state.activeActivityEmpty.hidden = true;
@@ -442,6 +514,12 @@ function addActivity(tool, detail, result, options = {}) {
   const cleanTool = String(tool || "").replace(/^\d+\.\s*/, "");
   const bridgeSummary = options.bridgeSummary || options.rationale || "הסוכן ממשיך לצעד זה כדי לצמצם את השאלה לפי ההקשר שנאסף עד עכשיו.";
   const technical = formatTechnical(options.technical, cleanTool);
+  const stepData = options.stepData || null;
+  const hasVisualData = stepData && (
+    (stepData.event_ids && stepData.event_ids.length) ||
+    (stepData.map_locations && stepData.map_locations.length) ||
+    (stepData.aggregate_groups && stepData.aggregate_groups.length)
+  );
   item.innerHTML = `
     <div class="activity-card-header">
       <span class="activity-step-number">${stepNumber}</span>
@@ -449,7 +527,10 @@ function addActivity(tool, detail, result, options = {}) {
         <strong>${escapeHtml(humanToolLabel(cleanTool))}</strong>
         <span class="activity-tool">${escapeHtml(cleanTool)}</span>
       </div>
-      <span class="activity-status ${options.isError ? "error" : "success"}">${options.isError ? "נכשל" : "הושלם"}</span>
+      <div class="activity-card-actions">
+        ${hasVisualData ? `<button type="button" class="step-show-btn" title="הצג בתצוגה">הצג</button>` : ""}
+        <span class="activity-status ${options.isError ? "error" : "success"}">${options.isError ? "נכשל" : "הושלם"}</span>
+      </div>
     </div>
     <div class="activity-flow">
       <section class="activity-section rationale-section">
@@ -469,6 +550,9 @@ function addActivity(tool, detail, result, options = {}) {
       <summary>פרטים טכניים</summary>
       <pre>${escapeHtml(technical)}</pre>
     </details>`;
+  if (hasVisualData) {
+    item.querySelector(".step-show-btn").addEventListener("click", () => showStepResult(stepData));
+  }
   state.activeActivityList.appendChild(item);
   conversation.scrollTop = conversation.scrollHeight;
 }
@@ -540,7 +624,8 @@ function renderActivitySteps(steps) {
       bridgeSummary: explanation.bridge_summary || step.bridge_summary,
       rationale: explanation.decision || step.rationale || step.decision,
       technical: step.technical,
-      isError: step.technical?.is_error
+      isError: step.technical?.is_error,
+      stepData: step
     });
   });
 }
@@ -551,12 +636,29 @@ function sleep(ms) {
 
 function applyHermesResult(result, prompt, options = {}) {
   result.answer = cleanAssistantAnswer(result.answer);
+  // Save last result so the step-view return button can restore it
+  if (!options.restoreOnly) {
+    state.lastResult = result;
+    state.lastPrompt = prompt;
+  }
   const idsFromAnswer = (result.answer || "").match(EVENT_ID_PATTERN) || [];
   const evidence = new Set([...(result.event_ids || []), ...idsFromAnswer]);
   state.current = state.events.filter(event => evidence.has(event.event_id));
   state.aggregateLocations = collectAggregateLocations(result);
   state.aggregateTimeline = collectAggregateTimeline(result);
 
+  if (options.restoreOnly) {
+    // Just restore visualization state, don't touch the chat DOM
+    showResult(
+      "ממצאי חקירת הסוכן",
+      state.current.length
+        ? "הראיות שהסוכן ציטט מוצגות במפה, בציר הזמן ובטבלה."
+        : (state.aggregateLocations.length || state.aggregateTimeline.length ? "התוצאה האגרגטיבית מוצגת לפי מיקומים, זמן או טבלה." : "הסוכן השיב, אך לא נמצאו בתשובה מזהי אירועים שניתן לקשר לתצוגה.")
+    );
+    const inferred = inferRecommendedView(prompt, result.answer);
+    activateView(result.recommended_view || inferred.view, { automatic: true, reason: result.view_reason || inferred.reason });
+    return;
+  }
   if (!options.keepRenderedSteps) renderActivitySteps(result.investigation_steps || []);
   if (!options.keepRenderedSteps && !(result.investigation_steps || []).length) {
     const started = (result.events || []).filter(event => event.event === "tool.started");
@@ -602,7 +704,8 @@ async function replayRecordedResult(result, prompt) {
       bridgeSummary: step.bridge_summary,
       rationale: step.rationale || step.decision,
       technical: step.technical,
-      isError: step.technical?.is_error
+      isError: step.technical?.is_error,
+      stepData: step
     });
     await sleep(delay);
   }
