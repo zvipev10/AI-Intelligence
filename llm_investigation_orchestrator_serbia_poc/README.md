@@ -50,7 +50,7 @@ different POC_UI_HOST value
 
 ## Data Projection
 
-The source dataset is retained unchanged under `data/north_kosovo_attachment_inspect/`.
+The source dataset is retained under `data/north_kosovo_attachment_inspect/`, with source channels normalized for the analyst-facing runtime.
 
 The runtime MCP reads:
 
@@ -66,6 +66,13 @@ event_id,timestamp_utc,source_type,source_reliability,entity_or_actor,location_i
 ```
 
 The runtime file is intentionally clean. It exposes only the canonical fields above. `event_summary` contains only the original raw text, and `source_reliability` is neutralized to avoid leaking truth labels.
+
+Source normalization:
+
+- `source_category` is removed from the raw CSV/JSONL and evaluator-label CSV.
+- The former source types `דיווח אזרחי` and `דיווח חירום` are remapped to approved visible channels such as `חדשות מקומיות`, `טלגרם`, `טיקטוק`, `שמועה מקומית`, `X`, `קבוצת וואטסאפ`, `הודעת דובר`, and `בלוג פוליטי`.
+- Generic `information_type` values `דיווח אזרחי` and `רעש לא קשור` are remapped by content cues into operational categories such as `כלכלי/חברתי`, `תחבורה/לוגיסטיקה אזרחית`, `רפואי/חירום`, `פינוי/חילוץ`, `רשתות חברתיות`, `דיווח פיצוץ`, and `מדיני/דיפלומטי`.
+- The normalizer is `data/normalize_sources.py`; it also writes `data/source_normalization_report.json`.
 
 Evaluation-only labels are stored separately in:
 

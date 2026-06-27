@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>סביבת חקירה מונחית סוכן</title>
   <link rel="stylesheet" href="./vendor/maplibre-gl.css">
-  <link rel="stylesheet" href="./styles.css?v=28">
+  <link rel="stylesheet" href="./styles.css?v=35">
 </head>
 <body>
   <a class="help-button" href="./help.html" target="_blank" rel="noopener" aria-label="פתח עזרה">?</a>
@@ -43,31 +43,32 @@
     <div class="panel-resizer" data-resizer="left" role="separator" aria-label="שינוי רוחב שיחה ותצוגה"></div>
 
     <section class="result-panel">
-      <div class="result-header">
-        <div>
-          <span class="eyebrow">תמונת מצב</span>
-          <h2 id="resultTitle">טרם בוצעה חקירה</h2>
-          <p id="resultSubtitle">תוצאות, המחשות וראיות יופיעו כאן לאחר השאלה הראשונה.</p>
-        </div>
-        <div id="resultCount" class="result-count">0 אירועים</div>
-      </div>
       <nav class="view-tabs" aria-label="תצוגות תוצאה">
         <button class="view-tab active" data-view="map" type="button">מפה</button>
         <button class="view-tab" data-view="timeline" type="button">ציר זמן</button>
-        <button class="view-tab" data-view="evidence" type="button">אירועים גולמיים</button>
       </nav>
       <div id="viewRecommendation" class="view-recommendation" aria-live="polite" hidden></div>
       <div class="view-stack">
-        <section id="mapView" class="view-pane active"><div id="map" class="map-canvas"></div></section>
+        <section id="mapView" class="view-pane active">
+          <div id="map" class="map-canvas"></div>
+        </section>
         <section id="timelineView" class="view-pane"><div id="timeline" class="timeline empty-state">לא נבחרו אירועים להצגה.</div></section>
-        <section id="evidenceView" class="view-pane">
-          <div class="table-wrap">
+        <section id="rawEventsOverlay" class="raw-events-overlay" aria-label="אירועים גולמיים" hidden>
+          <div class="raw-events-resize-handle" id="rawEventsResizeHandle" role="separator" aria-orientation="horizontal" aria-label="שינוי גודל טבלת אירועים"></div>
+          <div class="raw-events-header">
+            <div class="raw-events-tabs" id="rawEventsTabs" role="tablist" aria-label="סינון לפי מקור"></div>
+            <button id="rawEventsMinimize" class="raw-events-minimize" type="button" aria-label="מזער טבלת אירועים" title="מזער">−</button>
+          </div>
+          <div class="raw-events-table table-wrap">
             <table>
-              <thead><tr><th>זמן</th><th>מקור</th><th>אמינות</th><th>ודאות</th><th>גורם</th><th>מיקום</th><th>תקציר</th></tr></thead>
-              <tbody id="evidenceRows"><tr><td colspan="7" class="empty-cell">לא נבחרו אירועים להצגה.</td></tr></tbody>
+              <thead id="evidenceHead"><tr><th>זמן</th><th>אמינות</th><th>ודאות</th><th>גורם</th><th>מיקום</th><th>תקציר</th></tr></thead>
+              <tbody id="evidenceRows"></tbody>
             </table>
           </div>
         </section>
+      </div>
+      <div id="resultInspector" class="result-inspector" aria-label="כלי שכבות ושאילתה">
+        <div id="stepViewSlot" class="step-view-slot" aria-live="polite"></div>
       </div>
     </section>
 
@@ -87,7 +88,20 @@
     </section>
   </div>
 
+  <div id="queryModal" class="modal-backdrop query-modal-backdrop" hidden>
+    <section class="query-modal" role="dialog" aria-modal="true" aria-labelledby="queryModalTitle">
+      <div class="query-modal-header">
+        <div>
+          <span class="eyebrow">שאילתה פעילה</span>
+          <h2 id="queryModalTitle">פרטי השאילתה</h2>
+        </div>
+        <button id="queryModalClose" class="quiet-button" type="button">סגור</button>
+      </div>
+      <pre id="queryModalBody" class="query-modal-body"></pre>
+    </section>
+  </div>
+
   <script src="./vendor/maplibre-gl.js"></script>
-  <script src="./app.js?v=36"></script>
+  <script src="./app.js?v=47"></script>
 </body>
 </html>

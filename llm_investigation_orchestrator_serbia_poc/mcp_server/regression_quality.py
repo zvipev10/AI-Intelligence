@@ -308,7 +308,7 @@ def scenario_calls() -> list[tuple[str, dict[str, Any]]]:
             {
                 "seed_event_ids": ["REC-062762", "REC-084560", "REC-017577", "REC-019675"],
                 "dimensions": ["entity", "identifier", "semantic", "time", "location"],
-                "source_types": ["טלגרם", "טיקטוק", "הודעת דובר", "דיווח אזרחי"],
+                "source_types": ["טלגרם", "טיקטוק", "הודעת דובר", "שמועה מקומית"],
                 "before_hours": 72,
                 "after_hours": 24,
                 "distance_km": 500,

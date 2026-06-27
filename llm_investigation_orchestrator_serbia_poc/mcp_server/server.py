@@ -354,10 +354,12 @@ def investigative_seed_score(event: dict[str, Any], matched_clues: list[str] | N
     source = event["source_type"]
     source_weights = {
         "הודעת דובר": 8,
-        "דיווח אזרחי": 7,
         "טלגרם": 7,
+        "חדשות מקומיות": 7,
+        "X": 7,
         "טיקטוק": 6,
         "פייסבוק": 6,
+        "קבוצת וואטסאפ": 6,
         "ערוץ חדשות בינלאומי": 6,
         "בלוג פוליטי": 5,
         "שמועה מקומית": 4,
@@ -2096,7 +2098,7 @@ TOOLS = [
                 "source_types": {
                     "type": "array",
                     "items": {"type": "string"},
-                    "description": "Optional event/source type filter for candidate events, for example telephone metadata, signal intercepts, financial alerts, movement sensors, or port/customs records.",
+                    "description": "Optional event/source channel filter for candidate events. Use only source_type values that exist in the dataset, for example טלגרם, טיקטוק, X, פייסבוק, חדשות מקומיות, הודעת דובר, קבוצת וואטסאפ, שמועה מקומית, בלוג פוליטי, or ערוץ חדשות בינלאומי.",
                 },
                 "before_hours": {"type": "number", "minimum": 0, "maximum": 168},
                 "after_hours": {"type": "number", "minimum": 0, "maximum": 168},

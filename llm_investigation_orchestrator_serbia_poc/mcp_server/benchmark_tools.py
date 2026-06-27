@@ -175,7 +175,7 @@ def scenario_calls() -> list[tuple[str, dict[str, Any]]]:
             "identifier_type": "record",
             "start_time": "2026-09-12T00:00:00Z",
             "end_time": "2026-09-22T23:59:59Z",
-            "source_types": ["טלגרם", "טיקטוק", "הודעת דובר", "דיווח אזרחי"],
+            "source_types": ["טלגרם", "טיקטוק", "הודעת דובר", "שמועה מקומית"],
         }),
         ("trace_identifier", {"identifier": "REC-017577", "identifier_type": "record", "include_negated": True}),
         ("trace_identifier", {"identifier": "LOC-001", "identifier_type": "location"}),
@@ -207,7 +207,7 @@ def scenario_calls() -> list[tuple[str, dict[str, Any]]]:
         ("find_related_events", {
             "seed_event_ids": ["REC-062762", "REC-084560", "REC-017577", "REC-019675"],
             "dimensions": ["entity", "identifier", "semantic", "time", "location"],
-            "source_types": ["טלגרם", "טיקטוק", "הודעת דובר", "דיווח אזרחי"],
+            "source_types": ["טלגרם", "טיקטוק", "הודעת דובר", "שמועה מקומית"],
             "before_hours": 72,
             "after_hours": 24,
             "distance_km": 500,

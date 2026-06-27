@@ -1,234 +1,261 @@
-# AI Intelligence Project Handoff For Claude
+# AI Intelligence Project Handoff
 
-Last updated: 2026-06-24
+Last updated: 2026-06-27
 
-This file is the primary handoff document for continuing the project in another assistant/chat. It captures the current repository state, deployed state, architecture, important files, known risks, and the exact context needed to avoid rediscovering old decisions.
+This is the primary handoff for continuing the AI Intelligence project in another assistant/chat. It reflects the current `main` branch workspace and the latest VM deployment state after the data normalization, source-layer UI refactor, and result-layer architecture work.
 
 ## One-Line Summary
 
-The project contains two intelligence-analysis POCs. The active work is the Serbia/North Kosovo POC: a Hebrew analyst UI backed by a Hermes orchestrator model and MCP tools over a 10,000-record synthetic event corpus, with map/timeline/evidence visualizations, recorded demo replays, and agent-step explainability embedded inside the chat answer.
+The active project is the Serbia/North Kosovo intelligence-analysis POC: a Hebrew analyst UI backed by Hermes and MCP tools over a 10,000-record synthetic event corpus. The UI now treats all visualization outputs as layers: event-source layers, location-summary layers, and time-aggregation layers can be shown/hidden and rendered according to their own map/timeline/table capabilities.
 
-## Repository And Git State
+## Repository And Current State
 
-GitHub repository:
+Repository:
 
-- https://github.com/zvipev10/AI-Intelligence
+- `https://github.com/zvipev10/AI-Intelligence`
 
-Current active branch:
+Current branch:
 
-- `app-v2-agent-steps-in-chat`
-- Branch URL: https://github.com/zvipev10/AI-Intelligence/tree/app-v2-agent-steps-in-chat
-- PR creation URL: https://github.com/zvipev10/AI-Intelligence/pull/new/app-v2-agent-steps-in-chat
+- `main`
+- Latest observed head: merge commit `849a829 Merge pull request #1 from zvipev10/app-v2-agent-steps-in-chat`
 
-Main branch at time of handoff:
+Important local workspace:
 
-- `main` / `origin/main`: `39110d1 Require model evidence IDs for retrieval answers`
+- Active repo path used by Codex: `C:\Users\user\Documents\AI Intelligence\.codex_ai_intelligence_repo`
+- The parent folder `C:\Users\user\Documents\AI Intelligence` may contain other/older files; use `.codex_ai_intelligence_repo` for this project.
 
-Active branch head at time of handoff:
+Current local working tree has intentional uncommitted work:
 
-- `e8de1f5 Keep mobile evidence scroller RTL`
+- UI changes in `llm_investigation_orchestrator_serbia_poc/index.html`
+- UI changes in `llm_investigation_orchestrator_serbia_poc/app.js`
+- UI changes in `llm_investigation_orchestrator_serbia_poc/styles.css`
+- Gateway fixes in `llm_investigation_orchestrator_serbia_poc/server.py`
+- MCP/source normalization updates in `llm_investigation_orchestrator_serbia_poc/mcp_server/*.py`
+- Data normalization files under `llm_investigation_orchestrator_serbia_poc/data/`
+- New normalizer: `llm_investigation_orchestrator_serbia_poc/data/normalize_sources.py`
+- New report: `llm_investigation_orchestrator_serbia_poc/data/source_normalization_report.json`
 
-Recent v2 branch commits, newest first:
+Do not assume these changes are committed.
 
-```text
-e8de1f5 Keep mobile evidence scroller RTL
-9b8cd94 Refresh fifth demo recording
-74d596a Broaden mobile evidence overflow media query
-2e18302 Force mobile evidence table overflow
-0eb99c9 Restore mobile evidence horizontal scroll
-10c4683 Use card layout for mobile evidence view
-9bdbd33 Fix mobile evidence table overflow
-6634253 Embed agent research steps in chat
-```
-
-Important dirty working-tree note:
-
-- `llm_investigation_orchestrator_serbia_poc/recorded_runs/q2_movement.json` is modified locally and was deliberately not committed in the latest work.
-- Do not include it in unrelated commits unless the user explicitly asks to refresh question 2 recording.
-
-## Active POCs
-
-Cargo / previous POC:
-
-- Directory: `llm_investigation_orchestrator_poc`
-- Local UI: `http://127.0.0.1:8768/`
-- Purpose: original cargo/cross-inference scenario, including the hidden object `OF-4482`.
+## Active POC
 
 Serbia / North Kosovo POC:
 
 - Directory: `llm_investigation_orchestrator_serbia_poc`
 - Local UI: `http://127.0.0.1:8769/`
 - VM UI: `http://151.145.93.180:8769/`
-- Purpose: scenario-portability demo without cargo-specific concepts, based on 10,000 raw North Kosovo escalation records.
+- Purpose: scenario-portability demo over North Kosovo escalation data, with analyst questions, data-grounded MCP tools, agent-step visibility, and map/timeline/table result presentation.
 
-## Current Deployed State On Hermes VM
+Cargo POC still exists but is not the active focus:
+
+- Directory: `llm_investigation_orchestrator_poc`
+- Local UI: `http://127.0.0.1:8768/`
+
+## Current VM Deployment
 
 VM:
 
 - Host: `151.145.93.180`
 - User: `ubuntu`
-- SSH key normally used locally: `C:\Users\e054922\Downloads\oracle.key`
+- SSH key path used locally: `C:\Users\user\Downloads\oracle.key`
+- Important: user explicitly said not to touch/modify the key file.
 
-Current Serbia UI deployment:
+Active UI service:
 
-- Path: `/opt/serbia-poc-ui`
 - Service: `serbia-poc-ui.service`
-- Verified active on 2026-06-24.
-- `index.html` currently serves:
-  - `styles.css?v=27`
-  - `app.js?v=35`
+- Actual served path: `/opt/serbia-poc-ui`
+- This is important: an earlier deploy mistakenly copied to `/opt/serbia-poc/ui`, but the active service serves `/opt/serbia-poc-ui`.
+- Current served versions verified over HTTP:
+  - `styles.css?v=35`
+  - `app.js?v=47`
 
-Current Serbia MCP/Hermes deployment:
+Active MCP/Hermes service:
 
 - MCP path: `/opt/serbia-poc/mcp_server/server.py`
+- Data path: `/opt/serbia-poc/data/serbia_kosovo_events_projection.csv`
 - Hermes gateway service: `hermes-gateway.service`
-- Verified active on 2026-06-24.
 - Hermes local API port on VM: `127.0.0.1:8642`
 
 Useful VM checks:
 
 ```bash
-systemctl is-active serbia-poc-ui.service
-systemctl is-active hermes-gateway.service
-grep -n 'styles.css?v=\|app.js?v=' /opt/serbia-poc-ui/index.html
-grep -n 'research-steps-toggle\|orientation: portrait\|direction: rtl' /opt/serbia-poc-ui/styles.css | head -10
+sudo systemctl is-active serbia-poc-ui.service
+sudo systemctl is-active hermes-gateway.service
+curl -fsS http://127.0.0.1:8769/api/status
+curl -fsS http://127.0.0.1:8769/api/live-steps
+curl -fsS http://127.0.0.1:8769/ | grep -E 'styles.css\?v=|app.js\?v='
+grep -n 'rawEventsOverlay\|final-answer-show-btn\|buildLocationLayer' /opt/serbia-poc-ui/app.js /opt/serbia-poc-ui/index.html
 ```
 
-Deploy UI files manually from local Windows workspace:
+## Deployment Notes
 
-```powershell
-scp -o ConnectTimeout=8 -i "C:\Users\e054922\Downloads\oracle.key" -o StrictHostKeyChecking=no llm_investigation_orchestrator_serbia_poc/index.html ubuntu@151.145.93.180:/tmp/index.html
-scp -o ConnectTimeout=8 -i "C:\Users\e054922\Downloads\oracle.key" -o StrictHostKeyChecking=no llm_investigation_orchestrator_serbia_poc/app.js ubuntu@151.145.93.180:/tmp/app.js
-scp -o ConnectTimeout=8 -i "C:\Users\e054922\Downloads\oracle.key" -o StrictHostKeyChecking=no llm_investigation_orchestrator_serbia_poc/styles.css ubuntu@151.145.93.180:/tmp/styles.css
-ssh -o ConnectTimeout=8 -i "C:\Users\e054922\Downloads\oracle.key" -o StrictHostKeyChecking=no ubuntu@151.145.93.180 "cp /tmp/index.html /opt/serbia-poc-ui/index.html && cp /tmp/app.js /opt/serbia-poc-ui/app.js && cp /tmp/styles.css /opt/serbia-poc-ui/styles.css && sudo systemctl restart serbia-poc-ui.service && systemctl is-active serbia-poc-ui.service"
-```
+Use `/opt/serbia-poc-ui` for UI deploys.
 
-Deploy a refreshed recorded run, example q5:
+When generating `/opt/serbia-poc-ui/.hermes-api.json`, write it as UTF-8 without BOM. The gateway now reads it with `utf-8-sig`, but no-BOM is still preferred.
 
-```powershell
-scp -o ConnectTimeout=8 -i "C:\Users\e054922\Downloads\oracle.key" -o StrictHostKeyChecking=no llm_investigation_orchestrator_serbia_poc/recorded_runs/q5_assessment.json ubuntu@151.145.93.180:/tmp/q5_assessment.json
-ssh -o ConnectTimeout=8 -i "C:\Users\e054922\Downloads\oracle.key" -o StrictHostKeyChecking=no ubuntu@151.145.93.180 "cp /tmp/q5_assessment.json /opt/serbia-poc-ui/recorded_runs/q5_assessment.json && sudo systemctl restart serbia-poc-ui.service"
-```
+Known fixed issue:
 
-## Architecture
+- A PowerShell-generated `.hermes-api.json` caused: `Unexpected UTF-8 BOM (decode using utf-8-sig)`.
+- Fix implemented in `server.py`: `load_hermes_config()` reads config using `encoding="utf-8-sig"`.
+- The deployed config was also rewritten without BOM.
 
-High-level flow:
+Recommended UI deployment pattern:
+
+1. Preserve the existing API key from `/opt/serbia-poc-ui/.hermes-api.json` or Hermes config.
+2. Package `server.py`, `index.html`, `app.js`, `styles.css`, `help.html`, `README.md`, `vendor/`, and `data/`.
+3. Copy to `/opt/serbia-poc-ui`.
+4. Restart `serbia-poc-ui.service`.
+5. Verify served versions over HTTP, not only disk files.
+
+## Current UI Architecture
+
+The UI has been refactored from “views over current records” into a layer-based result model.
+
+Core idea:
 
 ```text
-Hebrew analyst question
-  -> browser UI
-  -> local/VM Python gateway server.py
-  -> Hermes API
-  -> main orchestrator model
-  -> MCP tools in mcp_server/server.py
-  -> CSV/JSON event data
-  -> tool audit records
-  -> final model answer
-  -> UI chat + embedded research process + map/timeline/evidence view
+tool/final result
+  -> result layers
+  -> map/timeline/table render each visible layer according to capability
 ```
 
-Runtime configuration split:
+Current layer types:
 
-- Same `server.py` is used locally and on the VM.
-- Local Windows development uses `.hermes-api.json` with SSH transport to VM.
-- VM deployment uses `.hermes-api.json` with direct transport to local Hermes API.
+- `events`
+  - One layer per `source_type`, e.g. `טלגרם`, `X`, `חדשות מקומיות`.
+  - Capabilities: table, map, timeline.
+- `locations`
+  - Static location-summary layer, e.g. `ריכוזי מיקומים`.
+  - Capabilities: table, map.
+  - Not filter-derived from source tabs unless backing events exist in an event layer.
+- `time_aggregation`
+  - Static time aggregation layer, e.g. summary by date/hour.
+  - Capabilities: table, timeline.
 
-Committed config templates:
+Important functions in `app.js`:
 
-- `llm_investigation_orchestrator_serbia_poc/.hermes-api.local.example.json`
-- `llm_investigation_orchestrator_serbia_poc/.hermes-api.vm.example.json`
+- `buildEventLayers(events)`
+- `buildLocationLayer(locations)`
+- `buildTimeAggregationLayer(items)`
+- `setResultLayers(...)`
+- `visibleLayers(capability)`
+- `activeTableLayer()`
+- `renderMap()`
+- `renderTimeline()`
+- `renderEvidence()`
 
-The real `.hermes-api.json` is intentionally uncommitted because it contains secrets and local key paths.
+Current UI behavior:
 
-## Key Files
+- The raw/results table is an overlay shared by map and timeline.
+- Table tabs are layer tabs, not source-type-only tabs.
+- Each layer tab has an eye toggle.
+- Hiding a layer affects all visualizations where that layer participates.
+- The overlay can be resized and minimized.
+- Final assistant answers now have a `הצג` button.
+- Clicking final `הצג` restores that answer’s result presentation and clears any open step-view banner.
+- Tool steps still have `הצג` buttons that present the step’s specific result/layers.
 
-Serbia UI and gateway:
+Removed UI sections:
 
-- `llm_investigation_orchestrator_serbia_poc/index.html`
-- `llm_investigation_orchestrator_serbia_poc/styles.css`
-- `llm_investigation_orchestrator_serbia_poc/app.js`
+- Removed the former result summary header (`תמונת מצב`, `ממצאי חקירת הסוכן`, event count badge) from the top of the result panel.
+- Removed the old separate `אירועים גולמיים` top-level view tab.
+- Removed extra bottom query/layer labels that duplicated information.
+
+## Data Normalization
+
+The active data was normalized to remove confusing/non-real source categories.
+
+Removed field:
+
+- `source_category`
+
+Removed source/source-like labels from active data:
+
+- `דיסאינפורמציה/מידע מטעה`
+- `רעש לא קשור`
+- `דיווח אזרחי`
+- `דיווח חירום`
+
+Approved visible `source_type` values:
+
+- `פייסבוק`
+- `חדשות מקומיות`
+- `X`
+- `בלוג פוליטי`
+- `טלגרם`
+- `הודעת דובר`
+- `טיקטוק`
+- `ערוץ חדשות בינלאומי`
+- `שמועה מקומית`
+- `קבוצת וואטסאפ`
+
+Active source counts after normalization:
+
+```text
+1307 חדשות מקומיות
+1280 טלגרם
+1074 טיקטוק
+1017 שמועה מקומית
+ 970 X
+ 912 קבוצת וואטסאפ
+ 887 הודעת דובר
+ 875 בלוג פוליטי
+ 870 פייסבוק
+ 808 ערוץ חדשות בינלאומי
+```
+
+Normalized active files:
+
+- `data/north_kosovo_attachment_inspect/north_kosovo_synthetic_dataset_he_10k_subset.csv`
+- `data/north_kosovo_attachment_inspect/north_kosovo_synthetic_dataset_he_10k_subset.jsonl`
+- `data/serbia_kosovo_events_projection.csv`
+- `data/serbia_kosovo_evaluator_labels.csv`
+
+Normalizer/report:
+
+- `data/normalize_sources.py`
+- `data/source_normalization_report.json`
+
+Validation already performed:
+
+- Active data row count preserved: `10000`.
+- Core fields preserved: `timestamp`, `location_id`, `event_id`, `text`.
+- No active-data matches for removed labels or `source_category`.
+
+Historical backup/test/recorded files may still contain old terms. Do not treat those as active runtime data.
+
+## Model Prompt And MCP Schema Updates
+
+The model/gateway prompt and MCP schema were updated so source examples match the normalized data.
+
+Updated:
+
 - `llm_investigation_orchestrator_serbia_poc/server.py`
-- `llm_investigation_orchestrator_serbia_poc/help.html`
-
-Serbia MCP:
-
 - `llm_investigation_orchestrator_serbia_poc/mcp_server/server.py`
-- `llm_investigation_orchestrator_serbia_poc/mcp_server/smoke_client.py`
-- `llm_investigation_orchestrator_serbia_poc/mcp_server/regression_quality.py`
-- `llm_investigation_orchestrator_serbia_poc/mcp_server/benchmark_tools.py`
-- `llm_investigation_orchestrator_serbia_poc/mcp_server/remote_deploy_serbia.py`
-- `llm_investigation_orchestrator_serbia_poc/mcp_server/remote_deploy_ui.py`
 
-Serbia data:
+Removed stale examples such as:
 
-- `llm_investigation_orchestrator_serbia_poc/data/serbia_kosovo_events_projection.csv`
-- `llm_investigation_orchestrator_serbia_poc/data/serbia_kosovo_locations.json`
-- `llm_investigation_orchestrator_serbia_poc/data/serbia_kosovo_evaluator_labels.csv`
+- SIGINT
+- financial alerts
+- sensors
+- port/customs records
 
-Recorded demo runs:
+Current guidance uses visible channels such as:
 
-- `llm_investigation_orchestrator_serbia_poc/recorded_runs/real_hotspots_20260621.json`
-- `llm_investigation_orchestrator_serbia_poc/recorded_runs/q2_movement.json`
-- `llm_investigation_orchestrator_serbia_poc/recorded_runs/q3_stabilizer.json`
-- `llm_investigation_orchestrator_serbia_poc/recorded_runs/q4_violence_noise.json`
-- `llm_investigation_orchestrator_serbia_poc/recorded_runs/q5_assessment.json`
+- `טלגרם`
+- `טיקטוק`
+- `X`
+- `פייסבוק`
+- `חדשות מקומיות`
+- `הודעת דובר`
+- `קבוצת וואטסאפ`
+- `שמועה מקומית`
+- `בלוג פוליטי`
+- `ערוץ חדשות בינלאומי`
 
-Performance logs:
+## MCP Tools
 
-- `llm_investigation_orchestrator_serbia_poc/performance_logs/`
-- `llm_investigation_orchestrator_poc/performance_logs/`
-
-Cargo POC files:
-
-- `llm_investigation_orchestrator_poc/server.py`
-- `llm_investigation_orchestrator_poc/app.js`
-- `llm_investigation_orchestrator_poc/styles.css`
-- `llm_investigation_orchestrator_poc/index.html`
-- `llm_investigation_orchestrator_poc/help.html`
-- `llm_investigation_orchestrator_poc/mcp_server/server.py`
-
-Original direct-model benchmark POC:
-
-- `llm_cross_reference_benchmark/`
-- `llm_cross_reference_benchmark_he/`
-
-## Version 2.0 UI Changes
-
-Implemented on branch `app-v2-agent-steps-in-chat`.
-
-What changed:
-
-- Removed the right-side `הקשר החקירה` section from the Serbia UI.
-- Removed frontend `investigation_state` construction and sending.
-- Moved agent work explanations into the chat answer itself.
-- While the agent is running, steps appear live/open inside the active `סוכן חקירה` message.
-- When the final answer arrives, steps collapse under `תהליך המחקר` at the top of that same answer, similar to the existing collapsible event IDs.
-- The result/map/timeline/evidence panel remains separate.
-- Mobile evidence table was kept as a horizontally scrollable table, not cards.
-- Current mobile table scroller:
-  - `styles.css?v=27`
-  - `overflow-x: scroll`
-  - table fixed width in portrait
-  - both scroller and table set to `direction: rtl`
-
-Important UI implementation points:
-
-- Active assistant message state lives in `app.js`:
-  - `activeAssistantMessage`
-  - `activeActivityList`
-  - `activeActivityEmpty`
-- Relevant functions:
-  - `startAssistantResearchMessage`
-  - `ensureAssistantResearchMessage`
-  - `setActiveResearchMessage`
-  - `finalizeAssistantMessage`
-  - `renderActivitySteps`
-  - `applyHermesResult`
-  - `replayRecordedResult`
-
-## Serbia MCP Tools
-
-The MCP server exposes these tools:
+Current Serbia MCP tools:
 
 ```text
 classify_question_intent
@@ -249,26 +276,56 @@ compare_location_claims
 challenge_hypothesis
 ```
 
-Special tools:
+Tool outputs can include:
 
-- `classify_question_intent`: first-step intent classifier. Uses MCP sampling when available and falls back to deterministic classification.
-- `plan_next_investigation_step`: bounded process-control tool that suggests concrete next steps; it does not replace the orchestrator model's analytical brain.
-- `compare_location_claims`: compares visible location-report conflicts using visible reliability/certainty fields only. It does not know hidden truth labels.
+- `events` / `event_ids`
+- `locations` / `location_ids`
+- `map_locations`
+- `aggregate_groups`
+- `route`
+- `ordered_event_ids`
+- `recommended_next_seeds`
+- `new_clues_to_trace`
+- `conflict_groups`
+- `alternative_events`
+- `gaps`
+- `bridges`
+- entity resolver matches
 
-Hybrid LLM/sampling tools:
+Visualization architecture now treats displayable outputs as layers.
 
-- `classify_question_intent`
-- `resolve_event_reference`
-- `trace_semantic_clues`
-- `find_related_events`
-- `compare_location_claims`
-- `challenge_hypothesis`
+First-class display-layer candidates:
 
-Design rule:
+- events
+- locations
+- time aggregations
 
-- Deterministic retrieval remains the source of event candidates.
-- LLM sampling may classify, rerank, summarize, or suggest bounded follow-up clues.
-- LLM sampling must not silently invent event IDs outside deterministic candidate sets.
+Potential future layer types:
+
+- routes/sequences
+- conflict groups
+- entity/actor presence
+- link/bridge relationships
+- semantic clue clusters
+
+## Entities
+
+There is no `entity_id` column in the active DB/data files.
+
+Active data fields:
+
+- Projection CSV has `entity_or_actor`.
+- Raw dataset has `actor_mentioned` and `observed_actor`.
+- There are 16 unique actor names in the current data.
+
+There is a small synthetic resolver registry in MCP code:
+
+- `ENT-KFOR`
+- `ENT-EULEX`
+- `ENT-KOSOVO-POLICE`
+- `ENT-SERBIAN-ACTORS`
+
+These are code-level aliases, not first-class DB rows.
 
 ## Data Policy
 
@@ -281,196 +338,145 @@ Evaluation-only hidden labels:
 
 - `serbia_kosovo_evaluator_labels.csv`
 
-Important: do not expose evaluator labels to the orchestrator, MCP runtime, UI, or prompt. They contain scenario IDs, ground truth, misleading labels, and other information that would unfairly help the model.
+Do not expose evaluator labels to the orchestrator, MCP runtime, UI, or prompt. They include ground truth and misleading labels that would contaminate the intelligence-analysis scenario.
 
-The visible DB projection intentionally contains only what an analyst could see:
+## Current Result Presentation Behavior
 
-- canonical event IDs
-- timestamps
-- source type/reliability/certainty as visible fields
-- actor/entity
-- location
-- raw event summary
+Current behavior:
 
-## Recorded Demo Questions
+- Tool-step `הצג` presents the selected step’s results.
+- Final-answer `הצג` presents/restores the final answer’s result layers.
+- Answer arrival still applies the final result presentation automatically in most paths, but a recent observed issue showed an answer could return without a new visible presentation. The final `הצג` button was added first; next design decision is how forceful/automatic final-answer presentation should be.
 
-The demo uses five recorded questions available through the `+` button in the UI.
+Open design question:
 
-Current compact questions:
+- When a final answer arrives, should the result panel always switch to the final answer’s layers, or should it preserve the current step/layer view until the user clicks final `הצג`?
 
-1. `איפה נמצאים מוקדי החיכוך העיקריים בצפון קוסובו, ומה המוקדים המדויקים בתוך כל אזור?`
-2. `האם ניתן לזהות דפוס של תנועת כוחות או הגברת נוכחות בזמן ובמרחב?`
-3. `מה הגורם הבינלאומי המרכזי עושה בפועל: מייצב את השטח, מציב חיץ, או מגביל את חופש הפעולה?`
-4. `האם הדיווחים על ירי ופיצוצים נראים כמו אירועים אמיתיים או כמו רעש מידע?`
-5. `על בסיס כל מה שמצאת, האם מדובר באכיפה נקודתית או בדפוס הסלמה רחב יותר בצפון קוסובו?`
+Suggested next behavior:
 
-Latest q5 recording:
+- Do not silently override an explicitly selected tool-step view.
+- If no step view is active, final answer should update result layers automatically.
+- Always provide final `הצג` as a reliable manual restore.
 
-- File: `llm_investigation_orchestrator_serbia_poc/recorded_runs/q5_assessment.json`
-- Created: 2026-06-23
-- Source: `live_hermes_run_local_rerun_v2`
-- Live run ID: `run_c071179942ba4a1d85cf991a6403a0dc`
-- Runtime: about 56.4 seconds
-- Steps: 4
-- Event/location IDs: 30
-- Recommended view: `evidence`
-- Deployed to VM and verified through `/api/recorded-run?id=q5_assessment`
+## Near-Term RAG Plan
 
-Note on q2:
+The team discussed adding a small RAG capability in the near future. This should be a focused retrieval-layer improvement, not a large architecture rewrite.
 
-- Local `q2_movement.json` has uncommitted modifications. Treat it as pending/user-generated unless explicitly asked to commit or revert.
+Goal:
 
-## Running Locally
+- Improve semantic recall over the 10,000 event records and later over tool outputs/layer objects.
+- Let the retrieval layer find records based on real corpus similarity rather than only general model reasoning or keyword matching.
+- Keep deterministic filtering, IDs, and auditability.
+
+Recommended near-term implementation:
+
+1. Add a lightweight local semantic index over active event text.
+   - Index fields: `event_id`, `event_summary`, `entity_or_actor`, `location_name`, `source_type`, `timestamp_utc`.
+   - Store metadata needed for filters: time, location, source type, actor, reliability/certainty.
+   - Keep `REC-*` IDs as the canonical join key.
+
+2. Use hybrid retrieval, not vector-only retrieval.
+   - Existing keyword/filter tools stay.
+   - Add semantic candidate retrieval.
+   - Fuse/rerank candidates deterministically where possible.
+
+3. Expose through MCP as a bounded tool, not raw vector DB access.
+   - Candidate tool name: `semantic_search_events` or `retrieve_event_context`.
+   - Input: query/clues, optional time/location/source filters, limit.
+   - Output: `event_ids`, `events`, scores, matched terms/semantic rationale.
+   - UI can render returned events as normal event layers.
+
+4. Keep RAG evidence auditable.
+   - Every result must map back to `REC-*`.
+   - Do not return anonymous chunks with no record ID.
+   - Final answers must cite event IDs when evidence is used.
+
+5. Start small.
+   - Do not introduce Elastic/OpenSearch unless the project grows beyond the current POC.
+   - For this corpus size, a local file-based or lightweight vector index is enough.
+   - The implementation can be regenerated from CSV during deploy/startup.
+
+Possible stack options:
+
+- Local embeddings using a small multilingual embedding model if available in the deployment environment.
+- SQLite + vector extension, FAISS/HNSW, or a simple persisted embedding matrix for POC scale.
+- If model/runtime constraints make local embeddings hard, defer embedding generation and first implement lexical+semantic clue expansion using existing fields.
+
+RAG integration with layers:
+
+- RAG returns event IDs and events.
+- The UI creates normal event layers by `source_type`.
+- Later, RAG can return a separate “semantic cluster” layer if we want to visualize retrieved themes.
+
+Do not do yet:
+
+- Do not expose raw vector queries to the model.
+- Do not make RAG replace MCP tools.
+- Do not make RAG decide truth.
+- Do not use hidden evaluator labels for retrieval.
+
+## Validation Commands
 
 From repo root:
 
 ```powershell
 cd llm_investigation_orchestrator_serbia_poc
-$env:PYTHONIOENCODING='utf-8'
-python server.py 8769
-```
-
-Open:
-
-```text
-http://127.0.0.1:8769/
-```
-
-If using the Codex bundled Python:
-
-```powershell
-& "C:\Users\e054922\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe" "llm_investigation_orchestrator_serbia_poc\server.py" 8769
-```
-
-Current local status endpoint was verified as:
-
-```json
-{"mode": "hermes", "configured": true, "build": "serbia-poc-1"}
-```
-
-## Verification Commands
-
-Syntax check for UI JS:
-
-```powershell
-& "C:\Users\e054922\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe" --check llm_investigation_orchestrator_serbia_poc/app.js
+node --check app.js
+& "C:\Users\user\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe" -m py_compile server.py mcp_server/server.py mcp_server/benchmark_tools.py mcp_server/regression_quality.py
+git diff --check
 ```
 
 MCP smoke test:
 
 ```powershell
 $env:PYTHONIOENCODING='utf-8'
-python llm_investigation_orchestrator_serbia_poc/mcp_server/smoke_client.py
+& "C:\Users\user\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe" mcp_server\smoke_client.py
 ```
 
-Regression quality gate:
+Data validation:
 
 ```powershell
-$env:PYTHONIOENCODING='utf-8'
-python llm_investigation_orchestrator_serbia_poc/mcp_server/regression_quality.py
+Select-String -Path `
+  data\north_kosovo_attachment_inspect\north_kosovo_synthetic_dataset_he_10k_subset.csv,`
+  data\north_kosovo_attachment_inspect\north_kosovo_synthetic_dataset_he_10k_subset.jsonl,`
+  data\serbia_kosovo_events_projection.csv,`
+  data\serbia_kosovo_evaluator_labels.csv `
+  -Pattern 'source_category|דיסאינפורמציה/מידע מטעה|רעש לא קשור|דיווח אזרחי|דיווח חירום' -SimpleMatch
 ```
 
-Regression compare against a baseline:
+Expected: no matches in active data files.
 
-```powershell
-$env:PYTHONIOENCODING='utf-8'
-python llm_investigation_orchestrator_serbia_poc/mcp_server/regression_quality.py --compare llm_investigation_orchestrator_serbia_poc/test_runs/regression_quality_20260620T192453Z.json
-```
+## Known Risks / Watch Items
 
-Benchmark all tools:
+1. Layer architecture is new.
+   - Test map/timeline/table after each result path: live answer, recorded answer, tool-step `הצג`, final-answer `הצג`.
 
-```powershell
-$env:PYTHONIOENCODING='utf-8'
-python llm_investigation_orchestrator_serbia_poc/mcp_server/benchmark_tools.py --rounds 3
-```
+2. Static location layers are intentionally not source-filtered.
+   - They are peer layers, not derived event filters.
+   - Eye toggle hides/shows the whole location layer.
 
-## Performance Reality
+3. VM deploy path confusion.
+   - Use `/opt/serbia-poc-ui`, not `/opt/serbia-poc/ui`.
 
-The slow part is not the DB tools. It is usually model orchestration and final synthesis.
+4. Config BOM.
+   - Write `.hermes-api.json` without BOM.
+   - `server.py` now tolerates BOM via `utf-8-sig`.
 
-Observed pattern from prior logs:
+5. Historical files still contain old source labels.
+   - Active data is clean; historical test/recorded files may not be.
 
-- Tool execution can be milliseconds to a few seconds.
-- End-to-end runs can be 50-200+ seconds.
-- Large investigation prompts and final answer synthesis dominate latency.
+6. Entity IDs are not in DB.
+   - Treat entities as future layer candidates only after adding first-class entity data.
 
-For demos:
-
-- Prefer recorded questions via the `+` button.
-- Recorded replay uses real model answers captured from prior runs.
-- Steps replay progressively, so the UI feels interactive without waiting for a live Hermes run.
-
-## Current Known Issues / Watch Items
-
-1. Mobile evidence scroller
-   - Current state: horizontal scroll works and is set RTL.
-   - Recent user feedback: scroller was perfect but looked LTR; fixed by setting `.table-wrap` direction to RTL.
-   - If user still dislikes behavior, next likely fix is JS-assisted scroll/drag rather than pure CSS.
-
-2. Dirty q2 recording
-   - `recorded_runs/q2_movement.json` is modified locally.
-   - Do not accidentally commit it.
-
-3. Model may choose `evidence` instead of `timeline`
-   - If timeline is desired, ask explicitly: `תציג כרצף זמן`, `סדר לפי זמן`, or `ציר זמן`.
-
-4. Broad live runs are slow
-   - Use recorded demo for presentations.
-   - If real live demo is required, choose narrower questions.
-
-5. Hidden/evaluator fields
-   - Do not put `serbia_kosovo_evaluator_labels.csv` into runtime prompts/tools.
-
-6. Git branch discipline
-   - Active UI 2.0 changes are on `app-v2-agent-steps-in-chat`.
-   - Main does not yet include these v2 changes.
-
-## Cargo POC Context
-
-Cargo POC goal:
-
-- Demonstrate that a model can discover hidden cross-inference behavior in diverse simulated operational data.
-
-Important cargo hidden behavior:
-
-- Target object was `OF-4482`.
-- Earlier problem: the second POC often found only a partial chain or stopped after it had enough evidence, without returning all supporting records.
-- Tools/instructions were expanded with semantic clue tracing, bounded seed expansion, larger coverage defaults, and `plan_next_investigation_step`.
-
-Do not overfit Serbia instructions back into cargo, and do not reintroduce cargo-specific words into Serbia prompts/tools.
-
-## Serbia Demo Story
-
-The demo narrative:
-
-- A Serbian intelligence officer receives 10,000 raw records about several days of escalation in North Kosovo.
-- The analyst is not asking for a news summary, but for structured intelligence sensemaking:
-  - local enforcement or broader northern operation?
-  - is the international force stabilizing or constraining Serbian freedom of action?
-  - is there significant force movement over time and space?
-  - are shooting/explosion/border/roadblock reports reliable or information noise?
-  - do point events connect into an evolving scenario requiring a decision?
-
-The value of the POC:
-
-- Natural-language analyst questions.
-- Agentic tool orchestration.
-- Data-grounded evidence retrieval.
-- Model-generated reasoning bridges for each step.
-- Visual recommendation: map, timeline, or raw evidence.
-- Recorded replay for demo speed.
-
-## Suggested First Message To Claude
-
-Use this in a new Claude chat:
+## Suggested First Message To A New Assistant
 
 ```text
-Read PROJECT_HANDOFF.md first. Continue work on the Serbia/North Kosovo POC in llm_investigation_orchestrator_serbia_poc. The active branch is app-v2-agent-steps-in-chat. Do not commit the existing dirty q2_movement.json unless explicitly asked. Current VM UI is http://151.145.93.180:8769/ and local UI is http://127.0.0.1:8769/.
+Read PROJECT_HANDOFF.md first. Continue work on the Serbia/North Kosovo POC in llm_investigation_orchestrator_serbia_poc. The current branch is main. The UI is deployed from /opt/serbia-poc-ui on VM 151.145.93.180 and currently serves styles.css?v=35 and app.js?v=47. Do not touch C:\Users\user\Downloads\oracle.key. The UI now uses a layer architecture; preserve that model when adding new filters or visualizations.
 ```
 
-## File Review Order For Claude
+## File Review Order
 
-For UI work:
+For UI/layer work:
 
 1. `llm_investigation_orchestrator_serbia_poc/index.html`
 2. `llm_investigation_orchestrator_serbia_poc/styles.css`
@@ -484,18 +490,19 @@ For agent/tool behavior:
 3. `llm_investigation_orchestrator_serbia_poc/mcp_server/smoke_client.py`
 4. `llm_investigation_orchestrator_serbia_poc/mcp_server/regression_quality.py`
 
-For demo/recorded replay:
+For data normalization:
 
-1. `llm_investigation_orchestrator_serbia_poc/recorded_runs/`
-2. `llm_investigation_orchestrator_serbia_poc/server.py`
-3. `llm_investigation_orchestrator_serbia_poc/app.js`
+1. `llm_investigation_orchestrator_serbia_poc/data/normalize_sources.py`
+2. `llm_investigation_orchestrator_serbia_poc/data/source_normalization_report.json`
+3. Active CSV/JSONL files under `llm_investigation_orchestrator_serbia_poc/data/`
 
-## Final Sanity Checklist Before Any Future Handoff
+## Final Sanity Checklist Before Future Handoff
 
 - Run `git status --short --branch`.
-- Check which branch is active.
-- Do not commit unrelated dirty recorded-run files.
-- Verify VM `styles.css?v=` and `app.js?v=` after UI deploy.
-- Verify `serbia-poc-ui.service` after VM deploy.
-- If MCP changed, run smoke/regression before deploy.
-- If recorded run changed, verify `/api/recorded-run?id=<id>` on the VM.
+- Verify served VM asset versions over HTTP, not just disk.
+- Verify `serbia-poc-ui.service` is active.
+- Verify `/api/live-steps` returns JSON.
+- If MCP changed, run smoke test before deploy.
+- If data changed, run active-data forbidden-label search.
+- Do not expose evaluator labels.
+- Do not touch the SSH key file.
