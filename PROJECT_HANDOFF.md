@@ -43,7 +43,7 @@ Serbia / North Kosovo POC:
 
 - Directory: `llm_investigation_orchestrator_serbia_poc`
 - Local UI: `http://127.0.0.1:8769/`
-- VM UI: `http://151.145.93.180:8769/`
+- VM UI: `https://151.145.93.180/`
 - Purpose: scenario-portability demo over North Kosovo escalation data, with analyst questions, data-grounded MCP tools, agent-step visibility, and map/timeline/table result presentation.
 
 Cargo POC still exists but is not the active focus:
@@ -65,7 +65,7 @@ Active UI service:
 - Service: `serbia-poc-ui.service`
 - Actual served path: `/opt/serbia-poc-ui`
 - This is important: an earlier deploy mistakenly copied to `/opt/serbia-poc/ui`, but the active service serves `/opt/serbia-poc-ui`.
-- Current served versions verified over HTTP:
+- Current served versions verified through the public HTTPS endpoint:
   - `styles.css?v=35`
   - `app.js?v=47`
 
@@ -81,9 +81,9 @@ Useful VM checks:
 ```bash
 sudo systemctl is-active serbia-poc-ui.service
 sudo systemctl is-active hermes-gateway.service
+curl -k -fsS https://151.145.93.180/ | grep -E 'styles.css\?v=|app.js\?v='
 curl -fsS http://127.0.0.1:8769/api/status
 curl -fsS http://127.0.0.1:8769/api/live-steps
-curl -fsS http://127.0.0.1:8769/ | grep -E 'styles.css\?v=|app.js\?v='
 grep -n 'rawEventsOverlay\|final-answer-show-btn\|buildLocationLayer' /opt/serbia-poc-ui/app.js /opt/serbia-poc-ui/index.html
 ```
 
@@ -105,7 +105,7 @@ Recommended UI deployment pattern:
 2. Package `server.py`, `index.html`, `app.js`, `styles.css`, `help.html`, `README.md`, `vendor/`, and `data/`.
 3. Copy to `/opt/serbia-poc-ui`.
 4. Restart `serbia-poc-ui.service`.
-5. Verify served versions over HTTP, not only disk files.
+5. Verify served versions through the public HTTPS endpoint, not only disk files.
 
 ## Current UI Architecture
 
@@ -499,7 +499,7 @@ For data normalization:
 ## Final Sanity Checklist Before Future Handoff
 
 - Run `git status --short --branch`.
-- Verify served VM asset versions over HTTP, not just disk.
+- Verify served VM asset versions through the public HTTPS endpoint, not just disk.
 - Verify `serbia-poc-ui.service` is active.
 - Verify `/api/live-steps` returns JSON.
 - If MCP changed, run smoke test before deploy.
