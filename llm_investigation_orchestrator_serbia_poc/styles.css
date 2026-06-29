@@ -191,9 +191,25 @@ th { position: sticky; top: 0; z-index: 1; background: #202530; }
 .query-modal-header { padding: 14px; display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; border-bottom: 1px solid var(--line); }
 .query-modal-header h2 { margin: 4px 0 0; font-size: 16px; }
 .query-modal-body { margin: 0; padding: 14px; overflow: auto; background: #0f131b; color: var(--ink); font: 11px/1.55 Consolas, monospace; direction: ltr; text-align: left; white-space: pre-wrap; overflow-wrap: anywhere; }
-#step-view-banner { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 9px 14px; background: rgba(88, 166, 255, .1); border-bottom: 1px solid var(--blue); font-size: 12px; color: var(--ink); }
+.query-form { display: flex; flex-direction: column; gap: 16px; padding: 16px; overflow: auto; }
+.form-group { display: flex; flex-direction: column; gap: 6px; }
+.form-group label { font-size: 12px; font-weight: 600; color: var(--blue); text-transform: uppercase; letter-spacing: 0.5px; }
+.form-read-only { padding: 8px 12px; background: rgba(15,19,27,.5); border: 1px solid var(--line); border-radius: 4px; font-size: 13px; color: var(--ink); font-family: Consolas, monospace; }
+.query-form select, .arguments-editor { padding: 8px 12px; background: rgba(15,19,27,.8); border: 1px solid rgba(88,166,255,.3); border-radius: 4px; color: var(--ink); font-size: 12px; font-family: Consolas, monospace; }
+.query-form select:focus, .arguments-editor:focus { outline: none; border-color: var(--blue); background: rgba(15,19,27,.95); box-shadow: 0 0 0 3px rgba(88,166,255,.15); }
+.arguments-editor { min-height: 120px; resize: vertical; line-height: 1.4; direction: ltr; text-align: left; }
+.query-modal-header-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.query-modal-header-actions button { border: 1px solid var(--blue); border-radius: 6px; background: var(--panel-2); padding: 6px 9px; color: var(--blue); font-size: 12px; cursor: pointer; white-space: nowrap; transition: background .15s; }
+.query-modal-header-actions button:hover:not(:disabled) { background: rgba(88,166,255,.12); }
+.run-button:disabled { opacity: .4; cursor: not-allowed; }
+#step-view-banner { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 10px; padding: 9px 14px; background: rgba(88, 166, 255, .1); border-bottom: 1px solid var(--blue); font-size: 12px; color: var(--ink); }
 .step-view-description { min-width: 0; padding: 8px 11px; border: 1px solid var(--line); border-radius: 6px; background: #0f131b; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .step-tool-details { max-width: 220px; }
+.source-visibility-btn { width: 28px; height: 28px; padding: 0; border: 1px solid var(--line); border-radius: 6px; background: transparent; color: var(--ink); font-size: 15px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background .15s, color .15s, opacity .15s; flex-shrink: 0; }
+.source-visibility-btn::before { content: "👁"; }
+.source-visibility-btn:hover { background: rgba(88,166,255,.15); border-color: var(--blue); }
+.source-visibility-btn.layers-hidden { opacity: .4; }
+.source-visibility-btn.layers-hidden::before { content: "🚫"; }
 .activity-technical { margin-top: 9px; border-top: 1px solid var(--line); padding-top: 8px; }
 .activity-technical summary { color: var(--blue); cursor: pointer; font-size: 10px; font-weight: 800; user-select: none; }
 .activity-technical summary:hover { text-decoration: underline; }

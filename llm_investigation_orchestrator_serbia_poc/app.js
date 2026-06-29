@@ -187,7 +187,9 @@ const state = {
   layers: [],
   activeLayerId: null,
   rawOverlayMinimized: false,
-  rawOverlayHeight: 28
+  rawOverlayHeight: 28,
+  queryEdited: false,
+  originalQuery: null
 };
 
 const conversation = document.getElementById("conversation");
@@ -747,12 +749,8 @@ function queryReadoutForLayer(layer) {
     const step = state.queryContext.step || {};
     const payload = {
       layer,
-      source: "investigation_step",
       tool: step.tool || state.queryContext.label,
-      arguments: compactArguments(step.technical?.arguments),
-      event_ids: (step.event_ids || []).slice(0, 24),
-      map_locations: (step.map_locations || []).slice(0, 12).map(item => item.location_id || item.location_name),
-      aggregate_groups: (step.aggregate_groups || []).slice(0, 12).map(item => item.label || item.key)
+      arguments: compactArguments(step.technical?.arguments)
     };
     return { tool: step.tool || state.queryContext.label, text: JSON.stringify(payload, null, 2), available: true };
   }
@@ -765,7 +763,6 @@ function queryReadoutForLayer(layer) {
     analyst_question: state.queryContext.prompt,
     tool: step?.tool || "final_answer",
     arguments: compactArguments(step?.technical?.arguments),
-    event_ids: (layer === "evidence" ? (result.event_ids || []) : (step?.event_ids || [])).slice(0, 30),
     recommended_view: result.recommended_view || state.queryContext.preferredLayer,
     view_reason: result.view_reason || ""
   };
@@ -786,9 +783,49 @@ function renderQueryInspector() {
 function openQueryModal() {
   const button = document.getElementById("queryToolName");
   if (!queryModal || !button || button.disabled) return;
-  queryModalTitle.textContent = button.textContent || "פרטי השאילתה";
-  queryModalBody.textContent = button.dataset.queryDetails || "";
+
+  let queryObj = {};
+  try { queryObj = JSON.parse(button.dataset.queryDetails || "{}"); } catch (e) {}
+
+  state.originalQuery = JSON.stringify(queryObj.arguments || {}, null, 2);
+  state.queryEdited = false;
+
+  document.getElementById("queryFormTool").textContent = queryObj.tool || button.textContent || "";
+  const layerSelect = document.getElementById("queryFormLayer");
+  if (layerSelect) layerSelect.value = queryObj.layer || "map";
+  const argsArea = document.getElementById("queryFormArguments");
+  if (argsArea) argsArea.value = JSON.stringify(queryObj.arguments || {}, null, 2);
+  const runBtn = document.getElementById("queryFormRunButton");
+  if (runBtn) runBtn.disabled = true;
+
   queryModal.hidden = false;
+  attachQueryFormListeners();
+}
+
+function attachQueryFormListeners() {
+  const form = document.getElementById("queryForm");
+  if (!form || form.dataset.listenersAttached) return;
+  form.querySelectorAll("select, textarea").forEach(input => {
+    input.addEventListener("input", detectQueryEdits);
+    input.addEventListener("change", detectQueryEdits);
+  });
+  form.dataset.listenersAttached = "1";
+}
+
+function detectQueryEdits() {
+  const argsArea = document.getElementById("queryFormArguments");
+  const currentArgs = argsArea ? argsArea.value : "";
+  state.queryEdited = currentArgs !== state.originalQuery;
+  const runBtn = document.getElementById("queryFormRunButton");
+  if (runBtn) runBtn.disabled = !state.queryEdited;
+}
+
+function handleQueryFormSubmit() {
+  const tool = document.getElementById("queryFormTool")?.textContent || "";
+  const layer = document.getElementById("queryFormLayer")?.value || "map";
+  let args = {};
+  try { args = JSON.parse(document.getElementById("queryFormArguments")?.value || "{}"); } catch (e) {}
+  console.log("Query form submitted (Phase 2 will implement execution):", { tool, layer, arguments: args });
 }
 
 function closeQueryModal() {
@@ -881,21 +918,34 @@ function showStepResult(step) {
     observed_clue: step.observed_clue || "",
     decision: step.decision || step.rationale || ""
   };
+  const bannerSourceId = sanitizeLayerKey(step.__sourceId || stepSourceId(state.lastResult || state.investigationId, step.__stepNumber));
   const existing = document.getElementById("step-view-banner");
   if (!existing) {
     const banner = document.createElement("div");
     banner.id = "step-view-banner";
-    banner.innerHTML = `<span class="step-view-description">${escapeHtml(label)}</span><button type="button" id="queryToolName" class="query-tool-name step-tool-details" title="פרטי הרצת הכלי">${escapeHtml(step.tool || label)}</button>`;
+    banner.innerHTML = `<span class="step-view-description">${escapeHtml(label)}</span><button type="button" class="source-visibility-btn" data-source-id="${escapeHtml(bannerSourceId)}" title="הסתר/הצג שכבות"></button><button type="button" id="queryToolName" class="query-tool-name step-tool-details" title="פרטי הרצת הכלי">${escapeHtml(step.tool || label)}</button>`;
     if (stepViewSlot) stepViewSlot.appendChild(banner);
   } else {
     existing.querySelector(".step-view-description").textContent = label;
     existing.querySelector("#queryToolName").textContent = step.tool || label;
+    const visBtn = existing.querySelector(".source-visibility-btn");
+    if (visBtn) visBtn.dataset.sourceId = bannerSourceId;
   }
   const detailsButton = document.getElementById("queryToolName");
   if (detailsButton) {
     detailsButton.disabled = false;
     detailsButton.dataset.queryDetails = JSON.stringify(stepDetails, null, 2);
   }
+  const visibilityBtn = document.querySelector("#step-view-banner .source-visibility-btn");
+  if (visibilityBtn) updateSourceVisibilityBtn(visibilityBtn);
+}
+
+function updateSourceVisibilityBtn(btn) {
+  const sourceId = btn.dataset.sourceId;
+  const sourceLayers = state.layers.filter(layer => layer.sourceId === sourceId);
+  const anyVisible = sourceLayers.some(layer => layer.visible);
+  btn.classList.toggle("layers-hidden", !anyVisible);
+  btn.title = anyVisible ? "הסתר שכבות" : "הצג שכבות";
 }
 
 function addActivity(tool, detail, result, options = {}) {
@@ -1556,10 +1606,22 @@ document.addEventListener("click", event => {
   if (event.target.closest("#queryToolName")) openQueryModal();
   if (event.target.closest("#queryModalClose")) closeQueryModal();
   if (event.target === queryModal) closeQueryModal();
+  if (event.target.id === "queryFormRunButton") handleQueryFormSubmit();
   const recordedQuestion = event.target.closest("[data-recorded-id]");
   if (recordedQuestion) runRecordedQuestion(recordedQuestion.dataset.recordedId);
   const viewButton = event.target.closest("[data-view]");
   if (viewButton) activateView(viewButton.dataset.view);
+  const sourceVisibilityBtn = event.target.closest(".source-visibility-btn");
+  if (sourceVisibilityBtn) {
+    event.stopPropagation();
+    const sourceId = sourceVisibilityBtn.dataset.sourceId;
+    const sourceLayers = state.layers.filter(layer => layer.sourceId === sourceId);
+    const anyVisible = sourceLayers.some(layer => layer.visible);
+    sourceLayers.forEach(layer => { layer.visible = !anyVisible; });
+    updateSourceVisibilityBtn(sourceVisibilityBtn);
+    renderAllViews();
+    return;
+  }
   const visibilityToggle = event.target.closest("[data-layer-visibility]");
   if (visibilityToggle) {
     event.stopPropagation();
