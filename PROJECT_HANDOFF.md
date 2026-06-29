@@ -2,11 +2,11 @@
 
 Last updated: 2026-06-28
 
-This is the primary handoff for continuing the AI Intelligence project in another assistant/chat. It reflects the current `main` branch workspace and the latest VM deployment state after the data normalization, source-layer UI refactor, and result-layer architecture work.
+This is the primary handoff for continuing the AI Intelligence project in another assistant/chat. It reflects the current `main` branch workspace and the latest VM deployment state after the data normalization, additive result-layer UI refactor, recorded-run refresh, and map marker popup work.
 
 ## One-Line Summary
 
-The active project is the Serbia/North Kosovo intelligence-analysis POC: a Hebrew analyst UI backed by Hermes and MCP tools over a 10,000-record synthetic event corpus. The UI now treats all visualization outputs as layers: event-source layers, location-summary layers, and time-aggregation layers can be shown/hidden and rendered according to their own map/timeline/table capabilities.
+The active project is the Serbia/North Kosovo intelligence-analysis POC: a Hebrew analyst UI backed by Hermes and MCP tools over a 10,000-record synthetic event corpus. The UI now treats all visualization outputs as additive layers: event-source layers, location-summary layers, group-aggregation layers, and time-aggregation layers can be shown/hidden/closed and rendered according to their own map/timeline/table capabilities.
 
 ## Repository And Current State
 
@@ -17,7 +17,7 @@ Repository:
 Current branch:
 
 - `main`
-- Latest observed head: merge commit `849a829 Merge pull request #1 from zvipev10/app-v2-agent-steps-in-chat`
+- Latest observed head should be checked with `git log -1 --oneline`; the repo is expected to be clean and aligned with `origin/main` after each handoff.
 
 Important local workspace:
 
@@ -66,8 +66,8 @@ Active UI service:
 - Actual served path: `/opt/serbia-poc-ui`
 - This is important: an earlier deploy mistakenly copied to `/opt/serbia-poc/ui`, but the active service serves `/opt/serbia-poc-ui`.
 - Current served versions verified through the public HTTPS endpoint:
-  - `styles.css?v=35`
-  - `app.js?v=47`
+  - `styles.css?v=39`
+  - `app.js?v=54`
 
 Active MCP/Hermes service:
 
@@ -208,7 +208,7 @@ Do not generate demo recordings from synthetic fallback data or manually shorten
 
 ## Current UI Architecture
 
-The UI has been refactored from “views over current records” into a layer-based result model.
+The UI has been refactored from “views over current records” into an additive layer-based result model.
 
 Core idea:
 
@@ -218,25 +218,43 @@ tool/final result
   -> map/timeline/table render each visible layer according to capability
 ```
 
+Layer identity model:
+
+- Every displayed layer has a `sourceId` and a `dataId`.
+- `sourceId` identifies where the layer came from: a specific final assistant answer or a specific investigation step.
+- `dataId` identifies the visual data inside that source, for example event-source layer, location-summary layer, date aggregation, or generic aggregation.
+- The concrete layer key is built from `sourceId + dataId`.
+- Pressing `הצג` is additive: it adds related layers without replacing currently displayed layers.
+- Pressing the same `הצג` again re-shows/focuses existing layers instead of duplicating them.
+- If a layer was closed with `x`, pressing the same `הצג` recreates it.
+- Layer colors are assigned automatically from a palette and released when the layer is closed.
+
 Current layer types:
 
 - `events`
   - One layer per `source_type`, e.g. `טלגרם`, `X`, `חדשות מקומיות`.
   - Capabilities: table, map, timeline.
 - `locations`
-  - Static location-summary layer, e.g. `ריכוזי מיקומים`.
+  - Location-summary layer, e.g. `ריכוזי מיקומים`.
   - Capabilities: table, map.
   - Not filter-derived from source tabs unless backing events exist in an event layer.
 - `time_aggregation`
-  - Static time aggregation layer, e.g. summary by date/hour.
+  - Time aggregation layer, e.g. summary by date/hour.
   - Capabilities: table, timeline.
+- `group_aggregation`
+  - Generic aggregation layer, e.g. grouping by actor/source/category when it is not a map or timeline group.
+  - Capabilities: table.
 
 Important functions in `app.js`:
 
 - `buildEventLayers(events)`
 - `buildLocationLayer(locations)`
 - `buildTimeAggregationLayer(items)`
-- `setResultLayers(...)`
+- `buildGroupAggregationLayer(items)`
+- `buildResultLayers(...)`
+- `addResultLayers(...)`
+- `finalSourceId(result)`
+- `stepSourceId(resultOrBase, stepNumber)`
 - `visibleLayers(capability)`
 - `activeTableLayer()`
 - `renderMap()`
@@ -248,11 +266,16 @@ Current UI behavior:
 - The raw/results table is an overlay shared by map and timeline.
 - Table tabs are layer tabs, not source-type-only tabs.
 - Each layer tab has an eye toggle.
+- Each layer tab has an `x` close control.
+- Each layer tab displays the layer color.
 - Hiding a layer affects all visualizations where that layer participates.
+- Closing a layer removes it from the current workspace and releases its color.
 - The overlay can be resized and minimized.
 - Final assistant answers now have a `הצג` button.
-- Clicking final `הצג` restores that answer’s result presentation and clears any open step-view banner.
+- Clicking final `הצג` adds or focuses that answer’s result layers and clears any open step-view banner.
 - Tool steps still have `הצג` buttons that present the step’s specific result/layers.
+- Map locations are shown as colored point markers, not always-open rectangles.
+- Clicking a map point opens a MapLibre popup with the location name, item count, and contributing layer labels.
 
 Removed UI sections:
 
@@ -570,12 +593,19 @@ Expected: no matches in active data files.
 ## Suggested First Message To A New Assistant
 
 ```text
-Read PROJECT_HANDOFF.md first. Continue work on the Serbia/North Kosovo POC in llm_investigation_orchestrator_serbia_poc. The current branch is main. The UI is deployed from /opt/serbia-poc-ui on VM 151.145.93.180 and currently serves styles.css?v=35 and app.js?v=47. Do not touch C:\Users\user\Downloads\oracle.key. The UI now uses a layer architecture; preserve that model when adding new filters or visualizations.
+Read PROJECT_HANDOFF.md first. Continue work on the Serbia/North Kosovo POC in llm_investigation_orchestrator_serbia_poc. The current branch is main. The UI is deployed from /opt/serbia-poc-ui on VM 151.145.93.180 and currently serves styles.css?v=39 and app.js?v=54. Do not touch C:\Users\user\Downloads\oracle.key. The UI now uses an additive source/data layer architecture; preserve that model when adding new filters or visualizations.
 ```
 
 ## File Review Order
 
 For UI/layer work:
+
+Preserve the additive layer model:
+
+- Keep visualization state decoupled from chat state.
+- Use `sourceId` for final-answer/step origin and `dataId` for the layer data identity.
+- `הצג` should add/focus related layers, not replace unrelated visible layers.
+- Layer colors are workspace-level visual identities and should not be tied to chat order.
 
 1. `llm_investigation_orchestrator_serbia_poc/index.html`
 2. `llm_investigation_orchestrator_serbia_poc/styles.css`

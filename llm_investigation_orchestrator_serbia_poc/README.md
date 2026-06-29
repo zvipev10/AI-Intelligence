@@ -189,6 +189,32 @@ curl -k -fsS https://151.145.93.180/api/recorded-questions
 curl -k -fsS "https://151.145.93.180/api/recorded-run?id=q2_movement" | head -c 500
 ```
 
+## UI Result Layers
+
+The app presents tool and final-answer outputs as additive visual layers, not as one global replacement dataset.
+
+Layer identity:
+
+- `sourceId` identifies the source chat object: final assistant answer or a specific investigation step.
+- `dataId` identifies the actual data layer inside that source: events, locations, time aggregation, or generic aggregation.
+- The concrete UI layer key combines `sourceId + dataId`.
+
+Layer behavior:
+
+- Pressing `הצג` adds/focuses all layers related to that source.
+- Pressing the same `הצג` again does not duplicate existing layers.
+- Closing a layer with `x` removes it from the current workspace.
+- Pressing `הצג` again after closing recreates the missing layer.
+- Each open layer gets an automatically assigned color; the color is released when the layer is closed.
+- Layer visibility is controlled with the eye toggle.
+
+Visualization behavior:
+
+- Map-capable layers are rendered as colored point markers.
+- Clicking a map point opens a popup with location name, item count, and contributing layer labels.
+- Timeline-capable layers use the layer color on timeline dots.
+- Table tabs represent layers and show the layer color, count, visibility toggle, and close control.
+
 ## UI Deployment
 
 The VM serves the public UI at:
