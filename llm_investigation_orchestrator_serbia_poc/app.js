@@ -1457,7 +1457,7 @@ function renderEvidence() {
   overlay.style.setProperty("--raw-overlay-height", `${state.rawOverlayHeight}%`);
   const minimizeButton = document.getElementById("rawEventsMinimize");
   if (minimizeButton) {
-    minimizeButton.textContent = state.rawOverlayMinimized ? "+" : "−";
+    minimizeButton.textContent = state.rawOverlayMinimized ? "↑" : "↓";
     minimizeButton.title = state.rawOverlayMinimized ? "פתח" : "מזער";
     minimizeButton.setAttribute("aria-label", state.rawOverlayMinimized ? "פתח טבלת אירועים" : "מזער טבלת אירועים");
   }
@@ -1589,6 +1589,16 @@ document.addEventListener("click", event => {
   if (event.target.closest("#rawEventsMinimize")) {
     state.rawOverlayMinimized = !state.rawOverlayMinimized;
     renderEvidence();
+  }
+  if (event.target.closest("#rawEventsClose")) {
+    state.layers = [];
+    state.activeLayerId = null;
+    state.current = [];
+    state.aggregateLocations = [];
+    state.aggregateTimeline = [];
+    state.queryContext = null;
+    renderAllViews();
+    renderQueryInspector();
   }
   if (event.target === recordedModal) closeRecordedModal();
 });

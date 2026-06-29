@@ -105,8 +105,10 @@ h3 { margin: 0; font-size: 14px; }
 .raw-events-resize-handle::after { content: ""; display: block; width: 44px; height: 3px; margin: 3px auto 0; border-radius: 999px; background: rgba(190, 205, 228, .46); }
 .raw-events-header { min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; border-bottom: 1px solid rgba(146, 170, 205, .22); }
 .raw-events-tabs { min-width: 0; display: flex; gap: 6px; padding: 8px; overflow-x: auto; }
-.raw-events-minimize { margin-left: 8px; width: 28px; height: 28px; border: 1px solid var(--line); border-radius: 999px; background: rgba(30, 36, 48, .78); color: var(--blue); font-size: 17px; font-weight: 900; line-height: 1; cursor: pointer; }
-.raw-events-minimize:hover { border-color: var(--blue); color: #fff; }
+.raw-events-window-actions { margin-left: 8px; display: flex; gap: 6px; align-items: center; }
+.raw-events-window-btn { width: 28px; height: 28px; border: 1px solid var(--line); border-radius: 999px; background: rgba(30, 36, 48, .78); color: var(--blue); font-size: 15px; font-weight: 900; line-height: 1; cursor: pointer; }
+.raw-events-window-btn:hover { border-color: var(--blue); color: #fff; }
+#rawEventsClose:hover { border-color: var(--red); color: var(--red); }
 .raw-source-tab { display: inline-flex; align-items: center; gap: 7px; flex: 0 0 auto; padding: 6px 10px; border: 1px solid var(--line); border-radius: 999px; background: rgba(30, 36, 48, .78); color: var(--muted); font-size: 10px; font-weight: 800; cursor: pointer; }
 .raw-source-tab strong { color: var(--blue); font-size: 9px; }
 .raw-source-tab.active { border-color: var(--layer-color, var(--green)); background: rgba(129, 201, 149, .14); color: var(--ink); }
