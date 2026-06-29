@@ -207,7 +207,6 @@ const recordedList = document.getElementById("recordedList");
 const agentStatus = document.getElementById("agentStatus");
 const viewRecommendation = document.getElementById("viewRecommendation");
 const workspace = document.querySelector(".workspace");
-const stepViewSlot = document.getElementById("stepViewSlot");
 const queryLayerName = document.getElementById("queryLayerName");
 const queryToolName = document.getElementById("queryToolName");
 const queryModal = document.getElementById("queryModal");
@@ -653,8 +652,6 @@ function finalizeAssistantMessage(answer, options = {}) {
 
 function showFinalAnswerResult(result, prompt) {
   if (!result) return;
-  const banner = document.getElementById("step-view-banner");
-  if (banner) banner.remove();
   applyHermesResult(result, prompt, { keepRenderedSteps: true, restoreOnly: true });
 }
 
@@ -771,7 +768,7 @@ function queryReadoutForLayer(layer) {
 
 function renderQueryInspector() {
   const button = document.getElementById("queryToolName");
-  if (!button || button.closest("#step-view-banner")) return;
+  if (!button) return;
   const layer = activeLayer();
   if (queryLayerName) queryLayerName.textContent = LAYER_QUERY_LABELS[layer] || "שכבת אירועים גולמיים";
   const readout = queryReadoutForLayer(layer);
@@ -780,8 +777,8 @@ function renderQueryInspector() {
   button.dataset.queryDetails = readout.text || "";
 }
 
-function openQueryModal() {
-  const button = document.getElementById("queryToolName");
+function openQueryModal(trigger = null) {
+  const button = trigger || document.getElementById("queryToolName");
   if (!queryModal || !button || button.disabled) return;
 
   let queryObj = {};
@@ -830,6 +827,22 @@ function handleQueryFormSubmit() {
 
 function closeQueryModal() {
   if (queryModal) queryModal.hidden = true;
+}
+
+function stepQueryDetails(step, label) {
+  return {
+    source: "investigation_step",
+    description: label,
+    tool: step.tool || label,
+    layer: layerFromStep(step),
+    arguments: compactArguments(step.technical?.arguments),
+    event_ids: (step.event_ids || []).slice(0, 100),
+    map_locations: (step.map_locations || []).slice(0, 50),
+    aggregate_groups: (step.aggregate_groups || []).slice(0, 50),
+    result: step.result || "",
+    observed_clue: step.observed_clue || "",
+    decision: step.decision || step.rationale || ""
+  };
 }
 
 function showStepResult(step) {
@@ -906,38 +919,7 @@ function showStepResult(step) {
     activateView("map", { automatic: true, reason: "צעד עם רשומות" });
   }
 
-  const stepDetails = {
-    source: "investigation_step",
-    description: label,
-    tool: step.tool || label,
-    arguments: compactArguments(step.technical?.arguments),
-    event_ids: (step.event_ids || []).slice(0, 100),
-    map_locations: (step.map_locations || []).slice(0, 50),
-    aggregate_groups: (step.aggregate_groups || []).slice(0, 50),
-    result: step.result || "",
-    observed_clue: step.observed_clue || "",
-    decision: step.decision || step.rationale || ""
-  };
-  const bannerSourceId = sanitizeLayerKey(step.__sourceId || stepSourceId(state.lastResult || state.investigationId, step.__stepNumber));
-  const existing = document.getElementById("step-view-banner");
-  if (!existing) {
-    const banner = document.createElement("div");
-    banner.id = "step-view-banner";
-    banner.innerHTML = `<span class="step-view-description">${escapeHtml(label)}</span><button type="button" class="source-visibility-btn" data-source-id="${escapeHtml(bannerSourceId)}" title="הסתר/הצג שכבות"></button><button type="button" id="queryToolName" class="query-tool-name step-tool-details" title="פרטי הרצת הכלי">${escapeHtml(step.tool || label)}</button>`;
-    if (stepViewSlot) stepViewSlot.appendChild(banner);
-  } else {
-    existing.querySelector(".step-view-description").textContent = label;
-    existing.querySelector("#queryToolName").textContent = step.tool || label;
-    const visBtn = existing.querySelector(".source-visibility-btn");
-    if (visBtn) visBtn.dataset.sourceId = bannerSourceId;
-  }
-  const detailsButton = document.getElementById("queryToolName");
-  if (detailsButton) {
-    detailsButton.disabled = false;
-    detailsButton.dataset.queryDetails = JSON.stringify(stepDetails, null, 2);
-  }
-  const visibilityBtn = document.querySelector("#step-view-banner .source-visibility-btn");
-  if (visibilityBtn) updateSourceVisibilityBtn(visibilityBtn);
+  updateStepVisibilityButtons();
 }
 
 function updateSourceVisibilityBtn(btn) {
@@ -946,6 +928,27 @@ function updateSourceVisibilityBtn(btn) {
   const anyVisible = sourceLayers.some(layer => layer.visible);
   btn.classList.toggle("layers-hidden", !anyVisible);
   btn.title = anyVisible ? "הסתר שכבות" : "הצג שכבות";
+  btn.setAttribute("aria-label", anyVisible ? "הסתר שכבות" : "הצג שכבות");
+  btn.setAttribute("aria-pressed", anyVisible ? "true" : "false");
+  const icon = btn.querySelector(".visibility-eye-icon");
+  if (icon) icon.classList.toggle("off", !anyVisible);
+}
+
+function updateStepVisibilityButtons() {
+  document.querySelectorAll(".step-visibility-btn").forEach(updateSourceVisibilityBtn);
+}
+
+function toggleStepVisibility(step, btn) {
+  const sourceId = sanitizeLayerKey(step.__sourceId || stepSourceId(state.lastResult || state.investigationId, step.__stepNumber));
+  const sourceLayers = state.layers.filter(layer => layer.sourceId === sourceId);
+  const anyVisible = sourceLayers.some(layer => layer.visible);
+  if (!sourceLayers.length || !anyVisible) {
+    showStepResult(step);
+    return;
+  }
+  sourceLayers.forEach(layer => { layer.visible = false; });
+  updateSourceVisibilityBtn(btn);
+  renderAllViews();
 }
 
 function addActivity(tool, detail, result, options = {}) {
@@ -956,7 +959,6 @@ function addActivity(tool, detail, result, options = {}) {
   const stepNumber = options.stepNumber || state.activeActivityList.children.length + 1;
   const cleanTool = String(tool || "").replace(/^\d+\.\s*/, "");
   const bridgeSummary = options.bridgeSummary || options.rationale || "הסוכן ממשיך לצעד זה כדי לצמצם את השאלה לפי ההקשר שנאסף עד עכשיו.";
-  const technical = formatTechnical(options.technical, cleanTool);
   const baseStepData = options.stepData || {
     tool: cleanTool,
     action: detail,
@@ -970,11 +972,14 @@ function addActivity(tool, detail, result, options = {}) {
     __stepNumber: stepNumber
   };
   const hasStepData = Boolean(stepData);
+  const sourceId = sanitizeLayerKey(stepData.__sourceId);
+  const label = humanToolLabel(cleanTool);
+  const queryDetails = stepQueryDetails(stepData, label);
   item.innerHTML = `
     <div class="activity-card-header">
       <span class="activity-step-number">${stepNumber}</span>
       <div class="activity-card-title">
-        <strong>${escapeHtml(humanToolLabel(cleanTool))}</strong>
+        <strong>${escapeHtml(label)}</strong>
         <span class="activity-tool">${escapeHtml(cleanTool)}</span>
       </div>
       <div class="activity-card-actions">
@@ -995,13 +1000,23 @@ function addActivity(tool, detail, result, options = {}) {
         <p class="activity-result">${escapeHtml(result)}</p>
       </section>
     </div>
-    ${hasStepData ? `<div class="activity-step-actions"><button type="button" class="step-show-btn" title="הצג צעד">הצג</button></div>` : ""}
-    <details class="activity-technical">
-      <summary>פרטים טכניים</summary>
-      <pre>${escapeHtml(technical)}</pre>
-    </details>`;
+    ${hasStepData ? `
+      <div class="activity-step-actions">
+        <button type="button" class="step-visibility-btn source-visibility-btn layers-hidden" data-source-id="${escapeHtml(sourceId)}" title="הצג שכבות" aria-label="הצג שכבות" aria-pressed="false">
+          <span class="visibility-eye-icon off" aria-hidden="true"></span>
+        </button>
+        <button type="button" class="step-query-btn" title="הצג שאילה">הצג שאילה</button>
+      </div>` : ""}`;
   if (hasStepData) {
-    item.querySelector(".step-show-btn").addEventListener("click", () => showStepResult(stepData));
+    const visibilityBtn = item.querySelector(".step-visibility-btn");
+    visibilityBtn.addEventListener("click", event => {
+      event.stopPropagation();
+      toggleStepVisibility(stepData, visibilityBtn);
+    });
+    const queryBtn = item.querySelector(".step-query-btn");
+    queryBtn.dataset.queryDetails = JSON.stringify(queryDetails, null, 2);
+    queryBtn.addEventListener("click", () => openQueryModal(queryBtn));
+    updateSourceVisibilityBtn(visibilityBtn);
   }
   state.activeActivityList.appendChild(item);
 }
@@ -1094,8 +1109,6 @@ function applyHermesResult(result, prompt, options = {}) {
     state.lastPrompt = prompt;
     state.rawOverlayMinimized = false;
     state.rawOverlayHeight = 28;
-    const banner = document.getElementById("step-view-banner");
-    if (banner) banner.remove();
   }
 
   if (options.restoreOnly) {
@@ -1326,6 +1339,7 @@ function renderAllViews() {
   renderMap();
   renderTimeline();
   renderEvidence();
+  updateStepVisibilityButtons();
 }
 
 function activateView(view, options = {}) {
@@ -1516,7 +1530,9 @@ function renderEvidence() {
       <span class="raw-source-color"></span>
       <span class="raw-source-name">${escapeHtml(layer.label)}</span>
       <strong>${layer.items.length.toLocaleString("he-IL")}</strong>
-      <span class="raw-source-eye" data-layer-visibility="${escapeHtml(layer.id)}" title="${layer.visible ? "הסתר שכבה" : "הצג שכבה"}" aria-label="${layer.visible ? "הסתר שכבה" : "הצג שכבה"}">${layer.visible ? "◉" : "◌"}</span>
+        <span class="raw-source-eye" data-layer-visibility="${escapeHtml(layer.id)}" title="${layer.visible ? "הסתר שכבה" : "הצג שכבה"}" aria-label="${layer.visible ? "הסתר שכבה" : "הצג שכבה"}" aria-pressed="${layer.visible ? "true" : "false"}">
+          <span class="visibility-eye-icon ${layer.visible ? "" : "off"}" aria-hidden="true"></span>
+        </span>
       <span class="raw-source-close" data-layer-close="${escapeHtml(layer.id)}" title="סגור שכבה" aria-label="סגור שכבה">×</span>
     </button>`).join("");
 
@@ -1583,8 +1599,6 @@ function resetInvestigation() {
   state.activeActivityList = null;
   state.activeActivityEmpty = null;
   state.queryContext = null;
-  const banner = document.getElementById("step-view-banner");
-  if (banner) banner.remove();
   conversation.innerHTML = '<article class="message assistant-message"><div class="message-label">סוכן חקירה</div><p>אפשר להתחיל בשאלה פתוחה. אשתמש בכלי החיפוש, הזמן והמפה כדי לבנות תשובה שניתן לבדוק מול האירועים הגולמיים.</p></article>';
   if (resultTitle) resultTitle.textContent = "טרם בוצעה חקירה";
   if (resultSubtitle) resultSubtitle.textContent = "תוצאות, המחשות וראיות יופיעו כאן לאחר השאלה הראשונה.";
