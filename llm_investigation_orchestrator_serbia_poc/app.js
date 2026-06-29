@@ -1399,7 +1399,8 @@ function renderMap() {
         <em>${escapeHtml([...item.labels].join(" · "))}</em>
       </div>`;
     const popup = new maplibregl.Popup({ offset: 18, closeButton: true, closeOnClick: true }).setHTML(popupHtml);
-    state.markers.push(new maplibregl.Marker({ element, anchor: "center" }).setLngLat([location.lon, location.lat]).setPopup(popup).addTo(state.map));
+    const marker = new maplibregl.Marker({ element, anchor: "center" }).setLngLat([location.lon, location.lat]).setPopup(popup).addTo(state.map);
+    state.markers.push(marker);
     bounds.extend([location.lon, location.lat]);
   });
   if (!bounds.isEmpty()) state.map.fitBounds(bounds, { padding: 110, maxZoom: 10.2, duration: 450 });

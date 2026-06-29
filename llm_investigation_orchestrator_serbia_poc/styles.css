@@ -124,7 +124,7 @@ h3 { margin: 0; font-size: 14px; }
 .raw-events-table th, .raw-events-table td { padding: 7px 8px; }
 .raw-events-table th { background: rgba(23, 29, 40, .92); }
 .raw-events-table td:last-child { min-width: 280px; line-height: 1.45; }
-.map-marker { position: relative; width: 20px; height: 20px; border: 2px solid rgba(255,255,255,.92); border-radius: 999px; background: var(--layer-color, #4f6f91); box-shadow: 0 2px 10px rgba(0,0,0,.46), 0 0 0 5px rgba(255,255,255,.12); cursor: pointer; }
+.map-marker { position: absolute; width: 20px; height: 20px; border: 2px solid rgba(255,255,255,.92); border-radius: 999px; background: var(--layer-color, #4f6f91); box-shadow: 0 2px 10px rgba(0,0,0,.46), 0 0 0 5px rgba(255,255,255,.12); cursor: pointer; }
 .map-marker:hover { transform: scale(1.12); }
 .map-marker-dot { position: absolute; inset: 0; border-radius: inherit; background: var(--layer-color, #4f6f91); }
 .map-marker-count { position: absolute; right: 10px; top: -12px; min-width: 18px; height: 18px; padding: 0 4px; display: inline-grid; place-items: center; border: 1px solid rgba(255,255,255,.82); border-radius: 999px; background: rgba(24,29,38,.98); color: var(--ink); font-size: 9px; font-weight: 900; line-height: 1; }

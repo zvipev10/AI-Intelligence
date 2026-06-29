@@ -66,8 +66,8 @@ Active UI service:
 - Actual served path: `/opt/serbia-poc-ui`
 - This is important: an earlier deploy mistakenly copied to `/opt/serbia-poc/ui`, but the active service serves `/opt/serbia-poc-ui`.
 - Current served versions verified through the public HTTPS endpoint:
-  - `styles.css?v=39`
-  - `app.js?v=54`
+  - `styles.css?v=41`
+  - `app.js?v=59`
 
 Active MCP/Hermes service:
 
@@ -593,7 +593,7 @@ Expected: no matches in active data files.
 ## Suggested First Message To A New Assistant
 
 ```text
-Read PROJECT_HANDOFF.md first. Continue work on the Serbia/North Kosovo POC in llm_investigation_orchestrator_serbia_poc. The current branch is main. The UI is deployed from /opt/serbia-poc-ui on VM 151.145.93.180 and currently serves styles.css?v=39 and app.js?v=54. Do not touch C:\Users\user\Downloads\oracle.key. The UI now uses an additive source/data layer architecture; preserve that model when adding new filters or visualizations.
+Read PROJECT_HANDOFF.md first. Continue work on the Serbia/North Kosovo POC in llm_investigation_orchestrator_serbia_poc. The current branch is main. The UI is deployed from /opt/serbia-poc-ui on VM 151.145.93.180 and currently serves styles.css?v=41 and app.js?v=59. Do not touch C:\Users\user\Downloads\oracle.key. The UI now uses an additive source/data layer architecture; preserve that model when adding new filters or visualizations.
 ```
 
 ## File Review Order
