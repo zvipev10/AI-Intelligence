@@ -24,20 +24,16 @@ Important local workspace:
 - Active repo path used by Codex: `C:\Users\user\Documents\AI Intelligence\.codex_ai_intelligence_repo`
 - The parent folder `C:\Users\user\Documents\AI Intelligence` may contain other/older files; use `.codex_ai_intelligence_repo` for this project.
 
-Current local working tree has intentional uncommitted work:
+Current local working tree expectation:
 
-- UI changes in `llm_investigation_orchestrator_serbia_poc/index.html` (phase 2 query builder form added)
-- UI changes in `llm_investigation_orchestrator_serbia_poc/app.js` (query builder state tracking, form population, change detection; marker click handler for popup toggle)
-- UI changes in `llm_investigation_orchestrator_serbia_poc/styles.css` (query form styling)
-- Gateway fixes in `llm_investigation_orchestrator_serbia_poc/server.py`
-- MCP/source normalization updates in `llm_investigation_orchestrator_serbia_poc/mcp_server/*.py`
-- Data normalization files under `llm_investigation_orchestrator_serbia_poc/data/`
-- New normalizer: `llm_investigation_orchestrator_serbia_poc/data/normalize_sources.py`
-- New report: `llm_investigation_orchestrator_serbia_poc/data/source_normalization_report.json`
+- `main` should be clean and aligned with `origin/main`.
+- This handoff was updated from a fresh GitHub clone, not from the older local working copy.
+- Latest observed pre-handoff GitHub head: `0239051 Add query edit modal controls`.
+- Do not continue from stale local files if `git fetch origin main` shows remote commits ahead.
 
-Do not assume these changes are committed.
+**Important sync lesson (2026-06-29):** A stale local workspace and stale VM deployment briefly reintroduced old behavior: rectangular map markers and automatic final-answer presentation. GitHub already had the correct point-marker/manual-show behavior, but the VM was still serving older `styles.css?v=36` and `app.js?v=48`. Before every deploy, fetch GitHub, verify `git status --short --branch`, and deploy from the current committed `main`, not from stale uncommitted local files.
 
-**Phase 1 completion note (2026-06-29):** Map marker rendering bug fixed (added click handler for popup toggle at lines 1402-1403 in app.js; version bumps to v=41 and v=56). Markers now display on map and respond to click events.
+**Latest UI completion note (2026-06-29):** Map markers are colored points with popups; final-answer results are not presented automatically and are shown only via the final `הצג` button. Result table window controls exist: `↓` minimizes, `↑` reopens, and `×` closes/clears result layers from map/timeline/table. The query edit modal controls are in `main`. Current deployed asset versions are `styles.css?v=46` and `app.js?v=62`.
 
 ## Active POC
 
@@ -67,9 +63,10 @@ Active UI service:
 - Service: `serbia-poc-ui.service`
 - Actual served path: `/opt/serbia-poc-ui`
 - This is important: an earlier deploy mistakenly copied to `/opt/serbia-poc/ui`, but the active service serves `/opt/serbia-poc-ui`.
-- Current served versions verified through the public HTTPS endpoint (as of 2026-06-29):
-  - `styles.css?v=41` (Phase 2 query form styling)
-  - `app.js?v=59` (pending deploy: marker click handler + query builder form)
+- Current served versions verified on the VM after cloning fresh GitHub `main` (as of 2026-06-29):
+  - `styles.css?v=46`
+  - `app.js?v=62`
+- These versions include colored point markers, manual final-answer presentation via `הצג`, additive layer tabs, table resize/minimize, close/clear result-window behavior, and query edit modal controls.
 
 Active MCP/Hermes service:
 
@@ -103,11 +100,13 @@ Known fixed issue:
 
 Recommended UI deployment pattern:
 
-1. Preserve the existing API key from `/opt/serbia-poc-ui/.hermes-api.json` or Hermes config.
-2. Package `server.py`, `index.html`, `app.js`, `styles.css`, `help.html`, `README.md`, `vendor/`, and `data/`.
-3. Copy to `/opt/serbia-poc-ui`.
-4. Restart `serbia-poc-ui.service`.
-5. Verify served versions through the public HTTPS endpoint, not only disk files.
+1. Run `git fetch origin main` and confirm local `main` is aligned with `origin/main`.
+2. Preserve the existing API key from `/opt/serbia-poc-ui/.hermes-api.json` or Hermes config.
+3. Package committed files only: `server.py`, `index.html`, `app.js`, `styles.css`, `help.html`, `README.md`, `vendor/`, `data/`, `recorded_runs/`, and `mcp_server/` when needed.
+4. Copy to `/opt/serbia-poc-ui`.
+5. Restart `serbia-poc-ui.service`.
+6. Verify served versions through the public HTTPS endpoint, not only disk files.
+7. Never deploy from a stale local working tree with uncommitted old UI files.
 
 ## Recorded Demo Runs
 
@@ -156,7 +155,7 @@ Create or refresh a recording from a real local run:
 cd llm_investigation_orchestrator_serbia_poc
 $env:PYTHONPATH=(Resolve-Path ..\.tools\python).Path
 $env:PYTHONIOENCODING='utf-8'
-& "C:\Users\e054922\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe" server.py 8769
+& "C:\Users\user\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe" server.py 8769
 ```
 
 In another PowerShell window:
@@ -468,23 +467,21 @@ Do not expose evaluator labels to the orchestrator, MCP runtime, UI, or prompt. 
 
 Current behavior:
 
-- Tool-step `הצג` presents the selected step’s results.
-- Final-answer `הצג` presents/restores the final answer’s result layers.
-- Answer arrival still applies the final result presentation automatically in most paths, but a recent observed issue showed an answer could return without a new visible presentation. The final `הצג` button was added first; next design decision is how forceful/automatic final-answer presentation should be.
+- Tool-step `הצג` presents the selected step's results/layers.
+- Final-answer `הצג` presents/restores the final answer's result layers.
+- Final answer arrival does **not** automatically replace the current map/timeline/table presentation. This is intentional: the analyst decides when to present the final answer's layers.
+- `applyHermesResult(..., { restoreOnly: true })` is the path used by final `הצג` to build/show final-answer layers.
+- Normal final-answer arrival only finalizes the chat answer and keeps visualization state under user control.
 
-Open design question:
+Design decision:
 
-- When a final answer arrives, should the result panel always switch to the final answer’s layers, or should it preserve the current step/layer view until the user clicks final `הצג`?
-
-Suggested next behavior:
-
+- Preserve the current step/layer view until the user clicks final `הצג`.
 - Do not silently override an explicitly selected tool-step view.
-- If no step view is active, final answer should update result layers automatically.
-- Always provide final `הצג` as a reliable manual restore.
+- Keep final `הצג` as the reliable manual restore/presentation action.
 
-## Phase 2: Query Builder — Editable Query Form (In Progress)
+## Phase 2: Query Builder — Editable Query Form
 
-**Status:** Step 1 planned and documented. Ready for Claude Code implementation.
+**Status:** Step 1 UI foundation and query edit modal controls exist in current `main`. Future work should continue from the committed GitHub state, not from older local snapshots.
 
 **Objective:** Transform the query display from read-only JSON (`<pre>` modal) to an editable form component with smart "Run New Query" button visibility.
 
@@ -501,9 +498,9 @@ Suggested next behavior:
 5. Stub handler `handleQueryFormSubmit()` for Phase 2a.
 
 **Files affected:**
-- `app.js` (lines 737–757 query cleanup; 800+ new functions; version v=56+)
-- `index.html` (lines 91–102 modal redesign; version v=41+)
-- `styles.css` (new query-form styling at end)
+- `app.js` (query cleanup, query form state/functions, modal controls, layer presentation behavior; current deployed version `v=62`)
+- `index.html` (query modal/result controls; current deployed script version `v=62`)
+- `styles.css` (query form, layer tabs, point markers, result-window controls; current deployed version `v=46`)
 
 **Rationale:**
 - Query ≠ Results: Query payload should contain only request parameters, not response data.
@@ -511,7 +508,7 @@ Suggested next behavior:
 - Smart visibility: Run button appears only after edits, preventing accidental re-runs of unchanged queries.
 - Foundation for Phase 2: Prepares UI for spatial query type selector, temporal range picker, and filter dropdowns.
 
-**Full plan:** See `C:\Users\e054922\Claude\QUERY_BUILDER_PHASE_PLAN.md` for task-by-task execution details with line numbers.
+**Full plan:** Continue from this handoff and the committed code in `main`; do not rely on older private scratch files from another Windows user profile.
 
 **Next phase after Step 1:**
 - Phase 2a: Implement `handleQueryFormSubmit()` to call agent with edited query and create new layer.
@@ -616,8 +613,11 @@ Expected: no matches in active data files.
    - They are peer layers, not derived event filters.
    - Eye toggle hides/shows the whole location layer.
 
-3. VM deploy path confusion.
+3. VM deploy path and stale-code confusion.
    - Use `/opt/serbia-poc-ui`, not `/opt/serbia-poc/ui`.
+   - Verify public served asset versions after deploy.
+   - If the UI shows rectangles instead of colored points, the VM is serving stale CSS/JS.
+   - If final answers auto-present results, the VM/local code is stale; current `main` requires manual final `הצג`.
 
 4. Config BOM.
    - Write `.hermes-api.json` without BOM.
@@ -632,11 +632,11 @@ Expected: no matches in active data files.
 ## Suggested First Message To A New Assistant
 
 ```text
-Read PROJECT_HANDOFF.md first. Continue work on the Serbia/North Kosovo POC in llm_investigation_orchestrator_serbia_poc. The current branch is main. The UI is deployed from /opt/serbia-poc-ui on VM 151.145.93.180 and currently serves styles.css?v=41 and app.js?v=59. Do not touch C:\Users\e054922\Downloads\oracle.key. 
+Read PROJECT_HANDOFF.md first. Continue work on the Serbia/North Kosovo POC in llm_investigation_orchestrator_serbia_poc. The current branch is main and should be clean/aligned with origin/main. The UI is deployed from /opt/serbia-poc-ui on VM 151.145.93.180 and currently serves styles.css?v=46 and app.js?v=62. Do not touch C:\Users\user\Downloads\oracle.key.
 
-Current work: Phase 2 Query Builder, Step 1. Local changes include map marker click handler (Phase 1 fix) and query form redesign (Phase 2 Step 1). See C:\Users\e054922\Claude\QUERY_BUILDER_PHASE_PLAN.md for full execution plan ready for Claude Code implementation.
+Current behavior: colored map point markers with popups; final answers do not auto-present visualization layers; final `הצג` presents/restores final-answer layers manually. The result table supports layer tabs, eye toggles, per-layer close, resize, ↓/↑ minimize, and window close/clear. Query edit modal controls exist but query re-execution is still future work.
 
-The UI uses an additive source/data layer architecture; preserve that model when adding new filters or visualizations.
+The UI uses an additive source/data layer architecture; preserve that model when adding new filters or visualizations. Before deploying, fetch GitHub and verify the VM is not serving stale assets.
 ```
 
 ## File Review Order
