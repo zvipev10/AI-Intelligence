@@ -123,3 +123,102 @@ python mcp_server/benchmark_tools.py --rounds 3
 ```
 
 The benchmark covers the full tool surface against Serbia/Kosovo questions: intent classification, location/event resolution, broad search, filtered search, actor history, aggregations, linkage explanation, sequence building, entity resolution, identifier tracing, semantic tracing, related-event expansion, and hypothesis challenge.
+
+## Recorded Demo Runs
+
+Recorded runs live in:
+
+```text
+recorded_runs/
+```
+
+The UI reads them through:
+
+```text
+GET /api/recorded-questions
+GET /api/recorded-run?id=<recording-id>
+```
+
+Each file should contain `id`, `question`, `title`, `recorded_at_utc`, `elapsed_ms`, `source`, and the full live Hermes `result`. Do not hand-write shortened demo answers; record real `/api/investigate` responses so the replay includes the real final answer, investigation steps, tool outputs, IDs, layers, and usage metadata.
+
+Create a recording locally:
+
+```powershell
+$env:PYTHONPATH=(Resolve-Path ..\.tools\python).Path
+$env:PYTHONIOENCODING='utf-8'
+& "C:\Users\e054922\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe" server.py 8769
+```
+
+In another PowerShell window:
+
+```powershell
+$question = "האם ניתן לזהות דפוס של תנועת כוחות או הגברת נוכחות בזמן ובמרחב?"
+$body = @{
+  prompt = $question
+  history = @()
+  investigation_id = "recording-q2-$(Get-Date -Format yyyyMMddHHmmss)"
+} | ConvertTo-Json -Depth 20
+$started = Get-Date
+$result = Invoke-RestMethod -Method Post -Uri "http://127.0.0.1:8769/api/investigate" -ContentType "application/json; charset=utf-8" -Body $body
+$elapsed = [int]((Get-Date) - $started).TotalMilliseconds
+$recording = [ordered]@{
+  id = "q2_movement"
+  question = $question
+  title = "תנועת כוחות והגברת נוכחות"
+  recorded_at_utc = (Get-Date).ToUniversalTime().ToString("o")
+  elapsed_ms = $elapsed
+  source = "live_hermes_run_main_rerun_$(Get-Date -Format yyyyMMdd)"
+  result = $result
+}
+$recording | ConvertTo-Json -Depth 100 | Set-Content -Encoding utf8 "recorded_runs\q2_movement.json"
+```
+
+Verify locally:
+
+```powershell
+Invoke-RestMethod "http://127.0.0.1:8769/api/recorded-questions"
+Invoke-RestMethod "http://127.0.0.1:8769/api/recorded-run?id=q2_movement"
+```
+
+Deploy recordings by deploying the UI package with the full `recorded_runs/` directory to `/opt/serbia-poc-ui/recorded_runs`, then restart `serbia-poc-ui.service`. Recording-only changes do not require a Hermes or MCP restart.
+
+Verify on the VM:
+
+```bash
+curl -k -fsS https://151.145.93.180/api/recorded-questions
+curl -k -fsS "https://151.145.93.180/api/recorded-run?id=q2_movement" | head -c 500
+```
+
+## UI Deployment
+
+The VM serves the public UI at:
+
+```text
+https://151.145.93.180/
+```
+
+The active deployed UI directory is:
+
+```text
+/opt/serbia-poc-ui
+```
+
+Deployment rules:
+
+- Use the same `server.py` for local and VM deployments.
+- Local `.hermes-api.json` normally uses SSH transport through the VM.
+- VM `.hermes-api.json` uses `"transport": "direct"` against `127.0.0.1:8642`.
+- Preserve the existing VM API key from `/opt/serbia-poc-ui/.hermes-api.json`.
+- Include `server.py`, `index.html`, `app.js`, `styles.css`, `help.html`, `README.md`, `vendor/`, `data/`, and `recorded_runs/`.
+- Restart `serbia-poc-ui.service`.
+- Verify the public HTTPS endpoint, not only files on disk.
+
+Useful VM checks:
+
+```bash
+sudo systemctl is-active serbia-poc-ui.service
+sudo systemctl is-active hermes-gateway.service
+curl -k -fsS https://151.145.93.180/ | grep -E 'styles.css\?v=|app.js\?v='
+curl -fsS http://127.0.0.1:8769/api/status
+curl -fsS http://127.0.0.1:8769/api/live-steps
+```

@@ -170,6 +170,7 @@ const state = {
   stage: 0,
   aggregateLocations: [],
   aggregateTimeline: [],
+  aggregateGroups: [],
   map: null,
   mapReady: false,
   markers: [],
@@ -224,6 +225,21 @@ const LAYER_QUERY_LABELS = {
   evidence: "שכבת אירועים גולמיים"
 };
 
+const LAYER_COLORS = [
+  "#8ab4f8",
+  "#81c995",
+  "#f28b82",
+  "#fdd663",
+  "#c58af9",
+  "#78d9ec",
+  "#ff9f80",
+  "#b3d46f",
+  "#f78fb3",
+  "#a7b7ff",
+  "#c9ab76",
+  "#7fd1ae"
+];
+
 function parseCsv(text) {
   const rows = [];
   let row = [];
@@ -275,8 +291,10 @@ function collectAggregateLocations(result) {
     });
   });
   let locations = [...byLocation.values()].sort((a, b) => b.count - a.count);
-  const idsInAnswer = new Set((result.answer || "").match(/\bL-\d{3}\b/g) || []);
-  if (idsInAnswer.size) locations = locations.filter(item => idsInAnswer.has(item.location_id));
+  const idsInAnswer = new Set((result.answer || "").match(/\bLOC-\d{3}\b/g) || []);
+  if (idsInAnswer.size) {
+    locations = locations.filter(item => idsInAnswer.has(item.location_id) || !String(item.location_id || "").match(/^LOC-\d{3}$/));
+  }
   return locations;
 }
 
@@ -331,6 +349,27 @@ function collectAggregateTimeline(result) {
     .sort((a, b) => a.sortKey > b.sortKey ? 1 : a.sortKey < b.sortKey ? -1 : 0);
 }
 
+function collectGenericAggregateGroups(result) {
+  const items = [];
+  (result.investigation_steps || []).forEach(step => {
+    const groupBy = step.technical?.arguments?.group_by || step.aggregate_groups?.[0]?.group_by;
+    if (!step.aggregate_groups?.length || ["date", "hour", "location", "municipality"].includes(groupBy)) return;
+    step.aggregate_groups.forEach(group => {
+      items.push({
+        group_by: group.group_by || groupBy,
+        key: group.key,
+        label: group.label || group.key,
+        count: Number(group.count || 0),
+        first_event_id: group.first_event_id,
+        first_event_time: group.first_event_time,
+        last_event_id: group.last_event_id,
+        last_event_time: group.last_event_time
+      });
+    });
+  });
+  return items.sort((a, b) => b.count - a.count);
+}
+
 function layerId(kind, label) {
   return `${kind}:${String(label || "unknown").replace(/\s+/g, "-")}`;
 }
@@ -345,7 +384,7 @@ function buildEventLayers(events) {
   return [...grouped.entries()]
     .sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0], "he"))
     .map(([label, items]) => ({
-      id: layerId("events", label),
+      dataId: layerId("events", label),
       label,
       kind: "events",
       visible: true,
@@ -356,8 +395,13 @@ function buildEventLayers(events) {
 
 function buildLocationLayer(locations) {
   if (!locations.length) return null;
+  const layerKey = locations
+    .map(item => item.location_id || item.location_name || item.label || item.key)
+    .filter(Boolean)
+    .slice(0, 8)
+    .join("-");
   return {
-    id: "locations:summary",
+    dataId: layerId("locations", layerKey || "summary"),
     label: "ריכוזי מיקומים",
     kind: "locations",
     visible: true,
@@ -369,7 +413,7 @@ function buildLocationLayer(locations) {
 function buildTimeAggregationLayer(items) {
   if (!items.length) return null;
   return {
-    id: "aggregations:time",
+    dataId: "aggregations:time",
     label: items[0]?.group_by === "hour" ? "סיכום לפי שעה" : "סיכום לפי תאריך",
     kind: "time_aggregation",
     visible: true,
@@ -378,21 +422,110 @@ function buildTimeAggregationLayer(items) {
   };
 }
 
-function setResultLayers({ events = [], locations = [], timeline = [] } = {}) {
-  const previousVisibility = new Map(state.layers.map(layer => [layer.id, layer.visible]));
-  const nextLayers = [
+function buildGroupAggregationLayer(items) {
+  if (!items.length) return null;
+  const groupBy = items[0]?.group_by || "group";
+  return {
+    dataId: layerId("aggregations", groupBy),
+    label: `סיכום לפי ${groupBy}`,
+    kind: "group_aggregation",
+    visible: true,
+    items,
+    capabilities: { table: true, map: false, timeline: false }
+  };
+}
+
+function buildResultLayers({ events = [], locations = [], timeline = [], groups = [] } = {}) {
+  return [
     ...buildEventLayers(events),
     buildLocationLayer(locations),
-    buildTimeAggregationLayer(timeline)
-  ].filter(Boolean).map(layer => ({
-    ...layer,
-    visible: previousVisibility.has(layer.id) ? previousVisibility.get(layer.id) : layer.visible
-  }));
-  state.layers = nextLayers;
+    buildTimeAggregationLayer(timeline),
+    buildGroupAggregationLayer(groups)
+  ].filter(Boolean);
+}
+
+function sanitizeLayerKey(value) {
+  return String(value || "unknown").replace(/[^\p{L}\p{N}_:-]+/gu, "-");
+}
+
+function usedLayerColors() {
+  return new Set(state.layers.map(layer => layer.color).filter(Boolean));
+}
+
+function nextLayerColor() {
+  const used = usedLayerColors();
+  return LAYER_COLORS.find(color => !used.has(color)) || LAYER_COLORS[state.layers.length % LAYER_COLORS.length];
+}
+
+function ensureActiveLayer() {
   const activeStillExists = state.layers.some(layer => layer.id === state.activeLayerId);
   if (!activeStillExists) {
-    state.activeLayerId = state.layers.find(layer => layer.capabilities.table)?.id || null;
+    state.activeLayerId = state.layers.find(layer => layer.capabilities.table && layer.visible)?.id
+      || state.layers.find(layer => layer.capabilities.table)?.id
+      || null;
   }
+  if (!state.layers.some(layer => layer.id === state.activeLayerId && layer.visible && layer.capabilities.table)) {
+    state.activeLayerId = state.layers.find(layer => layer.capabilities.table && layer.visible)?.id
+      || state.layers.find(layer => layer.capabilities.table)?.id
+      || null;
+  }
+}
+
+function addResultLayers({ sourceId, sourceLabel, preferredView = "map", layers = [] }) {
+  const cleanSourceId = sanitizeLayerKey(sourceId);
+  const existingSourceLayers = state.layers.filter(layer => layer.sourceId === cleanSourceId);
+  const added = [];
+
+  if (existingSourceLayers.length) {
+    existingSourceLayers.forEach(layer => { layer.visible = true; });
+  }
+
+  layers.forEach(layer => {
+    const dataId = layer.dataId || layer.id || layerId(layer.kind, layer.label);
+    const id = `${cleanSourceId}::${sanitizeLayerKey(dataId)}`;
+    const existing = state.layers.find(item => item.id === id);
+    if (existing) {
+      existing.visible = true;
+      added.push(existing);
+      return;
+    }
+    const next = {
+      ...layer,
+      id,
+      dataId,
+      sourceId: cleanSourceId,
+      sourceLabel,
+      preferredView,
+      color: nextLayerColor(),
+      visible: true
+    };
+    state.layers.push(next);
+    added.push(next);
+  });
+
+  const preferredLayer = added.find(layer => layer.capabilities.table)
+    || existingSourceLayers.find(layer => layer.capabilities.table)
+    || state.layers.find(layer => layer.capabilities.table);
+  if (preferredLayer) state.activeLayerId = preferredLayer.id;
+  ensureActiveLayer();
+  return added;
+}
+
+function resultSourceBase(result = {}) {
+  return sanitizeLayerKey(result.run_id || result.recorded_id || result.source_run_id || state.investigationId || "current");
+}
+
+function finalSourceId(result = {}) {
+  return `msg:${resultSourceBase(result)}:final`;
+}
+
+function stepSourceId(resultOrBase = {}, stepNumber = 0) {
+  const base = typeof resultOrBase === "string" ? sanitizeLayerKey(resultOrBase) : resultSourceBase(resultOrBase);
+  return `msg:${base}:step:${stepNumber || "unknown"}`;
+}
+
+function layerColorStyle(layer) {
+  return `--layer-color:${escapeHtml(layer?.color || "#8ab4f8")}`;
 }
 
 function visibleLayers(capability = null) {
@@ -504,7 +637,12 @@ function finalizeAssistantMessage(answer, options = {}) {
     actions.querySelector(".final-answer-show-btn").addEventListener("click", () => {
       showFinalAnswerResult(options.result, options.prompt || "");
     });
-    article.appendChild(actions);
+    const evidenceToggle = answerBody.querySelector(".evidence-ids-toggle");
+    if (evidenceToggle) {
+      answerBody.insertBefore(actions, evidenceToggle);
+    } else {
+      answerBody.appendChild(actions);
+    }
   }
   state.activeAssistantMessage = null;
   state.activeActivityList = null;
@@ -554,7 +692,8 @@ function compactArguments(argumentsPayload) {
 function layerFromStep(step, fallback = "evidence") {
   const groupBy = step?.technical?.arguments?.group_by;
   if (step?.map_locations?.length || ["location", "municipality"].includes(groupBy)) return "map";
-  if (step?.aggregate_groups?.length || ["date", "hour"].includes(groupBy)) return "timeline";
+  const aggregateGroupBy = step?.aggregate_groups?.[0]?.group_by || groupBy;
+  if ((step?.aggregate_groups?.length && ["date", "hour"].includes(aggregateGroupBy)) || ["date", "hour"].includes(groupBy)) return "timeline";
   if (step?.event_ids?.length) return "evidence";
   return fallback;
 }
@@ -678,30 +817,47 @@ function showStepResult(step) {
   }
 
   if (aggregateGroups.length) {
-    state.aggregateTimeline = aggregateGroups.map(group => ({
-      group_by: step.technical?.arguments?.group_by || "date",
+    const stepGroupBy = step.technical?.arguments?.group_by;
+    const timelineGroups = aggregateGroups.filter(group => ["date", "hour"].includes(group.group_by || stepGroupBy));
+    const genericGroups = aggregateGroups.filter(group => !["date", "hour", "location", "municipality"].includes(group.group_by || stepGroupBy));
+    state.aggregateTimeline = timelineGroups.map(group => ({
+      group_by: group.group_by || stepGroupBy || "date",
       label: group.label || group.key,
       timeLabel: group.label || group.key,
       count: Number(group.count || 0),
       sortKey: group.key || group.label,
       summary: `${Number(group.count || 0).toLocaleString("he-IL")} אירועים`
     }));
+    state.aggregateGroups = genericGroups;
   } else {
     state.aggregateTimeline = [];
+    state.aggregateGroups = [];
   }
 
-  const hasData = state.current.length || state.aggregateLocations.length || state.aggregateTimeline.length;
-  state.activeLayerId = null;
-  state.layers = [];
-  setResultLayers({
+  const hasData = state.current.length || state.aggregateLocations.length || state.aggregateTimeline.length || state.aggregateGroups.length;
+  const candidateLayers = buildResultLayers({
     events: state.current,
     locations: state.aggregateLocations,
-    timeline: state.aggregateTimeline
+    timeline: state.aggregateTimeline,
+    groups: state.aggregateGroups
   });
+  const addedLayers = addResultLayers({
+    sourceId: step.__sourceId || stepSourceId(state.lastResult || state.investigationId, step.__stepNumber),
+    sourceLabel: step.__sourceLabel || `צעד ${step.__stepNumber || ""}: ${label}`.trim(),
+    preferredView: layerFromStep(step),
+    layers: candidateLayers
+  });
+  const preferredStepLayer =
+    addedLayers.find(layer => state.aggregateLocations.length && layer.kind === "locations")
+    || addedLayers.find(layer => state.aggregateTimeline.length && layer.kind === "time_aggregation")
+    || addedLayers.find(layer => state.aggregateGroups.length && layer.kind === "group_aggregation")
+    || addedLayers.find(layer => state.current.length && layer.kind === "events")
+    || addedLayers.find(layer => layer.capabilities.table);
+  if (preferredStepLayer) state.activeLayerId = preferredStepLayer.id;
   showResult(
     `צעד: ${label}`,
     hasData
-      ? `מציג ${state.current.length ? state.current.length + " רשומות" : ""}${state.aggregateLocations.length ? " מיקומים" : ""}${state.aggregateTimeline.length ? " ציר זמן" : ""} מהצעד הזה.`
+      ? `נוספו או הוצגו ${addedLayers.length.toLocaleString("he-IL")} שכבות מהצעד הזה.`
       : "הצעד הזה לא החזיר נתונים שניתן להציג בתצוגה."
   );
 
@@ -751,11 +907,17 @@ function addActivity(tool, detail, result, options = {}) {
   const cleanTool = String(tool || "").replace(/^\d+\.\s*/, "");
   const bridgeSummary = options.bridgeSummary || options.rationale || "הסוכן ממשיך לצעד זה כדי לצמצם את השאלה לפי ההקשר שנאסף עד עכשיו.";
   const technical = formatTechnical(options.technical, cleanTool);
-  const stepData = options.stepData || {
+  const baseStepData = options.stepData || {
     tool: cleanTool,
     action: detail,
     result,
     technical: options.technical || { tool: cleanTool, arguments: {} }
+  };
+  const stepData = {
+    ...baseStepData,
+    __sourceId: options.sourceId || baseStepData.__sourceId || stepSourceId(state.lastResult || state.investigationId, stepNumber),
+    __sourceLabel: options.sourceLabel || baseStepData.__sourceLabel || `צעד ${stepNumber}: ${humanToolLabel(cleanTool)}`,
+    __stepNumber: stepNumber
   };
   const hasStepData = Boolean(stepData);
   item.innerHTML = `
@@ -766,7 +928,6 @@ function addActivity(tool, detail, result, options = {}) {
         <span class="activity-tool">${escapeHtml(cleanTool)}</span>
       </div>
       <div class="activity-card-actions">
-        ${hasStepData ? `<button type="button" class="step-show-btn" title="הצג צעד">הצג</button>` : ""}
         <span class="activity-status ${options.isError ? "error" : "success"}">${options.isError ? "נכשל" : "הושלם"}</span>
       </div>
     </div>
@@ -784,6 +945,7 @@ function addActivity(tool, detail, result, options = {}) {
         <p class="activity-result">${escapeHtml(result)}</p>
       </section>
     </div>
+    ${hasStepData ? `<div class="activity-step-actions"><button type="button" class="step-show-btn" title="הצג צעד">הצג</button></div>` : ""}
     <details class="activity-technical">
       <summary>פרטים טכניים</summary>
       <pre>${escapeHtml(technical)}</pre>
@@ -851,18 +1013,21 @@ function inferRecommendedView(prompt, answer) {
   return { view, reason: reasons[view] };
 }
 
-function renderActivitySteps(steps) {
+function renderActivitySteps(steps, sourceBase = null) {
   ensureAssistantResearchMessage();
   state.activeActivityList.innerHTML = "";
   (steps || []).forEach((step, index) => {
     const explanation = step.model_explanation || {};
+    const number = index + 1;
     addActivity(step.tool, step.action, step.result, {
-      stepNumber: index + 1,
+      stepNumber: number,
       bridgeSummary: explanation.bridge_summary || step.bridge_summary,
       rationale: explanation.decision || step.rationale || step.decision,
       technical: step.technical,
       isError: step.technical?.is_error,
-      stepData: step
+      stepData: step,
+      sourceId: stepSourceId(sourceBase || state.lastResult || state.investigationId, number),
+      sourceLabel: `צעד ${number}: ${humanToolLabel(step.tool)}`
     });
   });
 }
@@ -877,39 +1042,44 @@ function applyHermesResult(result, prompt, options = {}) {
   if (!options.restoreOnly) {
     state.lastResult = result;
     state.lastPrompt = prompt;
-    state.activeLayerId = null;
-    state.layers = [];
     state.rawOverlayMinimized = false;
     state.rawOverlayHeight = 28;
     const banner = document.getElementById("step-view-banner");
     if (banner) banner.remove();
   }
-  state.queryContext = buildFinalQueryContext(result, prompt);
-  const idsFromAnswer = (result.answer || "").match(EVENT_ID_PATTERN) || [];
-  const evidence = new Set([...(result.event_ids || []), ...idsFromAnswer]);
-  state.current = state.events.filter(event => evidence.has(event.event_id));
-  state.aggregateLocations = collectAggregateLocations(result);
-  state.aggregateTimeline = collectAggregateTimeline(result);
-  setResultLayers({
-    events: state.current,
-    locations: state.aggregateLocations,
-    timeline: state.aggregateTimeline
-  });
 
   if (options.restoreOnly) {
+    state.queryContext = buildFinalQueryContext(result, prompt);
+    const idsFromAnswer = (result.answer || "").match(EVENT_ID_PATTERN) || [];
+    const evidence = new Set([...(result.event_ids || []), ...idsFromAnswer]);
+    state.current = state.events.filter(event => evidence.has(event.event_id));
+    state.aggregateLocations = collectAggregateLocations(result);
+    state.aggregateTimeline = collectAggregateTimeline(result);
+    state.aggregateGroups = collectGenericAggregateGroups(result);
+    const addedLayers = addResultLayers({
+      sourceId: finalSourceId(result),
+      sourceLabel: "תשובת הסוכן",
+      preferredView: result.recommended_view || inferRecommendedView(prompt, result.answer).view,
+      layers: buildResultLayers({
+      events: state.current,
+      locations: state.aggregateLocations,
+      timeline: state.aggregateTimeline,
+      groups: state.aggregateGroups
+      })
+    });
     // Just restore visualization state, don't touch the chat DOM
     showResult(
       "ממצאי חקירת הסוכן",
-      state.current.length
-        ? "הראיות שהסוכן ציטט מוצגות במפה, בציר הזמן ובטבלה."
-        : (state.aggregateLocations.length || state.aggregateTimeline.length ? "התוצאה האגרגטיבית מוצגת לפי מיקומים, זמן או טבלה." : "הסוכן השיב, אך לא נמצאו בתשובה מזהי אירועים שניתן לקשר לתצוגה.")
+      addedLayers.length
+        ? `נוספו או הוצגו ${addedLayers.length.toLocaleString("he-IL")} שכבות מתוך תשובת הסוכן.`
+        : "הסוכן השיב, אך לא נמצאו בתשובה נתונים שניתן לקשר לתצוגה."
     );
     const inferred = inferRecommendedView(prompt, result.answer);
     activateView(result.recommended_view || inferred.view, { automatic: true, reason: result.view_reason || inferred.reason });
     renderQueryInspector();
     return;
   }
-  if (!options.keepRenderedSteps) renderActivitySteps(result.investigation_steps || []);
+  if (!options.keepRenderedSteps) renderActivitySteps(result.investigation_steps || [], result);
   if (!options.keepRenderedSteps && !(result.investigation_steps || []).length) {
     const started = (result.events || []).filter(event => event.event === "tool.started");
     started.forEach((event, index) => {
@@ -920,7 +1090,9 @@ function applyHermesResult(result, prompt, options = {}) {
         observedClue: "Hermes דיווח שהסוכן בחר להפעיל כלי, אך לא החזיר רמז מפורט לשלב הזה.",
         rationale: "הסוכן בחר בכלי הזה כדי להמשיך לצמצם את אי-הוודאות בחקירה.",
         expectedValue: "לקבל ראיות נוספות או לאמת מועמד שכבר עלה.",
-        technical: { tool, preview: event.preview || null }
+        technical: { tool, preview: event.preview || null },
+        sourceId: stepSourceId(result, index + 1),
+        sourceLabel: `צעד ${index + 1}: ${humanToolLabel(tool)}`
       });
     });
   }
@@ -929,17 +1101,6 @@ function applyHermesResult(result, prompt, options = {}) {
   }
 
   finalizeAssistantMessage(result.answer, { result, prompt });
-  showResult(
-    "ממצאי חקירת הסוכן",
-    state.current.length
-      ? "הראיות שהסוכן ציטט מוצגות במפה, בציר הזמן ובטבלה."
-      : (state.aggregateLocations.length || state.aggregateTimeline.length ? "התוצאה האגרגטיבית מוצגת לפי מיקומים, זמן או טבלה." : "הסוכן השיב, אך לא נמצאו בתשובה מזהי אירועים שניתן לקשר לתצוגה.")
-  );
-  const inferred = inferRecommendedView(prompt, result.answer);
-  activateView(result.recommended_view || inferred.view, {
-    automatic: true,
-    reason: result.view_reason || inferred.reason
-  });
   renderQueryInspector();
   setSuggestions(["אילו הסברים תמימים יכולים להתאים לאותן ראיות?", "מה חסר כדי להעלות את רמת הביטחון?", "הצג את רצף האירועים לפי סדר הזמן"]);
 }
@@ -956,7 +1117,9 @@ async function replayRecordedResult(result, prompt) {
       rationale: step.rationale || step.decision,
       technical: step.technical,
       isError: step.technical?.is_error,
-      stepData: step
+      stepData: step,
+      sourceId: stepSourceId(result, index + 1),
+      sourceLabel: `צעד ${index + 1}: ${humanToolLabel(step.tool)}`
     });
     await sleep(delay);
   }
@@ -1120,7 +1283,12 @@ function activateView(view, options = {}) {
   const safeView = VIEW_LABELS[requestedView] ? requestedView : "map";
   document.querySelectorAll(".view-tab").forEach(button => button.classList.toggle("active", button.dataset.view === safeView));
   document.querySelectorAll(".view-pane").forEach(pane => pane.classList.toggle("active", pane.id === `${safeView}View`));
-  if (safeView === "map" && state.map) setTimeout(() => state.map.resize(), 0);
+  if (safeView === "map" && state.map) {
+    setTimeout(() => {
+      state.map.resize();
+      renderMap();
+    }, 0);
+  }
   if (options.automatic) {
     viewRecommendation.hidden = false;
     viewRecommendation.textContent = `הסוכן בחר להציג: ${VIEW_LABELS[safeView]} · ${options.reason}`;
@@ -1190,11 +1358,12 @@ function renderMap() {
   if (!state.mapReady) return;
   clearMarkers();
   const byLocation = new Map();
-  const addLocationCount = (locationId, count, label, aggregateLocation = null) => {
+  const addLocationCount = (locationId, count, label, aggregateLocation = null, color = null) => {
     if (!locationId) return;
-    const existing = byLocation.get(locationId) || { location_id: locationId, count: 0, labels: new Set(), aggregateLocation };
+    const existing = byLocation.get(locationId) || { location_id: locationId, count: 0, labels: new Set(), colors: new Set(), aggregateLocation };
     existing.count += Number(count || 0);
     existing.labels.add(label);
+    if (color) existing.colors.add(color);
     if (aggregateLocation) existing.aggregateLocation = aggregateLocation;
     byLocation.set(locationId, existing);
   };
@@ -1202,9 +1371,9 @@ function renderMap() {
     if (layer.kind === "events") {
       const counts = {};
       layer.items.forEach(event => { counts[event.location_id] = (counts[event.location_id] || 0) + 1; });
-      Object.entries(counts).forEach(([locationId, count]) => addLocationCount(locationId, count, layer.label));
+      Object.entries(counts).forEach(([locationId, count]) => addLocationCount(locationId, count, layer.label, null, layer.color));
     } else if (layer.kind === "locations") {
-      layer.items.forEach(item => addLocationCount(item.location_id, item.count || 1, layer.label, item));
+      layer.items.forEach(item => addLocationCount(item.location_id, item.count || 1, layer.label, item, layer.color));
     }
   });
   const bounds = new maplibregl.LngLatBounds();
@@ -1219,8 +1388,18 @@ function renderMap() {
     if (!location) return;
     const element = document.createElement("div");
     element.className = `map-marker`;
-    element.innerHTML = `<strong>${item.count.toLocaleString("he-IL")} פריטים</strong><span>${escapeHtml(location.name)}</span><em>${escapeHtml([...item.labels].join(" · "))}</em>`;
-    state.markers.push(new maplibregl.Marker({ element, anchor: "center", offset: [0, -30] }).setLngLat([location.lon, location.lat]).addTo(state.map));
+    element.style.setProperty("--layer-color", [...item.colors][0] || "#8ab4f8");
+    element.setAttribute("role", "button");
+    element.setAttribute("aria-label", `${location.name}: ${item.count.toLocaleString("he-IL")} פריטים`);
+    element.innerHTML = `<span class="map-marker-dot"></span>${item.count > 1 ? `<span class="map-marker-count">${item.count.toLocaleString("he-IL")}</span>` : ""}`;
+    const popupHtml = `
+      <div class="map-popup" dir="rtl">
+        <strong>${escapeHtml(location.name)}</strong>
+        <span>${item.count.toLocaleString("he-IL")} פריטים</span>
+        <em>${escapeHtml([...item.labels].join(" · "))}</em>
+      </div>`;
+    const popup = new maplibregl.Popup({ offset: 18, closeButton: true, closeOnClick: true }).setHTML(popupHtml);
+    state.markers.push(new maplibregl.Marker({ element, anchor: "center" }).setLngLat([location.lon, location.lat]).setPopup(popup).addTo(state.map));
     bounds.extend([location.lon, location.lat]);
   });
   if (!bounds.isEmpty()) state.map.fitBounds(bounds, { padding: 110, maxZoom: 10.2, duration: 450 });
@@ -1237,14 +1416,14 @@ function renderTimeline() {
   if (!eventTimelineItems.length && !aggregateTimelineItems.length) { timeline.className = "timeline empty-state"; timeline.textContent = "לא נבחרו שכבות עם ציר זמן להצגה."; return; }
   timeline.className = "timeline";
   const aggregationHtml = aggregateTimelineItems.map(({ layer, item }) => `
-    <article class="timeline-item">
+    <article class="timeline-item" style="${layerColorStyle(layer)}">
       <span class="timeline-dot"></span>
       <div class="timeline-time">${escapeHtml(item.timeLabel)}</div>
       <div class="timeline-title">${escapeHtml(layer.label)} · ${item.count.toLocaleString("he-IL")} אירועים</div>
       <div class="timeline-summary">${escapeHtml(item.summary)}</div>
     </article>`).join("");
   const eventHtml = eventTimelineItems.sort((a, b) => a.sort - b.sort).map(({ layer, event }) => `
-    <article class="timeline-item">
+    <article class="timeline-item" style="${layerColorStyle(layer)}">
       <span class="timeline-dot"></span>
       <div class="timeline-time">${escapeHtml(event.timestamp_utc.replace("T", " ").replace("Z", ""))}</div>
       <div class="timeline-title">${escapeHtml(layer.label)} · ${escapeHtml(event.location_name)}</div>
@@ -1282,10 +1461,12 @@ function renderEvidence() {
     minimizeButton.setAttribute("aria-label", state.rawOverlayMinimized ? "פתח טבלת אירועים" : "מזער טבלת אירועים");
   }
   tabs.innerHTML = tableLayers.map(layer => `
-    <button type="button" class="raw-source-tab ${layer.id === activeLayer?.id ? "active" : ""} ${layer.visible ? "" : "hidden-source"}" data-layer-id="${escapeHtml(layer.id)}" role="tab" aria-selected="${layer.id === activeLayer?.id}">
+    <button type="button" class="raw-source-tab ${layer.id === activeLayer?.id ? "active" : ""} ${layer.visible ? "" : "hidden-source"}" style="${layerColorStyle(layer)}" data-layer-id="${escapeHtml(layer.id)}" role="tab" aria-selected="${layer.id === activeLayer?.id}" title="${escapeHtml(layer.sourceLabel || layer.label)}">
+      <span class="raw-source-color"></span>
       <span class="raw-source-name">${escapeHtml(layer.label)}</span>
       <strong>${layer.items.length.toLocaleString("he-IL")}</strong>
       <span class="raw-source-eye" data-layer-visibility="${escapeHtml(layer.id)}" title="${layer.visible ? "הסתר שכבה" : "הצג שכבה"}" aria-label="${layer.visible ? "הסתר שכבה" : "הצג שכבה"}">${layer.visible ? "◉" : "◌"}</span>
+      <span class="raw-source-close" data-layer-close="${escapeHtml(layer.id)}" title="סגור שכבה" aria-label="סגור שכבה">×</span>
     </button>`).join("");
 
   if (!activeLayer) return;
@@ -1311,6 +1492,18 @@ function renderEvidence() {
       </tr>`).join("") : '<tr><td colspan="4" class="empty-cell">השכבה מוסתרת או ריקה.</td></tr>';
     return;
   }
+  if (activeLayer.kind === "group_aggregation") {
+    head.innerHTML = "<tr><th>קבוצה</th><th>כמות</th><th>סוג קיבוץ</th><th>אירוע ראשון</th><th>אירוע אחרון</th></tr>";
+    body.innerHTML = activeLayer.visible && activeLayer.items.length ? activeLayer.items.map(item => `
+      <tr>
+        <td>${escapeHtml(item.label || item.key || "-")}</td>
+        <td>${Number(item.count || 0).toLocaleString("he-IL")}</td>
+        <td>${escapeHtml(item.group_by || "-")}</td>
+        <td dir="ltr">${escapeHtml(item.first_event_id || item.first_event_time || "-")}</td>
+        <td dir="ltr">${escapeHtml(item.last_event_id || item.last_event_time || "-")}</td>
+      </tr>`).join("") : '<tr><td colspan="5" class="empty-cell">השכבה מוסתרת או ריקה.</td></tr>';
+    return;
+  }
   head.innerHTML = "<tr><th>זמן</th><th>אמינות</th><th>ודאות</th><th>גורם</th><th>מיקום</th><th>תקציר</th></tr>";
   body.innerHTML = activeLayer.visible && activeLayer.items.length ? activeLayer.items.map(event => `
     <tr>
@@ -1328,6 +1521,7 @@ function resetInvestigation() {
   state.stage = 0;
   state.aggregateLocations = [];
   state.aggregateTimeline = [];
+  state.aggregateGroups = [];
   state.layers = [];
   state.activeLayerId = null;
   state.rawOverlayMinimized = false;
@@ -1370,6 +1564,19 @@ document.addEventListener("click", event => {
     event.stopPropagation();
     const layer = state.layers.find(item => item.id === visibilityToggle.dataset.layerVisibility);
     if (layer) layer.visible = !layer.visible;
+    renderAllViews();
+    return;
+  }
+  const closeLayer = event.target.closest("[data-layer-close]");
+  if (closeLayer) {
+    event.stopPropagation();
+    const layerIdToClose = closeLayer.dataset.layerClose;
+    state.layers = state.layers.filter(item => item.id !== layerIdToClose);
+    if (state.activeLayerId === layerIdToClose) {
+      state.activeLayerId = state.layers.find(layer => layer.capabilities.table && layer.visible)?.id
+        || state.layers.find(layer => layer.capabilities.table)?.id
+        || null;
+    }
     renderAllViews();
     return;
   }

@@ -30,3 +30,4 @@ invoices.db-wal
 *.tgz
 *.zip
 deploy_serbia_ui_*/
+backups/

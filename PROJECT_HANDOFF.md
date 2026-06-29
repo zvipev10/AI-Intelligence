@@ -1,6 +1,6 @@
 # AI Intelligence Project Handoff
 
-Last updated: 2026-06-27
+Last updated: 2026-06-28
 
 This is the primary handoff for continuing the AI Intelligence project in another assistant/chat. It reflects the current `main` branch workspace and the latest VM deployment state after the data normalization, source-layer UI refactor, and result-layer architecture work.
 
@@ -106,6 +106,105 @@ Recommended UI deployment pattern:
 3. Copy to `/opt/serbia-poc-ui`.
 4. Restart `serbia-poc-ui.service`.
 5. Verify served versions through the public HTTPS endpoint, not only disk files.
+
+## Recorded Demo Runs
+
+Recorded demo runs are served by the UI backend from:
+
+```text
+llm_investigation_orchestrator_serbia_poc/recorded_runs/
+```
+
+Each recording is a JSON file with this shape:
+
+```json
+{
+  "id": "q2_movement",
+  "question": "analyst question shown in the replay modal",
+  "title": "short title shown in the replay modal",
+  "recorded_at_utc": "2026-06-28T12:56:18Z",
+  "elapsed_ms": 171554,
+  "source": "live_hermes_run_main_rerun_YYYYMMDD",
+  "result": {
+    "run_id": "run_...",
+    "answer": "...",
+    "event_ids": [],
+    "answer_event_ids": [],
+    "recommended_view": "map",
+    "view_reason": "...",
+    "investigation_steps": [],
+    "events": [],
+    "usage": {}
+  }
+}
+```
+
+The UI exposes recordings through:
+
+```text
+GET /api/recorded-questions
+GET /api/recorded-run?id=<recording-id>
+```
+
+The browser replays the saved `investigation_steps` at `replay_delay_ms` from `/api/recorded-questions` currently 2000 ms per step, then renders the saved final answer and result layers. Follow-up questions after a recording are sent as real live questions; the replayed user/assistant messages are added to chat history before the next live request.
+
+Create or refresh a recording from a real local run:
+
+```powershell
+cd llm_investigation_orchestrator_serbia_poc
+$env:PYTHONPATH=(Resolve-Path ..\.tools\python).Path
+$env:PYTHONIOENCODING='utf-8'
+& "C:\Users\e054922\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe" server.py 8769
+```
+
+In another PowerShell window:
+
+```powershell
+$question = "האם ניתן לזהות דפוס של תנועת כוחות או הגברת נוכחות בזמן ובמרחב?"
+$body = @{
+  prompt = $question
+  history = @()
+  investigation_id = "recording-q2-$(Get-Date -Format yyyyMMddHHmmss)"
+} | ConvertTo-Json -Depth 20
+$started = Get-Date
+$result = Invoke-RestMethod -Method Post -Uri "http://127.0.0.1:8769/api/investigate" -ContentType "application/json; charset=utf-8" -Body $body
+$elapsed = [int]((Get-Date) - $started).TotalMilliseconds
+$recording = [ordered]@{
+  id = "q2_movement"
+  question = $question
+  title = "תנועת כוחות והגברת נוכחות"
+  recorded_at_utc = (Get-Date).ToUniversalTime().ToString("o")
+  elapsed_ms = $elapsed
+  source = "live_hermes_run_main_rerun_$(Get-Date -Format yyyyMMdd)"
+  result = $result
+}
+$recording | ConvertTo-Json -Depth 100 | Set-Content -Encoding utf8 "recorded_runs\q2_movement.json"
+```
+
+After saving a recording, verify it locally:
+
+```powershell
+Invoke-RestMethod "http://127.0.0.1:8769/api/recorded-questions"
+Invoke-RestMethod "http://127.0.0.1:8769/api/recorded-run?id=q2_movement"
+```
+
+Then open `http://127.0.0.1:8769/`, press the `+` recorded-questions button, and replay the refreshed question. Check that:
+
+- The question appears in the modal.
+- Steps replay at roughly two seconds per step.
+- Final answer, event IDs, map/timeline/table layers, and per-step `הצג` all work.
+- The saved result does not contain failed/partial runs.
+
+Deploy recordings with the UI. Include the whole `recorded_runs/` directory in the package copied to `/opt/serbia-poc-ui/recorded_runs`. No Hermes/MCP restart is required for recording-only changes; restart `serbia-poc-ui.service` because recordings are served by the UI backend.
+
+Recommended VM recording verification:
+
+```bash
+curl -k -fsS https://151.145.93.180/api/recorded-questions
+curl -k -fsS "https://151.145.93.180/api/recorded-run?id=q2_movement" | head -c 500
+```
+
+Do not generate demo recordings from synthetic fallback data or manually shortened answers. The recording must come from a real `/api/investigate` Hermes run so it preserves the actual answer, step explanations, tool outputs, result layers, and usage/performance metadata.
 
 ## Current UI Architecture
 

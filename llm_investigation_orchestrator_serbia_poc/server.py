@@ -637,6 +637,105 @@ class HermesClient:
                 expected = "לקבל פלט שיאשר, ישלול או ימקד את כיוון החקירה."
             return observed, decision, expected
 
+        def normalize_location_item(item, default_count=0):
+            if not isinstance(item, dict):
+                return None
+            location_id = item.get("location_id") or item.get("key")
+            location_name = item.get("location_name") or item.get("name") or item.get("label")
+            if not location_id and not location_name:
+                return None
+            return {
+                "location_id": location_id,
+                "location_name": location_name or location_id,
+                "latitude": item.get("latitude"),
+                "longitude": item.get("longitude"),
+                "municipality": item.get("municipality"),
+                "count": item.get("count", default_count),
+            }
+
+        def normalize_map_locations(tool, result):
+            locations = []
+
+            for item in result.get("map_locations") or []:
+                normalized = normalize_location_item(item)
+                if normalized:
+                    locations.append(normalized)
+
+            for item in result.get("locations") or []:
+                normalized = normalize_location_item(item, default_count=1)
+                if normalized:
+                    locations.append(normalized)
+
+            if tool == "aggregate_events" and result.get("group_by") in {"location", "municipality"}:
+                for item in result.get("groups") or []:
+                    normalized = normalize_location_item(item)
+                    if normalized:
+                        locations.append(normalized)
+
+            for item in result.get("route") or []:
+                normalized = normalize_location_item(item)
+                if normalized:
+                    locations.append(normalized)
+
+            for group in result.get("conflict_groups") or []:
+                for item in group.get("locations") or []:
+                    normalized = normalize_location_item(item)
+                    if normalized:
+                        locations.append(normalized)
+
+            deduped = {}
+            for item in locations:
+                key = item.get("location_id") or item.get("location_name")
+                if not key:
+                    continue
+                existing = deduped.get(key)
+                if not existing or int(item.get("count") or 0) > int(existing.get("count") or 0):
+                    deduped[key] = item
+            return list(deduped.values())
+
+        def normalize_aggregate_groups(result):
+            groups = []
+            group_by = result.get("group_by")
+            for item in result.get("groups") or []:
+                if not isinstance(item, dict):
+                    continue
+                key = item.get("key") or item.get("label")
+                label = item.get("label") or item.get("key")
+                if key is None and label is None:
+                    continue
+                groups.append({
+                    "key": key,
+                    "label": label,
+                    "count": item.get("count", 0),
+                    "group_by": group_by,
+                    "first_event_id": item.get("first_event_id"),
+                    "first_event_time": item.get("first_event_time"),
+                    "last_event_id": item.get("last_event_id"),
+                    "last_event_time": item.get("last_event_time"),
+                })
+            return groups
+
+        def extract_event_ids(value, depth=0):
+            if depth > 5:
+                return []
+            ids = []
+            if isinstance(value, dict):
+                for key, item in value.items():
+                    if any(marker in key for marker in ("missing", "excluded", "blocked")):
+                        continue
+                    if key == "event_id" and item:
+                        ids.append(item)
+                    elif key.endswith("event_id") and item:
+                        ids.append(item)
+                    elif key.endswith("event_ids") and isinstance(item, list):
+                        ids.extend(entry for entry in item if entry)
+                    else:
+                        ids.extend(extract_event_ids(item, depth + 1))
+            elif isinstance(value, list):
+                for item in value:
+                    ids.extend(extract_event_ids(item, depth + 1))
+            return ids
+
         steps = []
         previous_result = None
         for index, record in enumerate(records):
@@ -813,6 +912,8 @@ class HermesClient:
                     step_event_ids.extend(group.get("event_ids") or [])
             elif tool == "challenge_hypothesis":
                 step_event_ids = (result.get("alternative_event_ids") or []) + (args.get("supporting_event_ids") or [])
+            if not step_event_ids:
+                step_event_ids = extract_event_ids(result)
 
             step_dict = {
                 "tool": tool,
@@ -832,29 +933,16 @@ class HermesClient:
             }
             if step_event_ids:
                 step_dict["event_ids"] = list(dict.fromkeys(step_event_ids))  # deduplicate, preserve order
+
+            map_locations = normalize_map_locations(tool, result)
+            if map_locations:
+                step_dict["map_locations"] = map_locations
+
+            aggregate_groups = normalize_aggregate_groups(result)
+            if aggregate_groups:
+                step_dict["aggregate_groups"] = aggregate_groups
+
             steps.append(step_dict)
-            if tool == "aggregate_events" and result.get("group_by") in {"location", "municipality"}:
-                steps[-1]["map_locations"] = [
-                    {
-                        "location_id": item.get("location_id") or item.get("key"),
-                        "location_name": item.get("label"),
-                        "latitude": item.get("latitude"),
-                        "longitude": item.get("longitude"),
-                        "municipality": item.get("municipality"),
-                        "count": item.get("count", 0),
-                    }
-                    for item in (result.get("groups") or [])
-                    if item.get("key")
-                ]
-            if tool == "aggregate_events" and result.get("group_by") in {"date", "hour"}:
-                steps[-1]["aggregate_groups"] = [
-                    {
-                        "key": item.get("key"),
-                        "label": item.get("label") or item.get("key"),
-                        "count": item.get("count", 0),
-                    }
-                    for item in (result.get("groups") or [])
-                ]
             previous_result = result
         return steps
 

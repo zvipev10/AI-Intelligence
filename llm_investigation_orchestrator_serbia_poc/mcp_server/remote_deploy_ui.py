@@ -15,7 +15,7 @@ import paramiko
 
 HOST = "151.145.93.180"
 USER = "ubuntu"
-REMOTE_UI_ROOT = "/opt/serbia-poc/ui"
+REMOTE_UI_ROOT = "/opt/serbia-poc-ui"
 SERVICE_NAME = "serbia-poc-ui.service"
 UI_PORT = 8769
 LOCAL_ROOT = Path(__file__).resolve().parent.parent
@@ -33,6 +33,7 @@ FILES = [
 DIRS = [
     "vendor",
     "data",
+    "recorded_runs",
 ]
 
 
@@ -142,6 +143,7 @@ Restart=on-failure
 RestartSec=3
 Environment=PYTHONUNBUFFERED=1
 Environment=PYTHONIOENCODING=utf-8
+Environment=POC_UI_HOST=0.0.0.0
 
 [Install]
 WantedBy=multi-user.target
@@ -170,7 +172,7 @@ def verify(client: paramiko.SSHClient) -> dict:
         "service": f"sudo -n systemctl is-active {SERVICE_NAME}",
         "status": f"curl -fsS http://127.0.0.1:{UI_PORT}/api/status",
         "index": f"curl -fsS http://127.0.0.1:{UI_PORT}/ | head -5",
-        "listeners": f"ss -ltnp 2>/dev/null | grep '127.0.0.1:{UI_PORT}' || true",
+        "listeners": f"ss -ltnp 2>/dev/null | grep ':{UI_PORT}' || true",
         "logs": f"journalctl -u {SERVICE_NAME} -n 40 --no-pager",
     }
     result = {}
