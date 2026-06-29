@@ -33,7 +33,7 @@ Current local working tree expectation:
 
 **Important sync lesson (2026-06-29):** A stale local workspace and stale VM deployment briefly reintroduced old behavior: rectangular map markers and automatic final-answer presentation. GitHub already had the correct point-marker/manual-show behavior, but the VM was still serving older `styles.css?v=36` and `app.js?v=48`. Before every deploy, fetch GitHub, verify `git status --short --branch`, and deploy from the current committed `main`, not from stale uncommitted local files.
 
-**Latest UI completion note (2026-06-29):** Map markers are colored points with popups; final-answer results are not presented automatically and are shown only via the final `הצג` button. Result table window controls exist: `↓` minimizes, `↑` reopens, and `×` closes/clears result layers from map/timeline/table. Step presentation controls moved into each step card: a standard eye/eye-off icon presents or hides that step’s layers, and `הצג שאילה` opens the query modal. The result-table layer visibility control uses the same standard eye/eye-off icon. Current deployed asset versions are `styles.css?v=48` and `app.js?v=63`.
+**Latest UI completion note (2026-06-29):** Map markers are colored points with popups; final-answer results are not presented automatically and are shown only via the final `הצג` button. Result table window controls exist: `↓` minimizes, `↑` reopens, and `×` closes/clears result layers from map/timeline/table. Step presentation controls moved into each step card: a standard eye/eye-off icon presents or hides that step’s layers, and `הצג שאילתה` opens the query modal. The result-table layer visibility control uses the same standard eye/eye-off icon. Current deployed asset versions are `styles.css?v=48` and `app.js?v=64`.
 
 ## Active POC
 
@@ -65,7 +65,7 @@ Active UI service:
 - This is important: an earlier deploy mistakenly copied to `/opt/serbia-poc/ui`, but the active service serves `/opt/serbia-poc-ui`.
 - Current served versions verified on the VM after the latest UI deploy (as of 2026-06-29):
   - `styles.css?v=48`
-  - `app.js?v=63`
+  - `app.js?v=64`
 - These versions include colored point markers, manual final-answer presentation via `הצג`, additive layer tabs, table resize/minimize, close/clear result-window behavior, query edit modal controls, per-step eye/eye-off layer presentation controls, and shared standard visibility icons.
 
 Active MCP/Hermes service:
@@ -498,8 +498,8 @@ Design decision:
 5. Stub handler `handleQueryFormSubmit()` for Phase 2a.
 
 **Files affected:**
-- `app.js` (query cleanup, query form state/functions, modal controls, step-card visibility behavior, layer presentation behavior; current deployed version `v=63`)
-- `index.html` (query modal/result controls; current deployed script version `v=63`)
+- `app.js` (query cleanup, query form state/functions, modal controls, step-card visibility behavior, layer presentation behavior; current deployed version `v=64`)
+- `index.html` (query modal/result controls; current deployed script version `v=64`)
 - `styles.css` (query form, layer tabs, point markers, result-window controls, standard eye/eye-off visibility icons; current deployed version `v=48`)
 
 **Rationale:**
@@ -632,9 +632,9 @@ Expected: no matches in active data files.
 ## Suggested First Message To A New Assistant
 
 ```text
-Read PROJECT_HANDOFF.md first. Continue work on the Serbia/North Kosovo POC in llm_investigation_orchestrator_serbia_poc. The current branch is main and should be clean/aligned with origin/main. The UI is deployed from /opt/serbia-poc-ui on VM 151.145.93.180 and currently serves styles.css?v=48 and app.js?v=63. Do not touch C:\Users\user\Downloads\oracle.key.
+Read PROJECT_HANDOFF.md first. Continue work on the Serbia/North Kosovo POC in llm_investigation_orchestrator_serbia_poc. The current branch is main and should be clean/aligned with origin/main. The UI is deployed from /opt/serbia-poc-ui on VM 151.145.93.180 and currently serves styles.css?v=48 and app.js?v=64. Do not touch C:\Users\user\Downloads\oracle.key.
 
-Current behavior: colored map point markers with popups; final answers do not auto-present visualization layers; final `הצג` presents/restores final-answer layers manually. The result table supports layer tabs, standard eye/eye-off toggles, per-layer close, resize, ↓/↑ minimize, and window close/clear. Step cards use the same standard eye/eye-off visual language for presenting/hiding step layers, and `הצג שאילה` opens query details. Query edit modal controls exist but query re-execution is still future work.
+Current behavior: colored map point markers with popups; final answers do not auto-present visualization layers; final `הצג` presents/restores final-answer layers manually. The result table supports layer tabs, standard eye/eye-off toggles, per-layer close, resize, ↓/↑ minimize, and window close/clear. Step cards use the same standard eye/eye-off visual language for presenting/hiding step layers, and `הצג שאילתה` opens query details. Query edit modal controls exist but query re-execution is still future work.
 
 The UI uses an additive source/data layer architecture; preserve that model when adding new filters or visualizations. Before deploying, fetch GitHub and verify the VM is not serving stale assets.
 ```

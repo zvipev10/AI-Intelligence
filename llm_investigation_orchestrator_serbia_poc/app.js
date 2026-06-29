@@ -1005,7 +1005,7 @@ function addActivity(tool, detail, result, options = {}) {
         <button type="button" class="step-visibility-btn source-visibility-btn layers-hidden" data-source-id="${escapeHtml(sourceId)}" title="הצג שכבות" aria-label="הצג שכבות" aria-pressed="false">
           <span class="visibility-eye-icon off" aria-hidden="true"></span>
         </button>
-        <button type="button" class="step-query-btn" title="הצג שאילה">הצג שאילה</button>
+        <button type="button" class="step-query-btn" title="הצג שאילתה">הצג שאילתה</button>
       </div>` : ""}`;
   if (hasStepData) {
     const visibilityBtn = item.querySelector(".step-visibility-btn");
