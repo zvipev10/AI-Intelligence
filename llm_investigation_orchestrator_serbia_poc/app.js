@@ -927,11 +927,16 @@ function updateSourceVisibilityBtn(btn) {
   const sourceLayers = state.layers.filter(layer => layer.sourceId === sourceId);
   const anyVisible = sourceLayers.some(layer => layer.visible);
   btn.classList.toggle("layers-hidden", !anyVisible);
-  btn.title = anyVisible ? "הסתר שכבות" : "הצג שכבות";
-  btn.setAttribute("aria-label", anyVisible ? "הסתר שכבות" : "הצג שכבות");
-  btn.setAttribute("aria-pressed", anyVisible ? "true" : "false");
   const icon = btn.querySelector(".visibility-eye-icon");
   if (icon) icon.classList.toggle("off", !anyVisible);
+  const label = btn.querySelector(".step-visibility-label");
+  const actionLabel = label
+    ? (anyVisible ? "הסתר תוצאות" : "הצג תוצאות")
+    : (anyVisible ? "הסתר שכבות" : "הצג שכבות");
+  btn.title = actionLabel;
+  btn.setAttribute("aria-label", actionLabel);
+  btn.setAttribute("aria-pressed", anyVisible ? "true" : "false");
+  if (label) label.textContent = actionLabel;
 }
 
 function updateStepVisibilityButtons() {
@@ -1002,8 +1007,8 @@ function addActivity(tool, detail, result, options = {}) {
     </div>
     ${hasStepData ? `
       <div class="activity-step-actions">
-        <button type="button" class="step-visibility-btn source-visibility-btn layers-hidden" data-source-id="${escapeHtml(sourceId)}" title="הצג שכבות" aria-label="הצג שכבות" aria-pressed="false">
-          <span class="visibility-eye-icon off" aria-hidden="true"></span>
+        <button type="button" class="step-visibility-btn source-visibility-btn layers-hidden" data-source-id="${escapeHtml(sourceId)}" title="הצג תוצאות" aria-label="הצג תוצאות" aria-pressed="false">
+          <span class="step-visibility-label">הצג תוצאות</span>
         </button>
         <button type="button" class="step-query-btn" title="הצג שאילתה">הצג שאילתה</button>
       </div>` : ""}`;
