@@ -1,8 +1,8 @@
 # AI Intelligence Project Handoff
 
-Last updated: 2026-06-28
+Last updated: 2026-06-29
 
-This is the primary handoff for continuing the AI Intelligence project in another assistant/chat. It reflects the current `main` branch workspace and the latest VM deployment state after the data normalization, additive result-layer UI refactor, recorded-run refresh, and map marker popup work.
+This is the primary handoff for continuing the AI Intelligence project in another assistant/chat. It reflects the current `main` branch workspace and the latest VM deployment state after the data normalization, additive result-layer UI refactor, recorded-run refresh, map marker popup work, and Phase 2 query builder planning.
 
 ## One-Line Summary
 
@@ -26,9 +26,9 @@ Important local workspace:
 
 Current local working tree has intentional uncommitted work:
 
-- UI changes in `llm_investigation_orchestrator_serbia_poc/index.html`
-- UI changes in `llm_investigation_orchestrator_serbia_poc/app.js`
-- UI changes in `llm_investigation_orchestrator_serbia_poc/styles.css`
+- UI changes in `llm_investigation_orchestrator_serbia_poc/index.html` (phase 2 query builder form added)
+- UI changes in `llm_investigation_orchestrator_serbia_poc/app.js` (query builder state tracking, form population, change detection; marker click handler for popup toggle)
+- UI changes in `llm_investigation_orchestrator_serbia_poc/styles.css` (query form styling)
 - Gateway fixes in `llm_investigation_orchestrator_serbia_poc/server.py`
 - MCP/source normalization updates in `llm_investigation_orchestrator_serbia_poc/mcp_server/*.py`
 - Data normalization files under `llm_investigation_orchestrator_serbia_poc/data/`
@@ -36,6 +36,8 @@ Current local working tree has intentional uncommitted work:
 - New report: `llm_investigation_orchestrator_serbia_poc/data/source_normalization_report.json`
 
 Do not assume these changes are committed.
+
+**Phase 1 completion note (2026-06-29):** Map marker rendering bug fixed (added click handler for popup toggle at lines 1402-1403 in app.js; version bumps to v=41 and v=56). Markers now display on map and respond to click events.
 
 ## Active POC
 
@@ -65,9 +67,9 @@ Active UI service:
 - Service: `serbia-poc-ui.service`
 - Actual served path: `/opt/serbia-poc-ui`
 - This is important: an earlier deploy mistakenly copied to `/opt/serbia-poc/ui`, but the active service serves `/opt/serbia-poc-ui`.
-- Current served versions verified through the public HTTPS endpoint:
-  - `styles.css?v=41`
-  - `app.js?v=59`
+- Current served versions verified through the public HTTPS endpoint (as of 2026-06-29):
+  - `styles.css?v=41` (Phase 2 query form styling)
+  - `app.js?v=59` (pending deploy: marker click handler + query builder form)
 
 Active MCP/Hermes service:
 
@@ -480,6 +482,43 @@ Suggested next behavior:
 - If no step view is active, final answer should update result layers automatically.
 - Always provide final `הצג` as a reliable manual restore.
 
+## Phase 2: Query Builder — Editable Query Form (In Progress)
+
+**Status:** Step 1 planned and documented. Ready for Claude Code implementation.
+
+**Objective:** Transform the query display from read-only JSON (`<pre>` modal) to an editable form component with smart "Run New Query" button visibility.
+
+**Key Changes in Step 1:**
+
+1. Remove result data from query object: `event_ids`, `map_locations`, `aggregate_groups` no longer appear in `queryReadoutForLayer()` payload.
+2. Replace modal `<pre>` element with form-based modal containing:
+   - Tool name (read-only display)
+   - Layer selector (editable dropdown: map, timeline)
+   - Arguments editor (editable textarea with JSON)
+   - "תריץ שליפה חדשה" button (hidden until user edits)
+3. Add state tracking: `state.queryEdited` boolean, change detection on form inputs.
+4. Add form styling to match existing UI palette.
+5. Stub handler `handleQueryFormSubmit()` for Phase 2a.
+
+**Files affected:**
+- `app.js` (lines 737–757 query cleanup; 800+ new functions; version v=56+)
+- `index.html` (lines 91–102 modal redesign; version v=41+)
+- `styles.css` (new query-form styling at end)
+
+**Rationale:**
+- Query ≠ Results: Query payload should contain only request parameters, not response data.
+- Form-based UI: Editable fields are more intuitive than JSON text.
+- Smart visibility: Run button appears only after edits, preventing accidental re-runs of unchanged queries.
+- Foundation for Phase 2: Prepares UI for spatial query type selector, temporal range picker, and filter dropdowns.
+
+**Full plan:** See `C:\Users\e054922\Claude\QUERY_BUILDER_PHASE_PLAN.md` for task-by-task execution details with line numbers.
+
+**Next phase after Step 1:**
+- Phase 2a: Implement `handleQueryFormSubmit()` to call agent with edited query and create new layer.
+- Phase 2b: Add spatial query type selector + draw tools (proximity, polygon, corridor).
+- Phase 2c: Add temporal range picker.
+- Phase 2d: Add filter dropdowns (source, certainty, labels).
+
 ## Near-Term RAG Plan
 
 The team discussed adding a small RAG capability in the near future. This should be a focused retrieval-layer improvement, not a large architecture rewrite.
@@ -593,7 +632,11 @@ Expected: no matches in active data files.
 ## Suggested First Message To A New Assistant
 
 ```text
-Read PROJECT_HANDOFF.md first. Continue work on the Serbia/North Kosovo POC in llm_investigation_orchestrator_serbia_poc. The current branch is main. The UI is deployed from /opt/serbia-poc-ui on VM 151.145.93.180 and currently serves styles.css?v=41 and app.js?v=59. Do not touch C:\Users\user\Downloads\oracle.key. The UI now uses an additive source/data layer architecture; preserve that model when adding new filters or visualizations.
+Read PROJECT_HANDOFF.md first. Continue work on the Serbia/North Kosovo POC in llm_investigation_orchestrator_serbia_poc. The current branch is main. The UI is deployed from /opt/serbia-poc-ui on VM 151.145.93.180 and currently serves styles.css?v=41 and app.js?v=59. Do not touch C:\Users\e054922\Downloads\oracle.key. 
+
+Current work: Phase 2 Query Builder, Step 1. Local changes include map marker click handler (Phase 1 fix) and query form redesign (Phase 2 Step 1). See C:\Users\e054922\Claude\QUERY_BUILDER_PHASE_PLAN.md for full execution plan ready for Claude Code implementation.
+
+The UI uses an additive source/data layer architecture; preserve that model when adding new filters or visualizations.
 ```
 
 ## File Review Order
