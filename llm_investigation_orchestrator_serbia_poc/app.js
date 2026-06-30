@@ -892,7 +892,7 @@ function showStepResult(step) {
     groups: state.aggregateGroups
   });
   const addedLayers = addResultLayers({
-    sourceId: step.__sourceId || stepSourceId(state.lastResult || state.investigationId, step.__stepNumber),
+    sourceId: resolvedStepSourceId(step),
     sourceLabel: step.__sourceLabel || `צעד ${step.__stepNumber || ""}: ${label}`.trim(),
     preferredView: layerFromStep(step),
     layers: candidateLayers
@@ -943,8 +943,17 @@ function updateStepVisibilityButtons() {
   document.querySelectorAll(".step-visibility-btn").forEach(updateSourceVisibilityBtn);
 }
 
+function resolvedStepSourceId(step) {
+  // After investigation completes, state.lastResult has the authoritative run_id.
+  // Prefer re-deriving from lastResult to avoid stale investigationId-based sourceIds.
+  if (state.lastResult && step.__stepNumber) {
+    return sanitizeLayerKey(stepSourceId(state.lastResult, step.__stepNumber));
+  }
+  return sanitizeLayerKey(step.__sourceId || stepSourceId(state.lastResult || state.investigationId, step.__stepNumber));
+}
+
 function toggleStepVisibility(step, btn) {
-  const sourceId = sanitizeLayerKey(step.__sourceId || stepSourceId(state.lastResult || state.investigationId, step.__stepNumber));
+  const sourceId = resolvedStepSourceId(step);
   const sourceLayers = state.layers.filter(layer => layer.sourceId === sourceId);
   const anyVisible = sourceLayers.some(layer => layer.visible);
   if (!sourceLayers.length || !anyVisible) {
