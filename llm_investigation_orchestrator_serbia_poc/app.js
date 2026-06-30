@@ -1007,7 +1007,7 @@ function addActivity(tool, detail, result, options = {}) {
     </div>
     ${hasStepData ? `
       <div class="activity-step-actions">
-        <button type="button" class="step-visibility-btn source-visibility-btn layers-hidden" data-source-id="${escapeHtml(sourceId)}" title="הצג תוצאות" aria-label="הצג תוצאות" aria-pressed="false">
+        <button type="button" class="step-visibility-btn layers-hidden" data-source-id="${escapeHtml(sourceId)}" title="הצג תוצאות" aria-label="הצג תוצאות" aria-pressed="false">
           <span class="step-visibility-label">הצג תוצאות</span>
         </button>
         <button type="button" class="step-query-btn" title="הצג שאילתה">הצג שאילתה</button>

@@ -65,7 +65,7 @@ h3 { margin: 0; font-size: 14px; }
 .research-steps-toggle summary:hover { text-decoration: underline; }
 .answer-body { display: grid; gap: 7px; }
 .final-answer-actions { margin-top: 10px; display: flex; justify-content: flex-start; }
-.final-answer-show-btn, .step-query-btn, .step-visibility-btn { width: auto; height: auto; min-width: 0; padding: 3px 9px; border: 1px solid var(--blue); border-radius: 999px; background: transparent; color: var(--blue); font-size: 10px; font-weight: 800; line-height: 1.4; cursor: pointer; transition: background .15s, color .15s; white-space: nowrap; }
+.final-answer-show-btn, .step-query-btn, .step-visibility-btn { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; width: auto; height: auto; min-width: 0; padding: 3px 9px; border: 1px solid var(--blue); border-radius: 999px; background: transparent; color: var(--blue); font-size: 10px; font-weight: 800; line-height: 1.4; cursor: pointer; transition: background .15s, color .15s; white-space: nowrap; }
 .final-answer-show-btn:hover, .step-query-btn:hover, .step-visibility-btn:hover { background: rgba(88,166,255,.15); color: #fff; }
 .suggestions { padding: 8px 12px; border-top: 1px solid var(--line); display: flex; gap: 7px; overflow-x: auto; }
 .suggestions:empty { display: none; }
@@ -176,7 +176,7 @@ th { position: sticky; top: 0; z-index: 1; background: #202530; }
 .activity-detail { color: var(--muted); }
 .activity-result { color: var(--ink); font-weight: 700; }
 .activity-card-actions { display: flex; align-items: center; gap: 7px; margin-right: auto; }
-.activity-step-actions { margin-top: 9px; display: flex; align-items: center; justify-content: flex-start; gap: 8px; border-top: 1px solid var(--line); padding-top: 8px; }
+.activity-step-actions { margin-top: 9px; display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-start; gap: 8px; border-top: 1px solid var(--line); padding-top: 8px; }
 .query-tool-panel { padding: 10px 14px 12px; display: block; }
 .query-readout { min-width: 0; display: grid; grid-template-columns: minmax(160px, auto) minmax(220px, 1fr); gap: 10px; align-items: center; }
 .query-layer-name { width: fit-content; max-width: 100%; padding: 7px 10px; border: 1px solid var(--line); border-radius: 999px; color: var(--blue); background: rgba(88, 166, 255, .09); font-size: 11px; font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
