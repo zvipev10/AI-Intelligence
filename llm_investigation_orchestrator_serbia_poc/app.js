@@ -1127,6 +1127,9 @@ function applyHermesResult(result, prompt, options = {}) {
       state.layers.forEach(layer => {
         if (layer.sourceId && layer.sourceId.includes(oldBase)) {
           layer.sourceId = layer.sourceId.replace(oldBase, newBase);
+          if (layer.id && layer.id.includes(oldBase)) {
+            layer.id = layer.id.replace(oldBase, newBase);
+          }
         }
       });
     }
