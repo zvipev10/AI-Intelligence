@@ -57,15 +57,23 @@ The runtime MCP reads:
 ```text
 data/serbia_kosovo_events_projection.csv
 data/serbia_kosovo_locations.json
+data/serbia_kosovo_entities.json
 ```
 
 The projection maps the Serbia/Kosovo source fields into the existing canonical event schema:
 
 ```text
-event_id,timestamp_utc,source_type,source_reliability,entity_or_actor,location_id,event_summary
+event_id,timestamp_utc,source_type,source_reliability,source_reliability_label,certainty_level,entity_id,location_id,event_summary
 ```
 
 The runtime file is intentionally clean. It exposes only the canonical fields above. `event_summary` contains only the original raw text, and `source_reliability` is neutralized to avoid leaking truth labels.
+
+Locations and entities are normalized in the same way:
+
+- Event records contain `location_id`; location names, coordinates, and metadata come from `serbia_kosovo_locations.json`.
+- Event records contain `entity_id`; entity names, aliases, and metadata come from `serbia_kosovo_entities.json`.
+- The old `entity_or_actor` field was removed from the runtime events projection.
+- The entities DB contains 16 entities, one for each actor/entity value in the projected corpus.
 
 Source normalization:
 
@@ -90,7 +98,7 @@ The MCP server remains read-only and exposes the same fifteen tools:
 classify_question_intent
 plan_next_investigation_step
 search_events
-get_events
+get_objects
 resolve_location
 resolve_event_reference
 find_actor_history
@@ -105,6 +113,15 @@ challenge_hypothesis
 ```
 
 The tool algorithms and DB structure were not changed for this copy. Scenario-specific configuration was replaced with Serbia/Kosovo locations, actors, identifier patterns, and semantic clues. Hidden scenario labels are deliberately kept out of the agent-visible runtime.
+
+`get_objects` is the general object retrieval tool for the three runtime layers:
+
+- `object_type="event"` retrieves event objects by `event_ids`.
+- `object_type="location"` retrieves location-layer objects by `location_ids`.
+- `object_type="entity"` retrieves entity-layer objects by `entity_ids`.
+- `object_type="all"` can retrieve event objects and the related location/entity layers together.
+
+Entity-aware tools should prefer `entity_ids` over natural-language actor names. Some schemas still accept `actors` as compatibility input, but the normalized runtime model is `entity_id` based.
 
 ## Verification
 

@@ -171,6 +171,8 @@ const state = {
   aggregateLocations: [],
   aggregateTimeline: [],
   aggregateGroups: [],
+  locationMetadata: [],
+  entityMetadata: [],
   map: null,
   mapReady: false,
   markers: [],
@@ -371,6 +373,38 @@ function collectGenericAggregateGroups(result) {
   return items.sort((a, b) => b.count - a.count);
 }
 
+function collectLocationMetadata(result) {
+  const byId = new Map();
+  (result.investigation_steps || []).forEach(step => {
+    (step.location_layers || []).forEach(item => {
+      const locationId = item.location_id;
+      if (!locationId) return;
+      const existing = byId.get(locationId);
+      const count = Number(item.event_count ?? item.count ?? 0);
+      if (!existing || count > Number(existing.event_count ?? existing.count ?? 0)) {
+        byId.set(locationId, { ...item, event_count: count });
+      }
+    });
+  });
+  return [...byId.values()].sort((a, b) => Number(b.event_count || 0) - Number(a.event_count || 0));
+}
+
+function collectEntityMetadata(result) {
+  const byId = new Map();
+  (result.investigation_steps || []).forEach(step => {
+    (step.entity_layers || []).forEach(item => {
+      const entityId = item.entity_id;
+      if (!entityId) return;
+      const existing = byId.get(entityId);
+      const count = Number(item.event_count ?? item.count ?? 0);
+      if (!existing || count > Number(existing.event_count ?? existing.count ?? 0)) {
+        byId.set(entityId, { ...item, event_count: count });
+      }
+    });
+  });
+  return [...byId.values()].sort((a, b) => Number(b.event_count || 0) - Number(a.event_count || 0));
+}
+
 function layerId(kind, label) {
   return `${kind}:${String(label || "unknown").replace(/\s+/g, "-")}`;
 }
@@ -436,12 +470,38 @@ function buildGroupAggregationLayer(items) {
   };
 }
 
-function buildResultLayers({ events = [], locations = [], timeline = [], groups = [] } = {}) {
+function buildLocationMetadataLayer(items) {
+  if (!items.length) return null;
+  return {
+    dataId: layerId("location-metadata", items.map(item => item.location_id).slice(0, 8).join("-")),
+    label: "שכבת מיקומים",
+    kind: "location_metadata",
+    visible: true,
+    items,
+    capabilities: { table: true, map: true, timeline: false }
+  };
+}
+
+function buildEntityMetadataLayer(items) {
+  if (!items.length) return null;
+  return {
+    dataId: layerId("entity-metadata", items.map(item => item.entity_id).slice(0, 8).join("-")),
+    label: "שכבת ישויות",
+    kind: "entity_metadata",
+    visible: true,
+    items,
+    capabilities: { table: true, map: true, timeline: false }
+  };
+}
+
+function buildResultLayers({ events = [], locations = [], timeline = [], groups = [], locationMetadata = [], entityMetadata = [] } = {}) {
   return [
     ...buildEventLayers(events),
     buildLocationLayer(locations),
     buildTimeAggregationLayer(timeline),
-    buildGroupAggregationLayer(groups)
+    buildGroupAggregationLayer(groups),
+    buildLocationMetadataLayer(locationMetadata),
+    buildEntityMetadataLayer(entityMetadata)
   ].filter(Boolean);
 }
 
@@ -660,7 +720,7 @@ const TOOL_LABELS = {
   resolve_location: "הבנת המקום",
   resolve_event_reference: "זיהוי אירוע העוגן",
   search_events: "חיפוש ממוקד במאגר",
-  get_events: "אימות הרשומות",
+  get_objects: "שליפת אובייקטים",
   find_actor_history: "בדיקת היסטוריית גורם",
   aggregate_events: "זיהוי ריכוזים",
   explain_linkage: "בדיקת גשר ראייתי",
@@ -690,7 +750,7 @@ function compactArguments(argumentsPayload) {
 
 function layerFromStep(step, fallback = "evidence") {
   const groupBy = step?.technical?.arguments?.group_by;
-  if (step?.map_locations?.length || ["location", "municipality"].includes(groupBy)) return "map";
+  if (step?.map_locations?.length || step?.location_layers?.length || step?.entity_layers?.length || ["location", "municipality"].includes(groupBy)) return "map";
   const aggregateGroupBy = step?.aggregate_groups?.[0]?.group_by || groupBy;
   if ((step?.aggregate_groups?.length && ["date", "hour"].includes(aggregateGroupBy)) || ["date", "hour"].includes(groupBy)) return "timeline";
   if (step?.event_ids?.length) return "evidence";
@@ -839,6 +899,8 @@ function stepQueryDetails(step, label) {
     event_ids: (step.event_ids || []).slice(0, 100),
     map_locations: (step.map_locations || []).slice(0, 50),
     aggregate_groups: (step.aggregate_groups || []).slice(0, 50),
+    location_layers: (step.location_layers || []).slice(0, 50),
+    entity_layers: (step.entity_layers || []).slice(0, 50),
     result: step.result || "",
     observed_clue: step.observed_clue || "",
     decision: step.decision || step.rationale || ""
@@ -849,6 +911,8 @@ function showStepResult(step) {
   const eventIds = step.event_ids || [];
   const mapLocations = step.map_locations || [];
   const aggregateGroups = step.aggregate_groups || [];
+  const locationMetadata = step.location_layers || [];
+  const entityMetadata = step.entity_layers || [];
   const label = humanToolLabel(String(step.tool || "").replace(/^\d+\.\s*/, ""));
   state.queryContext = buildStepQueryContext(step, label);
 
@@ -883,13 +947,17 @@ function showStepResult(step) {
     state.aggregateTimeline = [];
     state.aggregateGroups = [];
   }
+  state.locationMetadata = locationMetadata;
+  state.entityMetadata = entityMetadata;
 
-  const hasData = state.current.length || state.aggregateLocations.length || state.aggregateTimeline.length || state.aggregateGroups.length;
+  const hasData = state.current.length || state.aggregateLocations.length || state.aggregateTimeline.length || state.aggregateGroups.length || state.locationMetadata.length || state.entityMetadata.length;
   const candidateLayers = buildResultLayers({
     events: state.current,
     locations: state.aggregateLocations,
     timeline: state.aggregateTimeline,
-    groups: state.aggregateGroups
+    groups: state.aggregateGroups,
+    locationMetadata: state.locationMetadata,
+    entityMetadata: state.entityMetadata
   });
   const addedLayers = addResultLayers({
     sourceId: resolvedStepSourceId(step),
@@ -899,6 +967,8 @@ function showStepResult(step) {
   });
   const preferredStepLayer =
     addedLayers.find(layer => state.aggregateLocations.length && layer.kind === "locations")
+    || addedLayers.find(layer => state.locationMetadata.length && layer.kind === "location_metadata")
+    || addedLayers.find(layer => state.entityMetadata.length && layer.kind === "entity_metadata")
     || addedLayers.find(layer => state.aggregateTimeline.length && layer.kind === "time_aggregation")
     || addedLayers.find(layer => state.aggregateGroups.length && layer.kind === "group_aggregation")
     || addedLayers.find(layer => state.current.length && layer.kind === "events")
@@ -913,7 +983,7 @@ function showStepResult(step) {
 
   if (state.aggregateTimeline.length) {
     activateView("timeline", { automatic: true, reason: "צעד עם נתוני זמן" });
-  } else if (state.aggregateLocations.length || state.current.some(e => e.location_id)) {
+  } else if (state.aggregateLocations.length || state.locationMetadata.length || state.entityMetadata.length || state.current.some(e => e.location_id)) {
     activateView("map", { automatic: true, reason: "צעד עם נתוני מיקום" });
   } else {
     activateView("map", { automatic: true, reason: "צעד עם רשומות" });
@@ -1040,7 +1110,7 @@ function setSuggestions(items) {
 }
 
 function eventText(event) {
-  return `${event.event_summary} ${event.entity_or_actor} ${event.location_name}`;
+  return `${event.event_summary} ${event.entity_name || event.entity_id || ""} ${event.location_name}`;
 }
 
 function answerHtml(text) {
@@ -1147,6 +1217,8 @@ function applyHermesResult(result, prompt, options = {}) {
     state.aggregateLocations = collectAggregateLocations(result);
     state.aggregateTimeline = collectAggregateTimeline(result);
     state.aggregateGroups = collectGenericAggregateGroups(result);
+    state.locationMetadata = collectLocationMetadata(result);
+    state.entityMetadata = collectEntityMetadata(result);
     const addedLayers = addResultLayers({
       sourceId: finalSourceId(result),
       sourceLabel: "תשובת הסוכן",
@@ -1155,7 +1227,9 @@ function applyHermesResult(result, prompt, options = {}) {
       events: state.current,
       locations: state.aggregateLocations,
       timeline: state.aggregateTimeline,
-      groups: state.aggregateGroups
+      groups: state.aggregateGroups,
+      locationMetadata: state.locationMetadata,
+      entityMetadata: state.entityMetadata
       })
     });
     // Just restore visualization state, don't touch the chat DOM
@@ -1467,6 +1541,26 @@ function renderMap() {
       Object.entries(counts).forEach(([locationId, count]) => addLocationCount(locationId, count, layer.label, null, layer.color));
     } else if (layer.kind === "locations") {
       layer.items.forEach(item => addLocationCount(item.location_id, item.count || 1, layer.label, item, layer.color));
+    } else if (layer.kind === "location_metadata") {
+      layer.items.forEach(item => addLocationCount(item.location_id, item.event_count || item.count || 1, item.location_name || layer.label, item, layer.color));
+    } else if (layer.kind === "entity_metadata") {
+      layer.items.forEach(entity => {
+        (entity.top_locations || []).forEach(location => {
+          addLocationCount(
+            location.location_id,
+            location.count || 1,
+            entity.canonical_name || entity.entity_id || layer.label,
+            {
+              location_id: location.location_id,
+              location_name: location.location_name,
+              latitude: location.latitude,
+              longitude: location.longitude,
+              count: location.count
+            },
+            layer.color
+          );
+        });
+      });
     }
   });
   const bounds = new maplibregl.LngLatBounds();
@@ -1566,6 +1660,36 @@ function renderEvidence() {
     </button>`).join("");
 
   if (!activeLayer) return;
+  if (activeLayer.kind === "location_metadata") {
+    head.innerHTML = "<tr><th>מיקום</th><th>אירועים</th><th>רשות</th><th>סוג</th><th>דיוק</th><th>מזהה</th></tr>";
+    body.innerHTML = activeLayer.visible && activeLayer.items.length ? activeLayer.items.map(item => `
+      <tr>
+        <td>${escapeHtml(item.location_name || item.name || item.location_id || "-")}</td>
+        <td>${Number(item.event_count || item.count || 0).toLocaleString("he-IL")}</td>
+        <td>${escapeHtml(item.municipality || "-")}</td>
+        <td>${escapeHtml(item.type || "-")}</td>
+        <td>${escapeHtml(item.precision || "-")}</td>
+        <td dir="ltr">${escapeHtml(item.location_id || "-")}</td>
+      </tr>`).join("") : '<tr><td colspan="6" class="empty-cell">השכבה מוסתרת או ריקה.</td></tr>';
+    return;
+  }
+  if (activeLayer.kind === "entity_metadata") {
+    head.innerHTML = "<tr><th>ישות</th><th>אירועים</th><th>סוג</th><th>ערכי actor</th><th>מוקדים מובילים</th><th>מזהה</th></tr>";
+    body.innerHTML = activeLayer.visible && activeLayer.items.length ? activeLayer.items.map(item => {
+      const aliases = (item.aliases || []).slice(0, 4).join(", ");
+      const topLocations = (item.top_locations || []).slice(0, 4).map(location => `${location.location_name || location.location_id} (${Number(location.count || 0).toLocaleString("he-IL")})`).join(", ");
+      return `
+      <tr>
+        <td>${escapeHtml(item.canonical_name || item.entity_id || "-")}</td>
+        <td>${Number(item.event_count || item.count || 0).toLocaleString("he-IL")}</td>
+        <td>${escapeHtml(item.entity_type || "-")}</td>
+        <td>${escapeHtml(aliases || "-")}</td>
+        <td>${escapeHtml(topLocations || "-")}</td>
+        <td dir="ltr">${escapeHtml(item.entity_id || "-")}</td>
+      </tr>`;
+    }).join("") : '<tr><td colspan="6" class="empty-cell">השכבה מוסתרת או ריקה.</td></tr>';
+    return;
+  }
   if (activeLayer.kind === "locations") {
     head.innerHTML = "<tr><th>מיקום</th><th>כמות</th><th>מזהה</th><th>סוג שכבה</th></tr>";
     body.innerHTML = activeLayer.visible && activeLayer.items.length ? activeLayer.items.map(item => `
@@ -1606,7 +1730,7 @@ function renderEvidence() {
       <td dir="ltr">${escapeHtml(event.timestamp_utc)}</td>
       <td>${escapeHtml(event.source_reliability_label || event.source_reliability || "-")}</td>
       <td>${escapeHtml(event.certainty_level || "-")}</td>
-      <td>${escapeHtml(event.entity_or_actor || "-")}</td>
+      <td>${escapeHtml(event.entity_name || event.entity_id || "-")}</td>
       <td>${escapeHtml(event.location_name || "-")}</td>
       <td>${escapeHtml(event.event_summary || "-")}</td>
     </tr>`).join("") : '<tr><td colspan="6" class="empty-cell">השכבה מוסתרת או ריקה.</td></tr>';
@@ -1618,6 +1742,8 @@ function resetInvestigation() {
   state.aggregateLocations = [];
   state.aggregateTimeline = [];
   state.aggregateGroups = [];
+  state.locationMetadata = [];
+  state.entityMetadata = [];
   state.layers = [];
   state.activeLayerId = null;
   state.rawOverlayMinimized = false;
@@ -1701,6 +1827,8 @@ document.addEventListener("click", event => {
     state.current = [];
     state.aggregateLocations = [];
     state.aggregateTimeline = [];
+    state.locationMetadata = [];
+    state.entityMetadata = [];
     state.queryContext = null;
     renderAllViews();
     renderQueryInspector();

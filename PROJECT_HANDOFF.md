@@ -1,12 +1,12 @@
 # AI Intelligence Project Handoff
 
-Last updated: 2026-06-29
+Last updated: 2026-06-30
 
-This is the primary handoff for continuing the AI Intelligence project in another assistant/chat. It reflects the current `main` branch workspace and the latest VM deployment state after the data normalization, additive result-layer UI refactor, recorded-run refresh, map marker popup work, and Phase 2 query builder planning.
+This is the primary handoff for continuing the AI Intelligence project in another assistant/chat. It reflects the current Serbia POC workspace after the data normalization, additive result-layer UI refactor, recorded-run refresh, map marker popup work, Phase 2 query builder planning, and the latest location/entity layer normalization.
 
 ## One-Line Summary
 
-The active project is the Serbia/North Kosovo intelligence-analysis POC: a Hebrew analyst UI backed by Hermes and MCP tools over a 10,000-record synthetic event corpus. The UI now treats all visualization outputs as additive layers: event-source layers, location-summary layers, group-aggregation layers, and time-aggregation layers can be shown/hidden/closed and rendered according to their own map/timeline/table capabilities.
+The active project is the Serbia/North Kosovo intelligence-analysis POC: a Hebrew analyst UI backed by Hermes and MCP tools over a 10,000-record synthetic event corpus. The UI treats all visualization outputs as additive layers: event-source layers, location-summary layers, entity layers, group-aggregation layers, and time-aggregation layers can be shown/hidden/closed and rendered according to their own map/timeline/table capabilities.
 
 ## Repository And Current State
 
@@ -33,7 +33,7 @@ Current local working tree expectation:
 
 **Important sync lesson (2026-06-29):** A stale local workspace and stale VM deployment briefly reintroduced old behavior: rectangular map markers and automatic final-answer presentation. GitHub already had the correct point-marker/manual-show behavior, but the VM was still serving older `styles.css?v=36` and `app.js?v=48`. Before every deploy, fetch GitHub, verify `git status --short --branch`, and deploy from the current committed `main`, not from stale uncommitted local files.
 
-**Latest UI completion note (2026-06-29):** Map markers are colored points with popups; final-answer results are not presented automatically and are shown only via the final `הצג תוצאות` button. Result layers are shown in a flush transparent tabbed overlay attached to the map/timeline borders. Each layer appears as a real tab with a standard `×` close control, and the whole overlay uses standard window controls: `−` minimize, `□` restore/maximize, and `×` close/clear. Step presentation controls moved into each step card: a text button toggles between `הצג תוצאות` and `הסתר תוצאות`, and `הצג שאילתה` opens the query modal. Current deployed asset versions are `styles.css?v=52` and `app.js?v=68`.
+**Latest UI completion note (2026-06-30):** Map markers are colored points with popups; final-answer results are not presented automatically and are shown only via the final `הצג תוצאות` button. Result layers are shown in a flush transparent tabbed overlay attached to the map/timeline borders. Each layer appears as a real tab with a standard `×` close control, and the whole overlay uses standard window controls: `−` minimize, `□` restore/maximize, and `×` close/clear. Step presentation controls moved into each step card: a text button toggles between `הצג תוצאות` and `הסתר תוצאות`, and `הצג שאילתה` opens the query modal. Current deployed asset versions after the entity/location layer normalization deploy are `styles.css?v=53` and `app.js?v=73`.
 
 ## Active POC
 
@@ -48,6 +48,43 @@ Cargo POC still exists but is not the active focus:
 
 - Directory: `llm_investigation_orchestrator_poc`
 - Local UI: `http://127.0.0.1:8768/`
+
+## Location And Entity Layer Normalization
+
+Latest schema change, 2026-06-30:
+
+The Serbia POC now treats entities exactly like locations.
+
+Runtime event records contain stable foreign keys only:
+
+```text
+event_id,timestamp_utc,source_type,source_reliability,source_reliability_label,certainty_level,entity_id,location_id,event_summary
+```
+
+Reference layers:
+
+```text
+data/serbia_kosovo_locations.json
+data/serbia_kosovo_entities.json
+```
+
+Important implications:
+
+- `entity_or_actor` was removed from `serbia_kosovo_events_projection.csv`.
+- `ENTITY_REGISTRY` was removed from `mcp_server/server.py`.
+- `data/serbia_kosovo_entities.json` contains 16 entity records, one for each former raw actor value.
+- Runtime event objects are enriched by the MCP loader with `entity_name` from the entities DB, the same way events are enriched with `location_name` from the locations DB.
+- The active event object fields exposed to the agent/UI are now `entity_id` and `entity_name`, not `entity_or_actor`.
+- `get_events` was removed. Use `get_objects` for all event/location/entity object retrieval.
+- `get_objects(object_type="all", event_ids=[...])` returns the raw event objects plus their related `location_layers` and `entity_layers`.
+- `aggregate_events(group_by="entity")`, `search_events(entity_ids=[...])`, `find_actor_history(entity_ids=[...])`, `find_related_events`, and `explain_linkage` all operate through entity IDs/names.
+- `actors` remains only as compatibility input in some tool schemas; new prompts/tool calls should prefer `entity_ids`.
+
+UI behavior:
+
+- A single `הצג` action can add event, location, and entity layers together.
+- Each layer is separate in the result tabs and can be hidden/closed independently.
+- Entity layers render in the table and on the map through each entity's top locations.
 
 ## Current VM Deployment
 
@@ -64,8 +101,8 @@ Active UI service:
 - Actual served path: `/opt/serbia-poc-ui`
 - This is important: an earlier deploy mistakenly copied to `/opt/serbia-poc/ui`, but the active service serves `/opt/serbia-poc-ui`.
 - Current served versions verified on the VM after the latest UI deploy (as of 2026-06-29):
-  - `styles.css?v=52`
-  - `app.js?v=68`
+  - `styles.css?v=53`
+  - `app.js?v=73`
 - These versions include colored point markers, manual final-answer presentation via `הצג תוצאות`, additive layer tabs, table resize/minimize, close/clear result-window behavior, query edit modal controls, `הצג תוצאות` / `הסתר תוצאות` controls styled identically to `הצג שאילתה` without the old square icon-button class, real tabbed result layers, standard tab/window close controls, and shared standard table visibility icons.
 
 Active MCP/Hermes service:
@@ -632,7 +669,7 @@ Expected: no matches in active data files.
 ## Suggested First Message To A New Assistant
 
 ```text
-Read PROJECT_HANDOFF.md first. Continue work on the Serbia/North Kosovo POC in llm_investigation_orchestrator_serbia_poc. The current branch is main and should be clean/aligned with origin/main. The UI is deployed from /opt/serbia-poc-ui on VM 151.145.93.180 and currently serves styles.css?v=52 and app.js?v=68. Do not touch C:\Users\user\Downloads\oracle.key.
+Read PROJECT_HANDOFF.md first. Continue work on the Serbia/North Kosovo POC in llm_investigation_orchestrator_serbia_poc. The UI is deployed from /opt/serbia-poc-ui on VM 151.145.93.180 and currently serves styles.css?v=53 and app.js?v=73 after the entity/location layer normalization work. Do not touch C:\Users\user\Downloads\oracle.key.
 
 Current behavior: colored map point markers with popups; final answers do not auto-present visualization layers; final `הצג תוצאות` presents/restores final-answer layers manually. The result table is a flush transparent tabbed overlay with real layer tabs, standard eye/eye-off toggles, per-tab `×` close, resize, `−` minimize, `□` restore/maximize, and window `×` close/clear. Final and step result actions use the same non-overlapping pill styling as `הצג שאילתה`; step cards toggle `הצג תוצאות` / `הסתר תוצאות`, and `הצג שאילתה` opens query details. Query edit modal controls exist but query re-execution is still future work.
 
