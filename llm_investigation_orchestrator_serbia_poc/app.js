@@ -1169,6 +1169,7 @@ function applyHermesResult(result, prompt, options = {}) {
   }
 
   finalizeAssistantMessage(result.answer, { result, prompt });
+  updateStepVisibilityButtons();
   renderQueryInspector();
   setSuggestions(["אילו הסברים תמימים יכולים להתאים לאותן ראיות?", "מה חסר כדי להעלות את רמת הביטחון?", "הצג את רצף האירועים לפי סדר הזמן"]);
 }
