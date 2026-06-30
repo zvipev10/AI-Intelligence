@@ -1110,6 +1110,17 @@ function applyHermesResult(result, prompt, options = {}) {
   result.answer = cleanAssistantAnswer(result.answer);
   // Save last result so the step-view return button can restore it
   if (!options.restoreOnly) {
+    // Reconcile sourceIds: live-poll layers were keyed with investigationId;
+    // final result has run_id. Rekey so buttons match after renderActivitySteps.
+    if (result.run_id && state.investigationId && result.run_id !== state.investigationId) {
+      const oldBase = sanitizeLayerKey(state.investigationId);
+      const newBase = sanitizeLayerKey(result.run_id);
+      state.layers.forEach(layer => {
+        if (layer.sourceId && layer.sourceId.includes(oldBase)) {
+          layer.sourceId = layer.sourceId.replace(oldBase, newBase);
+        }
+      });
+    }
     state.lastResult = result;
     state.lastPrompt = prompt;
     state.rawOverlayMinimized = false;
