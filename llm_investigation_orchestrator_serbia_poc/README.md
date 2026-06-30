@@ -141,6 +141,29 @@ python mcp_server/benchmark_tools.py --rounds 3
 
 The benchmark covers the full tool surface against Serbia/Kosovo questions: intent classification, location/event resolution, broad search, filtered search, actor history, aggregations, linkage explanation, sequence building, entity resolution, identifier tracing, semantic tracing, related-event expansion, and hypothesis challenge.
 
+## Saved Questions
+
+Saved Questions are the user-facing replacement for demo-only recorded replay. After a successful live investigation, press `שמור` near the prompt input to persist the full `/api/investigate` result.
+
+Runtime files live in:
+
+```text
+saved_questions/
+```
+
+The UI reads and writes them through:
+
+```text
+GET    /api/saved-questions
+GET    /api/saved-question?id=<saved-id>
+POST   /api/saved-question
+DELETE /api/saved-question?id=<saved-id>
+```
+
+Each saved file stores `id`, `schema_version`, `title`, `question`, `saved_at_utc`, `source_run_id`, and the full `result` object. Loading a saved question does not call Hermes; it restores the final answer, investigation steps, tool outputs, event/location/entity layers, map, timeline, table, and usage/performance metadata from the saved artifact.
+
+Runtime saved question JSON files are ignored by git. Keep only `saved_questions/.gitkeep` and docs in source control unless a deliberate sample fixture is needed.
+
 ## Recorded Demo Runs
 
 Recorded runs live in:
@@ -252,7 +275,7 @@ Deployment rules:
 - Local `.hermes-api.json` normally uses SSH transport through the VM.
 - VM `.hermes-api.json` uses `"transport": "direct"` against `127.0.0.1:8642`.
 - Preserve the existing VM API key from `/opt/serbia-poc-ui/.hermes-api.json`.
-- Include `server.py`, `index.html`, `app.js`, `styles.css`, `help.html`, `README.md`, `vendor/`, `data/`, and `recorded_runs/`.
+- Include `server.py`, `index.html`, `app.js`, `styles.css`, `help.html`, `README.md`, `vendor/`, `data/`, `recorded_runs/`, and `saved_questions/`.
 - Restart `serbia-poc-ui.service`.
 - Verify the public HTTPS endpoint, not only files on disk.
 

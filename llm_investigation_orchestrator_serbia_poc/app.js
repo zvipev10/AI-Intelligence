@@ -179,6 +179,7 @@ const state = {
   history: [],
   investigationId: createInvestigationId(),
   recordedQuestions: [],
+  savedQuestions: [],
   busy: false,
   activeAssistantMessage: null,
   activeActivityList: null,
@@ -202,6 +203,7 @@ const resultTitle = document.getElementById("resultTitle");
 const resultSubtitle = document.getElementById("resultSubtitle");
 const resultCount = document.getElementById("resultCount");
 const sendButton = document.getElementById("sendButton");
+const saveQuestionButton = document.getElementById("saveQuestionButton");
 const recordedButton = document.getElementById("recordedButton");
 const recordedModal = document.getElementById("recordedModal");
 const recordedClose = document.getElementById("recordedClose");
@@ -708,6 +710,7 @@ function finalizeAssistantMessage(answer, options = {}) {
   state.activeAssistantMessage = null;
   state.activeActivityList = null;
   state.activeActivityEmpty = null;
+  updateSaveQuestionButton();
 }
 
 function showFinalAnswerResult(result, prompt) {
@@ -1185,6 +1188,74 @@ function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+function canSaveCurrentResult() {
+  return Boolean(
+    state.lastPrompt
+    && state.lastResult
+    && state.lastResult.answer
+    && !state.lastResult.demo_replay
+    && !state.lastResult.recorded_id
+    && !state.lastResult.saved_question_id
+  );
+}
+
+function updateSaveQuestionButton() {
+  if (!saveQuestionButton) return;
+  saveQuestionButton.disabled = state.busy || !canSaveCurrentResult();
+  saveQuestionButton.textContent = "שמור";
+  saveQuestionButton.title = "שמור את תוצאת החקירה";
+}
+
+function formatSavedTime(value) {
+  if (!value) return "זמן שמירה לא ידוע";
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return value;
+  return parsed.toLocaleString("he-IL", {
+    dateStyle: "short",
+    timeStyle: "short",
+  });
+}
+
+async function saveCurrentQuestion() {
+  if (!canSaveCurrentResult() || state.busy) return;
+  saveQuestionButton.disabled = true;
+  saveQuestionButton.textContent = "שומר...";
+  try {
+    const title = state.lastPrompt.trim().slice(0, 60);
+    const response = await fetch("/api/saved-question", {
+      method: "POST",
+      headers: { "Content-Type": "application/json; charset=utf-8" },
+      body: JSON.stringify({
+        title,
+        question: state.lastPrompt,
+        result: state.lastResult,
+      }),
+    });
+    const payload = await response.json();
+    if (!response.ok) throw new Error(payload.error || "שמירת השאלה נכשלה");
+    state.lastResult = { ...state.lastResult, saved_question_id: payload.id };
+    saveQuestionButton.textContent = "נשמר";
+  } catch (error) {
+    saveQuestionButton.textContent = "נכשל";
+    saveQuestionButton.title = error.message;
+  } finally {
+    setTimeout(updateSaveQuestionButton, 1400);
+  }
+}
+
+async function deleteSavedQuestion(savedId) {
+  if (!savedId || state.busy) return;
+  try {
+    const response = await fetch(`/api/saved-question?id=${encodeURIComponent(savedId)}`, { method: "DELETE" });
+    const payload = await response.json();
+    if (!response.ok) throw new Error(payload.error || "מחיקת השאלה נכשלה");
+    state.savedQuestions = state.savedQuestions.filter(item => item.id !== savedId);
+    loadRecordedQuestions();
+  } catch (error) {
+    recordedList.innerHTML = `<div class="activity-empty">מחיקת השאלה השמורה נכשלה: ${escapeHtml(error.message)}</div>`;
+  }
+}
+
 function applyHermesResult(result, prompt, options = {}) {
   result.answer = cleanAssistantAnswer(result.answer);
   // Save last result so the step-view return button can restore it
@@ -1207,6 +1278,7 @@ function applyHermesResult(result, prompt, options = {}) {
     state.lastPrompt = prompt;
     state.rawOverlayMinimized = false;
     state.rawOverlayHeight = 28;
+    updateSaveQuestionButton();
   }
 
   if (options.restoreOnly) {
@@ -1271,50 +1343,36 @@ function applyHermesResult(result, prompt, options = {}) {
   setSuggestions(["אילו הסברים תמימים יכולים להתאים לאותן ראיות?", "מה חסר כדי להעלות את רמת הביטחון?", "הצג את רצף האירועים לפי סדר הזמן"]);
 }
 
-async function replayRecordedResult(result, prompt) {
-  setActiveResearchMessage("מציג ריצה מוקלטת...");
-  const steps = result.investigation_steps || [];
-  const delay = Number(result.replay_delay_ms || 2000);
-  for (let index = 0; index < steps.length; index += 1) {
-    const step = steps[index];
-    addActivity(step.tool, step.action, step.result, {
-      stepNumber: index + 1,
-      bridgeSummary: step.bridge_summary,
-      rationale: step.rationale || step.decision,
-      technical: step.technical,
-      isError: step.technical?.is_error,
-      stepData: step,
-      sourceId: stepSourceId(result, index + 1),
-      sourceLabel: `צעד ${index + 1}: ${humanToolLabel(step.tool)}`
-    });
-    await sleep(delay);
-  }
-  state.history.push({ role: "user", content: prompt }, { role: "assistant", content: result.answer });
-  applyHermesResult(result, prompt, { keepRenderedSteps: true });
-}
-
-async function runRecordedQuestion(recordedId) {
+async function runSavedQuestion(savedId) {
   if (state.busy) return;
   closeRecordedModal();
   state.busy = true;
   sendButton.disabled = true;
   recordedButton.disabled = true;
+  updateSaveQuestionButton();
   sendButton.textContent = "מציג...";
   try {
-    const response = await fetch(`/api/recorded-run?id=${encodeURIComponent(recordedId)}`, { cache: "no-store" });
-    const result = await response.json();
-    if (!response.ok) throw new Error(result.error || "Recorded run failed");
-    const prompt = (state.recordedQuestions.find(item => item.id === recordedId)?.question || result.question || "").trim();
+    const response = await fetch(`/api/saved-question?id=${encodeURIComponent(savedId)}`, { cache: "no-store" });
+    const saved = await response.json();
+    if (!response.ok) throw new Error(saved.error || "טעינת השאלה השמורה נכשלה");
+    const result = {
+      ...(saved.result || {}),
+      saved_question_id: saved.id,
+      source_run_id: saved.source_run_id || saved.result?.run_id,
+    };
+    const prompt = (saved.question || "").trim();
     appendMessage("user", `<p>${escapeHtml(prompt)}</p>`);
-    await replayRecordedResult(result, prompt);
+    state.history.push({ role: "user", content: prompt }, { role: "assistant", content: result.answer || "" });
+    applyHermesResult(result, prompt);
   } catch (error) {
-    addActivity("recorded_replay", "טעינת שאלה מוקלטת", error.message, { isError: true });
-    finalizeAssistantMessage(`<p>לא הצלחתי להציג את השאלה המוקלטת.</p><div class="answer-callout">${escapeHtml(error.message)}</div>`, { html: true });
+    startAssistantResearchMessage("טעינת שאלה שמורה נכשלה.");
+    finalizeAssistantMessage(`<p>לא הצלחתי להציג את השאלה השמורה.</p><div class="answer-callout">${escapeHtml(error.message)}</div>`, { html: true });
   } finally {
     state.busy = false;
     sendButton.disabled = false;
     recordedButton.disabled = false;
     sendButton.textContent = "שלח";
+    updateSaveQuestionButton();
   }
 }
 
@@ -1328,24 +1386,31 @@ function closeRecordedModal() {
 }
 
 async function loadRecordedQuestions() {
-  recordedList.innerHTML = `<div class="activity-empty">טוען שאלות מוקלטות...</div>`;
+  recordedList.innerHTML = `<div class="activity-empty">טוען שאלות שמורות...</div>`;
   try {
-    const response = await fetch("/api/recorded-questions", { cache: "no-store" });
+    const response = await fetch("/api/saved-questions", { cache: "no-store" });
     const payload = await response.json();
-    if (!response.ok) throw new Error(payload.error || "Recorded questions unavailable");
-    state.recordedQuestions = payload.questions || [];
-    if (!state.recordedQuestions.length) {
-      recordedList.innerHTML = `<div class="activity-empty">לא נמצאו שאלות מוקלטות.</div>`;
+    if (!response.ok) throw new Error(payload.error || "Saved questions unavailable");
+    state.savedQuestions = payload.saved_questions || [];
+    if (!state.savedQuestions.length) {
+      recordedList.innerHTML = `<div class="activity-empty">לא נמצאו שאלות שמורות.</div>`;
       return;
     }
-    recordedList.innerHTML = state.recordedQuestions.map(item => `
-      <button class="recorded-question" type="button" data-recorded-id="${escapeHtml(item.id)}">
-        <strong>${escapeHtml(item.question)}</strong>
-        <span>${escapeHtml(VIEW_LABELS[item.view] || item.view || "תצוגה")} · ${Number(item.step_count || 0)} צעדים מוקלטים · ניגון כל 2 שניות</span>
-      </button>
+    recordedList.innerHTML = state.savedQuestions.map(item => `
+      <article class="recorded-question saved-question-card">
+        <div class="saved-question-main">
+          <strong>${escapeHtml(item.title || item.question || "שאלה שמורה")}</strong>
+          <p>${escapeHtml(item.question || "")}</p>
+          <span>${escapeHtml(formatSavedTime(item.saved_at_utc))} · ${escapeHtml(VIEW_LABELS[item.recommended_view] || item.recommended_view || "תצוגה")} · ${Number(item.step_count || 0)} צעדים</span>
+        </div>
+        <div class="saved-question-actions">
+          <button type="button" data-saved-id="${escapeHtml(item.id)}">פתח</button>
+          <button type="button" class="danger-button" data-saved-delete="${escapeHtml(item.id)}">מחק</button>
+        </div>
+      </article>
     `).join("");
   } catch (error) {
-    recordedList.innerHTML = `<div class="activity-empty">טעינת השאלות המוקלטות נכשלה: ${escapeHtml(error.message)}</div>`;
+    recordedList.innerHTML = `<div class="activity-empty">טעינת השאלות השמורות נכשלה: ${escapeHtml(error.message)}</div>`;
   }
 }
 
@@ -1358,6 +1423,7 @@ async function runPrompt(prompt) {
   startAssistantResearchMessage();
   state.busy = true;
   sendButton.disabled = true;
+  updateSaveQuestionButton();
   sendButton.textContent = "חוקר...";
   suggestions.innerHTML = "";
   let liveStepCount = 0;
@@ -1421,6 +1487,7 @@ async function runPrompt(prompt) {
     state.busy = false;
     sendButton.disabled = false;
     sendButton.textContent = "שלח";
+    updateSaveQuestionButton();
   }
 }
 
@@ -1753,6 +1820,8 @@ function resetInvestigation() {
   state.activeAssistantMessage = null;
   state.activeActivityList = null;
   state.activeActivityEmpty = null;
+  state.lastResult = null;
+  state.lastPrompt = null;
   state.queryContext = null;
   conversation.innerHTML = '<article class="message assistant-message"><div class="message-label">סוכן חקירה</div><p>אפשר להתחיל בשאלה פתוחה. אשתמש בכלי החיפוש, הזמן והמפה כדי לבנות תשובה שניתן לבדוק מול האירועים הגולמיים.</p></article>';
   if (resultTitle) resultTitle.textContent = "טרם בוצעה חקירה";
@@ -1762,6 +1831,7 @@ function resetInvestigation() {
   setSuggestions(["אילו דיווחים על חסימות הופיעו ראשונים?", "האם הטענה על חציית גבול מגובה במקור אמין?", "איפה יש ריכוזי דיווחים מרכזיים?"]);
   renderAllViews();
   renderQueryInspector();
+  updateSaveQuestionButton();
   if (state.map) setTimeout(() => state.map.resize(), 0);
 }
 
@@ -1776,8 +1846,14 @@ document.addEventListener("click", event => {
   if (event.target.closest("#queryModalClose")) closeQueryModal();
   if (event.target === queryModal) closeQueryModal();
   if (event.target.id === "queryFormRunButton") handleQueryFormSubmit();
-  const recordedQuestion = event.target.closest("[data-recorded-id]");
-  if (recordedQuestion) runRecordedQuestion(recordedQuestion.dataset.recordedId);
+  const savedDelete = event.target.closest("[data-saved-delete]");
+  if (savedDelete) {
+    event.stopPropagation();
+    deleteSavedQuestion(savedDelete.dataset.savedDelete);
+    return;
+  }
+  const savedQuestion = event.target.closest("[data-saved-id]");
+  if (savedQuestion) runSavedQuestion(savedQuestion.dataset.savedId);
   const viewButton = event.target.closest("[data-view]");
   if (viewButton) activateView(viewButton.dataset.view);
   const sourceVisibilityBtn = event.target.closest(".source-visibility-btn");
@@ -1880,6 +1956,7 @@ promptInput.addEventListener("keydown", event => {
 });
 
 document.getElementById("resetButton").addEventListener("click", resetInvestigation);
+saveQuestionButton.addEventListener("click", saveCurrentQuestion);
 recordedButton.addEventListener("click", openRecordedModal);
 recordedClose.addEventListener("click", closeRecordedModal);
 initPanelResizers();

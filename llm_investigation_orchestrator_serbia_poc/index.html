@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>סביבת חקירה מונחית סוכן</title>
   <link rel="stylesheet" href="./vendor/maplibre-gl.css">
-  <link rel="stylesheet" href="./styles.css?v=54">
+  <link rel="stylesheet" href="./styles.css?v=55">
 </head>
 <body>
   <a class="help-button" href="./help.html" target="_blank" rel="noopener" aria-label="פתח עזרה">?</a>
@@ -34,8 +34,9 @@
         <button type="button" data-prompt="איפה יש ריכוזי דיווחים מרכזיים בצפון קוסובו?">איפה יש ריכוזי דיווחים מרכזיים בצפון קוסובו?</button>
       </div>
       <form id="promptForm" class="prompt-form">
-        <button id="recordedButton" class="recorded-button" type="button" title="שאלות מוקלטות" aria-label="שאלות מוקלטות">+</button>
+        <button id="recordedButton" class="recorded-button" type="button" title="שאלות שמורות" aria-label="שאלות שמורות">+</button>
         <textarea id="promptInput" rows="2" aria-label="שאלת חקירה" placeholder="כתוב שאלת חקירה..."></textarea>
+        <button id="saveQuestionButton" class="save-question-button" type="button" title="שמור את תוצאת החקירה" disabled>שמור</button>
         <button id="sendButton" type="submit">שלח</button>
       </form>
     </aside>
@@ -78,12 +79,12 @@
     <section class="recorded-modal" role="dialog" aria-modal="true" aria-labelledby="recordedModalTitle">
       <div class="recorded-modal-header">
         <div>
-          <span class="eyebrow">דמו מהיר</span>
-          <h2 id="recordedModalTitle">שאלות מוקלטות</h2>
+          <span class="eyebrow">חקירות שנשמרו</span>
+          <h2 id="recordedModalTitle">שאלות שמורות</h2>
         </div>
         <button id="recordedClose" class="quiet-button" type="button">סגור</button>
       </div>
-      <p class="recorded-modal-note">בחירה בשאלה תציג ריצה מוקלטת מתוך תוצר אמיתי של הסוכן. הצעדים יופיעו בהדרגה, כל כ-2 שניות.</p>
+      <p class="recorded-modal-note">בחירה בשאלה תטען תוצאת חקירה שמורה בלי להריץ את הסוכן מחדש.</p>
       <div id="recordedList" class="recorded-list"></div>
     </section>
   </div>
@@ -121,6 +122,6 @@
   </div>
 
   <script src="./vendor/maplibre-gl.js"></script>
-  <script src="./app.js?v=73"></script>
+  <script src="./app.js?v=74"></script>
 </body>
 </html>

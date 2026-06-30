@@ -145,6 +145,38 @@ Recommended UI deployment pattern:
 6. Verify served versions through the public HTTPS endpoint, not only disk files.
 7. Never deploy from a stale local working tree with uncommitted old UI files.
 
+## Saved Questions
+
+Saved Questions are now the user-facing way to persist investigation results. After a successful live `/api/investigate` response, the UI enables `שמור` near the prompt input. Saving writes the full result artifact, not only the final answer.
+
+Runtime storage:
+
+```text
+llm_investigation_orchestrator_serbia_poc/saved_questions/
+/opt/serbia-poc-ui/saved_questions/
+```
+
+Backend endpoints:
+
+```text
+GET    /api/saved-questions
+GET    /api/saved-question?id=<saved-id>
+POST   /api/saved-question
+DELETE /api/saved-question?id=<saved-id>
+```
+
+Implementation details:
+
+- One UTF-8 JSON file per saved question.
+- IDs are generated server-side as `saved_YYYYMMDD_HHMMSS_<hex>`.
+- IDs are strictly validated before read/delete.
+- Writes use a temporary file followed by rename.
+- Listing skips corrupt or incomplete JSON files.
+- Runtime `saved_questions/*.json` files are ignored by git; only `.gitkeep` is committed.
+- Loading a saved question does not call Hermes. It restores the saved result through the normal `applyHermesResult` path so final-answer `הצג תוצאות`, per-step `הצג תוצאות`, map, timeline, table, event layers, location layers, entity layers, and aggregation layers keep working.
+
+Deployment note: include `saved_questions/` in the UI deployment package and ensure `/opt/serbia-poc-ui/saved_questions/` is owned by the UI service user.
+
 ## Recorded Demo Runs
 
 Recorded demo runs are served by the UI backend from:

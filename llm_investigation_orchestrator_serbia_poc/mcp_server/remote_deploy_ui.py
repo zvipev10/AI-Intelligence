@@ -34,6 +34,7 @@ DIRS = [
     "vendor",
     "data",
     "recorded_runs",
+    "saved_questions",
 ]
 
 

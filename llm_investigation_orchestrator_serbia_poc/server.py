@@ -8,6 +8,7 @@ import os
 import re
 import sys
 import time
+import secrets
 from datetime import datetime, timezone
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -23,10 +24,12 @@ ROOT = Path(__file__).resolve().parent
 CONFIG_PATH = ROOT / ".hermes-api.json"
 PERFORMANCE_DIR = ROOT / "performance_logs"
 RECORDED_RUNS_DIR = ROOT / "recorded_runs"
+SAVED_QUESTIONS_DIR = ROOT / "saved_questions"
 RECORDED_RUNS_PATH = ROOT / "test_runs" / "compact_demo_after_general_instructions_20260620T151848Z.json"
 LOCATIONS_PATH = ROOT / "data" / "serbia_kosovo_locations.json"
 TERMINAL_STATUSES = {"completed", "failed", "cancelled"}
 EVENT_ID_PATTERN = re.compile(r"\b(?:REC-\d{6}|LOC-\d{3})\b")
+SAVED_QUESTION_ID_PATTERN = re.compile(r"^[A-Za-z0-9_.-]+$")
 ACTIVE_RUN_STARTED_AT = None
 APP_BUILD = "serbia-poc-1"
 REMOTE_AUDIT_PATH = "/opt/serbia-poc/mcp_audit.jsonl"
@@ -330,6 +333,113 @@ def recorded_result(recorded_id: str) -> dict | None:
             "performance_log": item.get("performance_log"),
         }
     return None
+
+
+def utc_now_iso() -> str:
+    return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+
+
+def saved_question_path(saved_id: str) -> Path:
+    if not SAVED_QUESTION_ID_PATTERN.fullmatch(saved_id or ""):
+        raise ValueError("Invalid saved question id")
+    path = (SAVED_QUESTIONS_DIR / f"{saved_id}.json").resolve()
+    if SAVED_QUESTIONS_DIR.resolve() not in path.parents:
+        raise ValueError("Invalid saved question path")
+    return path
+
+
+def saved_question_metadata(payload: dict) -> dict:
+    result = payload.get("result") if isinstance(payload.get("result"), dict) else {}
+    return {
+        "id": payload.get("id"),
+        "title": payload.get("title") or payload.get("question") or "שאלה שמורה",
+        "question": payload.get("question") or "",
+        "saved_at_utc": payload.get("saved_at_utc"),
+        "source_run_id": payload.get("source_run_id") or result.get("run_id"),
+        "recommended_view": result.get("recommended_view") or "evidence",
+        "step_count": len(result.get("investigation_steps") or []),
+    }
+
+
+def load_saved_questions() -> list[dict]:
+    if not SAVED_QUESTIONS_DIR.exists():
+        return []
+    saved: list[dict] = []
+    for path in sorted(SAVED_QUESTIONS_DIR.glob("*.json")):
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8-sig"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if not isinstance(payload, dict):
+            continue
+        result = payload.get("result")
+        if not payload.get("id") or not payload.get("question") or not isinstance(result, dict) or not result.get("answer"):
+            continue
+        saved.append(payload)
+    return sorted(saved, key=lambda item: str(item.get("saved_at_utc") or ""), reverse=True)
+
+
+def list_saved_question_metadata() -> list[dict]:
+    return [saved_question_metadata(item) for item in load_saved_questions()]
+
+
+def load_saved_question(saved_id: str) -> dict | None:
+    try:
+        path = saved_question_path(saved_id)
+    except ValueError:
+        return None
+    if not path.exists():
+        return None
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8-sig"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    if not isinstance(payload, dict):
+        return None
+    result = payload.get("result")
+    if not payload.get("question") or not isinstance(result, dict) or not result.get("answer"):
+        return None
+    return payload
+
+
+def create_saved_question(request: dict) -> dict:
+    question = str(request.get("question") or "").strip()
+    result = request.get("result")
+    if not question:
+        raise ValueError("Missing question")
+    if not isinstance(result, dict):
+        raise ValueError("Missing result")
+    if not str(result.get("answer") or "").strip():
+        raise ValueError("Missing result answer")
+    if not isinstance(result.get("investigation_steps"), list):
+        result = {**result, "investigation_steps": []}
+    now = utc_now_iso()
+    saved_id = f"saved_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}_{secrets.token_hex(3)}"
+    raw_title = str(request.get("title") or "").strip()
+    title = raw_title or question[:60]
+    payload = {
+        "id": saved_id,
+        "schema_version": 1,
+        "title": title,
+        "question": question,
+        "saved_at_utc": now,
+        "source_run_id": result.get("run_id"),
+        "result": result,
+    }
+    SAVED_QUESTIONS_DIR.mkdir(parents=True, exist_ok=True)
+    path = saved_question_path(saved_id)
+    tmp_path = path.with_suffix(".json.tmp")
+    tmp_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    tmp_path.replace(path)
+    return payload
+
+
+def delete_saved_question(saved_id: str) -> bool:
+    path = saved_question_path(saved_id)
+    if not path.exists():
+        return False
+    path.unlink()
+    return True
 
 
 class SSHHTTPConnection(http.client.HTTPConnection):
@@ -1462,6 +1572,18 @@ class Handler(SimpleHTTPRequestHandler):
         if path.path == "/api/status":
             self.send_json(200, {"mode": "hermes", "configured": CONFIG_PATH.exists(), "build": APP_BUILD})
             return
+        if path.path == "/api/saved-questions":
+            self.send_json(200, {"saved_questions": list_saved_question_metadata()})
+            return
+        if path.path == "/api/saved-question":
+            query = parse_qs(path.query)
+            saved_id = (query.get("id") or [""])[0]
+            result = load_saved_question(saved_id)
+            if result is None:
+                self.send_json(404, {"error": "Saved question not found"})
+            else:
+                self.send_json(200, result)
+            return
         if path.path == "/api/recorded-questions":
             self.send_json(200, {"questions": recorded_questions(), "replay_delay_ms": 2000})
             return
@@ -1486,6 +1608,20 @@ class Handler(SimpleHTTPRequestHandler):
 
     def do_POST(self):
         path = urlparse(self.path).path
+        if path == "/api/saved-question":
+            try:
+                length = int(self.headers.get("Content-Length", "0"))
+                if length > 15_000_000:
+                    self.send_json(413, {"error": "Saved question payload too large"})
+                    return
+                request = json.loads(self.rfile.read(length).decode("utf-8-sig"))
+                saved = create_saved_question(request)
+                self.send_json(201, saved_question_metadata(saved))
+            except ValueError as exc:
+                self.send_json(400, {"error": str(exc)})
+            except Exception as exc:
+                self.send_json(502, {"error": str(exc)})
+            return
         if path == "/api/performance-client":
             try:
                 length = int(self.headers.get("Content-Length", "0"))
@@ -1517,6 +1653,23 @@ class Handler(SimpleHTTPRequestHandler):
             self.send_json(200, result)
         except Exception as exc:
             self.send_json(502, {"error": str(exc)})
+
+    def do_DELETE(self):
+        path = urlparse(self.path)
+        if path.path != "/api/saved-question":
+            self.send_error(404)
+            return
+        query = parse_qs(path.query)
+        saved_id = (query.get("id") or [""])[0]
+        try:
+            deleted = delete_saved_question(saved_id)
+        except ValueError as exc:
+            self.send_json(400, {"error": str(exc)})
+            return
+        if not deleted:
+            self.send_json(404, {"error": "Saved question not found"})
+            return
+        self.send_json(200, {"deleted": True, "id": saved_id})
 
 
 if __name__ == "__main__":
