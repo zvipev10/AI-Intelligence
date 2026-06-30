@@ -97,30 +97,31 @@ h3 { margin: 0; font-size: 14px; }
 .view-pane { display: none; }
 .view-pane.active { display: block; }
 .map-canvas { height: 100%; min-height: 0; }
-.raw-events-overlay { --raw-overlay-height: 28%; position: absolute; z-index: 3; left: 14px; right: 14px; bottom: 14px; height: var(--raw-overlay-height); min-height: 150px; max-height: 55%; display: grid; grid-template-rows: 10px auto minmax(0, 1fr); border: 1px solid rgba(146, 170, 205, .42); border-radius: 12px; background: rgba(15, 19, 27, .82); box-shadow: 0 16px 48px rgba(0,0,0,.38); backdrop-filter: blur(8px); overflow: hidden; }
+.raw-events-overlay { --raw-overlay-height: 28%; position: absolute; z-index: 3; left: 0; right: 0; bottom: 0; height: var(--raw-overlay-height); min-height: 150px; max-height: 55%; display: grid; grid-template-rows: 10px auto minmax(0, 1fr); border: 1px solid rgba(146, 170, 205, .42); border-bottom: 0; border-radius: 10px 10px 0 0; background: rgba(15, 19, 27, .82); box-shadow: 0 -10px 42px rgba(0,0,0,.34); backdrop-filter: blur(8px); overflow: hidden; }
 .raw-events-overlay[hidden] { display: none; }
 .raw-events-overlay.minimized { height: auto; min-height: 0; grid-template-rows: auto; }
 .raw-events-overlay.minimized .raw-events-resize-handle, .raw-events-overlay.minimized .raw-events-table { display: none; }
 .raw-events-resize-handle { height: 10px; cursor: ns-resize; background: linear-gradient(to bottom, rgba(255,255,255,.12), rgba(255,255,255,0)); touch-action: none; }
 .raw-events-resize-handle::after { content: ""; display: block; width: 44px; height: 3px; margin: 3px auto 0; border-radius: 999px; background: rgba(190, 205, 228, .46); }
-.raw-events-header { min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; border-bottom: 1px solid rgba(146, 170, 205, .22); }
-.raw-events-tabs { min-width: 0; display: flex; gap: 6px; padding: 8px; overflow-x: auto; }
-.raw-events-window-actions { margin-left: 8px; display: flex; gap: 6px; align-items: center; }
-.raw-events-window-btn { width: 28px; height: 28px; border: 1px solid var(--line); border-radius: 999px; background: rgba(30, 36, 48, .78); color: var(--blue); font-size: 15px; font-weight: 900; line-height: 1; cursor: pointer; }
-.raw-events-window-btn:hover { border-color: var(--blue); color: #fff; }
+.raw-events-header { min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0; align-items: stretch; border-bottom: 1px solid rgba(146, 170, 205, .24); background: rgba(13, 17, 24, .58); }
+.raw-events-tabs { min-width: 0; display: flex; gap: 0; padding: 0 8px; overflow-x: auto; align-items: end; }
+.raw-events-window-actions { display: flex; align-items: stretch; border-right: 1px solid rgba(146, 170, 205, .2); }
+.raw-events-window-btn { width: 34px; height: 34px; border: 0; border-left: 1px solid rgba(146, 170, 205, .2); border-radius: 0; background: transparent; color: var(--muted); font-size: 17px; font-weight: 800; line-height: 1; cursor: pointer; }
+.raw-events-window-btn:hover { background: rgba(88,166,255,.13); color: #fff; }
 #rawEventsClose:hover { border-color: var(--red); color: var(--red); }
-.raw-source-tab { display: inline-flex; align-items: center; gap: 7px; flex: 0 0 auto; padding: 6px 10px; border: 1px solid var(--line); border-radius: 999px; background: rgba(30, 36, 48, .78); color: var(--muted); font-size: 10px; font-weight: 800; cursor: pointer; }
+.raw-source-tab { position: relative; display: inline-flex; align-items: center; gap: 7px; flex: 0 0 auto; min-height: 34px; margin-top: 5px; margin-bottom: -1px; padding: 7px 10px; border: 1px solid rgba(146, 170, 205, .24); border-left: 0; border-radius: 8px 8px 0 0; background: rgba(21, 27, 38, .72); color: var(--muted); font-size: 10px; font-weight: 800; cursor: pointer; }
+.raw-source-tab:first-child { border-left: 1px solid rgba(146, 170, 205, .24); }
 .raw-source-tab strong { color: var(--blue); font-size: 9px; }
-.raw-source-tab.active { border-color: var(--layer-color, var(--green)); background: rgba(129, 201, 149, .14); color: var(--ink); }
+.raw-source-tab.active { border-color: rgba(146, 170, 205, .36); border-top-color: var(--layer-color, var(--green)); border-top-width: 2px; background: rgba(15, 19, 27, .94); color: var(--ink); z-index: 1; }
 .raw-source-tab.hidden-source { opacity: .58; border-style: dashed; }
 .raw-source-color { width: 9px; height: 9px; border-radius: 999px; background: var(--layer-color, var(--blue)); box-shadow: 0 0 0 2px rgba(255,255,255,.08); flex: 0 0 auto; }
 .raw-source-name { max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.raw-source-eye, .raw-source-close { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 999px; border: 1px solid rgba(146, 170, 205, .32); font-size: 10px; line-height: 1; }
+.raw-source-eye, .raw-source-close { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 4px; border: 0; font-size: 12px; line-height: 1; }
 .raw-source-eye { color: var(--green); cursor: pointer; }
-.raw-source-close { color: var(--muted); font-size: 13px; font-weight: 900; }
+.raw-source-close { color: var(--muted); font-size: 16px; font-weight: 500; }
 .raw-source-tab.hidden-source .raw-source-eye { color: var(--muted); }
-.raw-source-eye:hover { border-color: var(--blue); color: var(--blue); }
-.raw-source-close:hover { border-color: var(--red); color: var(--red); }
+.raw-source-eye:hover { background: rgba(88,166,255,.12); color: var(--blue); }
+.raw-source-close:hover { background: rgba(242,139,130,.12); color: var(--red); }
 .raw-events-table { height: 100%; background: rgba(9, 12, 18, .42); }
 .raw-events-table table { font-size: 10px; }
 .raw-events-table th, .raw-events-table td { padding: 7px 8px; }
@@ -234,7 +235,7 @@ th { position: sticky; top: 0; z-index: 1; background: #202530; }
   .panel-resizer { display: none; }
   .conversation-panel { min-height: 620px; }
   .result-panel { min-height: 680px; }
-  .raw-events-overlay { left: 8px; right: 8px; bottom: 8px; height: 36%; min-height: 190px; }
+  .raw-events-overlay { left: 0; right: 0; bottom: 0; height: 36%; min-height: 190px; }
   .raw-events-table { overflow-x: auto; }
   .raw-events-table table { width: 880px; min-width: 880px; table-layout: fixed; }
 }

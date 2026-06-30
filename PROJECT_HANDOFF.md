@@ -33,7 +33,7 @@ Current local working tree expectation:
 
 **Important sync lesson (2026-06-29):** A stale local workspace and stale VM deployment briefly reintroduced old behavior: rectangular map markers and automatic final-answer presentation. GitHub already had the correct point-marker/manual-show behavior, but the VM was still serving older `styles.css?v=36` and `app.js?v=48`. Before every deploy, fetch GitHub, verify `git status --short --branch`, and deploy from the current committed `main`, not from stale uncommitted local files.
 
-**Latest UI completion note (2026-06-29):** Map markers are colored points with popups; final-answer results are not presented automatically and are shown only via the final `הצג` button. Result table window controls exist: `↓` minimizes, `↑` reopens, and `×` closes/clears result layers from map/timeline/table. Step presentation controls moved into each step card: a text button toggles between `הצג תוצאות` and `הסתר תוצאות`, and `הצג שאילתה` opens the query modal. The result-table layer visibility control still uses the standard eye/eye-off icon. Current deployed asset versions are `styles.css?v=49` and `app.js?v=65`.
+**Latest UI completion note (2026-06-29):** Map markers are colored points with popups; final-answer results are not presented automatically and are shown only via the final `הצג` button. Result layers are shown in a flush transparent tabbed overlay attached to the map/timeline borders. Each layer appears as a real tab with a standard `×` close control, and the whole overlay uses standard window controls: `−` minimize, `□` restore/maximize, and `×` close/clear. Step presentation controls moved into each step card: a text button toggles between `הצג תוצאות` and `הסתר תוצאות`, and `הצג שאילתה` opens the query modal. Current deployed asset versions are `styles.css?v=50` and `app.js?v=66`.
 
 ## Active POC
 
@@ -64,9 +64,9 @@ Active UI service:
 - Actual served path: `/opt/serbia-poc-ui`
 - This is important: an earlier deploy mistakenly copied to `/opt/serbia-poc/ui`, but the active service serves `/opt/serbia-poc-ui`.
 - Current served versions verified on the VM after the latest UI deploy (as of 2026-06-29):
-  - `styles.css?v=49`
-  - `app.js?v=65`
-- These versions include colored point markers, manual final-answer presentation via `הצג`, additive layer tabs, table resize/minimize, close/clear result-window behavior, query edit modal controls, per-step `הצג תוצאות` / `הסתר תוצאות` controls, and shared standard table visibility icons.
+  - `styles.css?v=50`
+  - `app.js?v=66`
+- These versions include colored point markers, manual final-answer presentation via `הצג`, additive layer tabs, table resize/minimize, close/clear result-window behavior, query edit modal controls, per-step `הצג תוצאות` / `הסתר תוצאות` controls, real tabbed result layers, standard tab/window close controls, and shared standard table visibility icons.
 
 Active MCP/Hermes service:
 
@@ -264,17 +264,17 @@ Important functions in `app.js`:
 
 Current UI behavior:
 
-- The raw/results table is an overlay shared by map and timeline.
-- Table tabs are layer tabs, not source-type-only tabs.
+- The raw/results table is a transparent overlay shared by map and timeline, flush with the map/timeline borders.
+- Table tabs are real layer tabs, not source-type-only pills.
 - Each layer tab has a standard eye/eye-off toggle.
-- Each layer tab has an `x` close control.
+- Each layer tab has a standard `×` close control.
 - Each layer tab displays the layer color.
 - Hiding a layer affects all visualizations where that layer participates.
 - Closing a layer removes it from the current workspace and releases its color.
-- The overlay can be resized and minimized.
-- Final assistant answers now have a `הצג` button.
-- Clicking final `הצג` adds or focuses that answer’s result layers and clears any open step-view banner.
-- Tool steps still have `הצג` buttons that present the step’s specific result/layers.
+- The overlay can be resized, minimized with `−`, restored/maximized with `□`, and closed/cleared with `×`.
+- Final assistant answers have a `הצג` button.
+- Clicking final `הצג` adds or focuses that answer’s result layers without automatically overriding the current visual state on answer arrival.
+- Tool steps use `הצג תוצאות` / `הסתר תוצאות` for step result layers and `הצג שאילתה` for query/tool details.
 - Map locations are shown as colored point markers, not always-open rectangles.
 - Clicking a map point opens a MapLibre popup with the location name, item count, and contributing layer labels.
 
@@ -498,9 +498,9 @@ Design decision:
 5. Stub handler `handleQueryFormSubmit()` for Phase 2a.
 
 **Files affected:**
-- `app.js` (query cleanup, query form state/functions, modal controls, step-card visibility behavior, layer presentation behavior; current deployed version `v=65`)
-- `index.html` (query modal/result controls; current deployed script version `v=65`)
-- `styles.css` (query form, layer tabs, point markers, result-window controls, standard eye/eye-off visibility icons and step-result text toggle styling; current deployed version `v=49`)
+- `app.js` (query cleanup, query form state/functions, modal controls, step-card visibility behavior, layer presentation behavior; current deployed version `v=66`)
+- `index.html` (query modal/result controls; current deployed script version `v=66`)
+- `styles.css` (query form, layer tabs, point markers, result-window controls, standard eye/eye-off visibility icons and step-result text toggle styling; current deployed version `v=50`)
 
 **Rationale:**
 - Query ≠ Results: Query payload should contain only request parameters, not response data.
@@ -632,9 +632,9 @@ Expected: no matches in active data files.
 ## Suggested First Message To A New Assistant
 
 ```text
-Read PROJECT_HANDOFF.md first. Continue work on the Serbia/North Kosovo POC in llm_investigation_orchestrator_serbia_poc. The current branch is main and should be clean/aligned with origin/main. The UI is deployed from /opt/serbia-poc-ui on VM 151.145.93.180 and currently serves styles.css?v=49 and app.js?v=65. Do not touch C:\Users\user\Downloads\oracle.key.
+Read PROJECT_HANDOFF.md first. Continue work on the Serbia/North Kosovo POC in llm_investigation_orchestrator_serbia_poc. The current branch is main and should be clean/aligned with origin/main. The UI is deployed from /opt/serbia-poc-ui on VM 151.145.93.180 and currently serves styles.css?v=50 and app.js?v=66. Do not touch C:\Users\user\Downloads\oracle.key.
 
-Current behavior: colored map point markers with popups; final answers do not auto-present visualization layers; final `הצג` presents/restores final-answer layers manually. The result table supports layer tabs, standard eye/eye-off toggles, per-layer close, resize, ↓/↑ minimize, and window close/clear. Step cards use a text toggle, `הצג תוצאות` / `הסתר תוצאות`, for presenting/hiding step layers, and `הצג שאילתה` opens query details. Query edit modal controls exist but query re-execution is still future work.
+Current behavior: colored map point markers with popups; final answers do not auto-present visualization layers; final `הצג` presents/restores final-answer layers manually. The result table is a flush transparent tabbed overlay with real layer tabs, standard eye/eye-off toggles, per-tab `×` close, resize, `−` minimize, `□` restore/maximize, and window `×` close/clear. Step cards use a text toggle, `הצג תוצאות` / `הסתר תוצאות`, for presenting/hiding step layers, and `הצג שאילתה` opens query details. Query edit modal controls exist but query re-execution is still future work.
 
 The UI uses an additive source/data layer architecture; preserve that model when adding new filters or visualizations. Before deploying, fetch GitHub and verify the VM is not serving stale assets.
 ```

@@ -1526,9 +1526,9 @@ function renderEvidence() {
   overlay.style.setProperty("--raw-overlay-height", `${state.rawOverlayHeight}%`);
   const minimizeButton = document.getElementById("rawEventsMinimize");
   if (minimizeButton) {
-    minimizeButton.textContent = state.rawOverlayMinimized ? "↑" : "↓";
-    minimizeButton.title = state.rawOverlayMinimized ? "פתח" : "מזער";
-    minimizeButton.setAttribute("aria-label", state.rawOverlayMinimized ? "פתח טבלת אירועים" : "מזער טבלת אירועים");
+    minimizeButton.textContent = state.rawOverlayMinimized ? "□" : "−";
+    minimizeButton.title = state.rawOverlayMinimized ? "הגדל" : "מזער";
+    minimizeButton.setAttribute("aria-label", state.rawOverlayMinimized ? "הגדל טבלת תוצאות" : "מזער טבלת תוצאות");
   }
   tabs.innerHTML = tableLayers.map(layer => `
     <button type="button" class="raw-source-tab ${layer.id === activeLayer?.id ? "active" : ""} ${layer.visible ? "" : "hidden-source"}" style="${layerColorStyle(layer)}" data-layer-id="${escapeHtml(layer.id)}" role="tab" aria-selected="${layer.id === activeLayer?.id}" title="${escapeHtml(layer.sourceLabel || layer.label)}">
