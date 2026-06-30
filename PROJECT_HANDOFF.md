@@ -33,7 +33,7 @@ Current local working tree expectation:
 
 **Important sync lesson (2026-06-29):** A stale local workspace and stale VM deployment briefly reintroduced old behavior: rectangular map markers and automatic final-answer presentation. GitHub already had the correct point-marker/manual-show behavior, but the VM was still serving older `styles.css?v=36` and `app.js?v=48`. Before every deploy, fetch GitHub, verify `git status --short --branch`, and deploy from the current committed `main`, not from stale uncommitted local files.
 
-**Latest UI completion note (2026-06-29):** Map markers are colored points with popups; final-answer results are not presented automatically and are shown only via the final `הצג` button. Result layers are shown in a flush transparent tabbed overlay attached to the map/timeline borders. Each layer appears as a real tab with a standard `×` close control, and the whole overlay uses standard window controls: `−` minimize, `□` restore/maximize, and `×` close/clear. Step presentation controls moved into each step card: a text button toggles between `הצג תוצאות` and `הסתר תוצאות`, and `הצג שאילתה` opens the query modal. Current deployed asset versions are `styles.css?v=50` and `app.js?v=66`.
+**Latest UI completion note (2026-06-29):** Map markers are colored points with popups; final-answer results are not presented automatically and are shown only via the final `הצג תוצאות` button. Result layers are shown in a flush transparent tabbed overlay attached to the map/timeline borders. Each layer appears as a real tab with a standard `×` close control, and the whole overlay uses standard window controls: `−` minimize, `□` restore/maximize, and `×` close/clear. Step presentation controls moved into each step card: a text button toggles between `הצג תוצאות` and `הסתר תוצאות`, and `הצג שאילתה` opens the query modal. Current deployed asset versions are `styles.css?v=51` and `app.js?v=67`.
 
 ## Active POC
 
@@ -64,9 +64,9 @@ Active UI service:
 - Actual served path: `/opt/serbia-poc-ui`
 - This is important: an earlier deploy mistakenly copied to `/opt/serbia-poc/ui`, but the active service serves `/opt/serbia-poc-ui`.
 - Current served versions verified on the VM after the latest UI deploy (as of 2026-06-29):
-  - `styles.css?v=50`
-  - `app.js?v=66`
-- These versions include colored point markers, manual final-answer presentation via `הצג`, additive layer tabs, table resize/minimize, close/clear result-window behavior, query edit modal controls, per-step `הצג תוצאות` / `הסתר תוצאות` controls, real tabbed result layers, standard tab/window close controls, and shared standard table visibility icons.
+  - `styles.css?v=51`
+  - `app.js?v=67`
+- These versions include colored point markers, manual final-answer presentation via `הצג תוצאות`, additive layer tabs, table resize/minimize, close/clear result-window behavior, query edit modal controls, `הצג תוצאות` / `הסתר תוצאות` controls styled identically to `הצג שאילתה`, real tabbed result layers, standard tab/window close controls, and shared standard table visibility icons.
 
 Active MCP/Hermes service:
 
@@ -272,8 +272,8 @@ Current UI behavior:
 - Hiding a layer affects all visualizations where that layer participates.
 - Closing a layer removes it from the current workspace and releases its color.
 - The overlay can be resized, minimized with `−`, restored/maximized with `□`, and closed/cleared with `×`.
-- Final assistant answers have a `הצג` button.
-- Clicking final `הצג` adds or focuses that answer’s result layers without automatically overriding the current visual state on answer arrival.
+- Final assistant answers have a `הצג תוצאות` button styled like the step action pills.
+- Clicking final `הצג תוצאות` adds or focuses that answer’s result layers without automatically overriding the current visual state on answer arrival.
 - Tool steps use `הצג תוצאות` / `הסתר תוצאות` for step result layers and `הצג שאילתה` for query/tool details.
 - Map locations are shown as colored point markers, not always-open rectangles.
 - Clicking a map point opens a MapLibre popup with the location name, item count, and contributing layer labels.
@@ -468,16 +468,16 @@ Do not expose evaluator labels to the orchestrator, MCP runtime, UI, or prompt. 
 Current behavior:
 
 - Tool-step `הצג` presents the selected step's results/layers.
-- Final-answer `הצג` presents/restores the final answer's result layers.
+- Final-answer `הצג תוצאות` presents/restores the final answer's result layers.
 - Final answer arrival does **not** automatically replace the current map/timeline/table presentation. This is intentional: the analyst decides when to present the final answer's layers.
-- `applyHermesResult(..., { restoreOnly: true })` is the path used by final `הצג` to build/show final-answer layers.
+- `applyHermesResult(..., { restoreOnly: true })` is the path used by final `הצג תוצאות` to build/show final-answer layers.
 - Normal final-answer arrival only finalizes the chat answer and keeps visualization state under user control.
 
 Design decision:
 
-- Preserve the current step/layer view until the user clicks final `הצג`.
+- Preserve the current step/layer view until the user clicks final `הצג תוצאות`.
 - Do not silently override an explicitly selected tool-step view.
-- Keep final `הצג` as the reliable manual restore/presentation action.
+- Keep final `הצג תוצאות` as the reliable manual restore/presentation action.
 
 ## Phase 2: Query Builder — Editable Query Form
 
@@ -498,9 +498,9 @@ Design decision:
 5. Stub handler `handleQueryFormSubmit()` for Phase 2a.
 
 **Files affected:**
-- `app.js` (query cleanup, query form state/functions, modal controls, step-card visibility behavior, layer presentation behavior; current deployed version `v=66`)
-- `index.html` (query modal/result controls; current deployed script version `v=66`)
-- `styles.css` (query form, layer tabs, point markers, result-window controls, standard eye/eye-off visibility icons and step-result text toggle styling; current deployed version `v=50`)
+- `app.js` (query cleanup, query form state/functions, modal controls, step-card visibility behavior, layer presentation behavior; current deployed version `v=67`)
+- `index.html` (query modal/result controls; current deployed script version `v=67`)
+- `styles.css` (query form, layer tabs, point markers, result-window controls, standard eye/eye-off visibility icons and step-result text toggle styling; current deployed version `v=51`)
 
 **Rationale:**
 - Query ≠ Results: Query payload should contain only request parameters, not response data.
@@ -632,9 +632,9 @@ Expected: no matches in active data files.
 ## Suggested First Message To A New Assistant
 
 ```text
-Read PROJECT_HANDOFF.md first. Continue work on the Serbia/North Kosovo POC in llm_investigation_orchestrator_serbia_poc. The current branch is main and should be clean/aligned with origin/main. The UI is deployed from /opt/serbia-poc-ui on VM 151.145.93.180 and currently serves styles.css?v=50 and app.js?v=66. Do not touch C:\Users\user\Downloads\oracle.key.
+Read PROJECT_HANDOFF.md first. Continue work on the Serbia/North Kosovo POC in llm_investigation_orchestrator_serbia_poc. The current branch is main and should be clean/aligned with origin/main. The UI is deployed from /opt/serbia-poc-ui on VM 151.145.93.180 and currently serves styles.css?v=51 and app.js?v=67. Do not touch C:\Users\user\Downloads\oracle.key.
 
-Current behavior: colored map point markers with popups; final answers do not auto-present visualization layers; final `הצג` presents/restores final-answer layers manually. The result table is a flush transparent tabbed overlay with real layer tabs, standard eye/eye-off toggles, per-tab `×` close, resize, `−` minimize, `□` restore/maximize, and window `×` close/clear. Step cards use a text toggle, `הצג תוצאות` / `הסתר תוצאות`, for presenting/hiding step layers, and `הצג שאילתה` opens query details. Query edit modal controls exist but query re-execution is still future work.
+Current behavior: colored map point markers with popups; final answers do not auto-present visualization layers; final `הצג תוצאות` presents/restores final-answer layers manually. The result table is a flush transparent tabbed overlay with real layer tabs, standard eye/eye-off toggles, per-tab `×` close, resize, `−` minimize, `□` restore/maximize, and window `×` close/clear. Final and step result actions use the same pill styling as `הצג שאילתה`; step cards toggle `הצג תוצאות` / `הסתר תוצאות`, and `הצג שאילתה` opens query details. Query edit modal controls exist but query re-execution is still future work.
 
 The UI uses an additive source/data layer architecture; preserve that model when adding new filters or visualizations. Before deploying, fetch GitHub and verify the VM is not serving stale assets.
 ```

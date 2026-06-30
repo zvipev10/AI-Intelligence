@@ -634,7 +634,7 @@ function finalizeAssistantMessage(answer, options = {}) {
   if (options.result) {
     const actions = document.createElement("div");
     actions.className = "final-answer-actions";
-    actions.innerHTML = `<button type="button" class="final-answer-show-btn">הצג</button>`;
+    actions.innerHTML = `<button type="button" class="final-answer-show-btn">הצג תוצאות</button>`;
     actions.querySelector(".final-answer-show-btn").addEventListener("click", () => {
       showFinalAnswerResult(options.result, options.prompt || "");
     });
