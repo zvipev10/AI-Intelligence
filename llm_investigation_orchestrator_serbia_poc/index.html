@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>סביבת חקירה מונחית סוכן</title>
   <link rel="stylesheet" href="./vendor/maplibre-gl.css">
-  <link rel="stylesheet" href="./styles.css?v=56">
+  <link rel="stylesheet" href="./styles.css?v=57">
 </head>
 <body>
   <a class="help-button" href="./help.html" target="_blank" rel="noopener" aria-label="פתח עזרה">?</a>
@@ -81,7 +81,7 @@
           <span class="eyebrow">חקירות שנשמרו</span>
           <h2 id="recordedModalTitle">שאלות שמורות</h2>
         </div>
-        <button id="recordedClose" class="quiet-button" type="button">סגור</button>
+        <button id="recordedClose" class="modal-close-button" type="button" aria-label="סגור" title="סגור">×</button>
       </div>
       <p class="recorded-modal-note">בחירה בשאלה תטען תוצאת חקירה שמורה בלי להריץ את הסוכן מחדש.</p>
       <div id="recordedList" class="recorded-list"></div>
@@ -97,7 +97,7 @@
         </div>
         <div class="query-modal-header-actions">
           <button id="queryFormRunButton" type="button" class="run-button" disabled>תריץ שאילתה חדשה</button>
-          <button id="queryModalClose" class="quiet-button" type="button">סגור</button>
+          <button id="queryModalClose" class="modal-close-button" type="button" aria-label="סגור" title="סגור">×</button>
         </div>
       </div>
       <form id="queryForm" class="query-form">
@@ -121,6 +121,6 @@
   </div>
 
   <script src="./vendor/maplibre-gl.js"></script>
-  <script src="./app.js?v=76"></script>
+  <script src="./app.js?v=77"></script>
 </body>
 </html>
