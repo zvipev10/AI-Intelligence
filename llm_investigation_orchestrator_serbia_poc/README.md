@@ -143,7 +143,7 @@ The benchmark covers the full tool surface against Serbia/Kosovo questions: inte
 
 ## Saved Questions
 
-Saved Questions are the user-facing replacement for demo-only recorded replay. After a successful live investigation, press `שמור` near the prompt input to persist the full `/api/investigate` result.
+Saved Questions are the user-facing replacement for demo-only recorded replay. After a successful live investigation, press `שמור` beside the final answer `הצג תוצאות` button to persist the full `/api/investigate` result.
 
 Runtime files live in:
 

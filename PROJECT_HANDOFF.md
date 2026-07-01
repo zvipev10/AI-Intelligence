@@ -33,7 +33,7 @@ Current local working tree expectation:
 
 **Important sync lesson (2026-06-29):** A stale local workspace and stale VM deployment briefly reintroduced old behavior: rectangular map markers and automatic final-answer presentation. GitHub already had the correct point-marker/manual-show behavior, but the VM was still serving older `styles.css?v=36` and `app.js?v=48`. Before every deploy, fetch GitHub, verify `git status --short --branch`, and deploy from the current committed `main`, not from stale uncommitted local files.
 
-**Latest UI completion note (2026-06-30):** Map markers are colored points with popups; final-answer results are not presented automatically and are shown only via the final `הצג תוצאות` button. Result layers are shown in a flush transparent tabbed overlay attached to the map/timeline borders. Each layer appears as a real tab with a standard `×` close control, and the whole overlay uses standard window controls: `−` minimize, `□` restore/maximize, and `×` close/clear. Step presentation controls moved into each step card: a text button toggles between `הצג תוצאות` and `הסתר תוצאות`, and `הצג שאילתה` opens the query modal. Current deployed asset versions after the entity/location layer normalization deploy are `styles.css?v=53` and `app.js?v=73`.
+**Latest UI completion note (2026-07-01):** Map markers are colored points with popups; final-answer results are not presented automatically and are shown only via the final `הצג תוצאות` button. Result layers are shown in a flush transparent tabbed overlay attached to the map/timeline borders. Each layer appears as a real tab with a standard `×` close control, and the whole overlay uses standard window controls: `−` minimize, `□` restore/maximize, and `×` close/clear. Step presentation controls moved into each step card: a text button toggles between `הצג תוצאות` and `הסתר תוצאות`, and `הצג שאילתה` opens the query modal. Modal close buttons now use the standard `×` icon instead of text `סגור`. Current deployed asset versions after the saved-question/close-icon work are `styles.css?v=57` and `app.js?v=77`.
 
 ## Active POC
 
@@ -101,8 +101,8 @@ Active UI service:
 - Actual served path: `/opt/serbia-poc-ui`
 - This is important: an earlier deploy mistakenly copied to `/opt/serbia-poc/ui`, but the active service serves `/opt/serbia-poc-ui`.
 - Current served versions verified on the VM after the latest UI deploy (as of 2026-06-29):
-  - `styles.css?v=53`
-  - `app.js?v=73`
+  - `styles.css?v=57`
+  - `app.js?v=77`
 - These versions include colored point markers, manual final-answer presentation via `הצג תוצאות`, additive layer tabs, table resize/minimize, close/clear result-window behavior, query edit modal controls, `הצג תוצאות` / `הסתר תוצאות` controls styled identically to `הצג שאילתה` without the old square icon-button class, real tabbed result layers, standard tab/window close controls, and shared standard table visibility icons.
 
 Active MCP/Hermes service:
@@ -147,7 +147,7 @@ Recommended UI deployment pattern:
 
 ## Saved Questions
 
-Saved Questions are now the user-facing way to persist investigation results. After a successful live `/api/investigate` response, the UI enables `שמור` near the prompt input. Saving writes the full result artifact, not only the final answer.
+Saved Questions are now the user-facing way to persist investigation results. After a successful live `/api/investigate` response, the final assistant answer shows `הצג תוצאות` and `שמור` side by side with the same pill-button look and feel. Saving writes the full result artifact, not only the final answer. The prompt input bar no longer contains a save button.
 
 Runtime storage:
 
@@ -174,6 +174,7 @@ Implementation details:
 - Listing skips corrupt or incomplete JSON files.
 - Runtime `saved_questions/*.json` files are ignored by git; only `.gitkeep` is committed.
 - Loading a saved question does not call Hermes. It restores the saved result through the normal `applyHermesResult` path so final-answer `הצג תוצאות`, per-step `הצג תוצאות`, map, timeline, table, event layers, location layers, entity layers, and aggregation layers keep working.
+- The final-answer `שמור` button changes `שמור` → `שומר...` → `נשמר`; failures show `נכשל` and restore the button after a short delay.
 
 Deployment note: include `saved_questions/` in the UI deployment package and ensure `/opt/serbia-poc-ui/saved_questions/` is owned by the UI service user.
 
@@ -701,7 +702,7 @@ Expected: no matches in active data files.
 ## Suggested First Message To A New Assistant
 
 ```text
-Read PROJECT_HANDOFF.md first. Continue work on the Serbia/North Kosovo POC in llm_investigation_orchestrator_serbia_poc. The UI is deployed from /opt/serbia-poc-ui on VM 151.145.93.180 and currently serves styles.css?v=53 and app.js?v=73 after the entity/location layer normalization work. Do not touch C:\Users\user\Downloads\oracle.key.
+Read PROJECT_HANDOFF.md first. Continue work on the Serbia/North Kosovo POC in llm_investigation_orchestrator_serbia_poc. The UI is deployed from /opt/serbia-poc-ui on VM 151.145.93.180 and currently serves styles.css?v=57 and app.js?v=77 after the saved-question and standard close-icon work. Do not touch C:\Users\user\Downloads\oracle.key.
 
 Current behavior: colored map point markers with popups; final answers do not auto-present visualization layers; final `הצג תוצאות` presents/restores final-answer layers manually. The result table is a flush transparent tabbed overlay with real layer tabs, standard eye/eye-off toggles, per-tab `×` close, resize, `−` minimize, `□` restore/maximize, and window `×` close/clear. Final and step result actions use the same non-overlapping pill styling as `הצג שאילתה`; step cards toggle `הצג תוצאות` / `הסתר תוצאות`, and `הצג שאילתה` opens query details. Query edit modal controls exist but query re-execution is still future work.
 
