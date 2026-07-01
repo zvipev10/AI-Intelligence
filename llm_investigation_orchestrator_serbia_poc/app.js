@@ -181,6 +181,7 @@ const state = {
   recordedQuestions: [],
   savedQuestions: [],
   busy: false,
+  savingQuestion: false,
   activeAssistantMessage: null,
   activeActivityList: null,
   activeActivityEmpty: null,
@@ -1201,6 +1202,18 @@ function canSaveCurrentResult() {
 
 function updateSaveQuestionButton() {
   if (!saveQuestionButton) return;
+  if (state.savingQuestion) {
+    saveQuestionButton.disabled = true;
+    saveQuestionButton.textContent = "שומר...";
+    saveQuestionButton.title = "שומר את תוצאת החקירה";
+    return;
+  }
+  if (state.lastResult?.saved_question_id) {
+    saveQuestionButton.disabled = true;
+    saveQuestionButton.textContent = "נשמר";
+    saveQuestionButton.title = "תוצאת החקירה נשמרה";
+    return;
+  }
   saveQuestionButton.disabled = state.busy || !canSaveCurrentResult();
   saveQuestionButton.textContent = "שמור";
   saveQuestionButton.title = "שמור את תוצאת החקירה";
@@ -1218,13 +1231,17 @@ function formatSavedTime(value) {
 
 async function saveCurrentQuestion() {
   if (!canSaveCurrentResult() || state.busy) return;
-  saveQuestionButton.disabled = true;
-  saveQuestionButton.textContent = "שומר...";
+  state.savingQuestion = true;
+  updateSaveQuestionButton();
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15000);
+  let failed = false;
   try {
     const title = state.lastPrompt.trim().slice(0, 60);
     const response = await fetch("/api/saved-question", {
       method: "POST",
       headers: { "Content-Type": "application/json; charset=utf-8" },
+      signal: controller.signal,
       body: JSON.stringify({
         title,
         question: state.lastPrompt,
@@ -1234,12 +1251,17 @@ async function saveCurrentQuestion() {
     const payload = await response.json();
     if (!response.ok) throw new Error(payload.error || "שמירת השאלה נכשלה");
     state.lastResult = { ...state.lastResult, saved_question_id: payload.id };
-    saveQuestionButton.textContent = "נשמר";
+    if (!recordedModal.hidden) loadRecordedQuestions();
   } catch (error) {
+    failed = true;
+    const message = error.name === "AbortError" ? "שמירת השאלה נמשכה יותר מדי זמן. נסה שוב." : error.message;
     saveQuestionButton.textContent = "נכשל";
-    saveQuestionButton.title = error.message;
+    saveQuestionButton.title = message;
+    setTimeout(updateSaveQuestionButton, 2500);
   } finally {
-    setTimeout(updateSaveQuestionButton, 1400);
+    clearTimeout(timeout);
+    state.savingQuestion = false;
+    if (!failed) updateSaveQuestionButton();
   }
 }
 
