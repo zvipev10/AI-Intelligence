@@ -181,7 +181,6 @@ const state = {
   recordedQuestions: [],
   savedQuestions: [],
   busy: false,
-  savingQuestion: false,
   activeAssistantMessage: null,
   activeActivityList: null,
   activeActivityEmpty: null,
@@ -204,7 +203,6 @@ const resultTitle = document.getElementById("resultTitle");
 const resultSubtitle = document.getElementById("resultSubtitle");
 const resultCount = document.getElementById("resultCount");
 const sendButton = document.getElementById("sendButton");
-const saveQuestionButton = document.getElementById("saveQuestionButton");
 const recordedButton = document.getElementById("recordedButton");
 const recordedModal = document.getElementById("recordedModal");
 const recordedClose = document.getElementById("recordedClose");
@@ -697,9 +695,15 @@ function finalizeAssistantMessage(answer, options = {}) {
   if (options.result) {
     const actions = document.createElement("div");
     actions.className = "final-answer-actions";
-    actions.innerHTML = `<button type="button" class="final-answer-show-btn">הצג תוצאות</button>`;
+    actions.innerHTML = `
+      <button type="button" class="final-answer-show-btn">הצג תוצאות</button>
+      <button type="button" class="final-answer-save-btn" ${options.result.saved_question_id ? "disabled" : ""}>${options.result.saved_question_id ? "נשמר" : "שמור"}</button>
+    `;
     actions.querySelector(".final-answer-show-btn").addEventListener("click", () => {
       showFinalAnswerResult(options.result, options.prompt || "");
+    });
+    actions.querySelector(".final-answer-save-btn").addEventListener("click", event => {
+      saveResultQuestion(options.result, options.prompt || "", event.currentTarget);
     });
     const evidenceToggle = answerBody.querySelector(".evidence-ids-toggle");
     if (evidenceToggle) {
@@ -711,7 +715,6 @@ function finalizeAssistantMessage(answer, options = {}) {
   state.activeAssistantMessage = null;
   state.activeActivityList = null;
   state.activeActivityEmpty = null;
-  updateSaveQuestionButton();
 }
 
 function showFinalAnswerResult(result, prompt) {
@@ -1189,34 +1192,15 @@ function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-function canSaveCurrentResult() {
+function canSaveResult(result, prompt) {
   return Boolean(
-    state.lastPrompt
-    && state.lastResult
-    && state.lastResult.answer
-    && !state.lastResult.demo_replay
-    && !state.lastResult.recorded_id
-    && !state.lastResult.saved_question_id
+    prompt
+    && result
+    && result.answer
+    && !result.demo_replay
+    && !result.recorded_id
+    && !result.saved_question_id
   );
-}
-
-function updateSaveQuestionButton() {
-  if (!saveQuestionButton) return;
-  if (state.savingQuestion) {
-    saveQuestionButton.disabled = true;
-    saveQuestionButton.textContent = "שומר...";
-    saveQuestionButton.title = "שומר את תוצאת החקירה";
-    return;
-  }
-  if (state.lastResult?.saved_question_id) {
-    saveQuestionButton.disabled = true;
-    saveQuestionButton.textContent = "נשמר";
-    saveQuestionButton.title = "תוצאת החקירה נשמרה";
-    return;
-  }
-  saveQuestionButton.disabled = state.busy || !canSaveCurrentResult();
-  saveQuestionButton.textContent = "שמור";
-  saveQuestionButton.title = "שמור את תוצאת החקירה";
 }
 
 function formatSavedTime(value) {
@@ -1229,39 +1213,45 @@ function formatSavedTime(value) {
   });
 }
 
-async function saveCurrentQuestion() {
-  if (!canSaveCurrentResult() || state.busy) return;
-  state.savingQuestion = true;
-  updateSaveQuestionButton();
+async function saveResultQuestion(result, prompt, button) {
+  if (!canSaveResult(result, prompt) || state.busy || button?.disabled) return;
+  button.disabled = true;
+  button.textContent = "שומר...";
+  button.title = "שומר את תוצאת החקירה";
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 15000);
-  let failed = false;
   try {
-    const title = state.lastPrompt.trim().slice(0, 60);
+    const title = prompt.trim().slice(0, 60);
     const response = await fetch("/api/saved-question", {
       method: "POST",
       headers: { "Content-Type": "application/json; charset=utf-8" },
       signal: controller.signal,
       body: JSON.stringify({
         title,
-        question: state.lastPrompt,
-        result: state.lastResult,
+        question: prompt,
+        result,
       }),
     });
     const payload = await response.json();
     if (!response.ok) throw new Error(payload.error || "שמירת השאלה נכשלה");
-    state.lastResult = { ...state.lastResult, saved_question_id: payload.id };
+    result.saved_question_id = payload.id;
+    if (state.lastResult === result) state.lastResult = result;
+    button.textContent = "נשמר";
+    button.title = "תוצאת החקירה נשמרה";
     if (!recordedModal.hidden) loadRecordedQuestions();
   } catch (error) {
-    failed = true;
     const message = error.name === "AbortError" ? "שמירת השאלה נמשכה יותר מדי זמן. נסה שוב." : error.message;
-    saveQuestionButton.textContent = "נכשל";
-    saveQuestionButton.title = message;
-    setTimeout(updateSaveQuestionButton, 2500);
+    button.textContent = "נכשל";
+    button.title = message;
+    setTimeout(() => {
+      if (!result.saved_question_id) {
+        button.disabled = false;
+        button.textContent = "שמור";
+        button.title = "שמור את תוצאת החקירה";
+      }
+    }, 2500);
   } finally {
     clearTimeout(timeout);
-    state.savingQuestion = false;
-    if (!failed) updateSaveQuestionButton();
   }
 }
 
@@ -1300,7 +1290,6 @@ function applyHermesResult(result, prompt, options = {}) {
     state.lastPrompt = prompt;
     state.rawOverlayMinimized = false;
     state.rawOverlayHeight = 28;
-    updateSaveQuestionButton();
   }
 
   if (options.restoreOnly) {
@@ -1371,7 +1360,6 @@ async function runSavedQuestion(savedId) {
   state.busy = true;
   sendButton.disabled = true;
   recordedButton.disabled = true;
-  updateSaveQuestionButton();
   sendButton.textContent = "מציג...";
   try {
     const response = await fetch(`/api/saved-question?id=${encodeURIComponent(savedId)}`, { cache: "no-store" });
@@ -1394,7 +1382,6 @@ async function runSavedQuestion(savedId) {
     sendButton.disabled = false;
     recordedButton.disabled = false;
     sendButton.textContent = "שלח";
-    updateSaveQuestionButton();
   }
 }
 
@@ -1445,7 +1432,6 @@ async function runPrompt(prompt) {
   startAssistantResearchMessage();
   state.busy = true;
   sendButton.disabled = true;
-  updateSaveQuestionButton();
   sendButton.textContent = "חוקר...";
   suggestions.innerHTML = "";
   let liveStepCount = 0;
@@ -1509,7 +1495,6 @@ async function runPrompt(prompt) {
     state.busy = false;
     sendButton.disabled = false;
     sendButton.textContent = "שלח";
-    updateSaveQuestionButton();
   }
 }
 
@@ -1853,7 +1838,6 @@ function resetInvestigation() {
   setSuggestions(["אילו דיווחים על חסימות הופיעו ראשונים?", "האם הטענה על חציית גבול מגובה במקור אמין?", "איפה יש ריכוזי דיווחים מרכזיים?"]);
   renderAllViews();
   renderQueryInspector();
-  updateSaveQuestionButton();
   if (state.map) setTimeout(() => state.map.resize(), 0);
 }
 
@@ -1978,7 +1962,6 @@ promptInput.addEventListener("keydown", event => {
 });
 
 document.getElementById("resetButton").addEventListener("click", resetInvestigation);
-saveQuestionButton.addEventListener("click", saveCurrentQuestion);
 recordedButton.addEventListener("click", openRecordedModal);
 recordedClose.addEventListener("click", closeRecordedModal);
 initPanelResizers();
