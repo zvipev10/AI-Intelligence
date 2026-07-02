@@ -454,7 +454,7 @@ Current Serbia MCP tools:
 classify_question_intent
 plan_next_investigation_step
 search_events
-get_events
+get_objects
 resolve_location
 resolve_event_reference
 find_actor_history
@@ -473,6 +473,8 @@ Tool outputs can include:
 
 - `events` / `event_ids`
 - `locations` / `location_ids`
+- `location_layers`
+- `entity_layers`
 - `map_locations`
 - `aggregate_groups`
 - `route`
@@ -491,34 +493,35 @@ First-class display-layer candidates:
 
 - events
 - locations
+- entities
 - time aggregations
 
 Potential future layer types:
 
 - routes/sequences
 - conflict groups
-- entity/actor presence
 - link/bridge relationships
 - semantic clue clusters
 
 ## Entities
 
-There is no `entity_id` column in the active DB/data files.
+Entities are now first-class reference-layer objects, symmetric with locations.
 
 Active data fields:
 
-- Projection CSV has `entity_or_actor`.
-- Raw dataset has `actor_mentioned` and `observed_actor`.
-- There are 16 unique actor names in the current data.
+- Projection CSV has `entity_id`.
+- Projection CSV no longer has `entity_or_actor`.
+- `data/serbia_kosovo_entities.json` contains the 16 entity rows used by the projection.
+- MCP enriches public events with `entity_name` from the entities DB.
+- Tools should prefer `entity_ids`; `actors` is compatibility input only where still present.
 
-There is a small synthetic resolver registry in MCP code:
+Current entity reference file:
 
-- `ENT-KFOR`
-- `ENT-EULEX`
-- `ENT-KOSOVO-POLICE`
-- `ENT-SERBIAN-ACTORS`
+```text
+llm_investigation_orchestrator_serbia_poc/data/serbia_kosovo_entities.json
+```
 
-These are code-level aliases, not first-class DB rows.
+`ENTITY_REGISTRY` was removed from MCP code. Entity IDs are DB-backed, not hardcoded registry aliases.
 
 ## Data Policy
 
@@ -586,62 +589,119 @@ Design decision:
 - Phase 2c: Add temporal range picker.
 - Phase 2d: Add filter dropdowns (source, certainty, labels).
 
-## Near-Term RAG Plan
+## Near-Term RAG / Real Semantic Search Plan
 
-The team discussed adding a small RAG capability in the near future. This should be a focused retrieval-layer improvement, not a large architecture rewrite.
+The team agreed to implement a small local RAG capability before changing more investigation behavior. The goal is not Elastic/OpenSearch yet; it is to replace today’s fake semantic retrieval with one shared semantic index over real event data.
 
-Goal:
+This plan must use the normalized entity/location schema from this branch:
 
-- Improve semantic recall over the 10,000 event records and later over tool outputs/layer objects.
-- Let the retrieval layer find records based on real corpus similarity rather than only general model reasoning or keyword matching.
-- Keep deterministic filtering, IDs, and auditability.
+- Runtime events contain `entity_id` and `location_id`.
+- Entity names and aliases come from `data/serbia_kosovo_entities.json`.
+- Location names and coordinates come from `data/serbia_kosovo_locations.json`.
+- Runtime events expose `entity_name` and `location_name` only after MCP enrichment.
+- `get_events` no longer exists; use `get_objects`.
 
-Recommended near-term implementation:
+Current problem:
 
-1. Add a lightweight local semantic index over active event text.
-   - Index fields: `event_id`, `event_summary`, `entity_or_actor`, `location_name`, `source_type`, `timestamp_utc`.
-   - Store metadata needed for filters: time, location, source type, actor, reliability/certainty.
-   - Keep `REC-*` IDs as the canonical join key.
+- Several tools currently use the word “semantic”, but they are mostly hardcoded keyword/clue matching.
+- `trace_semantic_clues` retrieves by user/seed clues plus `SEMANTIC_CLUE_TERMS`.
+- `find_related_events` has a `semantic` dimension, but it currently means shared hardcoded clue terms.
+- `explain_linkage` uses hardcoded clue overlap for `semantic_overlap`.
+- `compare_location_claims` uses seed-derived clue keywords and `GEO_CONFLICT_MARKERS` for retrieval/grouping.
+- This is useful and explainable, but it is not real semantic similarity.
 
-2. Use hybrid retrieval, not vector-only retrieval.
-   - Existing keyword/filter tools stay.
-   - Add semantic candidate retrieval.
-   - Fuse/rerank candidates deterministically where possible.
+Target architecture:
 
-3. Expose through MCP as a bounded tool, not raw vector DB access.
-   - Candidate tool name: `semantic_search_events` or `retrieve_event_context`.
-   - Input: query/clues, optional time/location/source filters, limit.
-   - Output: `event_ids`, `events`, scores, matched terms/semantic rationale.
-   - UI can render returned events as normal event layers.
+1. Add one shared internal semantic backend: `SemanticEventIndex`.
+   - Build/load embeddings for all active event records.
+   - Search by vector similarity over event text.
+   - Apply metadata filters before/after retrieval: time, `location_id`, `entity_id`, source type, reliability/certainty.
+   - Return scored event candidates with canonical `REC-*` IDs.
+   - Store no anonymous chunks; every result must map back to an event row.
 
-4. Keep RAG evidence auditable.
-   - Every result must map back to `REC-*`.
-   - Do not return anonymous chunks with no record ID.
-   - Final answers must cite event IDs when evidence is used.
+2. Add a public MCP tool: `semantic_search_events`.
+   - Input: natural-language `query`, optional `seed_event_ids`, filters, and `limit`.
+   - Filters should align with current tools: `start_time`, `end_time`, `location_ids`, `entity_ids`, `source_types`, `reliabilities`, `keywords`, and `limit`.
+   - Output: `event_ids`, `events`, semantic scores, and concise match rationale.
+   - UI should render returned events as normal result layers/tabs/map/timeline records.
+   - This tool is the visible interface; existing tools should call the same internal `SemanticEventIndex` directly, not call the MCP tool as an external client.
 
-5. Start small.
-   - Do not introduce Elastic/OpenSearch unless the project grows beyond the current POC.
-   - For this corpus size, a local file-based or lightweight vector index is enough.
-   - The implementation can be regenerated from CSV during deploy/startup.
+3. Keep deterministic search tools.
+   - Do not replace `search_events`, `aggregate_events`, `get_objects`, `resolve_location`, `resolve_entity`, or `trace_identifier`.
+   - Exact filters, IDs, aliases, location/time constraints, and aggregation remain deterministic.
+   - RAG replaces fake semantic retrieval only, not exact search.
 
-Possible stack options:
+Implementation phases:
 
-- Local embeddings using a small multilingual embedding model if available in the deployment environment.
-- SQLite + vector extension, FAISS/HNSW, or a simple persisted embedding matrix for POC scale.
-- If model/runtime constraints make local embeddings hard, defer embedding generation and first implement lexical+semantic clue expansion using existing fields.
+**Phase 1 — Semantic index foundation**
 
-RAG integration with layers:
+- Create an event text builder using enriched public event fields:
+  - `event_summary`
+  - `entity_id`
+  - `entity_name`
+  - `location_id`
+  - `location_name`
+  - `source_type`
+  - `timestamp_utc`
+  - `certainty_level`
+  - `source_reliability_label`
+- Do not use removed fields such as `entity_or_actor`.
+- Choose a local POC stack: multilingual embeddings plus a persisted local vector index.
+- Preferred first stack: small multilingual embedding model + `hnswlib` or `FAISS`.
+- Fallback: simple persisted embedding matrix if deployment constraints are tight.
+- Add index build/load path that can regenerate from CSV plus entities/locations JSON during deploy/startup.
+- Keep metadata sidecar keyed by `event_id`.
 
-- RAG returns event IDs and events.
-- The UI creates normal event layers by `source_type`.
-- Later, RAG can return a separate “semantic cluster” layer if we want to visualize retrieved themes.
+**Phase 2 — Public semantic tool**
 
-Do not do yet:
+- Add `semantic_search_events` to `mcp_server/server.py`.
+- Support filters compatible with `search_events`: time, location IDs, entity IDs, source types, reliability/certainty, and limit.
+- Return normal public events plus `semantic_score`.
+- Add audit output and tool schema.
+- Add basic smoke/regression coverage.
 
-- Do not expose raw vector queries to the model.
-- Do not make RAG replace MCP tools.
-- Do not make RAG decide truth.
-- Do not use hidden evaluator labels for retrieval.
+**Phase 3 — Convert fake-semantic tools**
+
+- `trace_semantic_clues`
+  - Stop retrieving through `SEMANTIC_CLUE_TERMS`.
+  - Build query text from explicit clues plus seed event summaries.
+  - Retrieve via `SemanticEventIndex`.
+  - Keep negation/benign/direct-observation markers only as scoring/explanation modifiers.
+  - Consider later rename to `trace_operational_clues` if the public API should be clearer.
+
+- `find_related_events`
+  - Keep deterministic dimensions: `identifier`, `entity`, `time`, `location`.
+  - Entity dimension must use `entity_id` and entity aliases from `serbia_kosovo_entities.json`.
+  - Replace the current `semantic` dimension with vector similarity between seed event text and candidate event text.
+  - Hybrid score should combine deterministic bridges plus semantic score.
+  - Do not let semantic similarity outrank exact identifier evidence by default.
+
+- `explain_linkage`
+  - Keep exact bridges: identifier, `entity_id`, time, location.
+  - Replace hardcoded `semantic_overlap` with event-vector similarity.
+  - Return similarity score and a cautious rationale; do not claim causal truth.
+
+- `compare_location_claims`
+  - Keep geographic-conflict grouping and `GEO_CONFLICT_MARKERS` as warning/explanation signals.
+  - Replace seed-derived keyword retrieval with semantic retrieval of similar claim narratives across locations.
+  - Continue to state that the tool has no ground truth and cannot decide the correct location.
+
+**Phase 4 — Cleanup and naming**
+
+- Remove `SEMANTIC_CLUE_TERMS` from retrieval paths after the semantic backend is stable.
+- Keep `BENIGN_MARKERS`, `NEGATION_MARKERS`, `DIRECT_OBSERVATION_MARKERS`, and `GEO_CONFLICT_MARKERS` only as explainable scoring/warning signals.
+- Update tool descriptions so no tool implies hardcoded clue matching is true semantic search.
+- Update orchestrator guidance to call `semantic_search_events` when wording mismatch/fuzzy recall is likely.
+
+Design constraints:
+
+- RAG finds evidence; it does not decide truth.
+- The LLM must not receive raw vector DB access.
+- Hidden scenario/evaluator labels must never be used for retrieval.
+- All semantic results must remain auditable through `REC-*` IDs.
+- UI behavior stays layer-based: semantic results become ordinary event result layers/tabs by source type or result grouping.
+- RAG result events must preserve enriched `entity_id`, `entity_name`, `location_id`, and `location_name`.
+- Elastic/OpenSearch remains out of scope until corpus size, concurrency, or ops needs justify it.
 
 ## Validation Commands
 
