@@ -119,6 +119,50 @@ def _fold(value: str | None) -> str:
     return re.sub(r"\s+", " ", str(value or "").strip()).casefold()
 
 
+def split_location_query(query: str) -> list[str]:
+    """Split natural analyst geography into separately resolvable terms."""
+    normalized = re.sub(r"\s+", " ", query.strip())
+    if not normalized:
+        return []
+    parts = re.split(r"[,;،]+|\s+ו(?=\S)|\s+ו(?=\s)", normalized)
+    cleaned: list[str] = []
+    for part in parts:
+        term = part.strip(" .:-–—")
+        if term and term not in cleaned:
+            cleaned.append(term)
+    if len(cleaned) <= 1 and normalized not in cleaned:
+        cleaned.insert(0, normalized)
+    return cleaned
+
+
+def match_location_term(term: str) -> list[str]:
+    folded = _fold(term)
+    if not folded:
+        return []
+    exact_alias = AREA_ALIASES.get(term)
+    if exact_alias:
+        return list(exact_alias)
+    for alias, location_ids in AREA_ALIASES.items():
+        alias_folded = _fold(alias)
+        if folded == alias_folded or folded in alias_folded or alias_folded in folded:
+            return list(location_ids)
+
+    matched: list[str] = []
+    for location_id, location in LOCATIONS.items():
+        fields = [
+            location.get("name"),
+            location.get("type"),
+            location.get("municipality"),
+            location.get("region"),
+            location.get("country"),
+            location.get("locality"),
+        ]
+        haystack = " ".join(_fold(value) for value in fields if value)
+        if folded in haystack:
+            matched.append(location_id)
+    return matched
+
+
 def load_entity_db() -> dict[str, dict[str, Any]]:
     loaded = json.loads(ENTITIES_PATH.read_text(encoding="utf-8")) if ENTITIES_PATH.exists() else []
     return {item["entity_id"]: item for item in loaded if item.get("entity_id")}
@@ -1722,21 +1766,30 @@ def get_objects(arguments: dict[str, Any]) -> dict[str, Any]:
 
 def resolve_location(arguments: dict[str, Any]) -> dict[str, Any]:
     query = str(arguments.get("query") or "").strip()
-    exact_ids = AREA_ALIASES.get(query)
-    if exact_ids:
-        ids = exact_ids
-    else:
-        query_folded = query.casefold()
-        ids = [
-            location_id
-            for location_id, location in LOCATIONS.items()
-            if query_folded in location["name"].casefold() or query_folded in location["type"].casefold()
-        ]
+    resolved_terms = []
+    ids: list[str] = []
+    seen: set[str] = set()
+    for term in split_location_query(query):
+        term_ids = match_location_term(term)
+        if not term_ids:
+            continue
+        new_ids = [location_id for location_id in term_ids if location_id not in seen]
+        for location_id in new_ids:
+            seen.add(location_id)
+            ids.append(location_id)
+        resolved_terms.append({
+            "term": term,
+            "matched_location_count": len(term_ids),
+            "new_location_count": len(new_ids),
+            "sample_location_ids": term_ids[:10],
+        })
     return {
         "query": query,
         "location_ids": ids,
+        "match_count": len(ids),
         "locations": [{"location_id": location_id, **LOCATIONS[location_id]} for location_id in ids],
         "location_layers": [LOCATION_PRESENTATIONS[location_id] for location_id in ids if location_id in LOCATION_PRESENTATIONS],
+        "resolved_terms": resolved_terms,
     }
 
 
