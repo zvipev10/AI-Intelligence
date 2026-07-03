@@ -61,10 +61,18 @@ def summarize_result(name: str, result: dict[str, Any]) -> dict[str, Any]:
             "returned": result.get("returned"),
             "sample_event_ids": (result.get("event_ids") or [])[:5],
         }
-    if name == "get_events":
+    if name == "semantic_search_events":
+        return {
+            "backend": result.get("semantic_backend"),
+            "returned": result.get("returned"),
+            "sample_event_ids": (result.get("event_ids") or [])[:5],
+        }
+    if name == "get_objects":
         return {
             "returned": len(result.get("events") or []),
             "missing": result.get("missing_event_ids") or [],
+            "locations": len(result.get("location_layers") or []),
+            "entities": len(result.get("entity_layers") or []),
         }
     if name == "resolve_location":
         return {"location_ids": result.get("location_ids") or []}
@@ -155,7 +163,11 @@ def scenario_calls() -> list[tuple[str, dict[str, Any]]]:
             "match_all_keywords": False,
             "limit": max_limit,
         }),
-        ("get_events", {"event_ids": evidence_ids}),
+        ("semantic_search_events", {
+            "query": "דיווחים לא מאומתים על חציית גבול, חסימות וכוחות ביטחון",
+            "limit": max_limit,
+        }),
+        ("get_objects", {"object_type": "event", "event_ids": evidence_ids}),
         ("find_actor_history", {
             "actors": ["KFOR", "EULEX", "משטרת קוסובו", "מפגינים סרבים מקומיים"],
             "start_time": "2026-09-12T00:00:00Z",

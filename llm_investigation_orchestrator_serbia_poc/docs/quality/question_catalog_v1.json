@@ -1,0 +1,346 @@
+{
+  "catalog_id": "serbia_quality_questions_v1",
+  "status": "question_definition_only",
+  "created_for": "RAG and investigation-quality regression",
+  "language": "he",
+  "scope": {
+    "dataset": "Serbia / North Kosovo visible runtime corpus",
+    "hidden_labels_policy": "Do not use evaluator labels in prompts, tool inputs, UI, or runtime. They may be used later only for offline scoring.",
+    "step_1_contents": "Question and probe definitions only. Current-baseline and ideal-target references belong to step 2."
+  },
+  "full_investigation_questions": [
+    {
+      "id": "fq_01_hotspots",
+      "title": "מוקדי חיכוך עיקריים",
+      "question": "איפה נמצאים מוקדי החיכוך העיקריים בצפון קוסובו, ומה המוקדים המדויקים בתוך כל אזור?",
+      "primary_capability": "geographic_aggregation",
+      "secondary_capabilities": ["location_resolution", "map_layers", "location_objects"],
+      "semantic_capabilities_checked": [
+        "Whether the agent understands broad geographic wording and maps it to canonical municipalities/locations.",
+        "Whether the answer separates broad regions from precise friction points instead of treating all locations as equivalent.",
+        "Whether semantic interpretation stays bounded to geography and does not invent an investigation scenario."
+      ],
+      "expected_mode_hint": "retrieval",
+      "expected_view_hint": "map",
+      "reference_slot": "to_be_defined_in_step_2"
+    },
+    {
+      "id": "fq_02_force_movement",
+      "title": "תנועת כוחות והגברת נוכחות",
+      "question": "האם ניתן לזהות בצפון קוסובו דפוס של תנועת כוחות או הגברת נוכחות בזמן ובמרחב?",
+      "primary_capability": "spatio_temporal_pattern",
+      "secondary_capabilities": ["aggregation_by_time", "aggregation_by_location", "entity_context"],
+      "semantic_capabilities_checked": [
+        "Whether the agent interprets movement/presence as a semantic family, not only exact keywords.",
+        "Whether it distinguishes real movement from reporting density or static presence.",
+        "Whether it combines time, place, and actor semantics into one bounded pattern assessment."
+      ],
+      "expected_mode_hint": "investigation",
+      "expected_view_hint": "map",
+      "reference_slot": "to_be_defined_in_step_2"
+    },
+    {
+      "id": "fq_03_international_actor_role",
+      "title": "פעולת הגורם הבינלאומי המרכזי",
+      "question": "איזה גורם בינלאומי בולט בדיווחים, ומה הוא עושה בפועל: מייצב את השטח, מציב חיץ, מאבטח צירים, או מגביל את חופש הפעולה של גורמים אחרים?",
+      "primary_capability": "entity_role_assessment",
+      "secondary_capabilities": ["resolve_entity", "actor_history", "evidence_vs_noise"],
+      "semantic_capabilities_checked": [
+        "Whether the agent maps role language such as stabilizing, buffering, and limiting action into evidence searches.",
+        "Whether it separates direct actor activity from reports that only mention or misidentify the actor.",
+        "Whether it preserves uncertainty when the same actor can be interpreted in several operational roles."
+      ],
+      "expected_mode_hint": "investigation",
+      "expected_view_hint": "evidence",
+      "reference_slot": "to_be_defined_in_step_2"
+    },
+    {
+      "id": "fq_04_tactical_event_zvecan",
+      "title": "אירוע טקטי ליד זבצ׳אן",
+      "question": "מה באמת קרה באירוע הטקטי ליד זבצ׳אן? תציג את ההתרחשות כרצף זמן ותבדיל בין אירועים מאומתים, דיווחי ירי לא מאומתים ורעש מידע.",
+      "primary_capability": "event_reconstruction",
+      "secondary_capabilities": ["timeline", "certainty_assessment", "source_reliability", "semantic_search"],
+      "semantic_capabilities_checked": [
+        "Whether the agent connects paraphrased tactical-event language to relevant shooting, noise, checkpoint, and force-presence records.",
+        "Whether it separates verified events, unverified shooting claims, and information noise using visible reliability/certainty fields.",
+        "Whether it reconstructs a chronological sequence without forcing weak semantic matches into facts."
+      ],
+      "expected_mode_hint": "investigation",
+      "expected_view_hint": "timeline",
+      "reference_slot": "to_be_defined_in_step_2"
+    },
+    {
+      "id": "fq_05_escalation_assessment",
+      "title": "הערכת הסלמה כוללת",
+      "question": "האם האירועים בצפון קוסובו מצביעים על אכיפה נקודתית ומקומית, או על דפוס הסלמה רחב יותר? בדוק מוקדים, תנועה בזמן ובמרחב, שחקנים מרכזיים, אמינות הדיווחים וחלופות.",
+      "primary_capability": "synthesis",
+      "secondary_capabilities": ["cross_question_memory", "hypothesis_challenge", "evidence_caveats"],
+      "semantic_capabilities_checked": [
+        "Whether the agent synthesizes multiple semantic families: enforcement, escalation, force movement, civil unrest, and information noise.",
+        "Whether it uses prior context without overfitting to a single earlier answer.",
+        "Whether it distinguishes an explanatory pattern from a proven coordinated scenario."
+      ],
+      "expected_mode_hint": "investigation",
+      "expected_view_hint": "evidence",
+      "reference_slot": "to_be_defined_in_step_2"
+    },
+    {
+      "id": "fq_06_violence_noise_general",
+      "title": "ירי, פיצוץ ורעש מידע",
+      "question": "האם הדיווחים על ירי או פיצוץ בצפון קוסובו מצביעים על אירועים אמיתיים, או בעיקר על שמועות, זיקוקים, סרטונים ישנים ודיווחים מוגזמים?",
+      "primary_capability": "information_noise_assessment",
+      "secondary_capabilities": ["semantic_search", "compare_location_claims", "source_reliability", "certainty_assessment"],
+      "semantic_capabilities_checked": [
+        "Whether the agent retrieves violence/noise variants such as shooting, explosion, fireworks, old video, rumor, and exaggeration.",
+        "Whether it compares semantic alternatives instead of treating every violent term as confirmed violence.",
+        "Whether reliability and certainty semantics are used to grade the conclusion."
+      ],
+      "expected_mode_hint": "investigation",
+      "expected_view_hint": "evidence",
+      "reference_slot": "to_be_defined_in_step_2"
+    },
+    {
+      "id": "fq_07_geographic_deception",
+      "title": "חשד להטעיה גאוגרפית",
+      "question": "האם יש בצפון קוסובו דיווחים שנראים כאילו הם מייחסים אותו אירוע או אותו סרטון למיקומים שונים? תבדוק אם יש חשד להטעיה גאוגרפית.",
+      "primary_capability": "geographic_claim_comparison",
+      "secondary_capabilities": ["compare_location_claims", "semantic_search", "map_layers"],
+      "semantic_capabilities_checked": [
+        "Whether the agent recognizes same-claim/same-video language across different locations.",
+        "Whether it uses semantic similarity to find repeated narratives, not only identical keywords.",
+        "Whether it states geographic deception as suspicion from visible contradictions, not ground truth."
+      ],
+      "expected_mode_hint": "investigation",
+      "expected_view_hint": "map",
+      "reference_slot": "to_be_defined_in_step_2"
+    },
+    {
+      "id": "fq_08_first_event_by_hotspot",
+      "title": "סידור מוקדים לפי אירוע ראשון",
+      "question": "מצא את מוקדי החיכוך העיקריים בצפון קוסובו, וסדר אותם על ציר זמן לפי זמן האירוע הראשון בכל מוקד.",
+      "primary_capability": "timeline_aggregation",
+      "secondary_capabilities": ["aggregate_first_last", "timeline_layers"],
+      "semantic_capabilities_checked": [
+        "Whether the agent understands that hotspot timeline means first-event time per location/group, not a raw sample of events.",
+        "Whether it chooses deterministic aggregation rather than semantic search for a structured temporal request.",
+        "Whether it preserves the semantic distinction between hotspot and individual event."
+      ],
+      "expected_mode_hint": "retrieval",
+      "expected_view_hint": "timeline",
+      "reference_slot": "to_be_defined_in_step_2"
+    }
+  ],
+  "tool_level_probes": [
+    {
+      "id": "tp_01_semantic_zvecan_shooting_paraphrase",
+      "tool": "semantic_search_events",
+      "purpose": "Check fuzzy retrieval for paraphrased violent/tactical reports near Zvecan.",
+      "semantic_capabilities_checked": [
+        "Paraphrase retrieval for shooting/noise/tactical-event language.",
+        "Semantic narrowing with explicit Zvecan location filters.",
+        "Avoiding dependence on one exact Hebrew wording for shooting."
+      ],
+      "arguments": {
+        "query": "דיווחים לא מאומתים על ירי או רעש שנשמע כמו ירי ליד זבצ׳אן",
+        "location_ids": ["LOC-003", "LOC-004", "LOC-010", "LOC-019"],
+        "limit": 2000
+      },
+      "reference_slot": "to_be_defined_in_step_2"
+    },
+    {
+      "id": "tp_02_semantic_kfor_role",
+      "tool": "semantic_search_events",
+      "purpose": "Check whether semantic search retrieves role-related KFOR activity beyond exact keyword matching.",
+      "semantic_capabilities_checked": [
+        "Role semantics: buffer, stabilize, prevent friction, increased presence.",
+        "Entity-constrained semantic retrieval using ENT-KFOR.",
+        "Ability to retrieve relevant records even when the query does not simply ask for the literal token KFOR."
+      ],
+      "arguments": {
+        "query": "גורם בינלאומי שמציב חיץ, מגביר נוכחות או מנסה למנוע חיכוך ישיר",
+        "entity_ids": ["ENT-KFOR"],
+        "limit": 2000
+      },
+      "reference_slot": "to_be_defined_in_step_2"
+    },
+    {
+      "id": "tp_03_semantic_geographic_deception",
+      "tool": "semantic_search_events",
+      "purpose": "Check retrieval of repeated or disputed location narratives without relying only on fixed keywords.",
+      "semantic_capabilities_checked": [
+        "Narrative similarity across claims about video, convoy, place attribution, and old-event reuse.",
+        "Hybrid semantic retrieval plus loose keyword narrowing.",
+        "Ability to surface disputed-location candidates for later comparison."
+      ],
+      "arguments": {
+        "query": "אותו סרטון או אותה טענה מופצים בכמה מיקומים שונים, עם הכחשות או טענות שמדובר באירוע קודם",
+        "keywords": ["סרטון", "מיקום", "אירוע קודם"],
+        "match_all_keywords": false,
+        "limit": 2000
+      },
+      "reference_slot": "to_be_defined_in_step_2"
+    },
+    {
+      "id": "tp_04_compare_location_claims",
+      "tool": "compare_location_claims",
+      "purpose": "Check the explicit geographic-claim comparison tool on visible deception/noise signals.",
+      "semantic_capabilities_checked": [
+        "Grouping semantically similar reports across different locations.",
+        "Using visible contradiction, certainty, and reliability signals.",
+        "Separating suspicion of geographic deception from proof of true location."
+      ],
+      "arguments": {
+        "keywords": ["סרטון", "שיירה", "מיקום", "אירוע קודם", "מכחישים"],
+        "start_time": "2026-09-12T00:00:00Z",
+        "end_time": "2026-09-22T23:59:59Z",
+        "limit": 2000
+      },
+      "reference_slot": "to_be_defined_in_step_2"
+    },
+    {
+      "id": "tp_05_aggregate_municipality_hotspots",
+      "tool": "aggregate_events",
+      "purpose": "Check broad hotspot aggregation by municipality.",
+      "semantic_capabilities_checked": [
+        "No semantic retrieval expected; this is a control probe for deterministic geographic aggregation.",
+        "Checks whether geographic grouping semantics are represented by structured fields rather than text inference."
+      ],
+      "arguments": {
+        "group_by": "municipality",
+        "top_n": 10,
+        "limit": 2000
+      },
+      "reference_slot": "to_be_defined_in_step_2"
+    },
+    {
+      "id": "tp_06_aggregate_location_first_last",
+      "tool": "aggregate_events",
+      "purpose": "Check first/last event time support for timeline-by-hotspot questions.",
+      "semantic_capabilities_checked": [
+        "No semantic retrieval expected; this is a control probe for temporal aggregation.",
+        "Checks whether the system represents hotspot chronology through first/last event metadata."
+      ],
+      "arguments": {
+        "group_by": "location",
+        "include_first_last": true,
+        "sort_by": "first_event_time",
+        "sort_order": "asc",
+        "top_n": 20,
+        "limit": 2000
+      },
+      "reference_slot": "to_be_defined_in_step_2"
+    },
+    {
+      "id": "tp_07_search_force_movement_keywords",
+      "tool": "search_events",
+      "purpose": "Check exact/keyword retrieval for force movement and presence reports.",
+      "semantic_capabilities_checked": [
+        "Keyword baseline for movement/presence semantics.",
+        "Used to compare deterministic keyword coverage against semantic_search_events in later steps.",
+        "Checks whether obvious movement vocabulary is retrievable without semantic expansion."
+      ],
+      "arguments": {
+        "keywords": ["רכבים", "סיורים", "מחסום", "נוכחות", "כוחות"],
+        "match_all_keywords": false,
+        "start_time": "2026-09-12T00:00:00Z",
+        "end_time": "2026-09-22T23:59:59Z",
+        "limit": 2000
+      },
+      "reference_slot": "to_be_defined_in_step_2"
+    },
+    {
+      "id": "tp_08_resolve_core_locations",
+      "tool": "resolve_location",
+      "purpose": "Check that broad area and four northern municipalities resolve to usable location IDs.",
+      "semantic_capabilities_checked": [
+        "Location-name normalization and alias/area interpretation.",
+        "No semantic event retrieval expected; this is a control probe for canonical location grounding.",
+        "Checks whether broad geographic language can become structured filters for later semantic searches."
+      ],
+      "arguments": {
+        "query": "צפון קוסובו, צפון מיטרוביצה, זבצ׳אן, זובין פוטוק ולפוסאביץ׳"
+      },
+      "reference_slot": "to_be_defined_in_step_2"
+    },
+    {
+      "id": "tp_09a_resolve_kfor",
+      "tool": "resolve_entity",
+      "purpose": "Check canonical entity resolution for KFOR as a key international actor.",
+      "semantic_capabilities_checked": [
+        "Entity-name normalization for actor semantics.",
+        "No semantic event retrieval expected; this is a control probe for canonical entity grounding.",
+        "Checks whether KFOR can become a structured filter for later semantic searches."
+      ],
+      "arguments": {
+        "query": "KFOR"
+      },
+      "reference_slot": "to_be_defined_in_step_2"
+    },
+    {
+      "id": "tp_09b_resolve_kosovo_police",
+      "tool": "resolve_entity",
+      "purpose": "Check canonical entity resolution for Kosovo Police as a key security actor.",
+      "semantic_capabilities_checked": [
+        "Entity-name normalization for actor semantics.",
+        "No semantic event retrieval expected; this is a control probe for canonical entity grounding.",
+        "Checks whether Kosovo Police can become a structured filter for later semantic searches."
+      ],
+      "arguments": {
+        "query": "משטרת קוסובו"
+      },
+      "reference_slot": "to_be_defined_in_step_2"
+    },
+    {
+      "id": "tp_10_classify_semantic_investigation",
+      "tool": "classify_question_intent",
+      "purpose": "Check classification for a semantic investigation question that should allow semantic search.",
+      "semantic_capabilities_checked": [
+        "Intent classification for tactical-event reconstruction with reliability/noise distinctions.",
+        "Checks whether semantic/search tool families are available for a question with paraphrased event language.",
+        "Checks that the question is not reduced to simple retrieval."
+      ],
+      "arguments": {
+        "question": "מה באמת קרה באירוע הטקטי ליד זבצ׳אן? תבדיל בין דיווחים מאומתים, ירי לא מאומת ורעש מידע."
+      },
+      "reference_slot": "to_be_defined_in_step_2"
+    },
+    {
+      "id": "tp_11_classify_structured_aggregation",
+      "tool": "classify_question_intent",
+      "purpose": "Check classification for a structured hotspot timeline request that should prefer aggregation over semantic retrieval.",
+      "semantic_capabilities_checked": [
+        "Negative/control classification for semantic search.",
+        "Checks that hotspot chronology is interpreted as structured aggregation by first-event time.",
+        "Checks that broad semantic investigation is not triggered when the user asks for a structured ordering."
+      ],
+      "arguments": {
+        "question": "מצא את מוקדי החיכוך העיקריים בצפון קוסובו וסדר לפי זמן האירוע הראשון בכל מוקד."
+      },
+      "reference_slot": "to_be_defined_in_step_2"
+    },
+    {
+      "id": "tp_12_plan_next_frontier",
+      "tool": "plan_next_investigation_step",
+      "status": "disabled_until_step_2_real_seed_ids",
+      "purpose": "Check that process control blocks premature summarization when recommended seeds and semantic clues remain open.",
+      "semantic_capabilities_checked": [
+        "Process-control handling of unresolved semantic clues.",
+        "Ensures semantic frontier items are expanded before summary/challenge.",
+        "Does not test retrieval quality directly; tests whether the agent is constrained to continue semantic investigation."
+      ],
+      "arguments": {
+        "objective": "בדיקת אירוע טקטי ליד זבצ׳אן והבחנה בין ירי מאומת, דיווחים לא מאומתים ורעש מידע",
+        "candidate_chain_event_ids": [],
+        "pending_recommended_seeds": ["REC-PLACEHOLDER-001", "REC-PLACEHOLDER-002", "REC-PLACEHOLDER-003"],
+        "expanded_seed_event_ids": [],
+        "new_clues_to_trace": ["ירי לא מאומת", "רעש אזרחי", "סרטון ישן"],
+        "linkage_checks_done": [],
+        "semantic_calls_used": 0,
+        "related_calls_used": 0,
+        "tool_budget_remaining": 12
+      },
+      "reference_slot": "to_be_defined_in_step_2",
+      "note": "Placeholder event IDs are intentional for step 1. Replace with real baseline seeds in step 2."
+    }
+  ]
+}

@@ -727,6 +727,7 @@ const TOOL_LABELS = {
   resolve_location: "הבנת המקום",
   resolve_event_reference: "זיהוי אירוע העוגן",
   search_events: "חיפוש ממוקד במאגר",
+  semantic_search_events: "חיפוש סמנטי במאגר",
   get_objects: "שליפת אובייקטים",
   find_actor_history: "בדיקת היסטוריית גורם",
   aggregate_events: "זיהוי ריכוזים",

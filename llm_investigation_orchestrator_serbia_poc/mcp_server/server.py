@@ -15,6 +15,12 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
+try:
+    from semantic_index import SemanticEventIndex
+except ImportError:  # pragma: no cover - package-style execution fallback
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from semantic_index import SemanticEventIndex
+
 
 PROTOCOL_VERSION = "2025-06-18"
 SERVER_NAME = "serbia-events-poc"
@@ -27,6 +33,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 DATA_PATH = Path(os.environ.get("INTELLIGENCE_POC_DATA", BASE_DIR / "data" / "serbia_kosovo_events_projection.csv"))
 LOCATIONS_PATH = Path(os.environ.get("INTELLIGENCE_POC_LOCATIONS", BASE_DIR / "data" / "serbia_kosovo_locations.json"))
 ENTITIES_PATH = Path(os.environ.get("INTELLIGENCE_POC_ENTITIES", BASE_DIR / "data" / "serbia_kosovo_entities.json"))
+SEMANTIC_INDEX_DIR = Path(os.environ.get("INTELLIGENCE_POC_SEMANTIC_INDEX", BASE_DIR / "data" / "semantic_index"))
 AUDIT_PATH = Path(os.environ.get("INTELLIGENCE_POC_AUDIT", BASE_DIR / "mcp_audit.jsonl"))
 CLIENT_SUPPORTS_SAMPLING = False
 NEXT_SERVER_REQUEST_ID = 100000
@@ -105,6 +112,7 @@ EVENTS_BY_ID = {event["event_id"]: event for event in EVENTS}
 ENTITY_PRESENTATIONS: dict[str, dict[str, Any]] = {}
 LOCATION_PRESENTATIONS: dict[str, dict[str, Any]] = {}
 ENTITIES: dict[str, dict[str, Any]] = {}
+SEMANTIC_INDEX: SemanticEventIndex | None = None
 
 
 def _fold(value: str | None) -> str:
@@ -217,6 +225,29 @@ def public_event(event: dict[str, Any]) -> dict[str, Any]:
         "location_type": event["location_type"],
         "event_summary": event["event_summary"],
     }
+
+
+def semantic_index_signature() -> dict[str, Any]:
+    signature = {}
+    for label, path in [("events", DATA_PATH), ("locations", LOCATIONS_PATH), ("entities", ENTITIES_PATH)]:
+        try:
+            stat = path.stat()
+            signature[f"{label}_mtime_ns"] = stat.st_mtime_ns
+            signature[f"{label}_size"] = stat.st_size
+        except OSError:
+            signature[f"{label}_missing"] = True
+    return signature
+
+
+def get_semantic_index() -> SemanticEventIndex:
+    global SEMANTIC_INDEX
+    if SEMANTIC_INDEX is None:
+        SEMANTIC_INDEX = SemanticEventIndex(
+            [public_event(event) for event in EVENTS],
+            cache_dir=SEMANTIC_INDEX_DIR,
+            signature=semantic_index_signature(),
+        )
+    return SEMANTIC_INDEX
 
 
 def text_result(payload: Any, is_error: bool = False) -> dict[str, Any]:
@@ -528,7 +559,7 @@ def intent_defaults(intent: str, has_geo: bool = False, has_timeline: bool = Fal
         confidence = "גבוהה"
         tool_budget = 30
         allowed = [
-            "resolve", "search", "aggregate", "get", "trace_identifier", "trace_semantic_clues",
+            "resolve", "search", "semantic_search", "aggregate", "get", "trace_identifier", "trace_semantic_clues",
             "related_expansion", "linkage", "hypothesis_challenge", "sequence",
         ]
         blocked = []
@@ -539,7 +570,7 @@ def intent_defaults(intent: str, has_geo: bool = False, has_timeline: bool = Fal
         recommended_mode = "retrieval"
         confidence = "גבוהה"
         tool_budget = 3
-        allowed = ["resolve", "search", "aggregate", "get"]
+        allowed = ["resolve", "search", "semantic_search", "aggregate", "get"]
         blocked = ["related_expansion", "hypothesis_challenge", "linkage"]
         view_hint = "map"
         reason = "השאלה מבקשת הצגה או ספירה לפי מיקום, ללא בקשת קשרים נסתרים."
@@ -548,7 +579,7 @@ def intent_defaults(intent: str, has_geo: bool = False, has_timeline: bool = Fal
         recommended_mode = "retrieval"
         confidence = "בינונית-גבוהה"
         tool_budget = 4
-        allowed = ["resolve", "search", "get", "sequence"]
+        allowed = ["resolve", "search", "semantic_search", "get", "sequence"]
         blocked = ["related_expansion", "hypothesis_challenge", "linkage"]
         view_hint = "timeline"
         reason = "השאלה מבקשת סדר או עיתוי של אירועים קיימים."
@@ -557,7 +588,7 @@ def intent_defaults(intent: str, has_geo: bool = False, has_timeline: bool = Fal
         recommended_mode = "retrieval"
         confidence = "גבוהה"
         tool_budget = 3
-        allowed = ["resolve", "search", "aggregate", "get"]
+        allowed = ["resolve", "search", "semantic_search", "aggregate", "get"]
         blocked = ["related_expansion", "hypothesis_challenge", "linkage"]
         view_hint = "evidence"
         reason = "השאלה מבקשת שליפה, סינון, צמצום או ספירה של רשומות קיימות."
@@ -566,7 +597,7 @@ def intent_defaults(intent: str, has_geo: bool = False, has_timeline: bool = Fal
         recommended_mode = "retrieval"
         confidence = "בינונית"
         tool_budget = 3
-        allowed = ["resolve", "search", "aggregate", "get"]
+        allowed = ["resolve", "search", "semantic_search", "aggregate", "get"]
         blocked = ["related_expansion", "hypothesis_challenge", "linkage"]
         view_hint = "evidence"
         reason = "לא נמצאה בקשה מפורשת לחקירה עמוקה; ברירת המחדל היא שליפה זהירה."
@@ -766,14 +797,14 @@ def plan_next_investigation_step(arguments: dict[str, Any]) -> dict[str, Any]:
         decision = "continue"
         next_step_constraint = "expand_pending_recommended_seeds"
         required_event_ids = unexpanded_seeds
-        allowed = ["get_objects", "find_related_events", "trace_semantic_clues", "explain_linkage"]
+        allowed = ["get_objects", "find_related_events", "trace_semantic_clues", "semantic_search_events", "explain_linkage"]
         blocked = ["challenge_hypothesis", "final_summary"]
         reason = "קיימים seeds מומלצים שעדיין לא הורחבו; אין לסכם או לאתגר השערה לפני טיפול בהם."
     elif new_clues and semantic_calls_used < 2:
         decision = "continue"
         next_step_constraint = "trace_new_clues"
         required_event_ids = []
-        allowed = ["trace_semantic_clues", "search_events"]
+        allowed = ["trace_semantic_clues", "semantic_search_events", "search_events"]
         blocked = ["challenge_hypothesis", "final_summary"]
         reason = "קיימים רמזים סמנטיים חדשים שעדיין לא נבדקו, ועדיין יש תקציב קריאות סמנטיות."
     elif unchecked_pairs:
@@ -787,7 +818,7 @@ def plan_next_investigation_step(arguments: dict[str, Any]) -> dict[str, Any]:
         decision = "continue"
         next_step_constraint = "continue_bounded_expansion"
         required_event_ids = candidate_chain[-3:] if candidate_chain else []
-        allowed = ["find_related_events", "trace_semantic_clues", "search_events"]
+        allowed = ["find_related_events", "trace_semantic_clues", "semantic_search_events", "search_events"]
         blocked = ["challenge_hypothesis", "final_summary"]
         reason = "השרשרת עדיין קצרה ויש תקציב להרחבה מוגבלת לפני מסקנה."
     elif len(candidate_chain) >= 5:
@@ -1574,6 +1605,67 @@ def search_events(arguments: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def semantic_search_events(arguments: dict[str, Any]) -> dict[str, Any]:
+    query = str(arguments.get("query") or "").strip()
+    seed_ids = arguments.get("seed_event_ids") or []
+    seed_events = [EVENTS_BY_ID[event_id] for event_id in seed_ids if event_id in EVENTS_BY_ID]
+    query_parts = [query]
+    query_parts.extend(event["event_summary"] for event in seed_events)
+    query_text = "\n".join(part for part in query_parts if part)
+    if not query_text.strip():
+        raise ValueError("semantic_search_events requires query or seed_event_ids")
+
+    requested_limit = arguments.get("limit", 50)
+    limit = bounded_limit(requested_limit)
+    filters = {
+        "start_time": arguments.get("start_time"),
+        "end_time": arguments.get("end_time"),
+        "location_ids": arguments.get("location_ids") or [],
+        "entity_ids": arguments.get("entity_ids") or [],
+        "source_types": arguments.get("source_types") or [],
+        "reliabilities": arguments.get("reliabilities") or [],
+        "certainty_levels": arguments.get("certainty_levels") or [],
+        "keywords": arguments.get("keywords") or [],
+        "match_all_keywords": bool(arguments.get("match_all_keywords", False)),
+    }
+    index = get_semantic_index()
+    matches = index.search(query_text, filters=filters, limit=limit)
+    events = []
+    event_ids = []
+    for match in matches:
+        event = EVENTS_BY_ID.get(match["event_id"])
+        if not event:
+            continue
+        event_ids.append(event["event_id"])
+        events.append({
+            **public_event(event),
+            "semantic_score": match["semantic_score"],
+            "semantic_rationale": match["rationale"],
+        })
+    return {
+        "query": query,
+        "seed_event_ids": [event["event_id"] for event in seed_events],
+        "missing_seed_event_ids": [event_id for event_id in seed_ids if event_id not in EVENTS_BY_ID],
+        "backend": index.backend,
+        "semantic_backend": index.backend,
+        "index_manifest": index.manifest,
+        "filters_applied": filters,
+        "requested_limit": requested_limit,
+        "effective_limit": limit,
+        "event_ids": event_ids,
+        "events": events,
+        "matches": [
+            {
+                "event_id": item["event_id"],
+                "semantic_score": item["semantic_score"],
+                "rationale": item["rationale"],
+            }
+            for item in matches
+        ],
+        "returned": len(event_ids),
+    }
+
+
 def get_objects(arguments: dict[str, Any]) -> dict[str, Any]:
     object_type = str(arguments.get("object_type") or "event").casefold()
     if object_type == "events":
@@ -2084,6 +2176,30 @@ TOOLS = [
         "annotations": {"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": False},
     },
     {
+        "name": "semantic_search_events",
+        "title": "Semantic event search",
+        "description": "Retrieve events by corpus-level semantic similarity over enriched event text. Use when the analyst's wording may not match exact keywords, when tracing paraphrased claims, or when broad fuzzy recall is needed. This does not replace exact filters, IDs, aggregation, or identifier tracing. Results are auditable event rows with REC IDs and semantic scores.",
+        "inputSchema": with_step_bridge({
+            "type": "object",
+            "properties": {
+                "query": {"type": "string", "description": "Natural-language retrieval query in Hebrew or English."},
+                "seed_event_ids": {"type": "array", "items": {"type": "string"}, "maxItems": 50, "description": "Optional seed events; their summaries are appended to the semantic query."},
+                "start_time": {"type": "string", "description": "Optional inclusive ISO-8601 UTC start time."},
+                "end_time": {"type": "string", "description": "Optional inclusive ISO-8601 UTC end time."},
+                "location_ids": {"type": "array", "items": {"type": "string"}},
+                "entity_ids": {"type": "array", "items": {"type": "string"}},
+                "source_types": {"type": "array", "items": {"type": "string"}},
+                "reliabilities": {"type": "array", "items": {"type": "string"}},
+                "certainty_levels": {"type": "array", "items": {"type": "string"}},
+                "keywords": {"type": "array", "items": {"type": "string"}, "description": "Optional exact terms that must also appear in enriched event text."},
+                "match_all_keywords": {"type": "boolean", "description": "If true, all keywords must match; otherwise any keyword may match."},
+                "limit": {"type": "integer", "minimum": 1, "maximum": MAX_LIMIT, "description": "Maximum semantic candidates returned."},
+            },
+            "additionalProperties": False,
+        }),
+        "annotations": {"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": False},
+    },
+    {
         "name": "get_objects",
         "title": "Get layer objects",
         "description": "Retrieve exact objects from the event, location, and entity layers. Use object_type=event before citing raw evidence; use location/entity/all when the answer should present those layers.",
@@ -2306,6 +2422,7 @@ TOOL_HANDLERS = {
     "classify_question_intent": classify_question_intent,
     "plan_next_investigation_step": plan_next_investigation_step,
     "search_events": search_events,
+    "semantic_search_events": semantic_search_events,
     "get_objects": get_objects,
     "resolve_location": resolve_location,
     "resolve_event_reference": resolve_event_reference,
@@ -2355,7 +2472,7 @@ def handle_message(message: dict[str, Any]) -> dict[str, Any] | None:
                 "instructions": (
                     "Read-only synthetic intelligence data. Cite only event IDs returned by tools. "
                     "Resolve geographic, event, and entity references before broad searches. "
-                    "Trace concrete identifiers, trace semantic clues when a chain shifts from IDs to descriptive claims, location, actor, media, disinformation, or movement language, use plan_next_investigation_step as a process-control checkpoint after recommended seeds or before challenge/final summary, expand iteratively from strong seed evidence, and use aggregate_events before broad sampling. "
+                    "Trace concrete identifiers, use semantic_search_events for fuzzy or paraphrased retrieval, trace semantic clues when a chain shifts from IDs to descriptive claims, location, actor, media, disinformation, or movement language, use plan_next_investigation_step as a process-control checkpoint after recommended seeds or before challenge/final summary, expand iteratively from strong seed evidence, and use aggregate_events before broad sampling. "
                     "Keep result sets bounded but do not use low limits as proof of absence: if total/truncated or total_candidates/returned show sampling, narrow filters or raise limits before selecting investigative seeds. "
                     "Challenge hypotheses only after a candidate chain has enough supporting evidence or after explicit failed searches."
                 ),

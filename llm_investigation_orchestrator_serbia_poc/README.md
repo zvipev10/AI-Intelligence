@@ -92,12 +92,13 @@ That file contains scenario IDs, clusters, ground-truth status, misleading-type 
 
 ## MCP Tools
 
-The MCP server remains read-only and exposes the same fifteen tools:
+The MCP server remains read-only and exposes seventeen tools:
 
 ```text
 classify_question_intent
 plan_next_investigation_step
 search_events
+semantic_search_events
 get_objects
 resolve_location
 resolve_event_reference
@@ -109,10 +110,13 @@ resolve_entity
 trace_identifier
 trace_semantic_clues
 find_related_events
+compare_location_claims
 challenge_hypothesis
 ```
 
-The tool algorithms and DB structure were not changed for this copy. Scenario-specific configuration was replaced with Serbia/Kosovo locations, actors, identifier patterns, and semantic clues. Hidden scenario labels are deliberately kept out of the agent-visible runtime.
+Scenario-specific configuration was replaced with Serbia/Kosovo locations, actors, identifier patterns, and semantic clues. Hidden scenario labels are deliberately kept out of the agent-visible runtime.
+
+`semantic_search_events` is the first shared semantic retrieval entry point. In the current POC implementation it uses a local lexical TF-IDF index with cached metadata and no external dependency; the API is intentionally shaped so it can later be backed by multilingual embeddings or a vector database without changing the orchestrator contract.
 
 `get_objects` is the general object retrieval tool for the three runtime layers:
 
@@ -139,7 +143,7 @@ $env:PYTHONIOENCODING='utf-8'
 python mcp_server/benchmark_tools.py --rounds 3
 ```
 
-The benchmark covers the full tool surface against Serbia/Kosovo questions: intent classification, location/event resolution, broad search, filtered search, actor history, aggregations, linkage explanation, sequence building, entity resolution, identifier tracing, semantic tracing, related-event expansion, and hypothesis challenge.
+The benchmark covers the full tool surface against Serbia/Kosovo questions: intent classification, location/event resolution, broad search, semantic search, filtered search, actor history, aggregations, linkage explanation, sequence building, entity resolution, identifier tracing, semantic tracing, related-event expansion, location-claim comparison, and hypothesis challenge.
 
 ## Saved Questions
 

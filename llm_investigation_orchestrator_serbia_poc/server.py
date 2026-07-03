@@ -69,6 +69,11 @@ RECORDED_TOOL_TEXT = {
         "הסוכן מחפש במאגר לפי מילות מפתח, זמן, מקור או מיקום כדי לאסוף ראיות.",
         "נמצאו רשומות שתומכות בתשובה המוקלטת.",
     ),
+    "semantic_search_events": (
+        "חיפוש סמנטי במאגר",
+        "הסוכן מחפש אירועים דומים במשמעות גם כאשר הניסוח אינו זהה למילות הרשומה.",
+        "נמצאו מועמדים סמנטיים עם מזהי אירועים וציון התאמה.",
+    ),
     "find_actor_history": (
         "היסטוריית גורם",
         "הסוכן בודק הופעות של אותו גורם לאורך זמן ומרחב.",
@@ -650,6 +655,12 @@ class HermesClient:
                 if clues:
                     return f'הרמזים {format_ids(clues)}'
                 return f'רמזים מתוך אירועי העוגן {format_ids(seeds)}'
+            if tool == "semantic_search_events":
+                seeds = args.get("seed_event_ids") or []
+                query = args.get("query") or ""
+                if seeds:
+                    return f'השאלה הסמנטית "{query}" מתוך עוגנים {format_ids(seeds)}'
+                return f'השאלה הסמנטית "{query}"'
             if tool == "plan_next_investigation_step":
                 return f'מצב החקירה: {args.get("objective") or "יעד לא צוין"}'
             if tool == "get_objects":
@@ -716,6 +727,9 @@ class HermesClient:
             elif tool == "search_events":
                 decision = f'הסוכן משתמש ב-{clue} כדי למצוא רשומות שעומדות בתנאי החיפוש ולאסוף מועמדים ראשונים.'
                 expected = "לקבל רשימת אירועים מצומצמת שאפשר לאמת או להרחיב ממנה."
+            elif tool == "semantic_search_events":
+                decision = f'הסוכן משתמש ב-{clue} כאשר הרמזים או ניסוח השאלה עשויים להופיע במאגר במילים אחרות.'
+                expected = "לקבל מועמדי אירועים דומים סמנטית עם מזהי REC, ציון התאמה ורציונל קצר."
             elif tool == "get_objects":
                 decision = f'הסוכן קורא את הרשומות המלאות של {clue} כדי לא להסתמך רק על מזהים או תקצירים.'
                 expected = "לאמת את תוכן האירועים, המיקומים או הישויות לפני הסקת קשר או הצגה."
@@ -945,6 +959,23 @@ class HermesClient:
                 truncated = bool(result.get("truncated") or (isinstance(total, int) and isinstance(returned, int) and total > returned))
                 warning = " זוהי תוצאה מקוצצת; אין לבחור ממנה עוגן חקירתי בלי צמצום נוסף או הגדלת limit." if truncated else ""
                 outcome = f'נמצאו {total} רשומות; הוחזרו {returned}; מזהים: {format_ids(ids)}.{warning}'
+            elif tool == "semantic_search_events":
+                filters = []
+                for key in ["query", "seed_event_ids", "start_time", "end_time", "location_ids", "entity_ids", "source_types", "reliabilities", "certainty_levels", "keywords", "match_all_keywords", "limit"]:
+                    value = args.get(key)
+                    if value not in (None, "", [], False):
+                        filters.append(f"{key}={json.dumps(value, ensure_ascii=False)}")
+                action = f'חיפוש סמנטי במאגר עם המסננים: {"; ".join(filters) if filters else "ללא מסננים"}.'
+                ids = result.get("event_ids") or []
+                returned = result.get("returned", len(ids))
+                backend = result.get("semantic_backend") or result.get("backend") or "לא צוין"
+                top_scores = [
+                    f'{item.get("event_id")}={round(float(item.get("semantic_score") or 0), 3)}'
+                    for item in (result.get("matches") or [])[:5]
+                    if item.get("event_id")
+                ]
+                score_text = f'; ציונים מובילים: {", ".join(top_scores)}' if top_scores else ""
+                outcome = f'הוחזרו {returned} מועמדים סמנטיים באמצעות {backend}: {format_ids(ids)}{score_text}.'
             elif tool == "get_objects":
                 object_type = args.get("object_type") or result.get("object_type") or "event"
                 event_ids = [item.get("event_id") for item in result.get("events") or [] if item.get("event_id")]
@@ -1073,7 +1104,7 @@ class HermesClient:
                 outcome = f'פלט: {json.dumps(result, ensure_ascii=False)}.'
             # Collect event_ids for per-step visualization
             step_event_ids = []
-            if tool in {"search_events", "find_actor_history", "trace_identifier", "trace_semantic_clues", "find_related_events"}:
+            if tool in {"search_events", "semantic_search_events", "find_actor_history", "trace_identifier", "trace_semantic_clues", "find_related_events"}:
                 step_event_ids = result.get("event_ids") or []
             elif tool in {"resolve_event_reference"}:
                 step_event_ids = result.get("event_ids") or []
@@ -1260,6 +1291,10 @@ class HermesClient:
             " השתמש ב-limit קטן רק כאשר הצעד הוא אימות ממוקד של מזהים/רשומות שכבר נבחרו, לא לצורך חיפוש או שלילה."
             " כאשר כלי מחזיר truncated=true או total גדול מ-returned, אל תבחר עוגן חקירתי כאילו נבדקו כל הרשומות; בצע צמצום נוסף, אגרגציה, או חיפוש ממוקד לפני בחירת seeds."
             " אל תציג שרשרת כמבוססת אם העוגנים נבחרו רק מתוך תוצאה מקוצצת ללא הצדקה.\n"
+            "השתמש ב-semantic_search_events כאשר השאלה, הטענה או הרמזים מתארים משמעות כללית, פרפרזה, ניסוח תקשורתי, שמועה או תיאור שאולי לא מופיע במילים המדויקות ברשומות."
+            " אל תשתמש בו במקום trace_identifier למזהה גלוי, במקום search_events למסננים מפורשים, במקום aggregate_events לספירות, או במקום get_objects לשליפת אובייקטים ידועים."
+            " התייחס לתוצאת semantic_search_events כמועמדי ראיות בלבד: לאחר מכן אמת מועמדים מרכזיים בעזרת get_objects, find_related_events, explain_linkage או build_event_sequence לפי הצורך."
+            " כאשר קיימים entity_id או location_id ידועים, העבר אותם כמסננים ל-semantic_search_events כדי לצמצם רעש.\n"
             "ב-find_related_events בחקירה עמוקה, אל תשתמש ב-limit=20, limit=150 או limit=500 להרחבה רחבה. השתמש בדרך כלל ב-limit=2000, או צמצם מראש לפי source_types, חלון זמן, מיקום או ממדי קשר."
             " אם total_candidates גדול בהרבה מ-returned, התייחס לתוצאה כמדגם מדורג ולא כבדיקה מלאה; המשך בסינון או בהרחבה נוספת.\n"
             "אם המשתמש מבקש להציג, לשלוף, לסנן, לצמצם, למנות או להראות אירועים/רשומות/תוצאות,"

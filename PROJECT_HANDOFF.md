@@ -454,6 +454,7 @@ Current Serbia MCP tools:
 classify_question_intent
 plan_next_investigation_step
 search_events
+semantic_search_events
 get_objects
 resolve_location
 resolve_event_reference
@@ -610,11 +611,20 @@ Current problem:
 - `compare_location_claims` uses seed-derived clue keywords and `GEO_CONFLICT_MARKERS` for retrieval/grouping.
 - This is useful and explainable, but it is not real semantic similarity.
 
+Implementation status:
+
+- Phase 1 foundation is implemented as `mcp_server/semantic_index.py`.
+- The current backend is local lexical TF-IDF with persisted cache metadata, not a deployed embedding/vector DB yet.
+- This is the deliberate POC fallback stack: no external model/package dependency, auditable scoring, and stable MCP contract.
+- Public MCP tool `semantic_search_events` is implemented and returns normal public event objects plus `semantic_score` and a short rationale.
+- The orchestrator prompt now tells the model to use `semantic_search_events` for fuzzy/paraphrased retrieval, and not for exact IDs, exact filters, aggregation, or object retrieval.
+- Existing fake-semantic paths (`trace_semantic_clues`, `find_related_events`, `explain_linkage`, `compare_location_claims`) were not converted yet. They remain deterministic/hardcoded until a quality baseline shows that semantic retrieval improves them.
+
 Target architecture:
 
 1. Add one shared internal semantic backend: `SemanticEventIndex`.
-   - Build/load embeddings for all active event records.
-   - Search by vector similarity over event text.
+   - Build/load semantic retrieval vectors for all active event records.
+   - Current implementation uses lexical TF-IDF; future implementation can swap in multilingual embeddings/vector similarity.
    - Apply metadata filters before/after retrieval: time, `location_id`, `entity_id`, source type, reliability/certainty.
    - Return scored event candidates with canonical `REC-*` IDs.
    - Store no anonymous chunks; every result must map back to an event row.
@@ -646,9 +656,8 @@ Implementation phases:
   - `certainty_level`
   - `source_reliability_label`
 - Do not use removed fields such as `entity_or_actor`.
-- Choose a local POC stack: multilingual embeddings plus a persisted local vector index.
-- Preferred first stack: small multilingual embedding model + `hnswlib` or `FAISS`.
-- Fallback: simple persisted embedding matrix if deployment constraints are tight.
+- Current local POC stack: persisted sparse lexical TF-IDF index, no third-party dependency.
+- Future stack option: small multilingual embedding model plus `hnswlib`, `FAISS`, or a simple persisted embedding matrix if deployment constraints allow it.
 - Add index build/load path that can regenerate from CSV plus entities/locations JSON during deploy/startup.
 - Keep metadata sidecar keyed by `event_id`.
 
@@ -702,6 +711,38 @@ Design constraints:
 - UI behavior stays layer-based: semantic results become ordinary event result layers/tabs by source type or result grouping.
 - RAG result events must preserve enriched `entity_id`, `entity_name`, `location_id`, and `location_name`.
 - Elastic/OpenSearch remains out of scope until corpus size, concurrency, or ops needs justify it.
+
+## RAG Quality Test Catalog
+
+Step 1 of the deeper quality-test plan is defined here:
+
+```text
+llm_investigation_orchestrator_serbia_poc/docs/quality/question_catalog_v1.json
+```
+
+It contains:
+
+- 8 full investigation questions for the app/Hermes/agent path.
+- 10 direct tool-level probes for MCP/tool isolation.
+
+The companion explanation is:
+
+```text
+llm_investigation_orchestrator_serbia_poc/docs/quality/quality_test_plan.md
+```
+
+Step 2 reference base is now here:
+
+```text
+llm_investigation_orchestrator_serbia_poc/docs/quality/reference_base_v1.json
+```
+
+Current status:
+
+- `fq_01` through `fq_05` have current baselines from existing real recordings.
+- `fq_06`, `fq_07`, and `fq_08` still need live standalone full-agent runs.
+- Enabled tool probes have direct MCP current-output baselines.
+- Ideal targets define criteria and expected output behavior, but reviewed `must_find` / `acceptable` / `must_not_prioritize` ID lists still need an analyst/offline-label pass.
 
 ## Validation Commands
 
