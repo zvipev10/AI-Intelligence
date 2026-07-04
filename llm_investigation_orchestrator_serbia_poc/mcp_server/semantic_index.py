@@ -145,6 +145,7 @@ class SemanticEventIndex:
             "version": INDEX_VERSION,
             "backend": self.backend,
             "dense_dimensions": self.dense_dimensions if self.backend in {"dense_hash_embedding", "hybrid_embedding"} else None,
+            "dense_engine": ("numpy" if np is not None else "python") if self.backend in {"dense_hash_embedding", "hybrid_embedding"} else None,
             "record_count": len(self.records),
             **self.signature,
         }
@@ -190,6 +191,9 @@ class SemanticEventIndex:
                 pass
 
     def _build(self) -> None:
+        if self.backend == "hybrid_embedding" and np is None:
+            self._build_lexical()
+            return
         if self.backend in {"dense_hash_embedding", "hybrid_embedding"}:
             self._build_dense()
             if self.backend == "hybrid_embedding":
@@ -464,14 +468,17 @@ class SemanticEventIndex:
             self.backend = lexical_backend
         if not lexical_matches:
             return self._search_dense(query, filters, limit)
-        if self.embedding_matrix is None:
+        pure_python_rerank = np is None and self.embedding_matrix is None
+        if self.embedding_matrix is None and not pure_python_rerank:
             return lexical_matches[:limit]
         query_embedding = self._query_embedding(query)
         sparse_dense_scores = False
         if np is not None:
             dense_scores = self.embedding_matrix @ query_embedding if np.any(query_embedding) else None
-        else:
+        elif self.embedding_matrix is not None:
             sparse_dense_scores = bool(query_embedding)
+            dense_scores = None
+        else:
             dense_scores = None
         lexical_max = max((item["semantic_score"] for item in lexical_matches), default=1.0) or 1.0
         reranked = []
@@ -482,7 +489,13 @@ class SemanticEventIndex:
                 continue
             record = self.records[record_index]
             lexical_score = float(item["semantic_score"]) / lexical_max
-            if sparse_dense_scores:
+            if pure_python_rerank and query_embedding:
+                record_embedding = self._sparse_embedding_from_features(dense_features(self.event_text(record)))
+                record_norm = math.sqrt(sum(weight * weight for weight in record_embedding.values()))
+                if record_norm > 0:
+                    record_embedding = {bucket: weight / record_norm for bucket, weight in record_embedding.items()}
+                dense_score = self._sparse_embedding_similarity(query_embedding, record_embedding)
+            elif sparse_dense_scores:
                 dense_score = self._sparse_embedding_similarity(query_embedding, self.embedding_matrix[record_index])
             else:
                 dense_score = float(dense_scores[record_index]) if dense_scores is not None else 0.0
