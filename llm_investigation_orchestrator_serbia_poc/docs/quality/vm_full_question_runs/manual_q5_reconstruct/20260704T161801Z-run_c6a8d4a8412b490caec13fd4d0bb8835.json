@@ -1,0 +1,51 @@
+{
+  "run_id": "run_c6a8d4a8412b490caec13fd4d0bb8835",
+  "timestamp_utc": "2026-07-04T16:18:01.444093+00:00",
+  "prompt": "האם האירועים בצפון קוסובו מצביעים על אכיפה נקודתית ומקומית, או על דפוס הסלמה רחב יותר? בדוק מוקדים, תנועה בזמן ובמרחב, שחקנים מרכזיים, אמינות הדיווחים וחלופות",
+  "performance": {
+    "gateway": {
+      "ssh_session_open_ms": 0.003,
+      "audit_truncate_ms": 3.733,
+      "event_fetch_ms": 105.505,
+      "audit_fetch_ms": 95.676,
+      "postprocess_ms": 532.878,
+      "total_ms": 252089.3
+    },
+    "hermes": {
+      "poll_count": 245,
+      "status_request_total_ms": 6339.888000000003,
+      "run_create_ms": 4.611,
+      "run_wait_ms": 251548.043,
+      "time_to_first_tool_ms": 5082.112,
+      "run_total_ms": 251548.045,
+      "model_orchestration_gap_ms": 159229.975
+    },
+    "tools": {
+      "tool_call_count": 29,
+      "tool_execution_total_ms": 92318.07,
+      "tool_execution_max_ms": 19970.119,
+      "slowest_tool": {
+        "name": "challenge_hypothesis",
+        "duration_ms": 19970.119
+      }
+    },
+    "summary": {
+      "total_user_wait_server_ms": 252089.3,
+      "hermes_run_total_ms": 251548.045,
+      "time_to_first_tool_ms": 5082.112,
+      "tool_execution_total_ms": 92318.07,
+      "model_orchestration_gap_ms": 159229.975,
+      "tool_call_count": 29,
+      "slowest_tool": {
+        "name": "challenge_hypothesis",
+        "duration_ms": 19970.119
+      }
+    },
+    "client": {
+      "total_ms": 252668,
+      "request_response_ms": 252563,
+      "render_ms": 15,
+      "time_to_first_live_step_ms": 5594
+    }
+  }
+}
