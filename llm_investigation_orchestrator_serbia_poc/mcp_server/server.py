@@ -34,6 +34,7 @@ DATA_PATH = Path(os.environ.get("INTELLIGENCE_POC_DATA", BASE_DIR / "data" / "se
 LOCATIONS_PATH = Path(os.environ.get("INTELLIGENCE_POC_LOCATIONS", BASE_DIR / "data" / "serbia_kosovo_locations.json"))
 ENTITIES_PATH = Path(os.environ.get("INTELLIGENCE_POC_ENTITIES", BASE_DIR / "data" / "serbia_kosovo_entities.json"))
 SEMANTIC_INDEX_DIR = Path(os.environ.get("INTELLIGENCE_POC_SEMANTIC_INDEX", BASE_DIR / "data" / "semantic_index"))
+SEMANTIC_BACKEND = os.environ.get("INTELLIGENCE_POC_SEMANTIC_BACKEND", "hybrid_embedding")
 AUDIT_PATH = Path(os.environ.get("INTELLIGENCE_POC_AUDIT", BASE_DIR / "mcp_audit.jsonl"))
 CLIENT_SUPPORTS_SAMPLING = False
 NEXT_SERVER_REQUEST_ID = 100000
@@ -290,6 +291,7 @@ def get_semantic_index() -> SemanticEventIndex:
             [public_event(event) for event in EVENTS],
             cache_dir=SEMANTIC_INDEX_DIR,
             signature=semantic_index_signature(),
+            backend=SEMANTIC_BACKEND,
         )
     return SEMANTIC_INDEX
 

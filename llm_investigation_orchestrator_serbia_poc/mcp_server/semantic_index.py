@@ -111,8 +111,6 @@ class SemanticEventIndex:
         self.signature = signature or {}
         requested_backend = normalize_text(backend or os.environ.get("INTELLIGENCE_POC_SEMANTIC_BACKEND") or "lexical_tfidf")
         self.backend = requested_backend if requested_backend in {"lexical_tfidf", "dense_hash_embedding", "hybrid_embedding"} else "lexical_tfidf"
-        if self.backend in {"dense_hash_embedding", "hybrid_embedding"} and np is None:
-            self.backend = "lexical_tfidf"
         self.dense_dimensions = int(dense_dimensions or os.environ.get("INTELLIGENCE_POC_EMBEDDING_DIMENSIONS") or DEFAULT_DENSE_DIMENSIONS)
         self.idf: dict[str, float] = {}
         self.doc_vectors: list[dict[str, float]] = []
@@ -233,9 +231,6 @@ class SemanticEventIndex:
         return vector, norm
 
     def _build_dense(self) -> None:
-        if np is None:
-            self._build_lexical()
-            return
         document_features = [dense_features(self.event_text(record)) for record in self.records]
         document_frequency = Counter()
         for features in document_features:
@@ -245,6 +240,19 @@ class SemanticEventIndex:
             feature: math.log((1 + document_count) / (1 + count)) + 1.0
             for feature, count in document_frequency.items()
         }
+        if np is None:
+            vectors = []
+            for features in document_features:
+                vector = self._sparse_embedding_from_features(features)
+                norm = math.sqrt(sum(weight * weight for weight in vector.values()))
+                if norm > 0:
+                    vector = {bucket: weight / norm for bucket, weight in vector.items()}
+                vectors.append(vector)
+            self.embedding_matrix = vectors
+            self.idf = {}
+            self.doc_vectors = []
+            self.doc_norms = []
+            return
         matrix = np.zeros((len(self.records), self.dense_dimensions), dtype=np.float32)
         for row_index, features in enumerate(document_features):
             vector = self._dense_vector_from_features(features)
@@ -256,6 +264,18 @@ class SemanticEventIndex:
         self.idf = {}
         self.doc_vectors = []
         self.doc_norms = []
+
+    def _sparse_embedding_from_features(self, features: list[tuple[str, float]]) -> dict[int, float]:
+        if not features:
+            return {}
+        vector: dict[int, float] = {}
+        counts = Counter(feature for feature, _ in features)
+        max_count = max(counts.values())
+        for feature, base_weight in features:
+            bucket, sign = stable_bucket(feature, self.dense_dimensions)
+            tf = 0.5 + 0.5 * (counts[feature] / max_count)
+            vector[bucket] = vector.get(bucket, 0.0) + (sign * base_weight * tf * self.feature_idf.get(feature, 1.0))
+        return vector
 
     def _dense_vector_from_features(self, features: list[tuple[str, float]]) -> Any:
         if np is None:
@@ -273,7 +293,11 @@ class SemanticEventIndex:
 
     def _query_embedding(self, query: str) -> Any:
         if np is None:
-            raise RuntimeError("NumPy is required for dense semantic embeddings")
+            vector = self._sparse_embedding_from_features(dense_features(query))
+            norm = math.sqrt(sum(weight * weight for weight in vector.values()))
+            if norm > 0:
+                return {bucket: weight / norm for bucket, weight in vector.items()}
+            return {}
         vector = self._dense_vector_from_features(dense_features(query))
         norm = float(np.linalg.norm(vector))
         if norm > 0:
@@ -361,17 +385,25 @@ class SemanticEventIndex:
         return scored[:limit]
 
     def _search_dense(self, query: str, filters: dict[str, Any], limit: int) -> list[dict[str, Any]]:
-        if np is None or self.embedding_matrix is None:
+        if self.embedding_matrix is None:
             return []
         query_vector = self._query_embedding(query)
-        if not np.any(query_vector):
+        if np is not None:
+            if not np.any(query_vector):
+                return []
+            scores = self.embedding_matrix @ query_vector
+        elif not query_vector:
             return []
-        scores = self.embedding_matrix @ query_vector
+        else:
+            scores = None
         scored = []
         for index, record in enumerate(self.records):
             if not self._passes_filters(record, filters):
                 continue
-            score = float(scores[index])
+            if scores is None:
+                score = self._sparse_embedding_similarity(query_vector, self.embedding_matrix[index])
+            else:
+                score = float(scores[index])
             if score <= 0:
                 continue
             scored.append(
@@ -384,6 +416,14 @@ class SemanticEventIndex:
             )
         scored.sort(key=lambda item: (-item["semantic_score"], item["record"].get("timestamp_utc", ""), item["event_id"] or ""))
         return scored[:limit]
+
+    @staticmethod
+    def _sparse_embedding_similarity(first: dict[int, float], second: dict[int, float]) -> float:
+        if not first or not second:
+            return 0.0
+        if len(first) > len(second):
+            first, second = second, first
+        return sum(weight * second.get(bucket, 0.0) for bucket, weight in first.items())
 
     @staticmethod
     def _concept_overlap_score(query: str, record: dict[str, Any]) -> float:
@@ -424,10 +464,15 @@ class SemanticEventIndex:
             self.backend = lexical_backend
         if not lexical_matches:
             return self._search_dense(query, filters, limit)
-        if np is None or self.embedding_matrix is None:
+        if self.embedding_matrix is None:
             return lexical_matches[:limit]
         query_embedding = self._query_embedding(query)
-        dense_scores = self.embedding_matrix @ query_embedding if self.embedding_matrix is not None and np.any(query_embedding) else None
+        sparse_dense_scores = False
+        if np is not None:
+            dense_scores = self.embedding_matrix @ query_embedding if np.any(query_embedding) else None
+        else:
+            sparse_dense_scores = bool(query_embedding)
+            dense_scores = None
         lexical_max = max((item["semantic_score"] for item in lexical_matches), default=1.0) or 1.0
         reranked = []
         for item in lexical_matches:
@@ -437,7 +482,10 @@ class SemanticEventIndex:
                 continue
             record = self.records[record_index]
             lexical_score = float(item["semantic_score"]) / lexical_max
-            dense_score = float(dense_scores[record_index]) if dense_scores is not None else 0.0
+            if sparse_dense_scores:
+                dense_score = self._sparse_embedding_similarity(query_embedding, self.embedding_matrix[record_index])
+            else:
+                dense_score = float(dense_scores[record_index]) if dense_scores is not None else 0.0
             concept_score = min(self._concept_overlap_score(query, record) / 8.0, 1.0)
             specificity_penalty = self._specificity_penalty(query, record)
             final_score = max(0.0, (0.58 * lexical_score) + (0.22 * max(dense_score, 0.0)) + (0.20 * concept_score) - specificity_penalty)

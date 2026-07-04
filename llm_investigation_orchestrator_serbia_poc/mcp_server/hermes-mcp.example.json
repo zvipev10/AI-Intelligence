@@ -6,6 +6,8 @@
       "env": {
         "INTELLIGENCE_POC_DATA": "/opt/serbia-poc/data/serbia_kosovo_events_projection.csv",
         "INTELLIGENCE_POC_LOCATIONS": "/opt/serbia-poc/data/serbia_kosovo_locations.json",
+        "INTELLIGENCE_POC_ENTITIES": "/opt/serbia-poc/data/serbia_kosovo_entities.json",
+        "INTELLIGENCE_POC_SEMANTIC_BACKEND": "hybrid_embedding",
         "INTELLIGENCE_POC_AUDIT": "/opt/serbia-poc/mcp_audit.jsonl"
       }
     }

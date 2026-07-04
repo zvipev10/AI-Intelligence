@@ -116,7 +116,7 @@ challenge_hypothesis
 
 Scenario-specific configuration was replaced with Serbia/Kosovo locations, actors, identifier patterns, and semantic clues. Hidden scenario labels are deliberately kept out of the agent-visible runtime.
 
-`semantic_search_events` is the first shared semantic retrieval entry point. In the current POC implementation it uses a local lexical TF-IDF index with cached metadata and no external dependency; the API is intentionally shaped so it can later be backed by multilingual embeddings or a vector database without changing the orchestrator contract.
+`semantic_search_events` is the shared semantic retrieval entry point. The deployment default is now `hybrid_embedding`: the tool first uses lexical TF-IDF to preserve stable candidate recall, then reranks the candidates with local dense/concept embedding signals and lightweight penalties for generic matches. The backend remains configurable through `INTELLIGENCE_POC_SEMANTIC_BACKEND`; `lexical_tfidf` is still available as a baseline and fallback, and the API is intentionally shaped so a future multilingual embedding model or vector database can replace the local encoder without changing the orchestrator contract.
 
 `get_objects` is the general object retrieval tool for the three runtime layers:
 
