@@ -118,6 +118,12 @@ Scenario-specific configuration was replaced with Serbia/Kosovo locations, actor
 
 `semantic_search_events` is the shared semantic retrieval entry point. The deployment default is now `hybrid_embedding`: the tool first uses lexical TF-IDF to preserve stable candidate recall, then reranks the candidates with local dense/concept embedding signals and lightweight penalties for generic matches. The backend remains configurable through `INTELLIGENCE_POC_SEMANTIC_BACKEND`; `lexical_tfidf` is still available as a baseline and fallback, and the API is intentionally shaped so a future multilingual embedding model or vector database can replace the local encoder without changing the orchestrator contract.
 
+The same hybrid backend is also used as a candidate-generation signal inside higher-level tools:
+
+- `resolve_event_reference` uses hybrid semantic retrieval to map vague analyst references to candidate anchor events after extracting visible search/location/entity terms.
+- `trace_semantic_clues` uses hybrid semantic retrieval over input clues, LLM-expanded clues, and seed summaries, then applies clue-specific scoring, negation handling, next-seed selection, and next-clue extraction.
+- `find_related_events` uses hybrid semantic similarity only as a supporting `"semantic"` dimension. Structured bridges such as shared entity, identifier, time, and location remain dominant.
+
 `get_objects` is the general object retrieval tool for the three runtime layers:
 
 - `object_type="event"` retrieves event objects by `event_ids`.

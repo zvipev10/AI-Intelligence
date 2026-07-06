@@ -334,6 +334,35 @@ def coverage_limit(value: Any) -> int:
     return max(MIN_COVERAGE_LIMIT, bounded_limit(value))
 
 
+def semantic_filters_from_arguments(arguments: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "start_time": arguments.get("start_time"),
+        "end_time": arguments.get("end_time"),
+        "location_ids": arguments.get("location_ids") or [],
+        "entity_ids": arguments.get("entity_ids") or [],
+        "source_types": arguments.get("source_types") or [],
+        "reliabilities": arguments.get("reliabilities") or [],
+        "certainty_levels": arguments.get("certainty_levels") or [],
+        "keywords": arguments.get("keywords") or [],
+        "match_all_keywords": bool(arguments.get("match_all_keywords", False)),
+    }
+
+
+def semantic_candidates(query: str, arguments: dict[str, Any], limit: int) -> list[dict[str, Any]]:
+    query = str(query or "").strip()
+    if not query:
+        return []
+    try:
+        candidate_limit = max(1, min(int(limit or DEFAULT_LIMIT), MAX_LIMIT))
+    except (TypeError, ValueError):
+        candidate_limit = DEFAULT_LIMIT
+    return get_semantic_index().search(
+        query,
+        filters=semantic_filters_from_arguments(arguments),
+        limit=candidate_limit,
+    )
+
+
 def sort_order_desc(arguments: dict[str, Any]) -> bool:
     return str(arguments.get("sort_order") or "asc").casefold() == "desc"
 
@@ -993,8 +1022,13 @@ def trace_semantic_clues(arguments: dict[str, Any]) -> dict[str, Any]:
     include_negated = bool(arguments.get("include_negated", False))
     requested_limit = arguments.get("limit", MAX_LIMIT)
     limit = coverage_limit(requested_limit)
-    normalized_clues = [(clue, normalize_text(clue)) for clue in clues]
-    matches = []
+    active_clues = list(dict.fromkeys(clues + llm_expanded_clues))
+    normalized_clues = [(clue, normalize_text(clue)) for clue in active_clues]
+    semantic_query_parts = active_clues[:30] + [event["event_summary"] for event in seed_events[:5]]
+    semantic_query = "\n".join(part for part in semantic_query_parts if part)
+    semantic_matches = semantic_candidates(semantic_query, arguments, limit)
+    semantic_by_id = {match["event_id"]: match for match in semantic_matches if match.get("event_id")}
+    matches_by_id: dict[str, dict[str, Any]] = {}
     for event in EVENTS:
         if start and event["timestamp"] < start:
             continue
@@ -1012,18 +1046,55 @@ def trace_semantic_clues(arguments: dict[str, Any]) -> dict[str, Any]:
         if negated and not include_negated:
             continue
         score = len(matched_clues) * 4
+        semantic_match = semantic_by_id.get(event["event_id"])
+        if semantic_match:
+            score += min(4, max(1, int(float(semantic_match.get("semantic_score") or 0) * 10)))
         if any(marker in event["event_summary"] for marker in DIRECT_OBSERVATION_MARKERS):
             score += 1
         if negated:
             score -= 4
         if any(marker in event["event_summary"] for marker in BENIGN_MARKERS):
             score -= 2
-        matches.append({
+        matches_by_id[event["event_id"]] = {
             "score": score,
             "matched_clues": matched_clues,
             "mention_type": "negated" if negated else "direct",
+            "semantic_score": round(float(semantic_match.get("semantic_score") or 0), 6) if semantic_match else 0,
+            "semantic_rationale": semantic_match.get("rationale") if semantic_match else "",
+            "match_source": "direct_and_semantic" if semantic_match else "direct_clue",
             "event": public_event(event),
-        })
+        }
+    for match in semantic_matches:
+        event_id = match.get("event_id")
+        if not event_id or event_id in matches_by_id:
+            continue
+        event = EVENTS_BY_ID.get(event_id)
+        if not event:
+            continue
+        negated = event_has_negation(event)
+        if negated and not include_negated:
+            continue
+        event_clues = semantic_clues_from_text(event["event_summary"])
+        matched_clues = [clue for clue in event_clues if clue in active_clues] or ["semantic_similarity"]
+        score = min(6, max(2, int(float(match.get("semantic_score") or 0) * 12)))
+        if any(marker in event["event_summary"] for marker in DIRECT_OBSERVATION_MARKERS):
+            score += 1
+        if negated:
+            score -= 4
+        if any(marker in event["event_summary"] for marker in BENIGN_MARKERS):
+            score -= 2
+        if score < 2:
+            continue
+        matches_by_id[event_id] = {
+            "score": score,
+            "matched_clues": matched_clues,
+            "mention_type": "negated" if negated else "semantic",
+            "semantic_score": round(float(match.get("semantic_score") or 0), 6),
+            "semantic_rationale": match.get("rationale") or "",
+            "match_source": "semantic_candidate",
+            "event": public_event(event),
+        }
+    matches = list(matches_by_id.values())
     matches.sort(key=lambda item: (-item["score"], item["event"]["timestamp_utc"], item["event"]["event_id"]))
     selected = matches[:limit]
     seed_id_set = {event["event_id"] for event in seed_events}
@@ -1067,6 +1138,8 @@ def trace_semantic_clues(arguments: dict[str, Any]) -> dict[str, Any]:
         "event_ids": [item["event"]["event_id"] for item in selected],
         "matches": selected,
         "total_matches": len(matches),
+        "semantic_candidate_count": len(semantic_matches),
+        "semantic_backend": get_semantic_index().backend if semantic_matches else None,
         "returned": len(selected),
         "truncated": len(matches) > len(selected),
         "requested_limit": requested_limit,
@@ -1101,6 +1174,26 @@ def find_related_events(arguments: dict[str, Any]) -> dict[str, Any]:
     seed_semantic_clues = set().union(*(set(semantic_clues_from_text(seed["event_summary"])) for seed in seeds))
     earliest = min(seed["timestamp"] for seed in seeds) - timedelta(hours=before_hours)
     latest = max(seed["timestamp"] for seed in seeds) + timedelta(hours=after_hours)
+    semantic_related_matches: list[dict[str, Any]] = []
+    if "semantic" in dimensions:
+        semantic_query = "\n".join(
+            list(sorted(seed_semantic_clues))[:20] + [seed["event_summary"] for seed in seeds[:5]]
+        )
+        semantic_related_matches = semantic_candidates(
+            semantic_query,
+            {
+                **arguments,
+                "start_time": earliest.isoformat().replace("+00:00", "Z"),
+                "end_time": latest.isoformat().replace("+00:00", "Z"),
+                "source_types": list(source_types),
+            },
+            limit,
+        )
+    semantic_related_by_id = {
+        match["event_id"]: match
+        for match in semantic_related_matches
+        if match.get("event_id") and match.get("event_id") not in seed_ids
+    }
     ranked = []
     for event in EVENTS:
         if event["event_id"] in seed_ids or event["timestamp"] < earliest or event["timestamp"] > latest:
@@ -1143,6 +1236,17 @@ def find_related_events(arguments: dict[str, Any]) -> dict[str, Any]:
                 "dimension": "semantic",
                 "detail": ", ".join(sorted(shared_semantic)),
                 "weight": semantic_weight,
+            })
+        semantic_match = semantic_related_by_id.get(event["event_id"])
+        if "semantic" in dimensions and semantic_match:
+            semantic_score = float(semantic_match.get("semantic_score") or 0)
+            semantic_weight = 3 if semantic_score >= 0.12 else 2 if semantic_score >= 0.06 else 1
+            score += semantic_weight
+            reasons.append({
+                "dimension": "semantic_embedding",
+                "detail": semantic_match.get("rationale") or "hybrid semantic similarity to seed events",
+                "weight": semantic_weight,
+                "semantic_score": round(semantic_score, 6),
             })
         nearest_hours = min(abs((event["timestamp"] - seed["timestamp"]).total_seconds()) / 3600 for seed in seeds)
         if "time" in dimensions:
@@ -1252,6 +1356,8 @@ def find_related_events(arguments: dict[str, Any]) -> dict[str, Any]:
         "related_events": selected,
         "event_ids": [item["event"]["event_id"] for item in selected],
         "total_candidates": len(ranked),
+        "semantic_candidate_count": len(semantic_related_matches),
+        "semantic_backend": get_semantic_index().backend if semantic_related_matches else None,
         "returned": len(selected),
         "truncated": len(ranked) > len(selected),
         "requested_limit": requested_limit,
@@ -1818,8 +1924,28 @@ def resolve_event_reference(arguments: dict[str, Any]) -> dict[str, Any]:
             for term in string_list((llm_interpretation or {}).get(key), limit=8):
                 if normalize_text(term) not in {normalize_text(item) for item in search_terms}:
                     search_terms.append(term)
+        resolved_location_ids: list[str] = []
+        for term in string_list((llm_interpretation or {}).get("location_terms"), limit=8):
+            for location_id in match_location_term(term):
+                if location_id not in resolved_location_ids:
+                    resolved_location_ids.append(location_id)
+        resolved_entity_ids: list[str] = []
+        for term in string_list((llm_interpretation or {}).get("actor_terms"), limit=8):
+            for match in entity_matches(term):
+                entity_id = match.get("entity_id")
+                if entity_id and entity_id not in resolved_entity_ids:
+                    resolved_entity_ids.append(entity_id)
+        semantic_matches = semantic_candidates(
+            "\n".join(search_terms),
+            {
+                "location_ids": resolved_location_ids,
+                "entity_ids": resolved_entity_ids,
+            },
+            80,
+        )
+        semantic_by_id = {match["event_id"]: match for match in semantic_matches if match.get("event_id")}
         query_folded = query.casefold()
-        scored_events = []
+        scored_events_by_id: dict[str, dict[str, Any]] = {}
         for event in EVENTS:
             haystack = normalize_text(
                 " ".join([event["event_summary"], event["event_id"], event_entity_name(event), event["location_name"], event["source_type"]])
@@ -1836,13 +1962,55 @@ def resolve_event_reference(arguments: dict[str, Any]) -> dict[str, Any]:
             if score > 0 and any(marker in event["event_summary"] for marker in DIRECT_OBSERVATION_MARKERS):
                 score += 1
             if score > 0:
-                scored_events.append((score, matched_terms, event))
-        scored_events.sort(key=lambda item: (-item[0], item[2]["timestamp"], item[2]["event_id"]))
-        events = [event for _, _, event in scored_events[:20]]
+                semantic_match = semantic_by_id.get(event["event_id"])
+                if semantic_match:
+                    score += min(6, max(1, int(float(semantic_match.get("semantic_score") or 0) * 14)))
+                scored_events_by_id[event["event_id"]] = {
+                    "score": score,
+                    "matched_terms": matched_terms,
+                    "semantic_score": round(float(semantic_match.get("semantic_score") or 0), 6) if semantic_match else 0,
+                    "semantic_rationale": semantic_match.get("rationale") if semantic_match else "",
+                    "event": event,
+                }
+        for semantic_match in semantic_matches:
+            event_id = semantic_match.get("event_id")
+            if not event_id or event_id in scored_events_by_id:
+                continue
+            event = EVENTS_BY_ID.get(event_id)
+            if not event:
+                continue
+            score = min(8, max(2, int(float(semantic_match.get("semantic_score") or 0) * 18)))
+            if any(marker in event["event_summary"] for marker in DIRECT_OBSERVATION_MARKERS):
+                score += 1
+            scored_events_by_id[event_id] = {
+                "score": score,
+                "matched_terms": [],
+                "semantic_score": round(float(semantic_match.get("semantic_score") or 0), 6),
+                "semantic_rationale": semantic_match.get("rationale") or "",
+                "event": event,
+            }
+        scored_events = sorted(
+            scored_events_by_id.values(),
+            key=lambda item: (-item["score"], item["event"]["timestamp"], item["event"]["event_id"]),
+        )
+        events = [item["event"] for item in scored_events[:20]]
     return {
         "query": query,
         "event_ids": [event["event_id"] for event in events],
-        "events": [public_event(event) for event in events],
+        "events": [
+            {
+                **public_event(event),
+                "reference_score": next((item["score"] for item in scored_events if item["event"]["event_id"] == event["event_id"]), None) if not direct_ids else None,
+                "matched_terms": next((item["matched_terms"] for item in scored_events if item["event"]["event_id"] == event["event_id"]), []) if not direct_ids else [],
+                "semantic_score": next((item["semantic_score"] for item in scored_events if item["event"]["event_id"] == event["event_id"]), 0) if not direct_ids else 0,
+                "semantic_rationale": next((item["semantic_rationale"] for item in scored_events if item["event"]["event_id"] == event["event_id"]), "") if not direct_ids else "",
+            }
+            for event in events
+        ],
+        "semantic_candidate_count": len(semantic_matches) if not direct_ids else 0,
+        "semantic_backend": get_semantic_index().backend if not direct_ids and semantic_matches else None,
+        "resolved_location_ids": resolved_location_ids if not direct_ids else [],
+        "resolved_entity_ids": resolved_entity_ids if not direct_ids else [],
         "llm_interpretation": {
             "search_phrases": string_list((llm_interpretation or {}).get("search_phrases"), limit=8),
             "location_terms": string_list((llm_interpretation or {}).get("location_terms"), limit=8),
@@ -2282,7 +2450,7 @@ TOOLS = [
     {
         "name": "resolve_event_reference",
         "title": "Resolve event reference",
-        "description": "Resolve a natural-language event reference to anchor events. When MCP sampling is available, the tool first asks the host model for bounded visible search phrases, then performs deterministic DB matching. It never uses hidden scenario labels.",
+        "description": "Resolve a natural-language event reference to anchor events. When MCP sampling is available, the tool asks the host model for bounded visible search phrases, location terms, and actor terms, then uses direct DB matching plus hybrid semantic retrieval to generate candidate anchors. It never uses hidden scenario labels.",
         "inputSchema": with_step_bridge({"type": "object", "properties": {"query": {"type": "string"}}, "required": ["query"], "additionalProperties": False}),
         "annotations": {"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": False},
     },
@@ -2394,7 +2562,7 @@ TOOLS = [
     {
         "name": "trace_semantic_clues",
         "title": "Trace operational semantic clues",
-        "description": "Find events that mention operational clue terms such as border-crossing claims, roadblocks, KFOR/EULEX presence, police activity, shooting or explosion claims, media reports, rumors, contradiction language, or other semantic hints extracted from seed events. With MCP sampling, the tool may suggest additional follow-up clues, but it does not silently add those broad clues to the current retrieval. Use when the chain changes from a formal REC/LOC identifier to descriptive language. Negated benign records are excluded by default. Returns up to 3 recommended_next_seeds and new_clues_to_trace; use these before judging the chain or challenging the hypothesis.",
+        "description": "Find events that mention or semantically match operational clue terms such as border-crossing claims, roadblocks, KFOR/EULEX presence, police activity, shooting or explosion claims, media reports, rumors, contradiction language, or other semantic hints extracted from seed events. With MCP sampling, the tool expands clue phrases, then uses hybrid semantic retrieval plus clue-specific scoring to retrieve current matches. Use when the chain changes from a formal REC/LOC identifier to descriptive language. Negated benign records are excluded by default. Returns up to 3 recommended_next_seeds and new_clues_to_trace; use these before judging the chain or challenging the hypothesis.",
         "inputSchema": with_step_bridge({
             "type": "object",
             "properties": {
@@ -2417,7 +2585,7 @@ TOOLS = [
     {
         "name": "find_related_events",
         "title": "Expand from seed evidence",
-        "description": "Rank events related to seed evidence through explicit entity IDs/aliases, shared identifiers, operational semantic clues, temporal proximity, geographic proximity, and optional source-type filtering. Unknown or non-informative entity names are not treated as evidence bridges. Every candidate includes linkage reasons and weights. With MCP sampling, the tool may rerank only the deterministic top candidates; it cannot introduce outside event IDs. Returns up to 3 recommended_next_seeds and new_clues_to_trace for bounded frontier expansion. Coverage is mandatory by default: broad expansion is normalized to 2000 even if a smaller limit is supplied; if total_candidates is larger than returned, treat results as incomplete and narrow or report the gap.",
+        "description": "Rank events related to seed evidence through explicit entity IDs/aliases, shared identifiers, operational semantic clues, hybrid semantic similarity, temporal proximity, geographic proximity, and optional source-type filtering. Unknown or non-informative entity names are not treated as evidence bridges. Semantic similarity is a supporting signal, not a replacement for concrete bridges. Every candidate includes linkage reasons and weights. With MCP sampling, the tool may rerank only the deterministic top candidates; it cannot introduce outside event IDs. Returns up to 3 recommended_next_seeds and new_clues_to_trace for bounded frontier expansion. Coverage is mandatory by default: broad expansion is normalized to 2000 even if a smaller limit is supplied; if total_candidates is larger than returned, treat results as incomplete and narrow or report the gap.",
         "inputSchema": with_step_bridge({
             "type": "object",
             "properties": {
