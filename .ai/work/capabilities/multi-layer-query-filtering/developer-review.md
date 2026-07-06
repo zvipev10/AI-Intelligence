@@ -11,12 +11,32 @@ Prepared on 2026-07-06 as AI-authored draft notes during developer-stage review.
 ## Reviewer / input source
 AI-prepared draft from Codex repository inspection, pending human developer approval.
 
+## Developer-stage outcome
+This review is complete enough for human developer sign-off.
+
+Recommended developer decision:
+- Approve client-side MVP filtering against already-loaded `layer.items`.
+- Defer backend/MCP filtering until a later architecture-reviewed capability.
+- Proceed to execution planning only after Product/UX accept the table-only filtering assumption and draft/apply interaction details.
+
+This artifact remains `Draft - pending human approval` until the human developer explicitly approves it or edits it into the final developer position.
+
 ## Context reviewed
 - `.ai/work/capabilities/multi-layer-query-filtering/capability-brief.md`
 - `llm_investigation_orchestrator_serbia_poc/app.js`
 - `llm_investigation_orchestrator_serbia_poc/index.html`
 - `llm_investigation_orchestrator_serbia_poc/styles.css`
 - `llm_investigation_orchestrator_serbia_poc/mcp_server/server.py`
+
+## Code inspection notes
+- `state.layers` and `state.activeLayerId` are already the right ownership boundary for selected layers.
+- `buildEventLayers(events)` already creates one selectable event layer per `source_type`.
+- `buildLocationMetadataLayer(items)` and `buildEntityMetadataLayer(items)` already create table-capable metadata layers for the MVP layer families.
+- `addResultLayers(...)` already preserves existing layers and reactivates matching source layers instead of replacing all selected layers.
+- `renderEvidence()` is the main integration point for layer tabs and table rows. It should delegate filtering to helpers rather than absorb all filter logic inline.
+- `[data-layer-close]` already removes a layer from `state.layers`; this should remain the only close/remove-layer action.
+- `[data-layer-visibility]` already controls visibility separately from close and filter editing.
+- The raw overlay markup currently has only tabs/actions plus one table container; a side filter panel needs a small HTML/CSS layout addition.
 
 ## Product requirements understood
 The product brief asks for a guided workflow where users can select independent query layers and apply per-layer field/value filters.
@@ -145,6 +165,13 @@ Recommended matching:
 - For arrays/objects, stringify in a stable user-facing way before matching.
 - Use `casefold` equivalent in JS via `toLocaleLowerCase()` or `toLowerCase()` for MVP.
 - Backend `normalize_text` currently performs case folding and whitespace compaction only. It does not normalize Hebrew final letters or diacritics, so exact parity does not require extra Hebrew normalization.
+
+Recommended planning assumptions:
+- Filters apply to the raw results table only in this MVP. Map and timeline filtering should be explicitly scoped as a future enhancement unless Product changes the requirement.
+- A removed filter follows the same draft/apply contract as edited filters; the table changes only after Apply.
+- Duplicate filters are allowed for MVP because they are redundant but do not change AND semantics.
+- Raw field names are acceptable for the first implementation. Friendly labels/translations can be added after UX review.
+- Closing a layer discards that layer's draft and applied filter state with no confirmation.
 
 ## Technical risks
 - `renderEvidence()` is already a long function with per-kind table branches. Adding filters directly can make it harder to maintain unless helper functions are introduced first.
