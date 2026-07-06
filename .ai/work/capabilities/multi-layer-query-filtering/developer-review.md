@@ -47,6 +47,7 @@ Product clarification from the human developer:
 - It must not depend on layers/results loaded from chat answers or chat steps.
 - It should reuse the same presentation components and expand them with the results of layer selection.
 - Filtering should be allowed for any opened layer tab.
+- Applied filters should affect all presentations for that opened layer tab, including table, map, and timeline where the layer supports those capabilities.
 - Layer rows should be fetched through an API-based path.
 
 MVP layer families:
@@ -90,6 +91,7 @@ However, the new standalone layer-selection flow needs an API-backed layer catal
   - Add per-layer filter state defaults when layers are created.
   - Add helper functions for field discovery, filter matching, draft/applied filters, and filtered items.
   - Extend `renderEvidence()` to render filter controls beside the existing results table and to render filtered rows instead of raw `layer.items`.
+  - Update map/timeline item selection helpers to use applied filtered items for opened layers where those presentations are supported.
   - Extend document click/input/change handlers for add/edit/remove/apply/cancel interactions.
 - `llm_investigation_orchestrator_serbia_poc/server.py`
   - Add or expose API endpoint(s) for layer catalog and layer rows, depending on what existing data endpoints can already provide.
@@ -171,7 +173,8 @@ Implementation notes:
 - Add an open-layer function that fetches rows from the API and creates or updates an opened layer tab.
 - Initialize filter state when a tab is opened from the layer selector and when any legacy path creates a tab.
 - When an existing layer is re-shown, preserve its filter state.
-- Use `layer.items` as immutable source rows and derive filtered rows through a helper such as `itemsForLayerTable(layer)`.
+- Use `layer.items` as immutable source rows and derive the opened layer's active presentation items through a helper such as `itemsForLayerPresentation(layer)`.
+- Table, map, and timeline should consume the same applied-filter item set for a layer, while respecting each layer's existing `capabilities`.
 - Apply should validate all draft filter values with `trim()`. Empty values should set an inline layer-local error and not modify `appliedFilters`.
 - Cancel/reopen should reset `draftFilters` from `appliedFilters`.
 - Remove should remove from `draftFilters`; results should only change after Apply, unless Product explicitly wants removing an already-applied filter to apply immediately.
@@ -188,8 +191,9 @@ Recommended planning assumptions:
 - The layer-selection workflow is independent from chat and agent result loading.
 - Layer rows are fetched through an API-based path.
 - Filters are available for any opened layer tab.
+- Applied filters affect all presentations for the opened layer tab, including table, map, and timeline where supported.
 - Filtering can run client-side over fetched rows for MVP, while the API contract should allow future server-side filtering/paging.
-- A removed filter follows the same draft/apply contract as edited filters; the table changes only after Apply.
+- A removed filter follows the same draft/apply contract as edited filters; presentations change only after Apply.
 - Duplicate filters are allowed for MVP because they are redundant but do not change AND semantics.
 - Raw field names are acceptable for the first implementation. Friendly labels/translations can be added after UX review.
 - Closing a layer discards that layer's draft and applied filter state with no confirmation.
@@ -198,7 +202,7 @@ Recommended planning assumptions:
 - `renderEvidence()` is already a long function with per-kind table branches. Adding filters directly can make it harder to maintain unless helper functions are introduced first.
 - Field discovery over raw object keys may expose technical fields that are not meaningful, but the brief explicitly says all fields are filterable for MVP.
 - Objects/arrays in entity and location metadata need predictable display/match behavior.
-- If filters affect only the table while map/timeline continue using unfiltered visible layer items, users may expect all views to filter. The brief says displayed layer results/table; Product/UX should confirm whether map/timeline should also reflect applied filters in a later slice.
+- Map/timeline rendering currently uses visible layer items directly. This must be refactored so supported presentations use the same applied-filter item set as the table.
 - The raw events overlay is constrained to 28% height by default. A side filter panel may crowd the table unless the layout is widened carefully or stacks on small heights/screens.
 
 ## Data/API considerations
@@ -218,7 +222,7 @@ The new API endpoint must not expose data beyond what the current application is
 ## Performance considerations
 - Client-side contains matching is acceptable only for bounded row responses.
 - The row endpoint should return bounded data or support a limit/paging plan if layer sizes are large.
-- Add a helper that computes filtered items only for the active layer during table render. Avoid recomputing filtered rows for every layer on every render unless counts require it.
+- Add helpers that compute filtered items for visible/opened layers only when needed by table, map, timeline, or counts.
 - If showing filtered counts for all tabs, count computation should be simple and bounded to existing `layer.items`.
 - Server-side filtering should be considered if opened layers regularly contain many thousands of rows.
 
@@ -226,7 +230,7 @@ The new API endpoint must not expose data beyond what the current application is
 Manual browser validation:
 - Select/open Entities, Locations, and event-source layers.
 - Verify selecting another layer preserves prior layers and filters.
-- Add one filter and apply; confirm table rows narrow only for that layer.
+- Add one filter and apply; confirm table, map, and timeline narrow only for that opened layer where those presentations are supported.
 - Add multiple filters; confirm AND semantics.
 - Edit a draft filter and confirm results do not change until Apply.
 - Remove a draft/applied filter and confirm Apply controls when results change.
@@ -245,7 +249,7 @@ Automated/lightweight checks:
 Recommended clarifications before execution planning:
 - State that layer selection is a standalone workflow independent of chat/agent results.
 - State which API endpoint(s) provide layer catalog and row data.
-- State whether MVP filtering affects only the table presentation or also map/timeline for opened tabs.
+- State that MVP filtering affects all presentations for opened tabs, including table, map, and timeline where supported.
 - Define duplicate filter behavior. Recommended: allow duplicates for MVP.
 - Define whether removing an applied filter updates immediately or only after Apply. Recommended: only after Apply, to preserve the stated draft/apply contract.
 - Define field labels. Recommended: raw field names for MVP, with user-friendly labels as a later UX enhancement.
@@ -263,8 +267,8 @@ Recommended clarifications before execution planning:
 ### Slice 2: Presentation reuse and render plumbing
 - Reuse existing layer tabs/table rendering for API-opened layers.
 - Add per-layer filter state initialization for every opened tab.
-- Add helper functions for field discovery, value normalization/stringification, contains matching, AND filtering, and filtered table item retrieval.
-- Update table rendering to use filtered items while preserving current output when no filters are applied.
+- Add helper functions for field discovery, value normalization/stringification, contains matching, AND filtering, and filtered presentation item retrieval.
+- Update table, map, and timeline rendering to use filtered items while preserving current output when no filters are applied.
 - Risk: medium.
 - Review needed: Development and UX.
 
@@ -294,7 +298,7 @@ Recommended clarifications before execution planning:
 - Human developer must approve or revise this draft before it can be used for execution planning.
 - Create `execution-plan.md` from this developer review and the product brief.
 - Product should confirm the standalone layer-selection flow and API-backed row loading scope.
-- UX should confirm layer selector placement, panel placement, and whether filters apply only to table results or all presentations for the opened tab.
+- UX should confirm layer selector placement, filter panel placement, and cross-presentation filtered states.
 - Product should confirm duplicate filter and remove/apply behavior if not already accepted as assumptions.
 - QA should confirm manual acceptance coverage before implementation starts.
 
@@ -309,7 +313,6 @@ None blocking for execution planning if the following assumptions are accepted:
 - Raw field names are acceptable for MVP.
 
 ## Open questions for Product / UX / QA / Architecture / Security
-- Product/UX: Should applied filters affect only the table rows or all reused presentations for that opened layer tab, including map/timeline where supported?
 - UX: Should the filter panel be always visible for the active layer, collapsible, or opened by a filter button on the layer tab?
 - UX: Should filter labels be raw field names or translated labels in the first implementation?
 - QA: Which API-loaded dataset state should be used as the canonical manual test fixture?
