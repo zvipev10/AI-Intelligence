@@ -24,6 +24,20 @@ This repository uses an AI-assisted workflow for new capabilities.
 8. QA/product acceptance
 9. Context update
 
+## Role-boundary gates
+
+Execution planning must not be created as part of the same handoff that first gives Development the product brief, unless the user explicitly asks to bypass the gate.
+
+Before `execution-plan.md` is created:
+1. Product must publish `capability-brief.md`.
+2. Development must have a real review opportunity and publish `developer-review.md`.
+3. Required UX, QA, Architecture, or Security reviews must be either completed or explicitly marked not required.
+4. Any blocking open questions from role reviews must be answered or accepted as assumptions.
+
+If a user says "developer stage", treat that as role enrichment by default. Produce or update `developer-review.md`; do not produce `execution-plan.md` unless the user explicitly says to create the execution plan after developer review.
+
+Every execution plan must include a prerequisite review gate that lists the role-review artifacts used and their approval/status.
+
 ## Publishing workflow
 
 Every artifact handoff should be published through Git so the next role can work from repository state, not local files or chat history.
@@ -77,6 +91,8 @@ The developer should start from that file and create:
 `.ai/work/capabilities/<capability-slug>/developer-review.md`
 
 Only after role reviews and execution planning should product code implementation begin.
+
+Development owns the technical input step. The developer review should record who reviewed the product brief, what context they inspected, what technical constraints they found, which product questions block execution planning, and whether the artifact is ready for execution planning.
 
 ## Review checkpoint policy
 

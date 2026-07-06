@@ -2,7 +2,14 @@
 
 ## Capability
 
+## Review status
+Pending / Ready for execution planning / Blocked
+
+## Reviewer / input source
+
 ## Context reviewed
+
+## Product requirements understood
 
 ## Feasibility
 
@@ -39,5 +46,7 @@
 ### Slice 3
 
 ## Required review gates before coding
+
+## Blocking questions before execution planning
 
 ## Open questions for Product / UX / QA / Architecture / Security

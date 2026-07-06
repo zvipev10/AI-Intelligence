@@ -2,6 +2,14 @@
 
 ## Capability
 
+## Prerequisite review gate
+- Product brief:
+- Developer review:
+- UX review:
+- QA review:
+- Architecture/Security review:
+- Blocking questions resolved or accepted as assumptions:
+
 ## Goal
 
 ## Context used

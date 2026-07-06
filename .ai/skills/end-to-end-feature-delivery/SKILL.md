@@ -126,6 +126,8 @@ Request review from relevant professionals before execution planning.
 
 Do not code.
 
+If the current request says "developer stage", "UX stage", "QA stage", or names a review role, stop at this phase unless the user explicitly asks for execution planning after the role review is complete. Do not create `execution-plan.md` in the same pass that first creates a required role-review artifact unless the user explicitly asks to bypass the gate.
+
 Depending on the role, create or update:
 
 - `developer-review.md`
@@ -133,6 +135,7 @@ Depending on the role, create or update:
 - `qa-review.md`
 
 Developer review should include:
+- review status and reviewer/source of input
 - feasibility notes
 - likely affected files/services
 - implementation options
@@ -142,6 +145,7 @@ Developer review should include:
 - proposed execution slices
 - acceptance criteria improvements
 - review gates before coding
+- blocking questions that must be answered before execution planning
 
 UX review should include:
 - user flow
@@ -170,6 +174,8 @@ Publish:
 
 Do not code until the execution plan exists.
 
+Do not create the execution plan until required role-review artifacts exist and are marked ready for planning, or until the user explicitly accepts unresolved questions as assumptions. If any required review is missing or pending, update the relevant review artifact instead of creating `execution-plan.md`.
+
 Create:
 
 `.ai/work/capabilities/<capability-slug>/execution-plan.md`
@@ -177,6 +183,7 @@ Create:
 Use `.ai/templates/execution-plan.md` when available.
 
 Produce:
+- prerequisite review gate with artifact paths and statuses
 - implementation approach
 - likely files/services affected
 - API/data changes
