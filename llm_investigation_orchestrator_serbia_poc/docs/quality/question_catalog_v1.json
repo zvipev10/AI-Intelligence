@@ -341,6 +341,55 @@
       },
       "reference_slot": "to_be_defined_in_step_2",
       "note": "Placeholder event IDs are intentional for step 1. Replace with real baseline seeds in step 2."
+    },
+    {
+      "id": "tp_13_resolve_shooting_reference",
+      "tool": "resolve_event_reference",
+      "purpose": "Check whether a natural-language reference to an unverified shooting report resolves to anchor events without exact REC IDs.",
+      "semantic_capabilities_checked": [
+        "Reference resolution from paraphrased analyst language.",
+        "Hybrid semantic candidate generation when no direct literal match exists.",
+        "Ability to surface anchor events before the agent expands the chain."
+      ],
+      "arguments": {
+        "query": "דיווח הירי הלא מאומת בצומת כניסה לעיירה"
+      },
+      "reference_slot": "semantic_tool_integration_gold_v2"
+    },
+    {
+      "id": "tp_14_trace_tactical_noise_clues",
+      "tool": "trace_semantic_clues",
+      "purpose": "Check whether semantic clue tracing retrieves paraphrased tactical/noise/shooting records that direct clue matching previously missed.",
+      "semantic_capabilities_checked": [
+        "Semantic expansion from operational clue phrases.",
+        "Hybrid retrieval over clue text plus clue-specific scoring.",
+        "Recommended seed generation from semantically found records."
+      ],
+      "arguments": {
+        "clues": ["אירוע טקטי", "רעש ירי", "דיווח ירי לא מאומת", "רעש מידע", "פיצוץ או זיקוקים"],
+        "location_ids": ["LOC-003", "LOC-004", "LOC-010", "LOC-019"],
+        "limit": 2000
+      },
+      "reference_slot": "semantic_tool_integration_gold_v2"
+    },
+    {
+      "id": "tp_15_related_from_zvecan_shooting_seeds",
+      "tool": "find_related_events",
+      "purpose": "Check whether seed expansion adds hybrid semantic similarity as an explicit supporting bridge without replacing time/location evidence.",
+      "semantic_capabilities_checked": [
+        "Semantic expansion from known event anchors.",
+        "Preservation of structured time/location bridge scoring.",
+        "Explicit semantic_embedding reason when semantic similarity supports a candidate."
+      ],
+      "arguments": {
+        "seed_event_ids": ["REC-087831", "REC-008111"],
+        "dimensions": ["semantic", "time", "location"],
+        "before_hours": 48,
+        "after_hours": 48,
+        "distance_km": 25,
+        "limit": 2000
+      },
+      "reference_slot": "semantic_tool_integration_gold_v2"
     }
   ]
 }
