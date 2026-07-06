@@ -1,0 +1,114 @@
+name: Capability
+description: Define and execute a new capability using the AI-assisted delivery workflow.
+title: "[Capability] "
+labels: ["capability", "ai-workflow"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this issue for meaningful new capabilities or feature changes.
+        For Codex workflow artifacts, use `.ai/work/capabilities/<capability-slug>/`.
+
+  - type: input
+    id: capability-name
+    attributes:
+      label: Capability name
+      description: Short name for the capability.
+    validations:
+      required: true
+
+  - type: input
+    id: capability-slug
+    attributes:
+      label: Capability slug
+      description: Folder-safe slug, for example `map-layer-filtering`.
+    validations:
+      required: true
+
+  - type: textarea
+    id: user-problem
+    attributes:
+      label: User problem
+      description: What user problem are we solving?
+    validations:
+      required: true
+
+  - type: textarea
+    id: business-goal
+    attributes:
+      label: Business goal
+      description: Why is this important?
+    validations:
+      required: false
+
+  - type: textarea
+    id: proposed-behavior
+    attributes:
+      label: Proposed behavior
+      description: What should the user be able to do?
+    validations:
+      required: true
+
+  - type: textarea
+    id: mvp-scope
+    attributes:
+      label: MVP scope
+      description: What is included in the first version?
+    validations:
+      required: true
+
+  - type: textarea
+    id: non-goals
+    attributes:
+      label: Non-goals
+      description: What is intentionally out of scope?
+    validations:
+      required: false
+
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance criteria
+      description: How will we know this is done?
+      placeholder: |
+        - [ ] Criterion 1
+        - [ ] Criterion 2
+        - [ ] Criterion 3
+    validations:
+      required: true
+
+  - type: textarea
+    id: edge-cases
+    attributes:
+      label: Edge cases
+      description: Important edge cases or failure modes.
+    validations:
+      required: false
+
+  - type: textarea
+    id: technical-constraints
+    attributes:
+      label: Technical constraints
+      description: Known technical constraints, affected areas, or risks.
+    validations:
+      required: false
+
+  - type: textarea
+    id: capability-artifacts
+    attributes:
+      label: Capability artifacts
+      description: Link or list `.ai/work/capabilities/<capability-slug>/` files.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: required-reviewers
+    attributes:
+      label: Required reviewers
+      options:
+        - label: Product
+        - label: Development
+        - label: UX
+        - label: QA
+        - label: Architecture
+        - label: Security
