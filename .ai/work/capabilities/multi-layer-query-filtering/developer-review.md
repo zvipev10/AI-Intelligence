@@ -4,12 +4,12 @@
 Multi-Layer Query Filtering (`multi-layer-query-filtering`)
 
 ## Review status
-Ready for execution planning.
+Draft - pending human approval.
 
-Completed on 2026-07-06 during developer-stage review. This review replaces the pending reset artifact and is based on the current product brief plus targeted code inspection.
+Prepared on 2026-07-06 as AI-authored draft notes during developer-stage review. This artifact is not approved developer input yet. The human developer should accept, edit, or reject the recommendations before this can be marked `Ready for execution planning`.
 
 ## Reviewer / input source
-Codex developer review from repository inspection.
+AI-prepared draft from Codex repository inspection, pending human developer approval.
 
 ## Context reviewed
 - `.ai/work/capabilities/multi-layer-query-filtering/capability-brief.md`
@@ -227,6 +227,7 @@ Recommended clarifications before execution planning:
 - Review needed: QA.
 
 ## Required review gates before coding
+- Human developer must approve or revise this draft before it can be used for execution planning.
 - Create `execution-plan.md` from this developer review and the product brief.
 - UX should confirm panel placement and whether filters apply only to table results.
 - Product should confirm duplicate filter and remove/apply behavior.

@@ -36,6 +36,8 @@ Before `execution-plan.md` is created:
 
 If a user says "developer stage", treat that as role enrichment by default. Produce or update `developer-review.md`; do not produce `execution-plan.md` unless the user explicitly says to create the execution plan after developer review.
 
+Role reviews are owned by the corresponding human role owner unless the user explicitly delegates that role decision to the AI. AI may prepare a draft review by inspecting the repo and proposing technical input, but draft AI-authored role reviews must be marked `Draft - pending human approval` or `Pending human input`. The AI must not mark a role review `Ready for execution planning` from its own analysis alone. Phrases such as "developer stage", "UX stage", or "QA stage" are not approval and are not delegation.
+
 Every execution plan must include a prerequisite review gate that lists the role-review artifacts used and their approval/status.
 
 ## Publishing workflow
@@ -61,7 +63,7 @@ If publishing cannot be completed, the checkpoint or handoff must say exactly wh
    Publish `capability-brief.md` before developer review begins.
 
 2. Role enrichment:
-   Publish `developer-review.md`, `ux-review.md`, and `qa-review.md` after each role completes its artifact.
+   Publish `developer-review.md`, `ux-review.md`, and `qa-review.md` after each role completes its artifact, or publish an AI-prepared draft clearly marked as pending human approval.
 
 3. Execution planning:
    Publish `execution-plan.md` before implementation begins.
@@ -93,6 +95,12 @@ The developer should start from that file and create:
 Only after role reviews and execution planning should product code implementation begin.
 
 Development owns the technical input step. The developer review should record who reviewed the product brief, what context they inspected, what technical constraints they found, which product questions block execution planning, and whether the artifact is ready for execution planning.
+
+If Codex helps during developer stage, it should default to a facilitation pattern:
+1. Inspect relevant code and prepare draft notes.
+2. Mark the artifact as `Draft - pending human approval`.
+3. Ask the developer to accept, edit, or reject the recommendations.
+4. Only after explicit developer approval, update the review status to `Ready for execution planning`.
 
 ## Review checkpoint policy
 

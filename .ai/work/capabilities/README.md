@@ -25,11 +25,13 @@ Do not rely on long private chat history for handoff.
 ## Typical flow
 
 1. Product starts a capability and creates `capability-brief.md`.
-2. Developer reviews the brief and creates `developer-review.md`.
+2. Developer reviews the brief and creates or approves `developer-review.md`.
 3. UX and QA create review files when relevant.
 4. Codex creates `execution-plan.md`.
 5. Codex executes in slices and creates checkpoint summaries.
 6. Final handoff is saved in `handoff-summary.md`.
+
+AI-prepared role reviews are drafts until the human role owner explicitly approves them or explicitly delegates that role decision to the AI. A draft role review should not be treated as ready for execution planning.
 
 ## Notes
 

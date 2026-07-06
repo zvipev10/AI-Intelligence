@@ -128,6 +128,13 @@ Do not code.
 
 If the current request says "developer stage", "UX stage", "QA stage", or names a review role, stop at this phase unless the user explicitly asks for execution planning after the role review is complete. Do not create `execution-plan.md` in the same pass that first creates a required role-review artifact unless the user explicitly asks to bypass the gate.
 
+Role-review ownership rule:
+- If the user is the role owner, or the request implies the user will provide the role input, the AI must facilitate the review instead of completing it as approved.
+- The AI may inspect the repo, ask targeted questions, and prepare a draft artifact, but the review status must remain `Draft - pending human approval` or `Pending human input`.
+- The AI must not mark a role-review artifact `Ready for execution planning` unless the human role owner explicitly approves the artifact or explicitly delegates that role decision to the AI.
+- "Developer stage", "UX stage", or "QA stage" alone is not delegation to the AI to approve that role's review.
+- If a role review contains AI-authored recommendations, label them as draft recommendations until the role owner accepts them.
+
 Depending on the role, create or update:
 
 - `developer-review.md`
@@ -167,14 +174,14 @@ QA review should include:
 - automation suggestions
 
 Publish:
-- commit and push each completed role-review artifact
+- commit and push each completed or draft role-review artifact
 - update the draft PR / issue with the new artifact path and requested reviewer
 
 ## Phase 3 — Execution plan
 
 Do not code until the execution plan exists.
 
-Do not create the execution plan until required role-review artifacts exist and are marked ready for planning, or until the user explicitly accepts unresolved questions as assumptions. If any required review is missing or pending, update the relevant review artifact instead of creating `execution-plan.md`.
+Do not create the execution plan until required role-review artifacts exist and are marked ready for planning by the human role owner or by explicit human delegation, or until the user explicitly accepts unresolved questions as assumptions. If any required review is missing, pending, or only AI-drafted, update the relevant review artifact instead of creating `execution-plan.md`.
 
 Create:
 
