@@ -1,12 +1,12 @@
 # AI Intelligence Project Handoff
 
-Last updated: 2026-06-29
+Last updated: 2026-07-06
 
-This is the primary handoff for continuing the AI Intelligence project in another assistant/chat. It reflects the current `main` branch workspace and the latest VM deployment state after the data normalization, additive result-layer UI refactor, recorded-run refresh, map marker popup work, and Phase 2 query builder planning.
+This is the primary handoff for continuing the AI Intelligence project in another assistant/chat. It reflects the current Serbia POC workspace after the data normalization, additive result-layer UI refactor, recorded-run refresh, map marker popup work, Phase 2 query builder planning, location/entity layer normalization, and the hybrid semantic retrieval/tool-quality work.
 
 ## One-Line Summary
 
-The active project is the Serbia/North Kosovo intelligence-analysis POC: a Hebrew analyst UI backed by Hermes and MCP tools over a 10,000-record synthetic event corpus. The UI now treats all visualization outputs as additive layers: event-source layers, location-summary layers, group-aggregation layers, and time-aggregation layers can be shown/hidden/closed and rendered according to their own map/timeline/table capabilities.
+The active project is the Serbia/North Kosovo intelligence-analysis POC: a Hebrew analyst UI backed by Hermes and MCP tools over a 10,000-record synthetic event corpus. The UI treats all visualization outputs as additive layers: event-source layers, location-summary layers, entity layers, group-aggregation layers, and time-aggregation layers can be shown/hidden/closed and rendered according to their own map/timeline/table capabilities.
 
 ## Repository And Current State
 
@@ -16,8 +16,9 @@ Repository:
 
 Current branch:
 
-- `main`
-- Latest observed head should be checked with `git log -1 --oneline`; the repo is expected to be clean and aligned with `origin/main` after each handoff.
+- Active development branch: `feature/semantic-quality-tests`
+- `main` remains the stable baseline branch.
+- Latest observed head should be checked with `git log -1 --oneline`; the active branch is expected to be clean and aligned with its remote after each handoff.
 
 Important local workspace:
 
@@ -26,14 +27,67 @@ Important local workspace:
 
 Current local working tree expectation:
 
-- `main` should be clean and aligned with `origin/main`.
-- This handoff was updated from a fresh GitHub clone, not from the older local working copy.
-- Latest observed pre-handoff GitHub head before this handoff update: `9a3b5c6 Use standard visibility icons`.
-- Do not continue from stale local files if `git fetch origin main` shows remote commits ahead.
+- `feature/semantic-quality-tests` should be clean and aligned with `origin/feature/semantic-quality-tests`.
+- `main` should remain available as the stable baseline.
+- Do not continue from stale local files if `git fetch origin` shows the active remote branch ahead.
+- At the time of this handoff update there may be unrelated local working-tree files such as `.claude/`, `environments-configuration/`, or uncommitted UI styling experiments. Do not include them in semantic/tool-quality commits unless the user explicitly asks.
+
+## Latest Update: Semantic Tool Integration Quality
+
+Date: 2026-07-06
+
+Active branch:
+
+```text
+feature/semantic-quality-tests
+```
+
+Latest relevant commits before this handoff update:
+
+```text
+2e9f7ba Add configurable semantic embedding backend
+a6d4eea Enable hybrid semantic retrieval by default
+aa82add Make hybrid semantic cache engine-aware
+7ea65ef Use hybrid semantic candidates in investigation tools
+4747eb2 Add semantic tool integration comparison
+```
+
+Semantic retrieval status:
+
+- `semantic_search_events` uses the shared `SemanticEventIndex`.
+- Default backend is `hybrid_embedding`, which combines lexical TF-IDF recall with local dense/concept embedding reranking.
+- `lexical_tfidf` remains available as a deterministic baseline/fallback through `INTELLIGENCE_POC_SEMANTIC_BACKEND`.
+- Higher-level tool integrations now use the same backend:
+  - `resolve_event_reference` uses hybrid candidates to resolve vague analyst references to anchor events.
+  - `trace_semantic_clues` uses hybrid candidates over input clues, expanded clues, and seed summaries.
+  - `find_related_events` uses hybrid semantic similarity as a supporting `"semantic"` dimension, while structured bridges still dominate.
+
+Quality artifacts:
+
+```text
+llm_investigation_orchestrator_serbia_poc/docs/quality/semantic_tool_integration_gold_v2.json
+llm_investigation_orchestrator_serbia_poc/docs/quality/score_semantic_tool_integration.py
+llm_investigation_orchestrator_serbia_poc/docs/quality/semantic_tool_integration_runs/semantic_tool_integration_comparison_20260706T120341Z.md
+llm_investigation_orchestrator_serbia_poc/docs/quality/semantic_tool_integration_runs/semantic_tool_integration_comparison_20260706T120341Z.json
+```
+
+Comparison summary from the latest run:
+
+- `tp_13_resolve_shooting_reference` / `resolve_event_reference`: previous baseline found `0/2` must-find records; current found `2/2`; status PASS.
+- `tp_14_trace_tactical_noise_clues` / `trace_semantic_clues`: previous baseline found `0/16`; current found `16/16`; status PASS.
+- `tp_15_related_from_zvecan_shooting_seeds` / `find_related_events`: previous baseline already found `6/6`; current still found `6/6` and now adds semantic bridge metadata; status PASS.
+
+Rerun the semantic tool comparison from the Serbia POC directory:
+
+```powershell
+cd llm_investigation_orchestrator_serbia_poc
+$env:PYTHONIOENCODING='utf-8'
+python docs/quality/score_semantic_tool_integration.py --current-label working_tree
+```
 
 **Important sync lesson (2026-06-29):** A stale local workspace and stale VM deployment briefly reintroduced old behavior: rectangular map markers and automatic final-answer presentation. GitHub already had the correct point-marker/manual-show behavior, but the VM was still serving older `styles.css?v=36` and `app.js?v=48`. Before every deploy, fetch GitHub, verify `git status --short --branch`, and deploy from the current committed `main`, not from stale uncommitted local files.
 
-**Latest UI completion note (2026-06-29):** Map markers are colored points with popups; final-answer results are not presented automatically and are shown only via the final `הצג תוצאות` button. Result layers are shown in a flush transparent tabbed overlay attached to the map/timeline borders. Each layer appears as a real tab with a standard `×` close control, and the whole overlay uses standard window controls: `−` minimize, `□` restore/maximize, and `×` close/clear. Step presentation controls moved into each step card: a text button toggles between `הצג תוצאות` and `הסתר תוצאות`, and `הצג שאילתה` opens the query modal. Current deployed asset versions are `styles.css?v=52` and `app.js?v=68`.
+**Latest UI completion note (2026-07-01):** Map markers are colored points with popups; final-answer results are not presented automatically and are shown only via the final `הצג תוצאות` button. Result layers are shown in a flush transparent tabbed overlay attached to the map/timeline borders. Each layer appears as a real tab with a standard `×` close control, and the whole overlay uses standard window controls: `−` minimize, `□` restore/maximize, and `×` close/clear. Step presentation controls moved into each step card: a text button toggles between `הצג תוצאות` and `הסתר תוצאות`, and `הצג שאילתה` opens the query modal. Modal close buttons now use the standard `×` icon instead of text `סגור`. Current deployed asset versions after the saved-question/close-icon work are `styles.css?v=57` and `app.js?v=77`.
 
 ## Active POC
 
@@ -48,6 +102,43 @@ Cargo POC still exists but is not the active focus:
 
 - Directory: `llm_investigation_orchestrator_poc`
 - Local UI: `http://127.0.0.1:8768/`
+
+## Location And Entity Layer Normalization
+
+Latest schema change, 2026-06-30:
+
+The Serbia POC now treats entities exactly like locations.
+
+Runtime event records contain stable foreign keys only:
+
+```text
+event_id,timestamp_utc,source_type,source_reliability,source_reliability_label,certainty_level,entity_id,location_id,event_summary
+```
+
+Reference layers:
+
+```text
+data/serbia_kosovo_locations.json
+data/serbia_kosovo_entities.json
+```
+
+Important implications:
+
+- `entity_or_actor` was removed from `serbia_kosovo_events_projection.csv`.
+- `ENTITY_REGISTRY` was removed from `mcp_server/server.py`.
+- `data/serbia_kosovo_entities.json` contains 16 entity records, one for each former raw actor value.
+- Runtime event objects are enriched by the MCP loader with `entity_name` from the entities DB, the same way events are enriched with `location_name` from the locations DB.
+- The active event object fields exposed to the agent/UI are now `entity_id` and `entity_name`, not `entity_or_actor`.
+- `get_events` was removed. Use `get_objects` for all event/location/entity object retrieval.
+- `get_objects(object_type="all", event_ids=[...])` returns the raw event objects plus their related `location_layers` and `entity_layers`.
+- `aggregate_events(group_by="entity")`, `search_events(entity_ids=[...])`, `find_actor_history(entity_ids=[...])`, `find_related_events`, and `explain_linkage` all operate through entity IDs/names.
+- `actors` remains only as compatibility input in some tool schemas; new prompts/tool calls should prefer `entity_ids`.
+
+UI behavior:
+
+- A single `הצג` action can add event, location, and entity layers together.
+- Each layer is separate in the result tabs and can be hidden/closed independently.
+- Entity layers render in the table and on the map through each entity's top locations.
 
 ## Current VM Deployment
 
@@ -64,8 +155,8 @@ Active UI service:
 - Actual served path: `/opt/serbia-poc-ui`
 - This is important: an earlier deploy mistakenly copied to `/opt/serbia-poc/ui`, but the active service serves `/opt/serbia-poc-ui`.
 - Current served versions verified on the VM after the latest UI deploy (as of 2026-06-29):
-  - `styles.css?v=52`
-  - `app.js?v=68`
+  - `styles.css?v=57`
+  - `app.js?v=77`
 - These versions include colored point markers, manual final-answer presentation via `הצג תוצאות`, additive layer tabs, table resize/minimize, close/clear result-window behavior, query edit modal controls, `הצג תוצאות` / `הסתר תוצאות` controls styled identically to `הצג שאילתה` without the old square icon-button class, real tabbed result layers, standard tab/window close controls, and shared standard table visibility icons.
 
 Active MCP/Hermes service:
@@ -107,6 +198,39 @@ Recommended UI deployment pattern:
 5. Restart `serbia-poc-ui.service`.
 6. Verify served versions through the public HTTPS endpoint, not only disk files.
 7. Never deploy from a stale local working tree with uncommitted old UI files.
+
+## Saved Questions
+
+Saved Questions are now the user-facing way to persist investigation results. After a successful live `/api/investigate` response, the final assistant answer shows `הצג תוצאות` and `שמור` side by side with the same pill-button look and feel. Saving writes the full result artifact, not only the final answer. The prompt input bar no longer contains a save button.
+
+Runtime storage:
+
+```text
+llm_investigation_orchestrator_serbia_poc/saved_questions/
+/opt/serbia-poc-ui/saved_questions/
+```
+
+Backend endpoints:
+
+```text
+GET    /api/saved-questions
+GET    /api/saved-question?id=<saved-id>
+POST   /api/saved-question
+DELETE /api/saved-question?id=<saved-id>
+```
+
+Implementation details:
+
+- One UTF-8 JSON file per saved question.
+- IDs are generated server-side as `saved_YYYYMMDD_HHMMSS_<hex>`.
+- IDs are strictly validated before read/delete.
+- Writes use a temporary file followed by rename.
+- Listing skips corrupt or incomplete JSON files.
+- Runtime `saved_questions/*.json` files are ignored by git; only `.gitkeep` is committed.
+- Loading a saved question does not call Hermes. It restores the saved result through the normal `applyHermesResult` path so final-answer `הצג תוצאות`, per-step `הצג תוצאות`, map, timeline, table, event layers, location layers, entity layers, and aggregation layers keep working.
+- The final-answer `שמור` button changes `שמור` → `שומר...` → `נשמר`; failures show `נכשל` and restore the button after a short delay.
+
+Deployment note: include `saved_questions/` in the UI deployment package and ensure `/opt/serbia-poc-ui/saved_questions/` is owned by the UI service user.
 
 ## Recorded Demo Runs
 
@@ -384,7 +508,8 @@ Current Serbia MCP tools:
 classify_question_intent
 plan_next_investigation_step
 search_events
-get_events
+semantic_search_events
+get_objects
 resolve_location
 resolve_event_reference
 find_actor_history
@@ -403,6 +528,8 @@ Tool outputs can include:
 
 - `events` / `event_ids`
 - `locations` / `location_ids`
+- `location_layers`
+- `entity_layers`
 - `map_locations`
 - `aggregate_groups`
 - `route`
@@ -421,34 +548,35 @@ First-class display-layer candidates:
 
 - events
 - locations
+- entities
 - time aggregations
 
 Potential future layer types:
 
 - routes/sequences
 - conflict groups
-- entity/actor presence
 - link/bridge relationships
 - semantic clue clusters
 
 ## Entities
 
-There is no `entity_id` column in the active DB/data files.
+Entities are now first-class reference-layer objects, symmetric with locations.
 
 Active data fields:
 
-- Projection CSV has `entity_or_actor`.
-- Raw dataset has `actor_mentioned` and `observed_actor`.
-- There are 16 unique actor names in the current data.
+- Projection CSV has `entity_id`.
+- Projection CSV no longer has `entity_or_actor`.
+- `data/serbia_kosovo_entities.json` contains the 16 entity rows used by the projection.
+- MCP enriches public events with `entity_name` from the entities DB.
+- Tools should prefer `entity_ids`; `actors` is compatibility input only where still present.
 
-There is a small synthetic resolver registry in MCP code:
+Current entity reference file:
 
-- `ENT-KFOR`
-- `ENT-EULEX`
-- `ENT-KOSOVO-POLICE`
-- `ENT-SERBIAN-ACTORS`
+```text
+llm_investigation_orchestrator_serbia_poc/data/serbia_kosovo_entities.json
+```
 
-These are code-level aliases, not first-class DB rows.
+`ENTITY_REGISTRY` was removed from MCP code. Entity IDs are DB-backed, not hardcoded registry aliases.
 
 ## Data Policy
 
@@ -518,34 +646,53 @@ Design decision:
 
 ## Near-Term RAG / Real Semantic Search Plan
 
-The team agreed to implement a small local RAG capability before changing more investigation behavior. The goal is not Elastic/OpenSearch yet; it is to replace today’s fake semantic retrieval with one shared semantic index over real event data.
+The team agreed to implement a small local RAG capability before changing more investigation behavior. The goal is not Elastic/OpenSearch yet; it is to replace hardcoded semantic-style retrieval with one shared semantic index over real event data.
 
-Current problem:
+This plan must use the normalized entity/location schema from this branch:
 
-- Several tools currently use the word “semantic”, but they are mostly hardcoded keyword/clue matching.
-- `trace_semantic_clues` retrieves by user/seed clues plus `SEMANTIC_CLUE_TERMS`.
-- `find_related_events` has a `semantic` dimension, but it means shared hardcoded clue terms.
-- `explain_linkage` uses hardcoded clue overlap for `semantic_overlap`.
-- `compare_location_claims` uses seed-derived clue keywords and `GEO_CONFLICT_MARKERS` for retrieval/grouping.
-- This is useful and explainable, but it is not real semantic similarity.
+- Runtime events contain `entity_id` and `location_id`.
+- Entity names and aliases come from `data/serbia_kosovo_entities.json`.
+- Location names and coordinates come from `data/serbia_kosovo_locations.json`.
+- Runtime events expose `entity_name` and `location_name` only after MCP enrichment.
+- `get_events` no longer exists; use `get_objects`.
+
+Original problem:
+
+- Several tools used the word “semantic”, but were mostly hardcoded keyword/clue matching.
+- `trace_semantic_clues` retrieved by user/seed clues plus `SEMANTIC_CLUE_TERMS`.
+- `find_related_events` had a `semantic` dimension, but it meant shared hardcoded clue terms.
+- `explain_linkage` used hardcoded clue overlap for `semantic_overlap`.
+- `compare_location_claims` used seed-derived clue keywords and `GEO_CONFLICT_MARKERS` for retrieval/grouping.
+- This was useful and explainable, but it was not real semantic similarity.
+
+Implementation status:
+
+- Phase 1 foundation is implemented as `mcp_server/semantic_index.py`.
+- The default backend is now `hybrid_embedding`: lexical TF-IDF candidate recall plus local dense/concept embedding reranking.
+- `lexical_tfidf` remains available as a baseline/fallback.
+- Public MCP tool `semantic_search_events` is implemented and returns normal public event objects plus `semantic_score` and a short rationale.
+- The orchestrator prompt tells the model to use `semantic_search_events` for fuzzy/paraphrased retrieval, and not for exact IDs, exact filters, aggregation, or object retrieval.
+- `resolve_event_reference`, `trace_semantic_clues`, and `find_related_events` now use the shared semantic backend internally.
+- `explain_linkage` and `compare_location_claims` still use mostly deterministic/marker logic and are candidates for later semantic integration after a separate quality baseline.
 
 Target architecture:
 
 1. Add one shared internal semantic backend: `SemanticEventIndex`.
-   - Build/load embeddings for all active event records.
-   - Search by vector similarity over event text.
-   - Apply metadata filters before/after retrieval: time, location, source type, actor, reliability/certainty.
+   - Build/load semantic retrieval vectors for all active event records.
+   - Current implementation uses lexical TF-IDF; future implementation can swap in multilingual embeddings/vector similarity.
+   - Apply metadata filters before/after retrieval: time, `location_id`, `entity_id`, source type, reliability/certainty.
    - Return scored event candidates with canonical `REC-*` IDs.
    - Store no anonymous chunks; every result must map back to an event row.
 
 2. Add a public MCP tool: `semantic_search_events`.
    - Input: natural-language `query`, optional `seed_event_ids`, filters, and `limit`.
+   - Filters should align with current tools: `start_time`, `end_time`, `location_ids`, `entity_ids`, `source_types`, `reliabilities`, `keywords`, and `limit`.
    - Output: `event_ids`, `events`, semantic scores, and concise match rationale.
    - UI should render returned events as normal result layers/tabs/map/timeline records.
    - This tool is the visible interface; existing tools should call the same internal `SemanticEventIndex` directly, not call the MCP tool as an external client.
 
 3. Keep deterministic search tools.
-   - Do not replace `search_events`, `aggregate_events`, `get_events`, `resolve_location`, `resolve_entity`, or `trace_identifier`.
+   - Do not replace `search_events`, `aggregate_events`, `get_objects`, `resolve_location`, `resolve_entity`, or `trace_identifier`.
    - Exact filters, IDs, aliases, location/time constraints, and aggregation remain deterministic.
    - RAG replaces fake semantic retrieval only, not exact search.
 
@@ -553,16 +700,26 @@ Implementation phases:
 
 **Phase 1 — Semantic index foundation**
 
-- Create an event text builder using: `event_summary`, `entity_or_actor`, `location_name`, `source_type`, `timestamp_utc`, `certainty_level`, and reliability labels.
-- Choose a local POC stack: multilingual embeddings plus a persisted local vector index.
-- Preferred first stack: small multilingual embedding model + `hnswlib` or `FAISS`; fallback is a simple persisted embedding matrix if deployment constraints are tight.
-- Add index build/load path that can regenerate from CSV during deploy/startup.
+- Create an event text builder using enriched public event fields:
+  - `event_summary`
+  - `entity_id`
+  - `entity_name`
+  - `location_id`
+  - `location_name`
+  - `source_type`
+  - `timestamp_utc`
+  - `certainty_level`
+  - `source_reliability_label`
+- Do not use removed fields such as `entity_or_actor`.
+- Current local POC stack: persisted sparse lexical TF-IDF index, no third-party dependency.
+- Future stack option: small multilingual embedding model plus `hnswlib`, `FAISS`, or a simple persisted embedding matrix if deployment constraints allow it.
+- Add index build/load path that can regenerate from CSV plus entities/locations JSON during deploy/startup.
 - Keep metadata sidecar keyed by `event_id`.
 
 **Phase 2 — Public semantic tool**
 
 - Add `semantic_search_events` to `mcp_server/server.py`.
-- Support filters compatible with `search_events`: time, location IDs, source types, actors, reliability, and limit.
+- Support filters compatible with `search_events`: time, location IDs, entity IDs, source types, reliability/certainty, and limit.
 - Return normal public events plus `semantic_score`.
 - Add audit output and tool schema.
 - Add basic smoke/regression coverage.
@@ -570,20 +727,19 @@ Implementation phases:
 **Phase 3 — Convert fake-semantic tools**
 
 - `trace_semantic_clues`
-  - Stop retrieving through `SEMANTIC_CLUE_TERMS`.
-  - Build query text from explicit clues plus seed event summaries.
-  - Retrieve via `SemanticEventIndex`.
+  - Done for retrieval: it now uses the shared semantic backend.
   - Keep negation/benign/direct-observation markers only as scoring/explanation modifiers.
   - Consider later rename to `trace_operational_clues` if the public API should be clearer.
 
 - `find_related_events`
   - Keep deterministic dimensions: `identifier`, `entity`, `time`, `location`.
-  - Replace the current `semantic` dimension with vector similarity between seed event text and candidate event text.
+  - Entity dimension must use `entity_id` and entity aliases from `serbia_kosovo_entities.json`.
+  - Done: the `semantic` dimension now uses shared semantic similarity as a supporting bridge signal.
   - Hybrid score should combine deterministic bridges plus semantic score.
   - Do not let semantic similarity outrank exact identifier evidence by default.
 
 - `explain_linkage`
-  - Keep exact bridges: identifier, entity/alias, time, location.
+  - Keep exact bridges: identifier, `entity_id`, time, location.
   - Replace hardcoded `semantic_overlap` with event-vector similarity.
   - Return similarity score and a cautious rationale; do not claim causal truth.
 
@@ -594,7 +750,7 @@ Implementation phases:
 
 **Phase 4 — Cleanup and naming**
 
-- Remove `SEMANTIC_CLUE_TERMS` from retrieval paths after the semantic backend is stable.
+- Remove or demote `SEMANTIC_CLUE_TERMS` from remaining retrieval paths after the semantic backend is stable.
 - Keep `BENIGN_MARKERS`, `NEGATION_MARKERS`, `DIRECT_OBSERVATION_MARKERS`, and `GEO_CONFLICT_MARKERS` only as explainable scoring/warning signals.
 - Update tool descriptions so no tool implies hardcoded clue matching is true semantic search.
 - Update orchestrator guidance to call `semantic_search_events` when wording mismatch/fuzzy recall is likely.
@@ -605,8 +761,53 @@ Design constraints:
 - The LLM must not receive raw vector DB access.
 - Hidden scenario/evaluator labels must never be used for retrieval.
 - All semantic results must remain auditable through `REC-*` IDs.
-- UI behavior stays layer-based: semantic results become ordinary result layers/tabs by source type or result grouping.
+- UI behavior stays layer-based: semantic results become ordinary event result layers/tabs by source type or result grouping.
+- RAG result events must preserve enriched `entity_id`, `entity_name`, `location_id`, and `location_name`.
 - Elastic/OpenSearch remains out of scope until corpus size, concurrency, or ops needs justify it.
+
+## RAG Quality Test Catalog
+
+Step 1 of the deeper quality-test plan is defined here:
+
+```text
+llm_investigation_orchestrator_serbia_poc/docs/quality/question_catalog_v1.json
+```
+
+It contains:
+
+- 8 full investigation questions for the app/Hermes/agent path.
+- 10 direct tool-level probes for MCP/tool isolation.
+
+The companion explanation is:
+
+```text
+llm_investigation_orchestrator_serbia_poc/docs/quality/quality_test_plan.md
+```
+
+Step 2 reference base is now here:
+
+```text
+llm_investigation_orchestrator_serbia_poc/docs/quality/reference_base_v1.json
+```
+
+Current status:
+
+- `fq_01` through `fq_05` have current baselines from existing real recordings.
+- Enabled tool probes have direct MCP current-output baselines.
+- Ideal targets define criteria and expected output behavior, but reviewed `must_find` / `acceptable` / `must_not_prioritize` ID lists still need an analyst/offline-label pass.
+- Semantic integration probes `tp_13`, `tp_14`, and `tp_15` were added to cover the tools changed in the hybrid semantic work.
+- The semantic integration gold/reference file and scorer are:
+
+```text
+llm_investigation_orchestrator_serbia_poc/docs/quality/semantic_tool_integration_gold_v2.json
+llm_investigation_orchestrator_serbia_poc/docs/quality/score_semantic_tool_integration.py
+```
+
+Latest saved comparison:
+
+```text
+llm_investigation_orchestrator_serbia_poc/docs/quality/semantic_tool_integration_runs/semantic_tool_integration_comparison_20260706T120341Z.md
+```
 
 ## Validation Commands
 
@@ -661,13 +862,15 @@ Expected: no matches in active data files.
 5. Historical files still contain old source labels.
    - Active data is clean; historical test/recorded files may not be.
 
-6. Entity IDs are not in DB.
-   - Treat entities as future layer candidates only after adding first-class entity data.
+6. Entity IDs are now first-class runtime data.
+   - Event rows contain `entity_id`.
+   - Entity names and aliases come from `data/serbia_kosovo_entities.json`.
+   - Treat stale references to `entity_or_actor` as legacy-only unless inspecting archived data.
 
 ## Suggested First Message To A New Assistant
 
 ```text
-Read PROJECT_HANDOFF.md first. Continue work on the Serbia/North Kosovo POC in llm_investigation_orchestrator_serbia_poc. The current branch is main and should be clean/aligned with origin/main. The UI is deployed from /opt/serbia-poc-ui on VM 151.145.93.180 and currently serves styles.css?v=52 and app.js?v=68. Do not touch C:\Users\user\Downloads\oracle.key.
+Read PROJECT_HANDOFF.md first. Continue work on the Serbia/North Kosovo POC in llm_investigation_orchestrator_serbia_poc. The UI is deployed from /opt/serbia-poc-ui on VM 151.145.93.180 and currently serves styles.css?v=57 and app.js?v=77 after the saved-question and standard close-icon work. Do not touch C:\Users\user\Downloads\oracle.key.
 
 Current behavior: colored map point markers with popups; final answers do not auto-present visualization layers; final `הצג תוצאות` presents/restores final-answer layers manually. The result table is a flush transparent tabbed overlay with real layer tabs, standard eye/eye-off toggles, per-tab `×` close, resize, `−` minimize, `□` restore/maximize, and window `×` close/clear. Final and step result actions use the same non-overlapping pill styling as `הצג שאילתה`; step cards toggle `הצג תוצאות` / `הסתר תוצאות`, and `הצג שאילתה` opens query details. Query edit modal controls exist but query re-execution is still future work.
 

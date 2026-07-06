@@ -30,7 +30,8 @@ TOOLS = [
     "classify_question_intent",
     "plan_next_investigation_step",
     "search_events",
-    "get_events",
+    "semantic_search_events",
+    "get_objects",
     "resolve_location",
     "resolve_event_reference",
     "find_actor_history",
@@ -78,10 +79,12 @@ def upload_files(client: paramiko.SSHClient) -> str:
     run(client, f"mkdir -p {shlex.quote(staging)}/mcp_server {shlex.quote(staging)}/data")
     files = {
         LOCAL_ROOT / "mcp_server" / "server.py": f"{staging}/mcp_server/server.py",
+        LOCAL_ROOT / "mcp_server" / "semantic_index.py": f"{staging}/mcp_server/semantic_index.py",
         LOCAL_ROOT / "mcp_server" / "smoke_client.py": f"{staging}/mcp_server/smoke_client.py",
         LOCAL_ROOT / "mcp_server" / "benchmark_tools.py": f"{staging}/mcp_server/benchmark_tools.py",
         LOCAL_ROOT / "data" / "serbia_kosovo_events_projection.csv": f"{staging}/data/serbia_kosovo_events_projection.csv",
         LOCAL_ROOT / "data" / "serbia_kosovo_locations.json": f"{staging}/data/serbia_kosovo_locations.json",
+        LOCAL_ROOT / "data" / "serbia_kosovo_entities.json": f"{staging}/data/serbia_kosovo_entities.json",
     }
     sftp = client.open_sftp()
     try:
@@ -98,10 +101,12 @@ def install_files(client: paramiko.SSHClient, staging: str) -> None:
     command = (
         f"sudo -n install -d -o {USER} -g {USER} -m 0755 {root}/mcp_server {root}/data "
         f"&& sudo -n install -o {USER} -g {USER} -m 0755 {staging_q}/mcp_server/server.py {root}/mcp_server/server.py "
+        f"&& sudo -n install -o {USER} -g {USER} -m 0755 {staging_q}/mcp_server/semantic_index.py {root}/mcp_server/semantic_index.py "
         f"&& sudo -n install -o {USER} -g {USER} -m 0755 {staging_q}/mcp_server/smoke_client.py {root}/mcp_server/smoke_client.py "
         f"&& sudo -n install -o {USER} -g {USER} -m 0755 {staging_q}/mcp_server/benchmark_tools.py {root}/mcp_server/benchmark_tools.py "
         f"&& sudo -n install -o {USER} -g {USER} -m 0644 {staging_q}/data/serbia_kosovo_events_projection.csv {root}/data/serbia_kosovo_events_projection.csv "
         f"&& sudo -n install -o {USER} -g {USER} -m 0644 {staging_q}/data/serbia_kosovo_locations.json {root}/data/serbia_kosovo_locations.json "
+        f"&& sudo -n install -o {USER} -g {USER} -m 0644 {staging_q}/data/serbia_kosovo_entities.json {root}/data/serbia_kosovo_entities.json "
         f"&& sudo -n touch {root}/mcp_audit.jsonl "
         f"&& sudo -n chown {USER}:{USER} {root}/mcp_audit.jsonl "
         f"&& chmod 0644 {root}/mcp_audit.jsonl "
@@ -136,6 +141,8 @@ servers[settings["server_name"]] = {{
     "env": {{
         "INTELLIGENCE_POC_DATA": f"{{settings['remote_root']}}/data/serbia_kosovo_events_projection.csv",
         "INTELLIGENCE_POC_LOCATIONS": f"{{settings['remote_root']}}/data/serbia_kosovo_locations.json",
+        "INTELLIGENCE_POC_ENTITIES": f"{{settings['remote_root']}}/data/serbia_kosovo_entities.json",
+        "INTELLIGENCE_POC_SEMANTIC_INDEX": f"{{settings['remote_root']}}/data/semantic_index",
         "INTELLIGENCE_POC_AUDIT": f"{{settings['remote_root']}}/mcp_audit.jsonl",
     }},
     "timeout": 30,

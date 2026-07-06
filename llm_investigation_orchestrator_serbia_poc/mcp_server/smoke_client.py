@@ -83,12 +83,14 @@ def main() -> int:
         classified = call(process, 3, "classify_question_intent", {"question":"האם הטענה על חציית גבול מגובה במקור אמין? חפש מקורות, סתירות וחלופות."})
         location = call(process, 4, "resolve_location", {"query":"צפון מיטרוביצה"})
         events = call(process, 5, "search_events", {"keywords":["חציית גבול"], "limit":50})
-        aggregate = call(process, 6, "aggregate_events", {"group_by":"location", "keywords":["חסימה"], "limit":500, "top_n":5})
-        identifier = call(process, 7, "trace_identifier", {"identifier":"REC-017577", "identifier_type":"record", "limit":50})
-        semantic = call(process, 8, "trace_semantic_clues", {"clues":["חציית גבול", "מקורות אחרים", "חשבונות", "KFOR"], "limit":100})
-        related = call(process, 9, "find_related_events", {"seed_event_ids": (semantic["result"]["structuredContent"].get("event_ids") or [])[:3], "dimensions":["semantic","time","location","entity"], "before_hours":12, "after_hours":12, "limit":100})
-        geo_conflicts = call(process, 10, "compare_location_claims", {"keywords":["חציית גבול", "גבול", "מכחישים"], "limit":5})
-        challenge = call(process, 11, "challenge_hypothesis", {"hypothesis":"בדיקת חציית גבול לא מאומתת", "supporting_event_ids": (semantic["result"]["structuredContent"].get("event_ids") or [])[:5]})
+        semantic_search = call(process, 6, "semantic_search_events", {"query":"טענת גבול לא מאומתת עם הכחשה", "limit":50})
+        objects = call(process, 7, "get_objects", {"object_type":"event", "event_ids": (events["result"]["structuredContent"].get("event_ids") or [])[:3]})
+        aggregate = call(process, 8, "aggregate_events", {"group_by":"location", "keywords":["חסימה"], "limit":500, "top_n":5})
+        identifier = call(process, 9, "trace_identifier", {"identifier":"REC-017577", "identifier_type":"record", "limit":50})
+        semantic = call(process, 10, "trace_semantic_clues", {"clues":["חציית גבול", "מקורות אחרים", "חשבונות", "KFOR"], "limit":100})
+        related = call(process, 11, "find_related_events", {"seed_event_ids": (semantic["result"]["structuredContent"].get("event_ids") or [])[:3], "dimensions":["semantic","time","location","entity"], "before_hours":12, "after_hours":12, "limit":100})
+        geo_conflicts = call(process, 12, "compare_location_claims", {"keywords":["חציית גבול", "גבול", "מכחישים"], "limit":5})
+        challenge = call(process, 13, "challenge_hypothesis", {"hypothesis":"בדיקת חציית גבול לא מאומתת", "supporting_event_ids": (semantic["result"]["structuredContent"].get("event_ids") or [])[:5]})
         summary = {
             "server": initialized["result"]["serverInfo"],
             "tool_count": len(tools["result"]["tools"]),
@@ -96,6 +98,9 @@ def main() -> int:
             "classification_source": classified["result"]["structuredContent"].get("classification_source"),
             "resolved_locations": location["result"]["structuredContent"].get("location_ids", [])[:5],
             "search_total": events["result"]["structuredContent"].get("total"),
+            "semantic_search_ids": semantic_search["result"]["structuredContent"].get("event_ids", [])[:8],
+            "semantic_search_backend": semantic_search["result"]["structuredContent"].get("semantic_backend"),
+            "object_count": len(objects["result"]["structuredContent"].get("events") or []),
             "aggregate_groups": aggregate["result"]["structuredContent"].get("groups", [])[:3],
             "identifier_ids": identifier["result"]["structuredContent"].get("event_ids", [])[:5],
             "semantic_ids": semantic["result"]["structuredContent"].get("event_ids", [])[:8],
@@ -109,11 +114,14 @@ def main() -> int:
             )[:8],
             "challenge_llm_source": (challenge["result"]["structuredContent"].get("llm_challenge") or {}).get("source"),
         }
-        assert summary["tool_count"] == 16
+        assert summary["tool_count"] == 17
         assert summary["classified_intent"] == "investigation"
         assert summary["classification_source"] == "mcp_sampling"
         assert summary["resolved_locations"]
         assert summary["search_total"] > 0
+        assert summary["semantic_search_ids"]
+        assert summary["semantic_search_backend"]
+        assert summary["object_count"] > 0
         assert summary["semantic_ids"]
         assert summary["semantic_llm_source"] == "mcp_sampling"
         assert summary["related_llm_source"] == "mcp_sampling"

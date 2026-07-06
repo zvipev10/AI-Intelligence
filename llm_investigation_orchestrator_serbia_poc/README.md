@@ -57,15 +57,23 @@ The runtime MCP reads:
 ```text
 data/serbia_kosovo_events_projection.csv
 data/serbia_kosovo_locations.json
+data/serbia_kosovo_entities.json
 ```
 
 The projection maps the Serbia/Kosovo source fields into the existing canonical event schema:
 
 ```text
-event_id,timestamp_utc,source_type,source_reliability,entity_or_actor,location_id,event_summary
+event_id,timestamp_utc,source_type,source_reliability,source_reliability_label,certainty_level,entity_id,location_id,event_summary
 ```
 
 The runtime file is intentionally clean. It exposes only the canonical fields above. `event_summary` contains only the original raw text, and `source_reliability` is neutralized to avoid leaking truth labels.
+
+Locations and entities are normalized in the same way:
+
+- Event records contain `location_id`; location names, coordinates, and metadata come from `serbia_kosovo_locations.json`.
+- Event records contain `entity_id`; entity names, aliases, and metadata come from `serbia_kosovo_entities.json`.
+- The old `entity_or_actor` field was removed from the runtime events projection.
+- The entities DB contains 16 entities, one for each actor/entity value in the projected corpus.
 
 Source normalization:
 
@@ -84,13 +92,14 @@ That file contains scenario IDs, clusters, ground-truth status, misleading-type 
 
 ## MCP Tools
 
-The MCP server remains read-only and exposes the same fifteen tools:
+The MCP server remains read-only and exposes seventeen tools:
 
 ```text
 classify_question_intent
 plan_next_investigation_step
 search_events
-get_events
+semantic_search_events
+get_objects
 resolve_location
 resolve_event_reference
 find_actor_history
@@ -101,10 +110,28 @@ resolve_entity
 trace_identifier
 trace_semantic_clues
 find_related_events
+compare_location_claims
 challenge_hypothesis
 ```
 
-The tool algorithms and DB structure were not changed for this copy. Scenario-specific configuration was replaced with Serbia/Kosovo locations, actors, identifier patterns, and semantic clues. Hidden scenario labels are deliberately kept out of the agent-visible runtime.
+Scenario-specific configuration was replaced with Serbia/Kosovo locations, actors, identifier patterns, and semantic clues. Hidden scenario labels are deliberately kept out of the agent-visible runtime.
+
+`semantic_search_events` is the shared semantic retrieval entry point. The deployment default is now `hybrid_embedding`: the tool first uses lexical TF-IDF to preserve stable candidate recall, then reranks the candidates with local dense/concept embedding signals and lightweight penalties for generic matches. The backend remains configurable through `INTELLIGENCE_POC_SEMANTIC_BACKEND`; `lexical_tfidf` is still available as a baseline and fallback, and the API is intentionally shaped so a future multilingual embedding model or vector database can replace the local encoder without changing the orchestrator contract.
+
+The same hybrid backend is also used as a candidate-generation signal inside higher-level tools:
+
+- `resolve_event_reference` uses hybrid semantic retrieval to map vague analyst references to candidate anchor events after extracting visible search/location/entity terms.
+- `trace_semantic_clues` uses hybrid semantic retrieval over input clues, LLM-expanded clues, and seed summaries, then applies clue-specific scoring, negation handling, next-seed selection, and next-clue extraction.
+- `find_related_events` uses hybrid semantic similarity only as a supporting `"semantic"` dimension. Structured bridges such as shared entity, identifier, time, and location remain dominant.
+
+`get_objects` is the general object retrieval tool for the three runtime layers:
+
+- `object_type="event"` retrieves event objects by `event_ids`.
+- `object_type="location"` retrieves location-layer objects by `location_ids`.
+- `object_type="entity"` retrieves entity-layer objects by `entity_ids`.
+- `object_type="all"` can retrieve event objects and the related location/entity layers together.
+
+Entity-aware tools should prefer `entity_ids` over natural-language actor names. Some schemas still accept `actors` as compatibility input, but the normalized runtime model is `entity_id` based.
 
 ## Verification
 
@@ -122,7 +149,51 @@ $env:PYTHONIOENCODING='utf-8'
 python mcp_server/benchmark_tools.py --rounds 3
 ```
 
-The benchmark covers the full tool surface against Serbia/Kosovo questions: intent classification, location/event resolution, broad search, filtered search, actor history, aggregations, linkage explanation, sequence building, entity resolution, identifier tracing, semantic tracing, related-event expansion, and hypothesis challenge.
+The benchmark covers the full tool surface against Serbia/Kosovo questions: intent classification, location/event resolution, broad search, semantic search, filtered search, actor history, aggregations, linkage explanation, sequence building, entity resolution, identifier tracing, semantic tracing, related-event expansion, location-claim comparison, and hypothesis challenge.
+
+Run the semantic tool integration comparison:
+
+```powershell
+$env:PYTHONIOENCODING='utf-8'
+python docs/quality/score_semantic_tool_integration.py --current-label working_tree
+```
+
+The current semantic integration reference is:
+
+```text
+docs/quality/semantic_tool_integration_gold_v2.json
+```
+
+The latest saved comparison is:
+
+```text
+docs/quality/semantic_tool_integration_runs/semantic_tool_integration_comparison_20260706T120341Z.md
+```
+
+It compares the pre-integration baseline against the current hybrid semantic implementation for `resolve_event_reference`, `trace_semantic_clues`, and `find_related_events`.
+
+## Saved Questions
+
+Saved Questions are the user-facing replacement for demo-only recorded replay. After a successful live investigation, press `שמור` beside the final answer `הצג תוצאות` button to persist the full `/api/investigate` result.
+
+Runtime files live in:
+
+```text
+saved_questions/
+```
+
+The UI reads and writes them through:
+
+```text
+GET    /api/saved-questions
+GET    /api/saved-question?id=<saved-id>
+POST   /api/saved-question
+DELETE /api/saved-question?id=<saved-id>
+```
+
+Each saved file stores `id`, `schema_version`, `title`, `question`, `saved_at_utc`, `source_run_id`, and the full `result` object. Loading a saved question does not call Hermes; it restores the final answer, investigation steps, tool outputs, event/location/entity layers, map, timeline, table, and usage/performance metadata from the saved artifact.
+
+Runtime saved question JSON files are ignored by git. Keep only `saved_questions/.gitkeep` and docs in source control unless a deliberate sample fixture is needed.
 
 ## Recorded Demo Runs
 
@@ -235,7 +306,7 @@ Deployment rules:
 - Local `.hermes-api.json` normally uses SSH transport through the VM.
 - VM `.hermes-api.json` uses `"transport": "direct"` against `127.0.0.1:8642`.
 - Preserve the existing VM API key from `/opt/serbia-poc-ui/.hermes-api.json`.
-- Include `server.py`, `index.html`, `app.js`, `styles.css`, `help.html`, `README.md`, `vendor/`, `data/`, and `recorded_runs/`.
+- Include `server.py`, `index.html`, `app.js`, `styles.css`, `help.html`, `README.md`, `vendor/`, `data/`, `recorded_runs/`, and `saved_questions/`.
 - Restart `serbia-poc-ui.service`.
 - Verify the public HTTPS endpoint, not only files on disk.
 

@@ -1,0 +1,344 @@
+{
+  "gold_reference_id": "semantic_tool_gold_v1",
+  "created_utc": "2026-07-04T00:00:00Z",
+  "scope": "Visible-field gold reference for semantic-heavy MCP tool probes. This uses only public event fields, not hidden evaluator labels.",
+  "probes": [
+    {
+      "id": "tp_01_semantic_zvecan_shooting_paraphrase",
+      "tool": "semantic_search_events",
+      "evaluation_focus": "Unverified shooting/noise/explosion reports near Zvecan, including civilian-noise alternatives.",
+      "must_find_event_ids": [
+        "REC-059845",
+        "REC-070948",
+        "REC-003268",
+        "REC-083436",
+        "REC-059607",
+        "REC-087831",
+        "REC-008111",
+        "REC-009647",
+        "REC-055971",
+        "REC-082564",
+        "REC-073992",
+        "REC-083678",
+        "REC-063664",
+        "REC-043164",
+        "REC-016054",
+        "REC-047457"
+      ],
+      "high_value_event_ids": [
+        "REC-087831",
+        "REC-008111",
+        "REC-083678",
+        "REC-063664",
+        "REC-043164",
+        "REC-016054",
+        "REC-047457"
+      ],
+      "acceptable_noise_event_ids": [
+        "REC-059874",
+        "REC-013866",
+        "REC-026729",
+        "REC-070257"
+      ],
+      "must_not_prioritize_event_ids": [
+        "REC-039674",
+        "REC-034783",
+        "REC-090709"
+      ],
+      "rationale": "Top evidence should be records explicitly describing shooting-like sounds, viral shooting attribution, explosion/fireworks alternatives, or civilian-noise explanations in Zvecan locations. Generic road-closure warnings are relevant to information noise but should not outrank direct shooting/noise evidence."
+    },
+    {
+      "id": "tp_02_semantic_kfor_role",
+      "tool": "semantic_search_events",
+      "evaluation_focus": "KFOR role: increased presence, patrols, friction prevention, route/blockade/security role, and misidentification as KFOR/police.",
+      "must_find_event_ids": [
+        "REC-094919",
+        "REC-093706",
+        "REC-022483",
+        "REC-077103",
+        "REC-055293",
+        "REC-066668",
+        "REC-052798",
+        "REC-053879",
+        "REC-055571",
+        "REC-035159",
+        "REC-065930",
+        "REC-017527",
+        "REC-080322",
+        "REC-026393",
+        "REC-071848",
+        "REC-083284",
+        "REC-051329",
+        "REC-029717"
+      ],
+      "high_value_event_ids": [
+        "REC-094919",
+        "REC-093706",
+        "REC-022483",
+        "REC-066668",
+        "REC-052798",
+        "REC-071848",
+        "REC-083284",
+        "REC-051329",
+        "REC-029717"
+      ],
+      "acceptable_noise_event_ids": [
+        "REC-081536",
+        "REC-063985"
+      ],
+      "must_not_prioritize_event_ids": [
+        "REC-070642",
+        "REC-065871"
+      ],
+      "rationale": "The best evidence explicitly describes KFOR preventing friction, increasing presence/patrols, or being confused with police/Serbian forces. Generic municipal warnings or unrelated old-video items are low value."
+    },
+    {
+      "id": "tp_03_semantic_geographic_deception",
+      "tool": "semantic_search_events",
+      "evaluation_focus": "Old/reused video or claim attributed to different locations, repeated wording, or disputed geographic attribution.",
+      "must_find_event_ids": [
+        "REC-032521",
+        "REC-040875",
+        "REC-088270",
+        "REC-082069",
+        "REC-076464",
+        "REC-066658",
+        "REC-060835",
+        "REC-070493",
+        "REC-076698",
+        "REC-003420",
+        "REC-039159",
+        "REC-002459",
+        "REC-083584",
+        "REC-084736",
+        "REC-096036",
+        "REC-081344",
+        "REC-057683",
+        "REC-042634",
+        "REC-071592",
+        "REC-033314",
+        "REC-012264",
+        "REC-086028",
+        "REC-007722",
+        "REC-069352"
+      ],
+      "high_value_event_ids": [
+        "REC-032521",
+        "REC-040875",
+        "REC-088270",
+        "REC-082069",
+        "REC-076464",
+        "REC-066658",
+        "REC-070493",
+        "REC-002459",
+        "REC-069352"
+      ],
+      "acceptable_noise_event_ids": [
+        "REC-072891"
+      ],
+      "must_not_prioritize_event_ids": [],
+      "rationale": "The ideal result should strongly retrieve records whose visible text says a video is old/not related/currently misattributed to a location, especially repeated across accounts."
+    },
+    {
+      "id": "tp_04_compare_location_claims",
+      "tool": "compare_location_claims",
+      "evaluation_focus": "Conflict groups that indicate repeated claims across many locations and weak/low-certainty reporting.",
+      "must_find_claim_templates": [
+        "הסרטון שמופץ עכשיו לא נראה מהיום. שימו לב לפני שמשתפים.",
+        "תמונה של שיירה מוצגת ככוח סרבי, אך משתמשים אחרים טוענים שמדובר ב־kfor או במשטרה.",
+        "סרטון שמופץ ברשת מוצג כאילו צולם באזור <מיקום>, אך יש טענות שהוא ישן ואינו קשור לאירועים הנוכחיים.",
+        "דיווח דרמטי טוען שכוחות גדולים חצו את הגבול הלילה. נכון לעכשיו אין לכך אימות, ומקורות אחרים מכחישים."
+      ],
+      "minimum_conflict_group_count": 4,
+      "rationale": "The tool should surface repeated old-video, convoy-misidentification, old-location-attribution, and cross-border-rumor groups as high-scoring conflict groups."
+    }
+  ],
+  "current_tool_run": "docs/quality/vm_tool_probe_runs/tool_probes_20260703T175042Z.json",
+  "scores_against_current": [
+    {
+      "id": "tp_01_semantic_zvecan_shooting_paraphrase",
+      "tool": "semantic_search_events",
+      "returned": 223,
+      "must_find": {
+        "gold_count": 16,
+        "found_count": 16,
+        "recall": 1.0,
+        "found_top10": 7,
+        "found_top20": 12,
+        "found_top50": 16,
+        "missing_ids": [],
+        "ranks": {
+          "REC-059845": 4,
+          "REC-070948": 5,
+          "REC-003268": 6,
+          "REC-083436": 7,
+          "REC-059607": 8,
+          "REC-087831": 9,
+          "REC-008111": 10,
+          "REC-009647": 11,
+          "REC-055971": 12,
+          "REC-082564": 13,
+          "REC-073992": 14,
+          "REC-083678": 20,
+          "REC-063664": 21,
+          "REC-043164": 22,
+          "REC-016054": 23,
+          "REC-047457": 25
+        }
+      },
+      "high_value": {
+        "gold_count": 7,
+        "found_count": 7,
+        "recall": 1.0,
+        "found_top10": 2,
+        "found_top20": 3,
+        "found_top50": 7,
+        "missing_ids": [],
+        "ranks": {
+          "REC-087831": 9,
+          "REC-008111": 10,
+          "REC-083678": 20,
+          "REC-063664": 21,
+          "REC-043164": 22,
+          "REC-016054": 23,
+          "REC-047457": 25
+        }
+      },
+      "bad_priority_hits_top10": [
+        "REC-039674",
+        "REC-034783",
+        "REC-090709"
+      ]
+    },
+    {
+      "id": "tp_02_semantic_kfor_role",
+      "tool": "semantic_search_events",
+      "returned": 256,
+      "must_find": {
+        "gold_count": 18,
+        "found_count": 18,
+        "recall": 1.0,
+        "found_top10": 8,
+        "found_top20": 15,
+        "found_top50": 18,
+        "missing_ids": [],
+        "ranks": {
+          "REC-094919": 1,
+          "REC-093706": 2,
+          "REC-022483": 3,
+          "REC-077103": 5,
+          "REC-055293": 6,
+          "REC-066668": 7,
+          "REC-052798": 8,
+          "REC-053879": 10,
+          "REC-055571": 11,
+          "REC-035159": 12,
+          "REC-065930": 13,
+          "REC-017527": 16,
+          "REC-080322": 17,
+          "REC-026393": 18,
+          "REC-071848": 19,
+          "REC-083284": 25,
+          "REC-051329": 39,
+          "REC-029717": 43
+        }
+      },
+      "high_value": {
+        "gold_count": 9,
+        "found_count": 9,
+        "recall": 1.0,
+        "found_top10": 5,
+        "found_top20": 6,
+        "found_top50": 9,
+        "missing_ids": [],
+        "ranks": {
+          "REC-094919": 1,
+          "REC-093706": 2,
+          "REC-022483": 3,
+          "REC-066668": 7,
+          "REC-052798": 8,
+          "REC-071848": 19,
+          "REC-083284": 25,
+          "REC-051329": 39,
+          "REC-029717": 43
+        }
+      },
+      "bad_priority_hits_top10": []
+    },
+    {
+      "id": "tp_03_semantic_geographic_deception",
+      "tool": "semantic_search_events",
+      "returned": 1469,
+      "must_find": {
+        "gold_count": 24,
+        "found_count": 24,
+        "recall": 1.0,
+        "found_top10": 9,
+        "found_top20": 19,
+        "found_top50": 24,
+        "missing_ids": [],
+        "ranks": {
+          "REC-032521": 1,
+          "REC-040875": 3,
+          "REC-088270": 4,
+          "REC-082069": 5,
+          "REC-076464": 6,
+          "REC-066658": 7,
+          "REC-060835": 8,
+          "REC-070493": 9,
+          "REC-076698": 10,
+          "REC-003420": 11,
+          "REC-039159": 12,
+          "REC-002459": 13,
+          "REC-083584": 14,
+          "REC-084736": 15,
+          "REC-096036": 16,
+          "REC-081344": 17,
+          "REC-057683": 18,
+          "REC-042634": 19,
+          "REC-071592": 20,
+          "REC-033314": 21,
+          "REC-012264": 22,
+          "REC-086028": 23,
+          "REC-007722": 24,
+          "REC-069352": 25
+        }
+      },
+      "high_value": {
+        "gold_count": 9,
+        "found_count": 9,
+        "recall": 1.0,
+        "found_top10": 7,
+        "found_top20": 8,
+        "found_top50": 9,
+        "missing_ids": [],
+        "ranks": {
+          "REC-032521": 1,
+          "REC-040875": 3,
+          "REC-088270": 4,
+          "REC-082069": 5,
+          "REC-076464": 6,
+          "REC-066658": 7,
+          "REC-070493": 9,
+          "REC-002459": 13,
+          "REC-069352": 25
+        }
+      },
+      "bad_priority_hits_top10": []
+    },
+    {
+      "id": "tp_04_compare_location_claims",
+      "tool": "compare_location_claims",
+      "conflict_group_count": 168,
+      "required_template_count": 4,
+      "required_found_count": 4,
+      "required_missing": [],
+      "required_ranks": {
+        "הסרטון שמופץ עכשיו לא נראה מהיום. שימו לב לפני שמשתפים.": 1,
+        "תמונה של שיירה מוצגת ככוח סרבי, אך משתמשים אחרים טוענים שמדובר ב־kfor או במשטרה.": 2,
+        "סרטון שמופץ ברשת מוצג כאילו צולם באזור <מיקום>, אך יש טענות שהוא ישן ואינו קשור לאירועים הנוכחיים.": 3,
+        "דיווח דרמטי טוען שכוחות גדולים חצו את הגבול הלילה. נכון לעכשיו אין לכך אימות, ומקורות אחרים מכחישים.": 4
+      }
+    }
+  ]
+}

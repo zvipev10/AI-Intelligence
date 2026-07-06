@@ -1,0 +1,64 @@
+{
+  "gold_reference_id": "semantic_tool_integration_gold_v2",
+  "purpose": "Score semantic integration inside resolve_event_reference, trace_semantic_clues, and find_related_events after hybrid retrieval was added as a shared candidate source.",
+  "previous_reference_commit": "aa82add",
+  "current_reference_commit": "7ea65ef",
+  "notes": [
+    "The probes are designed to compare the previous hybrid semantic_search_events-only implementation with the newer implementation that also uses hybrid candidates inside higher-level tools.",
+    "This is a regression and ranking reference, not hidden-label ground truth. It uses visible-event review and previously curated semantic_search_events v1 IDs.",
+    "Success requires preserving event recall while exposing semantic backend/candidate metadata and avoiding purely generic top-ranked results."
+  ],
+  "probes": [
+    {
+      "id": "tp_13_resolve_shooting_reference",
+      "tool": "resolve_event_reference",
+      "must_find_event_ids": ["REC-087831", "REC-008111"],
+      "high_value_event_ids": ["REC-087831", "REC-008111"],
+      "must_not_prioritize_event_ids": [],
+      "expected_min_returned": 2,
+      "expected_semantic_candidate_count_min": 1,
+      "expected_semantic_backend": "hybrid_embedding",
+      "rationale": "The reference phrase does not provide REC IDs and previously resolved to no candidates. A good result should surface the two unverified shooting/noise records at the town-entrance junction."
+    },
+    {
+      "id": "tp_14_trace_tactical_noise_clues",
+      "tool": "trace_semantic_clues",
+      "must_find_event_ids": [
+        "REC-059845",
+        "REC-070948",
+        "REC-003268",
+        "REC-083436",
+        "REC-059607",
+        "REC-087831",
+        "REC-008111",
+        "REC-009647",
+        "REC-055971",
+        "REC-082564",
+        "REC-073992",
+        "REC-083678",
+        "REC-063664",
+        "REC-043164",
+        "REC-016054",
+        "REC-047457"
+      ],
+      "high_value_event_ids": ["REC-087831", "REC-008111", "REC-083678", "REC-063664", "REC-043164", "REC-016054", "REC-047457"],
+      "must_not_prioritize_event_ids": ["REC-039674", "REC-034783", "REC-090709"],
+      "expected_min_returned": 16,
+      "expected_semantic_candidate_count_min": 1,
+      "expected_semantic_backend": "hybrid_embedding",
+      "rationale": "This probe uses operational clue phrases that previous direct clue matching missed. A good result should recover the curated Zvecan/North-Mitrovica unverified shooting/noise records from semantic_search_events v1."
+    },
+    {
+      "id": "tp_15_related_from_zvecan_shooting_seeds",
+      "tool": "find_related_events",
+      "must_find_event_ids": ["REC-027164", "REC-055971", "REC-061974", "REC-084271", "REC-064411", "REC-003268"],
+      "high_value_event_ids": ["REC-027164", "REC-055971", "REC-061974", "REC-084271", "REC-064411"],
+      "must_not_prioritize_event_ids": [],
+      "expected_min_returned": 20,
+      "expected_semantic_candidate_count_min": 1,
+      "expected_semantic_backend": "hybrid_embedding",
+      "expected_reason_dimensions": ["semantic_embedding"],
+      "rationale": "The previous implementation already found many nearby/time-related candidates. The semantic improvement should be visible as explicit semantic_embedding linkage reasons while preserving the strong nearby shooting/noise candidates."
+    }
+  ]
+}

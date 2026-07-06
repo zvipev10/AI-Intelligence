@@ -15,6 +15,12 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
+try:
+    from semantic_index import SemanticEventIndex
+except ImportError:  # pragma: no cover - package-style execution fallback
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from semantic_index import SemanticEventIndex
+
 
 PROTOCOL_VERSION = "2025-06-18"
 SERVER_NAME = "serbia-events-poc"
@@ -26,6 +32,9 @@ MIN_COVERAGE_LIMIT = 2000
 BASE_DIR = Path(__file__).resolve().parent.parent
 DATA_PATH = Path(os.environ.get("INTELLIGENCE_POC_DATA", BASE_DIR / "data" / "serbia_kosovo_events_projection.csv"))
 LOCATIONS_PATH = Path(os.environ.get("INTELLIGENCE_POC_LOCATIONS", BASE_DIR / "data" / "serbia_kosovo_locations.json"))
+ENTITIES_PATH = Path(os.environ.get("INTELLIGENCE_POC_ENTITIES", BASE_DIR / "data" / "serbia_kosovo_entities.json"))
+SEMANTIC_INDEX_DIR = Path(os.environ.get("INTELLIGENCE_POC_SEMANTIC_INDEX", BASE_DIR / "data" / "semantic_index"))
+SEMANTIC_BACKEND = os.environ.get("INTELLIGENCE_POC_SEMANTIC_BACKEND", "hybrid_embedding")
 AUDIT_PATH = Path(os.environ.get("INTELLIGENCE_POC_AUDIT", BASE_DIR / "mcp_audit.jsonl"))
 CLIENT_SUPPORTS_SAMPLING = False
 NEXT_SERVER_REQUEST_ID = 100000
@@ -47,41 +56,6 @@ AREA_ALIASES = {
 }
 
 EVENT_REFERENCES = {}
-
-ENTITY_REGISTRY = {
-    "ENT-KFOR": {
-        "canonical_name": "KFOR",
-        "aliases": ["KFOR", "כוח קפור", "קפור"],
-        "entity_type": "כוח בינלאומי",
-        "confidence": "גבוהה",
-        "basis": "שם ארגון מוכר ברשומות הסינתטיות",
-        "relationships": [],
-    },
-    "ENT-EULEX": {
-        "canonical_name": "EULEX",
-        "aliases": ["EULEX", "יולקס"],
-        "entity_type": "משימה אירופית",
-        "confidence": "גבוהה",
-        "basis": "שם ארגון מוכר ברשומות הסינתטיות",
-        "relationships": [],
-    },
-    "ENT-KOSOVO-POLICE": {
-        "canonical_name": "משטרת קוסובו",
-        "aliases": ["משטרת קוסובו", "כוחות קוסובו", "כוח קוסוברי", "סיור קוסוברי"],
-        "entity_type": "כוח ביטחוני",
-        "confidence": "בינונית",
-        "basis": "וריאציות שמיות בדיווחים",
-        "relationships": [],
-    },
-    "ENT-SERBIAN-ACTORS": {
-        "canonical_name": "מפגינים סרבים מקומיים",
-        "aliases": ["מפגינים סרבים מקומיים", "תושבים סרבים", "קבוצות סרביות", "צבא סרביה"],
-        "entity_type": "שחקן אזרחי/מדיני",
-        "confidence": "בינונית",
-        "basis": "קבוצת שמות סמנטית לצורכי סימולציה",
-        "relationships": [],
-    },
-}
 
 IDENTIFIER_PATTERNS = {
     "record": re.compile(r"\bREC-\d{6}\b", re.IGNORECASE),
@@ -136,9 +110,152 @@ def load_events() -> list[dict[str, Any]]:
 
 EVENTS = load_events()
 EVENTS_BY_ID = {event["event_id"]: event for event in EVENTS}
+ENTITY_PRESENTATIONS: dict[str, dict[str, Any]] = {}
+LOCATION_PRESENTATIONS: dict[str, dict[str, Any]] = {}
+ENTITIES: dict[str, dict[str, Any]] = {}
+SEMANTIC_INDEX: SemanticEventIndex | None = None
+
+
+def _fold(value: str | None) -> str:
+    return re.sub(r"\s+", " ", str(value or "").strip()).casefold()
+
+
+def split_location_query(query: str) -> list[str]:
+    """Split natural analyst geography into separately resolvable terms."""
+    normalized = re.sub(r"\s+", " ", query.strip())
+    if not normalized:
+        return []
+    parts = re.split(r"[,;،]+|\s+ו(?=\S)|\s+ו(?=\s)", normalized)
+    cleaned: list[str] = []
+    for part in parts:
+        term = part.strip(" .:-–—")
+        if term and term not in cleaned:
+            cleaned.append(term)
+    if len(cleaned) <= 1 and normalized not in cleaned:
+        cleaned.insert(0, normalized)
+    return cleaned
+
+
+def match_location_term(term: str) -> list[str]:
+    folded = _fold(term)
+    if not folded:
+        return []
+    exact_alias = AREA_ALIASES.get(term)
+    if exact_alias:
+        return list(exact_alias)
+    for alias, location_ids in AREA_ALIASES.items():
+        alias_folded = _fold(alias)
+        if folded == alias_folded or folded in alias_folded or alias_folded in folded:
+            return list(location_ids)
+
+    matched: list[str] = []
+    for location_id, location in LOCATIONS.items():
+        fields = [
+            location.get("name"),
+            location.get("type"),
+            location.get("municipality"),
+            location.get("region"),
+            location.get("country"),
+            location.get("locality"),
+        ]
+        haystack = " ".join(_fold(value) for value in fields if value)
+        if folded in haystack:
+            matched.append(location_id)
+    return matched
+
+
+def load_entity_db() -> dict[str, dict[str, Any]]:
+    loaded = json.loads(ENTITIES_PATH.read_text(encoding="utf-8")) if ENTITIES_PATH.exists() else []
+    return {item["entity_id"]: item for item in loaded if item.get("entity_id")}
+
+
+def build_entity_layers() -> dict[str, dict[str, Any]]:
+    entity_db = load_entity_db()
+    entity_ids = sorted({event.get("entity_id", "") for event in EVENTS if event.get("entity_id")})
+    presentations: dict[str, dict[str, Any]] = {}
+    for entity_id in entity_ids:
+        base = entity_db.get(entity_id)
+        if not base:
+            raise ValueError(f"Missing entity_id in entities DB: {entity_id}")
+        events = [event for event in EVENTS if event.get("entity_id") == entity_id]
+        top_locations = []
+        for location_id, count in Counter(event["location_id"] for event in events).most_common(12):
+            location = LOCATIONS.get(location_id, {})
+            top_locations.append({
+                "location_id": location_id,
+                "location_name": location.get("name", location_id),
+                "municipality": location.get("municipality"),
+                "latitude": location.get("latitude"),
+                "longitude": location.get("longitude"),
+                "count": count,
+            })
+        presentations[entity_id] = {
+            "entity_id": entity_id,
+            "canonical_name": base.get("canonical_name") or entity_id,
+            "entity_type": base.get("entity_type") or "גורם מדווח",
+            "confidence": base.get("confidence") or "entity_id גלוי ברשומה",
+            "basis": base.get("basis") or "ישות מתוך serbia_kosovo_entities.json לפי entity_id ברשומה",
+            "aliases": list(dict.fromkeys(base.get("aliases") or [base.get("canonical_name") or entity_id])),
+            "event_count": len(events),
+            "top_locations": top_locations,
+            "top_sources": [{"source_type": key, "count": count} for key, count in Counter(event["source_type"] for event in events).most_common(10)],
+            "certainty_breakdown": dict(Counter(event.get("certainty_level") or "לא ידוע" for event in events)),
+            "reliability_breakdown": dict(Counter(event.get("source_reliability_label") or event.get("source_reliability") or "לא ידוע" for event in events)),
+        }
+    return presentations
+
+
+def build_location_layers() -> dict[str, dict[str, Any]]:
+    presentations: dict[str, dict[str, Any]] = {}
+    events_by_location: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for event in EVENTS:
+        events_by_location[event["location_id"]].append(event)
+    for location_id, location in LOCATIONS.items():
+        events = events_by_location.get(location_id, [])
+        presentations[location_id] = {
+            "location_id": location_id,
+            "location_name": location.get("name", location_id),
+            "name": location.get("name", location_id),
+            "type": location.get("type"),
+            "country": location.get("country"),
+            "region": location.get("region"),
+            "municipality": location.get("municipality"),
+            "locality": location.get("locality"),
+            "precision": location.get("precision"),
+            "latitude": location.get("latitude"),
+            "longitude": location.get("longitude"),
+            "event_count": len(events),
+            "top_entities": [
+                {
+                    "entity_id": entity_id,
+                    "name": ENTITY_PRESENTATIONS.get(entity_id, {}).get("canonical_name", entity_id),
+                    "count": count,
+                }
+                for entity_id, count in Counter(event.get("entity_id") for event in events if event.get("entity_id")).most_common(10)
+            ],
+            "top_sources": [{"source_type": key, "count": count} for key, count in Counter(event["source_type"] for event in events).most_common(10)],
+            "certainty_breakdown": dict(Counter(event.get("certainty_level") or "לא ידוע" for event in events)),
+            "reliability_breakdown": dict(Counter(event.get("source_reliability_label") or event.get("source_reliability") or "לא ידוע" for event in events)),
+        }
+    return presentations
+
+
+ENTITY_PRESENTATIONS = build_entity_layers()
+LOCATION_PRESENTATIONS = build_location_layers()
+
+
+def event_entity_id(event: dict[str, Any]) -> str | None:
+    return event.get("entity_id")
+
+
+def event_entity_name(event: dict[str, Any]) -> str:
+    entity = ENTITY_PRESENTATIONS.get(event_entity_id(event) or "", {})
+    return entity.get("canonical_name") or event_entity_id(event) or "לא ידוע"
 
 
 def public_event(event: dict[str, Any]) -> dict[str, Any]:
+    entity_id = event_entity_id(event)
+    entity = ENTITY_PRESENTATIONS.get(entity_id or "", {})
     return {
         "event_id": event["event_id"],
         "timestamp_utc": event["timestamp_utc"],
@@ -146,12 +263,37 @@ def public_event(event: dict[str, Any]) -> dict[str, Any]:
         "source_reliability": event["source_reliability"],
         "certainty_level": event.get("certainty_level", ""),
         "source_reliability_label": event.get("source_reliability_label", ""),
-        "entity_or_actor": event["entity_or_actor"],
+        "entity_id": entity_id,
+        "entity_name": entity.get("canonical_name") or entity_id,
         "location_id": event["location_id"],
         "location_name": event["location_name"],
         "location_type": event["location_type"],
         "event_summary": event["event_summary"],
     }
+
+
+def semantic_index_signature() -> dict[str, Any]:
+    signature = {}
+    for label, path in [("events", DATA_PATH), ("locations", LOCATIONS_PATH), ("entities", ENTITIES_PATH)]:
+        try:
+            stat = path.stat()
+            signature[f"{label}_mtime_ns"] = stat.st_mtime_ns
+            signature[f"{label}_size"] = stat.st_size
+        except OSError:
+            signature[f"{label}_missing"] = True
+    return signature
+
+
+def get_semantic_index() -> SemanticEventIndex:
+    global SEMANTIC_INDEX
+    if SEMANTIC_INDEX is None:
+        SEMANTIC_INDEX = SemanticEventIndex(
+            [public_event(event) for event in EVENTS],
+            cache_dir=SEMANTIC_INDEX_DIR,
+            signature=semantic_index_signature(),
+            backend=SEMANTIC_BACKEND,
+        )
+    return SEMANTIC_INDEX
 
 
 def text_result(payload: Any, is_error: bool = False) -> dict[str, Any]:
@@ -190,6 +332,35 @@ def bounded_limit(value: Any) -> int:
 def coverage_limit(value: Any) -> int:
     """Use maximum bounded coverage for investigative retrieval, even if the model asks for a small sample."""
     return max(MIN_COVERAGE_LIMIT, bounded_limit(value))
+
+
+def semantic_filters_from_arguments(arguments: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "start_time": arguments.get("start_time"),
+        "end_time": arguments.get("end_time"),
+        "location_ids": arguments.get("location_ids") or [],
+        "entity_ids": arguments.get("entity_ids") or [],
+        "source_types": arguments.get("source_types") or [],
+        "reliabilities": arguments.get("reliabilities") or [],
+        "certainty_levels": arguments.get("certainty_levels") or [],
+        "keywords": arguments.get("keywords") or [],
+        "match_all_keywords": bool(arguments.get("match_all_keywords", False)),
+    }
+
+
+def semantic_candidates(query: str, arguments: dict[str, Any], limit: int) -> list[dict[str, Any]]:
+    query = str(query or "").strip()
+    if not query:
+        return []
+    try:
+        candidate_limit = max(1, min(int(limit or DEFAULT_LIMIT), MAX_LIMIT))
+    except (TypeError, ValueError):
+        candidate_limit = DEFAULT_LIMIT
+    return get_semantic_index().search(
+        query,
+        filters=semantic_filters_from_arguments(arguments),
+        limit=candidate_limit,
+    )
 
 
 def sort_order_desc(arguments: dict[str, Any]) -> bool:
@@ -400,12 +571,15 @@ def investigative_seed_score(event: dict[str, Any], matched_clues: list[str] | N
 def entity_matches(query: str) -> list[dict[str, Any]]:
     folded = normalize_text(query)
     matches = []
-    for entity_id, entity in ENTITY_REGISTRY.items():
-        aliases = entity["aliases"]
+    for entity_id, entity in ENTITY_PRESENTATIONS.items():
+        aliases = entity.get("aliases", [])
         exact = [alias for alias in aliases if normalize_text(alias) == folded]
         partial = [alias for alias in aliases if folded and folded in normalize_text(alias)]
+        id_match = folded and folded == normalize_text(entity_id)
         if exact or partial:
             matches.append({"entity_id": entity_id, **entity, "match_type": "exact" if exact else "partial"})
+        elif id_match:
+            matches.append({"entity_id": entity_id, **entity, "match_type": "entity_id"})
     return matches
 
 
@@ -442,15 +616,15 @@ def haversine_km(first_location_id: str, second_location_id: str) -> float | Non
 def resolve_entity(arguments: dict[str, Any]) -> dict[str, Any]:
     query = str(arguments.get("query") or "").strip()
     matches = entity_matches(query)
-    actor_counts = Counter(event["entity_or_actor"] for event in EVENTS)
+    actor_counts = Counter(event_entity_name(event) for event in EVENTS)
     for match in matches:
         match["event_counts_by_alias"] = {
             alias: actor_counts[alias] for alias in match["aliases"] if actor_counts[alias]
         }
-        for relationship in match["relationships"]:
-            related = ENTITY_REGISTRY.get(relationship["entity_id"], {})
+        for relationship in match.get("relationships", []):
+            related = ENTITY_PRESENTATIONS.get(relationship["entity_id"], {})
             relationship["canonical_name"] = related.get("canonical_name")
-    return {"query": query, "matches": matches, "match_count": len(matches)}
+    return {"query": query, "matches": matches, "entity_layers": matches, "match_count": len(matches)}
 
 
 def intent_defaults(intent: str, has_geo: bool = False, has_timeline: bool = False) -> dict[str, Any]:
@@ -460,7 +634,7 @@ def intent_defaults(intent: str, has_geo: bool = False, has_timeline: bool = Fal
         confidence = "גבוהה"
         tool_budget = 30
         allowed = [
-            "resolve", "search", "aggregate", "get", "trace_identifier", "trace_semantic_clues",
+            "resolve", "search", "semantic_search", "aggregate", "get", "trace_identifier", "trace_semantic_clues",
             "related_expansion", "linkage", "hypothesis_challenge", "sequence",
         ]
         blocked = []
@@ -471,7 +645,7 @@ def intent_defaults(intent: str, has_geo: bool = False, has_timeline: bool = Fal
         recommended_mode = "retrieval"
         confidence = "גבוהה"
         tool_budget = 3
-        allowed = ["resolve", "search", "aggregate", "get"]
+        allowed = ["resolve", "search", "semantic_search", "aggregate", "get"]
         blocked = ["related_expansion", "hypothesis_challenge", "linkage"]
         view_hint = "map"
         reason = "השאלה מבקשת הצגה או ספירה לפי מיקום, ללא בקשת קשרים נסתרים."
@@ -480,7 +654,7 @@ def intent_defaults(intent: str, has_geo: bool = False, has_timeline: bool = Fal
         recommended_mode = "retrieval"
         confidence = "בינונית-גבוהה"
         tool_budget = 4
-        allowed = ["resolve", "search", "get", "sequence"]
+        allowed = ["resolve", "search", "semantic_search", "get", "sequence"]
         blocked = ["related_expansion", "hypothesis_challenge", "linkage"]
         view_hint = "timeline"
         reason = "השאלה מבקשת סדר או עיתוי של אירועים קיימים."
@@ -489,7 +663,7 @@ def intent_defaults(intent: str, has_geo: bool = False, has_timeline: bool = Fal
         recommended_mode = "retrieval"
         confidence = "גבוהה"
         tool_budget = 3
-        allowed = ["resolve", "search", "aggregate", "get"]
+        allowed = ["resolve", "search", "semantic_search", "aggregate", "get"]
         blocked = ["related_expansion", "hypothesis_challenge", "linkage"]
         view_hint = "evidence"
         reason = "השאלה מבקשת שליפה, סינון, צמצום או ספירה של רשומות קיימות."
@@ -498,7 +672,7 @@ def intent_defaults(intent: str, has_geo: bool = False, has_timeline: bool = Fal
         recommended_mode = "retrieval"
         confidence = "בינונית"
         tool_budget = 3
-        allowed = ["resolve", "search", "aggregate", "get"]
+        allowed = ["resolve", "search", "semantic_search", "aggregate", "get"]
         blocked = ["related_expansion", "hypothesis_challenge", "linkage"]
         view_hint = "evidence"
         reason = "לא נמצאה בקשה מפורשת לחקירה עמוקה; ברירת המחדל היא שליפה זהירה."
@@ -698,14 +872,14 @@ def plan_next_investigation_step(arguments: dict[str, Any]) -> dict[str, Any]:
         decision = "continue"
         next_step_constraint = "expand_pending_recommended_seeds"
         required_event_ids = unexpanded_seeds
-        allowed = ["get_events", "find_related_events", "trace_semantic_clues", "explain_linkage"]
+        allowed = ["get_objects", "find_related_events", "trace_semantic_clues", "semantic_search_events", "explain_linkage"]
         blocked = ["challenge_hypothesis", "final_summary"]
         reason = "קיימים seeds מומלצים שעדיין לא הורחבו; אין לסכם או לאתגר השערה לפני טיפול בהם."
     elif new_clues and semantic_calls_used < 2:
         decision = "continue"
         next_step_constraint = "trace_new_clues"
         required_event_ids = []
-        allowed = ["trace_semantic_clues", "search_events"]
+        allowed = ["trace_semantic_clues", "semantic_search_events", "search_events"]
         blocked = ["challenge_hypothesis", "final_summary"]
         reason = "קיימים רמזים סמנטיים חדשים שעדיין לא נבדקו, ועדיין יש תקציב קריאות סמנטיות."
     elif unchecked_pairs:
@@ -719,21 +893,21 @@ def plan_next_investigation_step(arguments: dict[str, Any]) -> dict[str, Any]:
         decision = "continue"
         next_step_constraint = "continue_bounded_expansion"
         required_event_ids = candidate_chain[-3:] if candidate_chain else []
-        allowed = ["find_related_events", "trace_semantic_clues", "search_events"]
+        allowed = ["find_related_events", "trace_semantic_clues", "semantic_search_events", "search_events"]
         blocked = ["challenge_hypothesis", "final_summary"]
         reason = "השרשרת עדיין קצרה ויש תקציב להרחבה מוגבלת לפני מסקנה."
     elif len(candidate_chain) >= 5:
         decision = "continue"
         next_step_constraint = "challenge_or_summarize_with_gaps"
         required_event_ids = candidate_chain[:20]
-        allowed = ["challenge_hypothesis", "build_event_sequence", "get_events"]
+        allowed = ["challenge_hypothesis", "build_event_sequence", "get_objects"]
         blocked = []
         reason = "קיימת שרשרת מועמדת מספקת או שה-frontier מוצה; מותר לבצע ביקורת השערה או סיכום עם פערים."
     else:
         decision = "stop"
         next_step_constraint = "summarize_with_gaps"
         required_event_ids = candidate_chain[:20]
-        allowed = ["build_event_sequence", "get_events"]
+        allowed = ["build_event_sequence", "get_objects"]
         blocked = []
         reason = "אין frontier מחייב נוסף או תקציב הרחבה משמעותי; יש לסכם את הפערים בלי להציג קשר לא מוכח."
 
@@ -848,8 +1022,13 @@ def trace_semantic_clues(arguments: dict[str, Any]) -> dict[str, Any]:
     include_negated = bool(arguments.get("include_negated", False))
     requested_limit = arguments.get("limit", MAX_LIMIT)
     limit = coverage_limit(requested_limit)
-    normalized_clues = [(clue, normalize_text(clue)) for clue in clues]
-    matches = []
+    active_clues = list(dict.fromkeys(clues + llm_expanded_clues))
+    normalized_clues = [(clue, normalize_text(clue)) for clue in active_clues]
+    semantic_query_parts = active_clues[:30] + [event["event_summary"] for event in seed_events[:5]]
+    semantic_query = "\n".join(part for part in semantic_query_parts if part)
+    semantic_matches = semantic_candidates(semantic_query, arguments, limit)
+    semantic_by_id = {match["event_id"]: match for match in semantic_matches if match.get("event_id")}
+    matches_by_id: dict[str, dict[str, Any]] = {}
     for event in EVENTS:
         if start and event["timestamp"] < start:
             continue
@@ -859,7 +1038,7 @@ def trace_semantic_clues(arguments: dict[str, Any]) -> dict[str, Any]:
             continue
         if source_types and event["source_type"] not in source_types:
             continue
-        haystack = normalize_text(" ".join([event["event_summary"], event["entity_or_actor"], event["location_name"]]))
+        haystack = normalize_text(" ".join([event["event_summary"], event_entity_name(event), event["location_name"]]))
         matched_clues = [clue for clue, folded in normalized_clues if folded and term_in_text(folded, haystack)]
         if not matched_clues:
             continue
@@ -867,18 +1046,55 @@ def trace_semantic_clues(arguments: dict[str, Any]) -> dict[str, Any]:
         if negated and not include_negated:
             continue
         score = len(matched_clues) * 4
+        semantic_match = semantic_by_id.get(event["event_id"])
+        if semantic_match:
+            score += min(4, max(1, int(float(semantic_match.get("semantic_score") or 0) * 10)))
         if any(marker in event["event_summary"] for marker in DIRECT_OBSERVATION_MARKERS):
             score += 1
         if negated:
             score -= 4
         if any(marker in event["event_summary"] for marker in BENIGN_MARKERS):
             score -= 2
-        matches.append({
+        matches_by_id[event["event_id"]] = {
             "score": score,
             "matched_clues": matched_clues,
             "mention_type": "negated" if negated else "direct",
+            "semantic_score": round(float(semantic_match.get("semantic_score") or 0), 6) if semantic_match else 0,
+            "semantic_rationale": semantic_match.get("rationale") if semantic_match else "",
+            "match_source": "direct_and_semantic" if semantic_match else "direct_clue",
             "event": public_event(event),
-        })
+        }
+    for match in semantic_matches:
+        event_id = match.get("event_id")
+        if not event_id or event_id in matches_by_id:
+            continue
+        event = EVENTS_BY_ID.get(event_id)
+        if not event:
+            continue
+        negated = event_has_negation(event)
+        if negated and not include_negated:
+            continue
+        event_clues = semantic_clues_from_text(event["event_summary"])
+        matched_clues = [clue for clue in event_clues if clue in active_clues] or ["semantic_similarity"]
+        score = min(6, max(2, int(float(match.get("semantic_score") or 0) * 12)))
+        if any(marker in event["event_summary"] for marker in DIRECT_OBSERVATION_MARKERS):
+            score += 1
+        if negated:
+            score -= 4
+        if any(marker in event["event_summary"] for marker in BENIGN_MARKERS):
+            score -= 2
+        if score < 2:
+            continue
+        matches_by_id[event_id] = {
+            "score": score,
+            "matched_clues": matched_clues,
+            "mention_type": "negated" if negated else "semantic",
+            "semantic_score": round(float(match.get("semantic_score") or 0), 6),
+            "semantic_rationale": match.get("rationale") or "",
+            "match_source": "semantic_candidate",
+            "event": public_event(event),
+        }
+    matches = list(matches_by_id.values())
     matches.sort(key=lambda item: (-item["score"], item["event"]["timestamp_utc"], item["event"]["event_id"]))
     selected = matches[:limit]
     seed_id_set = {event["event_id"] for event in seed_events}
@@ -922,6 +1138,8 @@ def trace_semantic_clues(arguments: dict[str, Any]) -> dict[str, Any]:
         "event_ids": [item["event"]["event_id"] for item in selected],
         "matches": selected,
         "total_matches": len(matches),
+        "semantic_candidate_count": len(semantic_matches),
+        "semantic_backend": get_semantic_index().backend if semantic_matches else None,
         "returned": len(selected),
         "truncated": len(matches) > len(selected),
         "requested_limit": requested_limit,
@@ -947,7 +1165,7 @@ def find_related_events(arguments: dict[str, Any]) -> dict[str, Any]:
     source_types = set(arguments.get("source_types") or [])
     requested_limit = arguments.get("limit", MAX_LIMIT)
     limit = coverage_limit(requested_limit)
-    informative_seed_actors = [seed["entity_or_actor"] for seed in seeds if is_informative_actor(seed["entity_or_actor"])]
+    informative_seed_actors = [event_entity_name(seed) for seed in seeds if is_informative_actor(event_entity_name(seed))]
     seed_entities = set().union(*(canonical_entity_ids(actor) for actor in informative_seed_actors))
     seed_identifiers = {
         (item["identifier_type"], normalize_text(item["value"]))
@@ -956,6 +1174,26 @@ def find_related_events(arguments: dict[str, Any]) -> dict[str, Any]:
     seed_semantic_clues = set().union(*(set(semantic_clues_from_text(seed["event_summary"])) for seed in seeds))
     earliest = min(seed["timestamp"] for seed in seeds) - timedelta(hours=before_hours)
     latest = max(seed["timestamp"] for seed in seeds) + timedelta(hours=after_hours)
+    semantic_related_matches: list[dict[str, Any]] = []
+    if "semantic" in dimensions:
+        semantic_query = "\n".join(
+            list(sorted(seed_semantic_clues))[:20] + [seed["event_summary"] for seed in seeds[:5]]
+        )
+        semantic_related_matches = semantic_candidates(
+            semantic_query,
+            {
+                **arguments,
+                "start_time": earliest.isoformat().replace("+00:00", "Z"),
+                "end_time": latest.isoformat().replace("+00:00", "Z"),
+                "source_types": list(source_types),
+            },
+            limit,
+        )
+    semantic_related_by_id = {
+        match["event_id"]: match
+        for match in semantic_related_matches
+        if match.get("event_id") and match.get("event_id") not in seed_ids
+    }
     ranked = []
     for event in EVENTS:
         if event["event_id"] in seed_ids or event["timestamp"] < earliest or event["timestamp"] > latest:
@@ -973,12 +1211,20 @@ def find_related_events(arguments: dict[str, Any]) -> dict[str, Any]:
             if shared:
                 score += 8
                 reasons.append({"dimension": "identifier", "detail": ", ".join(value for _, value in sorted(shared)), "weight": 8})
-        if "entity" in dimensions and is_informative_actor(event["entity_or_actor"]):
-            event_entities = canonical_entity_ids(event["entity_or_actor"])
+        if "entity" in dimensions and is_informative_actor(event_entity_name(event)):
+            event_entities = canonical_entity_ids(event_entity_name(event))
             if seed_entities & event_entities:
-                score += 5
-                reasons.append({"dimension": "entity", "detail": "ישות קנונית או כינוי משותף", "weight": 5})
-            elif any(is_informative_actor(seed["entity_or_actor"]) and event["entity_or_actor"] == seed["entity_or_actor"] for seed in seeds):
+                shared_entity_ids = sorted(seed_entities & event_entities)
+                score += 6
+                reasons.append({
+                    "dimension": "entity",
+                    "detail": ", ".join(
+                        f"{entity_id} ({ENTITY_PRESENTATIONS.get(entity_id, {}).get('canonical_name') or entity_id})"
+                        for entity_id in shared_entity_ids
+                    ),
+                    "weight": 6,
+                })
+            elif any(is_informative_actor(event_entity_name(seed)) and event_entity_name(event) == event_entity_name(seed) for seed in seeds):
                 score += 4
                 reasons.append({"dimension": "entity", "detail": "שם גורם זהה", "weight": 4})
         event_semantic_clues = set(semantic_clues_from_text(event["event_summary"]))
@@ -990,6 +1236,17 @@ def find_related_events(arguments: dict[str, Any]) -> dict[str, Any]:
                 "dimension": "semantic",
                 "detail": ", ".join(sorted(shared_semantic)),
                 "weight": semantic_weight,
+            })
+        semantic_match = semantic_related_by_id.get(event["event_id"])
+        if "semantic" in dimensions and semantic_match:
+            semantic_score = float(semantic_match.get("semantic_score") or 0)
+            semantic_weight = 3 if semantic_score >= 0.12 else 2 if semantic_score >= 0.06 else 1
+            score += semantic_weight
+            reasons.append({
+                "dimension": "semantic_embedding",
+                "detail": semantic_match.get("rationale") or "hybrid semantic similarity to seed events",
+                "weight": semantic_weight,
+                "semantic_score": round(semantic_score, 6),
             })
         nearest_hours = min(abs((event["timestamp"] - seed["timestamp"]).total_seconds()) / 3600 for seed in seeds)
         if "time" in dimensions:
@@ -1035,7 +1292,8 @@ def find_related_events(arguments: dict[str, Any]) -> dict[str, Any]:
                         "source_type": item["event"]["source_type"],
                         "certainty_level": item["event"].get("certainty_level", ""),
                         "source_reliability_label": item["event"].get("source_reliability_label", ""),
-                        "entity_or_actor": item["event"]["entity_or_actor"],
+                        "entity_id": item["event"].get("entity_id"),
+                        "entity_name": item["event"].get("entity_name"),
                         "location_name": item["event"]["location_name"],
                         "event_summary": item["event"]["event_summary"],
                         "deterministic_score": item["score"],
@@ -1098,6 +1356,8 @@ def find_related_events(arguments: dict[str, Any]) -> dict[str, Any]:
         "related_events": selected,
         "event_ids": [item["event"]["event_id"] for item in selected],
         "total_candidates": len(ranked),
+        "semantic_candidate_count": len(semantic_related_matches),
+        "semantic_backend": get_semantic_index().backend if semantic_related_matches else None,
         "returned": len(selected),
         "truncated": len(ranked) > len(selected),
         "requested_limit": requested_limit,
@@ -1175,7 +1435,7 @@ def compare_location_claims(arguments: dict[str, Any]) -> dict[str, Any]:
             continue
         if source_types and event["source_type"] not in source_types:
             continue
-        haystack = normalize_text(" ".join([event["event_summary"], event["entity_or_actor"], event["location_name"], event["source_type"]]))
+        haystack = normalize_text(" ".join([event["event_summary"], event_entity_name(event), event["location_name"], event["source_type"]]))
         matched_keywords = [keyword for keyword, folded in zip(keywords, normalized_keywords) if folded and term_in_text(folded, haystack)]
         markers = [marker for marker in GEO_CONFLICT_MARKERS if marker in event["event_summary"]]
         if keywords and not matched_keywords:
@@ -1415,6 +1675,7 @@ def filter_event_matches(arguments: dict[str, Any]) -> list[tuple[int, dict[str,
     start = parse_time(arguments.get("start_time"))
     end = parse_time(arguments.get("end_time"))
     location_ids = set(arguments.get("location_ids") or [])
+    entity_ids = set(arguments.get("entity_ids") or [])
     actors = {value.casefold() for value in arguments.get("actors") or []}
     source_types = set(arguments.get("source_types") or [])
     reliabilities = set(arguments.get("reliabilities") or [])
@@ -1431,7 +1692,9 @@ def filter_event_matches(arguments: dict[str, Any]) -> list[tuple[int, dict[str,
             continue
         if location_ids and event["location_id"] not in location_ids:
             continue
-        if actors and event["entity_or_actor"].casefold() not in actors:
+        if entity_ids and event_entity_id(event) not in entity_ids:
+            continue
+        if actors and event_entity_name(event).casefold() not in actors:
             continue
         if source_types and event["source_type"] not in source_types:
             continue
@@ -1443,7 +1706,7 @@ def filter_event_matches(arguments: dict[str, Any]) -> list[tuple[int, dict[str,
         if night_only and not (hour >= 20 or hour < 6):
             continue
         haystack = normalize_text(
-            " ".join([event["event_summary"], event["entity_or_actor"], event["location_name"], event["source_type"]])
+            " ".join([event["event_summary"], event_entity_name(event), event["location_name"], event["source_type"]])
         )
         if keywords:
             keyword_matches = [term_in_text(keyword, haystack) for keyword in keywords]
@@ -1453,7 +1716,7 @@ def filter_event_matches(arguments: dict[str, Any]) -> list[tuple[int, dict[str,
                 continue
         score = 0
         summary_folded = normalize_text(event["event_summary"])
-        actor_folded = normalize_text(event["entity_or_actor"])
+        actor_folded = normalize_text(event_entity_name(event))
         for keyword in keywords:
             if keyword == summary_folded or keyword == actor_folded:
                 score += 6
@@ -1494,32 +1757,147 @@ def search_events(arguments: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def get_events(arguments: dict[str, Any]) -> dict[str, Any]:
-    ids = arguments.get("event_ids") or []
-    found = [EVENTS_BY_ID[event_id] for event_id in ids if event_id in EVENTS_BY_ID]
-    missing = [event_id for event_id in ids if event_id not in EVENTS_BY_ID]
+def semantic_search_events(arguments: dict[str, Any]) -> dict[str, Any]:
+    query = str(arguments.get("query") or "").strip()
+    seed_ids = arguments.get("seed_event_ids") or []
+    seed_events = [EVENTS_BY_ID[event_id] for event_id in seed_ids if event_id in EVENTS_BY_ID]
+    query_parts = [query]
+    query_parts.extend(event["event_summary"] for event in seed_events)
+    query_text = "\n".join(part for part in query_parts if part)
+    if not query_text.strip():
+        raise ValueError("semantic_search_events requires query or seed_event_ids")
+
+    requested_limit = arguments.get("limit", 50)
+    limit = bounded_limit(requested_limit)
+    filters = {
+        "start_time": arguments.get("start_time"),
+        "end_time": arguments.get("end_time"),
+        "location_ids": arguments.get("location_ids") or [],
+        "entity_ids": arguments.get("entity_ids") or [],
+        "source_types": arguments.get("source_types") or [],
+        "reliabilities": arguments.get("reliabilities") or [],
+        "certainty_levels": arguments.get("certainty_levels") or [],
+        "keywords": arguments.get("keywords") or [],
+        "match_all_keywords": bool(arguments.get("match_all_keywords", False)),
+    }
+    index = get_semantic_index()
+    matches = index.search(query_text, filters=filters, limit=limit)
+    events = []
+    event_ids = []
+    for match in matches:
+        event = EVENTS_BY_ID.get(match["event_id"])
+        if not event:
+            continue
+        event_ids.append(event["event_id"])
+        events.append({
+            **public_event(event),
+            "semantic_score": match["semantic_score"],
+            "semantic_rationale": match["rationale"],
+        })
     return {
-        "events": [public_event(event) for event in found],
-        "missing_event_ids": missing,
+        "query": query,
+        "seed_event_ids": [event["event_id"] for event in seed_events],
+        "missing_seed_event_ids": [event_id for event_id in seed_ids if event_id not in EVENTS_BY_ID],
+        "backend": index.backend,
+        "semantic_backend": index.backend,
+        "index_manifest": index.manifest,
+        "filters_applied": filters,
+        "requested_limit": requested_limit,
+        "effective_limit": limit,
+        "event_ids": event_ids,
+        "events": events,
+        "matches": [
+            {
+                "event_id": item["event_id"],
+                "semantic_score": item["semantic_score"],
+                "rationale": item["rationale"],
+            }
+            for item in matches
+        ],
+        "returned": len(event_ids),
+    }
+
+
+def get_objects(arguments: dict[str, Any]) -> dict[str, Any]:
+    object_type = str(arguments.get("object_type") or "event").casefold()
+    if object_type == "events":
+        object_type = "event"
+    elif object_type == "locations":
+        object_type = "location"
+    elif object_type == "entities":
+        object_type = "entity"
+
+    event_ids = arguments.get("event_ids") or []
+    location_ids = arguments.get("location_ids") or []
+    entity_ids = arguments.get("entity_ids") or []
+    names_or_aliases = arguments.get("names_or_aliases") or []
+
+    found_events = [EVENTS_BY_ID[event_id] for event_id in event_ids if event_id in EVENTS_BY_ID]
+    found_locations = [LOCATION_PRESENTATIONS[location_id] for location_id in location_ids if location_id in LOCATION_PRESENTATIONS]
+    found_entities = [ENTITY_PRESENTATIONS[entity_id] for entity_id in entity_ids if entity_id in ENTITY_PRESENTATIONS]
+
+    if object_type == "all":
+        found_locations.extend(
+            LOCATION_PRESENTATIONS[event["location_id"]]
+            for event in found_events
+            if event["location_id"] in LOCATION_PRESENTATIONS
+        )
+        found_entities.extend(
+            ENTITY_PRESENTATIONS[event_entity_id(event)]
+            for event in found_events
+            if event_entity_id(event) in ENTITY_PRESENTATIONS
+        )
+
+    if object_type in {"location", "all"}:
+        for name in names_or_aliases:
+            for location_id, location in LOCATION_PRESENTATIONS.items():
+                haystack = " ".join(str(location.get(key) or "") for key in ["location_id", "location_name", "name", "municipality", "locality", "region", "type"])
+                if normalize_text(name) and normalize_text(name) in normalize_text(haystack):
+                    found_locations.append(location)
+
+    if object_type in {"entity", "all"}:
+        for name in names_or_aliases:
+            found_entities.extend(entity_matches(str(name)))
+
+    deduped_locations = {item["location_id"]: item for item in found_locations}
+    deduped_entities = {item["entity_id"]: item for item in found_entities}
+    return {
+        "object_type": object_type,
+        "events": [public_event(event) for event in found_events] if object_type in {"event", "all"} else [],
+        "location_layers": list(deduped_locations.values()) if object_type in {"location", "all"} else [],
+        "entity_layers": list(deduped_entities.values()) if object_type in {"entity", "all"} else [],
+        "missing_event_ids": [event_id for event_id in event_ids if event_id not in EVENTS_BY_ID],
+        "missing_location_ids": [location_id for location_id in location_ids if location_id not in LOCATION_PRESENTATIONS],
+        "missing_entity_ids": [entity_id for entity_id in entity_ids if entity_id not in ENTITY_PRESENTATIONS],
     }
 
 
 def resolve_location(arguments: dict[str, Any]) -> dict[str, Any]:
     query = str(arguments.get("query") or "").strip()
-    exact_ids = AREA_ALIASES.get(query)
-    if exact_ids:
-        ids = exact_ids
-    else:
-        query_folded = query.casefold()
-        ids = [
-            location_id
-            for location_id, location in LOCATIONS.items()
-            if query_folded in location["name"].casefold() or query_folded in location["type"].casefold()
-        ]
+    resolved_terms = []
+    ids: list[str] = []
+    seen: set[str] = set()
+    for term in split_location_query(query):
+        term_ids = match_location_term(term)
+        if not term_ids:
+            continue
+        new_ids = [location_id for location_id in term_ids if location_id not in seen]
+        for location_id in new_ids:
+            seen.add(location_id)
+            ids.append(location_id)
+        resolved_terms.append({
+            "term": term,
+            "matched_location_count": len(term_ids),
+            "new_location_count": len(new_ids),
+            "sample_location_ids": term_ids[:10],
+        })
     return {
         "query": query,
         "location_ids": ids,
+        "match_count": len(ids),
         "locations": [{"location_id": location_id, **LOCATIONS[location_id]} for location_id in ids],
+        "location_layers": [LOCATION_PRESENTATIONS[location_id] for location_id in ids if location_id in LOCATION_PRESENTATIONS],
+        "resolved_terms": resolved_terms,
     }
 
 
@@ -1546,11 +1924,31 @@ def resolve_event_reference(arguments: dict[str, Any]) -> dict[str, Any]:
             for term in string_list((llm_interpretation or {}).get(key), limit=8):
                 if normalize_text(term) not in {normalize_text(item) for item in search_terms}:
                     search_terms.append(term)
+        resolved_location_ids: list[str] = []
+        for term in string_list((llm_interpretation or {}).get("location_terms"), limit=8):
+            for location_id in match_location_term(term):
+                if location_id not in resolved_location_ids:
+                    resolved_location_ids.append(location_id)
+        resolved_entity_ids: list[str] = []
+        for term in string_list((llm_interpretation or {}).get("actor_terms"), limit=8):
+            for match in entity_matches(term):
+                entity_id = match.get("entity_id")
+                if entity_id and entity_id not in resolved_entity_ids:
+                    resolved_entity_ids.append(entity_id)
+        semantic_matches = semantic_candidates(
+            "\n".join(search_terms),
+            {
+                "location_ids": resolved_location_ids,
+                "entity_ids": resolved_entity_ids,
+            },
+            80,
+        )
+        semantic_by_id = {match["event_id"]: match for match in semantic_matches if match.get("event_id")}
         query_folded = query.casefold()
-        scored_events = []
+        scored_events_by_id: dict[str, dict[str, Any]] = {}
         for event in EVENTS:
             haystack = normalize_text(
-                " ".join([event["event_summary"], event["event_id"], event["entity_or_actor"], event["location_name"], event["source_type"]])
+                " ".join([event["event_summary"], event["event_id"], event_entity_name(event), event["location_name"], event["source_type"]])
             )
             score = 0
             if query_folded in event["event_summary"].casefold() or query_folded in event["event_id"].casefold():
@@ -1564,13 +1962,55 @@ def resolve_event_reference(arguments: dict[str, Any]) -> dict[str, Any]:
             if score > 0 and any(marker in event["event_summary"] for marker in DIRECT_OBSERVATION_MARKERS):
                 score += 1
             if score > 0:
-                scored_events.append((score, matched_terms, event))
-        scored_events.sort(key=lambda item: (-item[0], item[2]["timestamp"], item[2]["event_id"]))
-        events = [event for _, _, event in scored_events[:20]]
+                semantic_match = semantic_by_id.get(event["event_id"])
+                if semantic_match:
+                    score += min(6, max(1, int(float(semantic_match.get("semantic_score") or 0) * 14)))
+                scored_events_by_id[event["event_id"]] = {
+                    "score": score,
+                    "matched_terms": matched_terms,
+                    "semantic_score": round(float(semantic_match.get("semantic_score") or 0), 6) if semantic_match else 0,
+                    "semantic_rationale": semantic_match.get("rationale") if semantic_match else "",
+                    "event": event,
+                }
+        for semantic_match in semantic_matches:
+            event_id = semantic_match.get("event_id")
+            if not event_id or event_id in scored_events_by_id:
+                continue
+            event = EVENTS_BY_ID.get(event_id)
+            if not event:
+                continue
+            score = min(8, max(2, int(float(semantic_match.get("semantic_score") or 0) * 18)))
+            if any(marker in event["event_summary"] for marker in DIRECT_OBSERVATION_MARKERS):
+                score += 1
+            scored_events_by_id[event_id] = {
+                "score": score,
+                "matched_terms": [],
+                "semantic_score": round(float(semantic_match.get("semantic_score") or 0), 6),
+                "semantic_rationale": semantic_match.get("rationale") or "",
+                "event": event,
+            }
+        scored_events = sorted(
+            scored_events_by_id.values(),
+            key=lambda item: (-item["score"], item["event"]["timestamp"], item["event"]["event_id"]),
+        )
+        events = [item["event"] for item in scored_events[:20]]
     return {
         "query": query,
         "event_ids": [event["event_id"] for event in events],
-        "events": [public_event(event) for event in events],
+        "events": [
+            {
+                **public_event(event),
+                "reference_score": next((item["score"] for item in scored_events if item["event"]["event_id"] == event["event_id"]), None) if not direct_ids else None,
+                "matched_terms": next((item["matched_terms"] for item in scored_events if item["event"]["event_id"] == event["event_id"]), []) if not direct_ids else [],
+                "semantic_score": next((item["semantic_score"] for item in scored_events if item["event"]["event_id"] == event["event_id"]), 0) if not direct_ids else 0,
+                "semantic_rationale": next((item["semantic_rationale"] for item in scored_events if item["event"]["event_id"] == event["event_id"]), "") if not direct_ids else "",
+            }
+            for event in events
+        ],
+        "semantic_candidate_count": len(semantic_matches) if not direct_ids else 0,
+        "semantic_backend": get_semantic_index().backend if not direct_ids and semantic_matches else None,
+        "resolved_location_ids": resolved_location_ids if not direct_ids else [],
+        "resolved_entity_ids": resolved_entity_ids if not direct_ids else [],
         "llm_interpretation": {
             "search_phrases": string_list((llm_interpretation or {}).get("search_phrases"), limit=8),
             "location_terms": string_list((llm_interpretation or {}).get("location_terms"), limit=8),
@@ -1583,18 +2023,17 @@ def resolve_event_reference(arguments: dict[str, Any]) -> dict[str, Any]:
 
 def find_actor_history(arguments: dict[str, Any]) -> dict[str, Any]:
     actors = arguments.get("actors") or []
-    expanded_actors = []
-    seen = set()
+    entity_ids = list(arguments.get("entity_ids") or [])
+    seen_entities = set(entity_ids)
     for actor in actors:
         matches = entity_matches(actor)
-        candidates = [alias for match in matches for alias in match["aliases"]] or [actor]
-        for candidate in candidates:
-            folded = normalize_text(candidate)
-            if folded not in seen:
-                seen.add(folded)
-                expanded_actors.append(candidate)
+        for match in matches:
+            entity_id = match.get("entity_id")
+            if entity_id and entity_id not in seen_entities:
+                seen_entities.add(entity_id)
+                entity_ids.append(entity_id)
     forwarded = {
-        "actors": expanded_actors,
+        "entity_ids": entity_ids,
         "start_time": arguments.get("start_time"),
         "end_time": arguments.get("end_time"),
         "location_ids": arguments.get("location_ids") or [],
@@ -1604,7 +2043,9 @@ def find_actor_history(arguments: dict[str, Any]) -> dict[str, Any]:
     }
     result = search_events(forwarded)
     result["requested_actors"] = actors
-    result["expanded_actors"] = expanded_actors
+    result["requested_entity_ids"] = entity_ids
+    result["resolved_entity_ids"] = entity_ids
+    result["entity_layers"] = [ENTITY_PRESENTATIONS[entity_id] for entity_id in entity_ids if entity_id in ENTITY_PRESENTATIONS]
     return result
 
 
@@ -1621,7 +2062,8 @@ def aggregate_events(arguments: dict[str, Any]) -> dict[str, Any]:
     key_functions = {
         "location": lambda event: (event["location_id"], event["location_name"]),
         "municipality": lambda event: LOCATIONS.get(event["location_id"], {}).get("municipality") or "לא ידוע",
-        "actor": lambda event: event["entity_or_actor"],
+        "actor": lambda event: event_entity_name(event),
+        "entity": lambda event: event_entity_id(event) or event_entity_name(event),
         "source": lambda event: event["source_type"],
         "hour": lambda event: f"{event['timestamp'].hour:02d}:00",
         "date": lambda event: event["timestamp"].date().isoformat(),
@@ -1689,6 +2131,18 @@ def aggregate_events(arguments: dict[str, Any]) -> dict[str, Any]:
                 "longitude": sum(lon for _, lon in coordinates) / len(coordinates) if coordinates else None,
             }
             groups.append(apply_first_last(group, key) if needs_first_last else group)
+        elif group_by == "entity":
+            entity_id = str(key)
+            entity = ENTITY_PRESENTATIONS.get(entity_id, {})
+            group = {
+                "key": entity_id,
+                "label": entity.get("canonical_name") or entity_id,
+                "count": count,
+                "entity_id": entity_id,
+                "entity_name": entity.get("canonical_name") or entity_id,
+                "entity_type": entity.get("entity_type"),
+            }
+            groups.append(apply_first_last(group, key) if needs_first_last else group)
         else:
             group = {"key": str(key), "label": str(key), "count": count}
             groups.append(apply_first_last(group, key) if needs_first_last else group)
@@ -1716,6 +2170,10 @@ def aggregate_events(arguments: dict[str, Any]) -> dict[str, Any]:
     }
     if group_by in {"location", "municipality"}:
         result["map_locations"] = groups
+        if group_by == "location":
+            result["location_layers"] = [LOCATION_PRESENTATIONS[group["location_id"]] for group in groups if group.get("location_id") in LOCATION_PRESENTATIONS]
+    if group_by == "entity":
+        result["entity_layers"] = [ENTITY_PRESENTATIONS[group["entity_id"]] for group in groups if group.get("entity_id") in ENTITY_PRESENTATIONS]
     return result
 
 
@@ -1753,22 +2211,27 @@ def explain_linkage(arguments: dict[str, Any]) -> dict[str, Any]:
             "detail": ", ".join(value for _, _, value in sorted(shared_identifiers)),
         })
 
-    if is_informative_actor(first["entity_or_actor"]) and is_informative_actor(second["entity_or_actor"]):
-        first_entities = canonical_entity_ids(first["entity_or_actor"])
-        second_entities = canonical_entity_ids(second["entity_or_actor"])
+    if is_informative_actor(event_entity_name(first)) and is_informative_actor(event_entity_name(second)):
+        first_entities = canonical_entity_ids(event_entity_name(first))
+        second_entities = canonical_entity_ids(event_entity_name(second))
         if first_entities & second_entities:
+            shared_entity_ids = sorted(first_entities & second_entities)
+            entity_names = [
+                ENTITY_PRESENTATIONS.get(entity_id, {}).get("canonical_name") or entity_id
+                for entity_id in shared_entity_ids
+            ]
             bridges.append({
-                "bridge_type": "shared_entity_or_alias",
-                "confidence": "בינונית-גבוהה",
-                "weight": 5,
-                "detail": "ישות קנונית או כינוי משותף",
+                "bridge_type": "shared_entity_id",
+                "confidence": "גבוהה",
+                "weight": 6,
+                "detail": ", ".join(f"{entity_id} ({name})" for entity_id, name in zip(shared_entity_ids, entity_names)),
             })
-        elif normalize_text(first["entity_or_actor"]) == normalize_text(second["entity_or_actor"]):
+        elif normalize_text(event_entity_name(first)) == normalize_text(event_entity_name(second)):
             bridges.append({
                 "bridge_type": "same_actor_text",
                 "confidence": "בינונית",
                 "weight": 4,
-                "detail": first["entity_or_actor"],
+                "detail": event_entity_name(first),
             })
 
     hours_delta = abs((second["timestamp"] - first["timestamp"]).total_seconds()) / 3600
@@ -1801,7 +2264,7 @@ def explain_linkage(arguments: dict[str, Any]) -> dict[str, Any]:
     bridges.sort(key=lambda item: -item["weight"])
     strongest = bridges[0] if bridges else None
     total_weight = sum(item["weight"] for item in bridges)
-    if any(item["bridge_type"] in {"shared_identifier", "shared_entity_or_alias"} for item in bridges):
+    if any(item["bridge_type"] in {"shared_identifier", "shared_entity_id", "shared_entity_or_alias"} for item in bridges):
         assessment = "קיים גשר ראייתי ישיר יחסית בין האירועים."
     elif total_weight >= 4:
         assessment = "קיים קשר נסיבתי המבוסס על זמן, מקום או תוכן, אך לא מזהה ישיר."
@@ -1919,7 +2382,8 @@ TOOLS = [
                 "start_time": {"type": "string", "description": "Inclusive ISO-8601 UTC start time."},
                 "end_time": {"type": "string", "description": "Inclusive ISO-8601 UTC end time."},
                 "location_ids": {"type": "array", "items": {"type": "string"}},
-                "actors": {"type": "array", "items": {"type": "string"}},
+                "entity_ids": {"type": "array", "items": {"type": "string"}},
+                "actors": {"type": "array", "items": {"type": "string"}, "description": "Compatibility only. Prefer entity_ids from resolve_entity/get_objects."},
                 "source_types": {"type": "array", "items": {"type": "string"}},
                 "reliabilities": {"type": "array", "items": {"type": "string"}},
                 "keywords": {"type": "array", "items": {"type": "string"}},
@@ -1935,13 +2399,43 @@ TOOLS = [
         "annotations": {"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": False},
     },
     {
-        "name": "get_events",
-        "title": "Get raw events",
-        "description": "Retrieve exact raw evidence records by event ID. Use this before citing or presenting evidence.",
+        "name": "semantic_search_events",
+        "title": "Semantic event search",
+        "description": "Retrieve events by corpus-level semantic similarity over enriched event text. Use when the analyst's wording may not match exact keywords, when tracing paraphrased claims, or when broad fuzzy recall is needed. This does not replace exact filters, IDs, aggregation, or identifier tracing. Results are auditable event rows with REC IDs and semantic scores.",
         "inputSchema": with_step_bridge({
             "type": "object",
-            "properties": {"event_ids": {"type": "array", "items": {"type": "string"}, "maxItems": MAX_LIMIT}},
-            "required": ["event_ids"],
+            "properties": {
+                "query": {"type": "string", "description": "Natural-language retrieval query in Hebrew or English."},
+                "seed_event_ids": {"type": "array", "items": {"type": "string"}, "maxItems": 50, "description": "Optional seed events; their summaries are appended to the semantic query."},
+                "start_time": {"type": "string", "description": "Optional inclusive ISO-8601 UTC start time."},
+                "end_time": {"type": "string", "description": "Optional inclusive ISO-8601 UTC end time."},
+                "location_ids": {"type": "array", "items": {"type": "string"}},
+                "entity_ids": {"type": "array", "items": {"type": "string"}},
+                "source_types": {"type": "array", "items": {"type": "string"}},
+                "reliabilities": {"type": "array", "items": {"type": "string"}},
+                "certainty_levels": {"type": "array", "items": {"type": "string"}},
+                "keywords": {"type": "array", "items": {"type": "string"}, "description": "Optional exact terms that must also appear in enriched event text."},
+                "match_all_keywords": {"type": "boolean", "description": "If true, all keywords must match; otherwise any keyword may match."},
+                "limit": {"type": "integer", "minimum": 1, "maximum": MAX_LIMIT, "description": "Maximum semantic candidates returned."},
+            },
+            "additionalProperties": False,
+        }),
+        "annotations": {"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": False},
+    },
+    {
+        "name": "get_objects",
+        "title": "Get layer objects",
+        "description": "Retrieve exact objects from the event, location, and entity layers. Use object_type=event before citing raw evidence; use location/entity/all when the answer should present those layers.",
+        "inputSchema": with_step_bridge({
+            "type": "object",
+            "properties": {
+                "object_type": {"type": "string", "enum": ["event", "location", "entity", "all"], "description": "Layer object type to retrieve."},
+                "event_ids": {"type": "array", "items": {"type": "string"}, "maxItems": MAX_LIMIT},
+                "location_ids": {"type": "array", "items": {"type": "string"}, "maxItems": MAX_LIMIT},
+                "entity_ids": {"type": "array", "items": {"type": "string"}, "maxItems": MAX_LIMIT},
+                "names_or_aliases": {"type": "array", "items": {"type": "string"}, "maxItems": 100, "description": "Optional names or aliases to resolve within location/entity layers."},
+            },
+            "required": ["object_type"],
             "additionalProperties": False,
         }),
         "annotations": {"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": False},
@@ -1956,25 +2450,26 @@ TOOLS = [
     {
         "name": "resolve_event_reference",
         "title": "Resolve event reference",
-        "description": "Resolve a natural-language event reference to anchor events. When MCP sampling is available, the tool first asks the host model for bounded visible search phrases, then performs deterministic DB matching. It never uses hidden scenario labels.",
+        "description": "Resolve a natural-language event reference to anchor events. When MCP sampling is available, the tool asks the host model for bounded visible search phrases, location terms, and actor terms, then uses direct DB matching plus hybrid semantic retrieval to generate candidate anchors. It never uses hidden scenario labels.",
         "inputSchema": with_step_bridge({"type": "object", "properties": {"query": {"type": "string"}}, "required": ["query"], "additionalProperties": False}),
         "annotations": {"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": False},
     },
     {
         "name": "find_actor_history",
         "title": "Find actor history",
-        "description": "Find prior or subsequent appearances of actors with optional time, location, source, and night filters. Known entity aliases are expanded automatically and returned explicitly. Coverage is mandatory by default: broad actor searches are normalized to 2000; narrow with time/location/source filters when totals are still too large.",
+        "description": "Find prior or subsequent appearances of entities with optional time, location, source, and night filters. Prefer entity_ids. Natural-language actor names are accepted only as compatibility input and resolved through the entity DB.",
         "inputSchema": with_step_bridge({
             "type": "object",
             "properties": {
-                "actors": {"type": "array", "items": {"type": "string"}, "minItems": 1},
+                "actors": {"type": "array", "items": {"type": "string"}, "description": "Compatibility only: natural-language entity names or aliases. Prefer entity_ids."},
+                "entity_ids": {"type": "array", "items": {"type": "string"}, "description": "Canonical entity IDs from resolve_entity or get_objects."},
                 "start_time": {"type": "string"}, "end_time": {"type": "string"},
                 "location_ids": {"type": "array", "items": {"type": "string"}},
                 "source_types": {"type": "array", "items": {"type": "string"}},
                 "night_only": {"type": "boolean"},
                 "limit": {"type": "integer", "minimum": 1, "maximum": MAX_LIMIT, "description": "Requested maximum returned rows. Broad actor history is normalized to 2000 by coverage policy."},
             },
-            "required": ["actors"], "additionalProperties": False,
+            "additionalProperties": False,
         }),
         "annotations": {"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": False},
     },
@@ -1985,10 +2480,11 @@ TOOLS = [
         "inputSchema": with_step_bridge({
             "type": "object",
             "properties": {
-                "group_by": {"type": "string", "enum": ["location", "municipality", "actor", "source", "hour", "date"]},
+                "group_by": {"type": "string", "enum": ["location", "municipality", "actor", "entity", "source", "hour", "date"]},
                 "start_time": {"type": "string"}, "end_time": {"type": "string"},
                 "location_ids": {"type": "array", "items": {"type": "string"}},
-                "actors": {"type": "array", "items": {"type": "string"}},
+                "entity_ids": {"type": "array", "items": {"type": "string"}},
+                "actors": {"type": "array", "items": {"type": "string"}, "description": "Compatibility only. Prefer entity_ids."},
                 "source_types": {"type": "array", "items": {"type": "string"}},
                 "keywords": {"type": "array", "items": {"type": "string"}},
                 "night_only": {"type": "boolean"},
@@ -2066,7 +2562,7 @@ TOOLS = [
     {
         "name": "trace_semantic_clues",
         "title": "Trace operational semantic clues",
-        "description": "Find events that mention operational clue terms such as border-crossing claims, roadblocks, KFOR/EULEX presence, police activity, shooting or explosion claims, media reports, rumors, contradiction language, or other semantic hints extracted from seed events. With MCP sampling, the tool may suggest additional follow-up clues, but it does not silently add those broad clues to the current retrieval. Use when the chain changes from a formal REC/LOC identifier to descriptive language. Negated benign records are excluded by default. Returns up to 3 recommended_next_seeds and new_clues_to_trace; use these before judging the chain or challenging the hypothesis.",
+        "description": "Find events that mention or semantically match operational clue terms such as border-crossing claims, roadblocks, KFOR/EULEX presence, police activity, shooting or explosion claims, media reports, rumors, contradiction language, or other semantic hints extracted from seed events. With MCP sampling, the tool expands clue phrases, then uses hybrid semantic retrieval plus clue-specific scoring to retrieve current matches. Use when the chain changes from a formal REC/LOC identifier to descriptive language. Negated benign records are excluded by default. Returns up to 3 recommended_next_seeds and new_clues_to_trace; use these before judging the chain or challenging the hypothesis.",
         "inputSchema": with_step_bridge({
             "type": "object",
             "properties": {
@@ -2089,7 +2585,7 @@ TOOLS = [
     {
         "name": "find_related_events",
         "title": "Expand from seed evidence",
-        "description": "Rank events related to seed evidence through explicit entity aliases, shared identifiers, operational semantic clues, temporal proximity, geographic proximity, and optional source-type filtering. Unknown actors such as 'לא ידוע' are not treated as evidence bridges. Every candidate includes linkage reasons and weights. With MCP sampling, the tool may rerank only the deterministic top candidates; it cannot introduce outside event IDs. Returns up to 3 recommended_next_seeds and new_clues_to_trace for bounded frontier expansion. Coverage is mandatory by default: broad expansion is normalized to 2000 even if a smaller limit is supplied; if total_candidates is larger than returned, treat results as incomplete and narrow or report the gap.",
+        "description": "Rank events related to seed evidence through explicit entity IDs/aliases, shared identifiers, operational semantic clues, hybrid semantic similarity, temporal proximity, geographic proximity, and optional source-type filtering. Unknown or non-informative entity names are not treated as evidence bridges. Semantic similarity is a supporting signal, not a replacement for concrete bridges. Every candidate includes linkage reasons and weights. With MCP sampling, the tool may rerank only the deterministic top candidates; it cannot introduce outside event IDs. Returns up to 3 recommended_next_seeds and new_clues_to_trace for bounded frontier expansion. Coverage is mandatory by default: broad expansion is normalized to 2000 even if a smaller limit is supplied; if total_candidates is larger than returned, treat results as incomplete and narrow or report the gap.",
         "inputSchema": with_step_bridge({
             "type": "object",
             "properties": {
@@ -2149,7 +2645,8 @@ TOOL_HANDLERS = {
     "classify_question_intent": classify_question_intent,
     "plan_next_investigation_step": plan_next_investigation_step,
     "search_events": search_events,
-    "get_events": get_events,
+    "semantic_search_events": semantic_search_events,
+    "get_objects": get_objects,
     "resolve_location": resolve_location,
     "resolve_event_reference": resolve_event_reference,
     "find_actor_history": find_actor_history,
@@ -2198,7 +2695,7 @@ def handle_message(message: dict[str, Any]) -> dict[str, Any] | None:
                 "instructions": (
                     "Read-only synthetic intelligence data. Cite only event IDs returned by tools. "
                     "Resolve geographic, event, and entity references before broad searches. "
-                    "Trace concrete identifiers, trace semantic clues when a chain shifts from IDs to descriptive claims, location, actor, media, disinformation, or movement language, use plan_next_investigation_step as a process-control checkpoint after recommended seeds or before challenge/final summary, expand iteratively from strong seed evidence, and use aggregate_events before broad sampling. "
+                    "Trace concrete identifiers, use semantic_search_events for fuzzy or paraphrased retrieval, trace semantic clues when a chain shifts from IDs to descriptive claims, location, actor, media, disinformation, or movement language, use plan_next_investigation_step as a process-control checkpoint after recommended seeds or before challenge/final summary, expand iteratively from strong seed evidence, and use aggregate_events before broad sampling. "
                     "Keep result sets bounded but do not use low limits as proof of absence: if total/truncated or total_candidates/returned show sampling, narrow filters or raise limits before selecting investigative seeds. "
                     "Challenge hypotheses only after a candidate chain has enough supporting evidence or after explicit failed searches."
                 ),
@@ -2253,3 +2750,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+

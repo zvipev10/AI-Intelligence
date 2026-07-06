@@ -8,6 +8,7 @@ import os
 import re
 import sys
 import time
+import secrets
 from datetime import datetime, timezone
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -23,10 +24,12 @@ ROOT = Path(__file__).resolve().parent
 CONFIG_PATH = ROOT / ".hermes-api.json"
 PERFORMANCE_DIR = ROOT / "performance_logs"
 RECORDED_RUNS_DIR = ROOT / "recorded_runs"
+SAVED_QUESTIONS_DIR = ROOT / "saved_questions"
 RECORDED_RUNS_PATH = ROOT / "test_runs" / "compact_demo_after_general_instructions_20260620T151848Z.json"
 LOCATIONS_PATH = ROOT / "data" / "serbia_kosovo_locations.json"
 TERMINAL_STATUSES = {"completed", "failed", "cancelled"}
 EVENT_ID_PATTERN = re.compile(r"\b(?:REC-\d{6}|LOC-\d{3})\b")
+SAVED_QUESTION_ID_PATTERN = re.compile(r"^[A-Za-z0-9_.-]+$")
 ACTIVE_RUN_STARTED_AT = None
 APP_BUILD = "serbia-poc-1"
 REMOTE_AUDIT_PATH = "/opt/serbia-poc/mcp_audit.jsonl"
@@ -66,15 +69,20 @@ RECORDED_TOOL_TEXT = {
         "הסוכן מחפש במאגר לפי מילות מפתח, זמן, מקור או מיקום כדי לאסוף ראיות.",
         "נמצאו רשומות שתומכות בתשובה המוקלטת.",
     ),
+    "semantic_search_events": (
+        "חיפוש סמנטי במאגר",
+        "הסוכן מחפש אירועים דומים במשמעות גם כאשר הניסוח אינו זהה למילות הרשומה.",
+        "נמצאו מועמדים סמנטיים עם מזהי אירועים וציון התאמה.",
+    ),
     "find_actor_history": (
         "היסטוריית גורם",
         "הסוכן בודק הופעות של אותו גורם לאורך זמן ומרחב.",
         "נמצאו הופעות נוספות שמחזקות או מסייגות את הדפוס.",
     ),
-    "get_events": (
-        "אימות רשומות",
-        "הסוכן שולף את הרשומות הגולמיות לפני ציטוט מזהי ראיות.",
-        "הרשומות אומתו מול המזהים המרכזיים.",
+    "get_objects": (
+        "שליפת אובייקטים",
+        "הסוכן שולף אובייקטים מלאים משכבות האירועים, המיקומים או הישויות לפני הצגה או ציטוט.",
+        "האובייקטים אומתו מול המזהים המרכזיים.",
     ),
     "trace_semantic_clues": (
         "מעקב רמזים סמנטיים",
@@ -332,6 +340,113 @@ def recorded_result(recorded_id: str) -> dict | None:
     return None
 
 
+def utc_now_iso() -> str:
+    return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+
+
+def saved_question_path(saved_id: str) -> Path:
+    if not SAVED_QUESTION_ID_PATTERN.fullmatch(saved_id or ""):
+        raise ValueError("Invalid saved question id")
+    path = (SAVED_QUESTIONS_DIR / f"{saved_id}.json").resolve()
+    if SAVED_QUESTIONS_DIR.resolve() not in path.parents:
+        raise ValueError("Invalid saved question path")
+    return path
+
+
+def saved_question_metadata(payload: dict) -> dict:
+    result = payload.get("result") if isinstance(payload.get("result"), dict) else {}
+    return {
+        "id": payload.get("id"),
+        "title": payload.get("title") or payload.get("question") or "שאלה שמורה",
+        "question": payload.get("question") or "",
+        "saved_at_utc": payload.get("saved_at_utc"),
+        "source_run_id": payload.get("source_run_id") or result.get("run_id"),
+        "recommended_view": result.get("recommended_view") or "evidence",
+        "step_count": len(result.get("investigation_steps") or []),
+    }
+
+
+def load_saved_questions() -> list[dict]:
+    if not SAVED_QUESTIONS_DIR.exists():
+        return []
+    saved: list[dict] = []
+    for path in sorted(SAVED_QUESTIONS_DIR.glob("*.json")):
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8-sig"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if not isinstance(payload, dict):
+            continue
+        result = payload.get("result")
+        if not payload.get("id") or not payload.get("question") or not isinstance(result, dict) or not result.get("answer"):
+            continue
+        saved.append(payload)
+    return sorted(saved, key=lambda item: str(item.get("saved_at_utc") or ""), reverse=True)
+
+
+def list_saved_question_metadata() -> list[dict]:
+    return [saved_question_metadata(item) for item in load_saved_questions()]
+
+
+def load_saved_question(saved_id: str) -> dict | None:
+    try:
+        path = saved_question_path(saved_id)
+    except ValueError:
+        return None
+    if not path.exists():
+        return None
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8-sig"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    if not isinstance(payload, dict):
+        return None
+    result = payload.get("result")
+    if not payload.get("question") or not isinstance(result, dict) or not result.get("answer"):
+        return None
+    return payload
+
+
+def create_saved_question(request: dict) -> dict:
+    question = str(request.get("question") or "").strip()
+    result = request.get("result")
+    if not question:
+        raise ValueError("Missing question")
+    if not isinstance(result, dict):
+        raise ValueError("Missing result")
+    if not str(result.get("answer") or "").strip():
+        raise ValueError("Missing result answer")
+    if not isinstance(result.get("investigation_steps"), list):
+        result = {**result, "investigation_steps": []}
+    now = utc_now_iso()
+    saved_id = f"saved_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}_{secrets.token_hex(3)}"
+    raw_title = str(request.get("title") or "").strip()
+    title = raw_title or question[:60]
+    payload = {
+        "id": saved_id,
+        "schema_version": 1,
+        "title": title,
+        "question": question,
+        "saved_at_utc": now,
+        "source_run_id": result.get("run_id"),
+        "result": result,
+    }
+    SAVED_QUESTIONS_DIR.mkdir(parents=True, exist_ok=True)
+    path = saved_question_path(saved_id)
+    tmp_path = path.with_suffix(".json.tmp")
+    tmp_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    tmp_path.replace(path)
+    return payload
+
+
+def delete_saved_question(saved_id: str) -> bool:
+    path = saved_question_path(saved_id)
+    if not path.exists():
+        return False
+    path.unlink()
+    return True
+
+
 class SSHHTTPConnection(http.client.HTTPConnection):
     def __init__(self, ssh_client, remote_host, remote_port, timeout=30):
         super().__init__(remote_host, remote_port, timeout=timeout)
@@ -540,10 +655,17 @@ class HermesClient:
                 if clues:
                     return f'הרמזים {format_ids(clues)}'
                 return f'רמזים מתוך אירועי העוגן {format_ids(seeds)}'
+            if tool == "semantic_search_events":
+                seeds = args.get("seed_event_ids") or []
+                query = args.get("query") or ""
+                if seeds:
+                    return f'השאלה הסמנטית "{query}" מתוך עוגנים {format_ids(seeds)}'
+                return f'השאלה הסמנטית "{query}"'
             if tool == "plan_next_investigation_step":
                 return f'מצב החקירה: {args.get("objective") or "יעד לא צוין"}'
-            if tool == "get_events":
-                return f'מזהי האירועים {format_ids(args.get("event_ids") or [])}'
+            if tool == "get_objects":
+                ids = (args.get("event_ids") or []) + (args.get("location_ids") or []) + (args.get("entity_ids") or [])
+                return f'מזהי האובייקטים {format_ids(ids)}'
             if tool == "find_related_events":
                 return f'אירועי העוגן {format_ids(args.get("seed_event_ids") or [])}'
             if tool == "explain_linkage":
@@ -573,6 +695,14 @@ class HermesClient:
             if locations:
                 labels = [item.get("name") or item.get("location_id") for item in locations]
                 return f'מיקומים שעלו: {format_ids(labels)}'
+            location_layers = result.get("location_layers") or []
+            if location_layers:
+                labels = [item.get("location_name") or item.get("location_id") for item in location_layers]
+                return f'מיקומים שעלו: {format_ids(labels)}'
+            entity_layers = result.get("entity_layers") or []
+            if entity_layers:
+                labels = [item.get("canonical_name") or item.get("entity_id") for item in entity_layers]
+                return f'ישויות שעלו: {format_ids(labels)}'
             alternatives = result.get("alternative_event_ids") or []
             if alternatives:
                 return f'חלופות שעלו: {format_ids(alternatives)}'
@@ -597,9 +727,12 @@ class HermesClient:
             elif tool == "search_events":
                 decision = f'הסוכן משתמש ב-{clue} כדי למצוא רשומות שעומדות בתנאי החיפוש ולאסוף מועמדים ראשונים.'
                 expected = "לקבל רשימת אירועים מצומצמת שאפשר לאמת או להרחיב ממנה."
-            elif tool == "get_events":
+            elif tool == "semantic_search_events":
+                decision = f'הסוכן משתמש ב-{clue} כאשר הרמזים או ניסוח השאלה עשויים להופיע במאגר במילים אחרות.'
+                expected = "לקבל מועמדי אירועים דומים סמנטית עם מזהי REC, ציון התאמה ורציונל קצר."
+            elif tool == "get_objects":
                 decision = f'הסוכן קורא את הרשומות המלאות של {clue} כדי לא להסתמך רק על מזהים או תקצירים.'
-                expected = "לאמת את תוכן האירועים, הזמנים, הגורמים והמיקומים לפני הסקת קשר."
+                expected = "לאמת את תוכן האירועים, המיקומים או הישויות לפני הסקת קשר או הצגה."
             elif tool == "find_actor_history":
                 decision = f'{clue} עשוי לקשור בין אירועים, לכן הסוכן בודק היסטוריה וכינויים.'
                 expected = "למצוא הופעות נוספות של אותו גורם או להבין שהוא אינו יוצר רצף."
@@ -715,6 +848,57 @@ class HermesClient:
                 })
             return groups
 
+        def normalize_location_layers(result):
+            layers = []
+            for item in result.get("location_layers") or []:
+                if not isinstance(item, dict):
+                    continue
+                location_id = item.get("location_id")
+                if not location_id:
+                    continue
+                layers.append({
+                    "location_id": location_id,
+                    "location_name": item.get("location_name") or item.get("name") or location_id,
+                    "name": item.get("name") or item.get("location_name") or location_id,
+                    "type": item.get("type"),
+                    "country": item.get("country"),
+                    "region": item.get("region"),
+                    "municipality": item.get("municipality"),
+                    "locality": item.get("locality"),
+                    "precision": item.get("precision"),
+                    "latitude": item.get("latitude"),
+                    "longitude": item.get("longitude"),
+                    "event_count": item.get("event_count", item.get("count", 0)),
+                    "top_entities": item.get("top_entities") or [],
+                    "top_sources": item.get("top_sources") or [],
+                    "certainty_breakdown": item.get("certainty_breakdown") or {},
+                    "reliability_breakdown": item.get("reliability_breakdown") or {},
+                })
+            return layers
+
+        def normalize_entity_layers(result):
+            layers = []
+            for item in result.get("entity_layers") or []:
+                if not isinstance(item, dict):
+                    continue
+                entity_id = item.get("entity_id")
+                if not entity_id:
+                    continue
+                layers.append({
+                    "entity_id": entity_id,
+                    "canonical_name": item.get("canonical_name") or entity_id,
+                    "entity_type": item.get("entity_type"),
+                    "confidence": item.get("confidence"),
+                    "basis": item.get("basis"),
+                    "aliases": item.get("aliases") or [],
+                    "event_count": item.get("event_count", item.get("count", 0)),
+                    "top_locations": item.get("top_locations") or [],
+                    "top_sources": item.get("top_sources") or [],
+                    "certainty_breakdown": item.get("certainty_breakdown") or {},
+                    "reliability_breakdown": item.get("reliability_breakdown") or {},
+                })
+            return layers
+
         def extract_event_ids(value, depth=0):
             if depth > 5:
                 return []
@@ -775,12 +959,34 @@ class HermesClient:
                 truncated = bool(result.get("truncated") or (isinstance(total, int) and isinstance(returned, int) and total > returned))
                 warning = " זוהי תוצאה מקוצצת; אין לבחור ממנה עוגן חקירתי בלי צמצום נוסף או הגדלת limit." if truncated else ""
                 outcome = f'נמצאו {total} רשומות; הוחזרו {returned}; מזהים: {format_ids(ids)}.{warning}'
-            elif tool == "get_events":
-                requested = args.get("event_ids") or []
-                found = [item.get("event_id") for item in result.get("events") or []]
-                missing = result.get("missing_event_ids") or []
-                action = f'שליפת הרשומות המלאות עבור {len(requested)} מזהים: {format_ids(requested)}.'
-                outcome = f'הוחזרו {len(found)} רשומות: {format_ids(found)}; חסרים: {format_ids(missing)}.'
+            elif tool == "semantic_search_events":
+                filters = []
+                for key in ["query", "seed_event_ids", "start_time", "end_time", "location_ids", "entity_ids", "source_types", "reliabilities", "certainty_levels", "keywords", "match_all_keywords", "limit"]:
+                    value = args.get(key)
+                    if value not in (None, "", [], False):
+                        filters.append(f"{key}={json.dumps(value, ensure_ascii=False)}")
+                action = f'חיפוש סמנטי במאגר עם המסננים: {"; ".join(filters) if filters else "ללא מסננים"}.'
+                ids = result.get("event_ids") or []
+                returned = result.get("returned", len(ids))
+                backend = result.get("semantic_backend") or result.get("backend") or "לא צוין"
+                top_scores = [
+                    f'{item.get("event_id")}={round(float(item.get("semantic_score") or 0), 3)}'
+                    for item in (result.get("matches") or [])[:5]
+                    if item.get("event_id")
+                ]
+                score_text = f'; ציונים מובילים: {", ".join(top_scores)}' if top_scores else ""
+                outcome = f'הוחזרו {returned} מועמדים סמנטיים באמצעות {backend}: {format_ids(ids)}{score_text}.'
+            elif tool == "get_objects":
+                object_type = args.get("object_type") or result.get("object_type") or "event"
+                event_ids = [item.get("event_id") for item in result.get("events") or [] if item.get("event_id")]
+                location_ids = [item.get("location_id") for item in result.get("location_layers") or [] if item.get("location_id")]
+                entity_ids = [item.get("entity_id") for item in result.get("entity_layers") or [] if item.get("entity_id")]
+                requested = (args.get("event_ids") or []) + (args.get("location_ids") or []) + (args.get("entity_ids") or []) + (args.get("names_or_aliases") or [])
+                action = f'שליפת אובייקטים מסוג {object_type}: {format_ids(requested)}.'
+                outcome = (
+                    f'הוחזרו {len(event_ids)} אירועים, {len(location_ids)} מיקומים ו-{len(entity_ids)} ישויות; '
+                    f'אירועים: {format_ids(event_ids)}; מיקומים: {format_ids(location_ids)}; ישויות: {format_ids(entity_ids)}.'
+                )
             elif tool == "aggregate_events":
                 group_by = args.get("group_by")
                 filters = {key: value for key, value in public_args(args).items() if key != "group_by" and value not in (None, "", [], False)}
@@ -898,11 +1104,11 @@ class HermesClient:
                 outcome = f'פלט: {json.dumps(result, ensure_ascii=False)}.'
             # Collect event_ids for per-step visualization
             step_event_ids = []
-            if tool in {"search_events", "find_actor_history", "trace_identifier", "trace_semantic_clues", "find_related_events"}:
+            if tool in {"search_events", "semantic_search_events", "find_actor_history", "trace_identifier", "trace_semantic_clues", "find_related_events"}:
                 step_event_ids = result.get("event_ids") or []
             elif tool in {"resolve_event_reference"}:
                 step_event_ids = result.get("event_ids") or []
-            elif tool == "get_events":
+            elif tool == "get_objects":
                 step_event_ids = [item.get("event_id") for item in result.get("events") or [] if item.get("event_id")]
             elif tool == "build_event_sequence":
                 for route_item in (result.get("route") or []):
@@ -941,6 +1147,14 @@ class HermesClient:
             aggregate_groups = normalize_aggregate_groups(result)
             if aggregate_groups:
                 step_dict["aggregate_groups"] = aggregate_groups
+
+            location_layers = normalize_location_layers(result)
+            if location_layers:
+                step_dict["location_layers"] = location_layers
+
+            entity_layers = normalize_entity_layers(result)
+            if entity_layers:
+                step_dict["entity_layers"] = entity_layers
 
             steps.append(step_dict)
             previous_result = result
@@ -1061,13 +1275,13 @@ class HermesClient:
             " אל תבחר seeds אחרים מתוך תוצאה רחבה לפני שניסית את recommended_next_seeds או הסברת מדוע הם לא רלוונטיים."
             " אותו כלל חל גם על find_related_events: אם הוא מחזיר recommended_next_seeds, השתמש בהם כ-frontier המחייב הבא לפני מעבר ל-challenge_hypothesis או לסיכום."
             " אל תבנה רצף סופי רק מהעוגנים המקוריים אם find_related_events החזיר seeds מומלצים מסוג מקור רשמי, רשת חברתית, מדיה, שמועה, חסימה, ירי, KFOR, תנועה או מיקום שלא הורחבו."
-            " כלל מחייב: כאשר כלי מחזיר recommended_next_seeds, הקריאה הבאה שאינה explain_linkage חייבת להיות get_events או find_related_events על אותם event_id בדיוק, עד 3 seeds, לפי הסדר שהוחזר."
+            " כלל מחייב: כאשר כלי מחזיר recommended_next_seeds, הקריאה הבאה שאינה explain_linkage חייבת להיות get_objects עם object_type=event או find_related_events על אותם event_id בדיוק, עד 3 seeds, לפי הסדר שהוחזר."
             " אל תחליף אותם בזרעים אחרים מתוך הרשימה הרחבה, אל תבחר חלופות, ואל תפעיל challenge_hypothesis לפני שבוצעה לפחות קריאת הרחבה אחת על seed מומלץ אחד או יותר."
-            " אם seed מומלץ נראה לא רלוונטי, חובה לציין זאת ב-step_bridge ולשלוף אותו עם get_events לפני דחייה."
+            " אם seed מומלץ נראה לא רלוונטי, חובה לציין זאת ב-step_bridge ולשלוף אותו עם get_objects object_type=event לפני דחייה."
             " כאשר seeds מומלצים כוללים חוליית ביניים כמו מקור רשמי, מקור חברתי, מדיה, מיקום, חסימה, ירי, KFOR או תנועה, כלול אותם ברצף המועמד עד שבדיקת explain_linkage מראה שאין גשר מספיק."
             " השתמש ב-plan_next_investigation_step כנקודת ביקורת תהליכית: שלח לו objective, candidate_chain_event_ids, pending_recommended_seeds, expanded_seed_event_ids, new_clues_to_trace, linkage_checks_done, semantic_calls_used, related_calls_used ו-tool_budget_remaining."
             " אם הוא מחזיר blocked_tool_families הכוללים challenge_hypothesis או final_summary, אסור להפעיל אותם עד שבוצעה הפעולה שהוא דרש."
-            " אם הוא מחזיר required_event_ids, הצעד הבא חייב להשתמש במזהים האלה בדיוק, אלא אם step_bridge מסביר מדוע הם נדחו לאחר get_events."
+            " אם הוא מחזיר required_event_ids, הצעד הבא חייב להשתמש במזהים האלה בדיוק, אלא אם step_bridge מסביר מדוע הם נדחו לאחר get_objects object_type=event."
             " בדוק גשרים עם explain_linkage בין חוליות סמוכות בשרשרת המועמדת, לא רק בין התחלה לסוף."
             " הפעל challenge_hypothesis רק לאחר שנמצא רצף מועמד של לפחות 5 אירועים, או לאחר שני סבבי הרחבה שלא מצאו שום חוליה חדשה."
             " אם הגעת למגבלות העומק או הקריאות, עצור והצג אילו חוליות נמצאו ואילו seeds לא הורחבו.\n"
@@ -1077,6 +1291,10 @@ class HermesClient:
             " השתמש ב-limit קטן רק כאשר הצעד הוא אימות ממוקד של מזהים/רשומות שכבר נבחרו, לא לצורך חיפוש או שלילה."
             " כאשר כלי מחזיר truncated=true או total גדול מ-returned, אל תבחר עוגן חקירתי כאילו נבדקו כל הרשומות; בצע צמצום נוסף, אגרגציה, או חיפוש ממוקד לפני בחירת seeds."
             " אל תציג שרשרת כמבוססת אם העוגנים נבחרו רק מתוך תוצאה מקוצצת ללא הצדקה.\n"
+            "השתמש ב-semantic_search_events כאשר השאלה, הטענה או הרמזים מתארים משמעות כללית, פרפרזה, ניסוח תקשורתי, שמועה או תיאור שאולי לא מופיע במילים המדויקות ברשומות."
+            " אל תשתמש בו במקום trace_identifier למזהה גלוי, במקום search_events למסננים מפורשים, במקום aggregate_events לספירות, או במקום get_objects לשליפת אובייקטים ידועים."
+            " התייחס לתוצאת semantic_search_events כמועמדי ראיות בלבד: לאחר מכן אמת מועמדים מרכזיים בעזרת get_objects, find_related_events, explain_linkage או build_event_sequence לפי הצורך."
+            " כאשר קיימים entity_id או location_id ידועים, העבר אותם כמסננים ל-semantic_search_events כדי לצמצם רעש.\n"
             "ב-find_related_events בחקירה עמוקה, אל תשתמש ב-limit=20, limit=150 או limit=500 להרחבה רחבה. השתמש בדרך כלל ב-limit=2000, או צמצם מראש לפי source_types, חלון זמן, מיקום או ממדי קשר."
             " אם total_candidates גדול בהרבה מ-returned, התייחס לתוצאה כמדגם מדורג ולא כבדיקה מלאה; המשך בסינון או בהרחבה נוספת.\n"
             "אם המשתמש מבקש להציג, לשלוף, לסנן, לצמצם, למנות או להראות אירועים/רשומות/תוצאות,"
@@ -1088,6 +1306,7 @@ class HermesClient:
             "כאשר השאלה גאוגרפית או מבקשת מקבצים, ריכוזים, TOP מיקומים, אזורים, מוקדים או 'איפה',"
             " התייחס לכך כתוצאה מרחבית. השתמש ב-aggregate_events עם group_by=location כאשר מתאים,"
             " והשתמש ב-aggregate_events עם group_by=municipality כאשר נדרשת תמונת אזור רחבה."
+            " כאשר התשובה צריכה להציג מיקומים מלאים, השתמש ב-get_objects עם object_type=location או all כדי להחזיר location_layers להצגה."
             " החזר גם רמת אזור/רשות וגם מוקדים מדויקים כאשר המשתמש מבקש מוקדים עיקריים."
             " החזר לכל מיקום את location_id, שם המיקום ומספר האירועים, ולכל רשות את שם הרשות והספירה."
             " בחר תצוגה מומלצת map גם אם אין מזהי אירועים בודדים, והסבר שזו תוצאה אגרגטיבית לפי מיקום."
@@ -1095,6 +1314,9 @@ class HermesClient:
             "כאשר המשתמש מבקש לסדר מוקדים, אזורים או רשויות על ציר זמן לפי האירוע הראשון או האחרון בכל מוקד,"
             " השתמש ב-aggregate_events עם include_first_last=true ו-sort_by=first_event_time או last_event_time לפי השאלה,"
             " במקום להריץ חיפוש limit=1 נפרד לכל מוקד. השתמש ב-search_events עם sort_by=timestamp רק כאשר נדרש ציר זמן של רשומות גולמיות.\n"
+            "כאשר השאלה עוסקת בגורמים, שחקנים, ארגונים או כוחות, השתמש ב-resolve_entity או aggregate_events group_by=entity כדי לעבוד עם entity_id קנוני."
+            " כאשר צריך להציג או לאמת גורמים כ-layer, השתמש ב-get_objects עם object_type=entity או all כדי להחזיר entity_layers."
+            " search_events ו-find_actor_history יכולים לקבל entity_ids כאשר השאלה כבר הובנה ברמת ישות ולא רק ברמת actor טקסטואלי.\n"
             "כאשר המשתמש שואל על מיקום שגוי, הטעיה גאוגרפית, סרטון ישן, תמונה/שיירה שמיוחסת למקום, או טענה שמופצת בכמה מקומות,"
             " השתמש ב-compare_location_claims לפני מסקנה. הכלי מזהה רק סימני סתירה גלויים בין דיווחים דומים,"
             " ואינו יודע מה המיקום הנכון; לכן הצג את התוצאה כחשד לפיזור/הטעיה גאוגרפית ולא כהוכחת אמת קרקע."
@@ -1170,7 +1392,7 @@ class HermesClient:
             " אל תפרט את כל הצעדים הטכניים, הכלים והפרמטרים; יומן הפעילות בממשק מציג אותם בנפרד.\n"
             "בכל מצב, סיים בשורה שמתחילה 'מזהי ראיות:' ובה רק מזהי האירועים שאתה בוחר כראיות התומכות בתשובה."
             " הממשק משתמש בשורה זו כדי לדעת אילו רשומות להציג; לכן אל תשמיט מזהה מרכזי שעליו הסתמכת, ואל תכלול מזהים שלא שימשו כתמיכה לתשובה."
-            " אם המשתמש ביקש שליפה ממצה של רשומות וכלי search_events או get_events החזיר event_ids, חובה לכלול בשורת 'מזהי ראיות:' את מזהי REC שהוחזרו או שנבחרו להצגה."
+            " אם המשתמש ביקש שליפה ממצה של רשומות וכלי search_events או get_objects החזיר event_ids, חובה לכלול בשורת 'מזהי ראיות:' את מזהי REC שהוחזרו או שנבחרו להצגה."
             " אל תחליף רשימת מזהי REC בניסוח כמו '81 רשומות' או 'כיסוי מלא', כי הממשק אינו יכול להציג מזהים שלא נכתבו בתשובה."
             " אפשר לציין בגוף התשובה את מספר הרשומות והכיסוי, אבל שורת 'מזהי ראיות:' חייבת להכיל מזהי REC כאשר קיימים כאלה בפלט הכלים."
             " אם זו תוצאה אגרגטיבית ללא מזהי אירועים, כתוב 'מזהי ראיות: תוצאה אגרגטיבית ללא מזהי אירועים'.\n"
@@ -1385,6 +1607,18 @@ class Handler(SimpleHTTPRequestHandler):
         if path.path == "/api/status":
             self.send_json(200, {"mode": "hermes", "configured": CONFIG_PATH.exists(), "build": APP_BUILD})
             return
+        if path.path == "/api/saved-questions":
+            self.send_json(200, {"saved_questions": list_saved_question_metadata()})
+            return
+        if path.path == "/api/saved-question":
+            query = parse_qs(path.query)
+            saved_id = (query.get("id") or [""])[0]
+            result = load_saved_question(saved_id)
+            if result is None:
+                self.send_json(404, {"error": "Saved question not found"})
+            else:
+                self.send_json(200, result)
+            return
         if path.path == "/api/recorded-questions":
             self.send_json(200, {"questions": recorded_questions(), "replay_delay_ms": 2000})
             return
@@ -1409,6 +1643,20 @@ class Handler(SimpleHTTPRequestHandler):
 
     def do_POST(self):
         path = urlparse(self.path).path
+        if path == "/api/saved-question":
+            try:
+                length = int(self.headers.get("Content-Length", "0"))
+                if length > 15_000_000:
+                    self.send_json(413, {"error": "Saved question payload too large"})
+                    return
+                request = json.loads(self.rfile.read(length).decode("utf-8-sig"))
+                saved = create_saved_question(request)
+                self.send_json(201, saved_question_metadata(saved))
+            except ValueError as exc:
+                self.send_json(400, {"error": str(exc)})
+            except Exception as exc:
+                self.send_json(502, {"error": str(exc)})
+            return
         if path == "/api/performance-client":
             try:
                 length = int(self.headers.get("Content-Length", "0"))
@@ -1440,6 +1688,23 @@ class Handler(SimpleHTTPRequestHandler):
             self.send_json(200, result)
         except Exception as exc:
             self.send_json(502, {"error": str(exc)})
+
+    def do_DELETE(self):
+        path = urlparse(self.path)
+        if path.path != "/api/saved-question":
+            self.send_error(404)
+            return
+        query = parse_qs(path.query)
+        saved_id = (query.get("id") or [""])[0]
+        try:
+            deleted = delete_saved_question(saved_id)
+        except ValueError as exc:
+            self.send_json(400, {"error": str(exc)})
+            return
+        if not deleted:
+            self.send_json(404, {"error": "Saved question not found"})
+            return
+        self.send_json(200, {"deleted": True, "id": saved_id})
 
 
 if __name__ == "__main__":
