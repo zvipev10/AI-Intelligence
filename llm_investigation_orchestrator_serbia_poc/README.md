@@ -151,6 +151,27 @@ python mcp_server/benchmark_tools.py --rounds 3
 
 The benchmark covers the full tool surface against Serbia/Kosovo questions: intent classification, location/event resolution, broad search, semantic search, filtered search, actor history, aggregations, linkage explanation, sequence building, entity resolution, identifier tracing, semantic tracing, related-event expansion, location-claim comparison, and hypothesis challenge.
 
+Run the semantic tool integration comparison:
+
+```powershell
+$env:PYTHONIOENCODING='utf-8'
+python docs/quality/score_semantic_tool_integration.py --current-label working_tree
+```
+
+The current semantic integration reference is:
+
+```text
+docs/quality/semantic_tool_integration_gold_v2.json
+```
+
+The latest saved comparison is:
+
+```text
+docs/quality/semantic_tool_integration_runs/semantic_tool_integration_comparison_20260706T120341Z.md
+```
+
+It compares the pre-integration baseline against the current hybrid semantic implementation for `resolve_event_reference`, `trace_semantic_clues`, and `find_related_events`.
+
 ## Saved Questions
 
 Saved Questions are the user-facing replacement for demo-only recorded replay. After a successful live investigation, press `שמור` beside the final answer `הצג תוצאות` button to persist the full `/api/investigate` result.

@@ -1,8 +1,8 @@
 # AI Intelligence Project Handoff
 
-Last updated: 2026-06-30
+Last updated: 2026-07-06
 
-This is the primary handoff for continuing the AI Intelligence project in another assistant/chat. It reflects the current Serbia POC workspace after the data normalization, additive result-layer UI refactor, recorded-run refresh, map marker popup work, Phase 2 query builder planning, and the latest location/entity layer normalization.
+This is the primary handoff for continuing the AI Intelligence project in another assistant/chat. It reflects the current Serbia POC workspace after the data normalization, additive result-layer UI refactor, recorded-run refresh, map marker popup work, Phase 2 query builder planning, location/entity layer normalization, and the hybrid semantic retrieval/tool-quality work.
 
 ## One-Line Summary
 
@@ -16,8 +16,9 @@ Repository:
 
 Current branch:
 
-- `main`
-- Latest observed head should be checked with `git log -1 --oneline`; the repo is expected to be clean and aligned with `origin/main` after each handoff.
+- Active development branch: `feature/semantic-quality-tests`
+- `main` remains the stable baseline branch.
+- Latest observed head should be checked with `git log -1 --oneline`; the active branch is expected to be clean and aligned with its remote after each handoff.
 
 Important local workspace:
 
@@ -26,10 +27,63 @@ Important local workspace:
 
 Current local working tree expectation:
 
-- `main` should be clean and aligned with `origin/main`.
-- This handoff was updated from a fresh GitHub clone, not from the older local working copy.
-- Latest observed pre-handoff GitHub head before this handoff update: `9a3b5c6 Use standard visibility icons`.
-- Do not continue from stale local files if `git fetch origin main` shows remote commits ahead.
+- `feature/semantic-quality-tests` should be clean and aligned with `origin/feature/semantic-quality-tests`.
+- `main` should remain available as the stable baseline.
+- Do not continue from stale local files if `git fetch origin` shows the active remote branch ahead.
+- At the time of this handoff update there may be unrelated local working-tree files such as `.claude/`, `environments-configuration/`, or uncommitted UI styling experiments. Do not include them in semantic/tool-quality commits unless the user explicitly asks.
+
+## Latest Update: Semantic Tool Integration Quality
+
+Date: 2026-07-06
+
+Active branch:
+
+```text
+feature/semantic-quality-tests
+```
+
+Latest relevant commits before this handoff update:
+
+```text
+2e9f7ba Add configurable semantic embedding backend
+a6d4eea Enable hybrid semantic retrieval by default
+aa82add Make hybrid semantic cache engine-aware
+7ea65ef Use hybrid semantic candidates in investigation tools
+4747eb2 Add semantic tool integration comparison
+```
+
+Semantic retrieval status:
+
+- `semantic_search_events` uses the shared `SemanticEventIndex`.
+- Default backend is `hybrid_embedding`, which combines lexical TF-IDF recall with local dense/concept embedding reranking.
+- `lexical_tfidf` remains available as a deterministic baseline/fallback through `INTELLIGENCE_POC_SEMANTIC_BACKEND`.
+- Higher-level tool integrations now use the same backend:
+  - `resolve_event_reference` uses hybrid candidates to resolve vague analyst references to anchor events.
+  - `trace_semantic_clues` uses hybrid candidates over input clues, expanded clues, and seed summaries.
+  - `find_related_events` uses hybrid semantic similarity as a supporting `"semantic"` dimension, while structured bridges still dominate.
+
+Quality artifacts:
+
+```text
+llm_investigation_orchestrator_serbia_poc/docs/quality/semantic_tool_integration_gold_v2.json
+llm_investigation_orchestrator_serbia_poc/docs/quality/score_semantic_tool_integration.py
+llm_investigation_orchestrator_serbia_poc/docs/quality/semantic_tool_integration_runs/semantic_tool_integration_comparison_20260706T120341Z.md
+llm_investigation_orchestrator_serbia_poc/docs/quality/semantic_tool_integration_runs/semantic_tool_integration_comparison_20260706T120341Z.json
+```
+
+Comparison summary from the latest run:
+
+- `tp_13_resolve_shooting_reference` / `resolve_event_reference`: previous baseline found `0/2` must-find records; current found `2/2`; status PASS.
+- `tp_14_trace_tactical_noise_clues` / `trace_semantic_clues`: previous baseline found `0/16`; current found `16/16`; status PASS.
+- `tp_15_related_from_zvecan_shooting_seeds` / `find_related_events`: previous baseline already found `6/6`; current still found `6/6` and now adds semantic bridge metadata; status PASS.
+
+Rerun the semantic tool comparison from the Serbia POC directory:
+
+```powershell
+cd llm_investigation_orchestrator_serbia_poc
+$env:PYTHONIOENCODING='utf-8'
+python docs/quality/score_semantic_tool_integration.py --current-label working_tree
+```
 
 **Important sync lesson (2026-06-29):** A stale local workspace and stale VM deployment briefly reintroduced old behavior: rectangular map markers and automatic final-answer presentation. GitHub already had the correct point-marker/manual-show behavior, but the VM was still serving older `styles.css?v=36` and `app.js?v=48`. Before every deploy, fetch GitHub, verify `git status --short --branch`, and deploy from the current committed `main`, not from stale uncommitted local files.
 
@@ -592,7 +646,7 @@ Design decision:
 
 ## Near-Term RAG / Real Semantic Search Plan
 
-The team agreed to implement a small local RAG capability before changing more investigation behavior. The goal is not Elastic/OpenSearch yet; it is to replace today’s fake semantic retrieval with one shared semantic index over real event data.
+The team agreed to implement a small local RAG capability before changing more investigation behavior. The goal is not Elastic/OpenSearch yet; it is to replace hardcoded semantic-style retrieval with one shared semantic index over real event data.
 
 This plan must use the normalized entity/location schema from this branch:
 
@@ -602,23 +656,24 @@ This plan must use the normalized entity/location schema from this branch:
 - Runtime events expose `entity_name` and `location_name` only after MCP enrichment.
 - `get_events` no longer exists; use `get_objects`.
 
-Current problem:
+Original problem:
 
-- Several tools currently use the word “semantic”, but they are mostly hardcoded keyword/clue matching.
-- `trace_semantic_clues` retrieves by user/seed clues plus `SEMANTIC_CLUE_TERMS`.
-- `find_related_events` has a `semantic` dimension, but it currently means shared hardcoded clue terms.
-- `explain_linkage` uses hardcoded clue overlap for `semantic_overlap`.
-- `compare_location_claims` uses seed-derived clue keywords and `GEO_CONFLICT_MARKERS` for retrieval/grouping.
-- This is useful and explainable, but it is not real semantic similarity.
+- Several tools used the word “semantic”, but were mostly hardcoded keyword/clue matching.
+- `trace_semantic_clues` retrieved by user/seed clues plus `SEMANTIC_CLUE_TERMS`.
+- `find_related_events` had a `semantic` dimension, but it meant shared hardcoded clue terms.
+- `explain_linkage` used hardcoded clue overlap for `semantic_overlap`.
+- `compare_location_claims` used seed-derived clue keywords and `GEO_CONFLICT_MARKERS` for retrieval/grouping.
+- This was useful and explainable, but it was not real semantic similarity.
 
 Implementation status:
 
 - Phase 1 foundation is implemented as `mcp_server/semantic_index.py`.
-- The current backend is local lexical TF-IDF with persisted cache metadata, not a deployed embedding/vector DB yet.
-- This is the deliberate POC fallback stack: no external model/package dependency, auditable scoring, and stable MCP contract.
+- The default backend is now `hybrid_embedding`: lexical TF-IDF candidate recall plus local dense/concept embedding reranking.
+- `lexical_tfidf` remains available as a baseline/fallback.
 - Public MCP tool `semantic_search_events` is implemented and returns normal public event objects plus `semantic_score` and a short rationale.
-- The orchestrator prompt now tells the model to use `semantic_search_events` for fuzzy/paraphrased retrieval, and not for exact IDs, exact filters, aggregation, or object retrieval.
-- Existing fake-semantic paths (`trace_semantic_clues`, `find_related_events`, `explain_linkage`, `compare_location_claims`) were not converted yet. They remain deterministic/hardcoded until a quality baseline shows that semantic retrieval improves them.
+- The orchestrator prompt tells the model to use `semantic_search_events` for fuzzy/paraphrased retrieval, and not for exact IDs, exact filters, aggregation, or object retrieval.
+- `resolve_event_reference`, `trace_semantic_clues`, and `find_related_events` now use the shared semantic backend internally.
+- `explain_linkage` and `compare_location_claims` still use mostly deterministic/marker logic and are candidates for later semantic integration after a separate quality baseline.
 
 Target architecture:
 
@@ -672,16 +727,14 @@ Implementation phases:
 **Phase 3 — Convert fake-semantic tools**
 
 - `trace_semantic_clues`
-  - Stop retrieving through `SEMANTIC_CLUE_TERMS`.
-  - Build query text from explicit clues plus seed event summaries.
-  - Retrieve via `SemanticEventIndex`.
+  - Done for retrieval: it now uses the shared semantic backend.
   - Keep negation/benign/direct-observation markers only as scoring/explanation modifiers.
   - Consider later rename to `trace_operational_clues` if the public API should be clearer.
 
 - `find_related_events`
   - Keep deterministic dimensions: `identifier`, `entity`, `time`, `location`.
   - Entity dimension must use `entity_id` and entity aliases from `serbia_kosovo_entities.json`.
-  - Replace the current `semantic` dimension with vector similarity between seed event text and candidate event text.
+  - Done: the `semantic` dimension now uses shared semantic similarity as a supporting bridge signal.
   - Hybrid score should combine deterministic bridges plus semantic score.
   - Do not let semantic similarity outrank exact identifier evidence by default.
 
@@ -697,7 +750,7 @@ Implementation phases:
 
 **Phase 4 — Cleanup and naming**
 
-- Remove `SEMANTIC_CLUE_TERMS` from retrieval paths after the semantic backend is stable.
+- Remove or demote `SEMANTIC_CLUE_TERMS` from remaining retrieval paths after the semantic backend is stable.
 - Keep `BENIGN_MARKERS`, `NEGATION_MARKERS`, `DIRECT_OBSERVATION_MARKERS`, and `GEO_CONFLICT_MARKERS` only as explainable scoring/warning signals.
 - Update tool descriptions so no tool implies hardcoded clue matching is true semantic search.
 - Update orchestrator guidance to call `semantic_search_events` when wording mismatch/fuzzy recall is likely.
@@ -740,9 +793,21 @@ llm_investigation_orchestrator_serbia_poc/docs/quality/reference_base_v1.json
 Current status:
 
 - `fq_01` through `fq_05` have current baselines from existing real recordings.
-- `fq_06`, `fq_07`, and `fq_08` still need live standalone full-agent runs.
 - Enabled tool probes have direct MCP current-output baselines.
 - Ideal targets define criteria and expected output behavior, but reviewed `must_find` / `acceptable` / `must_not_prioritize` ID lists still need an analyst/offline-label pass.
+- Semantic integration probes `tp_13`, `tp_14`, and `tp_15` were added to cover the tools changed in the hybrid semantic work.
+- The semantic integration gold/reference file and scorer are:
+
+```text
+llm_investigation_orchestrator_serbia_poc/docs/quality/semantic_tool_integration_gold_v2.json
+llm_investigation_orchestrator_serbia_poc/docs/quality/score_semantic_tool_integration.py
+```
+
+Latest saved comparison:
+
+```text
+llm_investigation_orchestrator_serbia_poc/docs/quality/semantic_tool_integration_runs/semantic_tool_integration_comparison_20260706T120341Z.md
+```
 
 ## Validation Commands
 
@@ -797,8 +862,10 @@ Expected: no matches in active data files.
 5. Historical files still contain old source labels.
    - Active data is clean; historical test/recorded files may not be.
 
-6. Entity IDs are not in DB.
-   - Treat entities as future layer candidates only after adding first-class entity data.
+6. Entity IDs are now first-class runtime data.
+   - Event rows contain `entity_id`.
+   - Entity names and aliases come from `data/serbia_kosovo_entities.json`.
+   - Treat stale references to `entity_or_actor` as legacy-only unless inspecting archived data.
 
 ## Suggested First Message To A New Assistant
 
