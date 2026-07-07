@@ -23,7 +23,7 @@ Approved developer decision:
 - For MVP, do not add a row limit to layer row loading.
 - Product-owned UX decision: open the filter panel from the layer tab.
 - Product-owned UX decision: use raw field names for MVP filter fields.
-- Product-owned UX decision: add a new standalone layer selection component for Entities, Locations, and Events grouped by type/source type. Existing layer tabs are for already opened layers, not for discovering/selecting new layers.
+- Product-owned UX decision: add a new standalone layer selection component for Entities, Locations, and Events grouped by `source_type`. Existing layer tabs are for already opened layers, not for discovering/selecting new layers.
 
 This artifact is approved for execution planning.
 
@@ -101,7 +101,7 @@ However, the new standalone layer-selection flow needs an API-backed layer catal
 - `llm_investigation_orchestrator_serbia_poc/server.py`
   - Add or expose API endpoint(s) for layer catalog and layer rows, depending on what existing data endpoints can already provide.
 - `llm_investigation_orchestrator_serbia_poc/index.html`
-  - Add a new standalone layer selection component for Entities, Locations, and Events grouped by type/source type.
+  - Add a new standalone layer selection component for Entities, Locations, and Events grouped by `source_type`.
   - Add a container in `rawEventsOverlay` for the filter panel beside the table.
 - `llm_investigation_orchestrator_serbia_poc/styles.css`
   - Add layout and control styles for the layer selector, filter panel, validation state, active filter indicators, and responsive behavior.

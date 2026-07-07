@@ -49,7 +49,7 @@ Filtering behavior:
 - Support the existing location layer.
 - Support event-source layers derived from available `source_type` values.
 - Add a new standalone layer selection component for choosing layers.
-- The layer selection component must include Entities, Locations, and Events grouped by type/source type.
+- The layer selection component must include Entities, Locations, and Events grouped by `source_type`.
 - Allow users to find/select a layer from the new layer selection component.
 - Add each selected layer to the existing layer/table workspace.
 - Keep selected layers independent from each other.

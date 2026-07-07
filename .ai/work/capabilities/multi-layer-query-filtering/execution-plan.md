@@ -58,7 +58,7 @@ Deliver a standalone layer-selection and per-layer filtering workflow that is se
 ## Proposed approach
 Build the capability in five reviewable slices.
 
-First, expose a standalone layer catalog and layer row API in `server.py`, and add the new standalone layer selection component. The frontend should fetch available layer definitions, let users choose/add Entities, Locations, and Events grouped by type/source type, then fetch all rows for a selected layer. The selected layer should open into the existing layer tab model rather than depending on agent/chat result data.
+First, expose a standalone layer catalog and layer row API in `server.py`, and add the new standalone layer selection component. The frontend should fetch available layer definitions, let users choose/add Entities, Locations, and Events grouped by `source_type`, then fetch all rows for a selected layer. The selected layer should open into the existing layer tab model rather than depending on agent/chat result data.
 
 Second, introduce a shared presentation item helper so table, map, and timeline consume the same applied-filtered item set for each visible/opened layer. This avoids a common failure mode where the table looks filtered but the map and timeline still show unfiltered records.
 
@@ -96,7 +96,7 @@ Server-side filtering, pagination, limits, and typed filter operators are deferr
 
 ## UX changes
 - Add a new standalone layer selection component, separate from chat, agent result controls, existing opened-layer tabs, and the query modal.
-- The layer selection component should let users choose/add Entities, Locations, and Events grouped by type/source type.
+- The layer selection component should let users choose/add Entities, Locations, and Events grouped by `source_type`.
 - The existing opened-layer tabs should remain responsible for selecting an active opened layer, opening that layer's filter panel, visibility, and X close.
 - Open selected layers as existing-style layer tabs.
 - Open the filter panel from the layer tab.
@@ -142,7 +142,7 @@ Expected changes:
 - Return all rows for a selected layer with no MVP row limit.
 - Add frontend fetch helpers for catalog and layer rows.
 - Add a new standalone layer selection component.
-- The component lists/selects Entities, Locations, and Events grouped by type/source type.
+- The component lists/selects Entities, Locations, and Events grouped by `source_type`.
 - Selecting an item opens that layer into the existing opened-layer tab model.
 - The component remains available so users can add more layers later.
 
