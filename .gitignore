@@ -12,6 +12,10 @@ invoices.db-wal
 # Local Codex/runtime metadata
 .agents/
 .tools/
+.claude/
+
+# External repositories checked out beside this project
+environments-configuration/
 
 # Local Hermes/VM credentials and generated configs
 .hermes-api.json
