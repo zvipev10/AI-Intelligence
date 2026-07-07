@@ -48,20 +48,14 @@
         <button class="view-tab" data-view="timeline" type="button">ציר זמן</button>
       </nav>
       <div id="viewRecommendation" class="view-recommendation" aria-live="polite" hidden></div>
-      <section class="layer-selector" aria-labelledby="layerSelectorTitle">
-        <div class="layer-selector-header">
-          <div>
-            <span class="eyebrow">שכבות נתונים</span>
-            <h2 id="layerSelectorTitle">בחירת שכבות</h2>
-          </div>
-          <div id="layerSelectorStatus" class="layer-selector-status" aria-live="polite">טוען שכבות</div>
-        </div>
-        <div class="layer-selector-search" role="combobox" aria-haspopup="listbox" aria-expanded="false" aria-owns="layerSelectorList">
-          <input id="layerSelectorSearch" type="search" autocomplete="off" spellcheck="false" placeholder="חפש שכבה להוספה" aria-label="חיפוש שכבה להוספה" aria-controls="layerSelectorList">
-          <div id="layerSelectorList" class="layer-selector-list" role="listbox" aria-label="תוצאות חיפוש שכבות" hidden></div>
-        </div>
-      </section>
       <div class="view-stack">
+        <div class="layer-selector" aria-label="חיפוש שכבה להוספה">
+          <div class="layer-selector-search" role="combobox" aria-haspopup="listbox" aria-expanded="false" aria-owns="layerSelectorList">
+            <input id="layerSelectorSearch" type="search" autocomplete="off" spellcheck="false" placeholder="חפש שכבה להוספה" aria-label="חיפוש שכבה להוספה" aria-controls="layerSelectorList">
+            <div id="layerSelectorStatus" class="layer-selector-status" aria-live="polite">טוען שכבות</div>
+            <div id="layerSelectorList" class="layer-selector-list" role="listbox" aria-label="תוצאות חיפוש שכבות" hidden></div>
+          </div>
+        </div>
         <section id="mapView" class="view-pane active">
           <div id="map" class="map-canvas"></div>
         </section>

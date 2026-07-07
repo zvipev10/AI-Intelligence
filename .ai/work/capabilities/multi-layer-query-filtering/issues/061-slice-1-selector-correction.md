@@ -6,7 +6,7 @@ Apply Product/UX feedback from Slice 1.
 GitHub issue: #10
 
 ## Required action
-Remove the visible selector wrapper/header/count and keep only a compact search/autocomplete line.
+Implemented in `checkpoint-002.md`. Review should now happen through issue #11.
 
 ## Owner role
 Development.
@@ -22,15 +22,15 @@ Development.
 - `checkpoint-002.md` summarizing files changed, checks run, and Product/UX review request.
 
 ## Blocking
-Slice 2 cannot start until this correction is implemented and reviewed.
+Implementation is complete, but Slice 2 cannot start until issue #11 review approves the correction.
 
 ## Completion criteria
-- [ ] No visible "Data layers" section.
-- [ ] No visible "Layer selection" section.
-- [ ] No visible available-layer count block.
-- [ ] Compact search/autocomplete remains available.
-- [ ] API-backed layer opening still works.
-- [ ] `checkpoint-002.md` created.
+- [x] No visible "Data layers" section.
+- [x] No visible "Layer selection" section.
+- [x] No visible available-layer count block.
+- [x] Compact search/autocomplete remains available.
+- [x] API-backed layer opening still works.
+- [x] `checkpoint-002.md` created.
 
 ## Related artifacts
 - `status.md`

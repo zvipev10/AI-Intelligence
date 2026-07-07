@@ -658,7 +658,7 @@ function renderLayerSelector() {
   } else if (state.layerCatalogError) {
     layerSelectorStatus.textContent = state.layerCatalogError;
   } else {
-    layerSelectorStatus.textContent = `${state.layerCatalog.length.toLocaleString("he-IL")} שכבות זמינות`;
+    layerSelectorStatus.textContent = "";
   }
 
   layerSelectorSearch.value = state.layerSearchQuery;
@@ -756,7 +756,7 @@ async function openCatalogLayer(layerId) {
     const openedLayer = buildCatalogLayer(payload.layer || layer, payload.rows || []);
     const added = addResultLayers({
       sourceId: `catalog:${layerId}`,
-      sourceLabel: "בחירת שכבות",
+      sourceLabel: openedLayer.label,
       preferredView: openedLayer.capabilities.map ? "map" : (openedLayer.capabilities.timeline ? "timeline" : "evidence"),
       layers: [openedLayer]
     });
@@ -766,7 +766,7 @@ async function openCatalogLayer(layerId) {
     showResult(
       "שכבה נפתחה",
       added.length
-        ? `${openedLayer.label}: ${(openedLayer.items || []).length.toLocaleString("he-IL")} רשומות נטענו מבחירת שכבות.`
+        ? `${openedLayer.label}: ${(openedLayer.items || []).length.toLocaleString("he-IL")} רשומות נטענו.`
         : "השכבה כבר פתוחה."
     );
   } catch (error) {

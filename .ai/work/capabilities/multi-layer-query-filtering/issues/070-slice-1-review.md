@@ -6,13 +6,13 @@ Review the corrected selector and decide whether Slice 2 may start.
 GitHub issue: #11
 
 ## Required action
-Product, UX, and Development should review `checkpoint-002.md` after Development publishes it.
+Product, UX, and Development should review `checkpoint-002.md`.
 
 ## Owner role
 Product, UX, and Development.
 
 ## Inputs
-- `checkpoint-002.md` once created.
+- `checkpoint-002.md`.
 - Corrected UI.
 - `status.md`
 
