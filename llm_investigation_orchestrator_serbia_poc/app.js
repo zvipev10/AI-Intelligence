@@ -187,6 +187,10 @@ const state = {
   lastResult: null,
   lastPrompt: null,
   queryContext: null,
+  layerCatalog: [],
+  layerCatalogLoading: false,
+  layerCatalogError: "",
+  openingLayerIds: new Set(),
   layers: [],
   activeLayerId: null,
   rawOverlayMinimized: false,
@@ -209,6 +213,8 @@ const recordedClose = document.getElementById("recordedClose");
 const recordedList = document.getElementById("recordedList");
 const agentStatus = document.getElementById("agentStatus");
 const viewRecommendation = document.getElementById("viewRecommendation");
+const layerSelectorList = document.getElementById("layerSelectorList");
+const layerSelectorStatus = document.getElementById("layerSelectorStatus");
 const workspace = document.querySelector(".workspace");
 const queryLayerName = document.getElementById("queryLayerName");
 const queryToolName = document.getElementById("queryToolName");
@@ -243,6 +249,12 @@ const LAYER_COLORS = [
   "#c9ab76",
   "#7fd1ae"
 ];
+
+const LAYER_FAMILY_LABELS = {
+  entities: "ישויות",
+  locations: "מיקומים",
+  events: "אירועים לפי source_type"
+};
 
 function parseCsv(text) {
   const rows = [];
@@ -506,6 +518,21 @@ function buildResultLayers({ events = [], locations = [], timeline = [], groups 
   ].filter(Boolean);
 }
 
+function buildCatalogLayer(layer, rows = []) {
+  const items = layer.kind === "events"
+    ? rows.map(item => ({ ...item, date: new Date(item.timestamp_utc) }))
+    : rows;
+  return {
+    dataId: layer.id,
+    label: layer.label,
+    kind: layer.kind,
+    visible: true,
+    items,
+    capabilities: layer.capabilities || { table: true, map: false, timeline: false },
+    catalogLayerId: layer.id
+  };
+}
+
 function sanitizeLayerKey(value) {
   return String(value || "unknown").replace(/[^\p{L}\p{N}_:-]+/gu, "-");
 }
@@ -598,6 +625,116 @@ function activeTableLayer() {
   return state.layers.find(layer => layer.id === state.activeLayerId && layer.capabilities.table)
     || state.layers.find(layer => layer.capabilities.table)
     || null;
+}
+
+function isCatalogLayerOpen(layerId) {
+  return state.layers.some(layer => layer.catalogLayerId === layerId);
+}
+
+function renderLayerSelector() {
+  if (!layerSelectorList || !layerSelectorStatus) return;
+  if (state.layerCatalogLoading) {
+    layerSelectorStatus.textContent = "טוען שכבות";
+  } else if (state.layerCatalogError) {
+    layerSelectorStatus.textContent = state.layerCatalogError;
+  } else {
+    layerSelectorStatus.textContent = `${state.layerCatalog.length.toLocaleString("he-IL")} שכבות זמינות`;
+  }
+
+  if (state.layerCatalogError) {
+    layerSelectorList.innerHTML = `<div class="layer-selector-empty">${escapeHtml(state.layerCatalogError)}</div>`;
+    return;
+  }
+  if (state.layerCatalogLoading && !state.layerCatalog.length) {
+    layerSelectorList.innerHTML = '<div class="layer-selector-empty">טוען שכבות...</div>';
+    return;
+  }
+  if (!state.layerCatalog.length) {
+    layerSelectorList.innerHTML = '<div class="layer-selector-empty">אין שכבות זמינות.</div>';
+    return;
+  }
+
+  const grouped = state.layerCatalog.reduce((acc, layer) => {
+    const family = layer.family || "other";
+    if (!acc.has(family)) acc.set(family, []);
+    acc.get(family).push(layer);
+    return acc;
+  }, new Map());
+
+  layerSelectorList.innerHTML = [...grouped.entries()].map(([family, layers]) => `
+    <section class="layer-selector-group" aria-label="${escapeHtml(LAYER_FAMILY_LABELS[family] || family)}">
+      <div class="layer-selector-group-title">${escapeHtml(LAYER_FAMILY_LABELS[family] || family)}</div>
+      <div class="layer-selector-options">
+        ${layers.map(layer => {
+          const open = isCatalogLayerOpen(layer.id);
+          const loading = state.openingLayerIds.has(layer.id);
+          return `
+            <button type="button" class="layer-select-btn ${open ? "selected" : ""}" data-layer-select="${escapeHtml(layer.id)}" title="${escapeHtml(layer.label)}" ${loading ? "disabled" : ""}>
+              <span class="layer-select-name">${escapeHtml(layer.label)}</span>
+              <span class="layer-select-count">${Number(layer.count || 0).toLocaleString("he-IL")}</span>
+            </button>`;
+        }).join("")}
+      </div>
+    </section>`).join("");
+}
+
+async function loadLayerCatalog() {
+  if (!layerSelectorList || !layerSelectorStatus) return;
+  state.layerCatalogLoading = true;
+  state.layerCatalogError = "";
+  renderLayerSelector();
+  try {
+    const response = await fetch("/api/layers", { cache: "no-store" });
+    const payload = await response.json();
+    if (!response.ok) throw new Error(payload.error || "טעינת השכבות נכשלה");
+    state.layerCatalog = payload.layers || [];
+  } catch (error) {
+    state.layerCatalogError = error.message || "טעינת השכבות נכשלה";
+  } finally {
+    state.layerCatalogLoading = false;
+    renderLayerSelector();
+  }
+}
+
+async function openCatalogLayer(layerId) {
+  const layer = state.layerCatalog.find(item => item.id === layerId);
+  if (!layer || state.openingLayerIds.has(layerId)) return;
+  const existing = state.layers.find(item => item.catalogLayerId === layerId);
+  if (existing) {
+    existing.visible = true;
+    state.activeLayerId = existing.id;
+    state.rawOverlayMinimized = false;
+    renderAllViews();
+    renderLayerSelector();
+    return;
+  }
+
+  state.openingLayerIds.add(layerId);
+  renderLayerSelector();
+  try {
+    const response = await fetch(`/api/layers/${encodeURIComponent(layerId)}/rows`, { cache: "no-store" });
+    const payload = await response.json();
+    if (!response.ok) throw new Error(payload.error || "טעינת נתוני השכבה נכשלה");
+    const openedLayer = buildCatalogLayer(payload.layer || layer, payload.rows || []);
+    const added = addResultLayers({
+      sourceId: `catalog:${layerId}`,
+      sourceLabel: "בחירת שכבות",
+      preferredView: openedLayer.capabilities.map ? "map" : (openedLayer.capabilities.timeline ? "timeline" : "evidence"),
+      layers: [openedLayer]
+    });
+    state.rawOverlayMinimized = false;
+    showResult(
+      "שכבה נפתחה",
+      added.length
+        ? `${openedLayer.label}: ${(openedLayer.items || []).length.toLocaleString("he-IL")} רשומות נטענו מבחירת שכבות.`
+        : "השכבה כבר פתוחה."
+    );
+  } catch (error) {
+    state.layerCatalogError = error.message || "טעינת נתוני השכבה נכשלה";
+  } finally {
+    state.openingLayerIds.delete(layerId);
+    renderLayerSelector();
+  }
 }
 
 function visibleEventItems() {
@@ -1838,6 +1975,7 @@ function resetInvestigation() {
   activateView("map");
   setSuggestions(["אילו דיווחים על חסימות הופיעו ראשונים?", "האם הטענה על חציית גבול מגובה במקור אמין?", "איפה יש ריכוזי דיווחים מרכזיים?"]);
   renderAllViews();
+  renderLayerSelector();
   renderQueryInspector();
   if (state.map) setTimeout(() => state.map.resize(), 0);
 }
@@ -1863,6 +2001,11 @@ document.addEventListener("click", event => {
   if (savedQuestion) runSavedQuestion(savedQuestion.dataset.savedId);
   const viewButton = event.target.closest("[data-view]");
   if (viewButton) activateView(viewButton.dataset.view);
+  const layerSelect = event.target.closest("[data-layer-select]");
+  if (layerSelect) {
+    openCatalogLayer(layerSelect.dataset.layerSelect);
+    return;
+  }
   const sourceVisibilityBtn = event.target.closest(".source-visibility-btn");
   if (sourceVisibilityBtn) {
     event.stopPropagation();
@@ -1893,6 +2036,7 @@ document.addEventListener("click", event => {
         || null;
     }
     renderAllViews();
+    renderLayerSelector();
     return;
   }
   const rawLayerTab = event.target.closest("[data-layer-id]");
@@ -1914,6 +2058,7 @@ document.addEventListener("click", event => {
     state.entityMetadata = [];
     state.queryContext = null;
     renderAllViews();
+    renderLayerSelector();
     renderQueryInspector();
   }
   if (event.target === recordedModal) closeRecordedModal();
@@ -1969,6 +2114,7 @@ initPanelResizers();
 
 async function boot() {
   initMap();
+  loadLayerCatalog();
   try {
     const response = await fetch("./data/serbia_kosovo_events_projection.csv");
     if (!response.ok) throw new Error("dataset unavailable");

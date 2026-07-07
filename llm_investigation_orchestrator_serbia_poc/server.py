@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import http.client
+import csv
 import json
 import mimetypes
 import os
@@ -9,10 +10,12 @@ import re
 import sys
 import time
 import secrets
+from collections import Counter, defaultdict
 from datetime import datetime, timezone
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import parse_qs, urlparse
+from typing import Any
+from urllib.parse import parse_qs, unquote, urlparse
 
 try:
     import paramiko
@@ -27,6 +30,8 @@ RECORDED_RUNS_DIR = ROOT / "recorded_runs"
 SAVED_QUESTIONS_DIR = ROOT / "saved_questions"
 RECORDED_RUNS_PATH = ROOT / "test_runs" / "compact_demo_after_general_instructions_20260620T151848Z.json"
 LOCATIONS_PATH = ROOT / "data" / "serbia_kosovo_locations.json"
+EVENTS_PATH = ROOT / "data" / "serbia_kosovo_events_projection.csv"
+ENTITIES_PATH = ROOT / "data" / "serbia_kosovo_entities.json"
 TERMINAL_STATUSES = {"completed", "failed", "cancelled"}
 EVENT_ID_PATTERN = re.compile(r"\b(?:REC-\d{6}|LOC-\d{3})\b")
 SAVED_QUESTION_ID_PATTERN = re.compile(r"^[A-Za-z0-9_.-]+$")
@@ -38,6 +43,160 @@ try:
     LOCATIONS = json.loads(LOCATIONS_PATH.read_text(encoding="utf-8"))
 except (OSError, json.JSONDecodeError):
     LOCATIONS = {}
+
+
+def load_ui_events() -> list[dict[str, Any]]:
+    if not EVENTS_PATH.exists():
+        return []
+    with EVENTS_PATH.open(encoding="utf-8-sig", newline="") as handle:
+        events = list(csv.DictReader(handle))
+    for event in events:
+        location = LOCATIONS.get(event.get("location_id") or "", {})
+        event["location_name"] = location.get("name", event.get("location_id") or "")
+        event["location_type"] = location.get("type", "")
+    return sorted(events, key=lambda item: str(item.get("timestamp_utc") or ""))
+
+
+def load_ui_entity_db() -> dict[str, dict[str, Any]]:
+    if not ENTITIES_PATH.exists():
+        return {}
+    try:
+        loaded = json.loads(ENTITIES_PATH.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    return {item["entity_id"]: item for item in loaded if item.get("entity_id")}
+
+
+def build_ui_entity_layers(events: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+    entity_db = load_ui_entity_db()
+    entity_ids = sorted({event.get("entity_id", "") for event in events if event.get("entity_id")})
+    presentations: dict[str, dict[str, Any]] = {}
+    for entity_id in entity_ids:
+        base = entity_db.get(entity_id, {})
+        entity_events = [event for event in events if event.get("entity_id") == entity_id]
+        top_locations = []
+        for location_id, count in Counter(event.get("location_id") for event in entity_events if event.get("location_id")).most_common(12):
+            location = LOCATIONS.get(location_id, {})
+            top_locations.append({
+                "location_id": location_id,
+                "location_name": location.get("name", location_id),
+                "municipality": location.get("municipality"),
+                "latitude": location.get("latitude"),
+                "longitude": location.get("longitude"),
+                "count": count,
+            })
+        presentations[entity_id] = {
+            "entity_id": entity_id,
+            "canonical_name": base.get("canonical_name") or entity_id,
+            "entity_type": base.get("entity_type") or "גורם מדווח",
+            "confidence": base.get("confidence") or "entity_id גלוי ברשומה",
+            "basis": base.get("basis") or "ישות מתוך serbia_kosovo_entities.json לפי entity_id ברשומה",
+            "aliases": list(dict.fromkeys(base.get("aliases") or [base.get("canonical_name") or entity_id])),
+            "event_count": len(entity_events),
+            "top_locations": top_locations,
+            "top_sources": [{"source_type": key, "count": count} for key, count in Counter(event.get("source_type") or "לא ידוע" for event in entity_events).most_common(10)],
+            "certainty_breakdown": dict(Counter(event.get("certainty_level") or "לא ידוע" for event in entity_events)),
+            "reliability_breakdown": dict(Counter(event.get("source_reliability_label") or event.get("source_reliability") or "לא ידוע" for event in entity_events)),
+        }
+    return presentations
+
+
+def build_ui_location_layers(events: list[dict[str, Any]], entity_presentations: dict[str, dict[str, Any]]) -> dict[str, dict[str, Any]]:
+    presentations: dict[str, dict[str, Any]] = {}
+    events_by_location: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for event in events:
+        if event.get("location_id"):
+            events_by_location[event["location_id"]].append(event)
+    for location_id, location in LOCATIONS.items():
+        location_events = events_by_location.get(location_id, [])
+        presentations[location_id] = {
+            "location_id": location_id,
+            "location_name": location.get("name", location_id),
+            "name": location.get("name", location_id),
+            "type": location.get("type"),
+            "country": location.get("country"),
+            "region": location.get("region"),
+            "municipality": location.get("municipality"),
+            "locality": location.get("locality"),
+            "precision": location.get("precision"),
+            "latitude": location.get("latitude"),
+            "longitude": location.get("longitude"),
+            "event_count": len(location_events),
+            "top_entities": [
+                {
+                    "entity_id": entity_id,
+                    "name": entity_presentations.get(entity_id, {}).get("canonical_name", entity_id),
+                    "count": count,
+                }
+                for entity_id, count in Counter(event.get("entity_id") for event in location_events if event.get("entity_id")).most_common(10)
+            ],
+            "top_sources": [{"source_type": key, "count": count} for key, count in Counter(event.get("source_type") or "לא ידוע" for event in location_events).most_common(10)],
+            "certainty_breakdown": dict(Counter(event.get("certainty_level") or "לא ידוע" for event in location_events)),
+            "reliability_breakdown": dict(Counter(event.get("source_reliability_label") or event.get("source_reliability") or "לא ידוע" for event in location_events)),
+        }
+    return presentations
+
+
+def ui_layer_data() -> tuple[list[dict[str, Any]], dict[str, dict[str, Any]], dict[str, dict[str, Any]]]:
+    events = load_ui_events()
+    entities = build_ui_entity_layers(events)
+    locations = build_ui_location_layers(events, entities)
+    for event in events:
+        entity = entities.get(event.get("entity_id") or "", {})
+        event["entity_name"] = entity.get("canonical_name") or event.get("entity_id") or ""
+    return events, entities, locations
+
+
+def list_ui_layers() -> list[dict[str, Any]]:
+    events, entities, locations = ui_layer_data()
+    layers = [
+        {
+            "id": "entity-metadata:all",
+            "label": "שכבת ישויות",
+            "family": "entities",
+            "kind": "entity_metadata",
+            "count": len(entities),
+            "capabilities": {"table": True, "map": True, "timeline": False},
+        },
+        {
+            "id": "location-metadata:all",
+            "label": "שכבת מיקומים",
+            "family": "locations",
+            "kind": "location_metadata",
+            "count": len(locations),
+            "capabilities": {"table": True, "map": True, "timeline": False},
+        },
+    ]
+    source_counts = Counter(event.get("source_type") or "מקור לא ידוע" for event in events)
+    for source_type, count in sorted(source_counts.items(), key=lambda item: (-item[1], item[0])):
+        layers.append({
+            "id": f"events:{source_type}",
+            "label": source_type,
+            "family": "events",
+            "kind": "events",
+            "source_type": source_type,
+            "count": count,
+            "capabilities": {"table": True, "map": True, "timeline": True},
+        })
+    return layers
+
+
+def get_ui_layer_rows(layer_id: str) -> tuple[dict[str, Any], list[dict[str, Any]]] | None:
+    events, entities, locations = ui_layer_data()
+    layers = {layer["id"]: layer for layer in list_ui_layers()}
+    layer = layers.get(layer_id)
+    if not layer:
+        return None
+    if layer_id == "entity-metadata:all":
+        rows = sorted(entities.values(), key=lambda item: (-int(item.get("event_count") or 0), str(item.get("canonical_name") or "")))
+    elif layer_id == "location-metadata:all":
+        rows = sorted(locations.values(), key=lambda item: (-int(item.get("event_count") or 0), str(item.get("location_name") or "")))
+    elif layer_id.startswith("events:"):
+        source_type = layer.get("source_type") or layer_id.split(":", 1)[1]
+        rows = [event for event in events if (event.get("source_type") or "מקור לא ידוע") == source_type]
+    else:
+        return None
+    return layer, rows
 
 
 def load_hermes_config() -> dict:
@@ -1606,6 +1765,18 @@ class Handler(SimpleHTTPRequestHandler):
         path = urlparse(self.path)
         if path.path == "/api/status":
             self.send_json(200, {"mode": "hermes", "configured": CONFIG_PATH.exists(), "build": APP_BUILD})
+            return
+        if path.path == "/api/layers":
+            self.send_json(200, {"layers": list_ui_layers()})
+            return
+        if path.path.startswith("/api/layers/") and path.path.endswith("/rows"):
+            layer_id = unquote(path.path[len("/api/layers/"):-len("/rows")])
+            result = get_ui_layer_rows(layer_id)
+            if result is None:
+                self.send_json(404, {"error": "Layer not found"})
+            else:
+                layer, rows = result
+                self.send_json(200, {"layer": layer, "rows": rows})
             return
         if path.path == "/api/saved-questions":
             self.send_json(200, {"saved_questions": list_saved_question_metadata()})
