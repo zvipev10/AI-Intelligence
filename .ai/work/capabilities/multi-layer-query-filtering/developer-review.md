@@ -7,6 +7,7 @@ Multi-Layer Query Filtering (`multi-layer-query-filtering`)
 Ready for execution planning.
 
 Prepared on 2026-07-06 as AI-authored draft notes during developer-stage review. Approved by the human developer on 2026-07-07 with the MVP decision that API row loading should have no limit.
+Product UX decisions added on 2026-07-07: the filter panel opens from the layer tab, and MVP uses raw field names.
 
 ## Reviewer / input source
 AI-prepared draft from Codex repository inspection, approved by the human developer.
@@ -20,6 +21,8 @@ Approved developer decision:
 - Reuse the existing presentation components for opened layer tabs and expand them to support layer-selection results.
 - Filtering must be available for any opened layer tab, regardless of whether the tab was opened by the standalone layer selector or by a later/legacy result path.
 - For MVP, do not add a row limit to layer row loading.
+- Product-owned UX decision: open the filter panel from the layer tab.
+- Product-owned UX decision: use raw field names for MVP filter fields.
 
 This artifact is approved for execution planning.
 
@@ -316,8 +319,10 @@ None. The human developer approved the following assumptions on 2026-07-07:
 - Raw field names are acceptable for MVP.
 
 ## Open questions for Product / UX / QA / Architecture / Security
-- UX: Should the filter panel be always visible for the active layer, collapsible, or opened by a filter button on the layer tab?
-- UX: Should filter labels be raw field names or translated labels in the first implementation?
 - QA: Which API-loaded dataset state should be used as the canonical manual test fixture?
 - Architecture: Confirm the API endpoint shape if this POC pattern is expected to survive beyond local/demo use.
 - Security: Confirm no additional authorization is needed for the layer catalog and row endpoints in the current target environment.
+
+Resolved product/UX questions:
+- Filter panel opens from the layer tab.
+- MVP filter fields use raw field names.

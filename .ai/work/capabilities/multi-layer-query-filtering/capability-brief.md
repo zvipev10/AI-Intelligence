@@ -125,17 +125,26 @@ Observed code context:
 - Current event data fields include at least: `event_id`, `timestamp_utc`, `source_type`, `source_reliability`, `source_reliability_label`, `certainty_level`, `entity_id`, `location_id`, and `event_summary`.
 - The source normalization report lists approved source types such as `X`, `בלוג פוליטי`, `הודעת דובר`, `חדשות מקומיות`, `טיקטוק`, `טלגרם`, `ערוץ חדשות בינלאומי`, `פייסבוק`, `קבוצת וואטסאפ`, and `שמועה מקומית`.
 
-To be confirmed by developer review:
-- Whether filtering should be implemented entirely client-side for the visible layer items or routed through backend/MCP query calls.
-- Whether field discovery should inspect the current layer's item objects dynamically or use explicit field definitions.
-- Whether contains matching should normalize Hebrew/English text the same way as existing backend search helpers.
-- How to represent draft filters vs applied filters in `state.layers`.
+Confirmed by developer/product/UX review:
+- The capability is standalone from chat and agent result loading.
+- Layer rows are fetched through an API-backed path.
+- MVP row loading has no row limit.
+- MVP filtering runs client-side against API-loaded layer rows.
+- Applied filters affect all supported presentations for the opened layer tab: table, map, and timeline.
+- Field discovery should inspect the selected layer's loaded item objects dynamically.
+- MVP contains matching should use simple string contains matching with case folding, aligned with current frontend helper constraints.
+- Draft and applied filters should live on opened layer objects, using separate `draftFilters` and `appliedFilters` state.
+- Duplicate filters are allowed for MVP.
+- Removing a filter is a draft change until Apply.
+- Closing a layer discards that layer's draft/applied filter state with no confirmation.
 
 ## UX notes
 - The filter controls should be presented beside the existing results table.
+- The filter panel should be opened from the layer tab.
 - Each layer should own its own filter state and Apply action.
 - Editing filters and closing a layer must feel like distinct actions.
 - The X close action should remain the way users close/remove a selected layer.
+- MVP should display raw field names rather than translated or user-friendly field labels.
 - The UI should clearly indicate which layer is selected/active for table display.
 - The UI should make it clear when a layer has unapplied filter changes.
 - Empty filter values should be blocked before Apply with an obvious inline state.
@@ -163,21 +172,24 @@ To be confirmed by developer review:
 - Per-layer draft/applied state may complicate the current simple `state.layers` model.
 
 ## Open questions
-- Should filtering run client-side on already-loaded layer items for MVP, or should Apply execute a backend/MCP query?
-- Should contains matching be case-insensitive and normalized for Hebrew final letters/diacritics, matching existing backend behavior where possible?
-- Should duplicate filters on the same field/value be blocked or allowed?
-- When a layer is closed with X, should draft/applied filters be discarded immediately with no confirmation?
-- Should the existing eye visibility control remain available as-is, or should it be hidden/de-emphasized for this capability?
-- Should filter fields display raw field names or translated/user-friendly labels?
-- Should each layer have its own Apply button, or should Apply appear in the selected layer's filter panel only?
+No blocking product, UX, or developer questions remain before execution planning.
+
+Implementation-detail questions to handle during planning/checkpoints:
+- Whether the existing eye visibility control needs visual de-emphasis after the filter panel is added.
+- Exact button and validation copy for Add filter, Apply, Edit, Remove, Cancel/Revert, and empty-value validation.
+- Whether the first implementation should add a lightweight automated helper test harness or rely on manual browser validation.
 
 ## Missing inputs
-- Preferred UI placement for the layer filter panel beside the results table.
-- Exact copy/labels for Add filter, Apply, Edit, Remove, and empty-value validation.
-- Whether filter field names need translation.
-- Final decision on duplicate filters.
-- Final decision on client-side vs backend filtering.
-- Expected performance target for filtering large event-source layers.
+None blocking execution planning.
+
+Planning assumptions:
+- MVP uses raw field names.
+- MVP allows duplicate filters.
+- MVP uses API row loading with no row limit.
+- MVP uses client-side filtering over API-loaded rows.
+- MVP keeps removal draft-only until Apply.
+- MVP opens the filter panel from the layer tab.
+- Product accepts the performance risk of unlimited row loading for MVP.
 
 ## Required reviewers
 - Product
@@ -189,24 +201,23 @@ Potentially also:
 - Architecture, if filtering requires backend/MCP API changes.
 
 ## Proposed execution checkpoints
-1. Product/UX checkpoint: confirm per-layer filter interaction, Apply behavior, and panel placement.
-2. Developer checkpoint: confirm client-side vs backend filtering and the state model for draft/applied filters.
-3. Execution checkpoint 1: layer filter panel skeleton beside the results table, no filtering logic yet.
-4. Execution checkpoint 2: per-layer add/edit/remove filter state with validation.
-5. Execution checkpoint 3: Apply filters to one layer using contains + AND.
-6. Execution checkpoint 4: support Entities, Locations, and event-source layers consistently.
-7. QA checkpoint: validate edge cases, no-results behavior, Hebrew/English contains matching, and existing table/layer regressions.
+1. Execution checkpoint 1: standalone API-backed layer catalog and row loading.
+2. Execution checkpoint 2: presentation reuse for API-opened layers across table, map, and timeline.
+3. Execution checkpoint 3: layer-tab-triggered filter panel skeleton beside the results table.
+4. Execution checkpoint 4: per-layer add/edit/remove/apply filter state with validation.
+5. Execution checkpoint 5: cross-layer validation for Entities, Locations, and event-source layers.
+6. QA checkpoint: validate edge cases, no-results behavior, Hebrew/English contains matching, and existing table/layer regressions.
 
 ## Handoff to developer
 
-Questions for developer:
-- Should MVP filtering be client-side against `layer.items`, or should Apply call backend/MCP search endpoints?
-- What is the safest state shape for per-layer `draftFilters` and `appliedFilters` inside `state.layers`?
-- Which fields should be shown to users when "all fields" are filterable: raw object keys, translated labels, or a generated field list?
-- Can the existing `renderEvidence()` table rendering be extended cleanly, or should filtering introduce a small layer/filter model helper first?
-- Should the existing query modal be reused or kept separate from this layer-filter workflow?
-- How should contains matching normalize Hebrew/English strings?
-- What is the smallest first implementation slice that can be reviewed safely?
+Approved developer direction:
+- Build standalone API-backed layer opening, separate from chat/agent results.
+- Reuse existing presentation components after rows are loaded.
+- Keep the existing query modal separate.
+- Add helper functions before wiring heavy UI behavior.
+- Use `draftFilters` and `appliedFilters` on opened layer objects.
+- Use raw field names for MVP.
+- Apply filters across all supported presentations for the opened layer.
 
 Expected developer output:
 - feasibility notes
