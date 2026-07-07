@@ -48,7 +48,9 @@ Filtering behavior:
 - Support the existing entity layer.
 - Support the existing location layer.
 - Support event-source layers derived from available `source_type` values.
-- Allow users to find/select a layer.
+- Add a new standalone layer selection component for choosing layers.
+- The layer selection component must include Entities, Locations, and Events grouped by type/source type.
+- Allow users to find/select a layer from the new layer selection component.
 - Add each selected layer to the existing layer/table workspace.
 - Keep selected layers independent from each other.
 - Keep previously selected layers and their filters when another layer is selected.
@@ -139,6 +141,9 @@ Confirmed by developer/product/UX review:
 - Closing a layer discards that layer's draft/applied filter state with no confirmation.
 
 ## UX notes
+- Add a new standalone layer selection component. It is the place users choose/add layers.
+- The layer selection component is separate from opened layer tabs, chat, agent result steps, and the query modal.
+- The existing opened layer tabs remain the place users select, filter, hide/show, or close already opened layers.
 - The filter controls should be presented beside the existing results table.
 - The filter panel should be opened from the layer tab.
 - Each layer should own its own filter state and Apply action.

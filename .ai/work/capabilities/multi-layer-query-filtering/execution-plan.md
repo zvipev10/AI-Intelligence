@@ -29,6 +29,7 @@ Deliver a standalone layer-selection and per-layer filtering workflow that is se
 
 ## Approved scope
 - Standalone layer catalog and layer-opening flow, independent of chat and agent results.
+- New standalone layer selection component for choosing/adding layers.
 - MVP layer families:
   - Entities
   - Locations
@@ -57,15 +58,15 @@ Deliver a standalone layer-selection and per-layer filtering workflow that is se
 ## Proposed approach
 Build the capability in five reviewable slices.
 
-First, expose a standalone layer catalog and layer row API in `server.py`. The frontend should fetch available layer definitions, then fetch all rows for a selected layer. The selected layer should open into the existing layer tab model rather than depending on agent/chat result data.
+First, expose a standalone layer catalog and layer row API in `server.py`, and add the new standalone layer selection component. The frontend should fetch available layer definitions, let users choose/add Entities, Locations, and Events grouped by type/source type, then fetch all rows for a selected layer. The selected layer should open into the existing layer tab model rather than depending on agent/chat result data.
 
 Second, introduce a shared presentation item helper so table, map, and timeline consume the same applied-filtered item set for each visible/opened layer. This avoids a common failure mode where the table looks filtered but the map and timeline still show unfiltered records.
 
-Third, add the filter panel entry point from the layer tab and place filter controls beside the results table. Keep close, visibility, and filter editing visually distinct.
+Third, add the filter panel entry point from the layer tab and place filter controls beside the results table. Keep layer selection, opened layer tabs, close, visibility, and filter editing visually distinct.
 
 Fourth, wire draft/edit/remove/apply behavior. Apply validates draft filters, copies valid draft filters to applied filters, and then rerenders the supported presentations.
 
-Finally, run cross-layer validation and capture checkpoint results before asking QA for acceptance.
+Fifth, run cross-layer validation and capture checkpoint results before asking QA for acceptance.
 
 ## Files/services likely affected
 - `llm_investigation_orchestrator_serbia_poc/server.py`
@@ -76,9 +77,9 @@ Finally, run cross-layer validation and capture checkpoint results before asking
   - Refactor map/timeline/table item selection to use applied-filtered presentation items.
   - Add click/change/input handlers for layer filter controls.
 - `llm_investigation_orchestrator_serbia_poc/index.html`
-  - Add layer-selection UI and filter panel container.
+  - Add a new standalone layer selection component and filter panel container.
 - `llm_investigation_orchestrator_serbia_poc/styles.css`
-  - Add layer selector and filter panel styles.
+  - Add layer selection component and filter panel styles.
   - Preserve existing raw results overlay, layer tab, close, visibility, minimize, and resize behavior.
 
 ## Data/API changes
@@ -94,7 +95,9 @@ Recommended MVP API:
 Server-side filtering, pagination, limits, and typed filter operators are deferred.
 
 ## UX changes
-- Add a standalone layer selector, separate from chat and agent result controls.
+- Add a new standalone layer selection component, separate from chat, agent result controls, existing opened-layer tabs, and the query modal.
+- The layer selection component should let users choose/add Entities, Locations, and Events grouped by type/source type.
+- The existing opened-layer tabs should remain responsible for selecting an active opened layer, opening that layer's filter panel, visibility, and X close.
 - Open selected layers as existing-style layer tabs.
 - Open the filter panel from the layer tab.
 - Show raw field names in field selectors.
@@ -128,9 +131,9 @@ Automation/lightweight checks:
 
 ## Execution slices
 
-### Slice 1: API Layer Catalog And Row Loading
+### Slice 1: Layer Selection Component And API Row Loading
 Goal:
-Create the standalone data path for selectable layers.
+Create the standalone layer selection component and data path for selectable layers.
 
 Expected changes:
 - Add `GET /api/layers`.
@@ -138,16 +141,19 @@ Expected changes:
 - Return Entities, Locations, and event-source layer definitions.
 - Return all rows for a selected layer with no MVP row limit.
 - Add frontend fetch helpers for catalog and layer rows.
-- Add a minimal layer selector UI entry point if needed to exercise the API-open flow.
+- Add a new standalone layer selection component.
+- The component lists/selects Entities, Locations, and Events grouped by type/source type.
+- Selecting an item opens that layer into the existing opened-layer tab model.
+- The component remains available so users can add more layers later.
 
 Risk:
 Medium. This introduces a new API-backed workflow and becomes the foundation for the rest of the capability.
 
 Reviewer:
-Product and Development.
+Product, UX, and Development.
 
 Stop after slice?
-Yes. Product/Development should verify that standalone layer selection is independent from chat/agent results and that API shape is acceptable before filter UI work continues.
+Yes. Product/UX/Development should verify that the new layer selection component is separate from opened-layer tabs, independent from chat/agent results, and that API shape is acceptable before filter UI work continues.
 
 ### Slice 2: Presentation Reuse And Filterable Layer Model
 Goal:
@@ -241,7 +247,7 @@ Stop and request review if:
 
 ## Rollback/fallback notes
 - Keep chat/agent result rendering paths intact while adding standalone layer selection.
-- If the layer selector causes instability, hide or disable the standalone entry point while preserving existing result tabs.
+- If the layer selection component causes instability, hide or disable it while preserving existing result tabs.
 - If cross-presentation filtering is unstable, stop before release rather than shipping table-only filtering, because Product decided filters must affect all supported presentations.
 - If unlimited row loading is too slow on the MVP dataset, return to Product/Development for a limit/paging decision before changing the approved scope.
 
