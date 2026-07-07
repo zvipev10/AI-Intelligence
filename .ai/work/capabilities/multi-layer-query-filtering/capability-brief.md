@@ -52,6 +52,7 @@ Filtering behavior:
 - The layer selection component must include Entities, Locations, and Events grouped by `source_type`.
 - The layer selection component should be a compact search/autocomplete input, not a full always-visible list of all layers.
 - The search/autocomplete may be placed on the map surface if UX review confirms it stays compact and does not obscure investigation content.
+- Do not show a separate layer-selection section/header/card such as "Data layers", "Layer selection", or an available-layer count. The MVP selector should read as a small search line only.
 - Allow users to find/select a layer from the new layer selection component.
 - Add each selected layer to the existing layer/table workspace.
 - Keep selected layers independent from each other.
@@ -146,6 +147,7 @@ Confirmed by developer/product/UX review:
 - Add a new standalone layer selection component. It is the place users choose/add layers.
 - The layer selection component should be a small search line with autocomplete, rather than displaying all available layers above the map.
 - Candidate placement: on the map surface, if it remains compact and does not interfere with map reading.
+- Product review of Slice 1 rejected the separate visible "Data layers / Layer selection / available layers" section. Remove that section and keep only the compact search/autocomplete affordance.
 - Selecting an autocomplete result opens that layer in the results panel / opened-layer tabs.
 - The layer selection component is separate from opened layer tabs, chat, agent result steps, and the query modal.
 - The existing opened layer tabs remain the place users select, filter, hide/show, or close already opened layers.

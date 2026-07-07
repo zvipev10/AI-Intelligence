@@ -58,7 +58,7 @@ Create the standalone compact layer search/autocomplete component and API-backed
 - Full browser interaction QA.
 
 ## Risks / open questions
-- The selector layout and autocomplete interaction still need Product/UX review in the browser.
+- Product reviewed the selector layout and rejected the separate "Data layers / Layer selection / available layers" section shown in the Slice 1 UI. Developer review is required to remove that visible section/header/count and keep only a compact search/autocomplete line.
 - MVP no-limit row loading can still become a performance issue on larger datasets.
 - Existing unrelated local changes in `styles.css` predated this slice; this slice preserved and worked with them rather than reverting.
 
@@ -68,7 +68,7 @@ Create the standalone compact layer search/autocomplete component and API-backed
 - Development
 
 ## Continue / pause recommendation
-Pause for Slice 1 review before implementing Slice 2, because this slice introduces the new standalone compact layer search/autocomplete component and API-backed workflow.
+Pause for Developer review before implementing Slice 2. Product requested a Slice 1 UX correction: remove the separate selector section/header/count and keep only the compact search/autocomplete affordance.
 
 ## Next planned slice
 Slice 2: Presentation Reuse And Filterable Layer Model.

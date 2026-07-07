@@ -4,10 +4,11 @@
 Multi-Layer Query Filtering (`multi-layer-query-filtering`)
 
 ## Review status
-Ready for execution planning.
+Reopened for developer review after Product review of Slice 1.
 
 Prepared on 2026-07-06 as AI-authored draft notes during developer-stage review. Approved by the human developer on 2026-07-07 with the MVP decision that API row loading should have no limit.
 Product UX decisions added on 2026-07-07: the filter panel opens from the layer tab, and MVP uses raw field names.
+Product review of Slice 1 added on 2026-07-07: remove the separate "Data layers / Layer selection / available layers" section shown in the implemented UI. The selector should be only a small search/autocomplete line, potentially on the map surface, and selection should open the layer in the results panel.
 
 ## Reviewer / input source
 AI-prepared draft from Codex repository inspection, approved by the human developer.
@@ -25,8 +26,9 @@ Approved developer decision:
 - Product-owned UX decision: use raw field names for MVP filter fields.
 - Product-owned UX decision: add a new standalone layer selection component for Entities, Locations, and Events grouped by `source_type`. Existing layer tabs are for already opened layers, not for discovering/selecting new layers.
 - Product-owned UX decision: the standalone layer selection component should be a compact search/autocomplete input, potentially on the map surface, not a full list of all layers above the map. Selecting an autocomplete result opens the layer in the results panel/opened-layer tabs.
+- Product-owned UX correction after Slice 1 review: remove the visible section/header/count around the selector. Do not present copy like "Data layers", "Layer selection", or "12 available layers" as a separate block. Keep the layer-selection affordance visually minimal.
 
-This artifact is approved for execution planning.
+This artifact is reopened for developer review of the Slice 1 UI correction before Slice 2 continues.
 
 ## Context reviewed
 - `.ai/work/capabilities/multi-layer-query-filtering/capability-brief.md`
@@ -179,6 +181,7 @@ Implementation notes:
 - Add a dedicated compact search/autocomplete layer selection component; do not treat the existing layer tabs as the layer picker.
 - Avoid rendering all available layers as a large list above the map.
 - Consider placing the search/autocomplete on the map surface, as long as it remains compact and does not obscure important map content.
+- Remove any separate selector header/section/count block introduced in Slice 1; the search/autocomplete should stand on its own.
 - Add an open-layer function that fetches rows from the API and creates or updates an opened layer tab.
 - Initialize filter state when a tab is opened from the layer selector and when any legacy path creates a tab.
 - When an existing layer is re-shown, preserve its filter state.
@@ -272,6 +275,7 @@ Recommended clarifications before execution planning:
 - Add or expose API endpoint(s) for layer catalog and selected layer rows.
 - Add frontend layer selector state and open-layer action independent from chat/agent results.
 - Open Entities, Locations, and event-source layers into existing layer tabs using fetched rows.
+- Product review fix: remove the separate selector section/header/count and keep only a compact search/autocomplete line.
 - Risk: medium because this introduces a new API-backed workflow.
 - Review needed: Product, Development, QA.
 
@@ -324,6 +328,7 @@ None. The human developer approved the following assumptions on 2026-07-07:
 - Raw field names are acceptable for MVP.
 
 ## Open questions for Product / UX / QA / Architecture / Security
+- Development: Can the Slice 1 implementation remove the selector wrapper/header/count without affecting the API-backed layer catalog and open-layer behavior?
 - QA: Which API-loaded dataset state should be used as the canonical manual test fixture?
 - Architecture: Confirm the API endpoint shape if this POC pattern is expected to survive beyond local/demo use.
 - Security: Confirm no additional authorization is needed for the layer catalog and row endpoints in the current target environment.

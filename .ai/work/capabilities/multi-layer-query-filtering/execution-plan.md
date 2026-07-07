@@ -4,9 +4,10 @@
 Multi-Layer Query Filtering (`multi-layer-query-filtering`)
 
 ## Plan status
-Draft for Product and Development review.
+Reopened for Development review after Product review of Slice 1.
 
 Prepared on 2026-07-07 from the approved capability brief and developer review. Do not start implementation until Product and Development accept this plan or explicitly accept any changes as execution assumptions.
+Updated on 2026-07-07 after Product reviewed Slice 1 and requested removal of the separate visible "Data layers / Layer selection / available layers" selector section.
 
 ## Prerequisite review gate
 - Product brief: `.ai/work/capabilities/multi-layer-query-filtering/capability-brief.md` updated with Product/UX decisions.
@@ -97,6 +98,7 @@ Server-side filtering, pagination, limits, and typed filter operators are deferr
 ## UX changes
 - Add a new standalone compact search/autocomplete layer selection component, separate from chat, agent result controls, existing opened-layer tabs, and the query modal.
 - Do not display all available layers as a large list above the map.
+- Do not display a separate selector section/header/count such as "Data layers", "Layer selection", or "12 available layers".
 - Candidate placement: on the map surface, if compact and non-obstructive.
 - The layer selection component should let users search/select Entities, Locations, and Events grouped by `source_type`.
 - Selecting an autocomplete result should open that layer in the results panel as an existing-style opened layer tab.
@@ -147,6 +149,7 @@ Expected changes:
 - Add a new standalone compact search/autocomplete layer selection component.
 - The component searches/selects Entities, Locations, and Events grouped by `source_type`.
 - Do not place a full list of all available layers above the map.
+- Remove the separate visible selector section/header/count from the Slice 1 UI and keep the affordance as a small search/autocomplete line only.
 - Prefer a small search line; it may sit on the map surface if it stays compact and does not obscure map use.
 - Selecting an autocomplete result opens that layer in the results panel through the existing opened-layer tab model.
 - The component remains available so users can add more layers later.
@@ -158,7 +161,7 @@ Reviewer:
 Product, UX, and Development.
 
 Stop after slice?
-Yes. Product/UX/Development should verify that the new layer selection component is separate from opened-layer tabs, independent from chat/agent results, and that API shape is acceptable before filter UI work continues.
+Yes. Development should first review and apply the Product correction to remove the selector section/header/count. Product/UX/Development should then verify that the new layer selection component is separate from opened-layer tabs, independent from chat/agent results, and that API shape is acceptable before filter UI work continues.
 
 ### Slice 2: Presentation Reuse And Filterable Layer Model
 Goal:
