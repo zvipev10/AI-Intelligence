@@ -4,23 +4,24 @@
 Multi-Layer Query Filtering (`multi-layer-query-filtering`)
 
 ## Review status
-Draft - pending human approval.
+Ready for execution planning.
 
-Prepared on 2026-07-06 as AI-authored draft notes during developer-stage review. This artifact is not approved developer input yet. The human developer should accept, edit, or reject the recommendations before this can be marked `Ready for execution planning`.
+Prepared on 2026-07-06 as AI-authored draft notes during developer-stage review. Approved by the human developer on 2026-07-07 with the MVP decision that API row loading should have no limit.
 
 ## Reviewer / input source
-AI-prepared draft from Codex repository inspection, pending human developer approval.
+AI-prepared draft from Codex repository inspection, approved by the human developer.
 
 ## Developer-stage outcome
-Updated after human developer/product clarification on 2026-07-06.
+Updated after human developer/product clarification on 2026-07-06 and human developer approval on 2026-07-07.
 
-Recommended developer decision:
+Approved developer decision:
 - Build this as a standalone layer-selection capability, separate from chat, agent runs, and chat-step result loading.
 - Add or use an API endpoint to fetch rows for selected layers.
 - Reuse the existing presentation components for opened layer tabs and expand them to support layer-selection results.
 - Filtering must be available for any opened layer tab, regardless of whether the tab was opened by the standalone layer selector or by a later/legacy result path.
+- For MVP, do not add a row limit to layer row loading.
 
-This artifact remains `Draft - pending human approval` until the human developer explicitly approves it or edits it into the final developer position.
+This artifact is approved for execution planning.
 
 ## Context reviewed
 - `.ai/work/capabilities/multi-layer-query-filtering/capability-brief.md`
@@ -126,7 +127,7 @@ Pros:
 Cons:
 - Requires API work for catalog/row loading.
 - Filtering is limited to rows returned by the API request unless the API later supports server-side filter application.
-- Large layers may require paging or backend filtering.
+- Large layers may require paging or backend filtering after MVP.
 
 ### Option 2: Standalone API-backed layer opening with server-side filtering on Apply
 Add a layer catalog and row endpoint, then send draft filters to the backend on Apply so the API returns filtered rows.
@@ -193,6 +194,7 @@ Recommended planning assumptions:
 - Filters are available for any opened layer tab.
 - Applied filters affect all presentations for the opened layer tab, including table, map, and timeline where supported.
 - Filtering can run client-side over fetched rows for MVP, while the API contract should allow future server-side filtering/paging.
+- For MVP, layer row loading has no row limit.
 - A removed filter follows the same draft/apply contract as edited filters; presentations change only after Apply.
 - Duplicate filters are allowed for MVP because they are redundant but do not change AND semantics.
 - Raw field names are acceptable for the first implementation. Friendly labels/translations can be added after UX review.
@@ -214,16 +216,17 @@ Recommended planning assumptions:
   - Entities and Locations should return metadata rows compatible with the existing presentation components.
 - Event rows already include fields such as `event_id`, `timestamp_utc`, `source_type`, `source_reliability`, `source_reliability_label`, `certainty_level`, `entity_id`, `entity_name`, `location_id`, `location_name`, `location_type`, and `event_summary`.
 - Entity and location metadata include nested fields such as aliases, top locations, top sources, and breakdowns. These should be discoverable and matchable, but the table display can remain the existing curated columns.
-- If future requirements need filtering over the full dataset, large result sets, or pagination, add server-side filter parameters to the row endpoint.
+- For MVP, row endpoints should return all rows for the selected layer with no row limit.
+- If future requirements need better performance for large result sets or pagination, add server-side filter parameters to the row endpoint.
 
 ## Security/permissions considerations
 The new API endpoint must not expose data beyond what the current application is allowed to show. No new permissions are expected for the local POC, but productionizing this pattern would require authorization on the layer catalog and row endpoints.
 
 ## Performance considerations
-- Client-side contains matching is acceptable only for bounded row responses.
-- The row endpoint should return bounded data or support a limit/paging plan if layer sizes are large.
+- Client-side contains matching is accepted for MVP even though row loading is unlimited.
+- The no-limit MVP decision carries performance risk if selected layers are large.
 - Add helpers that compute filtered items for visible/opened layers only when needed by table, map, timeline, or counts.
-- If showing filtered counts for all tabs, count computation should be simple and bounded to existing `layer.items`.
+- If showing filtered counts for all tabs, count computation should be simple and based on existing `layer.items`.
 - Server-side filtering should be considered if opened layers regularly contain many thousands of rows.
 
 ## Test strategy
@@ -295,7 +298,6 @@ Recommended clarifications before execution planning:
 - Review needed: QA.
 
 ## Required review gates before coding
-- Human developer must approve or revise this draft before it can be used for execution planning.
 - Create `execution-plan.md` from this developer review and the product brief.
 - Product should confirm the standalone layer-selection flow and API-backed row loading scope.
 - UX should confirm layer selector placement, filter panel placement, and cross-presentation filtered states.
@@ -303,9 +305,10 @@ Recommended clarifications before execution planning:
 - QA should confirm manual acceptance coverage before implementation starts.
 
 ## Blocking questions before execution planning
-None blocking for execution planning if the following assumptions are accepted:
+None. The human developer approved the following assumptions on 2026-07-07:
 - The capability is standalone from chat/agent result loading.
 - Layer rows are fetched by API.
+- MVP layer row loading has no row limit.
 - MVP filtering is client-side against API-loaded layer rows.
 - Filters are available for every opened layer tab.
 - Duplicate filters are allowed.
