@@ -3,8 +3,20 @@
 ## Capability
 Multi-Layer Query Filtering (`multi-layer-query-filtering`)
 
+## Related issue
+GitHub issue: #5. Local issue body: `issues/020-developer-review.md`.
+
 ## Review status
-Reopened for developer review after Product review of Slice 1.
+Reopened.
+
+## Role action
+
+| Role | Status | Required action | Due before |
+|---|---|---|---|
+| Development | Action needed | Confirm and implement the Slice 1 selector correction, then publish `checkpoint-002.md`. | Slice 2 starts |
+
+## What changed since previous review
+Product reviewed Slice 1 and requested removal of the visible selector section/header/count. The API-backed catalog and row-loading approach remains valid, but the UI presentation must be corrected before Slice 2.
 
 Prepared on 2026-07-06 as AI-authored draft notes during developer-stage review. Approved by the human developer on 2026-07-07 with the MVP decision that API row loading should have no limit.
 Product UX decisions added on 2026-07-07: the filter panel opens from the layer tab, and MVP uses raw field names.

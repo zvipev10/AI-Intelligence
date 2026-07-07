@@ -2,10 +2,20 @@
 
 ## Capability
 
-## Review status
-Pending human input / Draft - pending human approval / Ready for execution planning / Blocked
+## Related issue
 
-Use `Ready for execution planning` only after the human developer explicitly approves this artifact or explicitly delegates the developer decision to the AI.
+## Review status
+Draft / Pending human review / Changes requested / Approved / Reopened / Superseded / Blocked / Complete
+
+Use `Approved` only after the human developer explicitly approves this artifact or explicitly delegates the developer decision to the AI.
+
+## Role action
+
+| Role | Status | Required action | Due before |
+|---|---|---|---|
+| Development |  |  |  |
+
+## What changed since previous review
 
 ## Reviewer / input source
 

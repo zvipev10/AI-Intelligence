@@ -7,6 +7,8 @@ Use one folder per meaningful capability:
 ```text
 .ai/work/capabilities/<capability-slug>/
   capability-brief.md
+  status.md
+  decisions.md
   developer-review.md
   ux-review.md
   qa-review.md
@@ -14,6 +16,7 @@ Use one folder per meaningful capability:
   checkpoint-001.md
   checkpoint-002.md
   handoff-summary.md
+  issues/
 ```
 
 ## Purpose
@@ -22,14 +25,22 @@ These files are used as shared handoff artifacts between roles.
 
 Do not rely on long private chat history for handoff.
 
+## Capability dashboard
+
+| Capability | Phase | Status | Waiting on | Next artifact |
+|---|---|---|---|---|
+| multi-layer-query-filtering | Slice 1 review | Changes requested | Development | checkpoint-002.md |
+
 ## Typical flow
 
-1. Product starts a capability and creates `capability-brief.md`.
-2. Developer reviews the brief and creates or approves `developer-review.md`.
-3. UX and QA create review files when relevant.
-4. Codex creates `execution-plan.md`.
-5. Codex executes in slices and creates checkpoint summaries.
-6. Final handoff is saved in `handoff-summary.md`.
+1. Product starts a capability and creates `capability-brief.md`, `status.md`, and the parent capability issue.
+2. Product, Development, UX, and QA work through child issues for actionable review tasks.
+3. Developer reviews the brief and creates or approves `developer-review.md`.
+4. UX and QA create review files when relevant.
+5. Codex creates `execution-plan.md` and child implementation/review issues for slices.
+6. Codex executes in slices and creates checkpoint summaries.
+7. `status.md` is updated whenever owner, phase, blocker, or next artifact changes.
+8. Final handoff is saved in `handoff-summary.md`, and the parent issue closes only after final acceptance.
 
 AI-prepared role reviews are drafts until the human role owner explicitly approves them or explicitly delegates that role decision to the AI. A draft role review should not be treated as ready for execution planning.
 

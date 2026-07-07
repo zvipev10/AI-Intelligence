@@ -6,6 +6,12 @@ Multi-Layer Query Filtering
 ## Capability slug
 multi-layer-query-filtering
 
+## Parent issue
+GitHub issue: #3. Local issue body: `issues/000-parent-capability.md`.
+
+## Current status
+See `status.md` for operational owner, blockers, and next action.
+
 ## User problem
 Users need a faster way to query and inspect application data by selecting relevant layers and narrowing each layer with field/value filters. Today the application can display result layers and a results table, but users do not yet have a guided workflow for finding a layer, adding filters to that layer, applying those filters, and later reopening the filter for editing.
 
@@ -211,6 +217,14 @@ Planning assumptions:
 
 Potentially also:
 - Architecture, if filtering requires backend/MCP API changes.
+
+## Required child issues
+- [x] Product review: #4 / `issues/010-product-brief-review.md`
+- [ ] Developer review / Slice 1 correction: #5 / `issues/020-developer-review.md`
+- [ ] UX review: #6 / `issues/030-ux-review.md`
+- [ ] QA planning: #7 / `issues/040-qa-planning.md`
+- [ ] Execution plan review: #8 / `issues/050-execution-plan-review.md`
+- [ ] Slice implementation and review tasks: `issues/060-slice-1-implementation.md` through `issues/120-final-handoff.md`
 
 ## Proposed execution checkpoints
 1. Execution checkpoint 1: compact search/autocomplete layer selection component with standalone API-backed layer catalog and row loading.

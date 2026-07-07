@@ -21,6 +21,8 @@ The reviewer mindset is different from the builder mindset:
 
 Use the available:
 - original request / issue / capability brief
+- parent capability issue and active child task issue
+- capability `status.md`
 - role reviews
 - execution plan
 - checkpoint summary
@@ -83,3 +85,9 @@ Use one:
 - pause for review
 - request changes
 - approve
+
+Also state:
+- next role that must act
+- issue status change needed
+- whether the active child issue can close
+- whether the parent capability issue remains open

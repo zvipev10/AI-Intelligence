@@ -6,6 +6,23 @@ Checkpoint 001 - Slice 1
 ## Capability
 Multi-Layer Query Filtering (`multi-layer-query-filtering`)
 
+## Related issue
+GitHub issue: #9 / `issues/060-slice-1-implementation.md`. Follow-up correction issue: #10 / `issues/061-slice-1-selector-correction.md`.
+
+## Checkpoint status
+Changes requested.
+
+## Handoff
+
+Next role: Development.
+Required action: remove the selector section/header/count and keep only the compact autocomplete line.
+Expected output: `checkpoint-002.md`.
+Do not proceed to: Slice 2.
+Until: Product/UX/Development review the corrected selector.
+
+## What changed since previous review
+Product rejected the separate visible selector block after Slice 1.
+
 ## Slice goal
 Create the standalone compact layer search/autocomplete component and API-backed data path for selectable layers.
 
@@ -57,10 +74,15 @@ Create the standalone compact layer search/autocomplete component and API-backed
 - Filter Apply behavior.
 - Full browser interaction QA.
 
-## Risks / open questions
-- Product reviewed the selector layout and rejected the separate "Data layers / Layer selection / available layers" section shown in the Slice 1 UI. Developer review is required to remove that visible section/header/count and keep only a compact search/autocomplete line.
+## Blockers
+- Product reviewed the selector layout and rejected the separate "Data layers / Layer selection / available layers" section shown in the Slice 1 UI. Development must remove that visible section/header/count and keep only a compact search/autocomplete line.
+
+## Risks
 - MVP no-limit row loading can still become a performance issue on larger datasets.
 - Existing unrelated local changes in `styles.css` predated this slice; this slice preserved and worked with them rather than reverting.
+
+## Open questions
+- Which API-loaded dataset state should be used as the canonical manual QA fixture?
 
 ## Review requested from
 - Product

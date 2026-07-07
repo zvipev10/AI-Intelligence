@@ -4,6 +4,21 @@
 
 ## Capability
 
+## Related issue
+
+## Checkpoint status
+Draft / Pending review / Changes requested / Approved / Blocked / Complete
+
+## Handoff
+
+Next role:
+Required action:
+Expected output:
+Do not proceed to:
+Until:
+
+## What changed since previous review
+
 ## Slice goal
 
 ## What changed
@@ -16,7 +31,11 @@
 
 ## Not completed yet
 
-## Risks / open questions
+## Blockers
+
+## Risks
+
+## Open questions
 
 ## Review requested from
 

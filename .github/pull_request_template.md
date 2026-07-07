@@ -4,6 +4,12 @@
 
 Closes #
 
+Parent capability issue:
+
+Child issue closed by this PR:
+
+Related child issues:
+
 ## What changed
 
 ## Acceptance criteria status

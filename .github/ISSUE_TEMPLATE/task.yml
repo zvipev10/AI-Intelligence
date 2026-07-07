@@ -1,0 +1,101 @@
+name: Capability task
+description: Track a role review, implementation slice, QA task, or handoff task for a capability.
+title: "[Task] "
+labels: ["ai-workflow", "task"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this for actionable child tasks under a parent capability issue.
+        The parent issue tracks the overall capability; this issue tracks one role-owned task.
+
+  - type: input
+    id: parent-capability
+    attributes:
+      label: Parent capability issue
+      description: Link or issue number for the parent capability.
+    validations:
+      required: true
+
+  - type: input
+    id: capability-slug
+    attributes:
+      label: Capability slug
+      description: Folder-safe slug, for example `multi-layer-query-filtering`.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: task-type
+    attributes:
+      label: Task type
+      options:
+        - Product review
+        - Developer review
+        - UX review
+        - QA review
+        - Architecture/Security review
+        - Execution planning
+        - Implementation slice
+        - Checkpoint review
+        - Final QA
+        - Handoff
+    validations:
+      required: true
+
+  - type: dropdown
+    id: owner-role
+    attributes:
+      label: Owner role
+      options:
+        - Product
+        - Development
+        - UX
+        - QA
+        - Architecture
+        - Security
+        - Codex
+    validations:
+      required: true
+
+  - type: textarea
+    id: required-action
+    attributes:
+      label: Required action
+      description: What exactly should this owner do?
+    validations:
+      required: true
+
+  - type: textarea
+    id: inputs
+    attributes:
+      label: Inputs
+      description: Link relevant artifacts, PRs, screenshots, or checkpoints.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected-output
+    attributes:
+      label: Expected output
+      description: What artifact, comment, approval, or PR should close this task?
+    validations:
+      required: true
+
+  - type: textarea
+    id: blocking
+    attributes:
+      label: Blocking relationship
+      description: What cannot continue until this task is complete?
+    validations:
+      required: false
+
+  - type: textarea
+    id: completion-criteria
+    attributes:
+      label: Completion criteria
+      placeholder: |
+        - [ ] Criterion 1
+        - [ ] Criterion 2
+    validations:
+      required: true

@@ -2,6 +2,18 @@
 
 ## Capability
 
+## Related issues
+
+## Plan status
+Draft / Pending human review / Changes requested / Approved / Reopened / Superseded / Blocked / Complete
+
+## Role actions
+
+| Role | Status | Required action | Due before |
+|---|---|---|---|
+
+## What changed since previous review
+
 ## Prerequisite review gate
 - Product brief:
 - Developer review:

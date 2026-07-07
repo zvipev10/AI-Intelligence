@@ -4,6 +4,12 @@
 
 ## Capability slug
 
+## Parent issue
+
+## Current status
+
+See `status.md` for operational owner, blockers, and next action.
+
 ## User problem
 
 ## Business goal
@@ -33,6 +39,14 @@
 ## Missing inputs
 
 ## Required reviewers
+
+## Required child issues
+
+- [ ] Product review
+- [ ] Developer review
+- [ ] UX review
+- [ ] QA review
+- [ ] Execution planning
 
 ## Proposed execution checkpoints
 

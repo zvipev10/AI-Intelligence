@@ -26,6 +26,8 @@ For every meaningful capability, create or use:
 Recommended files:
 
 - `capability-brief.md`
+- `status.md`
+- `decisions.md`
 - `developer-review.md`
 - `ux-review.md`
 - `qa-review.md`
@@ -33,10 +35,45 @@ Recommended files:
 - `checkpoint-001.md`
 - `checkpoint-002.md`
 - `handoff-summary.md`
+- `issues/`
 
 The workspace is the role-to-role handoff mechanism.
 
 Do not rely on previous chat history for handoff.
+
+## Issue-based task model
+
+Use issues as the operational work tracker:
+- One parent issue per capability.
+- One child issue per actionable task, for example product review, developer review, UX review, QA planning, implementation slice, checkpoint review, final QA, or handoff.
+- Pull requests should close child implementation/artifact issues with `Closes #N`, `Fixes #N`, or `Resolves #N`.
+- The parent capability issue stays open until all child issues and acceptance criteria are complete.
+
+Use artifacts as the durable context source:
+- `status.md` is the current operational dashboard.
+- `decisions.md` records accepted capability decisions.
+- Role review files record professional review state.
+- Checkpoints record what changed and what can continue.
+- Issue bodies under `issues/` are the local source for issue creation when remote issue creation is blocked.
+
+Every child issue should state:
+- purpose
+- required action
+- owner role
+- inputs
+- expected output
+- blocking relationship
+- completion criteria
+
+Every active capability `status.md` should state:
+- current phase
+- overall status
+- who needs to act now
+- current blockers
+- next expected artifact
+- parent issue
+- child issue table
+- latest change since previous review
 
 ## Publishing rule
 
@@ -50,6 +87,7 @@ Before publishing:
 - commit with a clear message
 - push to a shared branch
 - prefer a draft PR for capability work
+- update the parent capability issue and relevant child issue with artifact paths and current status
 
 Do not push directly to `main` unless explicitly instructed.
 
@@ -104,8 +142,11 @@ Do not code.
 Create:
 
 `.ai/work/capabilities/<capability-slug>/capability-brief.md`
+`.ai/work/capabilities/<capability-slug>/status.md`
+`.ai/work/capabilities/<capability-slug>/issues/parent-capability.md`
 
 Use `.ai/templates/capability-brief.md` when available.
+Use `.ai/templates/status.md` and `.ai/templates/parent-capability-issue.md` when available.
 
 Produce:
 - capability brief
@@ -114,10 +155,13 @@ Produce:
 - suggested reviewers
 - proposed execution checkpoints
 - specific questions for development, UX, QA, architecture, or security when relevant
+- parent capability issue body
+- first child issues for required reviews
 
 Publish:
 - commit and push `capability-brief.md`
 - create or update the draft PR / issue with the artifact path
+- create or update child review issues and link them from `status.md`
 
 Checkpoint A:
 Request review from relevant professionals before execution planning.
@@ -131,7 +175,7 @@ If the current request says "developer stage", "UX stage", "QA stage", or names 
 Role-review ownership rule:
 - If the user is the role owner, or the request implies the user will provide the role input, the AI must facilitate the review instead of completing it as approved.
 - The AI may inspect the repo, ask targeted questions, and prepare a draft artifact, but the review status must remain `Draft - pending human approval` or `Pending human input`.
-- The AI must not mark a role-review artifact `Ready for execution planning` unless the human role owner explicitly approves the artifact or explicitly delegates that role decision to the AI.
+- The AI must not mark a role-review artifact `Approved` unless the human role owner explicitly approves the artifact or explicitly delegates that role decision to the AI.
 - "Developer stage", "UX stage", or "QA stage" alone is not delegation to the AI to approve that role's review.
 - If a role review contains AI-authored recommendations, label them as draft recommendations until the role owner accepts them.
 
@@ -140,6 +184,7 @@ Depending on the role, create or update:
 - `developer-review.md`
 - `ux-review.md`
 - `qa-review.md`
+- matching child issue body under `issues/` when a remote issue cannot be created immediately
 
 Developer review should include:
 - review status and reviewer/source of input
@@ -176,6 +221,7 @@ QA review should include:
 Publish:
 - commit and push each completed or draft role-review artifact
 - update the draft PR / issue with the new artifact path and requested reviewer
+- update `status.md` so each role can see whether action is required
 
 ## Phase 3 — Execution plan
 
@@ -186,6 +232,7 @@ Do not create the execution plan until required role-review artifacts exist and 
 Create:
 
 `.ai/work/capabilities/<capability-slug>/execution-plan.md`
+child issues for approved execution slices
 
 Use `.ai/templates/execution-plan.md` when available.
 
@@ -203,6 +250,7 @@ Produce:
 Publish:
 - commit and push `execution-plan.md`
 - update the draft PR / issue before implementation begins
+- update parent and slice issues with the plan path and gate status
 
 Checkpoint B:
 Request review from relevant professionals before coding.
@@ -219,6 +267,8 @@ Before each slice:
 
 After each slice:
 - create or update `checkpoint-00N.md`
+- update `status.md`
+- update or create the next child issue
 - summarize changes
 - list files changed
 - explain decisions
@@ -227,6 +277,7 @@ After each slice:
 - request relevant review
 - commit and push the slice changes and checkpoint artifact
 - update the draft PR with the checkpoint summary path
+- close only the child issue that the PR fully completes; keep the parent issue open until final acceptance
 
 Use `.ai/templates/checkpoint-summary.md` after each slice.
 
@@ -250,6 +301,7 @@ Produce:
 - known risks
 - follow-up tasks
 - release note draft
+- final child issue updates and parent capability issue completion checklist
 
 Publish:
 - commit and push final review artifacts and any final code/doc changes

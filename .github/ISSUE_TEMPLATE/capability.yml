@@ -8,6 +8,7 @@ body:
       value: |
         Use this issue for meaningful new capabilities or feature changes.
         For Codex workflow artifacts, use `.ai/work/capabilities/<capability-slug>/`.
+        This is the parent issue. Create child task issues for role reviews, implementation slices, QA, and handoff.
 
   - type: input
     id: capability-name
@@ -98,6 +99,21 @@ body:
     attributes:
       label: Capability artifacts
       description: Link or list `.ai/work/capabilities/<capability-slug>/` files.
+    validations:
+      required: false
+
+  - type: textarea
+    id: child-tasks
+    attributes:
+      label: Child tasks
+      description: Link child issues for role-owned tasks, implementation slices, QA, and handoff.
+      placeholder: |
+        - [ ] Product review:
+        - [ ] Developer review:
+        - [ ] UX review:
+        - [ ] QA review:
+        - [ ] Slice 1 implementation:
+        - [ ] Final handoff:
     validations:
       required: false
 

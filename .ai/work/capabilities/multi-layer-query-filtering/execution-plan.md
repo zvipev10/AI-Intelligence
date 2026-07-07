@@ -3,17 +3,34 @@
 ## Capability
 Multi-Layer Query Filtering (`multi-layer-query-filtering`)
 
+## Related issues
+- Parent issue: #3 / `issues/000-parent-capability.md`
+- Execution plan review issue: #8 / `issues/050-execution-plan-review.md`
+- Active blocker issue: #10 / `issues/061-slice-1-selector-correction.md`
+
 ## Plan status
-Reopened for Development review after Product review of Slice 1.
+Reopened.
+
+## Role actions
+
+| Role | Status | Required action | Due before |
+|---|---|---|---|
+| Development | Action needed | Correct the Slice 1 selector UI and publish `checkpoint-002.md`. | Slice 2 starts |
+| Product | Waiting | Review corrected selector after Development publishes `checkpoint-002.md`. | Slice 2 starts |
+| UX | Waiting | Review corrected selector placement after Development publishes `checkpoint-002.md`. | Slice 2 starts |
+| QA | Waiting | Confirm QA fixture and validation plan before Slice 4 acceptance. | Slice 4 completion |
+
+## What changed since previous review
+The plan is reopened because Product rejected the visible selector section/header/count from Slice 1. The next action is a Slice 1 correction, not Slice 2 implementation.
 
 Prepared on 2026-07-07 from the approved capability brief and developer review. Do not start implementation until Product and Development accept this plan or explicitly accept any changes as execution assumptions.
 Updated on 2026-07-07 after Product reviewed Slice 1 and requested removal of the separate visible "Data layers / Layer selection / available layers" selector section.
 
 ## Prerequisite review gate
 - Product brief: `.ai/work/capabilities/multi-layer-query-filtering/capability-brief.md` updated with Product/UX decisions.
-- Developer review: `.ai/work/capabilities/multi-layer-query-filtering/developer-review.md` marked `Ready for execution planning`.
-- UX review: no separate `ux-review.md`; Product/UX decisions are captured in the brief and developer review.
-- QA review: no separate `qa-review.md`; QA checkpoint remains required before acceptance.
+- Developer review: `.ai/work/capabilities/multi-layer-query-filtering/developer-review.md` reopened for Slice 1 correction.
+- UX review: `.ai/work/capabilities/multi-layer-query-filtering/ux-review.md` backfilled and marked Changes requested for Slice 1.
+- QA review: `.ai/work/capabilities/multi-layer-query-filtering/qa-review.md` backfilled and pending human QA review.
 - Architecture/Security review: not blocking for local MVP, but API shape and authorization assumptions should be reviewed if this pattern is expected to survive beyond the POC.
 - Blocking questions resolved or accepted as assumptions: yes. Developer approved standalone API-backed layer loading, no row limit for MVP, client-side MVP filtering, raw field names, duplicate filters allowed, draft-only remove until Apply, and filter panel opened from the layer tab.
 

@@ -2,6 +2,10 @@
 
 ## Capability
 
+## Parent issue
+
+## Child issue closure status
+
 ## Goal
 
 ## Final behavior

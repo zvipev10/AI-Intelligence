@@ -16,11 +16,14 @@ The goal is to decide what should be saved and where.
 ### `.ai/work/capabilities/<capability-slug>/`
 
 Use for active capability-local artifacts:
+- status dashboard
+- capability-local decision log
 - capability brief
 - role reviews
 - execution plan
 - checkpoint summaries
 - handoff summary
+- issue body drafts under `issues/`
 
 This is active task memory, not necessarily long-term project memory.
 
@@ -63,6 +66,10 @@ Use for task-local context:
 - follow-up tasks
 - links or paths to capability artifacts
 - checkpoint and handoff summaries
+- parent capability status
+- child task ownership, blocking state, and completion criteria
+
+Use one parent capability issue and child issues for actionable tasks. PRs should close child issues when merged, not the parent issue unless the entire capability is complete.
 
 ### Git / draft PR
 
@@ -123,3 +130,4 @@ At the end of meaningful work, produce:
 4. Suggested issue/PR update
 5. Final handoff summary
 6. Publishing status
+7. Parent/child issue status
