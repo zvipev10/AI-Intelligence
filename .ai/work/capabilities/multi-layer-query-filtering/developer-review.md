@@ -24,6 +24,7 @@ Approved developer decision:
 - Product-owned UX decision: open the filter panel from the layer tab.
 - Product-owned UX decision: use raw field names for MVP filter fields.
 - Product-owned UX decision: add a new standalone layer selection component for Entities, Locations, and Events grouped by `source_type`. Existing layer tabs are for already opened layers, not for discovering/selecting new layers.
+- Product-owned UX decision: the standalone layer selection component should be a compact search/autocomplete input, potentially on the map surface, not a full list of all layers above the map. Selecting an autocomplete result opens the layer in the results panel/opened-layer tabs.
 
 This artifact is approved for execution planning.
 
@@ -101,7 +102,7 @@ However, the new standalone layer-selection flow needs an API-backed layer catal
 - `llm_investigation_orchestrator_serbia_poc/server.py`
   - Add or expose API endpoint(s) for layer catalog and layer rows, depending on what existing data endpoints can already provide.
 - `llm_investigation_orchestrator_serbia_poc/index.html`
-  - Add a new standalone layer selection component for Entities, Locations, and Events grouped by `source_type`.
+  - Add a new compact search/autocomplete layer selection component for Entities, Locations, and Events grouped by `source_type`.
   - Add a container in `rawEventsOverlay` for the filter panel beside the table.
 - `llm_investigation_orchestrator_serbia_poc/styles.css`
   - Add layout and control styles for the layer selector, filter panel, validation state, active filter indicators, and responsive behavior.
@@ -175,7 +176,9 @@ Recommended filter object:
 
 Implementation notes:
 - Add a layer catalog model for selectable layers.
-- Add a dedicated layer selection component; do not treat the existing layer tabs as the layer picker.
+- Add a dedicated compact search/autocomplete layer selection component; do not treat the existing layer tabs as the layer picker.
+- Avoid rendering all available layers as a large list above the map.
+- Consider placing the search/autocomplete on the map surface, as long as it remains compact and does not obscure important map content.
 - Add an open-layer function that fetches rows from the API and creates or updates an opened layer tab.
 - Initialize filter state when a tab is opened from the layer selector and when any legacy path creates a tab.
 - When an existing layer is re-shown, preserve its filter state.

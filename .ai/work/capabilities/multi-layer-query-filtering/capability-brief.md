@@ -50,6 +50,8 @@ Filtering behavior:
 - Support event-source layers derived from available `source_type` values.
 - Add a new standalone layer selection component for choosing layers.
 - The layer selection component must include Entities, Locations, and Events grouped by `source_type`.
+- The layer selection component should be a compact search/autocomplete input, not a full always-visible list of all layers.
+- The search/autocomplete may be placed on the map surface if UX review confirms it stays compact and does not obscure investigation content.
 - Allow users to find/select a layer from the new layer selection component.
 - Add each selected layer to the existing layer/table workspace.
 - Keep selected layers independent from each other.
@@ -142,6 +144,9 @@ Confirmed by developer/product/UX review:
 
 ## UX notes
 - Add a new standalone layer selection component. It is the place users choose/add layers.
+- The layer selection component should be a small search line with autocomplete, rather than displaying all available layers above the map.
+- Candidate placement: on the map surface, if it remains compact and does not interfere with map reading.
+- Selecting an autocomplete result opens that layer in the results panel / opened-layer tabs.
 - The layer selection component is separate from opened layer tabs, chat, agent result steps, and the query modal.
 - The existing opened layer tabs remain the place users select, filter, hide/show, or close already opened layers.
 - The filter controls should be presented beside the existing results table.
@@ -206,7 +211,7 @@ Potentially also:
 - Architecture, if filtering requires backend/MCP API changes.
 
 ## Proposed execution checkpoints
-1. Execution checkpoint 1: standalone API-backed layer catalog and row loading.
+1. Execution checkpoint 1: compact search/autocomplete layer selection component with standalone API-backed layer catalog and row loading.
 2. Execution checkpoint 2: presentation reuse for API-opened layers across table, map, and timeline.
 3. Execution checkpoint 3: layer-tab-triggered filter panel skeleton beside the results table.
 4. Execution checkpoint 4: per-layer add/edit/remove/apply filter state with validation.

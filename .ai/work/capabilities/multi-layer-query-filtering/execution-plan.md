@@ -29,7 +29,7 @@ Deliver a standalone layer-selection and per-layer filtering workflow that is se
 
 ## Approved scope
 - Standalone layer catalog and layer-opening flow, independent of chat and agent results.
-- New standalone layer selection component for choosing/adding layers.
+- New standalone compact search/autocomplete layer selection component for choosing/adding layers.
 - MVP layer families:
   - Entities
   - Locations
@@ -58,7 +58,7 @@ Deliver a standalone layer-selection and per-layer filtering workflow that is se
 ## Proposed approach
 Build the capability in five reviewable slices.
 
-First, expose a standalone layer catalog and layer row API in `server.py`, and add the new standalone layer selection component. The frontend should fetch available layer definitions, let users choose/add Entities, Locations, and Events grouped by `source_type`, then fetch all rows for a selected layer. The selected layer should open into the existing layer tab model rather than depending on agent/chat result data.
+First, expose a standalone layer catalog and layer row API in `server.py`, and add the new standalone compact search/autocomplete layer selection component. The frontend should fetch available layer definitions, let users search/autocomplete Entities, Locations, and Events grouped by `source_type`, then fetch all rows for a selected layer. The selected layer should open in the results panel through the existing opened-layer tab model rather than depending on agent/chat result data.
 
 Second, introduce a shared presentation item helper so table, map, and timeline consume the same applied-filtered item set for each visible/opened layer. This avoids a common failure mode where the table looks filtered but the map and timeline still show unfiltered records.
 
@@ -95,8 +95,11 @@ Recommended MVP API:
 Server-side filtering, pagination, limits, and typed filter operators are deferred.
 
 ## UX changes
-- Add a new standalone layer selection component, separate from chat, agent result controls, existing opened-layer tabs, and the query modal.
-- The layer selection component should let users choose/add Entities, Locations, and Events grouped by `source_type`.
+- Add a new standalone compact search/autocomplete layer selection component, separate from chat, agent result controls, existing opened-layer tabs, and the query modal.
+- Do not display all available layers as a large list above the map.
+- Candidate placement: on the map surface, if compact and non-obstructive.
+- The layer selection component should let users search/select Entities, Locations, and Events grouped by `source_type`.
+- Selecting an autocomplete result should open that layer in the results panel as an existing-style opened layer tab.
 - The existing opened-layer tabs should remain responsible for selecting an active opened layer, opening that layer's filter panel, visibility, and X close.
 - Open selected layers as existing-style layer tabs.
 - Open the filter panel from the layer tab.
@@ -131,9 +134,9 @@ Automation/lightweight checks:
 
 ## Execution slices
 
-### Slice 1: Layer Selection Component And API Row Loading
+### Slice 1: Compact Layer Search/Autocomplete And API Row Loading
 Goal:
-Create the standalone layer selection component and data path for selectable layers.
+Create the standalone compact layer search/autocomplete component and data path for selectable layers.
 
 Expected changes:
 - Add `GET /api/layers`.
@@ -141,9 +144,11 @@ Expected changes:
 - Return Entities, Locations, and event-source layer definitions.
 - Return all rows for a selected layer with no MVP row limit.
 - Add frontend fetch helpers for catalog and layer rows.
-- Add a new standalone layer selection component.
-- The component lists/selects Entities, Locations, and Events grouped by `source_type`.
-- Selecting an item opens that layer into the existing opened-layer tab model.
+- Add a new standalone compact search/autocomplete layer selection component.
+- The component searches/selects Entities, Locations, and Events grouped by `source_type`.
+- Do not place a full list of all available layers above the map.
+- Prefer a small search line; it may sit on the map surface if it stays compact and does not obscure map use.
+- Selecting an autocomplete result opens that layer in the results panel through the existing opened-layer tab model.
 - The component remains available so users can add more layers later.
 
 Risk:
@@ -247,7 +252,7 @@ Stop and request review if:
 
 ## Rollback/fallback notes
 - Keep chat/agent result rendering paths intact while adding standalone layer selection.
-- If the layer selection component causes instability, hide or disable it while preserving existing result tabs.
+- If the layer search/autocomplete component causes instability or obstructs the map/results experience, hide or disable it while preserving existing result tabs.
 - If cross-presentation filtering is unstable, stop before release rather than shipping table-only filtering, because Product decided filters must affect all supported presentations.
 - If unlimited row loading is too slow on the MVP dataset, return to Product/Development for a limit/paging decision before changing the approved scope.
 
