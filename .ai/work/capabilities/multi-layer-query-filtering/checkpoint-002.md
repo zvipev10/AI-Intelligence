@@ -10,15 +10,15 @@ Multi-Layer Query Filtering (`multi-layer-query-filtering`)
 GitHub issue: #10 / `issues/061-slice-1-selector-correction.md`.
 
 ## Checkpoint status
-Pending Product/UX/Development review.
+Reviewed by Product with UX changes requested.
 
 ## Handoff
 
-Next role: Product, UX, and Development.
-Required action: review the corrected compact selector and decide whether Slice 2 may start.
-Expected output: approval or requested changes on issue #11.
+Next role: Development.
+Required action: implement Product's UX comments from issue #11.
+Expected output: new checkpoint or updated review artifact showing the styling changes and checks.
 Do not proceed to: Slice 2.
-Until: Product/UX approve the corrected selector and Development confirms no API/catalog regression.
+Until: Product/UX approve the corrected selector/control/table styling and Development confirms no API/catalog regression.
 
 ## What changed since previous review
 The separate visible selector section/header/count was removed. The layer selector is now a compact search/autocomplete line over the presentation surface.
@@ -66,14 +66,18 @@ Apply Product/UX feedback from Slice 1 by removing the visible "Data layers / La
   - Selecting `טלגרם` opens an existing-style layer tab and renders 1,280 rows.
 
 ## Not completed yet
-- Product/UX/Development review of the corrected selector.
+- Product requested three UX styling changes after reviewing the corrected selector:
+  - Make the selector bar almost half as wide.
+  - Make the selector and other map-top components transparent.
+  - Make the results table slightly transparent like the map-top components.
+- Product/UX/Development final review of the corrected selector after these comments are implemented.
 - Slice 2 presentation reuse and filterable layer model.
 - Filter panel UI.
 - Draft/applied filter behavior.
 - Full QA validation.
 
 ## Blockers
-- Slice 2 remains blocked until issue #11 review approves this correction.
+- Slice 2 remains blocked until issue #11 review approves the selector correction plus Product's styling comments.
 
 ## Risks
 - Browser validation used an already-running local server on port `8777`.
@@ -82,6 +86,7 @@ Apply Product/UX feedback from Slice 1 by removing the visible "Data layers / La
 
 ## Open questions
 - Should the compact selector stay as an overlay on both map and timeline, or should UX request map-only placement later?
+- Exact opacity values are left to Development/UX judgment, but Product wants a transparent/translucent treatment that preserves readability.
 - Which API-loaded dataset state should QA treat as the canonical manual fixture?
 
 ## Review requested from

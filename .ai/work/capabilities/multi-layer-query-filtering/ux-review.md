@@ -7,16 +7,16 @@ Multi-Layer Query Filtering (`multi-layer-query-filtering`)
 GitHub issue: #6. Local issue body: `issues/030-ux-review.md`.
 
 ## Review status
-Changes requested.
+Changes requested after Product review of `checkpoint-002.md`.
 
 ## Role action
 
 | Role | Status | Required action | Due before |
 |---|---|---|---|
-| UX | Waiting on Development | Review the corrected compact selector after the visible section/header/count is removed. | Slice 2 starts |
+| UX | Waiting on Development | Review the corrected selector/control/table styling after Product's Slice 1 UX comments are implemented. | Slice 2 starts |
 
 ## What changed since previous review
-Product reviewed Slice 1 and requested a smaller selector presentation. The standalone layer picker remains required, but it must not appear as a separate "Data layers" or "Layer selection" section.
+Product reviewed Slice 1 and said the selector correction looks good, with three UX comments before Slice 2: make the selector almost half as wide, make the selector and other map-top components transparent, and make the results table slightly transparent in the same visual direction.
 
 ## Context reviewed
 - `capability-brief.md`
@@ -62,16 +62,19 @@ MVP uses raw field names for filter fields. Avoid section labels such as "Data l
 
 ## UX edge cases
 - Compact selector should not obscure map/timeline investigation content.
+- Compact selector should be almost half the current width from `checkpoint-002.md`.
+- Selector, map-top controls, and results table should use a transparent/translucent treatment while preserving readability.
 - Filter action, visibility action, and X close action must remain visually distinct.
 - Layer close should not feel like filter editing.
 - Unapplied filter changes should be visible enough to prevent accidental confusion.
 
 ## Product questions
-No current blocking Product questions. Product has requested the Slice 1 selector correction.
+No current blocking Product questions. Product has requested three Slice 1 UX styling changes before approval.
 
 ## Developer questions
 - Can the selector wrapper/header/count be removed without changing the API-backed catalog and row loading behavior?
 - Should the corrected selector be placed on the map surface or remain above the presentation area as a compact line?
+- Can the selector width, map-top transparency, and results-table transparency be changed with CSS-only updates and no API/catalog behavior changes?
 
 ## Review recommendation
-Request changes for Slice 1. Do not continue to Slice 2 until the compact selector correction is implemented and reviewed.
+Request changes for Slice 1. Do not continue to Slice 2 until Product's three UX styling comments are implemented and reviewed.
