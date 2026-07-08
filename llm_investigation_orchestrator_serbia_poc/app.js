@@ -644,6 +644,22 @@ function ensureLayerFilterState(layer) {
   return layer;
 }
 
+function createFilterId() {
+  return `filter:${Date.now()}:${Math.random().toString(16).slice(2)}`;
+}
+
+function cloneFilter(filter = {}) {
+  return {
+    id: filter.id || createFilterId(),
+    field: filter.field || "",
+    value: stringifyFilterValue(filter.value)
+  };
+}
+
+function cloneFilters(filters = []) {
+  return filters.map(filter => cloneFilter(filter));
+}
+
 function filterFieldPathsForValue(value, prefix = "", fields = new Set(), depth = 0) {
   if (value === null || value === undefined) return fields;
   if (value instanceof Date) {
@@ -732,6 +748,11 @@ function draftFiltersForLayer(layer) {
   return (layer?.draftFilters || []).filter(filter => filter?.field || normalizeFilterText(filter?.value));
 }
 
+function activeFilterLayer() {
+  const layer = activeTableLayer();
+  return layer?.filterPanelOpen ? layer : null;
+}
+
 function renderLayerFilterPanel(layer) {
   const panel = document.getElementById("layerFilterPanel");
   if (!panel) return;
@@ -745,15 +766,18 @@ function renderLayerFilterPanel(layer) {
   const fields = filterFieldsForLayer(layer);
   const draftFilters = draftFiltersForLayer(layer);
   const appliedFilters = validAppliedFilters(layer);
-  const fieldOptions = fields.length
-    ? fields.map(field => `<option value="${escapeHtml(field)}">${escapeHtml(field)}</option>`).join("")
+  const fieldOptionsFor = selectedField => fields.length
+    ? fields.map(field => `<option value="${escapeHtml(field)}" ${field === selectedField ? "selected" : ""}>${escapeHtml(field)}</option>`).join("")
     : '<option value="">אין שדות זמינים</option>';
   const draftHtml = draftFilters.length
-    ? draftFilters.map(filter => `
+    ? draftFilters.map((filter, index) => `
       <div class="filter-draft-row">
-        <span class="filter-field" dir="ltr">${escapeHtml(filter.field || "-")}</span>
+        <select class="layer-filter-select filter-field-select" data-filter-field data-filter-index="${index}" aria-label="בחר שדה מסנן">
+          ${fieldOptionsFor(filter.field)}
+        </select>
         <span class="filter-operator">contains</span>
-        <span class="filter-value">${escapeHtml(stringifyFilterValue(filter.value) || "-")}</span>
+        <input class="layer-filter-input filter-value-input" data-filter-value data-filter-index="${index}" type="text" value="${escapeHtml(stringifyFilterValue(filter.value))}" placeholder="ערך לחיפוש" aria-label="ערך מסנן">
+        <button type="button" class="filter-remove-button" data-filter-remove="${index}" aria-label="הסר מסנן" title="הסר מסנן">×</button>
       </div>`).join("")
     : '<div class="filter-empty">אין מסנני טיוטה.</div>';
   const appliedHtml = appliedFilters.length
@@ -764,6 +788,10 @@ function renderLayerFilterPanel(layer) {
         <strong>${escapeHtml(stringifyFilterValue(filter.value))}</strong>
       </span>`).join("")
     : '<span class="filter-empty inline">אין מסננים פעילים.</span>';
+  const addDisabled = fields.length ? "" : "disabled";
+  const errorHtml = layer.filterError
+    ? `<div class="filter-error" role="alert">${escapeHtml(layer.filterError)}</div>`
+    : "";
 
   panel.hidden = false;
   panel.innerHTML = `
@@ -775,23 +803,72 @@ function renderLayerFilterPanel(layer) {
       <button type="button" class="layer-filter-close" data-layer-filter="${escapeHtml(layer.id)}" aria-label="סגור מסננים" title="סגור מסננים">×</button>
     </div>
     <div class="layer-filter-section">
-      <label class="layer-filter-label" for="filterFieldPreview">שדה</label>
-      <select id="filterFieldPreview" class="layer-filter-select" disabled>
-        ${fieldOptions}
-      </select>
-    </div>
-    <div class="layer-filter-section">
       <div class="layer-filter-section-title">טיוטת מסננים</div>
       <div class="filter-draft-list">${draftHtml}</div>
+      ${errorHtml}
+    </div>
+    <div class="layer-filter-section">
+      <button type="button" class="filter-add-button" data-filter-add ${addDisabled}>הוסף מסנן</button>
     </div>
     <div class="layer-filter-section">
       <div class="layer-filter-section-title">מסננים פעילים</div>
       <div class="filter-chip-list">${appliedHtml}</div>
     </div>
     <div class="layer-filter-actions">
-      <button type="button" disabled>הוסף מסנן</button>
-      <button type="button" disabled>החל</button>
+      <button type="button" data-filter-cancel>בטל שינויים</button>
+      <button type="button" class="primary-filter-action" data-filter-apply>החל</button>
     </div>`;
+}
+
+function addDraftFilter(layer) {
+  ensureLayerFilterState(layer);
+  const [firstField] = filterFieldsForLayer(layer);
+  if (!firstField) {
+    layer.filterError = "אין שדות זמינים לסינון בשכבה הזו.";
+    return;
+  }
+  layer.draftFilters.push({ id: createFilterId(), field: firstField, value: "" });
+  layer.filterError = "";
+}
+
+function updateDraftFilterField(layer, index, field) {
+  ensureLayerFilterState(layer);
+  if (!layer.draftFilters[index]) return;
+  layer.draftFilters[index].field = field;
+  layer.filterError = "";
+}
+
+function updateDraftFilterValue(layer, index, value) {
+  ensureLayerFilterState(layer);
+  if (!layer.draftFilters[index]) return;
+  layer.draftFilters[index].value = value;
+  layer.filterError = "";
+}
+
+function removeDraftFilter(layer, index) {
+  ensureLayerFilterState(layer);
+  layer.draftFilters.splice(index, 1);
+  layer.filterError = "";
+}
+
+function resetDraftFilters(layer) {
+  ensureLayerFilterState(layer);
+  layer.draftFilters = cloneFilters(validAppliedFilters(layer));
+  layer.filterError = "";
+}
+
+function applyDraftFilters(layer) {
+  ensureLayerFilterState(layer);
+  const draftFilters = draftFiltersForLayer(layer);
+  const invalid = draftFilters.find(filter => !filter.field || !normalizeFilterText(filter.value));
+  if (invalid) {
+    layer.filterError = "יש למלא שדה וערך לפני החלת המסננים.";
+    return false;
+  }
+  layer.appliedFilters = cloneFilters(draftFilters);
+  layer.draftFilters = cloneFilters(layer.appliedFilters);
+  layer.filterError = "";
+  return true;
 }
 
 function isCatalogLayerOpen(layerId) {
@@ -2246,6 +2323,46 @@ document.addEventListener("click", event => {
     renderAllViews();
     return;
   }
+  const addFilter = event.target.closest("[data-filter-add]");
+  if (addFilter) {
+    event.stopPropagation();
+    const layer = activeFilterLayer();
+    if (layer) {
+      addDraftFilter(layer);
+      renderEvidence();
+    }
+    return;
+  }
+  const removeFilter = event.target.closest("[data-filter-remove]");
+  if (removeFilter) {
+    event.stopPropagation();
+    const layer = activeFilterLayer();
+    if (layer) {
+      removeDraftFilter(layer, Number(removeFilter.dataset.filterRemove));
+      renderEvidence();
+    }
+    return;
+  }
+  const cancelFilters = event.target.closest("[data-filter-cancel]");
+  if (cancelFilters) {
+    event.stopPropagation();
+    const layer = activeFilterLayer();
+    if (layer) {
+      resetDraftFilters(layer);
+      renderEvidence();
+    }
+    return;
+  }
+  const applyFilters = event.target.closest("[data-filter-apply]");
+  if (applyFilters) {
+    event.stopPropagation();
+    const layer = activeFilterLayer();
+    if (layer) {
+      const applied = applyDraftFilters(layer);
+      applied ? renderAllViews() : renderEvidence();
+    }
+    return;
+  }
   const visibilityToggle = event.target.closest("[data-layer-visibility]");
   if (visibilityToggle) {
     event.stopPropagation();
@@ -2313,10 +2430,23 @@ document.addEventListener("click", event => {
 });
 
 document.addEventListener("input", event => {
+  if (event.target.matches("[data-filter-value]")) {
+    const layer = activeFilterLayer();
+    if (layer) updateDraftFilterValue(layer, Number(event.target.dataset.filterIndex), event.target.value);
+    return;
+  }
   if (event.target !== layerSelectorSearch) return;
   state.layerSearchQuery = event.target.value;
   state.layerSearchOpen = true;
   renderLayerSelector();
+});
+
+document.addEventListener("change", event => {
+  if (!event.target.matches("[data-filter-field]")) return;
+  const layer = activeFilterLayer();
+  if (!layer) return;
+  updateDraftFilterField(layer, Number(event.target.dataset.filterIndex), event.target.value);
+  renderEvidence();
 });
 
 document.addEventListener("focusin", event => {
@@ -2326,6 +2456,15 @@ document.addEventListener("focusin", event => {
 });
 
 document.addEventListener("keydown", event => {
+  if (event.target.matches("[data-filter-value]") && event.key === "Enter") {
+    event.preventDefault();
+    const layer = activeFilterLayer();
+    if (layer) {
+      const applied = applyDraftFilters(layer);
+      applied ? renderAllViews() : renderEvidence();
+    }
+    return;
+  }
   if (event.target !== layerSelectorSearch) return;
   if (event.key === "Escape") {
     state.layerSearchOpen = false;
