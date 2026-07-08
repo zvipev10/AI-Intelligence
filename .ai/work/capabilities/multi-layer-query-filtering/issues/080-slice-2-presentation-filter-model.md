@@ -28,6 +28,9 @@ Implemented in `checkpoint-006.md`:
 - Table, map, timeline, and result counts now use `itemsForLayerPresentation(layer)`.
 - Browser smoke confirmed the no-filter path still opens `טלגרם` with 1,280 table rows.
 
+## Product review
+Product approved the deployed Slice 2 VM build for unchanged visible behavior and readiness to proceed to Slice 3 on 2026-07-08.
+
 ## Completion criteria
 - [x] API-opened layers initialize filter state.
 - [x] Field discovery helper added.
@@ -35,6 +38,7 @@ Implemented in `checkpoint-006.md`:
 - [x] Contains/AND filter helper added.
 - [x] Table, map, and timeline use shared applied-filtered items where supported.
 - [x] Slice 2 checkpoint created.
+- [x] Product approves deployed VM build.
 - [ ] Development approves Slice 2 implementation.
 - [ ] UX approves Slice 2 implementation before filter panel skeleton.
 

@@ -28,6 +28,6 @@ Deploy the current Slice 2 build to the VM so Product can review the implemented
 - Verified HTTP response from the VM returned `200 OK`.
 
 ## Review request
-Product should review the VM build for unchanged visible behavior and overall readiness to proceed to Slice 3.
+Product approved the VM build for unchanged visible behavior and overall readiness to proceed to Slice 3 on 2026-07-08.
 
 Development and UX should still review `checkpoint-006.md` before Slice 3 begins, because Slice 2 introduced the shared filter/presentation plumbing that future visible controls will use.
