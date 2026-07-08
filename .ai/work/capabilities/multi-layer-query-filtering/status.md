@@ -4,16 +4,16 @@
 Multi-Layer Query Filtering (`multi-layer-query-filtering`)
 
 ## Current phase
-Slice 2 implementation review.
+Slice 2 review on VM.
 
 ## Overall status
-Slice 1 approved by Product and UX; Slice 2 development is implemented and waiting for Development/UX review.
+Slice 1 approved by Product and UX; Slice 2 development is implemented and deployed to the VM for Product review, with Development/UX review still pending before Slice 3.
 
 ## Who needs to act now
 
 | Role | Status | Required action | Due before |
 |---|---|---|---|
-| Product | Complete | Approved the corrected selector/control/table transparency treatment in `checkpoint-005.md`. | Done |
+| Product | Action needed | Review the Slice 2 VM build for unchanged visible behavior and readiness for Slice 3 filter-panel work. | Before Slice 3 starts |
 | Development | Action needed | Review `checkpoint-006.md` and confirm shared presentation/filter helper approach before Slice 3. | Slice 3 starts |
 | UX | Waiting | Review `checkpoint-006.md` for presentation/filter plumbing implications before visible filter controls are added. | Slice 3 starts |
 | QA | Waiting | Confirm canonical manual test fixture and review QA checklist before core filter behavior is wired. | Slice 4 completion |
@@ -28,6 +28,11 @@ Development implemented Slice 2 in `checkpoint-006.md`:
 - Field discovery, value stringification, text normalization, contains matching, AND filtering, and shared presentation item helpers were added.
 - Table, map, timeline, and result counts now consume `itemsForLayerPresentation(layer)`.
 
+Deployment checkpoint `checkpoint-007.md`:
+- Deployed `app.js`, `index.html`, and `styles.css` to the review VM on 2026-07-08.
+- Restarted `serbia-poc-ui.service`; service reported `active`.
+- Verified the served page returns HTTP 200 and references `app.js?v=81` and `styles.css?v=63`.
+
 ## Current blockers
 - Slice 3 should not start until Development/UX review `checkpoint-006.md`.
 
@@ -37,7 +42,7 @@ Development implemented Slice 2 in `checkpoint-006.md`:
 - QA still needs to confirm the canonical manual test fixture before Slice 4 acceptance.
 
 ## Next expected artifact
-Development/UX review of `checkpoint-006.md`.
+Product review result for the VM build, plus Development/UX review of `checkpoint-006.md`.
 
 ## Parent issue
 GitHub issue: #3. Local issue body: `issues/000-parent-capability.md`.
@@ -68,7 +73,7 @@ GitHub issue: #3. Local issue body: `issues/000-parent-capability.md`.
 - UX review: `ux-review.md`
 - QA review: `qa-review.md`
 - Execution plan: `execution-plan.md`
-- Latest checkpoint: `checkpoint-006.md`
+- Latest checkpoint: `checkpoint-007.md`
 - Handoff: `handoff-summary.md`
 
 ## Gate checklist
