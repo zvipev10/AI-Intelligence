@@ -21,6 +21,10 @@ Slice 2 is fully approved by Product, Development, and UX. Slice 3 filter-panel 
 | Architecture/Security | Not blocking | Review API endpoint shape and authorization assumptions if this pattern will continue beyond the local POC. | Before productionizing |
 
 ## Latest change since previous review
+Mobile audit `mobile-audit-2026-07-08/report.md`:
+- Tablet portrait review is acceptable for Slice 3.
+- Phone-width review needs a fix: the filter panel opens below the visible overlay area, so users may not see the result of tapping the filter button.
+
 Deployment checkpoint `checkpoint-010.md`:
 - Deployed Slice 3 `app.js`, `index.html`, and `styles.css` to the review VM on 2026-07-08.
 - Restarted `serbia-poc-ui.service`; service reported `active`.
@@ -52,6 +56,7 @@ Development approval checkpoint `checkpoint-008.md`:
 
 ## Current blockers
 - Slice 4 should not start until Product/UX/Development review of `checkpoint-009.md`.
+- Phone-width Slice 3 mobile review should be corrected or explicitly accepted before mobile approval.
 
 ## Current risks
 - MVP row loading has no limit, which may create browser performance risk on larger datasets.
