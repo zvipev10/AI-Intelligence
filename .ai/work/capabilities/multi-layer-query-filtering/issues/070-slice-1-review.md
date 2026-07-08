@@ -39,6 +39,12 @@ Follow-up correction implemented in `checkpoint-004.md`:
 - Table body and cells are transparent instead of applying another translucent surface over the overlay.
 - Sticky table headers use a lighter `rgba(15, 19, 27, .54)` background for readability without making the table look opaque.
 
+Second follow-up correction implemented in `checkpoint-005.md`:
+- Shared transparent surfaces are lighter at `rgba(15, 19, 27, .58)`.
+- Active tab and table headers now use `rgba(15, 19, 27, .24)` so they no longer read as black blocks.
+- Table wrapper and cells remain fully transparent.
+- Added subtle text shadow for readability on lighter translucent surfaces.
+
 ## Completion criteria
 - [x] Selector width reduced per Product comment.
 - [x] Selector and map-top components made transparent/translucent.
@@ -52,6 +58,7 @@ Follow-up correction implemented in `checkpoint-004.md`:
 - `checkpoint-002.md`
 - `checkpoint-003.md`
 - `checkpoint-004.md`
+- `checkpoint-005.md`
 - `status.md`
 
 ## Parent capability

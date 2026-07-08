@@ -20,13 +20,13 @@ Development implementation complete; waiting for Product/UX review.
 | Architecture/Security | Not blocking | Review API endpoint shape and authorization assumptions if this pattern will continue beyond the local POC. | Before productionizing |
 
 ## Latest change since previous review
-Development corrected Product's follow-up table feedback in `checkpoint-004.md`:
-- The results overlay top chrome is compact again.
-- The table body no longer double-applies the translucent surface and now remains visibly transparent.
+Development corrected Product's follow-up transparency feedback in `checkpoint-005.md`:
+- Shared transparent surfaces are lighter, moving from `rgba(15, 19, 27, .78)` to `rgba(15, 19, 27, .58)`.
+- Remaining black-looking nested table/tab/header surfaces were reduced to lighter overlays or made transparent.
 - Selecting `טלגרם` still opens the raw table with 1,280 rows.
 
 ## Current blockers
-- Slice 2 should not start until Product/UX approve `checkpoint-004.md` and issue #11 review is complete.
+- Slice 2 should not start until Product/UX approve `checkpoint-005.md` and issue #11 review is complete.
 
 ## Current risks
 - MVP row loading has no limit, which may create browser performance risk on larger datasets.
@@ -34,7 +34,7 @@ Development corrected Product's follow-up table feedback in `checkpoint-004.md`:
 - Selector/control/table transparency needs Product/UX visual review after implementation.
 
 ## Next expected artifact
-Product/UX review of `checkpoint-004.md`.
+Product/UX review of `checkpoint-005.md`.
 
 ## Parent issue
 GitHub issue: #3. Local issue body: `issues/000-parent-capability.md`.
@@ -50,7 +50,7 @@ GitHub issue: #3. Local issue body: `issues/000-parent-capability.md`.
 | #8 / `issues/050-execution-plan-review.md` | Product/Development | Approve execution plan gates and slices. | Pending review after Slice 1 correction | Yes |
 | #9 / `issues/060-slice-1-implementation.md` | Development | Implement API layer catalog and selector. | Complete with correction checkpoint | No |
 | #10 / `issues/061-slice-1-selector-correction.md` | Development | Remove selector wrapper/header/count. | Implemented in `checkpoint-002.md`; follow-up UX comments implemented in `checkpoint-003.md` | No |
-| #11 / `issues/070-slice-1-review.md` | Product/UX/Development | Review corrected Slice 1. | Waiting Product/UX review of `checkpoint-004.md` | Yes |
+| #11 / `issues/070-slice-1-review.md` | Product/UX/Development | Review corrected Slice 1. | Waiting Product/UX review of `checkpoint-005.md` | Yes |
 | #12 / `issues/080-slice-2-presentation-filter-model.md` | Development | Add presentation reuse and filterable model helpers. | Not ready | Blocked by Slice 1 |
 | #13 / `issues/090-slice-3-filter-panel.md` | UX/Development | Add filter panel skeleton. | Not ready | Blocked by Slice 2 |
 | #14 / `issues/100-slice-4-filter-behavior.md` | Product/UX/Development/QA | Wire draft/edit/remove/apply behavior. | Not ready | Blocked by Slice 3 |
@@ -65,7 +65,7 @@ GitHub issue: #3. Local issue body: `issues/000-parent-capability.md`.
 - UX review: `ux-review.md`
 - QA review: `qa-review.md`
 - Execution plan: `execution-plan.md`
-- Latest checkpoint: `checkpoint-004.md`
+- Latest checkpoint: `checkpoint-005.md`
 - Handoff: `handoff-summary.md`
 
 ## Gate checklist
