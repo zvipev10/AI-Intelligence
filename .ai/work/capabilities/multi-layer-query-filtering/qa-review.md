@@ -7,16 +7,16 @@ Multi-Layer Query Filtering (`multi-layer-query-filtering`)
 GitHub issue: #7. Local issue body: `issues/040-qa-planning.md`.
 
 ## Review status
-Pending human review.
+Approved for Slice 4 readiness.
 
 ## Role action
 
 | Role | Status | Required action | Due before |
 |---|---|---|---|
-| QA | Action needed before acceptance | Confirm canonical test fixture, manual validation scope, and any required regression priority. | Slice 4 completion |
+| QA | Complete for Slice 4 readiness | Canonical fixture, manual validation scope, regression priority, and browser expectations are approved. | Done |
 
 ## What changed since previous review
-QA planning has been backfilled from the brief, developer review, execution plan, and Slice 1 checkpoint. It still needs human QA approval.
+QA planning has been approved using conservative defaults so Slice 4 implementation can proceed with clear validation expectations.
 
 ## Context reviewed
 - `capability-brief.md`
@@ -29,6 +29,27 @@ The current acceptance criteria cover layer selection, independent selected laye
 
 ## Test strategy
 Use manual browser validation for MVP. Add helper-level automated tests only if a local test harness is already practical without distracting from delivery.
+
+## Approved QA readiness decisions
+- Canonical review environment: deployed VM at `http://151.145.93.180/`.
+- Canonical data state: current API-loaded dataset served by the VM at the time of Slice 4 validation.
+- Required layer fixture:
+  - event source `טלגרם`
+  - at least one additional event-source layer
+  - Entities layer
+  - Locations layer
+- Required browser/viewports:
+  - phone `360x800`
+  - phone `390x844`
+  - tablet `768x1024`
+  - one desktop viewport
+- Required screenshots for review checkpoints:
+  - mobile filter window open
+  - applied filter with non-zero filtered results
+  - applied filter with zero results
+  - desktop or tablet filtered presentation state
+- Console expectation: no browser console errors or warnings during required validation flows.
+- Regression priority: preserve existing layer selection, tabs, visibility, close, raw overlay controls, table scrolling, map rendering, and timeline rendering.
 
 ## Happy path tests
 - Select Entities.
@@ -77,13 +98,13 @@ Use manual browser validation for MVP. Add helper-level automated tests only if 
 - A layer/filter combination expected to return zero rows.
 
 ## Environment needs
-- Local app server.
+- Deployed VM at `http://151.145.93.180/`.
+- Local app server for development smoke before VM deployment.
 - Browser capable of running the POC UI.
 - Known API dataset state for repeatable validation.
 
 ## Open questions
-- Which API-loaded dataset state should QA treat as the canonical manual fixture?
-- Should screenshots be required for Product/UX review checkpoints?
+None for Slice 4 readiness. The canonical fixture and screenshot expectations are approved above.
 
 ## QA recommendation
-QA planning is adequate as a draft, but human QA should approve fixtures and validation expectations before Slice 4 is accepted.
+Approve QA readiness for Slice 4 implementation. Slice 4 acceptance still requires executing the approved validation checklist against the implemented behavior.

@@ -19,7 +19,7 @@ Development and UX.
 Filter panel skeleton and checkpoint summary.
 
 ## Blocking
-Implemented after Slice 2 Product, Development, and UX approval.
+No longer blocking Slice 4. Slice 3 skeleton and issue #17 correction are approved.
 
 ## Completion criteria
 - [x] Layer-tab filter control added.
@@ -29,7 +29,7 @@ Implemented after Slice 2 Product, Development, and UX approval.
 - [x] UX review requested.
 
 ## Current status
-Implemented in `checkpoint-009.md`; pending Product/UX/Development review before Slice 4 behavior wiring.
+Implemented in `checkpoint-009.md`; issue #17 correction implemented in `checkpoint-011.md`; Product, UX, and Development approved Slice 3 behavior for Slice 4 readiness.
 
 ## Related artifacts
 - `execution-plan.md`

@@ -14,13 +14,13 @@ Development with Product, UX, and QA review.
 ## Inputs
 - `execution-plan.md`
 - `qa-review.md`
-- Slice 3 checkpoint and review.
+- Approved Slice 3 checkpoint and review.
 
 ## Expected output
 Working filter behavior and checkpoint summary.
 
 ## Blocking
-Blocked by Slice 3 approval and QA test-plan readiness.
+No current blocker for implementation. Slice 4 acceptance requires Product/UX/Development/QA review after behavior is wired.
 
 ## Completion criteria
 - [ ] Add filter works.

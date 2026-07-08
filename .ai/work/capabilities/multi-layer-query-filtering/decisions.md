@@ -141,3 +141,23 @@ Slice 1 is reopened for Development correction before Slice 2.
 
 Follow-ups:
 Development must publish `checkpoint-002.md`; Product/UX must review the corrected selector.
+
+## 2026-07-08 - QA readiness fixture and browser matrix
+
+Decision:
+Slice 4 QA readiness uses the deployed VM at `http://151.145.93.180/` as the canonical review environment, with the current API-loaded VM dataset as the canonical fixture.
+
+Owner:
+Product/QA by explicit approval, with Development using the fixture for implementation validation.
+
+Context:
+Slice 4 will wire draft/edit/remove/apply filter behavior and needs a clear validation target before acceptance.
+
+Rationale:
+The VM is the shared review environment already used for Product checkpoints, and the current API-loaded dataset contains the required event-source, entity, and location layers.
+
+Impact:
+Slice 4 validation must cover `טלגרם`, at least one additional event-source layer, Entities, Locations, phone viewports `360x800` and `390x844`, tablet `768x1024`, one desktop viewport, required screenshots, and no browser console errors or warnings.
+
+Follow-ups:
+After Slice 4 implementation, execute the approved QA checklist before acceptance.

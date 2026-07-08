@@ -30,7 +30,7 @@ Development.
 Development fix, checkpoint summary, and VM/mobile validation evidence for the floating filter window. Implemented in `checkpoint-011.md`.
 
 ## Blocking
-Blocks Slice 4 until UX/Development review `checkpoint-011.md`, unless Product explicitly waives review.
+No longer blocking Slice 4. Product, UX, and Development approved `checkpoint-011.md`.
 
 ## Product review
 Product approved `checkpoint-011.md` on 2026-07-08 and confirmed the corrected mobile floating filter window looks good.
@@ -58,7 +58,7 @@ Implemented in `checkpoint-011.md`:
 - [x] Existing transparency/readability treatment remains acceptable.
 - [x] No browser console errors or warnings during the tested flow.
 - [x] Product approves corrected Slice 3 behavior.
-- [ ] UX/Development approve corrected Slice 3 behavior.
+- [x] UX/Development approve corrected Slice 3 behavior.
 
 ## Suggested validation
 - Test local or deployed build at 360x800, 390x844, and 768x1024.

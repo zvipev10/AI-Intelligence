@@ -4,10 +4,10 @@
 Multi-Layer Query Filtering (`multi-layer-query-filtering`)
 
 ## Current phase
-Slice 3 floating filter-window correction review.
+Slice 4 ready for Development.
 
 ## Overall status
-Slice 2 is fully approved by Product, Development, and UX. Product approved the Slice 3 floating filter-window correction; UX/Development review is still required before Slice 4 behavior wiring.
+Slice 3 and issue #17 are approved by Product, UX, and Development. QA readiness decisions are filled and approved. Slice 4 implementation may start.
 
 ## Who needs to act now
 
@@ -18,11 +18,21 @@ Slice 2 is fully approved by Product, Development, and UX. Product approved the 
 | UX | Complete | Approved `checkpoint-006.md` and allowed Slice 3 to begin. | Done |
 | Development | Complete | Implemented GitHub issue #17 / `issues/130-slice-3-mobile-filter-panel-correction.md` and deployed the corrected floating filter window. | Done |
 | Product | Complete | Approved `checkpoint-011.md` and the VM build for corrected Slice 3 floating filter-window behavior. | Done |
-| UX/Development | Action needed | Review `checkpoint-011.md` and approve or request changes before Slice 4 behavior wiring. | Before Slice 4 starts |
-| QA | Waiting | Confirm canonical manual test fixture and review QA checklist before core filter behavior is wired. | Slice 4 completion |
+| UX/Development | Complete | Approved `checkpoint-011.md` and the corrected Slice 3 floating filter-window behavior. | Done |
+| QA | Complete for readiness | Approved canonical fixture, validation checklist, regression priority, and browser expectations for Slice 4 readiness. | Done |
+| Development | Action needed | Start Slice 4: draft/edit/remove/apply filter behavior. | Slice 4 checkpoint |
 | Architecture/Security | Not blocking | Review API endpoint shape and authorization assumptions if this pattern will continue beyond the local POC. | Before productionizing |
 
 ## Latest change since previous review
+QA readiness decisions were filled and approved on 2026-07-08:
+- Canonical review environment is the deployed VM at `http://151.145.93.180/`.
+- Canonical fixture is the current API-loaded VM dataset using `טלגרם`, at least one additional event-source layer, Entities, and Locations.
+- Required validation viewports are `360x800`, `390x844`, `768x1024`, and one desktop viewport.
+- Screenshots are required for mobile filter open, non-zero filtered results, zero-result filtered state, and desktop/tablet filtered presentation.
+- Slice 4 may start; Slice 4 acceptance still requires executing the approved validation checklist.
+
+Product approved all remaining Slice 3 review items on 2026-07-08; UX/Development approval is recorded by delegation in this session.
+
 Product approved `checkpoint-011.md` on 2026-07-08 and confirmed the corrected mobile floating filter window looks good. Product noted that choosing fields on mobile belongs to the next slice; this matches Slice 4 scope.
 
 Development implemented issue #17 in `checkpoint-011.md`:
@@ -73,16 +83,16 @@ Development approval checkpoint `checkpoint-008.md`:
 - Development approved the Slice 2 implementation and shared presentation/filter helper approach on 2026-07-08.
 
 ## Current blockers
-- Slice 4 should not start until UX/Development review and approve `checkpoint-011.md`, or Product explicitly waives this review.
-- QA test-plan readiness is still required before Slice 4 acceptance.
+- No current blockers for Slice 4 implementation.
+- Slice 4 acceptance requires Product/UX/Development/QA review after implementation and execution of the approved QA checklist.
 
 ## Current risks
 - MVP row loading has no limit, which may create browser performance risk on larger datasets.
 - UX and QA were previously captured indirectly; separate UX and QA artifacts have now been backfilled but still require human approval.
-- QA still needs to confirm the canonical manual test fixture before Slice 4 acceptance.
+- QA validation still needs to be executed after Slice 4 implementation.
 
 ## Next expected artifact
-UX/Development review result for `checkpoint-011.md`.
+Slice 4 implementation checkpoint.
 
 ## Parent issue
 GitHub issue: #3. Local issue body: `issues/000-parent-capability.md`.
@@ -94,15 +104,15 @@ GitHub issue: #3. Local issue body: `issues/000-parent-capability.md`.
 | #4 / `issues/010-product-brief-review.md` | Product | Approve initial capability brief. | Backfilled as complete from existing brief decisions | No |
 | #5 / `issues/020-developer-review.md` | Development | Review technical approach and implementation slices. | Complete after Slice 1 correction | No |
 | #6 / `issues/030-ux-review.md` | UX | Review selector and filter-panel UX decisions. | Complete; UX approved corrected selector | No |
-| #7 / `issues/040-qa-planning.md` | QA | Confirm test fixture and manual coverage. | Pending human QA input | Before Slice 4 acceptance |
+| #7 / `issues/040-qa-planning.md` | QA | Confirm test fixture and manual coverage. | Complete for Slice 4 readiness; execution required after implementation | No |
 | #8 / `issues/050-execution-plan-review.md` | Product/Development | Approve execution plan gates and slices. | Complete; plan reconciled after Slice 1 correction | No |
 | #9 / `issues/060-slice-1-implementation.md` | Development | Implement API layer catalog and selector. | Complete with correction checkpoint | No |
 | #10 / `issues/061-slice-1-selector-correction.md` | Development | Remove selector wrapper/header/count. | Implemented in `checkpoint-002.md`; follow-up UX comments implemented in `checkpoint-003.md` | No |
 | #11 / `issues/070-slice-1-review.md` | Product/UX/Development | Review corrected Slice 1. | Complete; Product and UX approved `checkpoint-005.md` | No |
 | #12 / `issues/080-slice-2-presentation-filter-model.md` | Development | Add presentation reuse and filterable model helpers. | Complete; Product, Development, and UX approved | No |
-| #13 / `issues/090-slice-3-filter-panel.md` | UX/Development | Add filter panel skeleton. | Implemented in `checkpoint-009.md`; Product approved issue #17 correction; pending UX/Development review | Yes |
-| #17 / `issues/130-slice-3-mobile-filter-panel-correction.md` | Development | Change filter section to floating window above results tabs over map/timeline. | Product approved `checkpoint-011.md`; pending UX/Development review | Yes |
-| #14 / `issues/100-slice-4-filter-behavior.md` | Product/UX/Development/QA | Wire draft/edit/remove/apply behavior. | Not ready | Blocked by Slice 3 |
+| #13 / `issues/090-slice-3-filter-panel.md` | UX/Development | Add filter panel skeleton. | Complete; Slice 3 behavior approved | No |
+| #17 / `issues/130-slice-3-mobile-filter-panel-correction.md` | Development | Change filter section to floating window above results tabs over map/timeline. | Complete; Product, UX, and Development approved `checkpoint-011.md` | No |
+| #14 / `issues/100-slice-4-filter-behavior.md` | Product/UX/Development/QA | Wire draft/edit/remove/apply behavior. | Ready for Development | No |
 | #15 / `issues/110-slice-5-validation.md` | QA/Product/Development | Validate cross-layer behavior and regressions. | Not ready | Blocked by Slice 4 |
 | #16 / `issues/120-final-handoff.md` | Product/Development/QA | Publish final handoff and closure status. | Not ready | Blocked by final QA |
 
