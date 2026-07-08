@@ -6,7 +6,7 @@ Review feasibility, implementation approach, affected files, risks, and executio
 GitHub issue: #5
 
 ## Required action
-Development should reconcile the reopened Slice 1 correction and confirm whether the technical plan remains valid.
+Development reconciled the reopened Slice 1 correction and confirmed the technical plan remains valid.
 
 ## Owner role
 Development.
@@ -18,17 +18,17 @@ Development.
 - `checkpoint-001.md`
 
 ## Expected output
-Updated developer approval or requested changes after the Slice 1 selector correction.
+Developer approval recorded after the Slice 1 selector correction.
 
 ## Blocking
-Slice 2 should not start until Development confirms the Slice 1 correction path.
+None. Development confirmed the Slice 1 correction path.
 
 ## Completion criteria
 - [x] API-backed layer loading approach reviewed.
 - [x] Client-side MVP filtering accepted.
 - [x] No row limit accepted for MVP.
 - [x] Execution slices proposed.
-- [ ] Slice 1 selector correction reviewed after implementation.
+- [x] Slice 1 selector correction reviewed after implementation.
 
 ## Related artifacts
 - `developer-review.md`

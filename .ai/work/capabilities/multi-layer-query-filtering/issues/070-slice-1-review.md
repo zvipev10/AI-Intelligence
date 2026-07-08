@@ -6,7 +6,7 @@ Review the corrected selector and decide whether Slice 2 may start.
 GitHub issue: #11
 
 ## Required action
-Development implemented Product's UX comments from review of `checkpoint-002.md`; Product approved `checkpoint-005.md`; UX should now complete review before Slice 2 starts.
+Development implemented Product's UX comments from review of `checkpoint-002.md`; Product and UX approved `checkpoint-005.md`; Slice 2 may start.
 
 ## Owner role
 Product, UX, and Development.
@@ -17,13 +17,16 @@ Product, UX, and Development.
 - `status.md`
 
 ## Expected output
-UX review result for `checkpoint-005.md`: approval to continue to Slice 2 or requested changes.
+Review result for `checkpoint-005.md`: approved to continue to Slice 2.
 
 ## Blocking
-Slice 2 remains blocked until this review is complete.
+None. Slice 1 review is complete.
 
 ## Product approval
 Product approved Slice 1 and the corrected `checkpoint-005.md` transparency treatment on 2026-07-08.
+
+## UX approval
+UX approved Slice 1 and the corrected `checkpoint-005.md` transparency treatment on 2026-07-08.
 
 ## Product review result
 Product reviewed `checkpoint-002.md` and said the correction looks good, with these UX comments to implement:
@@ -53,10 +56,10 @@ Second follow-up correction implemented in `checkpoint-005.md`:
 - [x] Selector and map-top components made transparent/translucent.
 - [x] Results table made slightly transparent while preserving readability.
 - [x] Product approves corrected selector and transparency treatment.
-- [ ] UX approves corrected selector placement and transparency treatment.
+- [x] UX approves corrected selector placement and transparency treatment.
 - [x] Development confirms no API/catalog regression.
 - [x] `status.md` updated after Product approval.
-- [ ] `status.md` updated for Slice 2 after UX approval.
+- [x] `status.md` updated for Slice 2 after UX approval.
 
 ## Related artifacts
 - `checkpoint-002.md`

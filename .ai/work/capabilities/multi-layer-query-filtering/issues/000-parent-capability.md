@@ -6,10 +6,10 @@ Multi-Layer Query Filtering (`multi-layer-query-filtering`)
 GitHub issue: #3
 
 ## Current phase
-Slice 1 review after Product feedback.
+Slice 2 ready for Development.
 
 ## Overall status
-Changes requested.
+Slice 1 approved by Product and UX.
 
 ## Operational status
 See `.ai/work/capabilities/multi-layer-query-filtering/status.md`.
@@ -31,13 +31,13 @@ See `.ai/work/capabilities/multi-layer-query-filtering/capability-brief.md`.
 
 ## Child tasks
 - [ ] Product brief review: #4 / `010-product-brief-review.md`
-- [ ] Developer review: #5 / `020-developer-review.md`
-- [ ] UX review: #6 / `030-ux-review.md`
+- [x] Developer review: #5 / `020-developer-review.md`
+- [x] UX review: #6 / `030-ux-review.md`
 - [ ] QA planning: #7 / `040-qa-planning.md`
-- [ ] Execution plan review: #8 / `050-execution-plan-review.md`
-- [ ] Slice 1 implementation: #9 / `060-slice-1-implementation.md`
-- [ ] Slice 1 selector correction: #10 / `061-slice-1-selector-correction.md`
-- [ ] Slice 1 review: #11 / `070-slice-1-review.md`
+- [x] Execution plan review: #8 / `050-execution-plan-review.md`
+- [x] Slice 1 implementation: #9 / `060-slice-1-implementation.md`
+- [x] Slice 1 selector correction: #10 / `061-slice-1-selector-correction.md`
+- [x] Slice 1 review: #11 / `070-slice-1-review.md`
 - [ ] Slice 2 implementation: #12 / `080-slice-2-presentation-filter-model.md`
 - [ ] Slice 3 implementation: #13 / `090-slice-3-filter-panel.md`
 - [ ] Slice 4 implementation: #14 / `100-slice-4-filter-behavior.md`
@@ -52,7 +52,7 @@ See `.ai/work/capabilities/multi-layer-query-filtering/capability-brief.md`.
 - UX review: `.ai/work/capabilities/multi-layer-query-filtering/ux-review.md`
 - QA review: `.ai/work/capabilities/multi-layer-query-filtering/qa-review.md`
 - Execution plan: `.ai/work/capabilities/multi-layer-query-filtering/execution-plan.md`
-- Latest checkpoint: `.ai/work/capabilities/multi-layer-query-filtering/checkpoint-001.md`
+- Latest checkpoint: `.ai/work/capabilities/multi-layer-query-filtering/checkpoint-005.md`
 - Handoff: `.ai/work/capabilities/multi-layer-query-filtering/handoff-summary.md`
 
 ## Closure rule

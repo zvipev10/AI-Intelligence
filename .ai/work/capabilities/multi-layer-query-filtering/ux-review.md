@@ -7,15 +7,17 @@ Multi-Layer Query Filtering (`multi-layer-query-filtering`)
 GitHub issue: #6. Local issue body: `issues/030-ux-review.md`.
 
 ## Review status
-Changes requested after Product review of `checkpoint-002.md`.
+Approved after review of the corrected `checkpoint-005.md` transparency treatment.
 
 ## Role action
 
 | Role | Status | Required action | Due before |
 |---|---|---|---|
-| UX | Waiting on Development | Review the corrected selector/control/table styling after Product's Slice 1 UX comments are implemented. | Slice 2 starts |
+| UX | Complete | Approved the corrected selector/control/table styling in `checkpoint-005.md`. | Done |
 
 ## What changed since previous review
+UX approved the corrected selector/control/table transparency treatment on 2026-07-08. Slice 2 may proceed.
+
 Product reviewed Slice 1 and said the selector correction looks good, with three UX comments before Slice 2: make the selector almost half as wide, make the selector and other map-top components transparent, and make the results table slightly transparent in the same visual direction.
 
 ## Context reviewed
@@ -69,7 +71,7 @@ MVP uses raw field names for filter fields. Avoid section labels such as "Data l
 - Unapplied filter changes should be visible enough to prevent accidental confusion.
 
 ## Product questions
-No current blocking Product questions. Product has requested three Slice 1 UX styling changes before approval.
+No current blocking Product questions. Product approved the corrected Slice 1 treatment.
 
 ## Developer questions
 - Can the selector wrapper/header/count be removed without changing the API-backed catalog and row loading behavior?
@@ -77,4 +79,4 @@ No current blocking Product questions. Product has requested three Slice 1 UX st
 - Can the selector width, map-top transparency, and results-table transparency be changed with CSS-only updates and no API/catalog behavior changes?
 
 ## Review recommendation
-Request changes for Slice 1. Do not continue to Slice 2 until Product's three UX styling comments are implemented and reviewed.
+Approve Slice 1. Continue to Slice 2.

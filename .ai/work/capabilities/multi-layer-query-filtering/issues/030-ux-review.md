@@ -6,7 +6,7 @@ Review UX decisions for the layer selector, opened layer tabs, and filter panel 
 GitHub issue: #6
 
 ## Required action
-UX should review the corrected compact selector after Development removes the visible wrapper/header/count.
+UX approved the corrected compact selector and transparency treatment after Development implemented the Slice 1 corrections.
 
 ## Owner role
 UX.
@@ -18,16 +18,16 @@ UX.
 - Corrected UI once `checkpoint-002.md` exists.
 
 ## Expected output
-UX approval or requested changes for the selector correction and next filter-panel placement.
+UX approval recorded for the selector correction and next filter-panel placement.
 
 ## Blocking
-Slice 2 should not start until selector correction is accepted.
+None. UX accepted the selector correction.
 
 ## Completion criteria
 - [x] Filter panel opens from the layer tab.
 - [x] Raw field names accepted for MVP.
 - [x] Visible selector section rejected.
-- [ ] Corrected compact selector reviewed.
+- [x] Corrected compact selector reviewed.
 
 ## Related artifacts
 - `ux-review.md`

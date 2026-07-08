@@ -6,7 +6,7 @@ Prepare shared layer filtering helpers and presentation item plumbing.
 GitHub issue: #12
 
 ## Required action
-After Slice 1 review, implement filter state initialization and shared applied-filter item helpers.
+Implement filter state initialization and shared applied-filter item helpers.
 
 ## Owner role
 Development.
@@ -19,7 +19,7 @@ Development.
 Slice 2 implementation and checkpoint summary.
 
 ## Blocking
-Blocked by Slice 1 selector correction and review.
+None. Slice 1 selector correction and review are complete.
 
 ## Completion criteria
 - [ ] API-opened layers initialize filter state.
