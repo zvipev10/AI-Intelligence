@@ -30,7 +30,12 @@ Development.
 Development fix, checkpoint summary, and VM/mobile validation evidence for the floating filter window. Implemented in `checkpoint-011.md`.
 
 ## Blocking
-Blocks Slice 4 until Product/UX/Development review `checkpoint-011.md`, unless Product explicitly waives review.
+Blocks Slice 4 until UX/Development review `checkpoint-011.md`, unless Product explicitly waives review.
+
+## Product review
+Product approved `checkpoint-011.md` on 2026-07-08 and confirmed the corrected mobile floating filter window looks good.
+
+Product also noted that choosing fields on mobile belongs to the next slice. This is correct: field selection is tracked under Slice 4 / issue #14.
 
 ## Development update
 Implemented in `checkpoint-011.md`:
@@ -52,7 +57,8 @@ Implemented in `checkpoint-011.md`:
 - [x] Existing tablet behavior remains acceptable at 768x1024.
 - [x] Existing transparency/readability treatment remains acceptable.
 - [x] No browser console errors or warnings during the tested flow.
-- [ ] Product/UX/Development approve corrected Slice 3 behavior.
+- [x] Product approves corrected Slice 3 behavior.
+- [ ] UX/Development approve corrected Slice 3 behavior.
 
 ## Suggested validation
 - Test local or deployed build at 360x800, 390x844, and 768x1024.
