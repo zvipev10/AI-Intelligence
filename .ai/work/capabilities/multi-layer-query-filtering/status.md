@@ -4,10 +4,10 @@
 Multi-Layer Query Filtering (`multi-layer-query-filtering`)
 
 ## Current phase
-Slice 3 floating filter-window correction requested.
+Slice 3 floating filter-window correction review.
 
 ## Overall status
-Slice 2 is fully approved by Product, Development, and UX. Slice 3 filter-panel skeleton is implemented and deployed, but Product changed the correction request: the filter section should open as a floating window above the results tabs, on top of the active map or timeline, before Slice 4 behavior wiring.
+Slice 2 is fully approved by Product, Development, and UX. Slice 3 filter-panel skeleton and issue #17 floating-window correction are implemented and deployed; Product/UX/Development review is required before Slice 4 behavior wiring.
 
 ## Who needs to act now
 
@@ -16,12 +16,18 @@ Slice 2 is fully approved by Product, Development, and UX. Slice 3 filter-panel 
 | Product | Complete | Approved the Slice 2 VM build for unchanged visible behavior and readiness for Slice 3 filter-panel work. | Done |
 | Development | Complete | Approved `checkpoint-006.md` and confirmed the shared presentation/filter helper approach for Slice 3. | Done |
 | UX | Complete | Approved `checkpoint-006.md` and allowed Slice 3 to begin. | Done |
-| Development | Action needed | Update GitHub issue #17 / `issues/130-slice-3-mobile-filter-panel-correction.md`: implement the filter section as a floating window above the results tabs on top of the active map/timeline. | Slice 4 starts |
-| Product/UX/Development | Waiting | Review the corrected Slice 3 mobile behavior after Development publishes the fix. | Before Slice 4 starts |
+| Development | Complete | Implemented GitHub issue #17 / `issues/130-slice-3-mobile-filter-panel-correction.md` and deployed the corrected floating filter window. | Done |
+| Product/UX/Development | Action needed | Review `checkpoint-011.md` and the VM build for corrected Slice 3 floating filter-window behavior. | Before Slice 4 starts |
 | QA | Waiting | Confirm canonical manual test fixture and review QA checklist before core filter behavior is wired. | Slice 4 completion |
 | Architecture/Security | Not blocking | Review API endpoint shape and authorization assumptions if this pattern will continue beyond the local POC. | Before productionizing |
 
 ## Latest change since previous review
+Development implemented issue #17 in `checkpoint-011.md`:
+- The filter section now opens as a floating window above the results tabs/table.
+- The filter window is detached from the raw results table layout and renders over the active map/timeline surface.
+- Local browser validation passed at 360x800, 390x844, 390x844 timeline view, and 768x1024.
+- Deployed to the review VM with `app.js?v=83` and `styles.css?v=65`; VM returned HTTP 200.
+
 Product changed Development request #17:
 - Do not solve the mobile issue by stacking the filter section inside the raw results overlay.
 - Open the filter section as a floating window above the results tabs, on top of the active map or timeline.
@@ -64,8 +70,7 @@ Development approval checkpoint `checkpoint-008.md`:
 - Development approved the Slice 2 implementation and shared presentation/filter helper approach on 2026-07-08.
 
 ## Current blockers
-- Slice 4 should not start until Development updates issue #17 to use the floating filter-window behavior, or Product explicitly changes/waives this request.
-- Product/UX/Development should review the corrected Slice 3 mobile behavior before Slice 4 behavior wiring.
+- Slice 4 should not start until Product/UX/Development review and approve `checkpoint-011.md`, or Product explicitly waives this review.
 
 ## Current risks
 - MVP row loading has no limit, which may create browser performance risk on larger datasets.
@@ -73,7 +78,7 @@ Development approval checkpoint `checkpoint-008.md`:
 - QA still needs to confirm the canonical manual test fixture before Slice 4 acceptance.
 
 ## Next expected artifact
-Development checkpoint for issue #17 mobile filter-panel correction.
+Product/UX/Development review result for `checkpoint-011.md`.
 
 ## Parent issue
 GitHub issue: #3. Local issue body: `issues/000-parent-capability.md`.
@@ -91,8 +96,8 @@ GitHub issue: #3. Local issue body: `issues/000-parent-capability.md`.
 | #10 / `issues/061-slice-1-selector-correction.md` | Development | Remove selector wrapper/header/count. | Implemented in `checkpoint-002.md`; follow-up UX comments implemented in `checkpoint-003.md` | No |
 | #11 / `issues/070-slice-1-review.md` | Product/UX/Development | Review corrected Slice 1. | Complete; Product and UX approved `checkpoint-005.md` | No |
 | #12 / `issues/080-slice-2-presentation-filter-model.md` | Development | Add presentation reuse and filterable model helpers. | Complete; Product, Development, and UX approved | No |
-| #13 / `issues/090-slice-3-filter-panel.md` | UX/Development | Add filter panel skeleton. | Implemented in `checkpoint-009.md`; pending Product/UX/Development review | Yes |
-| #17 / `issues/130-slice-3-mobile-filter-panel-correction.md` | Development | Change filter section to floating window above results tabs over map/timeline. | Product changed request; Development action needed | Yes |
+| #13 / `issues/090-slice-3-filter-panel.md` | UX/Development | Add filter panel skeleton. | Implemented in `checkpoint-009.md`; issue #17 correction implemented in `checkpoint-011.md`; pending Product/UX/Development review | Yes |
+| #17 / `issues/130-slice-3-mobile-filter-panel-correction.md` | Development | Change filter section to floating window above results tabs over map/timeline. | Implemented in `checkpoint-011.md`; pending Product/UX/Development review | Yes |
 | #14 / `issues/100-slice-4-filter-behavior.md` | Product/UX/Development/QA | Wire draft/edit/remove/apply behavior. | Not ready | Blocked by Slice 3 |
 | #15 / `issues/110-slice-5-validation.md` | QA/Product/Development | Validate cross-layer behavior and regressions. | Not ready | Blocked by Slice 4 |
 | #16 / `issues/120-final-handoff.md` | Product/Development/QA | Publish final handoff and closure status. | Not ready | Blocked by final QA |
@@ -105,7 +110,7 @@ GitHub issue: #3. Local issue body: `issues/000-parent-capability.md`.
 - UX review: `ux-review.md`
 - QA review: `qa-review.md`
 - Execution plan: `execution-plan.md`
-- Latest checkpoint: `checkpoint-010.md`
+- Latest checkpoint: `checkpoint-011.md`
 - Handoff: `handoff-summary.md`
 
 ## Gate checklist

@@ -126,7 +126,7 @@ h3 { margin: 0; font-size: 14px; }
 .layer-select-meta { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 10px; font-weight: 900; }
 .layer-select-count { direction: ltr; }
 .layer-select-state { color: var(--green); }
-.view-stack { position: relative; grid-row: 3; min-height: 0; height: 100%; overflow: hidden; }
+.view-stack { --raw-overlay-height: 28%; position: relative; grid-row: 3; min-height: 0; height: 100%; overflow: hidden; }
 .view-pane { position: relative; min-height: 0; height: 100%; }
 .view-pane { display: none; }
 .view-pane.active { display: block; }
@@ -167,13 +167,12 @@ h3 { margin: 0; font-size: 14px; }
 .filter-funnel-icon::before { content: ""; position: absolute; inset: 1px 2px auto; height: 0; border-top: 5px solid currentColor; border-left: 4px solid transparent; border-right: 4px solid transparent; }
 .filter-funnel-icon::after { content: ""; position: absolute; left: 5px; top: 6px; width: 3px; height: 5px; border-radius: 1px; background: currentColor; }
 .raw-events-content { min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr); background: transparent; overflow: hidden; }
-.raw-events-overlay.filter-panel-open .raw-events-content { grid-template-columns: minmax(0, 1fr) minmax(220px, 280px); }
 .raw-events-table { min-width: 0; height: 100%; background: transparent; }
 .raw-events-table table { font-size: 10px; background: transparent; }
 .raw-events-table th, .raw-events-table td { padding: 7px 8px; background: transparent; }
 .raw-events-table th { background: rgba(15, 19, 27, .24); }
 .raw-events-table td:last-child { min-width: 280px; line-height: 1.45; }
-.layer-filter-panel { min-width: 0; height: 100%; border-right: 1px solid rgba(146, 170, 205, .24); background: rgba(15, 19, 27, .18); padding: 10px; overflow: auto; color: var(--ink); }
+.layer-filter-panel { position: absolute; z-index: 4; right: 14px; bottom: calc(var(--raw-overlay-height) + 12px); width: min(320px, calc(100% - 28px)); max-height: min(340px, calc(100% - var(--raw-overlay-height) - 72px)); min-width: 0; border: 1px solid var(--map-control-border); border-radius: 8px; background: var(--map-control-surface); box-shadow: var(--map-control-shadow); backdrop-filter: blur(8px); padding: 10px; overflow: auto; color: var(--ink); text-shadow: var(--readability-shadow); }
 .layer-filter-panel[hidden] { display: none; }
 .layer-filter-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; padding-bottom: 9px; border-bottom: 1px solid rgba(146, 170, 205, .22); }
 .layer-filter-kicker { display: block; margin-bottom: 3px; color: var(--blue); font-size: 10px; font-weight: 900; }
@@ -285,7 +284,6 @@ th { position: sticky; top: 0; z-index: 1; background: #202530; }
   .activity-list { padding: 9px; }
   .activity-item { padding: 9px; }
   .activity-section { padding: 7px; }
-  .raw-events-overlay.filter-panel-open .raw-events-content { grid-template-columns: minmax(0, 1fr) minmax(200px, 240px); }
   .raw-source-name { max-width: 72px; }
 }
 @media (max-width: 760px) {
@@ -300,15 +298,15 @@ th { position: sticky; top: 0; z-index: 1; background: #202530; }
   .workspace { height: auto; overflow: visible; display: flex; flex-direction: column; padding: 8px; }
   .panel-resizer { display: none; }
   .conversation-panel { min-height: 620px; }
-  .result-panel { min-height: 680px; }
+  .result-panel { height: 680px; min-height: 680px; }
   .layer-selector { top: 10px; right: 10px; width: min(220px, calc(100% - 20px)); }
   .raw-events-overlay { left: 0; right: 0; bottom: 0; height: 36%; min-height: 190px; }
-  .raw-events-overlay.filter-panel-open .raw-events-content { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
-  .layer-filter-panel { max-height: 150px; border-right: 0; border-bottom: 1px solid rgba(146, 170, 205, .24); }
+  .layer-filter-panel { right: 10px; bottom: calc(34% + 10px); width: min(300px, calc(100% - 20px)); max-height: min(300px, calc(66% - 76px)); }
   .layer-filter-header h3 { max-width: none; }
   .raw-events-table { overflow-x: auto; }
   .raw-events-table table { width: 880px; min-width: 880px; table-layout: fixed; }
 }
 @media (orientation: portrait) and (max-width: 1000px) {
   .raw-events-overlay { height: 34%; min-height: 180px; }
+  .layer-filter-panel { bottom: calc(34% + 12px); max-height: min(340px, calc(66% - 76px)); }
 }

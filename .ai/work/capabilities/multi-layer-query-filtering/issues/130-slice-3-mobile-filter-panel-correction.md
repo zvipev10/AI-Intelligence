@@ -27,23 +27,32 @@ Development.
 - `checkpoint-010.md`
 
 ## Expected output
-Development fix, checkpoint summary, and VM/mobile validation evidence for the floating filter window.
+Development fix, checkpoint summary, and VM/mobile validation evidence for the floating filter window. Implemented in `checkpoint-011.md`.
 
 ## Blocking
-Blocks mobile approval of Slice 3 and should be resolved before Slice 4 behavior wiring unless Product explicitly waives phone-width mobile approval.
+Blocks Slice 4 until Product/UX/Development review `checkpoint-011.md`, unless Product explicitly waives review.
+
+## Development update
+Implemented in `checkpoint-011.md`:
+- `#layerFilterPanel` is detached from the raw results table layout and rendered as a sibling of `#rawEventsOverlay` under `.view-stack`.
+- The filter section opens as an absolute floating window above the results tabs/table.
+- The floating window stays over the active map or timeline surface.
+- Mobile map and timeline validation passed at phone widths.
+- Deployed to the VM with `app.js?v=83` and `styles.css?v=65`.
 
 ## Acceptance criteria
-- [ ] Opening the filter button shows a floating filter window above the results tabs/table, on top of the active map or timeline surface.
-- [ ] The filter window is detached from the raw results table layout.
-- [ ] On 360px wide phone viewport, opening the filter window makes it visible immediately without relying on the user scrolling the raw results overlay.
-- [ ] On 390px wide phone viewport, opening the filter window makes it visible immediately without relying on the user scrolling the raw results overlay.
-- [ ] On tablet and desktop widths, the floating window remains readable and does not obscure the layer selector, map controls, timeline header, results tab actions, or window controls in a confusing way.
-- [ ] The filter window has a clear close/dismiss action.
-- [ ] The table remains usable and horizontally scrollable.
-- [ ] Filter, visibility, and close actions remain visually distinct and do not overlap.
-- [ ] Existing tablet behavior remains acceptable at 768x1024.
-- [ ] Existing transparency/readability treatment remains acceptable.
-- [ ] No browser console errors or warnings during the tested flow.
+- [x] Opening the filter button shows a floating filter window above the results tabs/table, on top of the active map or timeline surface.
+- [x] The filter window is detached from the raw results table layout.
+- [x] On 360px wide phone viewport, opening the filter window makes it visible immediately without relying on the user scrolling the raw results overlay.
+- [x] On 390px wide phone viewport, opening the filter window makes it visible immediately without relying on the user scrolling the raw results overlay.
+- [x] On tablet and desktop widths, the floating window remains readable and does not obscure the layer selector, map controls, timeline header, results tab actions, or window controls in a confusing way.
+- [x] The filter window has a clear close/dismiss action.
+- [x] The table remains usable and horizontally scrollable.
+- [x] Filter, visibility, and close actions remain visually distinct and do not overlap.
+- [x] Existing tablet behavior remains acceptable at 768x1024.
+- [x] Existing transparency/readability treatment remains acceptable.
+- [x] No browser console errors or warnings during the tested flow.
+- [ ] Product/UX/Development approve corrected Slice 3 behavior.
 
 ## Suggested validation
 - Test local or deployed build at 360x800, 390x844, and 768x1024.

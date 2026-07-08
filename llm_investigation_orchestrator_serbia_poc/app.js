@@ -2039,6 +2039,7 @@ function renderTimeline() {
 
 function renderEvidence() {
   const overlay = document.getElementById("rawEventsOverlay");
+  const viewStack = overlay?.closest(".view-stack");
   const tabs = document.getElementById("rawEventsTabs");
   const head = document.getElementById("evidenceHead");
   const body = document.getElementById("evidenceRows");
@@ -2066,6 +2067,7 @@ function renderEvidence() {
   overlay.classList.toggle("minimized", state.rawOverlayMinimized);
   overlay.classList.toggle("filter-panel-open", Boolean(activeLayer?.filterPanelOpen));
   overlay.style.setProperty("--raw-overlay-height", `${state.rawOverlayHeight}%`);
+  if (viewStack) viewStack.style.setProperty("--raw-overlay-height", `${state.rawOverlayHeight}%`);
   const minimizeButton = document.getElementById("rawEventsMinimize");
   if (minimizeButton) {
     minimizeButton.textContent = state.rawOverlayMinimized ? "□" : "−";
@@ -2360,6 +2362,7 @@ document.addEventListener("pointerdown", event => {
     const nextPx = Math.min(Math.max(startHeight + delta, stackRect.height * 0.16), stackRect.height * 0.55);
     state.rawOverlayHeight = Math.round((nextPx / stackRect.height) * 100);
     overlay.style.setProperty("--raw-overlay-height", `${state.rawOverlayHeight}%`);
+    stack.style.setProperty("--raw-overlay-height", `${state.rawOverlayHeight}%`);
   };
   const onUp = () => {
     document.removeEventListener("pointermove", onMove);
