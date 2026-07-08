@@ -727,6 +727,73 @@ function itemsForLayerPresentation(layer) {
   return items.filter(item => filters.every(filter => filterMatchesItem(item, filter)));
 }
 
+function draftFiltersForLayer(layer) {
+  ensureLayerFilterState(layer);
+  return (layer?.draftFilters || []).filter(filter => filter?.field || normalizeFilterText(filter?.value));
+}
+
+function renderLayerFilterPanel(layer) {
+  const panel = document.getElementById("layerFilterPanel");
+  if (!panel) return;
+  if (!layer || !layer.filterPanelOpen) {
+    panel.hidden = true;
+    panel.innerHTML = "";
+    return;
+  }
+
+  ensureLayerFilterState(layer);
+  const fields = filterFieldsForLayer(layer);
+  const draftFilters = draftFiltersForLayer(layer);
+  const appliedFilters = validAppliedFilters(layer);
+  const fieldOptions = fields.length
+    ? fields.map(field => `<option value="${escapeHtml(field)}">${escapeHtml(field)}</option>`).join("")
+    : '<option value="">אין שדות זמינים</option>';
+  const draftHtml = draftFilters.length
+    ? draftFilters.map(filter => `
+      <div class="filter-draft-row">
+        <span class="filter-field" dir="ltr">${escapeHtml(filter.field || "-")}</span>
+        <span class="filter-operator">contains</span>
+        <span class="filter-value">${escapeHtml(stringifyFilterValue(filter.value) || "-")}</span>
+      </div>`).join("")
+    : '<div class="filter-empty">אין מסנני טיוטה.</div>';
+  const appliedHtml = appliedFilters.length
+    ? appliedFilters.map(filter => `
+      <span class="filter-chip">
+        <span dir="ltr">${escapeHtml(filter.field)}</span>
+        <span>contains</span>
+        <strong>${escapeHtml(stringifyFilterValue(filter.value))}</strong>
+      </span>`).join("")
+    : '<span class="filter-empty inline">אין מסננים פעילים.</span>';
+
+  panel.hidden = false;
+  panel.innerHTML = `
+    <div class="layer-filter-header">
+      <div>
+        <span class="layer-filter-kicker">מסנני שכבה</span>
+        <h3>${escapeHtml(layer.label)}</h3>
+      </div>
+      <button type="button" class="layer-filter-close" data-layer-filter="${escapeHtml(layer.id)}" aria-label="סגור מסננים" title="סגור מסננים">×</button>
+    </div>
+    <div class="layer-filter-section">
+      <label class="layer-filter-label" for="filterFieldPreview">שדה</label>
+      <select id="filterFieldPreview" class="layer-filter-select" disabled>
+        ${fieldOptions}
+      </select>
+    </div>
+    <div class="layer-filter-section">
+      <div class="layer-filter-section-title">טיוטת מסננים</div>
+      <div class="filter-draft-list">${draftHtml}</div>
+    </div>
+    <div class="layer-filter-section">
+      <div class="layer-filter-section-title">מסננים פעילים</div>
+      <div class="filter-chip-list">${appliedHtml}</div>
+    </div>
+    <div class="layer-filter-actions">
+      <button type="button" disabled>הוסף מסנן</button>
+      <button type="button" disabled>החל</button>
+    </div>`;
+}
+
 function isCatalogLayerOpen(layerId) {
   return state.layers.some(layer => layer.catalogLayerId === layerId);
 }
@@ -1975,6 +2042,7 @@ function renderEvidence() {
   const tabs = document.getElementById("rawEventsTabs");
   const head = document.getElementById("evidenceHead");
   const body = document.getElementById("evidenceRows");
+  const filterPanel = document.getElementById("layerFilterPanel");
   if (!overlay || !tabs || !head || !body) return;
 
   const tableLayers = state.layers.filter(layer => layer.capabilities.table);
@@ -1984,6 +2052,10 @@ function renderEvidence() {
     tabs.innerHTML = "";
     head.innerHTML = "";
     body.innerHTML = "";
+    if (filterPanel) {
+      filterPanel.hidden = true;
+      filterPanel.innerHTML = "";
+    }
     return;
   }
 
@@ -1992,6 +2064,7 @@ function renderEvidence() {
 
   overlay.hidden = false;
   overlay.classList.toggle("minimized", state.rawOverlayMinimized);
+  overlay.classList.toggle("filter-panel-open", Boolean(activeLayer?.filterPanelOpen));
   overlay.style.setProperty("--raw-overlay-height", `${state.rawOverlayHeight}%`);
   const minimizeButton = document.getElementById("rawEventsMinimize");
   if (minimizeButton) {
@@ -2010,6 +2083,9 @@ function renderEvidence() {
       <span class="raw-source-color"></span>
       <span class="raw-source-name">${escapeHtml(layer.label)}</span>
       <strong>${countLabel}</strong>
+      <span class="raw-source-filter ${layer.filterPanelOpen ? "active" : ""}" data-layer-filter="${escapeHtml(layer.id)}" title="פתח מסננים" aria-label="פתח מסננים" aria-pressed="${layer.filterPanelOpen ? "true" : "false"}">
+        <span class="filter-funnel-icon" aria-hidden="true"></span>
+      </span>
         <span class="raw-source-eye" data-layer-visibility="${escapeHtml(layer.id)}" title="${layer.visible ? "הסתר שכבה" : "הצג שכבה"}" aria-label="${layer.visible ? "הסתר שכבה" : "הצג שכבה"}" aria-pressed="${layer.visible ? "true" : "false"}">
           <span class="visibility-eye-icon ${layer.visible ? "" : "off"}" aria-hidden="true"></span>
         </span>
@@ -2019,6 +2095,7 @@ function renderEvidence() {
 
   if (!activeLayer) return;
   ensureLayerFilterState(activeLayer);
+  renderLayerFilterPanel(activeLayer);
   const activeItems = activeLayer.visible ? itemsForLayerPresentation(activeLayer) : [];
   if (activeLayer.kind === "location_metadata") {
     head.innerHTML = "<tr><th>מיקום</th><th>אירועים</th><th>רשות</th><th>סוג</th><th>דיוק</th><th>מזהה</th></tr>";
@@ -2173,6 +2250,21 @@ document.addEventListener("click", event => {
     const layer = state.layers.find(item => item.id === visibilityToggle.dataset.layerVisibility);
     if (layer) layer.visible = !layer.visible;
     renderAllViews();
+    return;
+  }
+  const filterToggle = event.target.closest("[data-layer-filter]");
+  if (filterToggle) {
+    event.stopPropagation();
+    const layer = state.layers.find(item => item.id === filterToggle.dataset.layerFilter);
+    if (layer) {
+      ensureLayerFilterState(layer);
+      const nextOpen = !layer.filterPanelOpen || state.activeLayerId !== layer.id;
+      state.layers.forEach(item => { item.filterPanelOpen = false; });
+      layer.filterPanelOpen = nextOpen;
+      state.activeLayerId = layer.id;
+      state.rawOverlayMinimized = false;
+    }
+    renderEvidence();
     return;
   }
   const closeLayer = event.target.closest("[data-layer-close]");

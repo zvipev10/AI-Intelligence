@@ -10,15 +10,15 @@ Multi-Layer Query Filtering (`multi-layer-query-filtering`)
 GitHub issue: #12 / `issues/080-slice-2-presentation-filter-model.md`.
 
 ## Checkpoint status
-Development implementation complete; Development approved on 2026-07-08; waiting for UX review.
+Development implementation complete; Development and UX approved on 2026-07-08.
 
 ## Handoff
 
-Next role: UX.
-Required action: review the shared presentation/filter plumbing before Slice 3 adds visible filter controls.
-Expected output: approval to continue to Slice 3 or requested changes.
-Do not proceed to: Slice 3.
-Until: UX confirms that the table, map, and timeline now share the same applied-filter item helper without creating visible UX issues for Slice 3.
+Next role: Development.
+Required action: proceed with Slice 3.
+Expected output: filter-panel skeleton checkpoint.
+Do not proceed to: Slice 4.
+Until: Product/UX/Development review the Slice 3 skeleton.
 
 ## What changed since previous review
 Product and UX approved Slice 1. Slice 2 is no longer blocked and Development started the presentation reuse/filterable model work.
@@ -94,9 +94,10 @@ Slice 2 intentionally adds model/helper plumbing but not visible filter controls
 
 ## Review completed
 - Development approved on 2026-07-08.
+- UX approved on 2026-07-08.
 
 ## Continue / pause recommendation
-Pause for UX review. If approved, proceed to Slice 3: Layer-Tab Filter Panel Skeleton.
+Proceed to Slice 3: Layer-Tab Filter Panel Skeleton.
 
 ## Next planned slice
 Slice 3: Layer-Tab Filter Panel Skeleton.

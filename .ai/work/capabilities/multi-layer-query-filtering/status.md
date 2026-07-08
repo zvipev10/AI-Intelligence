@@ -4,10 +4,10 @@
 Multi-Layer Query Filtering (`multi-layer-query-filtering`)
 
 ## Current phase
-Slice 2 UX review.
+Slice 3 implementation review.
 
 ## Overall status
-Slice 1 approved by Product and UX; Product approved the Slice 2 VM build; Development approved the Slice 2 shared presentation/filter helper approach. UX review is still pending before Slice 3.
+Slice 2 is fully approved by Product, Development, and UX. Slice 3 filter-panel skeleton is implemented and waiting for Product/UX/Development review before Slice 4 behavior wiring.
 
 ## Who needs to act now
 
@@ -15,11 +15,18 @@ Slice 1 approved by Product and UX; Product approved the Slice 2 VM build; Devel
 |---|---|---|---|
 | Product | Complete | Approved the Slice 2 VM build for unchanged visible behavior and readiness for Slice 3 filter-panel work. | Done |
 | Development | Complete | Approved `checkpoint-006.md` and confirmed the shared presentation/filter helper approach for Slice 3. | Done |
-| UX | Action needed | Review `checkpoint-006.md` for presentation/filter plumbing implications before visible filter controls are added. | Slice 3 starts |
+| UX | Complete | Approved `checkpoint-006.md` and allowed Slice 3 to begin. | Done |
+| Product/UX/Development | Action needed | Review the Slice 3 filter-panel skeleton in `checkpoint-009.md` before Slice 4 behavior wiring. | Slice 4 starts |
 | QA | Waiting | Confirm canonical manual test fixture and review QA checklist before core filter behavior is wired. | Slice 4 completion |
 | Architecture/Security | Not blocking | Review API endpoint shape and authorization assumptions if this pattern will continue beyond the local POC. | Before productionizing |
 
 ## Latest change since previous review
+UX approved Slice 2 on 2026-07-08.
+Development implemented Slice 3 in `checkpoint-009.md`:
+- Added a distinct filter action on each layer tab.
+- Added a beside-table filter-panel skeleton with active layer name, raw fields, draft filter summary, active filter summary, and disabled placeholder actions.
+- Kept Add/Apply mutation behavior deferred to Slice 4.
+
 Development approved the Slice 2 shared presentation/filter helper approach on 2026-07-08.
 Product approved the Slice 2 VM build on 2026-07-08.
 UX approved Slice 1 on 2026-07-08.
@@ -39,7 +46,7 @@ Development approval checkpoint `checkpoint-008.md`:
 - Development approved the Slice 2 implementation and shared presentation/filter helper approach on 2026-07-08.
 
 ## Current blockers
-- Slice 3 should not start until UX review of `checkpoint-006.md`.
+- Slice 4 should not start until Product/UX/Development review of `checkpoint-009.md`.
 
 ## Current risks
 - MVP row loading has no limit, which may create browser performance risk on larger datasets.
@@ -47,7 +54,7 @@ Development approval checkpoint `checkpoint-008.md`:
 - QA still needs to confirm the canonical manual test fixture before Slice 4 acceptance.
 
 ## Next expected artifact
-UX review of `checkpoint-006.md`.
+Product/UX/Development review of `checkpoint-009.md`.
 
 ## Parent issue
 GitHub issue: #3. Local issue body: `issues/000-parent-capability.md`.
@@ -64,8 +71,8 @@ GitHub issue: #3. Local issue body: `issues/000-parent-capability.md`.
 | #9 / `issues/060-slice-1-implementation.md` | Development | Implement API layer catalog and selector. | Complete with correction checkpoint | No |
 | #10 / `issues/061-slice-1-selector-correction.md` | Development | Remove selector wrapper/header/count. | Implemented in `checkpoint-002.md`; follow-up UX comments implemented in `checkpoint-003.md` | No |
 | #11 / `issues/070-slice-1-review.md` | Product/UX/Development | Review corrected Slice 1. | Complete; Product and UX approved `checkpoint-005.md` | No |
-| #12 / `issues/080-slice-2-presentation-filter-model.md` | Development | Add presentation reuse and filterable model helpers. | Product and Development approved; pending UX review | Yes |
-| #13 / `issues/090-slice-3-filter-panel.md` | UX/Development | Add filter panel skeleton. | Not ready | Blocked by Slice 2 review |
+| #12 / `issues/080-slice-2-presentation-filter-model.md` | Development | Add presentation reuse and filterable model helpers. | Complete; Product, Development, and UX approved | No |
+| #13 / `issues/090-slice-3-filter-panel.md` | UX/Development | Add filter panel skeleton. | Implemented in `checkpoint-009.md`; pending Product/UX/Development review | Yes |
 | #14 / `issues/100-slice-4-filter-behavior.md` | Product/UX/Development/QA | Wire draft/edit/remove/apply behavior. | Not ready | Blocked by Slice 3 |
 | #15 / `issues/110-slice-5-validation.md` | QA/Product/Development | Validate cross-layer behavior and regressions. | Not ready | Blocked by Slice 4 |
 | #16 / `issues/120-final-handoff.md` | Product/Development/QA | Publish final handoff and closure status. | Not ready | Blocked by final QA |
@@ -78,7 +85,7 @@ GitHub issue: #3. Local issue body: `issues/000-parent-capability.md`.
 - UX review: `ux-review.md`
 - QA review: `qa-review.md`
 - Execution plan: `execution-plan.md`
-- Latest checkpoint: `checkpoint-008.md`
+- Latest checkpoint: `checkpoint-009.md`
 - Handoff: `handoff-summary.md`
 
 ## Gate checklist

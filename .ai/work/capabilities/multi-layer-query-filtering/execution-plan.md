@@ -6,22 +6,22 @@ Multi-Layer Query Filtering (`multi-layer-query-filtering`)
 ## Related issues
 - Parent issue: #3 / `issues/000-parent-capability.md`
 - Execution plan review issue: #8 / `issues/050-execution-plan-review.md`
-- Active implementation issue: #12 / `issues/080-slice-2-presentation-filter-model.md`
+- Active implementation issue: #13 / `issues/090-slice-3-filter-panel.md`
 
 ## Plan status
-Approved through Slice 1; Slice 2 implemented and pending review.
+Approved through Slice 2; Slice 3 implemented and pending Product/UX/Development review.
 
 ## Role actions
 
 | Role | Status | Required action | Due before |
 |---|---|---|---|
-| Development | Action needed | Review `checkpoint-006.md` before Slice 3 starts. | Slice 3 starts |
-| Product | Complete | Approved Slice 1 selector/control/table treatment. | Done |
-| UX | Waiting | Review Slice 2 presentation/filter helper plumbing before visible filter controls are added. | Slice 3 starts |
+| Development | Action needed | Review `checkpoint-009.md` before Slice 4 starts. | Slice 4 starts |
+| Product | Action needed | Review `checkpoint-009.md` filter-panel skeleton placement and clarity. | Slice 4 starts |
+| UX | Action needed | Review `checkpoint-009.md` filter-panel skeleton placement and action clarity. | Slice 4 starts |
 | QA | Waiting | Confirm QA fixture and validation plan before Slice 4 acceptance. | Slice 4 completion |
 
 ## What changed since previous review
-Slice 1 is approved by Product and UX. Slice 2 implementation is captured in `checkpoint-006.md` and is pending Development/UX review before Slice 3.
+Slice 2 is approved by Product, Development, and UX. Slice 3 implementation is captured in `checkpoint-009.md` and is pending Product/UX/Development review before Slice 4.
 
 Prepared on 2026-07-07 from the approved capability brief and developer review. Do not start implementation until Product and Development accept this plan or explicitly accept any changes as execution assumptions.
 Updated on 2026-07-07 after Product reviewed Slice 1 and requested removal of the separate visible "Data layers / Layer selection / available layers" selector section.

@@ -6,7 +6,7 @@ Prepare shared layer filtering helpers and presentation item plumbing.
 GitHub issue: #12
 
 ## Required action
-Review the implemented filter state initialization and shared applied-filter item helpers in `checkpoint-006.md`.
+Slice 2 review is complete. Continue with Slice 3/Slice 4 review gates.
 
 ## Owner role
 Development and UX.
@@ -16,10 +16,10 @@ Development and UX.
 - Approved Slice 1 review.
 
 ## Expected output
-Approval to proceed to Slice 3 or requested changes.
+Slice 2 approval recorded; Slice 3 may proceed.
 
 ## Blocking
-Slice 3 remains blocked until Slice 2 review is complete.
+No longer blocking Slice 3.
 
 ## Development update
 Implemented in `checkpoint-006.md`:
@@ -31,6 +31,12 @@ Implemented in `checkpoint-006.md`:
 ## Product review
 Product approved the deployed Slice 2 VM build for unchanged visible behavior and readiness to proceed to Slice 3 on 2026-07-08.
 
+## Development review
+Development approved the Slice 2 implementation on 2026-07-08.
+
+## UX review
+UX approved the Slice 2 implementation on 2026-07-08.
+
 ## Completion criteria
 - [x] API-opened layers initialize filter state.
 - [x] Field discovery helper added.
@@ -39,8 +45,8 @@ Product approved the deployed Slice 2 VM build for unchanged visible behavior an
 - [x] Table, map, and timeline use shared applied-filtered items where supported.
 - [x] Slice 2 checkpoint created.
 - [x] Product approves deployed VM build.
-- [ ] Development approves Slice 2 implementation.
-- [ ] UX approves Slice 2 implementation before filter panel skeleton.
+- [x] Development approves Slice 2 implementation.
+- [x] UX approves Slice 2 implementation before filter panel skeleton.
 
 ## Related artifacts
 - `execution-plan.md`

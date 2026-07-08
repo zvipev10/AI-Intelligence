@@ -16,6 +16,8 @@ Approved after review of the corrected `checkpoint-005.md` transparency treatmen
 | UX | Complete | Approved the corrected selector/control/table styling in `checkpoint-005.md`. | Done |
 
 ## What changed since previous review
+UX approved the Slice 2 shared presentation/filter helper approach on 2026-07-08. Slice 3 may proceed.
+
 UX approved the corrected selector/control/table transparency treatment on 2026-07-08. Slice 2 may proceed.
 
 Product reviewed Slice 1 and said the selector correction looks good, with three UX comments before Slice 2: make the selector almost half as wide, make the selector and other map-top components transparent, and make the results table slightly transparent in the same visual direction.
@@ -79,4 +81,4 @@ No current blocking Product questions. Product approved the corrected Slice 1 tr
 - Can the selector width, map-top transparency, and results-table transparency be changed with CSS-only updates and no API/catalog behavior changes?
 
 ## Review recommendation
-Approve Slice 1. Continue to Slice 2.
+Approve Slice 2. Continue to Slice 3.

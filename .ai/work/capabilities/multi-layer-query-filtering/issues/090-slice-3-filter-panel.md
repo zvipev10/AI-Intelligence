@@ -19,14 +19,17 @@ Development and UX.
 Filter panel skeleton and checkpoint summary.
 
 ## Blocking
-Blocked by Slice 2 approval.
+Implemented after Slice 2 Product, Development, and UX approval.
 
 ## Completion criteria
-- [ ] Layer-tab filter control added.
-- [ ] Filter panel appears beside results table.
-- [ ] Filter action remains distinct from X close and visibility.
-- [ ] Raw field names rendered.
-- [ ] UX review requested.
+- [x] Layer-tab filter control added.
+- [x] Filter panel appears beside results table.
+- [x] Filter action remains distinct from X close and visibility.
+- [x] Raw field names rendered.
+- [x] UX review requested.
+
+## Current status
+Implemented in `checkpoint-009.md`; pending Product/UX/Development review before Slice 4 behavior wiring.
 
 ## Related artifacts
 - `execution-plan.md`
