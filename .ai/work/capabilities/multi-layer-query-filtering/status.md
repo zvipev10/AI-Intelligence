@@ -21,6 +21,11 @@ Slice 2 is fully approved by Product, Development, and UX. Slice 3 filter-panel 
 | Architecture/Security | Not blocking | Review API endpoint shape and authorization assumptions if this pattern will continue beyond the local POC. | Before productionizing |
 
 ## Latest change since previous review
+Deployment checkpoint `checkpoint-010.md`:
+- Deployed Slice 3 `app.js`, `index.html`, and `styles.css` to the review VM on 2026-07-08.
+- Restarted `serbia-poc-ui.service`; service reported `active`.
+- Verified the served page returns HTTP 200 and references `app.js?v=82` and `styles.css?v=64`.
+
 UX approved Slice 2 on 2026-07-08.
 Development implemented Slice 3 in `checkpoint-009.md`:
 - Added a distinct filter action on each layer tab.
@@ -85,7 +90,7 @@ GitHub issue: #3. Local issue body: `issues/000-parent-capability.md`.
 - UX review: `ux-review.md`
 - QA review: `qa-review.md`
 - Execution plan: `execution-plan.md`
-- Latest checkpoint: `checkpoint-009.md`
+- Latest checkpoint: `checkpoint-010.md`
 - Handoff: `handoff-summary.md`
 
 ## Gate checklist
