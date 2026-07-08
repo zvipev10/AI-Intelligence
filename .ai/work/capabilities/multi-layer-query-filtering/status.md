@@ -4,18 +4,18 @@
 Multi-Layer Query Filtering (`multi-layer-query-filtering`)
 
 ## Current phase
-Slice 2 ready for Development.
+Slice 2 implementation review.
 
 ## Overall status
-Slice 1 approved by Product and UX; Development may start Slice 2.
+Slice 1 approved by Product and UX; Slice 2 development is implemented and waiting for Development/UX review.
 
 ## Who needs to act now
 
 | Role | Status | Required action | Due before |
 |---|---|---|---|
 | Product | Complete | Approved the corrected selector/control/table transparency treatment in `checkpoint-005.md`. | Done |
-| Development | Action needed | Start Slice 2: presentation reuse and filterable layer model helpers. | Slice 2 checkpoint |
-| UX | Complete | Approved the updated selector/control/table transparency in `checkpoint-005.md`. | Done |
+| Development | Action needed | Review `checkpoint-006.md` and confirm shared presentation/filter helper approach before Slice 3. | Slice 3 starts |
+| UX | Waiting | Review `checkpoint-006.md` for presentation/filter plumbing implications before visible filter controls are added. | Slice 3 starts |
 | QA | Waiting | Confirm canonical manual test fixture and review QA checklist before core filter behavior is wired. | Slice 4 completion |
 | Architecture/Security | Not blocking | Review API endpoint shape and authorization assumptions if this pattern will continue beyond the local POC. | Before productionizing |
 
@@ -23,13 +23,13 @@ Slice 1 approved by Product and UX; Development may start Slice 2.
 UX approved Slice 1 on 2026-07-08.
 Product approved Slice 1 on 2026-07-08.
 
-Development corrected Product's follow-up transparency feedback in `checkpoint-005.md`:
-- Shared transparent surfaces are lighter, moving from `rgba(15, 19, 27, .78)` to `rgba(15, 19, 27, .58)`.
-- Remaining black-looking nested table/tab/header surfaces were reduced to lighter overlays or made transparent.
-- Selecting `טלגרם` still opens the raw table with 1,280 rows.
+Development implemented Slice 2 in `checkpoint-006.md`:
+- Opened layers now initialize draft/applied filter model state.
+- Field discovery, value stringification, text normalization, contains matching, AND filtering, and shared presentation item helpers were added.
+- Table, map, timeline, and result counts now consume `itemsForLayerPresentation(layer)`.
 
 ## Current blockers
-- No current blockers for Slice 2.
+- Slice 3 should not start until Development/UX review `checkpoint-006.md`.
 
 ## Current risks
 - MVP row loading has no limit, which may create browser performance risk on larger datasets.
@@ -37,7 +37,7 @@ Development corrected Product's follow-up transparency feedback in `checkpoint-0
 - QA still needs to confirm the canonical manual test fixture before Slice 4 acceptance.
 
 ## Next expected artifact
-Slice 2 implementation checkpoint.
+Development/UX review of `checkpoint-006.md`.
 
 ## Parent issue
 GitHub issue: #3. Local issue body: `issues/000-parent-capability.md`.
@@ -54,8 +54,8 @@ GitHub issue: #3. Local issue body: `issues/000-parent-capability.md`.
 | #9 / `issues/060-slice-1-implementation.md` | Development | Implement API layer catalog and selector. | Complete with correction checkpoint | No |
 | #10 / `issues/061-slice-1-selector-correction.md` | Development | Remove selector wrapper/header/count. | Implemented in `checkpoint-002.md`; follow-up UX comments implemented in `checkpoint-003.md` | No |
 | #11 / `issues/070-slice-1-review.md` | Product/UX/Development | Review corrected Slice 1. | Complete; Product and UX approved `checkpoint-005.md` | No |
-| #12 / `issues/080-slice-2-presentation-filter-model.md` | Development | Add presentation reuse and filterable model helpers. | Ready for Development | No |
-| #13 / `issues/090-slice-3-filter-panel.md` | UX/Development | Add filter panel skeleton. | Not ready | Blocked by Slice 2 |
+| #12 / `issues/080-slice-2-presentation-filter-model.md` | Development | Add presentation reuse and filterable model helpers. | Implemented in `checkpoint-006.md`; pending review | Yes |
+| #13 / `issues/090-slice-3-filter-panel.md` | UX/Development | Add filter panel skeleton. | Not ready | Blocked by Slice 2 review |
 | #14 / `issues/100-slice-4-filter-behavior.md` | Product/UX/Development/QA | Wire draft/edit/remove/apply behavior. | Not ready | Blocked by Slice 3 |
 | #15 / `issues/110-slice-5-validation.md` | QA/Product/Development | Validate cross-layer behavior and regressions. | Not ready | Blocked by Slice 4 |
 | #16 / `issues/120-final-handoff.md` | Product/Development/QA | Publish final handoff and closure status. | Not ready | Blocked by final QA |
@@ -68,7 +68,7 @@ GitHub issue: #3. Local issue body: `issues/000-parent-capability.md`.
 - UX review: `ux-review.md`
 - QA review: `qa-review.md`
 - Execution plan: `execution-plan.md`
-- Latest checkpoint: `checkpoint-005.md`
+- Latest checkpoint: `checkpoint-006.md`
 - Handoff: `handoff-summary.md`
 
 ## Gate checklist

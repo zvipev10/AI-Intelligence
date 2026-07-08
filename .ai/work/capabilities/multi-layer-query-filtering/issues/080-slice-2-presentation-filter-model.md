@@ -6,31 +6,41 @@ Prepare shared layer filtering helpers and presentation item plumbing.
 GitHub issue: #12
 
 ## Required action
-Implement filter state initialization and shared applied-filter item helpers.
+Review the implemented filter state initialization and shared applied-filter item helpers in `checkpoint-006.md`.
 
 ## Owner role
-Development.
+Development and UX.
 
 ## Inputs
 - `execution-plan.md`
 - Approved Slice 1 review.
 
 ## Expected output
-Slice 2 implementation and checkpoint summary.
+Approval to proceed to Slice 3 or requested changes.
 
 ## Blocking
-None. Slice 1 selector correction and review are complete.
+Slice 3 remains blocked until Slice 2 review is complete.
+
+## Development update
+Implemented in `checkpoint-006.md`:
+- API-opened and reopened layers initialize filter state.
+- Field discovery, value stringification, text normalization, contains matching, AND matching, and shared item helpers were added.
+- Table, map, timeline, and result counts now use `itemsForLayerPresentation(layer)`.
+- Browser smoke confirmed the no-filter path still opens `טלגרם` with 1,280 table rows.
 
 ## Completion criteria
-- [ ] API-opened layers initialize filter state.
-- [ ] Field discovery helper added.
-- [ ] Value stringification helper added.
-- [ ] Contains/AND filter helper added.
-- [ ] Table, map, and timeline use shared applied-filtered items where supported.
-- [ ] Slice 2 checkpoint created.
+- [x] API-opened layers initialize filter state.
+- [x] Field discovery helper added.
+- [x] Value stringification helper added.
+- [x] Contains/AND filter helper added.
+- [x] Table, map, and timeline use shared applied-filtered items where supported.
+- [x] Slice 2 checkpoint created.
+- [ ] Development approves Slice 2 implementation.
+- [ ] UX approves Slice 2 implementation before filter panel skeleton.
 
 ## Related artifacts
 - `execution-plan.md`
+- `checkpoint-006.md`
 
 ## Parent capability
 #3 / `000-parent-capability.md`

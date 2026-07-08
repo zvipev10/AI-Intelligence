@@ -569,7 +569,10 @@ function addResultLayers({ sourceId, sourceLabel, preferredView = "map", layers 
   const added = [];
 
   if (existingSourceLayers.length) {
-    existingSourceLayers.forEach(layer => { layer.visible = true; });
+    existingSourceLayers.forEach(layer => {
+      ensureLayerFilterState(layer);
+      layer.visible = true;
+    });
   }
 
   layers.forEach(layer => {
@@ -577,6 +580,7 @@ function addResultLayers({ sourceId, sourceLabel, preferredView = "map", layers 
     const id = `${cleanSourceId}::${sanitizeLayerKey(dataId)}`;
     const existing = state.layers.find(item => item.id === id);
     if (existing) {
+      ensureLayerFilterState(existing);
       existing.visible = true;
       added.push(existing);
       return;
@@ -591,6 +595,7 @@ function addResultLayers({ sourceId, sourceLabel, preferredView = "map", layers 
       color: nextLayerColor(),
       visible: true
     };
+    ensureLayerFilterState(next);
     state.layers.push(next);
     added.push(next);
   });
@@ -628,6 +633,98 @@ function activeTableLayer() {
   return state.layers.find(layer => layer.id === state.activeLayerId && layer.capabilities.table)
     || state.layers.find(layer => layer.capabilities.table)
     || null;
+}
+
+function ensureLayerFilterState(layer) {
+  if (!layer) return null;
+  if (!Array.isArray(layer.draftFilters)) layer.draftFilters = [];
+  if (!Array.isArray(layer.appliedFilters)) layer.appliedFilters = [];
+  if (typeof layer.filterError !== "string") layer.filterError = "";
+  if (typeof layer.filterPanelOpen !== "boolean") layer.filterPanelOpen = false;
+  return layer;
+}
+
+function filterFieldPathsForValue(value, prefix = "", fields = new Set(), depth = 0) {
+  if (value === null || value === undefined) return fields;
+  if (value instanceof Date) {
+    if (prefix) fields.add(prefix);
+    return fields;
+  }
+  if (Array.isArray(value)) {
+    if (prefix) fields.add(prefix);
+    return fields;
+  }
+  if (typeof value !== "object") {
+    if (prefix) fields.add(prefix);
+    return fields;
+  }
+  Object.keys(value).forEach(key => {
+    const path = prefix ? `${prefix}.${key}` : key;
+    const child = value[key];
+    if (child && typeof child === "object" && !Array.isArray(child) && depth < 2) {
+      filterFieldPathsForValue(child, path, fields, depth + 1);
+    } else {
+      fields.add(path);
+    }
+  });
+  if (prefix && !Object.keys(value).length) fields.add(prefix);
+  return fields;
+}
+
+function filterFieldsForLayer(layer) {
+  ensureLayerFilterState(layer);
+  const fields = new Set();
+  (layer?.items || []).forEach(item => filterFieldPathsForValue(item, "", fields));
+  return [...fields].sort((a, b) => a.localeCompare(b, "he"));
+}
+
+function valueForFilterField(item, field) {
+  if (!field) return "";
+  return String(field).split(".").reduce((value, key) => {
+    if (value === null || value === undefined) return undefined;
+    return value[key];
+  }, item);
+}
+
+function stringifyFilterValue(value) {
+  if (value === null || value === undefined) return "";
+  if (value instanceof Date) return value.toISOString();
+  if (Array.isArray(value)) return value.map(item => stringifyFilterValue(item)).filter(Boolean).join(" ");
+  if (typeof value === "object") {
+    return Object.keys(value)
+      .sort((a, b) => a.localeCompare(b, "he"))
+      .map(key => stringifyFilterValue(value[key]))
+      .filter(Boolean)
+      .join(" ");
+  }
+  return String(value);
+}
+
+function normalizeFilterText(value) {
+  return stringifyFilterValue(value).trim().replace(/\s+/g, " ").toLocaleLowerCase("he-IL");
+}
+
+function validAppliedFilters(layer) {
+  ensureLayerFilterState(layer);
+  return (layer?.appliedFilters || []).filter(filter => filter?.field && normalizeFilterText(filter.value));
+}
+
+function layerHasAppliedFilters(layer) {
+  return validAppliedFilters(layer).length > 0;
+}
+
+function filterMatchesItem(item, filter) {
+  const needle = normalizeFilterText(filter.value);
+  if (!filter.field || !needle) return true;
+  return normalizeFilterText(valueForFilterField(item, filter.field)).includes(needle);
+}
+
+function itemsForLayerPresentation(layer) {
+  ensureLayerFilterState(layer);
+  const items = layer?.items || [];
+  const filters = validAppliedFilters(layer);
+  if (!filters.length) return items;
+  return items.filter(item => filters.every(filter => filterMatchesItem(item, filter)));
 }
 
 function isCatalogLayerOpen(layerId) {
@@ -780,7 +877,7 @@ async function openCatalogLayer(layerId) {
 function visibleEventItems() {
   return visibleLayers("timeline")
     .filter(layer => layer.kind === "events")
-    .flatMap(layer => layer.items);
+    .flatMap(layer => itemsForLayerPresentation(layer));
 }
 
 function initMap() {
@@ -1681,8 +1778,8 @@ function showResult(title, subtitle) {
   if (resultSubtitle) resultSubtitle.textContent = subtitle;
   if (resultCount) {
     const visibleEvents = visibleEventItems().length;
-    const visibleLocationLayers = visibleLayers("map").filter(layer => layer.kind === "locations").reduce((sum, layer) => sum + layer.items.length, 0);
-    const visibleTimeGroups = visibleLayers("timeline").filter(layer => layer.kind === "time_aggregation").reduce((sum, layer) => sum + layer.items.length, 0);
+    const visibleLocationLayers = visibleLayers("map").filter(layer => layer.kind === "locations").reduce((sum, layer) => sum + itemsForLayerPresentation(layer).length, 0);
+    const visibleTimeGroups = visibleLayers("timeline").filter(layer => layer.kind === "time_aggregation").reduce((sum, layer) => sum + itemsForLayerPresentation(layer).length, 0);
     resultCount.textContent = visibleEvents
       ? `${visibleEvents} אירועים`
       : (visibleTimeGroups ? `${visibleTimeGroups} נקודות זמן` : `${visibleLocationLayers} מיקומים`);
@@ -1787,16 +1884,17 @@ function renderMap() {
     byLocation.set(locationId, existing);
   };
   visibleLayers("map").forEach(layer => {
+    const items = itemsForLayerPresentation(layer);
     if (layer.kind === "events") {
       const counts = {};
-      layer.items.forEach(event => { counts[event.location_id] = (counts[event.location_id] || 0) + 1; });
+      items.forEach(event => { counts[event.location_id] = (counts[event.location_id] || 0) + 1; });
       Object.entries(counts).forEach(([locationId, count]) => addLocationCount(locationId, count, layer.label, null, layer.color));
     } else if (layer.kind === "locations") {
-      layer.items.forEach(item => addLocationCount(item.location_id, item.count || 1, layer.label, item, layer.color));
+      items.forEach(item => addLocationCount(item.location_id, item.count || 1, layer.label, item, layer.color));
     } else if (layer.kind === "location_metadata") {
-      layer.items.forEach(item => addLocationCount(item.location_id, item.event_count || item.count || 1, item.location_name || layer.label, item, layer.color));
+      items.forEach(item => addLocationCount(item.location_id, item.event_count || item.count || 1, item.location_name || layer.label, item, layer.color));
     } else if (layer.kind === "entity_metadata") {
-      layer.items.forEach(entity => {
+      items.forEach(entity => {
         (entity.top_locations || []).forEach(location => {
           addLocationCount(
             location.location_id,
@@ -1849,10 +1947,10 @@ function renderTimeline() {
   const timeline = document.getElementById("timeline");
   const eventTimelineItems = visibleLayers("timeline")
     .filter(layer => layer.kind === "events")
-    .flatMap(layer => layer.items.map(event => ({ type: "event", layer, event, sort: event.date })));
+    .flatMap(layer => itemsForLayerPresentation(layer).map(event => ({ type: "event", layer, event, sort: event.date })));
   const aggregateTimelineItems = visibleLayers("timeline")
     .filter(layer => layer.kind === "time_aggregation")
-    .flatMap(layer => layer.items.map(item => ({ type: "aggregation", layer, item, sort: item.sortKey })));
+    .flatMap(layer => itemsForLayerPresentation(layer).map(item => ({ type: "aggregation", layer, item, sort: item.sortKey })));
   if (!eventTimelineItems.length && !aggregateTimelineItems.length) { timeline.className = "timeline empty-state"; timeline.textContent = "לא נבחרו שכבות עם ציר זמן להצגה."; return; }
   timeline.className = "timeline";
   const aggregationHtml = aggregateTimelineItems.map(({ layer, item }) => `
@@ -1880,6 +1978,7 @@ function renderEvidence() {
   if (!overlay || !tabs || !head || !body) return;
 
   const tableLayers = state.layers.filter(layer => layer.capabilities.table);
+  tableLayers.forEach(layer => ensureLayerFilterState(layer));
   if (!tableLayers.length) {
     overlay.hidden = true;
     tabs.innerHTML = "";
@@ -1900,21 +1999,30 @@ function renderEvidence() {
     minimizeButton.title = state.rawOverlayMinimized ? "הגדל" : "מזער";
     minimizeButton.setAttribute("aria-label", state.rawOverlayMinimized ? "הגדל טבלת תוצאות" : "מזער טבלת תוצאות");
   }
-  tabs.innerHTML = tableLayers.map(layer => `
+  tabs.innerHTML = tableLayers.map(layer => {
+    const filteredCount = itemsForLayerPresentation(layer).length;
+    const originalCount = (layer.items || []).length;
+    const countLabel = layerHasAppliedFilters(layer)
+      ? `${filteredCount.toLocaleString("he-IL")}/${originalCount.toLocaleString("he-IL")}`
+      : originalCount.toLocaleString("he-IL");
+    return `
     <button type="button" class="raw-source-tab ${layer.id === activeLayer?.id ? "active" : ""} ${layer.visible ? "" : "hidden-source"}" style="${layerColorStyle(layer)}" data-layer-id="${escapeHtml(layer.id)}" role="tab" aria-selected="${layer.id === activeLayer?.id}" title="${escapeHtml(layer.sourceLabel || layer.label)}">
       <span class="raw-source-color"></span>
       <span class="raw-source-name">${escapeHtml(layer.label)}</span>
-      <strong>${layer.items.length.toLocaleString("he-IL")}</strong>
+      <strong>${countLabel}</strong>
         <span class="raw-source-eye" data-layer-visibility="${escapeHtml(layer.id)}" title="${layer.visible ? "הסתר שכבה" : "הצג שכבה"}" aria-label="${layer.visible ? "הסתר שכבה" : "הצג שכבה"}" aria-pressed="${layer.visible ? "true" : "false"}">
           <span class="visibility-eye-icon ${layer.visible ? "" : "off"}" aria-hidden="true"></span>
         </span>
       <span class="raw-source-close" data-layer-close="${escapeHtml(layer.id)}" title="סגור שכבה" aria-label="סגור שכבה">×</span>
-    </button>`).join("");
+    </button>`;
+  }).join("");
 
   if (!activeLayer) return;
+  ensureLayerFilterState(activeLayer);
+  const activeItems = activeLayer.visible ? itemsForLayerPresentation(activeLayer) : [];
   if (activeLayer.kind === "location_metadata") {
     head.innerHTML = "<tr><th>מיקום</th><th>אירועים</th><th>רשות</th><th>סוג</th><th>דיוק</th><th>מזהה</th></tr>";
-    body.innerHTML = activeLayer.visible && activeLayer.items.length ? activeLayer.items.map(item => `
+    body.innerHTML = activeItems.length ? activeItems.map(item => `
       <tr>
         <td>${escapeHtml(item.location_name || item.name || item.location_id || "-")}</td>
         <td>${Number(item.event_count || item.count || 0).toLocaleString("he-IL")}</td>
@@ -1927,7 +2035,7 @@ function renderEvidence() {
   }
   if (activeLayer.kind === "entity_metadata") {
     head.innerHTML = "<tr><th>ישות</th><th>אירועים</th><th>סוג</th><th>ערכי actor</th><th>מוקדים מובילים</th><th>מזהה</th></tr>";
-    body.innerHTML = activeLayer.visible && activeLayer.items.length ? activeLayer.items.map(item => {
+    body.innerHTML = activeItems.length ? activeItems.map(item => {
       const aliases = (item.aliases || []).slice(0, 4).join(", ");
       const topLocations = (item.top_locations || []).slice(0, 4).map(location => `${location.location_name || location.location_id} (${Number(location.count || 0).toLocaleString("he-IL")})`).join(", ");
       return `
@@ -1944,7 +2052,7 @@ function renderEvidence() {
   }
   if (activeLayer.kind === "locations") {
     head.innerHTML = "<tr><th>מיקום</th><th>כמות</th><th>מזהה</th><th>סוג שכבה</th></tr>";
-    body.innerHTML = activeLayer.visible && activeLayer.items.length ? activeLayer.items.map(item => `
+    body.innerHTML = activeItems.length ? activeItems.map(item => `
       <tr>
         <td>${escapeHtml(item.location_name || item.label || item.key || item.location_id || "-")}</td>
         <td>${Number(item.count || 0).toLocaleString("he-IL")}</td>
@@ -1955,7 +2063,7 @@ function renderEvidence() {
   }
   if (activeLayer.kind === "time_aggregation") {
     head.innerHTML = "<tr><th>זמן</th><th>כמות</th><th>סוג קיבוץ</th><th>תקציר</th></tr>";
-    body.innerHTML = activeLayer.visible && activeLayer.items.length ? activeLayer.items.map(item => `
+    body.innerHTML = activeItems.length ? activeItems.map(item => `
       <tr>
         <td>${escapeHtml(item.timeLabel || item.label || "-")}</td>
         <td>${Number(item.count || 0).toLocaleString("he-IL")}</td>
@@ -1966,7 +2074,7 @@ function renderEvidence() {
   }
   if (activeLayer.kind === "group_aggregation") {
     head.innerHTML = "<tr><th>קבוצה</th><th>כמות</th><th>סוג קיבוץ</th><th>אירוע ראשון</th><th>אירוע אחרון</th></tr>";
-    body.innerHTML = activeLayer.visible && activeLayer.items.length ? activeLayer.items.map(item => `
+    body.innerHTML = activeItems.length ? activeItems.map(item => `
       <tr>
         <td>${escapeHtml(item.label || item.key || "-")}</td>
         <td>${Number(item.count || 0).toLocaleString("he-IL")}</td>
@@ -1977,7 +2085,7 @@ function renderEvidence() {
     return;
   }
   head.innerHTML = "<tr><th>זמן</th><th>אמינות</th><th>ודאות</th><th>גורם</th><th>מיקום</th><th>תקציר</th></tr>";
-  body.innerHTML = activeLayer.visible && activeLayer.items.length ? activeLayer.items.map(event => `
+  body.innerHTML = activeItems.length ? activeItems.map(event => `
     <tr>
       <td dir="ltr">${escapeHtml(event.timestamp_utc)}</td>
       <td>${escapeHtml(event.source_reliability_label || event.source_reliability || "-")}</td>
