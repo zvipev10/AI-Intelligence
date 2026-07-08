@@ -29,7 +29,7 @@ Do not rely on long private chat history for handoff.
 
 | Capability | Phase | Status | Waiting on | Next artifact |
 |---|---|---|---|---|
-| multi-layer-query-filtering | Slice 1 review | Changes requested | Development | checkpoint-002.md |
+| multi-layer-query-filtering | Slice 1 UX styling review | Development complete | Product/UX | checkpoint-003.md |
 
 ## Typical flow
 

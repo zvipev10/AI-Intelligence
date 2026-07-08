@@ -6,7 +6,7 @@ Review the corrected selector and decide whether Slice 2 may start.
 GitHub issue: #11
 
 ## Required action
-Development should implement Product's UX comments from review of `checkpoint-002.md`; then Product, UX, and Development should review the result.
+Development implemented Product's UX comments from review of `checkpoint-002.md`; Product, UX, and Development should now review `checkpoint-003.md`.
 
 ## Owner role
 Product, UX, and Development.
@@ -17,7 +17,7 @@ Product, UX, and Development.
 - `status.md`
 
 ## Expected output
-Implemented styling changes, followed by approval to continue to Slice 2 or requested changes.
+Review result for `checkpoint-003.md`: approval to continue to Slice 2 or requested changes.
 
 ## Blocking
 Slice 2 remains blocked until this review is complete.
@@ -28,17 +28,24 @@ Product reviewed `checkpoint-002.md` and said the correction looks good, with th
 - Make the selector and all other map-top components transparent.
 - Make the results table slightly transparent in the same visual direction.
 
+## Development update
+Implemented in `checkpoint-003.md`:
+- Selector width reduced from 360px to 190px on desktop.
+- Selector, autocomplete list, MapLibre top-left controls, raw overlay, and raw table use the same `rgba(15, 19, 27, .78)` translucent surface.
+- Browser smoke confirmed selecting `טלגרם` still opens the raw table with 1,280 rows.
+
 ## Completion criteria
-- [ ] Selector width reduced per Product comment.
-- [ ] Selector and map-top components made transparent/translucent.
-- [ ] Results table made slightly transparent while preserving readability.
+- [x] Selector width reduced per Product comment.
+- [x] Selector and map-top components made transparent/translucent.
+- [x] Results table made slightly transparent while preserving readability.
 - [ ] Product approves corrected selector and transparency treatment.
 - [ ] UX approves corrected selector placement and transparency treatment.
-- [ ] Development confirms no API/catalog regression.
+- [x] Development confirms no API/catalog regression.
 - [ ] `status.md` updated for Slice 2.
 
 ## Related artifacts
 - `checkpoint-002.md`
+- `checkpoint-003.md`
 - `status.md`
 
 ## Parent capability
