@@ -34,6 +34,11 @@ Implemented in `checkpoint-003.md`:
 - Selector, autocomplete list, MapLibre top-left controls, raw overlay, and raw table use the same `rgba(15, 19, 27, .78)` translucent surface.
 - Browser smoke confirmed selecting `טלגרם` still opens the raw table with 1,280 rows.
 
+Follow-up correction implemented in `checkpoint-004.md`:
+- Results overlay top chrome is compact again: 6px resize row plus 34px header row.
+- Table body and cells are transparent instead of applying another translucent surface over the overlay.
+- Sticky table headers use a lighter `rgba(15, 19, 27, .54)` background for readability without making the table look opaque.
+
 ## Completion criteria
 - [x] Selector width reduced per Product comment.
 - [x] Selector and map-top components made transparent/translucent.
@@ -46,6 +51,7 @@ Implemented in `checkpoint-003.md`:
 ## Related artifacts
 - `checkpoint-002.md`
 - `checkpoint-003.md`
+- `checkpoint-004.md`
 - `status.md`
 
 ## Parent capability
