@@ -1383,17 +1383,26 @@ async function submitStepInject() {
   sendButton.disabled = true;
   sendButton.textContent = "מחקר...";
 
-  // Inject a synthetic user/assistant turn so Hermes treats this as continuation
-  const syntheticHistory = [
-    ...state.history,
-    { role: "assistant", content: "הבנתי. אמשיך את החקירה בהתבסס על ההוראה והשכבות שסומנו." }
-  ];
+  // Snapshot prior steps before starting the new bubble
+  const priorSteps = state.lastResult?.investigation_steps || [];
+  const priorResult = state.lastResult;
+  const baseStepCount = priorSteps.length;
 
-  ensureAssistantResearchMessage();
+  // Start a new labeled continuation bubble
+  startAssistantResearchMessage("Hermes ממשיך את החקירה...");
+  // Mark the article so CSS can show the ↩ continuation kicker
+  if (state.activeAssistantMessage) {
+    state.activeAssistantMessage.dataset.continuation = "true";
+  }
+
+  // Render all prior steps first so the analyst has full context in one place
+  if (priorResult && priorSteps.length) {
+    renderActivitySteps(priorSteps, priorResult);
+  }
+
   let progressTimer = null;
   let liveStepCount = 0;
 
-  const baseStepCount = state.lastResult?.investigation_steps?.length || 0;
   const pollContinuationSteps = async () => {
     try {
       const response = await fetch("/api/live-steps", { cache: "no-store" });
@@ -1427,14 +1436,18 @@ async function submitStepInject() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         prompt: continuationPrompt,
-        history: syntheticHistory,
-        investigation_id: state.investigationId
+        history: state.history,
+        investigation_id: state.investigationId,
+        is_continuation: true
       })
     });
     const result = await response.json();
     if (!response.ok) throw new Error(result.error || "Hermes request failed");
     result.answer = cleanAssistantAnswer(result.answer);
     state.history.push({ role: "user", content: continuationPrompt }, { role: "assistant", content: result.answer });
+    // Merge prior steps with new steps so the full chain is in state
+    const newSteps = result.investigation_steps || [];
+    result.investigation_steps = [...priorSteps, ...newSteps];
     applyHermesResult(result, continuationPrompt, { keepRenderedSteps: true });
   } catch (error) {
     addActivity("connection_error", "לא ניתן היה להשלים את המשך החקירה.", error.message);

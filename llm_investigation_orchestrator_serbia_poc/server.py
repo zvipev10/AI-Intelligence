@@ -1379,7 +1379,7 @@ class HermesClient:
                 continue
         return self.summarize_audit(audit_records)
 
-    def investigate(self, prompt, history, investigation_state=None, investigation_id=None):
+    def investigate(self, prompt, history, investigation_state=None, investigation_id=None, is_continuation=False):
         global ACTIVE_RUN_STARTED_AT
         overall_started = time.perf_counter()
         performance = {
@@ -1388,7 +1388,13 @@ class HermesClient:
             "tools": {},
         }
         audit_path = REMOTE_AUDIT_PATH
+        continuation_prefix = (
+            "זהו המשך של חקירה פעילה — אל תפתח חקירה חדשה ואל תפעיל classify_question_intent."
+            " הקשר המלא של החקירה נמצא בהיסטוריית השיחה שסופקה. המשך מהנקודה שבה הסתיימה החקירה הקודמת"
+            " בהתבסס על ההוראה החדשה שסופקה ב-prompt.\n"
+        ) if is_continuation else ""
         instructions = (
+            continuation_prefix +
             "אתה סוכן חקירה למערכת מודיעינית ניסיונית על תרחיש הסלמה בצפון קוסובו/סרביה. השב בעברית בלבד.\n"
             f"השתמש אך ורק בכלי MCP ששמם מתחיל ב-{HERMES_TOOL_PREFIX} ובנתונים שהם מחזירים.\n"
             "בכל שאלה חדשה, הפעל תחילה את classify_question_intent עם נוסח שאלת האנליסט והקשר קצר אם דרוש."
@@ -1855,6 +1861,7 @@ class Handler(SimpleHTTPRequestHandler):
                 request.get("history") or [],
                 investigation_state=request.get("investigation_state"),
                 investigation_id=request.get("investigation_id"),
+                is_continuation=bool(request.get("is_continuation")),
             )
             self.send_json(200, result)
         except Exception as exc:

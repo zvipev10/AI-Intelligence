@@ -230,6 +230,7 @@ h3 { margin: 0; font-size: 14px; }
 #stepInjectSubmit:disabled { opacity: .5; cursor: not-allowed; }
 .step-continue-btn { font-size: 10px; font-weight: 900; padding: 0 8px; height: 22px; border: 1px solid rgba(88,166,255,.34); border-radius: 5px; background: rgba(88,166,255,.08); color: var(--blue); cursor: pointer; }
 .step-continue-btn:hover { background: rgba(88,166,255,.16); color: #fff; }
+.assistant-message[data-continuation="true"] .research-process::before { content: "↩ המשך חקירה"; display: block; font-size: 10px; font-weight: 900; letter-spacing: .04em; color: var(--blue); opacity: .8; margin-bottom: 6px; }
 .map-marker { position: absolute; width: 20px; height: 20px; border: 2px solid rgba(255,255,255,.92); border-radius: 999px; background: var(--layer-color, #4f6f91); box-shadow: 0 2px 10px rgba(0,0,0,.46), 0 0 0 5px rgba(255,255,255,.12); cursor: pointer; }
 .map-marker:hover { transform: scale(1.12); }
 .map-marker-dot { position: absolute; inset: 0; border-radius: inherit; background: var(--layer-color, #4f6f91); }
