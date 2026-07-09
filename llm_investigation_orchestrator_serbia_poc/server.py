@@ -1388,19 +1388,24 @@ class HermesClient:
             "tools": {},
         }
         audit_path = REMOTE_AUDIT_PATH
-        continuation_prefix = (
-            "זהו המשך של חקירה פעילה — אל תפתח חקירה חדשה ואל תפעיל classify_question_intent."
-            " הקשר המלא של החקירה נמצא בהיסטוריית השיחה שסופקה. המשך מהנקודה שבה הסתיימה החקירה הקודמת"
-            " בהתבסס על ההוראה החדשה שסופקה ב-prompt.\n"
-        ) if is_continuation else ""
+        if is_continuation:
+            classify_instruction = (
+                "זהו המשך של חקירה פעילה — אל תפעיל classify_question_intent ואל תתחיל חקירה חדשה."
+                " הקשר המלא של החקירה נמצא בהיסטוריית השיחה שסופקה. המשך ישירות מהנקודה שבה הסתיימה"
+                " החקירה הקודמת בהתבסס על ההוראה החדשה שסופקה ב-prompt."
+                " השתמש ב-retrieval mode עם tool_budget של 10 כברירת מחדל אלא אם ההוראה מחייבת חקירה עמוקה יותר.\n"
+            )
+        else:
+            classify_instruction = (
+                "בכל שאלה חדשה, הפעל תחילה את classify_question_intent עם נוסח שאלת האנליסט והקשר קצר אם דרוש."
+                " הכלי משתמש ב-MCP sampling כדי לסווג את הכוונה בעזרת מודל, ומחזיר מסגרת עבודה מנורמלת."
+                " אל תשלח לכלי שדות סיווג ידניים כמו model_intent; תן לכלי לבצע את הסיווג."
+                " התייחס לפלט הכלי כמסגרת העבודה: recommended_mode, tool_budget, allowed_tool_families, blocked_tool_families ו-recommended_view_hint.\n"
+            )
         instructions = (
-            continuation_prefix +
             "אתה סוכן חקירה למערכת מודיעינית ניסיונית על תרחיש הסלמה בצפון קוסובו/סרביה. השב בעברית בלבד.\n"
             f"השתמש אך ורק בכלי MCP ששמם מתחיל ב-{HERMES_TOOL_PREFIX} ובנתונים שהם מחזירים.\n"
-            "בכל שאלה חדשה, הפעל תחילה את classify_question_intent עם נוסח שאלת האנליסט והקשר קצר אם דרוש."
-            " הכלי משתמש ב-MCP sampling כדי לסווג את הכוונה בעזרת מודל, ומחזיר מסגרת עבודה מנורמלת."
-            " אל תשלח לכלי שדות סיווג ידניים כמו model_intent; תן לכלי לבצע את הסיווג."
-            " התייחס לפלט הכלי כמסגרת העבודה: recommended_mode, tool_budget, allowed_tool_families, blocked_tool_families ו-recommended_view_hint.\n"
+            + classify_instruction +
             "עקרון כיסוי מחייב: ברירת המחדל בכל שאלת מודיעין היא Coverage / exhaustive mode."
             " אל תסתפק בדוגמאות מייצגות כאשר הכלים יכולים להחזיר את כלל התוצאות בתחום המוגדר."
             " השתמש באגרגציה כדי להבין את מרחב התוצאות, ואז בשליפה רחבה עם limit=2000 או במסננים מצמצמים כדי להביא את כל הרשומות הרלוונטיות האפשריות."
