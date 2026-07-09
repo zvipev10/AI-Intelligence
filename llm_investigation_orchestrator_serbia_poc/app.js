@@ -803,19 +803,11 @@ function renderLayerFilterPanel(layer) {
       <button type="button" class="layer-filter-close" data-layer-filter="${escapeHtml(layer.id)}" aria-label="סגור מסננים" title="סגור מסננים">×</button>
     </div>
     <div class="layer-filter-section">
-      <div class="layer-filter-section-title">טיוטת מסננים</div>
       <div class="filter-draft-list">${draftHtml}</div>
       ${errorHtml}
     </div>
-    <div class="layer-filter-section">
-      <button type="button" class="filter-add-button" data-filter-add ${addDisabled}>הוסף מסנן</button>
-    </div>
-    <div class="layer-filter-section">
-      <div class="layer-filter-section-title">מסננים פעילים</div>
-      <div class="filter-chip-list">${appliedHtml}</div>
-    </div>
     <div class="layer-filter-actions">
-      <button type="button" data-filter-cancel>בטל שינויים</button>
+      <button type="button" class="filter-add-button" data-filter-add ${addDisabled}>הוסף מסנן</button>
       <button type="button" class="primary-filter-action" data-filter-apply>החל</button>
     </div>`;
 }

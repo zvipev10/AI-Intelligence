@@ -197,7 +197,7 @@ h3 { margin: 0; font-size: 14px; }
 .filter-empty { padding: 7px; border: 1px dashed rgba(146, 170, 205, .24); border-radius: 6px; color: var(--muted); font-size: 10px; text-align: center; }
 .filter-empty.inline { display: inline-block; border: 0; padding: 0; text-align: right; }
 .filter-error { padding: 7px; border: 1px solid rgba(242,139,130,.34); border-radius: 6px; background: rgba(242,139,130,.1); color: var(--red); font-size: 10px; font-weight: 800; }
-.filter-add-button { width: 100%; min-height: 30px; border: 1px solid rgba(88,166,255,.34); border-radius: 6px; background: rgba(88,166,255,.1); color: var(--blue); font-size: 11px; font-weight: 900; }
+.filter-add-button { flex: 1 1 0; min-width: 0; height: 30px; border: 1px solid rgba(88,166,255,.34); border-radius: 6px; background: rgba(88,166,255,.1); color: var(--blue); font-size: 11px; font-weight: 900; cursor: pointer; }
 .filter-add-button:hover:not(:disabled) { background: rgba(88,166,255,.16); color: #fff; }
 .layer-filter-actions { display: flex; gap: 7px; padding-top: 10px; }
 .layer-filter-actions button { flex: 1 1 0; min-width: 0; height: 30px; border: 1px solid rgba(146, 170, 205, .26); border-radius: 6px; background: rgba(255,255,255,.04); color: var(--muted); font-size: 11px; font-weight: 900; cursor: pointer; }
