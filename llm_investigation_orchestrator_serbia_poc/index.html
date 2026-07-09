@@ -6,7 +6,7 @@
   <title>סביבת חקירה מונחית סוכן</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="./vendor/maplibre-gl.css">
-  <link rel="stylesheet" href="./styles.css?v=68">
+  <link rel="stylesheet" href="./styles.css?v=69">
 </head>
 <body>
   <a class="help-button" href="./help.html" target="_blank" rel="noopener" aria-label="פתח עזרה">?</a>
@@ -85,6 +85,32 @@
 
   </main>
 
+  <div id="stepInjectModal" class="step-inject-backdrop" hidden>
+    <section class="step-inject-window" role="dialog" aria-modal="true" aria-labelledby="stepInjectTitle">
+      <div class="step-inject-header">
+        <div>
+          <span class="step-inject-kicker">המשך מצעד</span>
+          <h3 id="stepInjectTitle"></h3>
+        </div>
+        <button id="stepInjectClose" class="modal-close-button" type="button" aria-label="סגור" title="סגור">×</button>
+      </div>
+      <div class="step-inject-body">
+        <div class="form-group">
+          <label for="stepInjectPrompt">הוראה לסוכן:</label>
+          <textarea id="stepInjectPrompt" rows="3" placeholder="מה לבדוק בהמשך..."></textarea>
+        </div>
+        <div class="form-group" id="stepInjectLayersGroup">
+          <label>בסס על שכבות:</label>
+          <div id="stepInjectLayers" class="step-inject-layer-list"></div>
+        </div>
+      </div>
+      <div class="step-inject-footer">
+        <div id="stepInjectError" class="step-inject-error" hidden></div>
+        <button id="stepInjectSubmit" type="button" class="primary-filter-action">שלח להמשך חקירה</button>
+      </div>
+    </section>
+  </div>
+
   <div id="recordedModal" class="modal-backdrop" hidden>
     <section class="recorded-modal" role="dialog" aria-modal="true" aria-labelledby="recordedModalTitle">
       <div class="recorded-modal-header">
@@ -132,6 +158,6 @@
   </div>
 
   <script src="./vendor/maplibre-gl.js"></script>
-  <script src="./app.js?v=87"></script>
+  <script src="./app.js?v=88"></script>
 </body>
 </html>

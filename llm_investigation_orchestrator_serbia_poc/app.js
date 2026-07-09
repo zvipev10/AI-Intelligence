@@ -1304,6 +1304,158 @@ function closeQueryModal() {
   if (queryModal) queryModal.hidden = true;
 }
 
+// ── Step Inject (Continue from here) ────────────────────────────────────────
+
+const stepInjectModal = document.getElementById("stepInjectModal");
+const stepInjectTitle = document.getElementById("stepInjectTitle");
+const stepInjectPrompt = document.getElementById("stepInjectPrompt");
+const stepInjectLayers = document.getElementById("stepInjectLayers");
+const stepInjectLayersGroup = document.getElementById("stepInjectLayersGroup");
+const stepInjectSubmit = document.getElementById("stepInjectSubmit");
+const stepInjectClose = document.getElementById("stepInjectClose");
+const stepInjectError = document.getElementById("stepInjectError");
+
+function openStepInjectModal(stepLabel, stepNumber) {
+  stepInjectTitle.textContent = `צעד ${stepNumber}: ${stepLabel}`;
+  stepInjectPrompt.value = "";
+  stepInjectError.hidden = true;
+  stepInjectError.textContent = "";
+
+  const visibleLayers_ = state.layers.filter(l => l.visible && l.capabilities?.table);
+  stepInjectLayersGroup.hidden = visibleLayers_.length === 0;
+  stepInjectLayers.innerHTML = visibleLayers_.map(layer => `
+    <label class="step-inject-layer-item" style="${layerColorStyle(layer)}">
+      <input type="checkbox" value="${escapeHtml(layer.id)}" checked>
+      <span class="step-inject-layer-color"></span>
+      <span class="step-inject-layer-name">${escapeHtml(layer.label)}</span>
+      <span class="step-inject-layer-count">${itemsForLayerPresentation(layer).length.toLocaleString("he-IL")}</span>
+    </label>`).join("");
+
+  stepInjectSubmit.disabled = false;
+  stepInjectSubmit.textContent = "שלח להמשך חקירה";
+  stepInjectModal.hidden = false;
+  stepInjectPrompt.focus();
+}
+
+function closeStepInjectModal() {
+  if (stepInjectModal) stepInjectModal.hidden = true;
+}
+
+function buildContinuationPrompt(instruction, selectedLayers) {
+  const lines = [`הוראה מהמשתמש: ${instruction}`];
+  if (selectedLayers.length) {
+    lines.push("\nשכבות שנבחרו להמשך:");
+    selectedLayers.forEach(layer => {
+      const items = itemsForLayerPresentation(layer);
+      const eventIds = items.map(item => item.event_id).filter(Boolean).slice(0, 100);
+      lines.push(`- ${layer.label}: ${items.length} רשומות${eventIds.length ? `, מזהים: ${eventIds.join(", ")}` : ""}`);
+    });
+  }
+  return lines.join("\n");
+}
+
+async function submitStepInject() {
+  const instruction = stepInjectPrompt.value.trim();
+  if (!instruction) {
+    stepInjectError.textContent = "יש להזין הוראה לסוכן.";
+    stepInjectError.hidden = false;
+    return;
+  }
+  if (state.busy) {
+    stepInjectError.textContent = "חקירה כבר פעילה — המתן לסיומה.";
+    stepInjectError.hidden = false;
+    return;
+  }
+
+  const checkedIds = new Set(
+    [...stepInjectLayers.querySelectorAll("input[type=checkbox]:checked")].map(cb => cb.value)
+  );
+  const selectedLayers = state.layers.filter(l => checkedIds.has(l.id));
+
+  const continuationPrompt = buildContinuationPrompt(instruction, selectedLayers);
+
+  stepInjectSubmit.disabled = true;
+  stepInjectSubmit.textContent = "שולח...";
+  stepInjectError.hidden = true;
+  closeStepInjectModal();
+
+  state.busy = true;
+  sendButton.disabled = true;
+  sendButton.textContent = "מחקר...";
+
+  // Inject a synthetic user/assistant turn so Hermes treats this as continuation
+  const syntheticHistory = [
+    ...state.history,
+    { role: "assistant", content: "הבנתי. אמשיך את החקירה בהתבסס על ההוראה והשכבות שסומנו." }
+  ];
+
+  ensureAssistantResearchMessage();
+  let progressTimer = null;
+  let liveStepCount = 0;
+
+  const baseStepCount = state.lastResult?.investigation_steps?.length || 0;
+  const pollContinuationSteps = async () => {
+    try {
+      const response = await fetch("/api/live-steps", { cache: "no-store" });
+      if (!response.ok) return;
+      const live = await response.json();
+      const steps = live.investigation_steps || [];
+      if (steps.length > liveStepCount) {
+        steps.slice(liveStepCount).forEach((step, i) => {
+          const num = baseStepCount + liveStepCount + i + 1;
+          addActivity(step.tool, step.action, step.result, {
+            stepNumber: num,
+            bridgeSummary: step.bridge_summary,
+            rationale: step.rationale || step.decision,
+            technical: step.technical,
+            isError: step.technical?.is_error,
+            stepData: step,
+            sourceId: stepSourceId(state.investigationId, num),
+            sourceLabel: `צעד ${num}: ${humanToolLabel(step.tool)}`
+          });
+        });
+        liveStepCount = steps.length;
+      }
+    } catch (_) {}
+  };
+
+  try {
+    progressTimer = setInterval(pollContinuationSteps, 1800);
+    setTimeout(pollContinuationSteps, 900);
+    const response = await fetch("/api/investigate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        prompt: continuationPrompt,
+        history: syntheticHistory,
+        investigation_id: state.investigationId
+      })
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || "Hermes request failed");
+    result.answer = cleanAssistantAnswer(result.answer);
+    state.history.push({ role: "user", content: continuationPrompt }, { role: "assistant", content: result.answer });
+    applyHermesResult(result, continuationPrompt, { keepRenderedSteps: true });
+  } catch (error) {
+    addActivity("connection_error", "לא ניתן היה להשלים את המשך החקירה.", error.message);
+    finalizeAssistantMessage(`<p>לא הצלחתי להשלים את המשך החקירה.</p><div class="answer-callout">${escapeHtml(error.message)}</div>`, { html: true });
+  } finally {
+    if (progressTimer) clearInterval(progressTimer);
+    state.busy = false;
+    sendButton.disabled = false;
+    sendButton.textContent = "שלח";
+  }
+}
+
+if (stepInjectClose) stepInjectClose.addEventListener("click", closeStepInjectModal);
+if (stepInjectModal) stepInjectModal.addEventListener("click", e => { if (e.target === stepInjectModal) closeStepInjectModal(); });
+if (stepInjectSubmit) stepInjectSubmit.addEventListener("click", submitStepInject);
+if (stepInjectPrompt) stepInjectPrompt.addEventListener("keydown", e => {
+  if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) submitStepInject();
+});
+
+// ── End Step Inject ──────────────────────────────────────────────────────────
+
 function stepQueryDetails(step, label) {
   return {
     source: "investigation_step",
@@ -1505,6 +1657,7 @@ function addActivity(tool, detail, result, options = {}) {
           <span class="step-visibility-label">הצג תוצאות</span>
         </button>
         <button type="button" class="step-query-btn" title="הצג שאילתה">הצג שאילתה</button>
+        <button type="button" class="step-continue-btn" title="המשך מצעד זה">המשך מכאן</button>
       </div>` : ""}`;
   if (hasStepData) {
     const visibilityBtn = item.querySelector(".step-visibility-btn");
@@ -1516,6 +1669,8 @@ function addActivity(tool, detail, result, options = {}) {
     queryBtn.dataset.queryDetails = JSON.stringify(queryDetails, null, 2);
     queryBtn.addEventListener("click", () => openQueryModal(queryBtn));
     updateSourceVisibilityBtn(visibilityBtn);
+    const continueBtn = item.querySelector(".step-continue-btn");
+    continueBtn.addEventListener("click", () => openStepInjectModal(label, stepNumber));
   }
   state.activeActivityList.appendChild(item);
 }
