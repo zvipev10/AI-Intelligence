@@ -10,7 +10,7 @@ Multi-Layer Query Filtering (`multi-layer-query-filtering`)
 GitHub issue: #3. Local issue body: `issues/000-parent-capability.md`.
 
 ## Final status
-Accepted and ready to merge to `main`.
+Accepted and merged to `main`.
 
 Product approved `checkpoint-013.md` on 2026-07-09 and authorized final handoff and merge to `main`.
 
@@ -139,7 +139,7 @@ Added standalone multi-layer query filtering for the Serbia POC. Users can add d
 ## Parent/child issue closure status
 Final handoff issue #16 is complete locally.
 
-The parent capability issue #3 is ready to close after the merge to `main` is confirmed.
+The parent capability issue #3 is ready to close.
 
 ## Recommended next action
-Merge `codex-ai-workflow-infrastructure` into `main` and push `main`.
+Close the parent capability issue after confirming the pushed `main` branch is visible in GitHub.

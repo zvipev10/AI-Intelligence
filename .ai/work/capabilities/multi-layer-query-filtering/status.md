@@ -7,7 +7,7 @@ Multi-Layer Query Filtering (`multi-layer-query-filtering`)
 Final handoff and merge.
 
 ## Overall status
-Slice 5 cross-layer validation passed, Product approved `checkpoint-013.md`, final handoff is complete, and the branch is ready to merge to `main`.
+Slice 5 cross-layer validation passed, Product approved `checkpoint-013.md`, final handoff is complete, and the capability has been merged to `main`.
 
 ## Who needs to act now
 
@@ -24,7 +24,7 @@ Slice 5 cross-layer validation passed, Product approved `checkpoint-013.md`, fin
 | Product/UX/Development/QA | Complete | Approved `checkpoint-012.md` and allowed Slice 5 to begin. | Done |
 | Development/QA | Complete | Executed Slice 5 cross-layer validation in `checkpoint-013.md`; all runner checks passed. | Done |
 | Product/QA/Development | Complete | Approved `checkpoint-013.md` and authorized final handoff / merge to `main`. | Done |
-| Development | Action needed | Merge `codex-ai-workflow-infrastructure` into `main` and push. | Now |
+| Development | Complete | Merged `codex-ai-workflow-infrastructure` into `main`. | Done |
 | Architecture/Security | Not blocking | Review API endpoint shape and authorization assumptions if this pattern will continue beyond the local POC. | Before productionizing |
 
 ## Latest change since previous review
@@ -107,7 +107,7 @@ Development approval checkpoint `checkpoint-008.md`:
 - Development approved the Slice 2 implementation and shared presentation/filter helper approach on 2026-07-08.
 
 ## Current blockers
-- Merge to `main` is pending.
+- None for the POC capability.
 
 ## Current risks
 - MVP row loading has no limit, which may create browser performance risk on larger datasets.
@@ -115,7 +115,7 @@ Development approval checkpoint `checkpoint-008.md`:
 - Productionizing still needs architecture/security review and a row-loading scalability decision.
 
 ## Next expected artifact
-Merge confirmation for `main`.
+Parent capability issue closure confirmation.
 
 ## Parent issue
 GitHub issue: #3. Local issue body: `issues/000-parent-capability.md`.

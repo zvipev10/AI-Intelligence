@@ -9,7 +9,7 @@ GitHub issue: #3
 Final handoff and merge.
 
 ## Overall status
-Slice 5 cross-layer validation passed and Product approved `checkpoint-013.md`; final handoff is complete and the branch is ready to merge to `main`.
+Slice 5 cross-layer validation passed, Product approved `checkpoint-013.md`, final handoff is complete, and the capability has been merged to `main`.
 
 ## Operational status
 See `.ai/work/capabilities/multi-layer-query-filtering/status.md`.
@@ -64,4 +64,4 @@ Keep this parent issue open until all required child tasks are closed, acceptanc
 - [x] Acceptance criteria satisfied.
 - [x] Final QA validation passed.
 - [x] Final handoff published in `handoff-summary.md`.
-- [ ] Merge to `main` confirmed.
+- [x] Merge to `main` confirmed.
