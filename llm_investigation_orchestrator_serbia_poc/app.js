@@ -1316,6 +1316,7 @@ const stepInjectClose = document.getElementById("stepInjectClose");
 const stepInjectError = document.getElementById("stepInjectError");
 
 function openStepInjectModal(stepLabel, stepNumber) {
+  stepInjectModal.dataset.fromStep = stepNumber;
   stepInjectTitle.textContent = `צעד ${stepNumber}: ${stepLabel}`;
   stepInjectPrompt.value = "";
   stepInjectError.hidden = true;
@@ -1383,8 +1384,10 @@ async function submitStepInject() {
   sendButton.disabled = true;
   sendButton.textContent = "מחקר...";
 
-  // Snapshot prior steps before starting the new bubble
-  const priorSteps = state.lastResult?.investigation_steps || [];
+  // Snapshot only steps up to (and including) the step that triggered the continuation
+  const fromStep = parseInt(stepInjectModal.dataset.fromStep, 10) || 0;
+  const allPriorSteps = state.lastResult?.investigation_steps || [];
+  const priorSteps = fromStep > 0 ? allPriorSteps.slice(0, fromStep) : allPriorSteps;
   const priorResult = state.lastResult;
   const baseStepCount = priorSteps.length;
 
