@@ -19,18 +19,29 @@ QA, Product, and Development.
 ## Expected output
 Validation checkpoint, acceptance status, and follow-up list.
 
+## Validation update
+Implemented in `checkpoint-013.md`.
+
+Validation passed using the repeatable browser runner:
+- `.ai/work/capabilities/multi-layer-query-filtering/slice5-validation-runner.cjs`
+
+Evidence:
+- `.ai/work/capabilities/multi-layer-query-filtering/slice5-validation-2026-07-09/validation-result.json`
+- screenshots under `.ai/work/capabilities/multi-layer-query-filtering/slice5-validation-2026-07-09/`
+
 ## Blocking
 Final handoff and parent issue closure.
 
 ## Completion criteria
-- [ ] Entities validated.
-- [ ] Locations validated.
-- [ ] Event-source layers validated.
-- [ ] Independent per-layer filters validated.
-- [ ] Empty value blocking validated.
-- [ ] No-results behavior validated.
-- [ ] Hebrew and English contains matching validated.
-- [ ] Close, visibility, minimize, resize, and tab regressions checked.
+- [x] Entities validated.
+- [x] Locations validated.
+- [x] Event-source layers validated.
+- [x] Independent per-layer filters validated.
+- [x] Empty value blocking validated.
+- [x] No-results behavior validated.
+- [x] Hebrew and English contains matching validated.
+- [x] Close, visibility, minimize, resize, and tab regressions checked.
+- [ ] Product/QA/Development approve Slice 5 validation checkpoint.
 
 ## Related artifacts
 - `qa-review.md`

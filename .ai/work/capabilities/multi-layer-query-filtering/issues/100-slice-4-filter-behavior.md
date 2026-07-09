@@ -41,7 +41,7 @@ Implemented in `checkpoint-012.md`:
 - [x] Apply blocks empty values.
 - [x] Apply updates all supported presentations for the active layer.
 - [x] Filtered/original count shown when relevant.
-- [ ] Product/UX/Development/QA approve Slice 4 behavior.
+- [x] Product/UX/Development/QA approve Slice 4 behavior.
 
 ## Related artifacts
 - `execution-plan.md`

@@ -6,10 +6,10 @@ Multi-Layer Query Filtering (`multi-layer-query-filtering`)
 GitHub issue: #3
 
 ## Current phase
-Slice 4 implementation review.
+Slice 5 validation review.
 
 ## Overall status
-Slice 4 implemented and deployed; Product/UX/Development/QA review is required before Slice 5.
+Slice 5 cross-layer validation passed in `checkpoint-013.md`; Product/QA/Development final acceptance is required before final handoff.
 
 ## Operational status
 See `.ai/work/capabilities/multi-layer-query-filtering/status.md`.
@@ -41,8 +41,8 @@ See `.ai/work/capabilities/multi-layer-query-filtering/capability-brief.md`.
 - [x] Slice 2 implementation: #12 / `080-slice-2-presentation-filter-model.md`
 - [x] Slice 3 implementation: #13 / `090-slice-3-filter-panel.md`
 - [x] Slice 3 mobile filter-panel correction: #17 / `130-slice-3-mobile-filter-panel-correction.md`
-- [ ] Slice 4 implementation: #14 / `100-slice-4-filter-behavior.md` - implemented, pending review
-- [ ] Slice 5 validation: #15 / `110-slice-5-validation.md`
+- [x] Slice 4 implementation: #14 / `100-slice-4-filter-behavior.md`
+- [ ] Slice 5 validation: #15 / `110-slice-5-validation.md` - validation passed, pending final acceptance review
 - [ ] Final handoff: #16 / `120-final-handoff.md`
 
 ## Artifacts
@@ -53,7 +53,7 @@ See `.ai/work/capabilities/multi-layer-query-filtering/capability-brief.md`.
 - UX review: `.ai/work/capabilities/multi-layer-query-filtering/ux-review.md`
 - QA review: `.ai/work/capabilities/multi-layer-query-filtering/qa-review.md`
 - Execution plan: `.ai/work/capabilities/multi-layer-query-filtering/execution-plan.md`
-- Latest checkpoint: `.ai/work/capabilities/multi-layer-query-filtering/checkpoint-012.md`
+- Latest checkpoint: `.ai/work/capabilities/multi-layer-query-filtering/checkpoint-013.md`
 - Handoff: `.ai/work/capabilities/multi-layer-query-filtering/handoff-summary.md`
 
 ## Closure rule

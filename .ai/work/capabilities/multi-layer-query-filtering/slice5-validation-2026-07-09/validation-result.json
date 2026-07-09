@@ -1,0 +1,342 @@
+{
+  "baseUrl": "http://127.0.0.1:8771/",
+  "checks": [
+    {
+      "name": "required layer families opened",
+      "pass": true,
+      "details": {
+        "title": "שכבת מיקומים",
+        "countText": "155",
+        "rows": 155,
+        "empty": "",
+        "filterOpen": false,
+        "filterError": "",
+        "mapMarkers": 155,
+        "timelineItems": 2587,
+        "activeHidden": false,
+        "overlayMinimized": false,
+        "tabs": [
+          "טלגרם",
+          "חדשות מקומיות",
+          "שכבת ישויות",
+          "שכבת מיקומים"
+        ]
+      }
+    },
+    {
+      "name": "empty value blocking",
+      "pass": true,
+      "details": {
+        "title": "טלגרם",
+        "countText": "1,280",
+        "rows": 1280,
+        "empty": "",
+        "filterOpen": true,
+        "filterError": "יש למלא שדה וערך לפני החלת המסננים.",
+        "mapMarkers": 155,
+        "timelineItems": 2587,
+        "activeHidden": false,
+        "overlayMinimized": false,
+        "tabs": [
+          "טלגרם",
+          "חדשות מקומיות",
+          "שכבת ישויות",
+          "שכבת מיקומים"
+        ]
+      }
+    },
+    {
+      "name": "event-source Hebrew contains filter",
+      "pass": true,
+      "details": {
+        "title": "טלגרם",
+        "countText": "1,280/1,280",
+        "rows": 1280,
+        "empty": "",
+        "filterOpen": true,
+        "filterError": "",
+        "mapMarkers": 155,
+        "timelineItems": 2587,
+        "activeHidden": false,
+        "overlayMinimized": false,
+        "tabs": [
+          "טלגרם",
+          "חדשות מקומיות",
+          "שכבת ישויות",
+          "שכבת מיקומים"
+        ]
+      }
+    },
+    {
+      "name": "second event-source English contains filter",
+      "pass": true,
+      "details": {
+        "title": "חדשות מקומיות",
+        "countText": "460/1,307",
+        "rows": 460,
+        "empty": "",
+        "filterOpen": true,
+        "filterError": "",
+        "mapMarkers": 155,
+        "timelineItems": 1740,
+        "activeHidden": false,
+        "overlayMinimized": false,
+        "tabs": [
+          "טלגרם",
+          "חדשות מקומיות",
+          "שכבת ישויות",
+          "שכבת מיקומים"
+        ]
+      }
+    },
+    {
+      "name": "independent event-source filter preserved",
+      "pass": true,
+      "details": {
+        "title": "טלגרם",
+        "countText": "1,280/1,280",
+        "rows": 1280,
+        "empty": "",
+        "filterOpen": false,
+        "filterError": "",
+        "mapMarkers": 155,
+        "timelineItems": 1740,
+        "activeHidden": false,
+        "overlayMinimized": false,
+        "tabs": [
+          "טלגרם",
+          "חדשות מקומיות",
+          "שכבת ישויות",
+          "שכבת מיקומים"
+        ]
+      }
+    },
+    {
+      "name": "Entities layer English contains filter",
+      "pass": true,
+      "details": {
+        "title": "שכבת ישויות",
+        "countText": "1/16",
+        "rows": 1,
+        "empty": "",
+        "filterOpen": true,
+        "filterError": "",
+        "mapMarkers": 155,
+        "timelineItems": 1740,
+        "activeHidden": false,
+        "overlayMinimized": false,
+        "tabs": [
+          "טלגרם",
+          "חדשות מקומיות",
+          "שכבת ישויות",
+          "שכבת מיקומים"
+        ]
+      }
+    },
+    {
+      "name": "Locations layer Hebrew contains filter",
+      "pass": true,
+      "details": {
+        "title": "שכבת מיקומים",
+        "countText": "44/155",
+        "rows": 44,
+        "empty": "",
+        "filterOpen": true,
+        "filterError": "",
+        "mapMarkers": 150,
+        "timelineItems": 1740,
+        "activeHidden": false,
+        "overlayMinimized": false,
+        "tabs": [
+          "טלגרם",
+          "חדשות מקומיות",
+          "שכבת ישויות",
+          "שכבת מיקומים"
+        ]
+      }
+    },
+    {
+      "name": "no-results behavior",
+      "pass": true,
+      "details": {
+        "title": "שכבת מיקומים",
+        "countText": "0/155",
+        "rows": 1,
+        "empty": "השכבה מוסתרת או ריקה.",
+        "filterOpen": true,
+        "filterError": "",
+        "mapMarkers": 150,
+        "timelineItems": 1740,
+        "activeHidden": false,
+        "overlayMinimized": false,
+        "tabs": [
+          "טלגרם",
+          "חדשות מקומיות",
+          "שכבת ישויות",
+          "שכבת מיקומים"
+        ]
+      }
+    },
+    {
+      "name": "timeline renders event layers",
+      "pass": true,
+      "details": {
+        "title": "שכבת מיקומים",
+        "countText": "0/155",
+        "rows": 1,
+        "empty": "השכבה מוסתרת או ריקה.",
+        "filterOpen": true,
+        "filterError": "",
+        "mapMarkers": 150,
+        "timelineItems": 1740,
+        "activeHidden": false,
+        "overlayMinimized": false,
+        "tabs": [
+          "טלגרם",
+          "חדשות מקומיות",
+          "שכבת ישויות",
+          "שכבת מיקומים"
+        ]
+      }
+    },
+    {
+      "name": "visibility hides active layer rows",
+      "pass": true,
+      "details": {
+        "title": "טלגרם",
+        "countText": "1,280/1,280",
+        "rows": 1,
+        "empty": "השכבה מוסתרת או ריקה.",
+        "filterOpen": false,
+        "filterError": "",
+        "mapMarkers": 145,
+        "timelineItems": 460,
+        "activeHidden": true,
+        "overlayMinimized": false,
+        "tabs": [
+          "טלגרם",
+          "חדשות מקומיות",
+          "שכבת ישויות",
+          "שכבת מיקומים"
+        ]
+      }
+    },
+    {
+      "name": "minimize and restore",
+      "pass": true,
+      "details": {
+        "title": "טלגרם",
+        "countText": "1,280/1,280",
+        "rows": 1280,
+        "empty": "",
+        "filterOpen": false,
+        "filterError": "",
+        "mapMarkers": 150,
+        "timelineItems": 1740,
+        "activeHidden": false,
+        "overlayMinimized": false,
+        "tabs": [
+          "טלגרם",
+          "חדשות מקומיות",
+          "שכבת ישויות",
+          "שכבת מיקומים"
+        ]
+      }
+    },
+    {
+      "name": "resize handle present",
+      "pass": true,
+      "details": {
+        "x": 10,
+        "y": 619.703125,
+        "width": 370,
+        "height": 6
+      }
+    },
+    {
+      "name": "resize drag checked",
+      "pass": true,
+      "details": {
+        "beforeHeight": "28%",
+        "afterHeight": "47%"
+      }
+    },
+    {
+      "name": "close removes selected layer only",
+      "pass": true,
+      "details": {
+        "title": "טלגרם",
+        "countText": "1,280/1,280",
+        "rows": 1280,
+        "empty": "",
+        "filterOpen": false,
+        "filterError": "",
+        "mapMarkers": 150,
+        "timelineItems": 1280,
+        "activeHidden": false,
+        "overlayMinimized": false,
+        "tabs": [
+          "טלגרם",
+          "שכבת ישויות",
+          "שכבת מיקומים"
+        ]
+      }
+    },
+    {
+      "name": "tablet viewport smoke",
+      "pass": true,
+      "details": {
+        "title": "טלגרם",
+        "countText": "1,280/1,280",
+        "rows": 1280,
+        "empty": "",
+        "filterOpen": true,
+        "filterError": "",
+        "mapMarkers": 150,
+        "timelineItems": 1280,
+        "activeHidden": false,
+        "overlayMinimized": false,
+        "tabs": [
+          "טלגרם"
+        ]
+      }
+    },
+    {
+      "name": "desktop viewport smoke",
+      "pass": true,
+      "details": {
+        "title": "שכבת ישויות",
+        "countText": "1/16",
+        "rows": 1,
+        "empty": "",
+        "filterOpen": true,
+        "filterError": "",
+        "mapMarkers": 12,
+        "timelineItems": 0,
+        "activeHidden": false,
+        "overlayMinimized": false,
+        "tabs": [
+          "שכבת ישויות"
+        ]
+      }
+    },
+    {
+      "name": "console clean of app warnings and errors",
+      "pass": true,
+      "details": {
+        "console": []
+      }
+    }
+  ],
+  "screenshots": [
+    ".ai\\work\\capabilities\\multi-layer-query-filtering\\slice5-validation-2026-07-09\\01-mobile-all-layers-filter-open.png",
+    ".ai\\work\\capabilities\\multi-layer-query-filtering\\slice5-validation-2026-07-09\\02-mobile-event-hebrew-filter-nonzero.png",
+    ".ai\\work\\capabilities\\multi-layer-query-filtering\\slice5-validation-2026-07-09\\03-mobile-entities-locations-filtered.png",
+    ".ai\\work\\capabilities\\multi-layer-query-filtering\\slice5-validation-2026-07-09\\04-mobile-zero-result-state.png",
+    ".ai\\work\\capabilities\\multi-layer-query-filtering\\slice5-validation-2026-07-09\\05-tablet-filtered-state.png",
+    ".ai\\work\\capabilities\\multi-layer-query-filtering\\slice5-validation-2026-07-09\\06-desktop-filtered-state.png"
+  ],
+  "console": [],
+  "passed": true,
+  "warningCount": 0
+}
