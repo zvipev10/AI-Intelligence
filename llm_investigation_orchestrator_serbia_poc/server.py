@@ -1391,9 +1391,10 @@ class HermesClient:
         if is_continuation:
             classify_instruction = (
                 "זהו המשך של חקירה פעילה — אל תפעיל classify_question_intent ואל תתחיל חקירה חדשה."
-                " הקשר המלא של החקירה נמצא בהיסטוריית השיחה שסופקה. המשך ישירות מהנקודה שבה הסתיימה"
-                " החקירה הקודמת בהתבסס על ההוראה החדשה שסופקה ב-prompt."
-                " השתמש ב-retrieval mode עם tool_budget של 10 כברירת מחדל אלא אם ההוראה מחייבת חקירה עמוקה יותר.\n"
+                " הקשר המלא של החקירה נמצא בהיסטוריית השיחה שסופקה, כולל תוצאת classify_question_intent"
+                " המקורית שקבעה את recommended_mode ו-tool_budget. המשך לפעול לפי אותם mode ו-budget"
+                " שנקבעו בסיווג המקורי. המשך ישירות מהנקודה שבה הסתיימה החקירה הקודמת בהתבסס על"
+                " ההוראה החדשה שסופקה ב-prompt.\n"
             )
         else:
             classify_instruction = (
