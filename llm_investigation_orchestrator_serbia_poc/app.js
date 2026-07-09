@@ -779,7 +779,7 @@ function renderLayerFilterPanel(layer) {
         <input class="layer-filter-input filter-value-input" data-filter-value data-filter-index="${index}" type="text" value="${escapeHtml(stringifyFilterValue(filter.value))}" placeholder="ערך לחיפוש" aria-label="ערך מסנן">
         <button type="button" class="filter-remove-button" data-filter-remove="${index}" aria-label="הסר מסנן" title="הסר מסנן">×</button>
       </div>`).join("")
-    : '<div class="filter-empty">אין מסנני טיוטה.</div>';
+    : "";
   const appliedHtml = appliedFilters.length
     ? appliedFilters.map(filter => `
       <span class="filter-chip">
