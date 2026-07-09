@@ -802,10 +802,7 @@ function renderLayerFilterPanel(layer) {
       </div>
       <button type="button" class="layer-filter-close" data-layer-filter="${escapeHtml(layer.id)}" aria-label="סגור מסננים" title="סגור מסננים">×</button>
     </div>
-    <div class="layer-filter-section">
-      <div class="filter-draft-list">${draftHtml}</div>
-      ${errorHtml}
-    </div>
+    ${draftFilters.length ? `<div class="layer-filter-section"><div class="filter-draft-list">${draftHtml}</div>${errorHtml}</div>` : errorHtml ? `<div class="layer-filter-section">${errorHtml}</div>` : ""}
     <div class="layer-filter-actions">
       <button type="button" class="filter-add-button" data-filter-add ${addDisabled}>הוסף מסנן</button>
       <button type="button" class="primary-filter-action" data-filter-apply>החל</button>
@@ -2154,7 +2151,7 @@ function renderEvidence() {
       <span class="raw-source-color"></span>
       <span class="raw-source-name">${escapeHtml(layer.label)}</span>
       <strong>${countLabel}</strong>
-      <span class="raw-source-filter ${layer.filterPanelOpen ? "active" : ""}" data-layer-filter="${escapeHtml(layer.id)}" title="פתח מסננים" aria-label="פתח מסננים" aria-pressed="${layer.filterPanelOpen ? "true" : "false"}">
+      <span class="raw-source-filter ${layer.filterPanelOpen ? "active" : ""} ${validAppliedFilters(layer).length ? "has-filters" : ""}" data-layer-filter="${escapeHtml(layer.id)}" title="פתח מסננים" aria-label="פתח מסננים" aria-pressed="${layer.filterPanelOpen ? "true" : "false"}">
         <span class="filter-funnel-icon" aria-hidden="true"></span>
       </span>
         <span class="raw-source-eye" data-layer-visibility="${escapeHtml(layer.id)}" title="${layer.visible ? "הסתר שכבה" : "הצג שכבה"}" aria-label="${layer.visible ? "הסתר שכבה" : "הצג שכבה"}" aria-pressed="${layer.visible ? "true" : "false"}">
