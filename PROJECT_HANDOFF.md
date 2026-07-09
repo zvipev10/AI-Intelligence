@@ -1,8 +1,8 @@
 # AI Intelligence Project Handoff
 
-Last updated: 2026-07-06
+Last updated: 2026-07-09
 
-This is the primary handoff for continuing the AI Intelligence project in another assistant/chat. It reflects the current Serbia POC workspace after the data normalization, additive result-layer UI refactor, recorded-run refresh, map marker popup work, Phase 2 query builder planning, location/entity layer normalization, and the hybrid semantic retrieval/tool-quality work.
+This is the primary handoff for continuing the AI Intelligence project in another assistant/chat. It reflects the current Serbia POC workspace after the data normalization, additive result-layer UI refactor, recorded-run refresh, map marker popup work, Phase 2 query builder planning, location/entity layer normalization, hybrid semantic retrieval/tool-quality work, filter panel simplification, step-button label and duplicate-layer bug fixes, and the new "המשך מכאן" step injection feature.
 
 ## One-Line Summary
 
@@ -32,7 +32,69 @@ Current local working tree expectation:
 - Do not continue from stale local files if `git fetch origin` shows the active remote branch ahead.
 - At the time of this handoff update there may be unrelated local working-tree files such as `.claude/`, `environments-configuration/`, or uncommitted UI styling experiments. Do not include them in semantic/tool-quality commits unless the user explicitly asks.
 
-## Latest Update: Semantic Tool Integration Quality
+## Latest Update: Step Injection ("המשך מכאן") Feature + Bug Fixes
+
+Date: 2026-07-09
+
+Current deployed asset versions: `styles.css?v=70`, `app.js?v=90`, served from `/opt/serbia-poc-ui` on port 8769.
+
+### Bug Fixes (this session)
+
+**Step button label bug (was: always showing "הצג תוצאות" after final answer returned)**
+
+Root cause: live-poll layers were keyed with `state.investigationId`; final result used `result.run_id`. After `applyHermesResult` rebuilt step DOM, `resolvedStepSourceId()` couldn't find layers because keys diverged.
+
+Fix: `applyHermesResult` now rekeys both `layer.sourceId` AND `layer.id` at the moment the final result arrives (before `renderActivitySteps`). Both fields must be rekeyed together because `addResultLayers` deduplicates by `item.id`.
+
+**Duplicate layers bug (was: clicking step button after final answer added duplicate layers)**
+
+Same root cause as above. Fixed by the same rekey loop.
+
+### Filter Panel Simplification
+
+- Removed "טיוטת מסננים" title and "מסננים פעילים" section
+- "הוסף מסנן" moved inline alongside "החל" button
+- Empty placeholder text removed
+- Empty middle section hidden when no draft filters exist
+- Eye icon: white when layer visible, grey when hidden
+- Filter icon: grey by default, white when any filters are applied (`has-filters` CSS class on the tab)
+
+### Step Injection Feature ("המשך מכאן")
+
+Each step card now has a "המשך מכאן" button. Clicking it opens a floating window (right side, vertically centered) where the analyst can:
+
+1. Write a free-text continuation instruction
+2. Optionally select one or more visible table-capable layers to base the continuation on (up to 100 event IDs per layer are included in the prompt)
+
+**UI behavior:**
+- A new chat bubble is created for the continuation, labeled with a "↩ המשך חקירה" kicker (CSS `::before` on `[data-continuation="true"]`)
+- The bubble renders steps 1…N (where N = the step whose button was clicked) first, then appends new live steps N+1…M as they arrive
+- `result.investigation_steps` is merged (prior + new) before `applyHermesResult`, so `state.lastResult` always holds the full chain
+
+**Server behavior (`server.py`):**
+- `investigate()` now accepts `is_continuation=False` parameter
+- When `is_continuation=True`, the `classify_question_intent` instruction line is **replaced** (not just prepended) with a continuation directive:
+  - Tells Hermes not to call `classify_question_intent`
+  - Tells Hermes to read the original classification from conversation history and preserve the established `recommended_mode` and `tool_budget`
+  - Tells Hermes to continue directly from where the prior investigation ended
+
+**Client sends:**
+```json
+{
+  "prompt": "...",
+  "history": state.history,
+  "investigation_id": state.investigationId,
+  "is_continuation": true
+}
+```
+
+**Known behavior:** The `syntheticHistory` approach (fake assistant ack turn) was removed. History is now sent as-is from `state.history` which already contains all prior user/assistant turns.
+
+**Step slice fix:** `openStepInjectModal` stores `stepNumber` in `stepInjectModal.dataset.fromStep`. `submitStepInject` slices `allPriorSteps.slice(0, fromStep)` so the continuation bubble only shows prior steps up to and including the triggering step, not all original steps.
+
+---
+
+## Semantic Tool Integration Quality
 
 Date: 2026-07-06
 
@@ -154,10 +216,10 @@ Active UI service:
 - Service: `serbia-poc-ui.service`
 - Actual served path: `/opt/serbia-poc-ui`
 - This is important: an earlier deploy mistakenly copied to `/opt/serbia-poc/ui`, but the active service serves `/opt/serbia-poc-ui`.
-- Current served versions verified on the VM after the latest UI deploy (as of 2026-06-29):
-  - `styles.css?v=57`
-  - `app.js?v=77`
-- These versions include colored point markers, manual final-answer presentation via `הצג תוצאות`, additive layer tabs, table resize/minimize, close/clear result-window behavior, query edit modal controls, `הצג תוצאות` / `הסתר תוצאות` controls styled identically to `הצג שאילתה` without the old square icon-button class, real tabbed result layers, standard tab/window close controls, and shared standard table visibility icons.
+- Current served versions verified on the VM after the latest UI deploy (as of 2026-07-09):
+  - `styles.css?v=70`
+  - `app.js?v=90`
+- These versions include colored point markers, manual final-answer presentation via `הצג תוצאות`, additive layer tabs, table resize/minimize, close/clear result-window behavior, query edit modal controls, `הצג תוצאות` / `הסתר תוצאות` toggle, simplified filter panel (inline הוסף/החל, no empty sections, white eye/filter icons when active), and the full "המשך מכאן" step injection feature.
 
 Active MCP/Hermes service:
 
@@ -870,11 +932,13 @@ Expected: no matches in active data files.
 ## Suggested First Message To A New Assistant
 
 ```text
-Read PROJECT_HANDOFF.md first. Continue work on the Serbia/North Kosovo POC in llm_investigation_orchestrator_serbia_poc. The UI is deployed from /opt/serbia-poc-ui on VM 151.145.93.180 and currently serves styles.css?v=57 and app.js?v=77 after the saved-question and standard close-icon work. Do not touch C:\Users\user\Downloads\oracle.key.
+Read PROJECT_HANDOFF.md first. Continue work on the Serbia/North Kosovo POC in llm_investigation_orchestrator_serbia_poc. The UI is deployed from /opt/serbia-poc-ui on VM 151.145.93.180 (port 8769) and currently serves styles.css?v=70 and app.js?v=90. Do not touch C:\Users\e054922\Downloads\oracle.key.
 
-Current behavior: colored map point markers with popups; final answers do not auto-present visualization layers; final `הצג תוצאות` presents/restores final-answer layers manually. The result table is a flush transparent tabbed overlay with real layer tabs, standard eye/eye-off toggles, per-tab `×` close, resize, `−` minimize, `□` restore/maximize, and window `×` close/clear. Final and step result actions use the same non-overlapping pill styling as `הצג שאילתה`; step cards toggle `הצג תוצאות` / `הסתר תוצאות`, and `הצג שאילתה` opens query details. Query edit modal controls exist but query re-execution is still future work.
+Current behavior: colored map point markers with popups; final answers do not auto-present visualization layers; final `הצג תוצאות` presents/restores final-answer layers manually. The result table is a flush transparent tabbed overlay with real layer tabs, standard eye/eye-off toggles (white when active, grey when inactive), per-tab filter icon (white when filters applied), per-tab `×` close, resize, `−` minimize, `□` restore/maximize, and window `×` close/clear. Filter panel is simplified: no title/active-section, inline הוסף/החל buttons.
 
-The UI uses an additive source/data layer architecture; preserve that model when adding new filters or visualizations. Before deploying, fetch GitHub and verify the VM is not serving stale assets.
+Each step card has a "המשך מכאן" button that opens a floating window for agent continuation. Continuation sends is_continuation:true to server.py which replaces the classify_question_intent instruction with a directive to continue from existing history using the original mode/budget. The continuation bubble renders all prior steps (up to the triggering step) plus new live steps, merged into state.lastResult.
+
+The UI uses an additive source/data layer architecture; preserve that model. Before deploying, fetch GitHub and verify the VM is not serving stale assets. The active branch is main.
 ```
 
 ## File Review Order
