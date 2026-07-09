@@ -4,10 +4,10 @@
 Multi-Layer Query Filtering (`multi-layer-query-filtering`)
 
 ## Current phase
-Slice 5 validation review.
+Final handoff and merge.
 
 ## Overall status
-Slice 5 cross-layer validation passed in `checkpoint-013.md`; Product/QA/Development final acceptance is required before final handoff.
+Slice 5 cross-layer validation passed, Product approved `checkpoint-013.md`, final handoff is complete, and the branch is ready to merge to `main`.
 
 ## Who needs to act now
 
@@ -23,10 +23,15 @@ Slice 5 cross-layer validation passed in `checkpoint-013.md`; Product/QA/Develop
 | Development | Complete | Implemented Slice 4 draft/edit/remove/apply filter behavior in `checkpoint-012.md` and deployed it to the VM. | Done |
 | Product/UX/Development/QA | Complete | Approved `checkpoint-012.md` and allowed Slice 5 to begin. | Done |
 | Development/QA | Complete | Executed Slice 5 cross-layer validation in `checkpoint-013.md`; all runner checks passed. | Done |
-| Product/QA/Development | Action needed | Review `checkpoint-013.md` and validation evidence for final acceptance. | Before final handoff |
+| Product/QA/Development | Complete | Approved `checkpoint-013.md` and authorized final handoff / merge to `main`. | Done |
+| Development | Action needed | Merge `codex-ai-workflow-infrastructure` into `main` and push. | Now |
 | Architecture/Security | Not blocking | Review API endpoint shape and authorization assumptions if this pattern will continue beyond the local POC. | Before productionizing |
 
 ## Latest change since previous review
+Product approved `checkpoint-013.md` on 2026-07-09 and authorized final handoff and merge to `main`.
+
+Final handoff is complete in `handoff-summary.md`.
+
 Slice 5 validation passed in `checkpoint-013.md`:
 - Required layer families were opened: `טלגרם`, `חדשות מקומיות`, Entities, and Locations.
 - Empty value blocking, no-results behavior, Hebrew/English contains matching, and independent per-layer filters were validated.
@@ -102,15 +107,15 @@ Development approval checkpoint `checkpoint-008.md`:
 - Development approved the Slice 2 implementation and shared presentation/filter helper approach on 2026-07-08.
 
 ## Current blockers
-- Final handoff should not start until Product/QA/Development approve `checkpoint-013.md`.
+- Merge to `main` is pending.
 
 ## Current risks
 - MVP row loading has no limit, which may create browser performance risk on larger datasets.
 - UX and QA were previously captured indirectly; separate UX and QA artifacts have now been backfilled but still require human approval.
-- Full acceptance still needs Product/QA/Development review of the Slice 5 validation checkpoint.
+- Productionizing still needs architecture/security review and a row-loading scalability decision.
 
 ## Next expected artifact
-Product/QA/Development final acceptance result for `checkpoint-013.md`.
+Merge confirmation for `main`.
 
 ## Parent issue
 GitHub issue: #3. Local issue body: `issues/000-parent-capability.md`.
@@ -131,8 +136,8 @@ GitHub issue: #3. Local issue body: `issues/000-parent-capability.md`.
 | #13 / `issues/090-slice-3-filter-panel.md` | UX/Development | Add filter panel skeleton. | Complete; Slice 3 behavior approved | No |
 | #17 / `issues/130-slice-3-mobile-filter-panel-correction.md` | Development | Change filter section to floating window above results tabs over map/timeline. | Complete; Product, UX, and Development approved `checkpoint-011.md` | No |
 | #14 / `issues/100-slice-4-filter-behavior.md` | Product/UX/Development/QA | Wire draft/edit/remove/apply behavior. | Complete; Product/UX/Development/QA approved `checkpoint-012.md` | No |
-| #15 / `issues/110-slice-5-validation.md` | QA/Product/Development | Validate cross-layer behavior and regressions. | Validation passed in `checkpoint-013.md`; pending final acceptance review | Yes |
-| #16 / `issues/120-final-handoff.md` | Product/Development/QA | Publish final handoff and closure status. | Not ready | Blocked by Slice 5 final acceptance |
+| #15 / `issues/110-slice-5-validation.md` | QA/Product/Development | Validate cross-layer behavior and regressions. | Complete; Product/QA/Development approved `checkpoint-013.md` | No |
+| #16 / `issues/120-final-handoff.md` | Product/Development/QA | Publish final handoff and closure status. | Complete in `handoff-summary.md` | No |
 
 ## Artifact links
 

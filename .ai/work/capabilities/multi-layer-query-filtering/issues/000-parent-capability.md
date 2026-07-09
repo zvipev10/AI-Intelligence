@@ -6,10 +6,10 @@ Multi-Layer Query Filtering (`multi-layer-query-filtering`)
 GitHub issue: #3
 
 ## Current phase
-Slice 5 validation review.
+Final handoff and merge.
 
 ## Overall status
-Slice 5 cross-layer validation passed in `checkpoint-013.md`; Product/QA/Development final acceptance is required before final handoff.
+Slice 5 cross-layer validation passed and Product approved `checkpoint-013.md`; final handoff is complete and the branch is ready to merge to `main`.
 
 ## Operational status
 See `.ai/work/capabilities/multi-layer-query-filtering/status.md`.
@@ -42,8 +42,8 @@ See `.ai/work/capabilities/multi-layer-query-filtering/capability-brief.md`.
 - [x] Slice 3 implementation: #13 / `090-slice-3-filter-panel.md`
 - [x] Slice 3 mobile filter-panel correction: #17 / `130-slice-3-mobile-filter-panel-correction.md`
 - [x] Slice 4 implementation: #14 / `100-slice-4-filter-behavior.md`
-- [ ] Slice 5 validation: #15 / `110-slice-5-validation.md` - validation passed, pending final acceptance review
-- [ ] Final handoff: #16 / `120-final-handoff.md`
+- [x] Slice 5 validation: #15 / `110-slice-5-validation.md`
+- [x] Final handoff: #16 / `120-final-handoff.md`
 
 ## Artifacts
 - Capability brief: `.ai/work/capabilities/multi-layer-query-filtering/capability-brief.md`
@@ -58,3 +58,10 @@ See `.ai/work/capabilities/multi-layer-query-filtering/capability-brief.md`.
 
 ## Closure rule
 Keep this parent issue open until all required child tasks are closed, acceptance criteria are satisfied, final QA is complete, and final handoff is published.
+
+## Closure checklist
+- [x] Child tasks complete locally.
+- [x] Acceptance criteria satisfied.
+- [x] Final QA validation passed.
+- [x] Final handoff published in `handoff-summary.md`.
+- [ ] Merge to `main` confirmed.

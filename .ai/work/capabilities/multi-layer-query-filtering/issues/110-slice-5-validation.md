@@ -41,7 +41,7 @@ Final handoff and parent issue closure.
 - [x] No-results behavior validated.
 - [x] Hebrew and English contains matching validated.
 - [x] Close, visibility, minimize, resize, and tab regressions checked.
-- [ ] Product/QA/Development approve Slice 5 validation checkpoint.
+- [x] Product/QA/Development approve Slice 5 validation checkpoint.
 
 ## Related artifacts
 - `qa-review.md`
