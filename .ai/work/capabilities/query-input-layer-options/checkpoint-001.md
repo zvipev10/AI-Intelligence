@@ -21,6 +21,13 @@ Add prompt-area `+` options for saved runs and layer selection.
 ## Validation
 - `git diff --check` passed.
 - `app.js` parsed successfully with Node `vm.Script`.
+- Deployed VM smoke with Playwright + system Edge passed:
+  - `+` menu opens.
+  - `הקלטות` and `שכבות` options render.
+  - `שכבות` opens the layer-selection modal.
+  - Searching `טלגרם` returns one matching layer.
+  - Selecting that layer closes the modal, opens the result overlay, and creates one layer tab.
+  - Browser console reported zero warnings/errors.
 
 ## Follow-up
 Phase 2 query-builder work can later decide whether selected layers should become structured query context instead of simply opening standalone layers.
