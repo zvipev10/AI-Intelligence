@@ -193,6 +193,7 @@ const state = {
   layerSearchQuery: "",
   layerSearchOpen: false,
   promptOptionsOpen: false,
+  promptSelectedLayerIds: new Set(),
   openingLayerIds: new Set(),
   layers: [],
   activeLayerId: null,
@@ -774,7 +775,7 @@ function identifiersForLayerContext(layer, items, limit = 80) {
 
 function selectedLayerContextForAgent() {
   return state.layers
-    .filter(layer => layer.visible && layer.capabilities?.table)
+    .filter(layer => state.promptSelectedLayerIds.has(layer.id) && layer.capabilities?.table)
     .slice(0, 8)
     .map(layer => {
       const filteredItems = itemsForLayerPresentation(layer);
@@ -803,17 +804,17 @@ function selectedLayerContextForAgent() {
 
 function renderSelectedLayersButton() {
   if (!selectedLayersButton || !selectedLayersLabel || !selectedLayersSummary) return;
-  const layers = visibleLayers("table");
+  const layers = state.layers.filter(layer => state.promptSelectedLayerIds.has(layer.id) && layer.capabilities?.table);
   selectedLayersButton.classList.toggle("has-layers", layers.length > 0);
   if (!layers.length) {
-    selectedLayersLabel.textContent = "לא נבחרו שכבות";
+    selectedLayersLabel.textContent = "בחר שכבות";
     selectedLayersSummary.textContent = "בחר שכבות לשאילתה";
     selectedLayersButton.title = "בחר שכבות לשאילתה";
     return;
   }
   const preview = layers.slice(0, 2).map(layer => layer.label).join(" · ");
   const remaining = layers.length > 2 ? ` +${layers.length - 2}` : "";
-  selectedLayersLabel.textContent = `${layers.length.toLocaleString("he-IL")} שכבות נבחרו`;
+  selectedLayersLabel.textContent = layers.length === 1 ? "שכבה אחת נבחרה" : `${layers.length.toLocaleString("he-IL")} שכבות נבחרו`;
   selectedLayersSummary.textContent = `${preview}${remaining}`;
   selectedLayersButton.title = `שנה שכבות לשאילתה: ${layers.map(layer => layer.label).join(", ")}`;
 }
@@ -1068,7 +1069,7 @@ function renderQueryLayersModal() {
   queryLayersList.innerHTML = openLayers.map(layer => {
     return `
     <label class="step-inject-layer-item" style="${layerColorStyle(layer)}">
-      <input type="checkbox" value="${escapeHtml(layer.id)}" ${layer.visible ? "checked" : ""}>
+      <input type="checkbox" value="${escapeHtml(layer.id)}" ${state.promptSelectedLayerIds.has(layer.id) ? "checked" : ""}>
       <span class="step-inject-layer-color"></span>
       <span class="step-inject-layer-name">${escapeHtml(layer.label)}</span>
       <span class="step-inject-layer-count">${itemsForLayerPresentation(layer).length.toLocaleString("he-IL")}</span>
@@ -2192,9 +2193,7 @@ function submitQueryLayerSelection() {
     queryLayersError.hidden = false;
     return;
   }
-  state.layers.forEach(layer => {
-    if (layer.capabilities.table) layer.visible = checkedIds.has(layer.id);
-  });
+  state.promptSelectedLayerIds = checkedIds;
   const firstTableLayer = selectedLayers.find(layer => layer.capabilities.table);
   if (firstTableLayer) state.activeLayerId = firstTableLayer.id;
   state.rawOverlayMinimized = false;
@@ -2655,6 +2654,7 @@ function resetInvestigation() {
   state.locationMetadata = [];
   state.entityMetadata = [];
   state.layers = [];
+  state.promptSelectedLayerIds = new Set();
   state.activeLayerId = null;
   state.rawOverlayMinimized = false;
   state.rawOverlayHeight = 28;
@@ -2796,6 +2796,7 @@ document.addEventListener("click", event => {
   if (closeLayer) {
     event.stopPropagation();
     const layerIdToClose = closeLayer.dataset.layerClose;
+    state.promptSelectedLayerIds.delete(layerIdToClose);
     state.layers = state.layers.filter(item => item.id !== layerIdToClose);
     if (state.activeLayerId === layerIdToClose) {
       state.activeLayerId = state.layers.find(layer => layer.capabilities.table && layer.visible)?.id
@@ -2818,6 +2819,7 @@ document.addEventListener("click", event => {
   }
   if (event.target.closest("#rawEventsClose")) {
     state.layers = [];
+    state.promptSelectedLayerIds = new Set();
     state.activeLayerId = null;
     state.current = [];
     state.aggregateLocations = [];
