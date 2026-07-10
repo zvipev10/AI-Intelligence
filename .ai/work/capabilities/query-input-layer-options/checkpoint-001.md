@@ -24,11 +24,13 @@ Add prompt-area `+` options for saved runs and layer selection.
 - Deployed VM smoke with Playwright + system Edge passed:
   - `+` menu opens.
   - `הקלטות` and `שכבות` options render.
-  - `שכבות` opens the layer-selection modal.
+  - `שכבות` opens the same `step-inject-window` floating shell used by step ingestion.
   - With no open layers, the modal shows `אין שכבות פתוחות לבחירה.` and no options.
-  - After opening `טלגרם` through the existing catalog selector, `שכבות` shows exactly that open layer.
-  - Searching `טלגרם` returns one matching open layer.
-  - Selecting that layer closes the modal, focuses the result overlay, and keeps the existing layer tab without creating a duplicate.
+  - With no open layers, the submit button is disabled.
+  - After opening `טלגרם` through the existing catalog selector, `שכבות` shows exactly one `step-inject-layer-item` row.
+  - The row includes the same checkbox, color dot, layer name, and count structure as step ingestion.
+  - The open layer checkbox is checked by default.
+  - Submitting closes the modal, focuses the result overlay, and keeps the existing layer tab without creating a duplicate.
   - Browser console reported zero warnings/errors.
 
 ## Follow-up
