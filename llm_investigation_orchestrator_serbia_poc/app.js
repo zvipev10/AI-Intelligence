@@ -889,12 +889,13 @@ function matchingCatalogLayers() {
     .slice(0, 8);
 }
 
-function matchingQueryLayerModalLayers() {
+function queryLayerModalLayers() {
+  const openLayers = visibleLayers("table");
   const query = normalizeLayerSearch(state.queryLayerSearchQuery);
   const source = query
-    ? state.layerCatalog.filter(layer => layerSearchText(layer).includes(query))
-    : state.layerCatalog;
-  return source.slice(0, 40);
+    ? openLayers.filter(layer => normalizeLayerSearch([layer.label, layer.kind, layer.sourceLabel, layer.id].filter(Boolean).join(" ")).includes(query))
+    : openLayers;
+  return source;
 }
 
 function renderLayerSelector() {
@@ -963,44 +964,31 @@ function renderLayerSelector() {
 function renderQueryLayersModal() {
   if (!queryLayersModal || !queryLayersSearch || !queryLayersList || !queryLayersStatus) return;
   queryLayersSearch.value = state.queryLayerSearchQuery;
-  queryLayersSearch.disabled = state.layerCatalogLoading && !state.layerCatalog.length;
+  queryLayersSearch.disabled = !visibleLayers("table").length;
   queryLayersSearch.parentElement?.setAttribute("aria-expanded", queryLayersModal.hidden ? "false" : "true");
 
-  if (state.layerCatalogLoading) {
-    queryLayersStatus.textContent = "טוען שכבות";
-    queryLayersList.innerHTML = '<div class="layer-selector-empty">טוען שכבות...</div>';
-    return;
-  }
-  if (state.layerCatalogError) {
-    queryLayersStatus.textContent = state.layerCatalogError;
-    queryLayersList.innerHTML = `<div class="layer-selector-empty">${escapeHtml(state.layerCatalogError)}</div>`;
-    return;
-  }
   queryLayersStatus.textContent = "";
-  if (!state.layerCatalog.length) {
-    queryLayersList.innerHTML = '<div class="layer-selector-empty">אין שכבות זמינות.</div>';
+  if (!visibleLayers("table").length) {
+    queryLayersList.innerHTML = '<div class="layer-selector-empty">אין שכבות פתוחות לבחירה.</div>';
     return;
   }
 
-  const matches = matchingQueryLayerModalLayers();
+  const matches = queryLayerModalLayers();
   if (!matches.length) {
-    queryLayersList.innerHTML = '<div class="layer-selector-empty">לא נמצאו שכבות תואמות.</div>';
+    queryLayersList.innerHTML = '<div class="layer-selector-empty">לא נמצאו שכבות פתוחות תואמות.</div>';
     return;
   }
 
   queryLayersList.innerHTML = matches.map(layer => {
-    const open = isCatalogLayerOpen(layer.id);
-    const loading = state.openingLayerIds.has(layer.id);
-    const family = LAYER_FAMILY_LABELS[layer.family] || layer.family || "שכבה";
     return `
-      <button type="button" role="option" class="layer-select-option ${open ? "selected" : ""}" data-query-layer-select="${escapeHtml(layer.id)}" title="${escapeHtml(layer.label)}" ${loading ? "disabled" : ""}>
+      <button type="button" role="option" class="layer-select-option selected" data-query-layer-select="${escapeHtml(layer.id)}" title="${escapeHtml(layer.label)}">
         <span class="layer-select-main">
           <span class="layer-select-name">${escapeHtml(layer.label)}</span>
-          <span class="layer-select-family">${escapeHtml(family)}</span>
+          <span class="layer-select-family">${escapeHtml(layer.sourceLabel || "שכבה פתוחה")}</span>
         </span>
         <span class="layer-select-meta">
-          <span class="layer-select-count">${Number(layer.count || 0).toLocaleString("he-IL")}</span>
-          ${open ? '<span class="layer-select-state">פתוחה</span>' : ""}
+          <span class="layer-select-count">${itemsForLayerPresentation(layer).length.toLocaleString("he-IL")}</span>
+          <span class="layer-select-state">פתוחה</span>
         </span>
       </button>`;
   }).join("");
@@ -2628,9 +2616,15 @@ document.addEventListener("click", event => {
   }
   const queryLayerSelect = event.target.closest("[data-query-layer-select]");
   if (queryLayerSelect) {
+    const layer = state.layers.find(item => item.id === queryLayerSelect.dataset.queryLayerSelect);
+    if (layer) {
+      layer.visible = true;
+      state.activeLayerId = layer.id;
+      state.rawOverlayMinimized = false;
+      renderAllViews();
+    }
     state.queryLayerSearchQuery = "";
     closeQueryLayersModal();
-    openCatalogLayer(queryLayerSelect.dataset.queryLayerSelect);
     return;
   }
   const sourceVisibilityBtn = event.target.closest(".source-visibility-btn");
@@ -2808,13 +2802,16 @@ document.addEventListener("keydown", event => {
       return;
     }
     if (event.key === "Enter") {
-      const [firstMatch] = matchingQueryLayerModalLayers();
-      if (firstMatch) {
-        event.preventDefault();
-        state.queryLayerSearchQuery = "";
-        closeQueryLayersModal();
-        openCatalogLayer(firstMatch.id);
-      }
+    const [firstMatch] = queryLayerModalLayers();
+    if (firstMatch) {
+      event.preventDefault();
+      firstMatch.visible = true;
+      state.activeLayerId = firstMatch.id;
+      state.rawOverlayMinimized = false;
+      renderAllViews();
+      state.queryLayerSearchQuery = "";
+      closeQueryLayersModal();
+    }
       return;
     }
   }

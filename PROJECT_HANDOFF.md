@@ -36,7 +36,7 @@ Current local working tree expectation:
 
 Date: 2026-07-09
 
-Current deployed asset versions: `styles.css?v=72`, `app.js?v=93`, served from `/opt/serbia-poc-ui` on port 8769.
+Current deployed asset versions: `styles.css?v=72`, `app.js?v=94`, served from `/opt/serbia-poc-ui` on port 8769.
 
 ### Follow-up Fixes (2026-07-10)
 
@@ -45,7 +45,7 @@ Current deployed asset versions: `styles.css?v=72`, `app.js?v=93`, served from `
 - Strengthened step continuation so the original `classify_question_intent` summary, including `recommended_mode` and `tool_budget`, is copied into the continuation prompt and server-side continuation instructions.
 - Fixed the `הסתר תוצאות` regression after step-result presentation by preserving per-step source IDs across continuation runs while still reconciling live-step IDs to the final run ID.
 - Fixed the whole-query final-answer `הצג תוצאות` control so it switches to `הסתר תוצאות` after presenting final result layers and can hide/show those layers.
-- Changed the prompt-area `+` button into an options menu with `הקלטות` for saved/replay runs and `שכבות` for opening a layer-selection modal backed by the existing layer catalog/open-layer flow.
+- Changed the prompt-area `+` button into an options menu with `הקלטות` for saved/replay runs and `שכבות` for choosing from currently open table-capable layers, matching the step-ingestion layer-selection behavior.
 
 ### Bug Fixes (this session)
 
@@ -227,7 +227,7 @@ Active UI service:
 - This is important: an earlier deploy mistakenly copied to `/opt/serbia-poc/ui`, but the active service serves `/opt/serbia-poc-ui`.
 - Current served versions verified on the VM after the latest UI deploy (as of 2026-07-10):
   - `styles.css?v=72`
-  - `app.js?v=93`
+  - `app.js?v=94`
 - These versions include colored point markers, manual final-answer presentation via `הצג תוצאות`, additive layer tabs, table resize/minimize, close/clear result-window behavior, query edit modal controls, `הצג תוצאות` / `הסתר תוצאות` toggle, simplified filter panel (inline הוסף/החל, no empty sections, white eye/filter icons when active), and the full "המשך מכאן" step injection feature.
 
 Active MCP/Hermes service:
@@ -941,7 +941,7 @@ Expected: no matches in active data files.
 ## Suggested First Message To A New Assistant
 
 ```text
-Read PROJECT_HANDOFF.md first. Continue work on the Serbia/North Kosovo POC in llm_investigation_orchestrator_serbia_poc. The UI is deployed from /opt/serbia-poc-ui on VM 151.145.93.180 (port 8769) and currently serves styles.css?v=72 and app.js?v=93. Do not touch C:\Users\e054922\Downloads\oracle.key.
+Read PROJECT_HANDOFF.md first. Continue work on the Serbia/North Kosovo POC in llm_investigation_orchestrator_serbia_poc. The UI is deployed from /opt/serbia-poc-ui on VM 151.145.93.180 (port 8769) and currently serves styles.css?v=72 and app.js?v=94. Do not touch C:\Users\e054922\Downloads\oracle.key.
 
 Current behavior: colored map point markers with popups; final answers do not auto-present visualization layers; final `הצג תוצאות` presents/restores final-answer layers manually. The result table is a flush transparent tabbed overlay with real layer tabs, standard eye/eye-off toggles (white when active, grey when inactive), per-tab filter icon (white when filters applied), per-tab `×` close, resize, `−` minimize, `□` restore/maximize, and window `×` close/clear. Filter panel is simplified: no title/active-section, inline הוסף/החל buttons.
 
