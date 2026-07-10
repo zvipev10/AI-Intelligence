@@ -25,8 +25,10 @@ Add prompt-area `+` options for saved runs and layer selection.
   - `+` menu opens.
   - `הקלטות` and `שכבות` options render.
   - `שכבות` opens the layer-selection modal.
-  - Searching `טלגרם` returns one matching open layer after the layer is already open.
-  - Selecting that layer closes the modal, focuses the result overlay, and keeps the existing layer tab.
+  - With no open layers, the modal shows `אין שכבות פתוחות לבחירה.` and no options.
+  - After opening `טלגרם` through the existing catalog selector, `שכבות` shows exactly that open layer.
+  - Searching `טלגרם` returns one matching open layer.
+  - Selecting that layer closes the modal, focuses the result overlay, and keeps the existing layer tab without creating a duplicate.
   - Browser console reported zero warnings/errors.
 
 ## Follow-up
