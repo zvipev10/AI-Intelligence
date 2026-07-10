@@ -192,6 +192,8 @@ const state = {
   layerCatalogError: "",
   layerSearchQuery: "",
   layerSearchOpen: false,
+  promptOptionsOpen: false,
+  queryLayerSearchQuery: "",
   openingLayerIds: new Set(),
   layers: [],
   activeLayerId: null,
@@ -209,10 +211,16 @@ const resultTitle = document.getElementById("resultTitle");
 const resultSubtitle = document.getElementById("resultSubtitle");
 const resultCount = document.getElementById("resultCount");
 const sendButton = document.getElementById("sendButton");
-const recordedButton = document.getElementById("recordedButton");
+const promptOptionsButton = document.getElementById("promptOptionsButton");
+const promptOptionsMenu = document.getElementById("promptOptionsMenu");
 const recordedModal = document.getElementById("recordedModal");
 const recordedClose = document.getElementById("recordedClose");
 const recordedList = document.getElementById("recordedList");
+const queryLayersModal = document.getElementById("queryLayersModal");
+const queryLayersClose = document.getElementById("queryLayersClose");
+const queryLayersSearch = document.getElementById("queryLayersSearch");
+const queryLayersList = document.getElementById("queryLayersList");
+const queryLayersStatus = document.getElementById("queryLayersStatus");
 const agentStatus = document.getElementById("agentStatus");
 const viewRecommendation = document.getElementById("viewRecommendation");
 const layerSelectorSearch = document.getElementById("layerSelectorSearch");
@@ -881,6 +889,14 @@ function matchingCatalogLayers() {
     .slice(0, 8);
 }
 
+function matchingQueryLayerModalLayers() {
+  const query = normalizeLayerSearch(state.queryLayerSearchQuery);
+  const source = query
+    ? state.layerCatalog.filter(layer => layerSearchText(layer).includes(query))
+    : state.layerCatalog;
+  return source.slice(0, 40);
+}
+
 function renderLayerSelector() {
   if (!layerSelectorSearch || !layerSelectorList || !layerSelectorStatus) return;
   if (state.layerCatalogLoading) {
@@ -944,6 +960,52 @@ function renderLayerSelector() {
   }).join("");
 }
 
+function renderQueryLayersModal() {
+  if (!queryLayersModal || !queryLayersSearch || !queryLayersList || !queryLayersStatus) return;
+  queryLayersSearch.value = state.queryLayerSearchQuery;
+  queryLayersSearch.disabled = state.layerCatalogLoading && !state.layerCatalog.length;
+  queryLayersSearch.parentElement?.setAttribute("aria-expanded", queryLayersModal.hidden ? "false" : "true");
+
+  if (state.layerCatalogLoading) {
+    queryLayersStatus.textContent = "טוען שכבות";
+    queryLayersList.innerHTML = '<div class="layer-selector-empty">טוען שכבות...</div>';
+    return;
+  }
+  if (state.layerCatalogError) {
+    queryLayersStatus.textContent = state.layerCatalogError;
+    queryLayersList.innerHTML = `<div class="layer-selector-empty">${escapeHtml(state.layerCatalogError)}</div>`;
+    return;
+  }
+  queryLayersStatus.textContent = "";
+  if (!state.layerCatalog.length) {
+    queryLayersList.innerHTML = '<div class="layer-selector-empty">אין שכבות זמינות.</div>';
+    return;
+  }
+
+  const matches = matchingQueryLayerModalLayers();
+  if (!matches.length) {
+    queryLayersList.innerHTML = '<div class="layer-selector-empty">לא נמצאו שכבות תואמות.</div>';
+    return;
+  }
+
+  queryLayersList.innerHTML = matches.map(layer => {
+    const open = isCatalogLayerOpen(layer.id);
+    const loading = state.openingLayerIds.has(layer.id);
+    const family = LAYER_FAMILY_LABELS[layer.family] || layer.family || "שכבה";
+    return `
+      <button type="button" role="option" class="layer-select-option ${open ? "selected" : ""}" data-query-layer-select="${escapeHtml(layer.id)}" title="${escapeHtml(layer.label)}" ${loading ? "disabled" : ""}>
+        <span class="layer-select-main">
+          <span class="layer-select-name">${escapeHtml(layer.label)}</span>
+          <span class="layer-select-family">${escapeHtml(family)}</span>
+        </span>
+        <span class="layer-select-meta">
+          <span class="layer-select-count">${Number(layer.count || 0).toLocaleString("he-IL")}</span>
+          ${open ? '<span class="layer-select-state">פתוחה</span>' : ""}
+        </span>
+      </button>`;
+  }).join("");
+}
+
 async function loadLayerCatalog() {
   if (!layerSelectorList || !layerSelectorStatus) return;
   state.layerCatalogLoading = true;
@@ -959,6 +1021,7 @@ async function loadLayerCatalog() {
   } finally {
     state.layerCatalogLoading = false;
     renderLayerSelector();
+    renderQueryLayersModal();
   }
 }
 
@@ -974,11 +1037,13 @@ async function openCatalogLayer(layerId) {
     state.layerSearchOpen = false;
     renderAllViews();
     renderLayerSelector();
+    renderQueryLayersModal();
     return;
   }
 
-  state.openingLayerIds.add(layerId);
-  renderLayerSelector();
+    state.openingLayerIds.add(layerId);
+    renderLayerSelector();
+    renderQueryLayersModal();
   try {
     const response = await fetch(`/api/layers/${encodeURIComponent(layerId)}/rows`, { cache: "no-store" });
     const payload = await response.json();
@@ -1004,6 +1069,7 @@ async function openCatalogLayer(layerId) {
   } finally {
     state.openingLayerIds.delete(layerId);
     renderLayerSelector();
+    renderQueryLayersModal();
   }
 }
 
@@ -1994,7 +2060,7 @@ async function runSavedQuestion(savedId) {
   closeRecordedModal();
   state.busy = true;
   sendButton.disabled = true;
-  recordedButton.disabled = true;
+  promptOptionsButton.disabled = true;
   sendButton.textContent = "מציג...";
   try {
     const response = await fetch(`/api/saved-question?id=${encodeURIComponent(savedId)}`, { cache: "no-store" });
@@ -2015,18 +2081,37 @@ async function runSavedQuestion(savedId) {
   } finally {
     state.busy = false;
     sendButton.disabled = false;
-    recordedButton.disabled = false;
+    promptOptionsButton.disabled = false;
     sendButton.textContent = "שלח";
   }
 }
 
+function setPromptOptionsOpen(open) {
+  state.promptOptionsOpen = Boolean(open);
+  if (promptOptionsMenu) promptOptionsMenu.hidden = !state.promptOptionsOpen;
+  if (promptOptionsButton) promptOptionsButton.setAttribute("aria-expanded", state.promptOptionsOpen ? "true" : "false");
+}
+
 function openRecordedModal() {
+  setPromptOptionsOpen(false);
   recordedModal.hidden = false;
   loadRecordedQuestions();
 }
 
 function closeRecordedModal() {
   recordedModal.hidden = true;
+}
+
+function openQueryLayersModal() {
+  setPromptOptionsOpen(false);
+  state.queryLayerSearchQuery = "";
+  queryLayersModal.hidden = false;
+  renderQueryLayersModal();
+  queryLayersSearch?.focus();
+}
+
+function closeQueryLayersModal() {
+  if (queryLayersModal) queryLayersModal.hidden = true;
 }
 
 async function loadRecordedQuestions() {
@@ -2488,6 +2573,11 @@ function resetInvestigation() {
   state.lastResult = null;
   state.lastPrompt = null;
   state.queryContext = null;
+  state.layerSearchQuery = "";
+  state.layerSearchOpen = false;
+  state.queryLayerSearchQuery = "";
+  setPromptOptionsOpen(false);
+  closeQueryLayersModal();
   conversation.innerHTML = '<article class="message assistant-message"><div class="message-label">סוכן חקירה</div><p>אפשר להתחיל בשאלה פתוחה. אשתמש בכלי החיפוש, הזמן והמפה כדי לבנות תשובה שניתן לבדוק מול האירועים הגולמיים.</p></article>';
   if (resultTitle) resultTitle.textContent = "טרם בוצעה חקירה";
   if (resultSubtitle) resultSubtitle.textContent = "תוצאות, המחשות וראיות יופיעו כאן לאחר השאלה הראשונה.";
@@ -2496,6 +2586,7 @@ function resetInvestigation() {
   setSuggestions(["אילו דיווחים על חסימות הופיעו ראשונים?", "האם הטענה על חציית גבול מגובה במקור אמין?", "איפה יש ריכוזי דיווחים מרכזיים?"]);
   renderAllViews();
   renderLayerSelector();
+  renderQueryLayersModal();
   renderQueryInspector();
   if (state.map) setTimeout(() => state.map.resize(), 0);
 }
@@ -2519,6 +2610,13 @@ document.addEventListener("click", event => {
   }
   const savedQuestion = event.target.closest("[data-saved-id]");
   if (savedQuestion) runSavedQuestion(savedQuestion.dataset.savedId);
+  const promptOption = event.target.closest("[data-prompt-option]");
+  if (promptOption) {
+    event.stopPropagation();
+    if (promptOption.dataset.promptOption === "recordings") openRecordedModal();
+    if (promptOption.dataset.promptOption === "layers") openQueryLayersModal();
+    return;
+  }
   const viewButton = event.target.closest("[data-view]");
   if (viewButton) activateView(viewButton.dataset.view);
   const layerSelect = event.target.closest("[data-layer-select]");
@@ -2526,6 +2624,13 @@ document.addEventListener("click", event => {
     state.layerSearchQuery = "";
     state.layerSearchOpen = false;
     openCatalogLayer(layerSelect.dataset.layerSelect);
+    return;
+  }
+  const queryLayerSelect = event.target.closest("[data-query-layer-select]");
+  if (queryLayerSelect) {
+    state.queryLayerSearchQuery = "";
+    closeQueryLayersModal();
+    openCatalogLayer(queryLayerSelect.dataset.queryLayerSelect);
     return;
   }
   const sourceVisibilityBtn = event.target.closest(".source-visibility-btn");
@@ -2614,6 +2719,7 @@ document.addEventListener("click", event => {
     }
     renderAllViews();
     renderLayerSelector();
+    renderQueryLayersModal();
     return;
   }
   const rawLayerTab = event.target.closest("[data-layer-id]");
@@ -2642,13 +2748,22 @@ document.addEventListener("click", event => {
     state.layerSearchOpen = false;
     renderLayerSelector();
   }
+  if (!event.target.closest(".prompt-options") && state.promptOptionsOpen) {
+    setPromptOptionsOpen(false);
+  }
   if (event.target === recordedModal) closeRecordedModal();
+  if (event.target === queryLayersModal) closeQueryLayersModal();
 });
 
 document.addEventListener("input", event => {
   if (event.target.matches("[data-filter-value]")) {
     const layer = activeFilterLayer();
     if (layer) updateDraftFilterValue(layer, Number(event.target.dataset.filterIndex), event.target.value);
+    return;
+  }
+  if (event.target === queryLayersSearch) {
+    state.queryLayerSearchQuery = event.target.value;
+    renderQueryLayersModal();
     return;
   }
   if (event.target !== layerSelectorSearch) return;
@@ -2672,6 +2787,11 @@ document.addEventListener("focusin", event => {
 });
 
 document.addEventListener("keydown", event => {
+  if (state.promptOptionsOpen && event.key === "Escape") {
+    setPromptOptionsOpen(false);
+    promptOptionsButton?.focus();
+    return;
+  }
   if (event.target.matches("[data-filter-value]") && event.key === "Enter") {
     event.preventDefault();
     const layer = activeFilterLayer();
@@ -2680,6 +2800,23 @@ document.addEventListener("keydown", event => {
       applied ? renderAllViews() : renderEvidence();
     }
     return;
+  }
+  if (event.target === queryLayersSearch) {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      closeQueryLayersModal();
+      return;
+    }
+    if (event.key === "Enter") {
+      const [firstMatch] = matchingQueryLayerModalLayers();
+      if (firstMatch) {
+        event.preventDefault();
+        state.queryLayerSearchQuery = "";
+        closeQueryLayersModal();
+        openCatalogLayer(firstMatch.id);
+      }
+      return;
+    }
   }
   if (event.target !== layerSelectorSearch) return;
   if (event.key === "Escape") {
@@ -2744,8 +2881,12 @@ promptInput.addEventListener("keydown", event => {
 });
 
 document.getElementById("resetButton").addEventListener("click", resetInvestigation);
-recordedButton.addEventListener("click", openRecordedModal);
+promptOptionsButton.addEventListener("click", event => {
+  event.stopPropagation();
+  setPromptOptionsOpen(!state.promptOptionsOpen);
+});
 recordedClose.addEventListener("click", closeRecordedModal);
+queryLayersClose.addEventListener("click", closeQueryLayersModal);
 initPanelResizers();
 
 async function boot() {
