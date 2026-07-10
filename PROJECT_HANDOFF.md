@@ -1,8 +1,8 @@
 # AI Intelligence Project Handoff
 
-Last updated: 2026-07-09
+Last updated: 2026-07-10
 
-This is the primary handoff for continuing the AI Intelligence project in another assistant/chat. It reflects the current Serbia POC workspace after the data normalization, additive result-layer UI refactor, recorded-run refresh, map marker popup work, Phase 2 query builder planning, location/entity layer normalization, hybrid semantic retrieval/tool-quality work, filter panel simplification, step-button label and duplicate-layer bug fixes, and the new "המשך מכאן" step injection feature.
+This is the primary handoff for continuing the AI Intelligence project in another assistant/chat. It reflects the current Serbia POC workspace after the data normalization, additive result-layer UI refactor, recorded-run refresh, map marker popup work, Phase 2 query builder planning, location/entity layer normalization, hybrid semantic retrieval/tool-quality work, filter panel simplification, step-button label and duplicate-layer bug fixes, the "המשך מכאן" step injection feature, multi-layer query filtering, and the Codex-style prompt composer with explicit prompt-layer selection.
 
 ## One-Line Summary
 
@@ -16,27 +16,42 @@ Repository:
 
 Current branch:
 
-- Active development branch: `feature/semantic-quality-tests`
-- `main` remains the stable baseline branch.
-- Latest observed head should be checked with `git log -1 --oneline`; the active branch is expected to be clean and aligned with its remote after each handoff.
+- Active branch: `main`
+- Latest observed head should be checked with `git log -1 --oneline`; `main` is expected to be clean and aligned with `origin/main` after each handoff.
 
 Important local workspace:
 
-- Active repo path used by Codex: `C:\Users\user\Documents\AI Intelligence\.codex_ai_intelligence_repo`
-- The parent folder `C:\Users\user\Documents\AI Intelligence` may contain other/older files; use `.codex_ai_intelligence_repo` for this project.
+- Active repo path used by Codex: `C:\Users\e054922\Documents\Codex\2026-06-09\i-managed-a-project-in-other\work\AI Intelligence`
+- The workspace may contain unrelated local files; do not stage or deploy them unless the user explicitly asks.
 
 Current local working tree expectation:
 
-- `feature/semantic-quality-tests` should be clean and aligned with `origin/feature/semantic-quality-tests`.
-- `main` should remain available as the stable baseline.
+- `main` should be clean and aligned with `origin/main`.
 - Do not continue from stale local files if `git fetch origin` shows the active remote branch ahead.
-- At the time of this handoff update there may be unrelated local working-tree files such as `.claude/`, `environments-configuration/`, or uncommitted UI styling experiments. Do not include them in semantic/tool-quality commits unless the user explicitly asks.
+- At the time of this handoff update there are unrelated local untracked geospatial requirement files. Do not include them in UI, workflow, or deployment commits unless the user explicitly asks.
 
-## Latest Update: Step Injection ("המשך מכאן") Feature + Bug Fixes
+## Latest Update: Prompt Composer + Results Table Follow-up
 
-Date: 2026-07-09
+Date: 2026-07-10
 
-Current deployed asset versions: `styles.css?v=73`, `app.js?v=95`, served from `/opt/serbia-poc-ui` on port 8769.
+Current deployed asset versions: `styles.css?v=75`, `app.js?v=98`, served from `/opt/serbia-poc-ui` on port 8769.
+
+Current prompt composer behavior:
+
+- The composer is Codex-style: textarea above, plus button and up-arrow send button below.
+- The plus button opens an options menu:
+  - `הקלטות` opens saved/replay investigations.
+  - `שכבות` opens the floating layer-selection window.
+- Prompt-layer selection is explicit and separate from map/table visibility.
+- Visible/open layers are not attached to the agent prompt unless the user selects them through `+` -> `שכבות` and submits the layer-selection window.
+- The selected-layer pill is hidden by default.
+- After explicit selection, the pill appears under the text with selected-layer summary and a small `×`.
+- Clicking `×` clears prompt-layer selection and hides the pill, while keeping visible result/map/table layers open.
+
+Current results-table behavior:
+
+- Raw result tabs stay in one horizontal scroll row instead of wrapping/clipping in the fixed-height header.
+- The raw results table exposes horizontal scrolling across viewport sizes.
 
 ### Follow-up Fixes (2026-07-10)
 
@@ -46,6 +61,10 @@ Current deployed asset versions: `styles.css?v=73`, `app.js?v=95`, served from `
 - Fixed the `הסתר תוצאות` regression after step-result presentation by preserving per-step source IDs across continuation runs while still reconciling live-step IDs to the final run ID.
 - Fixed the whole-query final-answer `הצג תוצאות` control so it switches to `הסתר תוצאות` after presenting final result layers and can hide/show those layers.
 - Changed the prompt-area `+` button into an options menu with `הקלטות` for saved/replay runs and `שכבות` for choosing currently open table-capable layers in the same floating checkbox-window UX as step ingestion.
+
+### Previous Update: Step Injection ("המשך מכאן") Feature + Bug Fixes
+
+Date: 2026-07-09
 
 ### Bug Fixes (this session)
 
@@ -217,7 +236,7 @@ VM:
 
 - Host: `151.145.93.180`
 - User: `ubuntu`
-- SSH key path used locally: `C:\Users\user\Downloads\oracle.key`
+- SSH key path used locally: `C:\Users\e054922\Downloads\oracle.key`
 - Important: user explicitly said not to touch/modify the key file.
 
 Active UI service:
@@ -226,9 +245,9 @@ Active UI service:
 - Actual served path: `/opt/serbia-poc-ui`
 - This is important: an earlier deploy mistakenly copied to `/opt/serbia-poc/ui`, but the active service serves `/opt/serbia-poc-ui`.
 - Current served versions verified on the VM after the latest UI deploy (as of 2026-07-10):
-  - `styles.css?v=73`
-  - `app.js?v=95`
-- These versions include colored point markers, manual final-answer presentation via `הצג תוצאות`, additive layer tabs, table resize/minimize, close/clear result-window behavior, query edit modal controls, `הצג תוצאות` / `הסתר תוצאות` toggle, simplified filter panel (inline הוסף/החל, no empty sections, white eye/filter icons when active), and the full "המשך מכאן" step injection feature.
+  - `styles.css?v=75`
+  - `app.js?v=98`
+- These versions include colored point markers, manual final-answer presentation via `הצג תוצאות`, additive layer tabs, table resize/minimize, close/clear result-window behavior, horizontal tab/table scrolling, query edit modal controls, `הצג תוצאות` / `הסתר תוצאות` toggle, simplified filter panel (inline הוסף/החל, no empty sections, white eye/filter icons when active), the full "המשך מכאן" step injection feature, and the Codex-style prompt composer with explicit removable prompt-layer selection.
 
 Active MCP/Hermes service:
 
@@ -941,9 +960,11 @@ Expected: no matches in active data files.
 ## Suggested First Message To A New Assistant
 
 ```text
-Read PROJECT_HANDOFF.md first. Continue work on the Serbia/North Kosovo POC in llm_investigation_orchestrator_serbia_poc. The UI is deployed from /opt/serbia-poc-ui on VM 151.145.93.180 (port 8769) and currently serves styles.css?v=73 and app.js?v=95. Do not touch C:\Users\e054922\Downloads\oracle.key.
+Read PROJECT_HANDOFF.md first. Continue work on the Serbia/North Kosovo POC in llm_investigation_orchestrator_serbia_poc. The UI is deployed from /opt/serbia-poc-ui on VM 151.145.93.180 (port 8769) and currently serves styles.css?v=75 and app.js?v=98. Do not touch C:\Users\e054922\Downloads\oracle.key.
 
-Current behavior: colored map point markers with popups; final answers do not auto-present visualization layers; final `הצג תוצאות` presents/restores final-answer layers manually. The result table is a flush transparent tabbed overlay with real layer tabs, standard eye/eye-off toggles (white when active, grey when inactive), per-tab filter icon (white when filters applied), per-tab `×` close, resize, `−` minimize, `□` restore/maximize, and window `×` close/clear. Filter panel is simplified: no title/active-section, inline הוסף/החל buttons.
+Current behavior: colored map point markers with popups; final answers do not auto-present visualization layers; final `הצג תוצאות` presents/restores final-answer layers manually. The result table is a flush transparent tabbed overlay with real horizontally scrollable layer tabs, standard eye/eye-off toggles (white when active, grey when inactive), per-tab filter icon (white when filters applied), per-tab `×` close, resize, `−` minimize, `□` restore/maximize, window `×` close/clear, and horizontal table scrolling. Filter panel is simplified: no title/active-section, inline הוסף/החל buttons.
+
+Prompt composer behavior: the prompt box is Codex-style with plus and up-arrow controls under the text. The plus menu has `הקלטות` and `שכבות`. Prompt-layer context is attached only after the user explicitly selects layers through `+` -> `שכבות`; visible/map/table layers alone are not sent as selected prompt layers. The selected-layer pill is hidden until selection and includes a small `×` to remove the prompt-layer option.
 
 Each step card has a "המשך מכאן" button that opens a floating window for agent continuation. Continuation sends is_continuation:true to server.py which replaces the classify_question_intent instruction with a directive to continue from existing history using the original mode/budget. The continuation bubble renders all prior steps (up to the triggering step) plus new live steps, merged into state.lastResult.
 

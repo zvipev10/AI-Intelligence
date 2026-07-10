@@ -193,6 +193,7 @@ const state = {
   layerSearchQuery: "",
   layerSearchOpen: false,
   promptOptionsOpen: false,
+  promptSelectedLayerIds: new Set(),
   openingLayerIds: new Set(),
   layers: [],
   activeLayerId: null,
@@ -212,6 +213,10 @@ const resultCount = document.getElementById("resultCount");
 const sendButton = document.getElementById("sendButton");
 const promptOptionsButton = document.getElementById("promptOptionsButton");
 const promptOptionsMenu = document.getElementById("promptOptionsMenu");
+const selectedLayersButton = document.getElementById("selectedLayersButton");
+const selectedLayersLabel = document.getElementById("selectedLayersLabel");
+const selectedLayersSummary = document.getElementById("selectedLayersSummary");
+const selectedLayersClear = document.getElementById("selectedLayersClear");
 const recordedModal = document.getElementById("recordedModal");
 const recordedClose = document.getElementById("recordedClose");
 const recordedList = document.getElementById("recordedList");
@@ -771,7 +776,7 @@ function identifiersForLayerContext(layer, items, limit = 80) {
 
 function selectedLayerContextForAgent() {
   return state.layers
-    .filter(layer => layer.visible && layer.capabilities?.table)
+    .filter(layer => state.promptSelectedLayerIds.has(layer.id) && layer.capabilities?.table)
     .slice(0, 8)
     .map(layer => {
       const filteredItems = itemsForLayerPresentation(layer);
@@ -796,6 +801,30 @@ function selectedLayerContextForAgent() {
         sample_ids: identifiersForLayerContext(layer, filteredItems)
       };
     });
+}
+
+function renderSelectedLayersButton() {
+  if (!selectedLayersButton || !selectedLayersLabel || !selectedLayersSummary) return;
+  const layers = state.layers.filter(layer => state.promptSelectedLayerIds.has(layer.id) && layer.capabilities?.table);
+  selectedLayersButton.classList.toggle("has-layers", layers.length > 0);
+  selectedLayersButton.hidden = layers.length === 0;
+  if (!layers.length) {
+    selectedLayersLabel.textContent = "";
+    selectedLayersSummary.textContent = "";
+    selectedLayersButton.title = "בחר שכבות לשאילתה";
+    return;
+  }
+  const preview = layers.slice(0, 2).map(layer => layer.label).join(" · ");
+  const remaining = layers.length > 2 ? ` +${layers.length - 2}` : "";
+  selectedLayersLabel.textContent = layers.length === 1 ? "שכבה אחת נבחרה" : `${layers.length.toLocaleString("he-IL")} שכבות נבחרו`;
+  selectedLayersSummary.textContent = `${preview}${remaining}`;
+  selectedLayersButton.title = `שנה שכבות לשאילתה: ${layers.map(layer => layer.label).join(", ")}`;
+}
+
+function clearPromptLayerSelection() {
+  state.promptSelectedLayerIds = new Set();
+  renderSelectedLayersButton();
+  renderQueryLayersModal();
 }
 
 function selectedLayerContextText(layers) {
@@ -1036,7 +1065,7 @@ function renderLayerSelector() {
 
 function renderQueryLayersModal() {
   if (!queryLayersModal || !queryLayersList || !queryLayersSubmit || !queryLayersError) return;
-  const openLayers = visibleLayers("table");
+  const openLayers = state.layers.filter(layer => layer.capabilities.table);
   queryLayersError.hidden = true;
   queryLayersError.textContent = "";
   queryLayersSubmit.disabled = openLayers.length === 0;
@@ -1048,7 +1077,7 @@ function renderQueryLayersModal() {
   queryLayersList.innerHTML = openLayers.map(layer => {
     return `
     <label class="step-inject-layer-item" style="${layerColorStyle(layer)}">
-      <input type="checkbox" value="${escapeHtml(layer.id)}" checked>
+      <input type="checkbox" value="${escapeHtml(layer.id)}" ${state.promptSelectedLayerIds.has(layer.id) ? "checked" : ""}>
       <span class="step-inject-layer-color"></span>
       <span class="step-inject-layer-name">${escapeHtml(layer.label)}</span>
       <span class="step-inject-layer-count">${itemsForLayerPresentation(layer).length.toLocaleString("he-IL")}</span>
@@ -1615,7 +1644,7 @@ async function submitStepInject() {
     if (progressTimer) clearInterval(progressTimer);
     state.busy = false;
     sendButton.disabled = false;
-    sendButton.textContent = "שלח";
+    sendButton.textContent = "↑";
   }
 }
 
@@ -2132,7 +2161,7 @@ async function runSavedQuestion(savedId) {
     state.busy = false;
     sendButton.disabled = false;
     promptOptionsButton.disabled = false;
-    sendButton.textContent = "שלח";
+    sendButton.textContent = "↑";
   }
 }
 
@@ -2172,7 +2201,7 @@ function submitQueryLayerSelection() {
     queryLayersError.hidden = false;
     return;
   }
-  selectedLayers.forEach(layer => { layer.visible = true; });
+  state.promptSelectedLayerIds = checkedIds;
   const firstTableLayer = selectedLayers.find(layer => layer.capabilities.table);
   if (firstTableLayer) state.activeLayerId = firstTableLayer.id;
   state.rawOverlayMinimized = false;
@@ -2284,7 +2313,7 @@ async function runPrompt(prompt) {
     if (progressTimer) clearInterval(progressTimer);
     state.busy = false;
     sendButton.disabled = false;
-    sendButton.textContent = "שלח";
+    sendButton.textContent = "↑";
   }
 }
 
@@ -2306,6 +2335,7 @@ function renderAllViews() {
   renderMap();
   renderTimeline();
   renderEvidence();
+  renderSelectedLayersButton();
   updateResultVisibilityButtons();
 }
 
@@ -2632,6 +2662,7 @@ function resetInvestigation() {
   state.locationMetadata = [];
   state.entityMetadata = [];
   state.layers = [];
+  state.promptSelectedLayerIds = new Set();
   state.activeLayerId = null;
   state.rawOverlayMinimized = false;
   state.rawOverlayHeight = 28;
@@ -2773,6 +2804,7 @@ document.addEventListener("click", event => {
   if (closeLayer) {
     event.stopPropagation();
     const layerIdToClose = closeLayer.dataset.layerClose;
+    state.promptSelectedLayerIds.delete(layerIdToClose);
     state.layers = state.layers.filter(item => item.id !== layerIdToClose);
     if (state.activeLayerId === layerIdToClose) {
       state.activeLayerId = state.layers.find(layer => layer.capabilities.table && layer.visible)?.id
@@ -2795,6 +2827,7 @@ document.addEventListener("click", event => {
   }
   if (event.target.closest("#rawEventsClose")) {
     state.layers = [];
+    state.promptSelectedLayerIds = new Set();
     state.activeLayerId = null;
     state.current = [];
     state.aggregateLocations = [];
@@ -2924,6 +2957,18 @@ document.getElementById("resetButton").addEventListener("click", resetInvestigat
 promptOptionsButton.addEventListener("click", event => {
   event.stopPropagation();
   setPromptOptionsOpen(!state.promptOptionsOpen);
+});
+selectedLayersButton.addEventListener("click", openQueryLayersModal);
+selectedLayersClear.addEventListener("click", event => {
+  event.preventDefault();
+  event.stopPropagation();
+  clearPromptLayerSelection();
+});
+selectedLayersClear.addEventListener("keydown", event => {
+  if (event.key !== "Enter" && event.key !== " ") return;
+  event.preventDefault();
+  event.stopPropagation();
+  clearPromptLayerSelection();
 });
 recordedClose.addEventListener("click", closeRecordedModal);
 queryLayersClose.addEventListener("click", closeQueryLayersModal);
