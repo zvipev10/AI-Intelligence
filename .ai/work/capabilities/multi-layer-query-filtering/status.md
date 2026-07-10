@@ -7,7 +7,7 @@ Multi-Layer Query Filtering (`multi-layer-query-filtering`)
 Final handoff and merge.
 
 ## Overall status
-Slice 5 cross-layer validation passed, Product approved `checkpoint-013.md`, final handoff is complete, and the capability has been merged to `main`. Post-merge checkpoints `checkpoint-014.md`, `checkpoint-015.md`, `checkpoint-016.md`, and `checkpoint-017.md` fix selected-layer prompt context propagation, results-table scrolling/tabs, the prompt-composer selected-layers UX, explicit prompt-layer selection, and deploy PR #18 to the review VM.
+Slice 5 cross-layer validation passed, Product approved `checkpoint-013.md`, final handoff is complete, and the capability has been merged to `main`. Post-merge checkpoints `checkpoint-014.md`, `checkpoint-015.md`, `checkpoint-016.md`, `checkpoint-017.md`, and `checkpoint-018.md` fix selected-layer prompt context propagation, results-table scrolling/tabs, the prompt-composer selected-layers UX, explicit prompt-layer selection, VM deployment, and the hidden/removable selected-layer pill behavior.
 
 ## Who needs to act now
 
@@ -29,6 +29,7 @@ Slice 5 cross-layer validation passed, Product approved `checkpoint-013.md`, fin
 | Development | Complete | Fixed results-table scrolling/tabs and redesigned the prompt composer in `checkpoint-015.md`. | Done |
 | Development | Complete | Decoupled prompt-layer selection from visible map/table layers in `checkpoint-016.md`. | Done |
 | Development | Complete | Deployed PR #18 to the review VM in `checkpoint-017.md`. | Done |
+| Development | Complete | Hid the selected-layers pill until explicit selection and added clear `×` in `checkpoint-018.md`. | Done |
 | Architecture/Security | Not blocking | Review API endpoint shape and authorization assumptions if this pattern will continue beyond the local POC. | Before productionizing |
 
 ## Latest change since previous review
@@ -50,6 +51,12 @@ VM deployment `checkpoint-017.md`:
 - `serbia-poc-ui.service` restarted and reported `active`.
 - Public endpoint serves `styles.css?v=74` and `app.js?v=97`.
 - Public `/api/status` reports Hermes mode configured.
+
+Post-deploy composer correction `checkpoint-018.md`:
+- Selected-layers pill is hidden until the user explicitly selects layers through the `+` menu and layer-selection window.
+- Added a small `×` inside the pill to clear prompt-layer selection.
+- Clearing prompt-layer selection hides the pill but keeps visible result/map layers open.
+- Local browser validation passed with `styles.css?v=75` and `app.js?v=98`.
 
 Post-merge bugfix `checkpoint-014.md`:
 - Selected visible table layers are now serialized into compact agent context for normal prompts.
@@ -176,11 +183,12 @@ GitHub issue: #3. Local issue body: `issues/000-parent-capability.md`.
 - UX review: `ux-review.md`
 - QA review: `qa-review.md`
 - Execution plan: `execution-plan.md`
-- Latest checkpoint: `checkpoint-017.md`
+- Latest checkpoint: `checkpoint-018.md`
 - Post-merge hotfix checkpoint: `checkpoint-014.md`
 - Post-merge UI regression checkpoint: `checkpoint-015.md`
 - Post-merge explicit selection checkpoint: `checkpoint-016.md`
 - VM deployment checkpoint: `checkpoint-017.md`
+- Post-deploy composer correction checkpoint: `checkpoint-018.md`
 - Handoff: `handoff-summary.md`
 
 ## Gate checklist

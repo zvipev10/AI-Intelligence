@@ -216,6 +216,7 @@ const promptOptionsMenu = document.getElementById("promptOptionsMenu");
 const selectedLayersButton = document.getElementById("selectedLayersButton");
 const selectedLayersLabel = document.getElementById("selectedLayersLabel");
 const selectedLayersSummary = document.getElementById("selectedLayersSummary");
+const selectedLayersClear = document.getElementById("selectedLayersClear");
 const recordedModal = document.getElementById("recordedModal");
 const recordedClose = document.getElementById("recordedClose");
 const recordedList = document.getElementById("recordedList");
@@ -806,9 +807,10 @@ function renderSelectedLayersButton() {
   if (!selectedLayersButton || !selectedLayersLabel || !selectedLayersSummary) return;
   const layers = state.layers.filter(layer => state.promptSelectedLayerIds.has(layer.id) && layer.capabilities?.table);
   selectedLayersButton.classList.toggle("has-layers", layers.length > 0);
+  selectedLayersButton.hidden = layers.length === 0;
   if (!layers.length) {
-    selectedLayersLabel.textContent = "בחר שכבות";
-    selectedLayersSummary.textContent = "בחר שכבות לשאילתה";
+    selectedLayersLabel.textContent = "";
+    selectedLayersSummary.textContent = "";
     selectedLayersButton.title = "בחר שכבות לשאילתה";
     return;
   }
@@ -817,6 +819,12 @@ function renderSelectedLayersButton() {
   selectedLayersLabel.textContent = layers.length === 1 ? "שכבה אחת נבחרה" : `${layers.length.toLocaleString("he-IL")} שכבות נבחרו`;
   selectedLayersSummary.textContent = `${preview}${remaining}`;
   selectedLayersButton.title = `שנה שכבות לשאילתה: ${layers.map(layer => layer.label).join(", ")}`;
+}
+
+function clearPromptLayerSelection() {
+  state.promptSelectedLayerIds = new Set();
+  renderSelectedLayersButton();
+  renderQueryLayersModal();
 }
 
 function selectedLayerContextText(layers) {
@@ -2951,6 +2959,17 @@ promptOptionsButton.addEventListener("click", event => {
   setPromptOptionsOpen(!state.promptOptionsOpen);
 });
 selectedLayersButton.addEventListener("click", openQueryLayersModal);
+selectedLayersClear.addEventListener("click", event => {
+  event.preventDefault();
+  event.stopPropagation();
+  clearPromptLayerSelection();
+});
+selectedLayersClear.addEventListener("keydown", event => {
+  if (event.key !== "Enter" && event.key !== " ") return;
+  event.preventDefault();
+  event.stopPropagation();
+  clearPromptLayerSelection();
+});
 recordedClose.addEventListener("click", closeRecordedModal);
 queryLayersClose.addEventListener("click", closeQueryLayersModal);
 queryLayersSubmit.addEventListener("click", submitQueryLayerSelection);
