@@ -1102,12 +1102,16 @@ function finalizeAssistantMessage(answer, options = {}) {
   if (options.result) {
     const actions = document.createElement("div");
     actions.className = "final-answer-actions";
+    const finalId = finalSourceId(options.result);
     actions.innerHTML = `
-      <button type="button" class="final-answer-show-btn">הצג תוצאות</button>
+      <button type="button" class="final-answer-show-btn layers-hidden" data-source-id="${escapeHtml(finalId)}" title="הצג תוצאות" aria-label="הצג תוצאות" aria-pressed="false">
+        <span class="final-answer-show-label">הצג תוצאות</span>
+      </button>
       <button type="button" class="final-answer-save-btn" ${options.result.saved_question_id ? "disabled" : ""}>${options.result.saved_question_id ? "נשמר" : "שמור"}</button>
     `;
-    actions.querySelector(".final-answer-show-btn").addEventListener("click", () => {
-      showFinalAnswerResult(options.result, options.prompt || "");
+    const finalShowBtn = actions.querySelector(".final-answer-show-btn");
+    finalShowBtn.addEventListener("click", () => {
+      toggleFinalAnswerVisibility(options.result, options.prompt || "", finalShowBtn);
     });
     actions.querySelector(".final-answer-save-btn").addEventListener("click", event => {
       saveResultQuestion(options.result, options.prompt || "", event.currentTarget);
@@ -1118,6 +1122,7 @@ function finalizeAssistantMessage(answer, options = {}) {
     } else {
       answerBody.appendChild(actions);
     }
+    updateSourceVisibilityBtn(finalShowBtn);
   }
   state.activeAssistantMessage = null;
   state.activeActivityList = null;
@@ -1127,6 +1132,19 @@ function finalizeAssistantMessage(answer, options = {}) {
 function showFinalAnswerResult(result, prompt) {
   if (!result) return;
   applyHermesResult(result, prompt, { keepRenderedSteps: true, restoreOnly: true });
+}
+
+function toggleFinalAnswerVisibility(result, prompt, btn) {
+  const sourceId = sanitizeLayerKey(btn?.dataset.sourceId || finalSourceId(result));
+  const sourceLayers = state.layers.filter(layer => layer.sourceId === sourceId);
+  const anyVisible = sourceLayers.some(layer => layer.visible);
+  if (!sourceLayers.length || !anyVisible) {
+    showFinalAnswerResult(result, prompt);
+    return;
+  }
+  sourceLayers.forEach(layer => { layer.visible = false; });
+  updateSourceVisibilityBtn(btn);
+  renderAllViews();
 }
 
 const TOOL_LABELS = {
@@ -1604,7 +1622,7 @@ function updateSourceVisibilityBtn(btn) {
   btn.classList.toggle("layers-hidden", !anyVisible);
   const icon = btn.querySelector(".visibility-eye-icon");
   if (icon) icon.classList.toggle("off", !anyVisible);
-  const label = btn.querySelector(".step-visibility-label");
+  const label = btn.querySelector(".step-visibility-label, .final-answer-show-label");
   const actionLabel = label
     ? (anyVisible ? "הסתר תוצאות" : "הצג תוצאות")
     : (anyVisible ? "הסתר שכבות" : "הצג שכבות");
@@ -1616,6 +1634,11 @@ function updateSourceVisibilityBtn(btn) {
 
 function updateStepVisibilityButtons() {
   document.querySelectorAll(".step-visibility-btn").forEach(updateSourceVisibilityBtn);
+}
+
+function updateResultVisibilityButtons() {
+  updateStepVisibilityButtons();
+  document.querySelectorAll(".final-answer-show-btn").forEach(updateSourceVisibilityBtn);
 }
 
 function resolvedStepSourceId(step) {
@@ -1961,7 +1984,7 @@ function applyHermesResult(result, prompt, options = {}) {
   }
 
   finalizeAssistantMessage(result.answer, { result, prompt });
-  updateStepVisibilityButtons();
+  updateResultVisibilityButtons();
   renderQueryInspector();
   setSuggestions(["אילו הסברים תמימים יכולים להתאים לאותן ראיות?", "מה חסר כדי להעלות את רמת הביטחון?", "הצג את רצף האירועים לפי סדר הזמן"]);
 }
@@ -2128,7 +2151,7 @@ function renderAllViews() {
   renderMap();
   renderTimeline();
   renderEvidence();
-  updateStepVisibilityButtons();
+  updateResultVisibilityButtons();
 }
 
 function activateView(view, options = {}) {
