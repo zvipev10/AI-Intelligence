@@ -193,7 +193,6 @@ const state = {
   layerSearchQuery: "",
   layerSearchOpen: false,
   promptOptionsOpen: false,
-  queryLayerSearchQuery: "",
   openingLayerIds: new Set(),
   layers: [],
   activeLayerId: null,
@@ -218,9 +217,9 @@ const recordedClose = document.getElementById("recordedClose");
 const recordedList = document.getElementById("recordedList");
 const queryLayersModal = document.getElementById("queryLayersModal");
 const queryLayersClose = document.getElementById("queryLayersClose");
-const queryLayersSearch = document.getElementById("queryLayersSearch");
 const queryLayersList = document.getElementById("queryLayersList");
-const queryLayersStatus = document.getElementById("queryLayersStatus");
+const queryLayersSubmit = document.getElementById("queryLayersSubmit");
+const queryLayersError = document.getElementById("queryLayersError");
 const agentStatus = document.getElementById("agentStatus");
 const viewRecommendation = document.getElementById("viewRecommendation");
 const layerSelectorSearch = document.getElementById("layerSelectorSearch");
@@ -889,15 +888,6 @@ function matchingCatalogLayers() {
     .slice(0, 8);
 }
 
-function queryLayerModalLayers() {
-  const openLayers = visibleLayers("table");
-  const query = normalizeLayerSearch(state.queryLayerSearchQuery);
-  const source = query
-    ? openLayers.filter(layer => normalizeLayerSearch([layer.label, layer.kind, layer.sourceLabel, layer.id].filter(Boolean).join(" ")).includes(query))
-    : openLayers;
-  return source;
-}
-
 function renderLayerSelector() {
   if (!layerSelectorSearch || !layerSelectorList || !layerSelectorStatus) return;
   if (state.layerCatalogLoading) {
@@ -962,35 +952,24 @@ function renderLayerSelector() {
 }
 
 function renderQueryLayersModal() {
-  if (!queryLayersModal || !queryLayersSearch || !queryLayersList || !queryLayersStatus) return;
-  queryLayersSearch.value = state.queryLayerSearchQuery;
-  queryLayersSearch.disabled = !visibleLayers("table").length;
-  queryLayersSearch.parentElement?.setAttribute("aria-expanded", queryLayersModal.hidden ? "false" : "true");
-
-  queryLayersStatus.textContent = "";
-  if (!visibleLayers("table").length) {
+  if (!queryLayersModal || !queryLayersList || !queryLayersSubmit || !queryLayersError) return;
+  const openLayers = visibleLayers("table");
+  queryLayersError.hidden = true;
+  queryLayersError.textContent = "";
+  queryLayersSubmit.disabled = openLayers.length === 0;
+  queryLayersSubmit.textContent = "בחר שכבות";
+  if (!openLayers.length) {
     queryLayersList.innerHTML = '<div class="layer-selector-empty">אין שכבות פתוחות לבחירה.</div>';
     return;
   }
-
-  const matches = queryLayerModalLayers();
-  if (!matches.length) {
-    queryLayersList.innerHTML = '<div class="layer-selector-empty">לא נמצאו שכבות פתוחות תואמות.</div>';
-    return;
-  }
-
-  queryLayersList.innerHTML = matches.map(layer => {
+  queryLayersList.innerHTML = openLayers.map(layer => {
     return `
-      <button type="button" role="option" class="layer-select-option selected" data-query-layer-select="${escapeHtml(layer.id)}" title="${escapeHtml(layer.label)}">
-        <span class="layer-select-main">
-          <span class="layer-select-name">${escapeHtml(layer.label)}</span>
-          <span class="layer-select-family">${escapeHtml(layer.sourceLabel || "שכבה פתוחה")}</span>
-        </span>
-        <span class="layer-select-meta">
-          <span class="layer-select-count">${itemsForLayerPresentation(layer).length.toLocaleString("he-IL")}</span>
-          <span class="layer-select-state">פתוחה</span>
-        </span>
-      </button>`;
+    <label class="step-inject-layer-item" style="${layerColorStyle(layer)}">
+      <input type="checkbox" value="${escapeHtml(layer.id)}" checked>
+      <span class="step-inject-layer-color"></span>
+      <span class="step-inject-layer-name">${escapeHtml(layer.label)}</span>
+      <span class="step-inject-layer-count">${itemsForLayerPresentation(layer).length.toLocaleString("he-IL")}</span>
+    </label>`;
   }).join("");
 }
 
@@ -2092,14 +2071,30 @@ function closeRecordedModal() {
 
 function openQueryLayersModal() {
   setPromptOptionsOpen(false);
-  state.queryLayerSearchQuery = "";
   queryLayersModal.hidden = false;
   renderQueryLayersModal();
-  queryLayersSearch?.focus();
 }
 
 function closeQueryLayersModal() {
   if (queryLayersModal) queryLayersModal.hidden = true;
+}
+
+function submitQueryLayerSelection() {
+  const checkedIds = new Set(
+    [...queryLayersList.querySelectorAll("input[type=checkbox]:checked")].map(cb => cb.value)
+  );
+  const selectedLayers = state.layers.filter(layer => checkedIds.has(layer.id));
+  if (!selectedLayers.length) {
+    queryLayersError.textContent = "יש לבחור לפחות שכבה אחת.";
+    queryLayersError.hidden = false;
+    return;
+  }
+  selectedLayers.forEach(layer => { layer.visible = true; });
+  const firstTableLayer = selectedLayers.find(layer => layer.capabilities.table);
+  if (firstTableLayer) state.activeLayerId = firstTableLayer.id;
+  state.rawOverlayMinimized = false;
+  closeQueryLayersModal();
+  renderAllViews();
 }
 
 async function loadRecordedQuestions() {
@@ -2563,7 +2558,6 @@ function resetInvestigation() {
   state.queryContext = null;
   state.layerSearchQuery = "";
   state.layerSearchOpen = false;
-  state.queryLayerSearchQuery = "";
   setPromptOptionsOpen(false);
   closeQueryLayersModal();
   conversation.innerHTML = '<article class="message assistant-message"><div class="message-label">סוכן חקירה</div><p>אפשר להתחיל בשאלה פתוחה. אשתמש בכלי החיפוש, הזמן והמפה כדי לבנות תשובה שניתן לבדוק מול האירועים הגולמיים.</p></article>';
@@ -2612,19 +2606,6 @@ document.addEventListener("click", event => {
     state.layerSearchQuery = "";
     state.layerSearchOpen = false;
     openCatalogLayer(layerSelect.dataset.layerSelect);
-    return;
-  }
-  const queryLayerSelect = event.target.closest("[data-query-layer-select]");
-  if (queryLayerSelect) {
-    const layer = state.layers.find(item => item.id === queryLayerSelect.dataset.queryLayerSelect);
-    if (layer) {
-      layer.visible = true;
-      state.activeLayerId = layer.id;
-      state.rawOverlayMinimized = false;
-      renderAllViews();
-    }
-    state.queryLayerSearchQuery = "";
-    closeQueryLayersModal();
     return;
   }
   const sourceVisibilityBtn = event.target.closest(".source-visibility-btn");
@@ -2755,11 +2736,6 @@ document.addEventListener("input", event => {
     if (layer) updateDraftFilterValue(layer, Number(event.target.dataset.filterIndex), event.target.value);
     return;
   }
-  if (event.target === queryLayersSearch) {
-    state.queryLayerSearchQuery = event.target.value;
-    renderQueryLayersModal();
-    return;
-  }
   if (event.target !== layerSelectorSearch) return;
   state.layerSearchQuery = event.target.value;
   state.layerSearchOpen = true;
@@ -2794,26 +2770,6 @@ document.addEventListener("keydown", event => {
       applied ? renderAllViews() : renderEvidence();
     }
     return;
-  }
-  if (event.target === queryLayersSearch) {
-    if (event.key === "Escape") {
-      event.preventDefault();
-      closeQueryLayersModal();
-      return;
-    }
-    if (event.key === "Enter") {
-    const [firstMatch] = queryLayerModalLayers();
-    if (firstMatch) {
-      event.preventDefault();
-      firstMatch.visible = true;
-      state.activeLayerId = firstMatch.id;
-      state.rawOverlayMinimized = false;
-      renderAllViews();
-      state.queryLayerSearchQuery = "";
-      closeQueryLayersModal();
-    }
-      return;
-    }
   }
   if (event.target !== layerSelectorSearch) return;
   if (event.key === "Escape") {
@@ -2884,6 +2840,7 @@ promptOptionsButton.addEventListener("click", event => {
 });
 recordedClose.addEventListener("click", closeRecordedModal);
 queryLayersClose.addEventListener("click", closeQueryLayersModal);
+queryLayersSubmit.addEventListener("click", submitQueryLayerSelection);
 initPanelResizers();
 
 async function boot() {

@@ -6,7 +6,7 @@
   <title>סביבת חקירה מונחית סוכן</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="./vendor/maplibre-gl.css">
-  <link rel="stylesheet" href="./styles.css?v=72">
+  <link rel="stylesheet" href="./styles.css?v=73">
 </head>
 <body>
   <a class="help-button" href="./help.html" target="_blank" rel="noopener" aria-label="פתח עזרה">?</a>
@@ -131,21 +131,24 @@
     </section>
   </div>
 
-  <div id="queryLayersModal" class="modal-backdrop" hidden>
-    <section class="recorded-modal query-layers-modal" role="dialog" aria-modal="true" aria-labelledby="queryLayersModalTitle">
-      <div class="recorded-modal-header">
+  <div id="queryLayersModal" class="step-inject-backdrop" hidden>
+    <section class="step-inject-window" role="dialog" aria-modal="true" aria-labelledby="queryLayersModalTitle">
+      <div class="step-inject-header">
         <div>
-          <span class="eyebrow">שכבות זמינות</span>
-          <h2 id="queryLayersModalTitle">בחירת שכבה פתוחה</h2>
+          <span class="step-inject-kicker">שכבות פתוחות</span>
+          <h3 id="queryLayersModalTitle">בחירת שכבות לשאילתה</h3>
         </div>
         <button id="queryLayersClose" class="modal-close-button" type="button" aria-label="סגור" title="סגור">×</button>
       </div>
-      <div class="query-layers-body">
-        <div class="query-layers-search" role="combobox" aria-haspopup="listbox" aria-expanded="false" aria-owns="queryLayersList">
-          <input id="queryLayersSearch" type="search" autocomplete="off" spellcheck="false" placeholder="חפש שכבה פתוחה" aria-label="חיפוש שכבה פתוחה" aria-controls="queryLayersList">
-          <div id="queryLayersStatus" class="layer-selector-status" aria-live="polite">טוען שכבות</div>
+      <div class="step-inject-body">
+        <div class="form-group" id="queryLayersGroup">
+          <label>בסס על שכבות:</label>
+          <div id="queryLayersList" class="step-inject-layer-list"></div>
         </div>
-        <div id="queryLayersList" class="query-layers-list" role="listbox" aria-label="שכבות זמינות"></div>
+      </div>
+      <div class="step-inject-footer">
+        <div id="queryLayersError" class="step-inject-error" hidden></div>
+        <button id="queryLayersSubmit" type="button" class="primary-filter-action">בחר שכבות</button>
       </div>
     </section>
   </div>
@@ -183,6 +186,6 @@
   </div>
 
   <script src="./vendor/maplibre-gl.js"></script>
-  <script src="./app.js?v=94"></script>
+  <script src="./app.js?v=95"></script>
 </body>
 </html>

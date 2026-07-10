@@ -12,7 +12,7 @@ Implemented as a focused UI slice on 2026-07-10.
 ## What changed
 - The prompt-area `+` control now opens an options menu.
 - `הקלטות` opens the existing saved/replay investigation modal.
-- `שכבות` opens a layer-selection modal showing only currently open table-capable layers, matching the step-ingestion selector behavior.
+- `שכבות` opens the same floating checkbox-window UX as step ingestion, showing only currently open table-capable layers.
 - Selecting a layer focuses that already-open layer in the existing additive layer/tab UI.
 
 ## Current blockers

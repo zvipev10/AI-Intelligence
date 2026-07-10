@@ -15,8 +15,8 @@ Add prompt-area `+` options for saved runs and layer selection.
 ## Implementation
 - Converted the old direct saved-run `+` button into a menu trigger.
 - Added menu actions for `הקלטות` and `שכבות`.
-- Added a layer-selection modal that shows only currently open table-capable layers, matching the step-ingestion layer selector.
-- Bumped cache versions to `app.js?v=94` and `styles.css?v=72`.
+- Added a layer-selection modal that uses the same floating checkbox-window UX as step ingestion and shows only currently open table-capable layers.
+- Bumped cache versions to `app.js?v=95` and `styles.css?v=73`.
 
 ## Validation
 - `git diff --check` passed.
