@@ -7,7 +7,7 @@ Multi-Layer Query Filtering (`multi-layer-query-filtering`)
 Final handoff and merge.
 
 ## Overall status
-Slice 5 cross-layer validation passed, Product approved `checkpoint-013.md`, final handoff is complete, and the capability has been merged to `main`.
+Slice 5 cross-layer validation passed, Product approved `checkpoint-013.md`, final handoff is complete, and the capability has been merged to `main`. Post-merge checkpoint `checkpoint-014.md` fixes selected-layer context propagation into agent prompts.
 
 ## Who needs to act now
 
@@ -25,9 +25,16 @@ Slice 5 cross-layer validation passed, Product approved `checkpoint-013.md`, fin
 | Development/QA | Complete | Executed Slice 5 cross-layer validation in `checkpoint-013.md`; all runner checks passed. | Done |
 | Product/QA/Development | Complete | Approved `checkpoint-013.md` and authorized final handoff / merge to `main`. | Done |
 | Development | Complete | Merged `codex-ai-workflow-infrastructure` into `main`. | Done |
+| Development | Complete | Fixed selected-layer context propagation into normal agent prompt requests in `checkpoint-014.md`. | Done |
 | Architecture/Security | Not blocking | Review API endpoint shape and authorization assumptions if this pattern will continue beyond the local POC. | Before productionizing |
 
 ## Latest change since previous review
+Post-merge bugfix `checkpoint-014.md`:
+- Selected visible table layers are now serialized into compact agent context for normal prompts.
+- The hidden agent prompt includes layer label, kind, catalog ID, source type, counts, applied filters, and sample IDs.
+- The same data is sent as `investigation_state.selected_layers` and rendered by the server into Hermes instructions.
+- User-visible prompt text remains clean.
+
 Product approved `checkpoint-013.md` on 2026-07-09 and authorized final handoff and merge to `main`.
 
 Final handoff is complete in `handoff-summary.md`.
@@ -148,6 +155,7 @@ GitHub issue: #3. Local issue body: `issues/000-parent-capability.md`.
 - QA review: `qa-review.md`
 - Execution plan: `execution-plan.md`
 - Latest checkpoint: `checkpoint-013.md`
+- Post-merge hotfix checkpoint: `checkpoint-014.md`
 - Handoff: `handoff-summary.md`
 
 ## Gate checklist

@@ -14,6 +14,8 @@ Accepted and merged to `main`.
 
 Product approved `checkpoint-013.md` on 2026-07-09 and authorized final handoff and merge to `main`.
 
+Post-merge update on 2026-07-10: `checkpoint-014.md` fixes selected-layer context propagation so normal agent prompts include the selected visible layer context.
+
 ## Goal
 Deliver a standalone layer-selection and per-layer filtering workflow that is independent from chat/agent results and reuses the existing layer presentation components.
 
@@ -32,6 +34,7 @@ Deliver a standalone layer-selection and per-layer filtering workflow that is in
 - Applied filters update table, map, timeline, and filtered/original counts where supported.
 - Closing a layer discards that layer's filter state.
 - The mobile filter panel opens as a floating window above the active map/timeline surface.
+- Normal agent prompts include selected visible layer context in the hidden agent request and structured investigation state.
 
 ## Acceptance criteria status
 Accepted.
@@ -61,6 +64,9 @@ Validated behavior:
 
 Latest validation checkpoint:
 - `checkpoint-013.md`
+
+Post-merge hotfix checkpoint:
+- `checkpoint-014.md`
 
 ## Tests/checks
 Final validation evidence:
@@ -121,6 +127,7 @@ Key accepted MVP decisions:
 - Filter labels are raw field names.
 - No OR logic, nested groups, typed operators, value autocomplete, saved filters, pagination, or server-side filtering.
 - Final Slice 5 validation ran locally with deterministic map tile stubbing; Slice 4 VM smoke validated the deployed app version.
+- Selected-layer prompt context uses capped sample IDs for large layers; the agent receives counts and a partial-sample marker when applicable.
 
 ## Follow-up tasks
 - Consider row limits, pagination, or server-side filtering before larger datasets.

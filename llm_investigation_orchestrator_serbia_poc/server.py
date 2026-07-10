@@ -1357,6 +1357,49 @@ class HermesClient:
         if leads:
             lines.append(f"כיווני המשך פתוחים: {'; '.join(leads)}")
 
+        selected_layers = inv_state.get("selected_layers") or []
+        if selected_layers:
+            lines.append("שכבות שנבחרו בממשק לפני שליחת השאלה:")
+            for layer in selected_layers[:8]:
+                if not isinstance(layer, dict):
+                    continue
+                label = str(layer.get("label") or layer.get("id") or "שכבה ללא שם")
+                kind = str(layer.get("kind") or "unknown")
+                catalog_id = str(layer.get("catalog_layer_id") or "")
+                filtered_count = layer.get("filtered_count")
+                original_count = layer.get("original_count")
+                count_text = ""
+                if isinstance(filtered_count, int) and isinstance(original_count, int):
+                    count_text = f"{filtered_count}/{original_count}" if filtered_count != original_count else str(original_count)
+                source_type = str(layer.get("source_type") or "").strip()
+                filters = layer.get("applied_filters") or []
+                filter_parts = []
+                if isinstance(filters, list):
+                    for item in filters[:8]:
+                        if not isinstance(item, dict):
+                            continue
+                        field = str(item.get("field") or "").strip()
+                        value = str(item.get("value") or "").strip()
+                        if field and value:
+                            filter_parts.append(f"{field} contains {value}")
+                sample_ids = layer.get("sample_ids") or []
+                ids_text = ", ".join(str(item) for item in sample_ids[:80] if item)
+                parts = [f"- {label}", f"kind={kind}"]
+                if catalog_id:
+                    parts.append(f"catalog_layer_id={catalog_id}")
+                if source_type:
+                    parts.append(f"source_type={source_type}")
+                if count_text:
+                    parts.append(f"count={count_text}")
+                if filter_parts:
+                    parts.append(f"filters={'; '.join(filter_parts)}")
+                if ids_text:
+                    parts.append(f"sample_ids={ids_text}")
+                    if isinstance(filtered_count, int) and filtered_count > len(sample_ids):
+                        parts.append("sample_ids_are_partial=true")
+                lines.append(" | ".join(parts))
+            lines.append("כאשר שאלת האנליסט מתייחסת לשכבות, לתוצאות שנבחרו, או להקשר הנוכחי בממשק, השתמש בשכבות האלה כמסגרת צמצום ולא כנתון רק לתצוגה.")
+
         lines.append("--- המשך החקירה משאלת האנליסט הנוכחית ---")
         return "\n".join(lines)
 

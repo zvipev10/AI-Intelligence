@@ -750,6 +750,89 @@ function itemsForLayerPresentation(layer) {
   return items.filter(item => filters.every(filter => filterMatchesItem(item, filter)));
 }
 
+function identifiersForLayerContext(layer, items, limit = 80) {
+  const idFields = layer?.kind === "entity_metadata"
+    ? ["entity_id"]
+    : layer?.kind === "location_metadata" || layer?.kind === "locations"
+      ? ["location_id", "key"]
+      : ["event_id", "location_id", "entity_id"];
+  const seen = new Set();
+  const ids = [];
+  items.forEach(item => {
+    idFields.forEach(field => {
+      const value = item?.[field];
+      if (!value || seen.has(value) || ids.length >= limit) return;
+      seen.add(value);
+      ids.push(value);
+    });
+  });
+  return ids;
+}
+
+function selectedLayerContextForAgent() {
+  return state.layers
+    .filter(layer => layer.visible && layer.capabilities?.table)
+    .slice(0, 8)
+    .map(layer => {
+      const filteredItems = itemsForLayerPresentation(layer);
+      const appliedFilters = validAppliedFilters(layer).map(filter => ({
+        field: filter.field,
+        operator: "contains",
+        value: stringifyFilterValue(filter.value)
+      }));
+      const firstItem = filteredItems[0] || (layer.items || [])[0] || {};
+      const sourceType = layer.source_type
+        || firstItem.source_type
+        || (String(layer.catalogLayerId || "").startsWith("events:") ? String(layer.catalogLayerId).slice("events:".length) : "");
+      return {
+        id: layer.id,
+        label: layer.label,
+        kind: layer.kind,
+        catalog_layer_id: layer.catalogLayerId || layer.dataId || "",
+        source_type: sourceType,
+        original_count: (layer.items || []).length,
+        filtered_count: filteredItems.length,
+        applied_filters: appliedFilters,
+        sample_ids: identifiersForLayerContext(layer, filteredItems)
+      };
+    });
+}
+
+function selectedLayerContextText(layers) {
+  if (!layers.length) return "";
+  const lines = [
+    "הקשר שכבות שנבחרו בממשק:",
+    "התייחס לשכבות אלה כהקשר ולמסננים שהאנליסט בחר לפני שליחת השאלה. אם השאלה מתייחסת לתוצאות/שכבות/הבחירה הנוכחית, השתמש בהן כדי לצמצם את החיפוש."
+  ];
+  layers.forEach(layer => {
+    const count = layer.applied_filters.length
+      ? `${layer.filtered_count}/${layer.original_count}`
+      : String(layer.original_count);
+    const source = layer.source_type ? `, source_type=${layer.source_type}` : "";
+    const filters = layer.applied_filters.length
+      ? `, filters=${layer.applied_filters.map(filter => `${filter.field} contains ${filter.value}`).join("; ")}`
+      : "";
+    const ids = layer.sample_ids.length ? `, sample_ids=${layer.sample_ids.join(", ")}` : "";
+    const more = layer.filtered_count > layer.sample_ids.length ? `, sample_ids_are_partial=true` : "";
+    lines.push(`- ${layer.label} (${layer.kind}, ${layer.catalog_layer_id || "no-catalog-id"}): ${count} רשומות${source}${filters}${ids}${more}`);
+  });
+  return lines.join("\n");
+}
+
+function promptForAgentWithSelectedLayers(prompt, selectedLayers) {
+  const context = selectedLayerContextText(selectedLayers);
+  return context ? `${prompt}\n\n${context}` : prompt;
+}
+
+function investigationStateForPrompt(selectedLayers) {
+  if (!selectedLayers.length) return null;
+  const userTurns = state.history.filter(item => item.role === "user").length + 1;
+  return {
+    turn: userTurns,
+    selected_layers: selectedLayers
+  };
+}
+
 function draftFiltersForLayer(layer) {
   ensureLayerFilterState(layer);
   return (layer?.draftFilters || []).filter(filter => filter?.field || normalizeFilterText(filter?.value));
@@ -2129,6 +2212,9 @@ async function loadRecordedQuestions() {
 async function runPrompt(prompt) {
   const clean = prompt.trim();
   if (!clean || state.busy) return;
+  const selectedLayers = selectedLayerContextForAgent();
+  const agentPrompt = promptForAgentWithSelectedLayers(clean, selectedLayers);
+  const investigationState = investigationStateForPrompt(selectedLayers);
   const clientStarted = performance.now();
   let firstLiveStepAt = null;
   appendMessage("user", `<p>${escapeHtml(clean)}</p>`);
@@ -2159,9 +2245,10 @@ async function runPrompt(prompt) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        prompt: clean,
+        prompt: agentPrompt,
         history: state.history,
-        investigation_id: state.investigationId
+        investigation_id: state.investigationId,
+        investigation_state: investigationState
       })
     });
     progressTimer = setInterval(pollLiveSteps, 1800);
