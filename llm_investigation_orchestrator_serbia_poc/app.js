@@ -212,6 +212,9 @@ const resultCount = document.getElementById("resultCount");
 const sendButton = document.getElementById("sendButton");
 const promptOptionsButton = document.getElementById("promptOptionsButton");
 const promptOptionsMenu = document.getElementById("promptOptionsMenu");
+const selectedLayersButton = document.getElementById("selectedLayersButton");
+const selectedLayersLabel = document.getElementById("selectedLayersLabel");
+const selectedLayersSummary = document.getElementById("selectedLayersSummary");
 const recordedModal = document.getElementById("recordedModal");
 const recordedClose = document.getElementById("recordedClose");
 const recordedList = document.getElementById("recordedList");
@@ -798,6 +801,23 @@ function selectedLayerContextForAgent() {
     });
 }
 
+function renderSelectedLayersButton() {
+  if (!selectedLayersButton || !selectedLayersLabel || !selectedLayersSummary) return;
+  const layers = visibleLayers("table");
+  selectedLayersButton.classList.toggle("has-layers", layers.length > 0);
+  if (!layers.length) {
+    selectedLayersLabel.textContent = "לא נבחרו שכבות";
+    selectedLayersSummary.textContent = "בחר שכבות לשאילתה";
+    selectedLayersButton.title = "בחר שכבות לשאילתה";
+    return;
+  }
+  const preview = layers.slice(0, 2).map(layer => layer.label).join(" · ");
+  const remaining = layers.length > 2 ? ` +${layers.length - 2}` : "";
+  selectedLayersLabel.textContent = `${layers.length.toLocaleString("he-IL")} שכבות נבחרו`;
+  selectedLayersSummary.textContent = `${preview}${remaining}`;
+  selectedLayersButton.title = `שנה שכבות לשאילתה: ${layers.map(layer => layer.label).join(", ")}`;
+}
+
 function selectedLayerContextText(layers) {
   if (!layers.length) return "";
   const lines = [
@@ -1036,7 +1056,7 @@ function renderLayerSelector() {
 
 function renderQueryLayersModal() {
   if (!queryLayersModal || !queryLayersList || !queryLayersSubmit || !queryLayersError) return;
-  const openLayers = visibleLayers("table");
+  const openLayers = state.layers.filter(layer => layer.capabilities.table);
   queryLayersError.hidden = true;
   queryLayersError.textContent = "";
   queryLayersSubmit.disabled = openLayers.length === 0;
@@ -1048,7 +1068,7 @@ function renderQueryLayersModal() {
   queryLayersList.innerHTML = openLayers.map(layer => {
     return `
     <label class="step-inject-layer-item" style="${layerColorStyle(layer)}">
-      <input type="checkbox" value="${escapeHtml(layer.id)}" checked>
+      <input type="checkbox" value="${escapeHtml(layer.id)}" ${layer.visible ? "checked" : ""}>
       <span class="step-inject-layer-color"></span>
       <span class="step-inject-layer-name">${escapeHtml(layer.label)}</span>
       <span class="step-inject-layer-count">${itemsForLayerPresentation(layer).length.toLocaleString("he-IL")}</span>
@@ -1615,7 +1635,7 @@ async function submitStepInject() {
     if (progressTimer) clearInterval(progressTimer);
     state.busy = false;
     sendButton.disabled = false;
-    sendButton.textContent = "שלח";
+    sendButton.textContent = "↑";
   }
 }
 
@@ -2132,7 +2152,7 @@ async function runSavedQuestion(savedId) {
     state.busy = false;
     sendButton.disabled = false;
     promptOptionsButton.disabled = false;
-    sendButton.textContent = "שלח";
+    sendButton.textContent = "↑";
   }
 }
 
@@ -2172,7 +2192,9 @@ function submitQueryLayerSelection() {
     queryLayersError.hidden = false;
     return;
   }
-  selectedLayers.forEach(layer => { layer.visible = true; });
+  state.layers.forEach(layer => {
+    if (layer.capabilities.table) layer.visible = checkedIds.has(layer.id);
+  });
   const firstTableLayer = selectedLayers.find(layer => layer.capabilities.table);
   if (firstTableLayer) state.activeLayerId = firstTableLayer.id;
   state.rawOverlayMinimized = false;
@@ -2284,7 +2306,7 @@ async function runPrompt(prompt) {
     if (progressTimer) clearInterval(progressTimer);
     state.busy = false;
     sendButton.disabled = false;
-    sendButton.textContent = "שלח";
+    sendButton.textContent = "↑";
   }
 }
 
@@ -2306,6 +2328,7 @@ function renderAllViews() {
   renderMap();
   renderTimeline();
   renderEvidence();
+  renderSelectedLayersButton();
   updateResultVisibilityButtons();
 }
 
@@ -2925,6 +2948,7 @@ promptOptionsButton.addEventListener("click", event => {
   event.stopPropagation();
   setPromptOptionsOpen(!state.promptOptionsOpen);
 });
+selectedLayersButton.addEventListener("click", openQueryLayersModal);
 recordedClose.addEventListener("click", closeRecordedModal);
 queryLayersClose.addEventListener("click", closeQueryLayersModal);
 queryLayersSubmit.addEventListener("click", submitQueryLayerSelection);

@@ -7,7 +7,7 @@ Multi-Layer Query Filtering (`multi-layer-query-filtering`)
 Final handoff and merge.
 
 ## Overall status
-Slice 5 cross-layer validation passed, Product approved `checkpoint-013.md`, final handoff is complete, and the capability has been merged to `main`. Post-merge checkpoint `checkpoint-014.md` fixes selected-layer context propagation into agent prompts.
+Slice 5 cross-layer validation passed, Product approved `checkpoint-013.md`, final handoff is complete, and the capability has been merged to `main`. Post-merge checkpoints `checkpoint-014.md` and `checkpoint-015.md` fix selected-layer prompt context propagation, results-table scrolling/tabs, and the prompt-composer selected-layers UX.
 
 ## Who needs to act now
 
@@ -26,9 +26,17 @@ Slice 5 cross-layer validation passed, Product approved `checkpoint-013.md`, fin
 | Product/QA/Development | Complete | Approved `checkpoint-013.md` and authorized final handoff / merge to `main`. | Done |
 | Development | Complete | Merged `codex-ai-workflow-infrastructure` into `main`. | Done |
 | Development | Complete | Fixed selected-layer context propagation into normal agent prompt requests in `checkpoint-014.md`. | Done |
+| Development | Complete | Fixed results-table scrolling/tabs and redesigned the prompt composer in `checkpoint-015.md`. | Done |
 | Architecture/Security | Not blocking | Review API endpoint shape and authorization assumptions if this pattern will continue beyond the local POC. | Before productionizing |
 
 ## Latest change since previous review
+Post-merge UI regression fix `checkpoint-015.md`:
+- Results-table layer tabs now stay in one scrollable row instead of wrapping/clipping in the fixed-height header.
+- The results table now exposes horizontal scrolling across viewport sizes.
+- The prompt composer was redesigned as a Codex-style input with textarea above plus/send controls and a selected-layers pill.
+- The selected-layers pill opens the layer-selection window and reflects visible table layers that are sent to the agent.
+- Local browser validation passed at `390x844` and `1366x900`; console warnings/errors were zero.
+
 Post-merge bugfix `checkpoint-014.md`:
 - Selected visible table layers are now serialized into compact agent context for normal prompts.
 - The hidden agent prompt includes layer label, kind, catalog ID, source type, counts, applied filters, and sample IDs.
@@ -154,8 +162,9 @@ GitHub issue: #3. Local issue body: `issues/000-parent-capability.md`.
 - UX review: `ux-review.md`
 - QA review: `qa-review.md`
 - Execution plan: `execution-plan.md`
-- Latest checkpoint: `checkpoint-013.md`
+- Latest checkpoint: `checkpoint-015.md`
 - Post-merge hotfix checkpoint: `checkpoint-014.md`
+- Post-merge UI regression checkpoint: `checkpoint-015.md`
 - Handoff: `handoff-summary.md`
 
 ## Gate checklist
