@@ -1379,7 +1379,7 @@ class HermesClient:
                 continue
         return self.summarize_audit(audit_records)
 
-    def investigate(self, prompt, history, investigation_state=None, investigation_id=None, is_continuation=False):
+    def investigate(self, prompt, history, investigation_state=None, investigation_id=None, is_continuation=False, continuation_context=None):
         global ACTIVE_RUN_STARTED_AT
         overall_started = time.perf_counter()
         performance = {
@@ -1388,13 +1388,24 @@ class HermesClient:
             "tools": {},
         }
         audit_path = REMOTE_AUDIT_PATH
+        original_classification = {}
+        if isinstance(continuation_context, dict):
+            original_classification = continuation_context.get("original_classification") or {}
+        original_classification_summary = ""
+        if isinstance(original_classification, dict):
+            original_classification_summary = str(original_classification.get("summary") or "").strip()
         if is_continuation:
+            preserved_context = (
+                f" מסגרת הסיווג המקורית לשימור: {original_classification_summary}"
+                if original_classification_summary else ""
+            )
             classify_instruction = (
                 "זהו המשך של חקירה פעילה — אל תפעיל classify_question_intent ואל תתחיל חקירה חדשה."
                 " הקשר המלא של החקירה נמצא בהיסטוריית השיחה שסופקה, כולל תוצאת classify_question_intent"
                 " המקורית שקבעה את recommended_mode ו-tool_budget. המשך לפעול לפי אותם mode ו-budget"
                 " שנקבעו בסיווג המקורי. המשך ישירות מהנקודה שבה הסתיימה החקירה הקודמת בהתבסס על"
-                " ההוראה החדשה שסופקה ב-prompt.\n"
+                " ההוראה החדשה שסופקה ב-prompt."
+                f"{preserved_context}\n"
             )
         else:
             classify_instruction = (
@@ -1868,6 +1879,7 @@ class Handler(SimpleHTTPRequestHandler):
                 investigation_state=request.get("investigation_state"),
                 investigation_id=request.get("investigation_id"),
                 is_continuation=bool(request.get("is_continuation")),
+                continuation_context=request.get("continuation_context"),
             )
             self.send_json(200, result)
         except Exception as exc:

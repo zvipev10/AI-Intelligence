@@ -1342,8 +1342,26 @@ function closeStepInjectModal() {
   if (stepInjectModal) stepInjectModal.hidden = true;
 }
 
-function buildContinuationPrompt(instruction, selectedLayers) {
+function originalClassificationContext(steps) {
+  const classificationStep = (steps || []).find(step => step?.tool === "classify_question_intent");
+  if (!classificationStep) return null;
+  const text = [classificationStep.action, classificationStep.result].filter(Boolean).join(" ");
+  return {
+    action: classificationStep.action || "",
+    result: classificationStep.result || "",
+    summary: text
+  };
+}
+
+function buildContinuationPrompt(instruction, selectedLayers, classificationContext = null) {
   const lines = [`הוראה מהמשתמש: ${instruction}`];
+  if (classificationContext?.summary) {
+    lines.push(
+      "\nמסגרת החקירה המקורית לשימור:",
+      classificationContext.summary,
+      "אין לסווג מחדש את השאלה. המשך לפי אותו recommended_mode ואותו tool_budget שנקבעו בסיווג המקורי."
+    );
+  }
   if (selectedLayers.length) {
     lines.push("\nשכבות שנבחרו להמשך:");
     selectedLayers.forEach(layer => {
@@ -1373,8 +1391,6 @@ async function submitStepInject() {
   );
   const selectedLayers = state.layers.filter(l => checkedIds.has(l.id));
 
-  const continuationPrompt = buildContinuationPrompt(instruction, selectedLayers);
-
   stepInjectSubmit.disabled = true;
   stepInjectSubmit.textContent = "שולח...";
   stepInjectError.hidden = true;
@@ -1390,6 +1406,8 @@ async function submitStepInject() {
   const priorSteps = fromStep > 0 ? allPriorSteps.slice(0, fromStep) : allPriorSteps;
   const priorResult = state.lastResult;
   const baseStepCount = priorSteps.length;
+  const classificationContext = originalClassificationContext(priorSteps.length ? priorSteps : allPriorSteps);
+  const continuationPrompt = buildContinuationPrompt(instruction, selectedLayers, classificationContext);
 
   // Start a new labeled continuation bubble
   startAssistantResearchMessage("Hermes ממשיך את החקירה...");
@@ -1441,6 +1459,10 @@ async function submitStepInject() {
         prompt: continuationPrompt,
         history: state.history,
         investigation_id: state.investigationId,
+        continuation_context: {
+          original_classification: classificationContext,
+          from_step: fromStep || null
+        },
         is_continuation: true
       })
     });
@@ -1597,16 +1619,22 @@ function updateStepVisibilityButtons() {
 }
 
 function resolvedStepSourceId(step) {
-  // After investigation completes, state.lastResult has the authoritative run_id.
-  // Prefer re-deriving from lastResult to avoid stale investigationId-based sourceIds.
+  if (step.__sourceId) {
+    const sourceId = sanitizeLayerKey(step.__sourceId);
+    const oldLiveBase = sanitizeLayerKey(state.investigationId);
+    if (state.lastResult?.run_id && oldLiveBase && sourceId.includes(oldLiveBase)) {
+      return sanitizeLayerKey(stepSourceId(state.lastResult, step.__stepNumber));
+    }
+    return sourceId;
+  }
   if (state.lastResult && step.__stepNumber) {
     return sanitizeLayerKey(stepSourceId(state.lastResult, step.__stepNumber));
   }
-  return sanitizeLayerKey(step.__sourceId || stepSourceId(state.lastResult || state.investigationId, step.__stepNumber));
+  return sanitizeLayerKey(stepSourceId(state.lastResult || state.investigationId, step.__stepNumber));
 }
 
 function toggleStepVisibility(step, btn) {
-  const sourceId = resolvedStepSourceId(step);
+  const sourceId = sanitizeLayerKey(btn?.dataset.sourceId || resolvedStepSourceId(step));
   const sourceLayers = state.layers.filter(layer => layer.sourceId === sourceId);
   const anyVisible = sourceLayers.some(layer => layer.visible);
   if (!sourceLayers.length || !anyVisible) {
@@ -1862,6 +1890,11 @@ function applyHermesResult(result, prompt, options = {}) {
           if (layer.id && layer.id.includes(oldBase)) {
             layer.id = layer.id.replace(oldBase, newBase);
           }
+        }
+      });
+      document.querySelectorAll(".step-visibility-btn").forEach(btn => {
+        if (btn.dataset.sourceId && btn.dataset.sourceId.includes(oldBase)) {
+          btn.dataset.sourceId = btn.dataset.sourceId.replace(oldBase, newBase);
         }
       });
     }
