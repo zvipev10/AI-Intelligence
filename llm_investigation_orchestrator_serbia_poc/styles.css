@@ -85,7 +85,7 @@ h3 { margin: 0; font-size: 14px; }
 .prompt-options { position: relative; }
 .prompt-icon-button { display: inline-grid; place-items: center; flex: 0 0 auto; width: 36px; height: 36px; padding: 0; overflow: hidden; border: 1px solid transparent; border-radius: 50%; background: transparent; color: var(--muted); font-size: 22px; line-height: 1; white-space: nowrap; transition: background .15s, border-color .15s, color .15s, transform .15s; }
 .prompt-icon-button:hover:not(:disabled), .prompt-icon-button:focus-visible { background: rgba(255,255,255,.07); color: var(--ink); outline: none; }
-.prompt-form .prompt-options-button { color: var(--muted); font-size: 25px; font-weight: 400; }
+.prompt-form .prompt-options-button { display: inline-flex; align-items: center; justify-content: center; color: var(--muted); font-size: 25px; font-weight: 400; line-height: 0; padding-bottom: 2px; }
 .prompt-form .prompt-options-button:hover, .prompt-form .prompt-options-button[aria-expanded="true"] { background: rgba(255,255,255,.07); color: var(--ink); }
 .send-icon-button { order: -1; background: #e8eaed; color: #0f1115; font-size: 20px; font-weight: 800; }
 .send-icon-button:hover:not(:disabled), .send-icon-button:focus-visible { background: #fff; color: #0f1115; transform: translateY(-1px); outline: none; }
