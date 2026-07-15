@@ -1561,7 +1561,7 @@ async function submitStepInject() {
 
   state.busy = true;
   sendButton.disabled = true;
-  sendButton.textContent = "מחקר...";
+  sendButton.textContent = "↑";
 
   // Snapshot only steps up to (and including) the step that triggered the continuation
   const fromStep = parseInt(stepInjectModal.dataset.fromStep, 10) || 0;
@@ -2140,7 +2140,7 @@ async function runSavedQuestion(savedId) {
   state.busy = true;
   sendButton.disabled = true;
   promptOptionsButton.disabled = true;
-  sendButton.textContent = "מציג...";
+  sendButton.textContent = "↑";
   try {
     const response = await fetch(`/api/saved-question?id=${encodeURIComponent(savedId)}`, { cache: "no-store" });
     const saved = await response.json();
@@ -2250,7 +2250,7 @@ async function runPrompt(prompt) {
   startAssistantResearchMessage();
   state.busy = true;
   sendButton.disabled = true;
-  sendButton.textContent = "חוקר...";
+  sendButton.textContent = "↑";
   suggestions.innerHTML = "";
   let liveStepCount = 0;
   let progressTimer = null;
