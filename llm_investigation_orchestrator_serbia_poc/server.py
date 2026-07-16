@@ -1679,6 +1679,73 @@ class HermesClient:
                 lines.append(" | ".join(parts))
             lines.append("כאשר שאלת האנליסט מתייחסת לשכבות, לתוצאות שנבחרו, או להקשר הנוכחי בממשק, השתמש בשכבות האלה כמסגרת צמצום ולא כנתון רק לתצוגה.")
 
+        saved_memory = inv_state.get("saved_memory") or {}
+        if isinstance(saved_memory, dict):
+            chat_summaries = saved_memory.get("chat_summaries") or []
+            if chat_summaries:
+                lines.append("זיכרון חקירה שנשמר ידנית על ידי האנליסט - ממצאי שיחה:")
+                for item in chat_summaries[:8]:
+                    if not isinstance(item, dict):
+                        continue
+                    prompt = str(item.get("prompt") or "").strip()
+                    summary = str(item.get("answer_summary") or item.get("answer_preview") or "").strip()
+                    evidence_ids = item.get("evidence_ids") or []
+                    ids_text = ", ".join(str(eid) for eid in evidence_ids[:60] if eid)
+                    parts = ["- ממצא שמור"]
+                    if prompt:
+                        parts.append(f"שאלה={prompt[:500]}")
+                    if summary:
+                        parts.append(f"סיכום={summary[:800]}")
+                    if ids_text:
+                        parts.append(f"evidence_ids={ids_text}")
+                    lines.append(" | ".join(parts))
+
+            memory_layers = saved_memory.get("layers") or []
+            if memory_layers:
+                lines.append("זיכרון חקירה שנשמר ידנית על ידי האנליסט - שכבות ומסננים:")
+                for layer in memory_layers[:12]:
+                    if not isinstance(layer, dict):
+                        continue
+                    label = str(layer.get("label") or layer.get("layer_id") or "שכבה שמורה")
+                    kind = str(layer.get("layer_kind") or layer.get("kind") or "unknown")
+                    catalog_id = str(layer.get("catalog_layer_id") or "")
+                    source_type = str(layer.get("source_type") or "").strip()
+                    filtered_count = layer.get("filtered_count")
+                    original_count = layer.get("original_count")
+                    count_text = ""
+                    if isinstance(filtered_count, int) and isinstance(original_count, int):
+                        count_text = f"{filtered_count}/{original_count}" if filtered_count != original_count else str(original_count)
+                    filters = layer.get("applied_filters") or []
+                    filter_parts = []
+                    if isinstance(filters, list):
+                        for item in filters[:8]:
+                            if not isinstance(item, dict):
+                                continue
+                            field = str(item.get("field") or "").strip()
+                            value = str(item.get("value") or "").strip()
+                            if field and value:
+                                filter_parts.append(f"{field} contains {value}")
+                    sample_ids = layer.get("sample_ids") or []
+                    ids_text = ", ".join(str(item) for item in sample_ids[:80] if item)
+                    restore_status = str(layer.get("restore_status") or "").strip()
+                    parts = [f"- {label}", f"kind={kind}"]
+                    if catalog_id:
+                        parts.append(f"catalog_layer_id={catalog_id}")
+                    if source_type:
+                        parts.append(f"source_type={source_type}")
+                    if count_text:
+                        parts.append(f"count={count_text}")
+                    if filter_parts:
+                        parts.append(f"filters={'; '.join(filter_parts)}")
+                    if ids_text:
+                        parts.append(f"sample_ids={ids_text}")
+                        if isinstance(filtered_count, int) and filtered_count > len(sample_ids):
+                            parts.append("sample_ids_are_partial=true")
+                    if restore_status:
+                        parts.append(f"restore_status={restore_status}")
+                    lines.append(" | ".join(parts))
+                lines.append("זיכרון זה נשמר ידנית; כאשר השאלה מתייחסת לחקירה הקודמת, המשך ממנו במקום להתחיל מאפס.")
+
         lines.append("--- המשך החקירה משאלת האנליסט הנוכחית ---")
         return "\n".join(lines)
 

@@ -183,6 +183,10 @@ const state = {
   investigationId: createInvestigationId(),
   investigationName: DEFAULT_INVESTIGATION_NAME,
   investigations: [],
+  investigationMemory: null,
+  investigationMemoryLoading: false,
+  investigationMemoryError: "",
+  investigationMemoryLoadToken: 0,
   investigationSelectorOpen: false,
   recordedQuestions: [],
   savedQuestions: [],
@@ -812,6 +816,143 @@ function selectedLayerContextForAgent() {
     });
 }
 
+function normalizeMemoryList(value) {
+  return Array.isArray(value) ? value.filter(item => item && typeof item === "object") : [];
+}
+
+function currentSavedMemory() {
+  const memory = state.investigationMemory?.memory;
+  return memory && typeof memory === "object" ? memory : { chat_summaries: [], layers: [] };
+}
+
+function normalizeSavedMemoryForAgent(memory = currentSavedMemory()) {
+  const chatSummaries = normalizeMemoryList(memory.chat_summaries).slice(-8).map(item => ({
+    id: item.id || "",
+    kind: item.kind || "chat_result_summary",
+    saved_at_utc: item.saved_at_utc || "",
+    prompt: item.prompt || "",
+    answer_summary: item.answer_summary || item.answer_preview || "",
+    answer_preview: item.answer_preview || "",
+    source_run_id: item.source_run_id || "",
+    recommended_view: item.recommended_view || "",
+    step_count: Number(item.step_count || 0),
+    evidence_ids: Array.isArray(item.evidence_ids) ? item.evidence_ids.slice(0, 80) : []
+  }));
+  const layers = normalizeMemoryList(memory.layers).slice(-12).map(item => ({
+    id: item.id || "",
+    kind: item.kind || "layer_filter_state",
+    saved_at_utc: item.saved_at_utc || "",
+    layer_id: item.layer_id || "",
+    label: item.label || "",
+    layer_kind: item.layer_kind || item.kind || "",
+    catalog_layer_id: item.catalog_layer_id || "",
+    data_id: item.data_id || "",
+    source_id: item.source_id || "",
+    source_label: item.source_label || "",
+    source_type: item.source_type || "",
+    original_count: Number(item.original_count || 0),
+    filtered_count: Number(item.filtered_count || 0),
+    applied_filters: normalizeMemoryList(item.applied_filters).slice(0, 20).map(filter => ({
+      field: filter.field || "",
+      operator: filter.operator || "contains",
+      value: stringifyFilterValue(filter.value)
+    })).filter(filter => filter.field && filter.value),
+    sample_ids: Array.isArray(item.sample_ids) ? item.sample_ids.slice(0, 80) : [],
+    restore_status: item.restore_status || ""
+  }));
+  return {
+    chat_summaries: chatSummaries,
+    layers
+  };
+}
+
+function investigationMemoryForAgent() {
+  const memory = normalizeSavedMemoryForAgent();
+  if (!memory.chat_summaries.length && !memory.layers.length) return null;
+  return memory;
+}
+
+function filtersFromSavedMemory(savedLayer) {
+  return normalizeMemoryList(savedLayer?.applied_filters).map(filter => ({
+    id: createFilterId(),
+    field: filter.field || "",
+    value: stringifyFilterValue(filter.value)
+  })).filter(filter => filter.field && normalizeFilterText(filter.value));
+}
+
+function applySavedFiltersToLayer(layer, savedLayer) {
+  if (!layer) return;
+  ensureLayerFilterState(layer);
+  const filters = filtersFromSavedMemory(savedLayer);
+  layer.appliedFilters = cloneFilters(filters);
+  layer.draftFilters = cloneFilters(filters);
+  layer.filterError = "";
+  layer.investigation_memory_layer_id = savedLayer.id || true;
+}
+
+async function restoreMemorySavedLayers(memoryPayload, token) {
+  const savedLayers = normalizeMemoryList(memoryPayload?.memory?.layers);
+  if (!savedLayers.length) {
+    renderAllViews();
+    return;
+  }
+  const restoredMemoryLayers = [];
+  for (const savedLayer of savedLayers) {
+    if (token !== state.investigationMemoryLoadToken) return;
+    const catalogLayerId = savedLayer.catalog_layer_id || "";
+    if (!catalogLayerId) {
+      restoredMemoryLayers.push({ ...savedLayer, restore_status: "context_only" });
+      continue;
+    }
+    const openedLayer = await openCatalogLayer(catalogLayerId, {
+      silent: true,
+      savedLayer
+    });
+    restoredMemoryLayers.push({
+      ...savedLayer,
+      restore_status: openedLayer ? "opened" : "unavailable"
+    });
+  }
+  if (token !== state.investigationMemoryLoadToken) return;
+  const memory = memoryPayload.memory || {};
+  state.investigationMemory = {
+    ...memoryPayload,
+    memory: {
+      chat_summaries: normalizeMemoryList(memory.chat_summaries),
+      layers: restoredMemoryLayers
+    }
+  };
+  renderAllViews();
+  renderLayerSelector();
+  renderQueryLayersModal();
+}
+
+async function loadInvestigationMemory(options = {}) {
+  if (!state.investigationId) return null;
+  const token = ++state.investigationMemoryLoadToken;
+  state.investigationMemoryLoading = true;
+  state.investigationMemoryError = "";
+  try {
+    const response = await fetch(`/api/investigation-memory?id=${encodeURIComponent(state.investigationId)}`, { cache: "no-store" });
+    const payload = await response.json();
+    if (!response.ok) throw new Error(payload.error || "טעינת זיכרון החקירה נכשלה");
+    if (token !== state.investigationMemoryLoadToken) return null;
+    state.investigationMemory = payload;
+    if (options.restoreLayers) await restoreMemorySavedLayers(payload, token);
+    return payload;
+  } catch (error) {
+    if (token === state.investigationMemoryLoadToken) {
+      state.investigationMemoryError = error.message || "טעינת זיכרון החקירה נכשלה";
+      state.investigationMemory = null;
+    }
+    return null;
+  } finally {
+    if (token === state.investigationMemoryLoadToken) {
+      state.investigationMemoryLoading = false;
+    }
+  }
+}
+
 function layerMemoryPayload(layer) {
   ensureLayerFilterState(layer);
   const filteredItems = itemsForLayerPresentation(layer);
@@ -934,12 +1075,13 @@ function promptForAgentWithSelectedLayers(prompt, selectedLayers) {
 }
 
 function investigationStateForPrompt(selectedLayers) {
-  if (!selectedLayers.length) return null;
+  const savedMemory = investigationMemoryForAgent();
+  if (!selectedLayers.length && !savedMemory) return null;
   const userTurns = state.history.filter(item => item.role === "user").length + 1;
-  return {
-    turn: userTurns,
-    selected_layers: selectedLayers
-  };
+  const invState = { turn: userTurns };
+  if (selectedLayers.length) invState.selected_layers = selectedLayers;
+  if (savedMemory) invState.saved_memory = savedMemory;
+  return invState;
 }
 
 function normalizeInvestigationName(name) {
@@ -1041,10 +1183,15 @@ function selectInvestigation(investigation, options = {}) {
   state.investigationId = investigation.id;
   state.investigationName = investigation.name;
   state.investigationSelectorOpen = false;
+  state.investigationMemoryLoadToken += 1;
+  state.investigationMemory = null;
+  state.investigationMemoryError = "";
+  state.investigationMemoryLoading = false;
   if (investigationInput) investigationInput.value = investigation.name;
   saveInvestigationRegistry();
   resetInvestigation({ keepInvestigation: true });
   renderInvestigationSelector();
+  loadInvestigationMemory({ restoreLayers: true });
   if (options.focusInput) investigationInput?.focus();
 }
 
@@ -1305,9 +1452,9 @@ async function loadLayerCatalog() {
   }
 }
 
-async function openCatalogLayer(layerId) {
+async function openCatalogLayer(layerId, options = {}) {
   const layer = state.layerCatalog.find(item => item.id === layerId);
-  if (!layer || state.openingLayerIds.has(layerId)) return;
+  if (!layer || state.openingLayerIds.has(layerId)) return null;
   const existing = state.layers.find(item => item.catalogLayerId === layerId);
   if (existing) {
     existing.visible = true;
@@ -1315,10 +1462,13 @@ async function openCatalogLayer(layerId) {
     state.rawOverlayMinimized = false;
     state.layerSearchQuery = "";
     state.layerSearchOpen = false;
-    renderAllViews();
-    renderLayerSelector();
-    renderQueryLayersModal();
-    return;
+    if (options.savedLayer) applySavedFiltersToLayer(existing, options.savedLayer);
+    if (!options.silent) {
+      renderAllViews();
+      renderLayerSelector();
+      renderQueryLayersModal();
+    }
+    return existing;
   }
 
     state.openingLayerIds.add(layerId);
@@ -1335,21 +1485,29 @@ async function openCatalogLayer(layerId) {
       preferredView: openedLayer.capabilities.map ? "map" : (openedLayer.capabilities.timeline ? "timeline" : "evidence"),
       layers: [openedLayer]
     });
+    const restoredLayer = added.find(item => item.catalogLayerId === layerId)
+      || state.layers.find(item => item.catalogLayerId === layerId)
+      || null;
+    if (restoredLayer && options.savedLayer) applySavedFiltersToLayer(restoredLayer, options.savedLayer);
     state.rawOverlayMinimized = false;
     state.layerSearchQuery = "";
     state.layerSearchOpen = false;
-    showResult(
+    if (!options.silent) showResult(
       "שכבה נפתחה",
       added.length
         ? `${openedLayer.label}: ${(openedLayer.items || []).length.toLocaleString("he-IL")} רשומות נטענו.`
         : "השכבה כבר פתוחה."
     );
+    return restoredLayer;
   } catch (error) {
     state.layerCatalogError = error.message || "טעינת נתוני השכבה נכשלה";
+    return null;
   } finally {
     state.openingLayerIds.delete(layerId);
-    renderLayerSelector();
-    renderQueryLayersModal();
+    if (!options.silent) {
+      renderLayerSelector();
+      renderQueryLayersModal();
+    }
   }
 }
 
@@ -1827,6 +1985,7 @@ async function submitStepInject() {
         prompt: continuationPrompt,
         history: state.history,
         investigation_id: state.investigationId,
+        investigation_state: investigationStateForPrompt(selectedLayerContextForAgent()),
         continuation_context: {
           original_classification: classificationContext,
           from_step: fromStep || null
@@ -2940,6 +3099,9 @@ function resetInvestigation(options = {}) {
   state.lastResult = null;
   state.lastPrompt = null;
   state.queryContext = null;
+  state.investigationMemory = null;
+  state.investigationMemoryError = "";
+  state.investigationMemoryLoading = false;
   state.layerSearchQuery = "";
   state.layerSearchOpen = false;
   setPromptOptionsOpen(false);
@@ -3275,7 +3437,8 @@ renderInvestigationSelector();
 
 async function boot() {
   initMap();
-  loadLayerCatalog();
+  await loadLayerCatalog();
+  await loadInvestigationMemory({ restoreLayers: true });
   try {
     const response = await fetch("./data/serbia_kosovo_events_projection.csv");
     if (!response.ok) throw new Error("dataset unavailable");

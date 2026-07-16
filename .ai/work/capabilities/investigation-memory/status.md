@@ -4,19 +4,19 @@
 Investigation Memory (`investigation-memory`)
 
 ## Current Phase
-Slice 3 developer/product/UX review.
+Slices 4-5 developer/product/UX review.
 
 ## Overall Status
-Slice 3 manual layer memory save is implemented and ready for developer/product/UX review. Product decisions remain: memory updates are manual only, memory is stored server-side, and selecting an investigation later should load memory and reopen memory-saved layers with their filters.
+Slices 4-5 are implemented and ready for developer/product/UX review. Selecting an investigation now loads saved memory, reopens saved catalog-backed layers with filters, and provides saved memory to the agent as investigation context.
 
 ## Who Needs To Act Now
 
 | Role | Status | Required Action | Due Before |
 |---|---|---|---|
-| Development | Review needed | Review Slice 3 manual layer memory save API and tab action. | Before Slice 4 |
-| Product | Review needed | Confirm explicit layer-save action and saved layer metadata shape. | Before Slice 4 |
-| UX | Review needed | Confirm layer tab bookmark action and final-answer memory button styling correction. | Before Slice 4 |
-| QA | Not blocking | Review persistence and restore checklist before restore slice. | Slice 4 |
+| Development | Review needed | Review memory loading, layer restore, and agent-context injection. | Before merge |
+| Product | Review needed | Confirm restore/context behavior and catalog-only visual restore limitation. | Before merge |
+| UX | Review needed | Confirm restored layers/filters appear as expected when switching investigations. | Before merge |
+| QA | Review needed | Validate save, switch investigation, restore layers/filters, and agent context continuity. | Before merge |
 | Architecture/Security | Not blocking | Review server-side persistence and authorization before productionizing. | Production |
 
 ## Current Blockers
@@ -27,9 +27,10 @@ None.
 - Future memory-saved layer restore must avoid persisting full row payloads.
 - Slice 2 summary is deterministic and compact, not an LLM-authored narrative summary.
 - Slice 3 saves layer/filter metadata only; it does not persist full layer rows.
+- Slice 4 visually reopens catalog-backed saved layers only; result-derived saved layers remain available to the agent as context.
 
 ## Next Expected Artifact
-Review of `checkpoint-003.md`, then Slice 4 load memory and reopen saved layers.
+Review of `checkpoint-004.md` and `checkpoint-005.md`, then final QA/acceptance.
 
 ## Parent Issue
 Not created yet. Local issue body can be added if this capability continues beyond Slice 1.
@@ -40,7 +41,9 @@ Not created yet. Local issue body can be added if this capability continues beyo
 |---|---|---|---|---|
 | TBD | Development | Server memory store foundation. | Complete in `checkpoint-001.md`; approved | No |
 | TBD | Development/Product/UX | Manual chat/result save to investigation memory. | Complete in `checkpoint-002.md`; product comment addressed | No |
-| TBD | Development/Product/UX | Manual layer/filter save to investigation memory. | Complete in `checkpoint-003.md`; awaiting review | No |
+| TBD | Development/Product/UX | Manual layer/filter save to investigation memory. | Complete in `checkpoint-003.md` | No |
+| TBD | Development/Product/UX/QA | Load memory and reopen saved layers. | Complete in `checkpoint-004.md`; awaiting review | No |
+| TBD | Development/Product/QA | Provide saved memory to agent prompt context. | Complete in `checkpoint-005.md`; awaiting review | No |
 
 ## Latest Change Since Previous Review
-Slice 3 added an explicit layer-tab action that appends saved layer/filter metadata to server-side investigation memory. Product feedback from Slice 2 was addressed by making the final-answer memory button visually match the neighboring final-answer buttons.
+Slices 4-5 load saved investigation memory when an investigation is selected, reopen saved catalog-backed layers with saved filters, and include saved chat/layer memory in `investigation_state` for Hermes.
