@@ -2,7 +2,7 @@
 
 Last updated: 2026-07-16
 
-This is the primary handoff for continuing the AI Intelligence project in another assistant/chat. It reflects the current Serbia POC workspace after the data normalization, additive result-layer UI refactor, recorded-run refresh, map marker popup work, Phase 2 query builder planning, location/entity layer normalization, hybrid semantic retrieval/tool-quality work, filter panel simplification, step-button label and duplicate-layer bug fixes, the "המשך מכאן" step injection feature, multi-layer query filtering, the Codex-style prompt composer with explicit prompt-layer selection, and the first investigation-selector slice.
+This is the primary handoff for continuing the AI Intelligence project in another assistant/chat. It reflects the current Serbia POC workspace after the data normalization, additive result-layer UI refactor, recorded-run refresh, map marker popup work, Phase 2 query builder planning, location/entity layer normalization, hybrid semantic retrieval/tool-quality work, filter panel simplification, step-button label and duplicate-layer bug fixes, the "המשך מכאן" step injection feature, multi-layer query filtering, the Codex-style prompt composer with explicit prompt-layer selection, the first investigation-selector slice, and Investigation Memory slices 1-2.
 
 ## One-Line Summary
 
@@ -30,7 +30,26 @@ Current local working tree expectation:
 - Do not continue from stale local files if `git fetch origin` shows the active remote branch ahead.
 - At the time of this handoff update there are unrelated local untracked geospatial requirement files. Do not include them in UI, workflow, or deployment commits unless the user explicitly asks.
 
-## Latest Update: Investigation Selector First Slice
+## Latest Update: Investigation Memory Slice 2 Review Deploy
+
+Date: 2026-07-16
+
+Current deployed asset versions after this update: `styles.css?v=79`, `app.js?v=101`, served from `/opt/serbia-poc-ui` on port 8769.
+
+Current investigation memory behavior:
+
+- Server-side investigation memory exists under `/opt/serbia-poc-ui/investigations/`.
+- Final answers include an explicit `שמור לזיכרון` action.
+- Clicking `שמור לזיכרון` appends a compact `chat_result_summary` through `POST /api/investigation-memory/chat-summary`.
+- Saved-question behavior remains separate from investigation memory.
+- Memory loading on investigation selection, layer restore, and agent prompt injection are not implemented yet.
+
+Review branch and PR:
+
+- Branch: `codex/investigation-memory-slice2`
+- Draft PR: `https://github.com/zvipev10/AI-Intelligence/pull/19`
+
+## Previous Update: Investigation Selector First Slice
 
 Date: 2026-07-16
 
