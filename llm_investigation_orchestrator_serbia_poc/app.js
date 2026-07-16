@@ -1383,6 +1383,7 @@ function finalizeAssistantMessage(answer, options = {}) {
         <span class="final-answer-show-label">הצג תוצאות</span>
       </button>
       <button type="button" class="final-answer-save-btn" ${options.result.saved_question_id ? "disabled" : ""}>${options.result.saved_question_id ? "נשמר" : "שמור"}</button>
+      <button type="button" class="final-answer-memory-btn" ${options.result.investigation_memory_summary_id ? "disabled" : ""}>${options.result.investigation_memory_summary_id ? "נשמר בזיכרון" : "שמור לזיכרון"}</button>
     `;
     const finalShowBtn = actions.querySelector(".final-answer-show-btn");
     finalShowBtn.addEventListener("click", () => {
@@ -1390,6 +1391,9 @@ function finalizeAssistantMessage(answer, options = {}) {
     });
     actions.querySelector(".final-answer-save-btn").addEventListener("click", event => {
       saveResultQuestion(options.result, options.prompt || "", event.currentTarget);
+    });
+    actions.querySelector(".final-answer-memory-btn").addEventListener("click", event => {
+      saveResultToInvestigationMemory(options.result, options.prompt || "", event.currentTarget);
     });
     const evidenceToggle = answerBody.querySelector(".evidence-ids-toggle");
     if (evidenceToggle) {
@@ -2108,6 +2112,18 @@ function canSaveResult(result, prompt) {
   );
 }
 
+function canSaveResultToMemory(result, prompt) {
+  return Boolean(
+    state.investigationId
+    && prompt
+    && result
+    && result.answer
+    && !result.demo_replay
+    && !result.recorded_id
+    && !result.investigation_memory_summary_id
+  );
+}
+
 function formatSavedTime(value) {
   if (!value) return "זמן שמירה לא ידוע";
   const parsed = new Date(value);
@@ -2153,6 +2169,47 @@ async function saveResultQuestion(result, prompt, button) {
         button.disabled = false;
         button.textContent = "שמור";
         button.title = "שמור את תוצאת החקירה";
+      }
+    }, 2500);
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function saveResultToInvestigationMemory(result, prompt, button) {
+  if (!canSaveResultToMemory(result, prompt) || state.busy || button?.disabled) return;
+  button.disabled = true;
+  button.textContent = "שומר לזיכרון...";
+  button.title = "שומר את הממצא לזיכרון החקירה";
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15000);
+  try {
+    const response = await fetch("/api/investigation-memory/chat-summary", {
+      method: "POST",
+      headers: { "Content-Type": "application/json; charset=utf-8" },
+      signal: controller.signal,
+      body: JSON.stringify({
+        investigation_id: state.investigationId,
+        name: state.investigationName,
+        prompt,
+        result,
+      }),
+    });
+    const payload = await response.json();
+    if (!response.ok) throw new Error(payload.error || "שמירה לזיכרון החקירה נכשלה");
+    result.investigation_memory_summary_id = payload.saved?.id || true;
+    if (state.lastResult === result) state.lastResult = result;
+    button.textContent = "נשמר בזיכרון";
+    button.title = "הממצא נשמר לזיכרון החקירה";
+  } catch (error) {
+    const message = error.name === "AbortError" ? "שמירה לזיכרון נמשכה יותר מדי זמן. נסה שוב." : error.message;
+    button.textContent = "נכשל";
+    button.title = message;
+    setTimeout(() => {
+      if (!result.investigation_memory_summary_id) {
+        button.disabled = false;
+        button.textContent = "שמור לזיכרון";
+        button.title = "שמור את הממצא לזיכרון החקירה";
       }
     }, 2500);
   } finally {

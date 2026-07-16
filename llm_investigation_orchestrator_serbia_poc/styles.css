@@ -83,9 +83,11 @@ h3 { margin: 0; font-size: 14px; }
 .research-steps-toggle summary:hover { text-decoration: underline; }
 .answer-body { display: grid; gap: 7px; }
 .final-answer-actions { margin-top: 10px; display: flex; gap: 7px; justify-content: flex-start; }
-.final-answer-show-btn, .final-answer-save-btn, .step-query-btn, .step-visibility-btn, .step-continue-btn { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; width: auto; height: auto; min-width: 0; padding: 3px 9px; border: 1px solid var(--blue); border-radius: 999px; background: transparent; color: var(--blue); font-size: 10px; font-weight: 800; line-height: 1.4; cursor: pointer; transition: background .15s, color .15s; white-space: nowrap; }
-.final-answer-show-btn:hover, .final-answer-save-btn:hover:not(:disabled), .step-query-btn:hover, .step-visibility-btn:hover, .step-continue-btn:hover { background: rgba(88,166,255,.15); color: #fff; }
-.final-answer-save-btn:disabled { cursor: default; opacity: .65; }
+.final-answer-show-btn, .final-answer-save-btn, .final-answer-memory-btn, .step-query-btn, .step-visibility-btn, .step-continue-btn { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; width: auto; height: auto; min-width: 0; padding: 3px 9px; border: 1px solid var(--blue); border-radius: 999px; background: transparent; color: var(--blue); font-size: 10px; font-weight: 800; line-height: 1.4; cursor: pointer; transition: background .15s, color .15s; white-space: nowrap; }
+.final-answer-show-btn:hover, .final-answer-save-btn:hover:not(:disabled), .final-answer-memory-btn:hover:not(:disabled), .step-query-btn:hover, .step-visibility-btn:hover, .step-continue-btn:hover { background: rgba(88,166,255,.15); color: #fff; }
+.final-answer-save-btn:disabled, .final-answer-memory-btn:disabled { cursor: default; opacity: .65; }
+.final-answer-memory-btn { border-color: rgba(129,201,149,.54); color: var(--green); }
+.final-answer-memory-btn:hover:not(:disabled) { background: rgba(129,201,149,.15); }
 .suggestions { padding: 8px 12px; border-top: 1px solid var(--line); display: flex; gap: 7px; overflow-x: auto; }
 .suggestions:empty { display: none; }
 .suggestions button { flex: 0 0 auto; max-width: 270px; border: 1px solid #31573f; border-radius: 6px; background: var(--green-soft); color: var(--green); padding: 7px 9px; text-align: right; font-size: 11px; }

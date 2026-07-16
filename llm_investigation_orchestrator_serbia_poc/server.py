@@ -556,6 +556,76 @@ def normalize_memory_list(value: Any) -> list[dict]:
     return [item for item in value if isinstance(item, dict)]
 
 
+def compact_text(value: Any, limit: int) -> str:
+    text = re.sub(r"\s+", " ", str(value or "")).strip()
+    if len(text) <= limit:
+        return text
+    return text[: max(0, limit - 3)].rstrip() + "..."
+
+
+def extract_result_ids(result: dict) -> list[str]:
+    ids: list[str] = []
+    seen: set[str] = set()
+    for value in result.get("event_ids") or []:
+        text = str(value or "").strip()
+        if text and text not in seen:
+            ids.append(text)
+            seen.add(text)
+    for match in EVENT_ID_PATTERN.findall(str(result.get("answer") or "")):
+        if match not in seen:
+            ids.append(match)
+            seen.add(match)
+    return ids[:80]
+
+
+def create_chat_summary_memory(request: dict) -> dict:
+    investigation_id = str(request.get("investigation_id") or "").strip()
+    if not investigation_id:
+        raise ValueError("Missing investigation_id")
+    if not INVESTIGATION_ID_PATTERN.fullmatch(investigation_id):
+        raise ValueError("Invalid investigation id")
+
+    prompt = str(request.get("prompt") or "").strip()
+    result = request.get("result")
+    if not prompt:
+        raise ValueError("Missing prompt")
+    if not isinstance(result, dict):
+        raise ValueError("Missing result")
+    answer = str(result.get("answer") or "").strip()
+    if not answer:
+        raise ValueError("Missing result answer")
+
+    now = utc_now_iso()
+    run_id = str(result.get("run_id") or result.get("source_run_id") or "").strip()
+    item = {
+        "id": f"chat_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}_{secrets.token_hex(3)}",
+        "kind": "chat_result_summary",
+        "saved_at_utc": now,
+        "source": "manual_user_action",
+        "prompt": compact_text(prompt, 1200),
+        "answer_summary": compact_text(answer, 1800),
+        "answer_preview": compact_text(answer, 320),
+        "source_run_id": run_id,
+        "recommended_view": result.get("recommended_view") or "",
+        "step_count": len(result.get("investigation_steps") or []),
+        "evidence_ids": extract_result_ids(result),
+    }
+
+    existing = load_investigation_memory(investigation_id)
+    memory = existing.get("memory") if isinstance(existing.get("memory"), dict) else {}
+    chat_summaries = normalize_memory_list(memory.get("chat_summaries"))
+    chat_summaries.append(item)
+    saved = save_investigation_memory({
+        "investigation_id": investigation_id,
+        "name": request.get("name") or existing.get("name") or investigation_id,
+        "memory": {
+            "chat_summaries": chat_summaries,
+            "layers": normalize_memory_list(memory.get("layers")),
+        }
+    })
+    return {"saved": item, "memory": saved}
+
+
 def normalize_investigation_memory(request: dict) -> dict:
     investigation_id = str(request.get("investigation_id") or "").strip()
     if not investigation_id:
@@ -2022,6 +2092,22 @@ class Handler(SimpleHTTPRequestHandler):
                 request = json.loads(self.rfile.read(length).decode("utf-8-sig"))
                 saved = create_saved_question(request)
                 self.send_json(201, saved_question_metadata(saved))
+            except ValueError as exc:
+                self.send_json(400, {"error": str(exc)})
+            except Exception as exc:
+                self.send_json(502, {"error": str(exc)})
+            return
+        if path == "/api/investigation-memory/chat-summary":
+            try:
+                length = int(self.headers.get("Content-Length", "0"))
+                if length > 2_000_000:
+                    self.send_json(413, {"error": "Investigation memory summary payload too large"})
+                    return
+                request = json.loads(self.rfile.read(length).decode("utf-8-sig"))
+                if not isinstance(request, dict):
+                    raise ValueError("Invalid investigation memory summary payload")
+                saved = create_chat_summary_memory(request)
+                self.send_json(201, saved)
             except ValueError as exc:
                 self.send_json(400, {"error": str(exc)})
             except Exception as exc:
