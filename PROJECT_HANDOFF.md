@@ -2,7 +2,7 @@
 
 Last updated: 2026-07-16
 
-This is the primary handoff for continuing the AI Intelligence project in another assistant/chat. It reflects the current Serbia POC workspace after the data normalization, additive result-layer UI refactor, recorded-run refresh, map marker popup work, Phase 2 query builder planning, location/entity layer normalization, hybrid semantic retrieval/tool-quality work, filter panel simplification, step-button label and duplicate-layer bug fixes, the "המשך מכאן" step injection feature, multi-layer query filtering, the Codex-style prompt composer with explicit prompt-layer selection, the first investigation-selector slice, and Investigation Memory slices 1-2.
+This is the primary handoff for continuing the AI Intelligence project in another assistant/chat. It reflects the current Serbia POC workspace after the data normalization, additive result-layer UI refactor, recorded-run refresh, map marker popup work, Phase 2 query builder planning, location/entity layer normalization, hybrid semantic retrieval/tool-quality work, filter panel simplification, step-button label and duplicate-layer bug fixes, the "המשך מכאן" step injection feature, multi-layer query filtering, the Codex-style prompt composer with explicit prompt-layer selection, the first investigation-selector slice, and Investigation Memory slices 1-5.
 
 ## One-Line Summary
 
@@ -30,24 +30,36 @@ Current local working tree expectation:
 - Do not continue from stale local files if `git fetch origin` shows the active remote branch ahead.
 - At the time of this handoff update there are unrelated local untracked geospatial requirement files. Do not include them in UI, workflow, or deployment commits unless the user explicitly asks.
 
-## Latest Update: Investigation Memory Slice 2 Review Deploy
+## Latest Update: Investigation Memory Slices 3-5 Review Deploy
 
 Date: 2026-07-16
 
-Current deployed asset versions after this update: `styles.css?v=79`, `app.js?v=101`, served from `/opt/serbia-poc-ui` on port 8769.
+Current deployed asset versions after this update: `styles.css?v=81`, `app.js?v=103`, served from `/opt/serbia-poc-ui` on port 8769.
 
 Current investigation memory behavior:
 
 - Server-side investigation memory exists under `/opt/serbia-poc-ui/investigations/`.
 - Final answers include an explicit `שמור לזיכרון` action.
 - Clicking `שמור לזיכרון` appends a compact `chat_result_summary` through `POST /api/investigation-memory/chat-summary`.
+- Layer tabs include an explicit save-to-memory action that appends `layer_filter_state` through `POST /api/investigation-memory/layer`.
+- Saved layer memory includes label, kind, catalog layer id when available, source metadata, original/filtered counts, applied filters, and sample ids.
+- Selecting an existing investigation loads server-side memory from `GET /api/investigation-memory?id=...`.
+- Catalog-backed saved layers reopen automatically through `/api/layers/<id>/rows` and restore their saved filters as applied filters.
+- Saved result-derived layers without a catalog layer id remain context-only memory and are not reopened as UI tabs.
+- Saved chat summaries and saved layer/filter memory are included in `investigation_state.saved_memory` for normal and continuation agent prompts.
 - Saved-question behavior remains separate from investigation memory.
-- Memory loading on investigation selection, layer restore, and agent prompt injection are not implemented yet.
 
 Review branch and PR:
 
 - Branch: `codex/investigation-memory-slice2`
 - Draft PR: `https://github.com/zvipev10/AI-Intelligence/pull/19`
+
+VM verification performed after deployment:
+
+- Public HTTP status returned `200 OK` from `http://151.145.93.180/api/status`.
+- Public index served `styles.css?v=81` and `app.js?v=103`.
+- Public memory API smoke confirmed chat-summary save, layer save, and memory reload.
+- Synthetic smoke investigation `investigation-vm-slice45-smoke` was removed from `/opt/serbia-poc-ui/investigations/`.
 
 ## Previous Update: Investigation Selector First Slice
 
