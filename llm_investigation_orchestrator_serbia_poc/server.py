@@ -626,6 +626,95 @@ def create_chat_summary_memory(request: dict) -> dict:
     return {"saved": item, "memory": saved}
 
 
+def normalize_memory_filters(value: Any) -> list[dict]:
+    filters: list[dict] = []
+    for item in normalize_memory_list(value):
+        field = compact_text(item.get("field"), 160)
+        operator = compact_text(item.get("operator") or "contains", 40)
+        filter_value = compact_text(item.get("value"), 320)
+        if not field or not filter_value:
+            continue
+        filters.append({
+            "field": field,
+            "operator": operator,
+            "value": filter_value,
+        })
+    return filters[:20]
+
+
+def normalize_memory_ids(value: Any) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    ids: list[str] = []
+    seen: set[str] = set()
+    for item in value:
+        text = compact_text(item, 120)
+        if not text or text in seen:
+            continue
+        ids.append(text)
+        seen.add(text)
+        if len(ids) >= 80:
+            break
+    return ids
+
+
+def memory_count(value: Any) -> int:
+    try:
+        return max(0, int(value))
+    except (TypeError, ValueError):
+        return 0
+
+
+def create_layer_memory(request: dict) -> dict:
+    investigation_id = str(request.get("investigation_id") or "").strip()
+    if not investigation_id:
+        raise ValueError("Missing investigation_id")
+    if not INVESTIGATION_ID_PATTERN.fullmatch(investigation_id):
+        raise ValueError("Invalid investigation id")
+
+    layer = request.get("layer")
+    if not isinstance(layer, dict):
+        raise ValueError("Missing layer")
+    label = compact_text(layer.get("label"), 240)
+    kind = compact_text(layer.get("kind"), 80)
+    if not label or not kind:
+        raise ValueError("Missing layer label or kind")
+
+    now = utc_now_iso()
+    item = {
+        "id": f"layer_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}_{secrets.token_hex(3)}",
+        "kind": "layer_filter_state",
+        "saved_at_utc": now,
+        "source": "manual_user_action",
+        "layer_id": compact_text(layer.get("id"), 240),
+        "label": label,
+        "layer_kind": kind,
+        "catalog_layer_id": compact_text(layer.get("catalog_layer_id") or layer.get("catalogLayerId"), 240),
+        "data_id": compact_text(layer.get("data_id") or layer.get("dataId"), 240),
+        "source_id": compact_text(layer.get("source_id") or layer.get("sourceId"), 240),
+        "source_label": compact_text(layer.get("source_label") or layer.get("sourceLabel"), 240),
+        "source_type": compact_text(layer.get("source_type"), 160),
+        "original_count": memory_count(layer.get("original_count")),
+        "filtered_count": memory_count(layer.get("filtered_count")),
+        "applied_filters": normalize_memory_filters(layer.get("applied_filters")),
+        "sample_ids": normalize_memory_ids(layer.get("sample_ids")),
+    }
+
+    existing = load_investigation_memory(investigation_id)
+    memory = existing.get("memory") if isinstance(existing.get("memory"), dict) else {}
+    layers = normalize_memory_list(memory.get("layers"))
+    layers.append(item)
+    saved = save_investigation_memory({
+        "investigation_id": investigation_id,
+        "name": request.get("name") or existing.get("name") or investigation_id,
+        "memory": {
+            "chat_summaries": normalize_memory_list(memory.get("chat_summaries")),
+            "layers": layers,
+        }
+    })
+    return {"saved": item, "memory": saved}
+
+
 def normalize_investigation_memory(request: dict) -> dict:
     investigation_id = str(request.get("investigation_id") or "").strip()
     if not investigation_id:
@@ -2107,6 +2196,22 @@ class Handler(SimpleHTTPRequestHandler):
                 if not isinstance(request, dict):
                     raise ValueError("Invalid investigation memory summary payload")
                 saved = create_chat_summary_memory(request)
+                self.send_json(201, saved)
+            except ValueError as exc:
+                self.send_json(400, {"error": str(exc)})
+            except Exception as exc:
+                self.send_json(502, {"error": str(exc)})
+            return
+        if path == "/api/investigation-memory/layer":
+            try:
+                length = int(self.headers.get("Content-Length", "0"))
+                if length > 2_000_000:
+                    self.send_json(413, {"error": "Investigation memory layer payload too large"})
+                    return
+                request = json.loads(self.rfile.read(length).decode("utf-8-sig"))
+                if not isinstance(request, dict):
+                    raise ValueError("Invalid investigation memory layer payload")
+                saved = create_layer_memory(request)
                 self.send_json(201, saved)
             except ValueError as exc:
                 self.send_json(400, {"error": str(exc)})

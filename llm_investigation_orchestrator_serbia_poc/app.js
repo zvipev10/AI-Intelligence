@@ -812,6 +812,77 @@ function selectedLayerContextForAgent() {
     });
 }
 
+function layerMemoryPayload(layer) {
+  ensureLayerFilterState(layer);
+  const filteredItems = itemsForLayerPresentation(layer);
+  const appliedFilters = validAppliedFilters(layer).map(filter => ({
+    field: filter.field,
+    operator: "contains",
+    value: stringifyFilterValue(filter.value)
+  }));
+  const firstItem = filteredItems[0] || (layer.items || [])[0] || {};
+  const sourceType = layer.source_type
+    || firstItem.source_type
+    || (String(layer.catalogLayerId || "").startsWith("events:") ? String(layer.catalogLayerId).slice("events:".length) : "");
+  return {
+    id: layer.id,
+    label: layer.label,
+    kind: layer.kind,
+    catalog_layer_id: layer.catalogLayerId || "",
+    data_id: layer.dataId || "",
+    source_id: layer.sourceId || "",
+    source_label: layer.sourceLabel || "",
+    source_type: sourceType,
+    original_count: (layer.items || []).length,
+    filtered_count: filteredItems.length,
+    applied_filters: appliedFilters,
+    sample_ids: identifiersForLayerContext(layer, filteredItems)
+  };
+}
+
+function canSaveLayerToMemory(layer) {
+  return Boolean(
+    state.investigationId
+    && layer
+    && layer.capabilities?.table
+    && layer.label
+    && !layer.investigation_memory_layer_id
+  );
+}
+
+async function saveLayerToInvestigationMemory(layer, button) {
+  if (!canSaveLayerToMemory(layer) || state.busy || button?.dataset.memorySaving === "true") return;
+  button.dataset.memorySaving = "true";
+  button.title = "שומר שכבה לזיכרון החקירה";
+  button.setAttribute("aria-label", "שומר שכבה לזיכרון החקירה");
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15000);
+  try {
+    const response = await fetch("/api/investigation-memory/layer", {
+      method: "POST",
+      headers: { "Content-Type": "application/json; charset=utf-8" },
+      signal: controller.signal,
+      body: JSON.stringify({
+        investigation_id: state.investigationId,
+        name: state.investigationName,
+        layer: layerMemoryPayload(layer),
+      }),
+    });
+    const payload = await response.json();
+    if (!response.ok) throw new Error(payload.error || "שמירת השכבה לזיכרון נכשלה");
+    layer.investigation_memory_layer_id = payload.saved?.id || true;
+    button.title = "השכבה נשמרה לזיכרון החקירה";
+    button.setAttribute("aria-label", "השכבה נשמרה לזיכרון החקירה");
+    renderEvidence();
+  } catch (error) {
+    button.title = error.name === "AbortError" ? "שמירת השכבה נמשכה יותר מדי זמן. נסה שוב." : error.message;
+    button.setAttribute("aria-label", button.title);
+  } finally {
+    clearTimeout(timeout);
+    delete button.dataset.memorySaving;
+  }
+}
+
 function renderSelectedLayersButton() {
   if (!selectedLayersButton || !selectedLayersLabel || !selectedLayersSummary) return;
   const layers = state.layers.filter(layer => state.promptSelectedLayerIds.has(layer.id) && layer.capabilities?.table);
@@ -2753,6 +2824,9 @@ function renderEvidence() {
       <span class="raw-source-filter ${layer.filterPanelOpen ? "active" : ""} ${validAppliedFilters(layer).length ? "has-filters" : ""}" data-layer-filter="${escapeHtml(layer.id)}" title="פתח מסננים" aria-label="פתח מסננים" aria-pressed="${layer.filterPanelOpen ? "true" : "false"}">
         <span class="filter-funnel-icon" aria-hidden="true"></span>
       </span>
+      <span class="raw-source-memory ${layer.investigation_memory_layer_id ? "saved" : ""}" data-layer-memory="${escapeHtml(layer.id)}" title="${layer.investigation_memory_layer_id ? "השכבה נשמרה לזיכרון החקירה" : "שמור שכבה לזיכרון החקירה"}" aria-label="${layer.investigation_memory_layer_id ? "השכבה נשמרה לזיכרון החקירה" : "שמור שכבה לזיכרון החקירה"}" aria-pressed="${layer.investigation_memory_layer_id ? "true" : "false"}">
+        <span class="memory-bookmark-icon" aria-hidden="true"></span>
+      </span>
         <span class="raw-source-eye" data-layer-visibility="${escapeHtml(layer.id)}" title="${layer.visible ? "הסתר שכבה" : "הצג שכבה"}" aria-label="${layer.visible ? "הסתר שכבה" : "הצג שכבה"}" aria-pressed="${layer.visible ? "true" : "false"}">
           <span class="visibility-eye-icon ${layer.visible ? "" : "off"}" aria-hidden="true"></span>
         </span>
@@ -2979,6 +3053,13 @@ document.addEventListener("click", event => {
     const layer = state.layers.find(item => item.id === visibilityToggle.dataset.layerVisibility);
     if (layer) layer.visible = !layer.visible;
     renderAllViews();
+    return;
+  }
+  const memoryToggle = event.target.closest("[data-layer-memory]");
+  if (memoryToggle) {
+    event.stopPropagation();
+    const layer = state.layers.find(item => item.id === memoryToggle.dataset.layerMemory);
+    if (layer) saveLayerToInvestigationMemory(layer, memoryToggle);
     return;
   }
   const filterToggle = event.target.closest("[data-layer-filter]");

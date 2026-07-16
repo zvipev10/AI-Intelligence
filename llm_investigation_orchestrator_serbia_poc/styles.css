@@ -86,8 +86,6 @@ h3 { margin: 0; font-size: 14px; }
 .final-answer-show-btn, .final-answer-save-btn, .final-answer-memory-btn, .step-query-btn, .step-visibility-btn, .step-continue-btn { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; width: auto; height: auto; min-width: 0; padding: 3px 9px; border: 1px solid var(--blue); border-radius: 999px; background: transparent; color: var(--blue); font-size: 10px; font-weight: 800; line-height: 1.4; cursor: pointer; transition: background .15s, color .15s; white-space: nowrap; }
 .final-answer-show-btn:hover, .final-answer-save-btn:hover:not(:disabled), .final-answer-memory-btn:hover:not(:disabled), .step-query-btn:hover, .step-visibility-btn:hover, .step-continue-btn:hover { background: rgba(88,166,255,.15); color: #fff; }
 .final-answer-save-btn:disabled, .final-answer-memory-btn:disabled { cursor: default; opacity: .65; }
-.final-answer-memory-btn { border-color: rgba(129,201,149,.54); color: var(--green); }
-.final-answer-memory-btn:hover:not(:disabled) { background: rgba(129,201,149,.15); }
 .suggestions { padding: 8px 12px; border-top: 1px solid var(--line); display: flex; gap: 7px; overflow-x: auto; }
 .suggestions:empty { display: none; }
 .suggestions button { flex: 0 0 auto; max-width: 270px; border: 1px solid #31573f; border-radius: 6px; background: var(--green-soft); color: var(--green); padding: 7px 9px; text-align: right; font-size: 11px; }
@@ -191,20 +189,24 @@ h3 { margin: 0; font-size: 14px; }
 .raw-source-tab.hidden-source { opacity: .58; border-style: dashed; }
 .raw-source-color { width: 9px; height: 9px; border-radius: 999px; background: var(--layer-color, var(--blue)); box-shadow: 0 0 0 2px rgba(255,255,255,.08); flex: 0 0 auto; }
 .raw-source-name { max-width: 90px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.raw-source-eye, .raw-source-filter, .raw-source-close { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 4px; border: 0; font-size: 12px; line-height: 1; }
+.raw-source-eye, .raw-source-filter, .raw-source-memory, .raw-source-close { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 4px; border: 0; font-size: 12px; line-height: 1; }
 .raw-source-eye { color: var(--muted); cursor: pointer; }
 .raw-source-tab:not(.hidden-source) .raw-source-eye { color: #fff; }
 .raw-source-filter { color: var(--muted); cursor: pointer; }
 .raw-source-filter.active, .raw-source-filter.has-filters { color: #fff; }
 .raw-source-filter.active { background: rgba(88,166,255,.16); }
+.raw-source-memory { color: var(--muted); cursor: pointer; }
+.raw-source-memory.saved { color: #fff; background: rgba(88,166,255,.16); }
 .raw-source-close { color: var(--muted); font-size: 16px; font-weight: 500; }
 .raw-source-tab.hidden-source .raw-source-eye { color: var(--muted); }
 .raw-source-eye:hover { background: rgba(88,166,255,.12); color: var(--blue); }
 .raw-source-filter:hover { background: rgba(88,166,255,.14); color: #fff; }
+.raw-source-memory:hover { background: rgba(88,166,255,.14); color: #fff; }
 .raw-source-close:hover { background: rgba(242,139,130,.12); color: var(--red); }
 .filter-funnel-icon { width: 13px; height: 13px; display: block; position: relative; }
 .filter-funnel-icon::before { content: ""; position: absolute; inset: 1px 2px auto; height: 0; border-top: 5px solid currentColor; border-left: 4px solid transparent; border-right: 4px solid transparent; }
 .filter-funnel-icon::after { content: ""; position: absolute; left: 5px; top: 6px; width: 3px; height: 5px; border-radius: 1px; background: currentColor; }
+.memory-bookmark-icon { width: 13px; height: 13px; display: block; background: currentColor; clip-path: polygon(24% 8%, 76% 8%, 76% 92%, 50% 72%, 24% 92%); }
 .raw-events-content { min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr); background: transparent; overflow: hidden; }
 .raw-events-table { min-width: 0; width: 100%; height: 100%; overflow: auto; background: transparent; scrollbar-width: thin; }
 .raw-events-table table { width: max-content; min-width: 980px; font-size: 10px; background: transparent; table-layout: auto; }
