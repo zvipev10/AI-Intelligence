@@ -28,6 +28,7 @@ CONFIG_PATH = ROOT / ".hermes-api.json"
 PERFORMANCE_DIR = ROOT / "performance_logs"
 RECORDED_RUNS_DIR = ROOT / "recorded_runs"
 SAVED_QUESTIONS_DIR = ROOT / "saved_questions"
+INVESTIGATIONS_DIR = ROOT / "investigations"
 RECORDED_RUNS_PATH = ROOT / "test_runs" / "compact_demo_after_general_instructions_20260620T151848Z.json"
 LOCATIONS_PATH = ROOT / "data" / "serbia_kosovo_locations.json"
 EVENTS_PATH = ROOT / "data" / "serbia_kosovo_events_projection.csv"
@@ -35,6 +36,7 @@ ENTITIES_PATH = ROOT / "data" / "serbia_kosovo_entities.json"
 TERMINAL_STATUSES = {"completed", "failed", "cancelled"}
 EVENT_ID_PATTERN = re.compile(r"\b(?:REC-\d{6}|LOC-\d{3})\b")
 SAVED_QUESTION_ID_PATTERN = re.compile(r"^[A-Za-z0-9_.-]+$")
+INVESTIGATION_ID_PATTERN = re.compile(r"^[A-Za-z0-9_.-]+$")
 ACTIVE_RUN_STARTED_AT = None
 APP_BUILD = "serbia-poc-1"
 REMOTE_AUDIT_PATH = "/opt/serbia-poc/mcp_audit.jsonl"
@@ -510,6 +512,124 @@ def saved_question_path(saved_id: str) -> Path:
     if SAVED_QUESTIONS_DIR.resolve() not in path.parents:
         raise ValueError("Invalid saved question path")
     return path
+
+
+def investigation_memory_path(investigation_id: str) -> Path:
+    if not INVESTIGATION_ID_PATTERN.fullmatch(investigation_id or ""):
+        raise ValueError("Invalid investigation id")
+    path = (INVESTIGATIONS_DIR / f"{investigation_id}.json").resolve()
+    if INVESTIGATIONS_DIR.resolve() not in path.parents:
+        raise ValueError("Invalid investigation memory path")
+    return path
+
+
+def empty_investigation_memory(investigation_id: str, name: str = "") -> dict:
+    now = utc_now_iso()
+    return {
+        "schema_version": 1,
+        "investigation_id": investigation_id,
+        "name": name or investigation_id,
+        "created_at_utc": now,
+        "updated_at_utc": now,
+        "memory": {
+            "chat_summaries": [],
+            "layers": []
+        }
+    }
+
+
+def investigation_memory_metadata(payload: dict) -> dict:
+    memory = payload.get("memory") if isinstance(payload.get("memory"), dict) else {}
+    return {
+        "investigation_id": payload.get("investigation_id"),
+        "name": payload.get("name") or payload.get("investigation_id") or "Investigation",
+        "created_at_utc": payload.get("created_at_utc"),
+        "updated_at_utc": payload.get("updated_at_utc"),
+        "chat_summary_count": len(memory.get("chat_summaries") or []),
+        "layer_count": len(memory.get("layers") or []),
+    }
+
+
+def normalize_memory_list(value: Any) -> list[dict]:
+    if not isinstance(value, list):
+        return []
+    return [item for item in value if isinstance(item, dict)]
+
+
+def normalize_investigation_memory(request: dict) -> dict:
+    investigation_id = str(request.get("investigation_id") or "").strip()
+    if not investigation_id:
+        raise ValueError("Missing investigation_id")
+    if not INVESTIGATION_ID_PATTERN.fullmatch(investigation_id):
+        raise ValueError("Invalid investigation id")
+
+    existing = load_investigation_memory(investigation_id)
+    now = utc_now_iso()
+    name = str(request.get("name") or existing.get("name") or investigation_id).strip() or investigation_id
+    memory = request.get("memory") if isinstance(request.get("memory"), dict) else {}
+    existing_memory = existing.get("memory") if isinstance(existing.get("memory"), dict) else {}
+    return {
+        "schema_version": 1,
+        "investigation_id": investigation_id,
+        "name": name,
+        "created_at_utc": existing.get("created_at_utc") or now,
+        "updated_at_utc": now,
+        "memory": {
+            "chat_summaries": normalize_memory_list(memory.get("chat_summaries", existing_memory.get("chat_summaries"))),
+            "layers": normalize_memory_list(memory.get("layers", existing_memory.get("layers"))),
+        }
+    }
+
+
+def load_investigation_memory(investigation_id: str) -> dict:
+    try:
+        path = investigation_memory_path(investigation_id)
+    except ValueError:
+        raise
+    if not path.exists():
+        return empty_investigation_memory(investigation_id)
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8-sig"))
+    except (OSError, json.JSONDecodeError):
+        return empty_investigation_memory(investigation_id)
+    if not isinstance(payload, dict):
+        return empty_investigation_memory(investigation_id)
+    memory = payload.get("memory") if isinstance(payload.get("memory"), dict) else {}
+    return {
+        "schema_version": 1,
+        "investigation_id": str(payload.get("investigation_id") or investigation_id),
+        "name": str(payload.get("name") or investigation_id),
+        "created_at_utc": payload.get("created_at_utc") or utc_now_iso(),
+        "updated_at_utc": payload.get("updated_at_utc") or payload.get("created_at_utc") or utc_now_iso(),
+        "memory": {
+            "chat_summaries": normalize_memory_list(memory.get("chat_summaries")),
+            "layers": normalize_memory_list(memory.get("layers")),
+        }
+    }
+
+
+def save_investigation_memory(request: dict) -> dict:
+    payload = normalize_investigation_memory(request)
+    INVESTIGATIONS_DIR.mkdir(parents=True, exist_ok=True)
+    path = investigation_memory_path(payload["investigation_id"])
+    tmp_path = path.with_suffix(".json.tmp")
+    tmp_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    tmp_path.replace(path)
+    return payload
+
+
+def list_investigation_memory_metadata() -> list[dict]:
+    if not INVESTIGATIONS_DIR.exists():
+        return []
+    items: list[dict] = []
+    for path in sorted(INVESTIGATIONS_DIR.glob("*.json")):
+        investigation_id = path.stem
+        try:
+            payload = load_investigation_memory(investigation_id)
+        except ValueError:
+            continue
+        items.append(investigation_memory_metadata(payload))
+    return sorted(items, key=lambda item: str(item.get("updated_at_utc") or ""), reverse=True)
 
 
 def saved_question_metadata(payload: dict) -> dict:
@@ -1856,6 +1976,19 @@ class Handler(SimpleHTTPRequestHandler):
             else:
                 self.send_json(200, result)
             return
+        if path.path == "/api/investigations":
+            self.send_json(200, {"investigations": list_investigation_memory_metadata()})
+            return
+        if path.path == "/api/investigation-memory":
+            query = parse_qs(path.query)
+            investigation_id = (query.get("id") or [""])[0]
+            try:
+                result = load_investigation_memory(investigation_id)
+            except ValueError as exc:
+                self.send_json(400, {"error": str(exc)})
+                return
+            self.send_json(200, result)
+            return
         if path.path == "/api/recorded-questions":
             self.send_json(200, {"questions": recorded_questions(), "replay_delay_ms": 2000})
             return
@@ -1925,6 +2058,26 @@ class Handler(SimpleHTTPRequestHandler):
                 continuation_context=request.get("continuation_context"),
             )
             self.send_json(200, result)
+        except Exception as exc:
+            self.send_json(502, {"error": str(exc)})
+
+    def do_PUT(self):
+        path = urlparse(self.path).path
+        if path != "/api/investigation-memory":
+            self.send_error(404)
+            return
+        try:
+            length = int(self.headers.get("Content-Length", "0"))
+            if length > 2_000_000:
+                self.send_json(413, {"error": "Investigation memory payload too large"})
+                return
+            request = json.loads(self.rfile.read(length).decode("utf-8-sig"))
+            if not isinstance(request, dict):
+                raise ValueError("Invalid investigation memory payload")
+            saved = save_investigation_memory(request)
+            self.send_json(200, saved)
+        except ValueError as exc:
+            self.send_json(400, {"error": str(exc)})
         except Exception as exc:
             self.send_json(502, {"error": str(exc)})
 
