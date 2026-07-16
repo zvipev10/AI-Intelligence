@@ -164,6 +164,9 @@ function createInvestigationId() {
   return `investigation-${random}`;
 }
 
+const INVESTIGATIONS_STORAGE_KEY = "serbia-poc-investigations-v1";
+const DEFAULT_INVESTIGATION_NAME = "חקירה חדשה";
+
 const state = {
   events: [],
   current: [],
@@ -178,6 +181,9 @@ const state = {
   markers: [],
   history: [],
   investigationId: createInvestigationId(),
+  investigationName: DEFAULT_INVESTIGATION_NAME,
+  investigations: [],
+  investigationSelectorOpen: false,
   recordedQuestions: [],
   savedQuestions: [],
   busy: false,
@@ -211,6 +217,9 @@ const resultTitle = document.getElementById("resultTitle");
 const resultSubtitle = document.getElementById("resultSubtitle");
 const resultCount = document.getElementById("resultCount");
 const sendButton = document.getElementById("sendButton");
+const investigationInput = document.getElementById("investigationInput");
+const investigationAddButton = document.getElementById("investigationAddButton");
+const investigationList = document.getElementById("investigationList");
 const promptOptionsButton = document.getElementById("promptOptionsButton");
 const promptOptionsMenu = document.getElementById("promptOptionsMenu");
 const selectedLayersButton = document.getElementById("selectedLayersButton");
@@ -860,6 +869,127 @@ function investigationStateForPrompt(selectedLayers) {
     turn: userTurns,
     selected_layers: selectedLayers
   };
+}
+
+function normalizeInvestigationName(name) {
+  return String(name || "").replace(/\s+/g, " ").trim();
+}
+
+function investigationNameKey(name) {
+  return normalizeInvestigationName(name).toLocaleLowerCase("he-IL");
+}
+
+function saveInvestigationRegistry() {
+  try {
+    localStorage.setItem(INVESTIGATIONS_STORAGE_KEY, JSON.stringify({
+      active_id: state.investigationId,
+      investigations: state.investigations
+    }));
+  } catch (error) {
+    console.warn("Could not save investigations", error);
+  }
+}
+
+function createInvestigationRecord(name) {
+  const safeName = normalizeInvestigationName(name) || DEFAULT_INVESTIGATION_NAME;
+  return {
+    id: createInvestigationId(),
+    name: safeName,
+    created_at: new Date().toISOString()
+  };
+}
+
+function ensureInvestigationRecord(name) {
+  const safeName = normalizeInvestigationName(name) || DEFAULT_INVESTIGATION_NAME;
+  const existing = state.investigations.find(item => investigationNameKey(item.name) === investigationNameKey(safeName));
+  if (existing) return existing;
+  const created = createInvestigationRecord(safeName);
+  state.investigations.push(created);
+  saveInvestigationRegistry();
+  return created;
+}
+
+function loadInvestigationRegistry() {
+  let registry = null;
+  try {
+    registry = JSON.parse(localStorage.getItem(INVESTIGATIONS_STORAGE_KEY) || "null");
+  } catch (error) {
+    registry = null;
+  }
+  const seen = new Set();
+  const investigations = Array.isArray(registry?.investigations)
+    ? registry.investigations
+        .map(item => ({
+          id: String(item?.id || createInvestigationId()),
+          name: normalizeInvestigationName(item?.name),
+          created_at: item?.created_at || new Date().toISOString()
+        }))
+        .filter(item => {
+          const key = investigationNameKey(item.name);
+          if (!item.name || seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        })
+    : [];
+  if (!investigations.length) investigations.push({
+    id: state.investigationId,
+    name: DEFAULT_INVESTIGATION_NAME,
+    created_at: new Date().toISOString()
+  });
+  state.investigations = investigations;
+  const active = investigations.find(item => item.id === registry?.active_id) || investigations[0];
+  state.investigationId = active.id;
+  state.investigationName = active.name;
+  saveInvestigationRegistry();
+}
+
+function matchingInvestigations(query) {
+  const key = investigationNameKey(query);
+  if (!key) return state.investigations;
+  return state.investigations.filter(item => investigationNameKey(item.name).includes(key));
+}
+
+function renderInvestigationSelector() {
+  if (!investigationInput || !investigationList) return;
+  if (document.activeElement !== investigationInput) {
+    investigationInput.value = state.investigationName || DEFAULT_INVESTIGATION_NAME;
+  }
+  const matches = matchingInvestigations(investigationInput.value);
+  investigationInput.setAttribute("aria-expanded", state.investigationSelectorOpen && matches.length ? "true" : "false");
+  investigationList.hidden = !state.investigationSelectorOpen || !matches.length;
+  investigationList.innerHTML = matches.map(item => `
+    <button type="button" class="investigation-option ${item.id === state.investigationId ? "active" : ""}" role="option" aria-selected="${item.id === state.investigationId}" data-investigation-id="${escapeHtml(item.id)}">
+      <span>${escapeHtml(item.name)}</span>
+      ${item.id === state.investigationId ? "<small>פעילה</small>" : ""}
+    </button>
+  `).join("");
+}
+
+function selectInvestigation(investigation, options = {}) {
+  if (!investigation || state.busy) return;
+  state.investigationId = investigation.id;
+  state.investigationName = investigation.name;
+  state.investigationSelectorOpen = false;
+  if (investigationInput) investigationInput.value = investigation.name;
+  saveInvestigationRegistry();
+  resetInvestigation({ keepInvestigation: true });
+  renderInvestigationSelector();
+  if (options.focusInput) investigationInput?.focus();
+}
+
+function addOrSelectInvestigation() {
+  const name = normalizeInvestigationName(investigationInput?.value) || DEFAULT_INVESTIGATION_NAME;
+  const investigation = ensureInvestigationRecord(name);
+  if (state.busy) {
+    renderInvestigationSelector();
+    return;
+  }
+  selectInvestigation(investigation, { focusInput: true });
+}
+
+function setInvestigationSelectorOpen(open) {
+  state.investigationSelectorOpen = !!open;
+  renderInvestigationSelector();
 }
 
 function draftFiltersForLayer(layer) {
@@ -2653,7 +2783,7 @@ function renderEvidence() {
     </tr>`).join("") : '<tr><td colspan="6" class="empty-cell">השכבה מוסתרת או ריקה.</td></tr>';
 }
 
-function resetInvestigation() {
+function resetInvestigation(options = {}) {
   state.current = [];
   state.stage = 0;
   state.aggregateLocations = [];
@@ -2667,7 +2797,12 @@ function resetInvestigation() {
   state.rawOverlayMinimized = false;
   state.rawOverlayHeight = 28;
   state.history = [];
-  state.investigationId = createInvestigationId();
+  if (!options.keepInvestigation) {
+    const investigation = ensureInvestigationRecord(DEFAULT_INVESTIGATION_NAME);
+    state.investigationId = investigation.id;
+    state.investigationName = investigation.name;
+    saveInvestigationRegistry();
+  }
   state.activeAssistantMessage = null;
   state.activeActivityList = null;
   state.activeActivityEmpty = null;
@@ -2688,6 +2823,7 @@ function resetInvestigation() {
   renderLayerSelector();
   renderQueryLayersModal();
   renderQueryInspector();
+  renderInvestigationSelector();
   if (state.map) setTimeout(() => state.map.resize(), 0);
 }
 
@@ -2710,6 +2846,9 @@ document.addEventListener("click", event => {
   }
   const savedQuestion = event.target.closest("[data-saved-id]");
   if (savedQuestion) runSavedQuestion(savedQuestion.dataset.savedId);
+  if (!event.target.closest(".investigation-switcher") && state.investigationSelectorOpen) {
+    setInvestigationSelectorOpen(false);
+  }
   const promptOption = event.target.closest("[data-prompt-option]");
   if (promptOption) {
     event.stopPropagation();
@@ -2953,7 +3092,26 @@ promptInput.addEventListener("keydown", event => {
   }
 });
 
-document.getElementById("resetButton").addEventListener("click", resetInvestigation);
+investigationInput?.addEventListener("focus", () => setInvestigationSelectorOpen(true));
+investigationInput?.addEventListener("input", () => setInvestigationSelectorOpen(true));
+investigationInput?.addEventListener("keydown", event => {
+  if (event.key === "Enter") {
+    event.preventDefault();
+    const name = normalizeInvestigationName(investigationInput.value);
+    const existing = state.investigations.find(item => investigationNameKey(item.name) === investigationNameKey(name));
+    if (existing) selectInvestigation(existing);
+    else addOrSelectInvestigation();
+  }
+  if (event.key === "Escape") setInvestigationSelectorOpen(false);
+});
+investigationAddButton?.addEventListener("click", addOrSelectInvestigation);
+investigationList?.addEventListener("mousedown", event => event.preventDefault());
+investigationList?.addEventListener("click", event => {
+  const option = event.target.closest("[data-investigation-id]");
+  if (!option) return;
+  const investigation = state.investigations.find(item => item.id === option.dataset.investigationId);
+  selectInvestigation(investigation, { focusInput: true });
+});
 promptOptionsButton.addEventListener("click", event => {
   event.stopPropagation();
   setPromptOptionsOpen(!state.promptOptionsOpen);
@@ -2974,6 +3132,8 @@ recordedClose.addEventListener("click", closeRecordedModal);
 queryLayersClose.addEventListener("click", closeQueryLayersModal);
 queryLayersSubmit.addEventListener("click", submitQueryLayerSelection);
 initPanelResizers();
+loadInvestigationRegistry();
+renderInvestigationSelector();
 
 async function boot() {
   initMap();

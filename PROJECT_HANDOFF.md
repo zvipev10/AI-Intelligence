@@ -1,8 +1,8 @@
 # AI Intelligence Project Handoff
 
-Last updated: 2026-07-10
+Last updated: 2026-07-16
 
-This is the primary handoff for continuing the AI Intelligence project in another assistant/chat. It reflects the current Serbia POC workspace after the data normalization, additive result-layer UI refactor, recorded-run refresh, map marker popup work, Phase 2 query builder planning, location/entity layer normalization, hybrid semantic retrieval/tool-quality work, filter panel simplification, step-button label and duplicate-layer bug fixes, the "המשך מכאן" step injection feature, multi-layer query filtering, and the Codex-style prompt composer with explicit prompt-layer selection.
+This is the primary handoff for continuing the AI Intelligence project in another assistant/chat. It reflects the current Serbia POC workspace after the data normalization, additive result-layer UI refactor, recorded-run refresh, map marker popup work, Phase 2 query builder planning, location/entity layer normalization, hybrid semantic retrieval/tool-quality work, filter panel simplification, step-button label and duplicate-layer bug fixes, the "המשך מכאן" step injection feature, multi-layer query filtering, the Codex-style prompt composer with explicit prompt-layer selection, and the first investigation-selector slice.
 
 ## One-Line Summary
 
@@ -21,7 +21,7 @@ Current branch:
 
 Important local workspace:
 
-- Active repo path used by Codex: `C:\Users\e054922\Documents\Codex\2026-06-09\i-managed-a-project-in-other\work\AI Intelligence`
+- Active repo path used by Codex in the current Windows workspace: `C:\Users\user\Documents\AI Intelligence\.codex_ai_intelligence_repo_github_latest`
 - The workspace may contain unrelated local files; do not stage or deploy them unless the user explicitly asks.
 
 Current local working tree expectation:
@@ -30,11 +30,42 @@ Current local working tree expectation:
 - Do not continue from stale local files if `git fetch origin` shows the active remote branch ahead.
 - At the time of this handoff update there are unrelated local untracked geospatial requirement files. Do not include them in UI, workflow, or deployment commits unless the user explicitly asks.
 
-## Latest Update: Prompt Composer + Results Table Follow-up
+## Latest Update: Investigation Selector First Slice
+
+Date: 2026-07-16
+
+Current deployed asset versions after this update: `styles.css?v=78`, `app.js?v=100`, served from `/opt/serbia-poc-ui` on port 8769.
+
+Current investigation selector behavior:
+
+- The active-investigation control moved to the upper header center.
+- The header shows `חקירה פעילה` inline beside a simple investigation combo box.
+- The analyst can type an investigation name; matching existing investigation names appear in a dropdown.
+- Choosing an existing name switches the active investigation.
+- Pressing `+` creates/selects the typed name as a new investigation; no additional modal or input window is used.
+- The `+` tooltip/ARIA label is `צור חקירה חדשה`.
+- Switching or creating an investigation clears the current workspace so layers/results from different investigations are not mixed.
+- The previous conversation-panel title/subtitle area was removed, including the text `חקירה בשפה טבעית מעל אירועים גולמיים, עם מעבר ישיר למקורות הראיה.`
+
+Implementation notes:
+
+- Investigation registry is currently browser-local metadata in `localStorage` (`serbia-poc-investigations-v1`).
+- This first slice does not yet persist separate per-investigation chat history, result layers, saved questions, recorded runs, or server-side state.
+- The dropdown overlap bug was fixed by scoping combo-box button styling to `.investigation-combobox > button`, so dropdown option buttons are not styled as the main add button.
+- `resetInvestigation({ keepInvestigation: true })` is used when selecting/creating an investigation to preserve the active investigation identity while clearing the visible workspace.
+
+Future investigation-management work:
+
+- Persist per-investigation chat/results/workspace state.
+- Associate saved questions and recorded runs with `investigation_id`.
+- Add backend/session support for investigation lists if cross-browser or multi-user persistence becomes required.
+- Keep result layers as the source of truth for map/timeline/table filtering inside each active investigation.
+
+## Previous Update: Prompt Composer + Results Table Follow-up
 
 Date: 2026-07-10
 
-Current deployed asset versions: `styles.css?v=75`, `app.js?v=98`, served from `/opt/serbia-poc-ui` on port 8769.
+Asset versions from that update were `styles.css?v=75`, `app.js?v=98`, served from `/opt/serbia-poc-ui` on port 8769. Newer handoff sections supersede these versions.
 
 Current prompt composer behavior:
 
@@ -236,7 +267,7 @@ VM:
 
 - Host: `151.145.93.180`
 - User: `ubuntu`
-- SSH key path used locally: `C:\Users\e054922\Downloads\oracle.key`
+- SSH key path used locally: `C:\Users\user\Downloads\oracle.key`
 - Important: user explicitly said not to touch/modify the key file.
 
 Active UI service:
@@ -244,9 +275,9 @@ Active UI service:
 - Service: `serbia-poc-ui.service`
 - Actual served path: `/opt/serbia-poc-ui`
 - This is important: an earlier deploy mistakenly copied to `/opt/serbia-poc/ui`, but the active service serves `/opt/serbia-poc-ui`.
-- Current served versions verified on the VM after the latest UI deploy (as of 2026-07-10):
-  - `styles.css?v=75`
-  - `app.js?v=98`
+- Current served versions expected after the latest UI deploy (as of 2026-07-16):
+  - `styles.css?v=78`
+  - `app.js?v=100`
 - These versions include colored point markers, manual final-answer presentation via `הצג תוצאות`, additive layer tabs, table resize/minimize, close/clear result-window behavior, horizontal tab/table scrolling, query edit modal controls, `הצג תוצאות` / `הסתר תוצאות` toggle, simplified filter panel (inline הוסף/החל, no empty sections, white eye/filter icons when active), the full "המשך מכאן" step injection feature, and the Codex-style prompt composer with explicit removable prompt-layer selection.
 
 Active MCP/Hermes service:
@@ -960,7 +991,7 @@ Expected: no matches in active data files.
 ## Suggested First Message To A New Assistant
 
 ```text
-Read PROJECT_HANDOFF.md first. Continue work on the Serbia/North Kosovo POC in llm_investigation_orchestrator_serbia_poc. The UI is deployed from /opt/serbia-poc-ui on VM 151.145.93.180 (port 8769) and currently serves styles.css?v=75 and app.js?v=98. Do not touch C:\Users\e054922\Downloads\oracle.key.
+Read PROJECT_HANDOFF.md first. Continue work on the Serbia/North Kosovo POC in llm_investigation_orchestrator_serbia_poc. The UI is deployed from /opt/serbia-poc-ui on VM 151.145.93.180 (port 8769) and currently serves styles.css?v=78 and app.js?v=100. Do not touch C:\Users\user\Downloads\oracle.key.
 
 Current behavior: colored map point markers with popups; final answers do not auto-present visualization layers; final `הצג תוצאות` presents/restores final-answer layers manually. The result table is a flush transparent tabbed overlay with real horizontally scrollable layer tabs, standard eye/eye-off toggles (white when active, grey when inactive), per-tab filter icon (white when filters applied), per-tab `×` close, resize, `−` minimize, `□` restore/maximize, window `×` close/clear, and horizontal table scrolling. Filter panel is simplified: no title/active-section, inline הוסף/החל buttons.
 
