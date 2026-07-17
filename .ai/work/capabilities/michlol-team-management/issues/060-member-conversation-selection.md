@@ -6,7 +6,7 @@
 
 ## Status
 
-Implemented locally / Pending deployment and Product, UX, and QA review
+Deployed / Pending Product, UX, and QA review
 
 ## Request
 
