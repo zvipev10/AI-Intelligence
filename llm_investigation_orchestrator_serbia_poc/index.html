@@ -3,16 +3,16 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>סביבת חקירה מונחית סוכן</title>
+  <title>סביבת מודיעין</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="./vendor/maplibre-gl.css">
-  <link rel="stylesheet" href="./styles.css?v=82">
+  <link rel="stylesheet" href="./styles.css?v=83">
 </head>
 <body>
   <a class="help-button" href="./help.html" target="_blank" rel="noopener" aria-label="פתח עזרה">?</a>
   <header class="app-header">
     <div class="header-copy">
-      <h1>סביבת חקירה מונחית סוכן</h1>
+      <h1>סביבת מודיעין</h1>
     </div>
     <section class="investigation-switcher" aria-label="ניהול חקירות">
       <label for="investigationInput">חקירה פעילה</label>
@@ -36,18 +36,26 @@
             <span class="michlol-avatar"><span class="michlol-initial">נ</span><img src="./assets/michlol/naama.png" alt="" loading="eager" onerror="this.remove()"></span>
             <span class="michlol-name">נעמה</span>
           </span>
-          <span class="michlol-member" role="listitem" data-member-id="gadi-collection-officer" data-member-type="user" title="גדי - קצין איסוף" aria-label="גדי, קצין איסוף">
-            <span class="michlol-avatar"><span class="michlol-initial">ג</span><img src="./assets/michlol/gadi.png" alt="" loading="eager" onerror="this.remove()"></span>
-            <span class="michlol-name">גדי</span>
-          </span>
-          <span class="michlol-member" role="listitem" data-member-id="yahli-processing-officer" data-member-type="user" title="יהלי - קצין עיבוד" aria-label="יהלי, קצין עיבוד">
-            <span class="michlol-avatar"><span class="michlol-initial">י</span><img src="./assets/michlol/yahli.png" alt="" loading="eager" onerror="this.remove()"></span>
-            <span class="michlol-name">יהלי</span>
-          </span>
+          <details class="michlol-more">
+            <summary title="הצג חברי מכלול נוספים" aria-label="הצג חברי מכלול נוספים">...</summary>
+            <div class="michlol-more-list">
+              <span class="michlol-member" role="listitem" data-member-id="gadi-collection-officer" data-member-type="user" title="גדי - קצין איסוף" aria-label="גדי, קצין איסוף">
+                <span class="michlol-avatar"><span class="michlol-initial">ג</span><img src="./assets/michlol/gadi.png" alt="" loading="eager" onerror="this.remove()"></span>
+                <span class="michlol-name">גדי</span>
+              </span>
+              <span class="michlol-member" role="listitem" data-member-id="yahli-processing-officer" data-member-type="user" title="יהלי - קצין עיבוד" aria-label="יהלי, קצין עיבוד">
+                <span class="michlol-avatar"><span class="michlol-initial">י</span><img src="./assets/michlol/yahli.png" alt="" loading="eager" onerror="this.remove()"></span>
+                <span class="michlol-name">יהלי</span>
+              </span>
+            </div>
+          </details>
         </div>
       </div>
     </section>
-    <div class="header-status"><span class="status-dot"></span><span id="datasetStatus">טוען נתונים</span><span class="status-divider">|</span><span id="agentStatus">בודק חיבור לסוכן</span></div>
+    <div class="header-status" aria-label="מצב מערכת">
+      <span class="status-line"><span class="status-dot"></span><span id="datasetStatus">טוען נתונים</span></span>
+      <span class="status-line"><span class="status-dot agent-dot"></span><span id="agentStatus">בודק חיבור לסוכן</span></span>
+    </div>
   </header>
 
   <main class="workspace">

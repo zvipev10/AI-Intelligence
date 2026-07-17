@@ -6,29 +6,29 @@
 
 ## Current phase
 
-Slice 1 deployed to VM; review pending
+Compact header correction implemented; VM deployment pending
 
 ## Overall status
 
-Pending Product/UX/QA review
+In progress
 
 ## Who needs to act now
 
 | Role | Status | Required action | Due before |
 |---|---|---|---|
 | Product | Complete | Product definition approved five predefined users, generated pictures, and compact placement near investigation-name combo. | Done |
-| Development | Complete | Implemented and validated static local data/assets for Slice 1. | Done |
-| UX | Review needed | Review compact strip below investigation combo. | Before Slice 2 |
-| QA | Review needed | Validate Slice 1 behavior and regressions. | Before Slice 2 |
+| Development | Complete | Implemented Product-requested compact header correction. | Done |
+| UX | Review needed | Review corrected compact header after VM deployment. | Before Slice 2 |
+| QA | Review needed | Validate corrected compact header and regressions after VM deployment. | Before Slice 2 |
 | Architecture/Security | Watch | Review only if MVP stores team state or introduces real identity/user semantics. | Execution planning |
 
 ## Latest change since previous review
 
-Slice 1 was deployed to the shared VM. The public URL serves `styles.css?v=82`, the `מכלול` strip, and all five generated avatar assets.
+Product requested compact upper-header corrections. Implemented `checkpoint-003.md`: renamed title to `סביבת מודיעין`, stacked statuses, narrowed the combo, moved `מכלול` inline, and added a three-dot expander for the remaining teammates.
 
 ## Current blockers
 
-No current blockers. Product/UX/QA VM review is pending.
+No current blockers. VM deployment of the correction is pending.
 
 ## Current risks
 
@@ -37,7 +37,7 @@ No current blockers. Product/UX/QA VM review is pending.
 
 ## Next expected artifact
 
-Product/UX/QA review of VM deployment in `checkpoint-002.md`.
+VM deployment checkpoint for the compact header correction.
 
 ## Parent issue
 
@@ -61,7 +61,7 @@ Local draft: `issues/000-parent-capability.md`
 - UX review: `ux-review.md`
 - QA review: `qa-review.md`
 - Execution plan: `execution-plan.md`
-- Latest checkpoint: `checkpoint-002.md`
+- Latest checkpoint: `checkpoint-003.md`
 - Handoff: not created yet
 
 ## Gate checklist
