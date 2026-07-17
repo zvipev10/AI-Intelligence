@@ -6,7 +6,7 @@
 
 ## Status
 
-Implemented / Pending Product, UX, and QA review
+Deployed / Pending Product, UX, and QA review
 
 ## Request
 
@@ -72,3 +72,7 @@ No blocking questions remain.
 ## Implementation checkpoint
 
 `../checkpoint-005.md`
+
+## Deployment checkpoint
+
+`../checkpoint-006.md`

@@ -6,7 +6,7 @@
 
 ## Current phase
 
-Slice 2 implemented; review pending
+Slice 2 deployed to VM; review pending
 
 ## Overall status
 
@@ -17,14 +17,14 @@ Pending Product/UX/QA review
 | Role | Status | Required action | Due before |
 |---|---|---|---|
 | Product | Complete | Clarified prompt-only behavior, multiple mentions, all prompt surfaces, client-only metadata, and Hermes ignore instruction. | Done |
-| Development | Complete | Implemented shared member data, reusable prompt-surface autocomplete, transient client metadata, and always-on Hermes ignore instruction. | Done |
+| Development | Complete | Implemented and deployed shared member data, reusable prompt-surface autocomplete, transient client metadata, and always-on Hermes ignore instruction. | Done |
 | UX | Complete for planning | Approved caret/input-area popover, constrained scrolling, keyboard controls, and hidden no-match state. | Done |
 | QA | Review needed | Validate RTL mention typing, keyboard selection, filtering, no-match behavior, prompt submission, selected-layer prompt context, step-continuation submission, and header regression. | Before acceptance |
 | Architecture/Security | Watch | Review only if MVP stores team state or introduces real identity/user semantics. | Acceptance |
 
 ## Latest change since previous review
 
-Implemented Slice 2 in `checkpoint-005.md`: prompt-only `@member` autocomplete for the main prompt and step-continuation prompt, shared member catalog, transient client-side mention parsing, and always-on Hermes ignore instruction.
+Deployed Slice 2 to the shared VM in `checkpoint-006.md`. Public `http://151.145.93.180/` now serves `styles.css?v=84` and `app.js?v=105`, including prompt-only `@member` autocomplete and the always-on Hermes ignore instruction.
 
 ## Current blockers
 
@@ -37,7 +37,7 @@ No current blockers. Product/UX/QA review is pending.
 
 ## Next expected artifact
 
-Product/UX/QA review of `checkpoint-005.md`.
+Product/UX/QA review of the VM deployment described in `checkpoint-006.md`.
 
 ## Parent issue
 
@@ -51,7 +51,7 @@ Local draft: `issues/000-parent-capability.md`
 | `issues/020-developer-review.md` | Development | Review implementation approach and risks. | Complete | No |
 | `issues/030-ux-review.md` | UX | Review flow, layout, and avatar/name treatment. | Complete | No |
 | `issues/040-qa-review.md` | QA | Review test plan and regression surface. | Complete | No |
-| `issues/050-member-task-mentions.md` | Product/UX/Development/QA | Define and implement `@member` autocomplete for asking/requesting tasks from team members. | Implemented; review pending | No |
+| `issues/050-member-task-mentions.md` | Product/UX/Development/QA | Define, implement, and deploy `@member` autocomplete for asking/requesting tasks from team members. | Deployed; review pending | No |
 
 ## Artifact links
 
@@ -63,7 +63,7 @@ Local draft: `issues/000-parent-capability.md`
 - QA review: `qa-review.md`
 - Execution plan: `execution-plan.md`
 - Member task mentions: `member-task-mentions-brief.md`
-- Latest checkpoint: `checkpoint-005.md`
+- Latest checkpoint: `checkpoint-006.md`
 - Handoff: not created yet
 
 ## Gate checklist
