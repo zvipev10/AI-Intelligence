@@ -32,6 +32,7 @@ The analyst needs a visible team/workgroup context for investigations. In the fu
 - [ ] The MVP uses the five predefined members approved in `product-review.md`.
 - [ ] Every predefined member has a name and picture.
 - [ ] The compact list is displayed near the investigation-name combo.
+- [x] Slice 1 is deployed to the shared VM for Product/UX/QA review.
 - [ ] The model leaves room for future real users and agents.
 - [ ] Existing chat, layer, filter, map, timeline, table, and investigation-memory behavior is not regressed.
 

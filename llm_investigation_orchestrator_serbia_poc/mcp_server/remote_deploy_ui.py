@@ -31,6 +31,7 @@ FILES = [
 ]
 
 DIRS = [
+    "assets",
     "vendor",
     "data",
     "recorded_runs",

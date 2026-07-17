@@ -6,7 +6,7 @@
 
 ## Current phase
 
-Slice 1 implementation complete; review pending
+Slice 1 deployed to VM; review pending
 
 ## Overall status
 
@@ -24,11 +24,11 @@ Pending Product/UX/QA review
 
 ## Latest change since previous review
 
-Slice 1 implemented and validated a static read-only `מכלול` strip near the investigation combo with five generated local avatar assets.
+Slice 1 was deployed to the shared VM. The public URL serves `styles.css?v=82`, the `מכלול` strip, and all five generated avatar assets.
 
 ## Current blockers
 
-No current blockers. Product/UX/QA review is pending.
+No current blockers. Product/UX/QA VM review is pending.
 
 ## Current risks
 
@@ -37,7 +37,7 @@ No current blockers. Product/UX/QA review is pending.
 
 ## Next expected artifact
 
-Product/UX/QA review of `checkpoint-001.md`.
+Product/UX/QA review of VM deployment in `checkpoint-002.md`.
 
 ## Parent issue
 
@@ -61,7 +61,7 @@ Local draft: `issues/000-parent-capability.md`
 - UX review: `ux-review.md`
 - QA review: `qa-review.md`
 - Execution plan: `execution-plan.md`
-- Latest checkpoint: `checkpoint-001.md`
+- Latest checkpoint: `checkpoint-002.md`
 - Handoff: not created yet
 
 ## Gate checklist
