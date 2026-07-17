@@ -437,7 +437,10 @@ function positionTeamMentionMenu(textarea) {
   const measuredHeight = Math.min(teamMentionMenu.offsetHeight || 186, 186);
   const belowTop = rect.bottom + 6;
   const aboveTop = rect.top - measuredHeight - 6;
-  const top = belowTop + measuredHeight <= window.innerHeight - 12 ? belowTop : Math.max(12, aboveTop);
+  const hasRoomAbove = aboveTop >= 12;
+  const hasRoomBelow = belowTop + measuredHeight <= window.innerHeight - 12;
+  const preferAbove = window.innerWidth <= 760 && hasRoomAbove;
+  const top = preferAbove || !hasRoomBelow ? Math.max(12, aboveTop) : belowTop;
   const left = Math.max(12, Math.min(rect.right - width, window.innerWidth - width - 12));
   teamMentionMenu.style.top = `${Math.round(top)}px`;
   teamMentionMenu.style.left = `${Math.round(left)}px`;

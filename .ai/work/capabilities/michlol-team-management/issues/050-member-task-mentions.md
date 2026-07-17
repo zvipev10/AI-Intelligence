@@ -6,7 +6,7 @@
 
 ## Status
 
-Deployed with blue mention-token follow-up / Pending Product, UX, and QA review
+Mobile visual fix implemented locally / Pending deployment and Product, UX, and QA review
 
 ## Request
 
@@ -81,3 +81,7 @@ No blocking questions remain.
 ## UX follow-up checkpoint
 
 `../checkpoint-007.md`
+
+## Mobile visual QA checkpoint
+
+`../checkpoint-008.md`

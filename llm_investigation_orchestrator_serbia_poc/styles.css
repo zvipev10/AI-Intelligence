@@ -134,7 +134,7 @@ h3 { margin: 0; font-size: 14px; }
 .mention-editor { position: relative; width: 100%; min-width: 0; }
 .mention-highlights { position: absolute; z-index: 0; inset: 0; overflow: hidden; pointer-events: none; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--ink); direction: inherit; text-align: inherit; }
 .mention-highlight-token { color: var(--blue); font-weight: 900; }
-textarea.mention-source { position: relative; z-index: 1; color: transparent !important; caret-color: var(--ink); background: transparent !important; }
+textarea.mention-source { display: block; position: relative; z-index: 1; color: transparent !important; caret-color: var(--ink); background: transparent !important; }
 textarea.mention-source::selection { background: rgba(88,166,255,.32); }
 textarea.mention-source::placeholder { color: var(--muted) !important; }
 .prompt-form .mention-editor { min-height: 58px; border-radius: 9px; }
@@ -412,6 +412,7 @@ th { position: sticky; top: 0; z-index: 1; background: #202530; }
   .panel-resizer { display: none; }
   .conversation-panel { min-height: 620px; }
   .result-panel { height: 680px; min-height: 680px; }
+  .team-mention-menu { max-height: 168px; }
   .layer-selector { top: 10px; right: 10px; width: min(220px, calc(100% - 20px)); }
   .raw-events-overlay { left: 0; right: 0; bottom: 0; height: 36%; min-height: 190px; }
   .layer-filter-panel { right: 10px; bottom: calc(34% + 10px); width: min(300px, calc(100% - 20px)); max-height: min(300px, calc(66% - 76px)); }
