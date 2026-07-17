@@ -6,18 +6,18 @@
 
 ## Current phase
 
-Three-dot outside-tap dismissal implemented; deployment and review pending
+Three-dot outside-tap dismissal deployed; review pending
 
 ## Overall status
 
-Pending deployment and Product/UX/QA review
+Pending Product/UX/QA review
 
 ## Who needs to act now
 
 | Role | Status | Required action | Due before |
 |---|---|---|---|
 | Product | Complete | Product definition approved five predefined users, generated pictures, and compact placement near investigation-name combo. | Done |
-| Development | Complete | Added outside-tap dismissal for the three-dot teammate expander. | Done |
+| Development | Complete | Added and deployed outside-tap dismissal for the three-dot teammate expander. | Done |
 | UX | Review needed | Review corrected compact header on the VM. | Before Slice 2 |
 | QA | Review needed | Validate corrected compact header and regressions on the VM. | Before Slice 2 |
 | Architecture/Security | Watch | Review only if MVP stores team state or introduces real identity/user semantics. | Execution planning |
@@ -37,7 +37,7 @@ No current blockers. Product/UX/QA VM review is pending.
 
 ## Next expected artifact
 
-Deploy and review the outside-tap dismissal described in `checkpoint-004.md`.
+Review the deployed outside-tap dismissal described in `checkpoint-004.md`.
 
 ## Parent issue
 

@@ -30,7 +30,14 @@ When the three-dot teammate control is expanded, tapping or clicking elsewhere o
 
 ## Deployment
 
-Not deployed as part of this checkpoint.
+Deployed to the shared review VM on 2026-07-17.
+
+- Updated `/opt/serbia-poc-ui/app.js` and `/opt/serbia-poc-ui/index.html` only; existing server configuration and data were preserved.
+- Restarted `serbia-poc-ui.service`; it reported `active`.
+- VM-local `/api/status` returned a configured Hermes response.
+- Public `http://151.145.93.180/` returned HTTP 200 and served `app.js?v=104`.
+- Public `app.js?v=104` contains the `details.michlol-more[open]` outside-tap handler.
+- The first public request immediately after restart returned a transient HTTP 502; a health check seconds later confirmed the service and public endpoint were healthy.
 
 ## Review needed
 
