@@ -6,29 +6,34 @@
 
 ## Current phase
 
-Three-dot outside-tap dismissal deployed; review pending
+Defining member task mentions with `@` autocomplete
 
 ## Overall status
 
-Pending Product/UX/QA review
+Draft extension / Pending Product, UX, and Development review
 
 ## Who needs to act now
 
 | Role | Status | Required action | Due before |
 |---|---|---|---|
-| Product | Complete | Product definition approved five predefined users, generated pictures, and compact placement near investigation-name combo. | Done |
-| Development | Complete | Added and deployed outside-tap dismissal for the three-dot teammate expander. | Done |
-| UX | Review needed | Review corrected compact header on the VM. | Before Slice 2 |
-| QA | Review needed | Validate corrected compact header and regressions on the VM. | Before Slice 2 |
+| Product | Review needed | Confirm `@member` task mention MVP semantics and whether mentions create visible task records or only address prompts. | Before implementation |
+| Development | Review needed | Review mention autocomplete data shape, prompt integration, and whether any API payload change is included. | Before implementation |
+| UX | Review needed | Define composer autocomplete placement, keyboard behavior, filtering, and empty state. | Before implementation |
+| QA | Review needed | Confirm RTL mention typing, keyboard selection, filtering, and prompt-regression coverage. | Before implementation |
 | Architecture/Security | Watch | Review only if MVP stores team state or introduces real identity/user semantics. | Execution planning |
 
 ## Latest change since previous review
 
-Added the requested dismissal behavior in `checkpoint-004.md`: when the three-dot teammate expander is open, any pointer tap outside the control closes it. Interactions inside the expanded list remain available.
+Added `member-task-mentions-brief.md` and `issues/050-member-task-mentions.md` to define the next `מכלול` extension: asking/requesting work from team members by typing `@member-name` with autocomplete.
 
 ## Current blockers
 
-No current blockers. Product/UX/QA VM review is pending.
+Product and UX must confirm the first-slice semantics before implementation:
+
+- Does a mention create a visible task record now, or only address the prompt?
+- Should multiple mentioned members be supported in one prompt?
+- Should autocomplete apply only to the main prompt composer or also to step-continuation prompts?
+- Should submitted prompts include structured `team_mentions` in an API payload now, or remain client/UI only until task routing is defined?
 
 ## Current risks
 
@@ -37,7 +42,7 @@ No current blockers. Product/UX/QA VM review is pending.
 
 ## Next expected artifact
 
-Review the deployed outside-tap dismissal described in `checkpoint-004.md`.
+Product/UX/Development review of `member-task-mentions-brief.md`, followed by an execution plan update if approved.
 
 ## Parent issue
 
@@ -51,6 +56,7 @@ Local draft: `issues/000-parent-capability.md`
 | `issues/020-developer-review.md` | Development | Review implementation approach and risks. | Complete | No |
 | `issues/030-ux-review.md` | UX | Review flow, layout, and avatar/name treatment. | Complete | No |
 | `issues/040-qa-review.md` | QA | Review test plan and regression surface. | Complete | No |
+| `issues/050-member-task-mentions.md` | Product/UX/Development/QA | Define `@member` autocomplete for asking/requesting tasks from team members. | Draft | Yes |
 
 ## Artifact links
 
@@ -61,6 +67,7 @@ Local draft: `issues/000-parent-capability.md`
 - UX review: `ux-review.md`
 - QA review: `qa-review.md`
 - Execution plan: `execution-plan.md`
+- Member task mentions: `member-task-mentions-brief.md`
 - Latest checkpoint: `checkpoint-004.md`
 - Handoff: not created yet
 

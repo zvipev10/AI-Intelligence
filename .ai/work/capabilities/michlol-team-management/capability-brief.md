@@ -105,6 +105,19 @@ Implementation note: Product provided each member as name plus role phrase. The 
 - Picture generation should use a consistent style across all five members.
 - The feature should remain independent from the investigation-memory storage model until Product defines what, if anything, should be persisted per investigation.
 
+## Extension under definition: member task mentions
+
+The next requested extension is the ability to ask/request work from specific team members by typing `@member-name` with autocomplete in the investigation prompt.
+
+Draft definition: `member-task-mentions-brief.md`.
+
+Recommended first slice:
+
+- Autocomplete from the same predefined member catalog.
+- Insert a readable `@שם` mention token into the prompt.
+- Preserve stable member ids separately from display text for future routing.
+- Keep existing Hermes/chat behavior unchanged until Product approves task lifecycle and API semantics.
+
 ## UX notes
 
 - `מכלול` should feel like a workspace/team affordance, not a marketing panel.
@@ -128,7 +141,9 @@ Implementation note: Product provided each member as name plus role phrase. The 
 
 ## Open questions
 
-No blocking product clarifications remain for MVP definition.
+No blocking product clarifications remain for the original read-only team-list MVP.
+
+Blocking clarifications for the `@member` task mention extension are tracked in `member-task-mentions-brief.md`.
 
 Non-blocking UX/development details to close before implementation:
 
