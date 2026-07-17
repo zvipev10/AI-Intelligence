@@ -6,7 +6,7 @@
 
 ## Status
 
-Deployed / Pending Product, UX, and QA review
+Deployed with blue mention-token follow-up / Pending Product, UX, and QA review
 
 ## Request
 
