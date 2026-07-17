@@ -53,8 +53,8 @@ The analyst needs a visible team/workgroup context for investigations. In the fu
 
 - Capability brief: `.ai/work/capabilities/michlol-team-management/capability-brief.md`
 - Status: `.ai/work/capabilities/michlol-team-management/status.md`
+- Decisions: `.ai/work/capabilities/michlol-team-management/decisions.md`
 - Product review: `.ai/work/capabilities/michlol-team-management/product-review.md`
-- Decisions:
 - Developer review:
 - UX review:
 - QA review:

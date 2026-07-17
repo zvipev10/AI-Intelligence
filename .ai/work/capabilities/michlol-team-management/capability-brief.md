@@ -113,10 +113,13 @@ Draft definition: `member-task-mentions-brief.md`.
 
 Recommended first slice:
 
-- Autocomplete from the same predefined member catalog.
+- Autocomplete from the same predefined member catalog in every prompt-entry surface.
 - Insert a readable `@שם` mention token into the prompt.
-- Preserve stable member ids separately from display text for future routing.
-- Keep existing Hermes/chat behavior unchanged until Product approves task lifecycle and API semantics.
+- Support multiple member mentions in one prompt.
+- Preserve stable member ids client-side separately from display text for future routing.
+- Do not create visible task records.
+- Do not send structured `team_mentions` to the backend in Slice 1.
+- Add a temporary Hermes instruction so `@member` names are ignored as investigation entities and treated only as UI addressing annotations.
 
 ## UX notes
 
@@ -143,7 +146,7 @@ Recommended first slice:
 
 No blocking product clarifications remain for the original read-only team-list MVP.
 
-Blocking clarifications for the `@member` task mention extension are tracked in `member-task-mentions-brief.md`.
+Product clarifications for the `@member` task mention extension are tracked in `member-task-mentions-brief.md`.
 
 Non-blocking UX/development details to close before implementation:
 

@@ -6,7 +6,7 @@ Allow the analyst to direct a question or requested task to specific `מכלול
 
 ## Status
 
-Draft / Pending Product, UX, and Development review.
+Product clarifications accepted / Pending UX and Development review.
 
 ## User story
 
@@ -18,15 +18,18 @@ This extends the existing static `מכלול` team foundation. It does not intro
 
 The first implementation should make the analyst's intent explicit in the prompt/task text and keep the selected member identity available in a structured way for future routing.
 
-## MVP behavior proposal
+## MVP behavior
 
 - Autocomplete is available in the main investigation prompt textarea.
+- Autocomplete is also available in other prompt-entry surfaces, including step-continuation prompts.
 - Typing `@` opens a compact member picker.
 - Continuing to type filters all predefined `מכלול` members by display name and role label.
 - Selecting a member inserts a mention token, for example `@משה`, into the textarea and returns focus to the prompt.
+- Multiple mentioned members are supported in one prompt.
 - The picker uses the same member picture/name treatment as the header list where practical.
-- The selected mention is parsed into structured metadata using the stable member id.
-- In MVP, submitting the prompt still follows the existing Hermes/chat flow; no real assignment, notification, or member-specific routing is performed.
+- The selected mentions may be parsed into client-side structured metadata using stable member ids.
+- In MVP, submitting the prompt still follows the existing Hermes/chat flow; no real assignment, notification, member-specific routing, backend task creation, or backend `team_mentions` payload is performed.
+- Hermes receives a temporary instruction that `@member` names are UI addressing annotations and should be ignored as investigation entities unless the user explicitly asks about those people.
 
 ## Future behavior
 
@@ -38,11 +41,13 @@ The first implementation should make the analyst's intent explicit in the prompt
 ## Non-goals for the first slice
 
 - Creating a task management board.
+- Creating visible task records.
 - Sending notifications.
 - User login, authorization, or identity management.
 - Real-time collaboration.
 - Agent execution or automatic task routing.
 - Assigning tasks from layer rows, map items, timeline items, or result cards.
+- Sending structured team mention data to the backend.
 
 ## UX considerations
 
@@ -69,14 +74,24 @@ The first implementation should make the analyst's intent explicit in the prompt
 - Unknown `@text` should not break prompt submission.
 - Existing prompt submit, selected-layer prompt context, prompt options menu, and investigation memory save behavior should not regress.
 
+## Product decisions
+
+- `@member` mentions only address the prompt; they do not create visible task records.
+- Multiple mentioned members are supported in one prompt.
+- Mention autocomplete should work everywhere the user can write an investigation prompt, including the main prompt and step-continuation prompts.
+- Mention metadata remains client-only in Slice 1. Do not send structured `team_mentions` to the backend yet.
+- Add a Hermes instruction for now: mentioned team member names should be ignored as investigation entities and treated only as UI addressing annotations.
+
 ## Open questions
 
-1. Should the first slice support multiple mentioned members in one prompt, or only one?
-2. Should mention autocomplete be limited to the main prompt textarea, or also available in step-continuation prompts?
-3. Should submitted prompts send structured `team_mentions` to the backend immediately, or should Slice 1 remain client/UI only until task routing is defined?
-4. When a member is mentioned, should Hermes receive any instruction beyond the literal prompt text?
-5. Should a mention create a visible task record now, or is the MVP only explicit prompt addressing?
+No blocking Product questions remain for Slice 1 definition.
+
+UX/development details still to close before implementation:
+
+1. Exact autocomplete popover placement and collision behavior for each prompt surface.
+2. Whether client-side mention metadata should be stored in JS state only during editing/submission, or also retained with the rendered chat message locally.
+3. Exact Hermes instruction wording and where it should be injected in the existing prompt construction flow.
 
 ## Recommendation
 
-Implement Slice 1 as prompt-composer mention autocomplete plus stable mention parsing. Do not create real task records or route work until Product defines task lifecycle, ownership, status, and future user/agent behavior.
+Implement Slice 1 as prompt-surface mention autocomplete plus stable client-side mention parsing. Do not create real task records, send backend mention metadata, or route work until Product defines task lifecycle, ownership, status, and future user/agent behavior.

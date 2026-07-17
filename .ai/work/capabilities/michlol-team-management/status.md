@@ -10,30 +10,37 @@ Defining member task mentions with `@` autocomplete
 
 ## Overall status
 
-Draft extension / Pending Product, UX, and Development review
+Product clarified / Pending UX and Development review
 
 ## Who needs to act now
 
 | Role | Status | Required action | Due before |
 |---|---|---|---|
-| Product | Review needed | Confirm `@member` task mention MVP semantics and whether mentions create visible task records or only address prompts. | Before implementation |
-| Development | Review needed | Review mention autocomplete data shape, prompt integration, and whether any API payload change is included. | Before implementation |
+| Product | Complete | Clarified prompt-only behavior, multiple mentions, all prompt surfaces, client-only metadata, and Hermes ignore instruction. | Done |
+| Development | Review needed | Review mention autocomplete data shape, prompt integration, client-only metadata, and Hermes instruction placement. | Before implementation |
 | UX | Review needed | Define composer autocomplete placement, keyboard behavior, filtering, and empty state. | Before implementation |
 | QA | Review needed | Confirm RTL mention typing, keyboard selection, filtering, and prompt-regression coverage. | Before implementation |
 | Architecture/Security | Watch | Review only if MVP stores team state or introduces real identity/user semantics. | Execution planning |
 
 ## Latest change since previous review
 
-Added `member-task-mentions-brief.md` and `issues/050-member-task-mentions.md` to define the next `מכלול` extension: asking/requesting work from team members by typing `@member-name` with autocomplete.
+Recorded Product clarifications for `@member` task mentions:
+
+- mentions only address prompts and do not create visible task records;
+- multiple members are supported in one prompt;
+- autocomplete should work in every prompt-entry surface, including step-continuation prompts;
+- structured mention metadata remains client-only for Slice 1;
+- Hermes should be instructed to ignore `@member` names as investigation entities for now.
 
 ## Current blockers
 
-Product and UX must confirm the first-slice semantics before implementation:
+No Product blockers remain for Slice 1 definition.
 
-- Does a mention create a visible task record now, or only address the prompt?
-- Should multiple mentioned members be supported in one prompt?
-- Should autocomplete apply only to the main prompt composer or also to step-continuation prompts?
-- Should submitted prompts include structured `team_mentions` in an API payload now, or remain client/UI only until task routing is defined?
+UX and Development still need to close implementation details:
+
+- Exact autocomplete popover placement and collision behavior for each prompt surface.
+- Temporary Hermes instruction wording and injection point in the current prompt flow.
+- Whether client-side mention metadata remains transient or is attached to rendered local chat messages.
 
 ## Current risks
 
@@ -42,7 +49,7 @@ Product and UX must confirm the first-slice semantics before implementation:
 
 ## Next expected artifact
 
-Product/UX/Development review of `member-task-mentions-brief.md`, followed by an execution plan update if approved.
+UX and Development review of `member-task-mentions-brief.md`, followed by an execution plan update if approved.
 
 ## Parent issue
 
@@ -56,7 +63,7 @@ Local draft: `issues/000-parent-capability.md`
 | `issues/020-developer-review.md` | Development | Review implementation approach and risks. | Complete | No |
 | `issues/030-ux-review.md` | UX | Review flow, layout, and avatar/name treatment. | Complete | No |
 | `issues/040-qa-review.md` | QA | Review test plan and regression surface. | Complete | No |
-| `issues/050-member-task-mentions.md` | Product/UX/Development/QA | Define `@member` autocomplete for asking/requesting tasks from team members. | Draft | Yes |
+| `issues/050-member-task-mentions.md` | Product/UX/Development/QA | Define `@member` autocomplete for asking/requesting tasks from team members. | Product clarified | Yes |
 
 ## Artifact links
 
