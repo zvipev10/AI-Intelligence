@@ -6,7 +6,7 @@ Allow the analyst to direct a question or requested task to specific `מכלול
 
 ## Status
 
-Product clarifications accepted / Pending UX and Development review.
+Product/UX/Development clarifications complete / Ready for execution planning.
 
 ## User story
 
@@ -29,7 +29,7 @@ The first implementation should make the analyst's intent explicit in the prompt
 - The picker uses the same member picture/name treatment as the header list where practical.
 - The selected mentions may be parsed into client-side structured metadata using stable member ids.
 - In MVP, submitting the prompt still follows the existing Hermes/chat flow; no real assignment, notification, member-specific routing, backend task creation, or backend `team_mentions` payload is performed.
-- Hermes receives a temporary instruction that `@member` names are UI addressing annotations and should be ignored as investigation entities unless the user explicitly asks about those people.
+- Hermes receives a general temporary instruction that `@member` names are UI addressing annotations and should be ignored as investigation entities unless the user explicitly asks about those people. This instruction is always included for now, because teammate names have no useful agent meaning in the current MVP.
 
 ## Future behavior
 
@@ -57,13 +57,16 @@ The first implementation should make the analyst's intent explicit in the prompt
 - The popover must not cover the send button or prompt action buttons in small layouts.
 - Empty/no-match state should be quiet and compact.
 - All five predefined members should be searchable even when only three are visible in the compact header strip.
+- Approved implementation behavior: show the popover near the caret/input area, constrain it with scrolling when space is tight, and hide it when there are no matches.
 
 ## Development considerations
 
 - The static member catalog should move from duplicated header markup into a small JS data source before autocomplete implementation, so the header and mention picker use the same ids, names, roles, and avatar paths.
 - Mention parsing should store stable ids separately from display text. Display names may change and future duplicate names are possible.
-- Prompt submission can include `team_mentions` metadata only after the API contract is reviewed. If no backend contract is approved for Slice 1, keep metadata client-side and preserve existing prompt behavior.
+- Prompt submission can include `team_mentions` metadata only after the API contract is reviewed. For Slice 1, keep metadata client-side and preserve existing prompt behavior.
 - The mention token should remain readable in plain text if copied or saved.
+- Approved implementation behavior: keep client-side mention metadata transient during editing/submission. Do not attach metadata to rendered local chat messages in Slice 1.
+- Approved implementation behavior: include the Hermes ignore instruction generally for all prompts, not only when recognized teammate mentions exist.
 
 ## QA considerations
 
@@ -80,18 +83,20 @@ The first implementation should make the analyst's intent explicit in the prompt
 - Multiple mentioned members are supported in one prompt.
 - Mention autocomplete should work everywhere the user can write an investigation prompt, including the main prompt and step-continuation prompts.
 - Mention metadata remains client-only in Slice 1. Do not send structured `team_mentions` to the backend yet.
-- Add a Hermes instruction for now: mentioned team member names should be ignored as investigation entities and treated only as UI addressing annotations.
+- Add a general Hermes instruction for now: mentioned team member names should be ignored as investigation entities and treated only as UI addressing annotations. The instruction should be included generally, not only when recognized mentions exist.
 
 ## Open questions
 
-No blocking Product questions remain for Slice 1 definition.
+No blocking Product, UX, or Development questions remain before execution planning.
 
-UX/development details still to close before implementation:
+Implementation details approved for Slice 1:
 
-1. Exact autocomplete popover placement and collision behavior for each prompt surface.
-2. Whether client-side mention metadata should be stored in JS state only during editing/submission, or also retained with the rendered chat message locally.
-3. Exact Hermes instruction wording and where it should be injected in the existing prompt construction flow.
+1. Popover appears near the caret/input area and is constrained/scrollable when space is tight.
+2. Keyboard controls are Arrow Up/Down, Enter or Tab to select, and Escape to close.
+3. No-match state hides the popover.
+4. Client-side mention metadata remains transient during editing/submission and is not attached to rendered local chat messages.
+5. Hermes ignore instruction is general/always-on for now, because teammate names do not make sense to the agent in the current MVP.
 
 ## Recommendation
 
-Implement Slice 1 as prompt-surface mention autocomplete plus stable client-side mention parsing. Do not create real task records, send backend mention metadata, or route work until Product defines task lifecycle, ownership, status, and future user/agent behavior.
+Proceed to execution planning for Slice 1: prompt-surface mention autocomplete plus stable transient client-side mention parsing. Do not create real task records, send backend mention metadata, or route work until Product defines task lifecycle, ownership, status, and future user/agent behavior.

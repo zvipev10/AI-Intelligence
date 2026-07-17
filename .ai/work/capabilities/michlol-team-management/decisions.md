@@ -51,19 +51,36 @@ Existing Hermes/chat API behavior remains unchanged except for the temporary pro
 Follow-ups:
 Revisit backend payload design when Product defines visible tasks, routing, persistence, or agent behavior.
 
-## 2026-07-17 - Hermes should ignore member names as investigation entities
+## 2026-07-17 - Hermes should generally ignore member names as investigation entities
 
 Decision:
-For now, Hermes should receive an instruction that `@member` names are UI addressing annotations and should be ignored as investigation entities unless the analyst explicitly asks about those people.
+For now, Hermes should always receive a general instruction that `@member` names are UI addressing annotations and should be ignored as investigation entities unless the analyst explicitly asks about those people.
 
 Context:
 The visible prompt may contain Hebrew team member names such as `@משה`, but these names are not part of the intelligence target or evidence unless explicitly stated otherwise.
 
 Rationale:
-Without an instruction, Hermes may treat teammate names as entities to analyze, which would pollute the investigation response.
+Without an instruction, Hermes may treat teammate names as entities to analyze, which would pollute the investigation response. Product clarified that teammate names do not make sense to the agent in the current MVP, so the instruction should be general rather than conditional.
 
 Impact:
-Development must add this instruction in the prompt construction flow for prompts that include team member mentions.
+Development must add this instruction generally in the prompt construction flow. The instruction should not depend on whether the current prompt contains recognized teammate mentions.
 
 Follow-ups:
 Development should choose exact wording and injection point during execution planning.
+
+## 2026-07-17 - Member mention UX and client metadata behavior approved
+
+Decision:
+The mention autocomplete popover should appear near the caret/input area, constrain and scroll when space is tight, use Arrow Up/Down, Enter or Tab, and Escape keyboard behavior, and hide when no members match. Client-side mention metadata should remain transient during editing/submission and should not be attached to rendered local chat messages in Slice 1.
+
+Context:
+Open UX/development implementation questions were reviewed before planning the `@member` autocomplete slice.
+
+Rationale:
+These choices keep the feature compact, predictable, and consistent across prompt-entry surfaces without creating new persistence or review surfaces.
+
+Impact:
+Development can proceed to execution planning without additional Product/UX clarification.
+
+Follow-ups:
+QA should validate RTL typing, keyboard behavior, filtering, no-match behavior, and prompt regressions.

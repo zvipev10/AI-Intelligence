@@ -6,7 +6,7 @@
 
 ## Status
 
-Product clarified / Pending UX and Development review
+Product/UX/Development clarifications complete / Ready for execution planning
 
 ## Request
 
@@ -23,7 +23,7 @@ Start defining the ability for the analyst to ask/request specific tasks from `×
 - Keep existing Hermes/chat submission behavior unchanged.
 - Do not create visible task records.
 - Do not send structured `team_mentions` to the backend in Slice 1.
-- Add a temporary Hermes instruction so mentioned team member names are ignored as investigation entities and treated only as UI addressing annotations.
+- Add a general temporary Hermes instruction so mentioned team member names are ignored as investigation entities and treated only as UI addressing annotations. The instruction is always included for now.
 
 ## Acceptance criteria draft
 
@@ -39,7 +39,7 @@ Start defining the ability for the analyst to ask/request specific tasks from `×
 - [ ] The implementation keeps stable ids available client-side separately from display text.
 - [ ] No visible task record is created by using `@member`.
 - [ ] No structured `team_mentions` payload is sent to the backend.
-- [ ] Hermes is instructed to ignore `@member` names as investigation entities unless the user explicitly asks about those people.
+- [ ] Hermes is generally instructed to ignore `@member` names as investigation entities unless the user explicitly asks about those people.
 
 ## Product decisions
 
@@ -47,17 +47,24 @@ Start defining the ability for the analyst to ask/request specific tasks from `×
 - Multiple mentions are supported.
 - Autocomplete is required everywhere the user writes an investigation prompt.
 - Metadata is client-only for Slice 1.
-- Hermes should receive an instruction to ignore the member names as investigation entities for now.
+- Hermes should receive a general/always-on instruction to ignore the member names as investigation entities for now.
+
+## Approved implementation details
+
+- Popover appears near the caret/input area.
+- Popover is constrained and scrollable when space is tight.
+- Keyboard behavior: Arrow Up/Down moves selection, Enter or Tab selects, Escape closes.
+- No-match state hides the popover.
+- Client-side mention metadata is transient during editing/submission and is not attached to rendered local chat messages.
+- Hermes ignore instruction is included generally for all prompts, not only when recognized teammate mentions exist.
 
 ## Open questions
 
-- UX placement/collision behavior for the autocomplete popover on each prompt surface.
-- Development placement for the temporary Hermes instruction in the prompt construction flow.
-- Whether selected mention metadata should remain transient or be attached to the local rendered chat message.
+No blocking questions remain before execution planning.
 
 ## Review needed
 
 - Product: no blocking Product action after the latest clarifications.
-- UX: confirm composer autocomplete behavior, keyboard rules, popover placement, and empty state.
-- Development: confirm data source refactor and whether any API payload change is included.
+- UX: complete for planning based on approved implementation details.
+- Development: complete for planning based on approved client-only scope and always-on Hermes instruction.
 - QA: confirm RTL, keyboard, filtering, and prompt-regression coverage.

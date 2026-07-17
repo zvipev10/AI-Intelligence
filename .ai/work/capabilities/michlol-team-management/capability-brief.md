@@ -119,7 +119,7 @@ Recommended first slice:
 - Preserve stable member ids client-side separately from display text for future routing.
 - Do not create visible task records.
 - Do not send structured `team_mentions` to the backend in Slice 1.
-- Add a temporary Hermes instruction so `@member` names are ignored as investigation entities and treated only as UI addressing annotations.
+- Add a general temporary Hermes instruction so `@member` names are ignored as investigation entities and treated only as UI addressing annotations.
 
 ## UX notes
 
