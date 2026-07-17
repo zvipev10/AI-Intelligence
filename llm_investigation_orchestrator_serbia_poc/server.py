@@ -556,6 +556,165 @@ def normalize_memory_list(value: Any) -> list[dict]:
     return [item for item in value if isinstance(item, dict)]
 
 
+def compact_text(value: Any, limit: int) -> str:
+    text = re.sub(r"\s+", " ", str(value or "")).strip()
+    if len(text) <= limit:
+        return text
+    return text[: max(0, limit - 3)].rstrip() + "..."
+
+
+def extract_result_ids(result: dict) -> list[str]:
+    ids: list[str] = []
+    seen: set[str] = set()
+    for value in result.get("event_ids") or []:
+        text = str(value or "").strip()
+        if text and text not in seen:
+            ids.append(text)
+            seen.add(text)
+    for match in EVENT_ID_PATTERN.findall(str(result.get("answer") or "")):
+        if match not in seen:
+            ids.append(match)
+            seen.add(match)
+    return ids[:80]
+
+
+def create_chat_summary_memory(request: dict) -> dict:
+    investigation_id = str(request.get("investigation_id") or "").strip()
+    if not investigation_id:
+        raise ValueError("Missing investigation_id")
+    if not INVESTIGATION_ID_PATTERN.fullmatch(investigation_id):
+        raise ValueError("Invalid investigation id")
+
+    prompt = str(request.get("prompt") or "").strip()
+    result = request.get("result")
+    if not prompt:
+        raise ValueError("Missing prompt")
+    if not isinstance(result, dict):
+        raise ValueError("Missing result")
+    answer = str(result.get("answer") or "").strip()
+    if not answer:
+        raise ValueError("Missing result answer")
+
+    now = utc_now_iso()
+    run_id = str(result.get("run_id") or result.get("source_run_id") or "").strip()
+    item = {
+        "id": f"chat_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}_{secrets.token_hex(3)}",
+        "kind": "chat_result_summary",
+        "saved_at_utc": now,
+        "source": "manual_user_action",
+        "prompt": compact_text(prompt, 1200),
+        "answer_summary": compact_text(answer, 1800),
+        "answer_preview": compact_text(answer, 320),
+        "source_run_id": run_id,
+        "recommended_view": result.get("recommended_view") or "",
+        "step_count": len(result.get("investigation_steps") or []),
+        "evidence_ids": extract_result_ids(result),
+    }
+
+    existing = load_investigation_memory(investigation_id)
+    memory = existing.get("memory") if isinstance(existing.get("memory"), dict) else {}
+    chat_summaries = normalize_memory_list(memory.get("chat_summaries"))
+    chat_summaries.append(item)
+    saved = save_investigation_memory({
+        "investigation_id": investigation_id,
+        "name": request.get("name") or existing.get("name") or investigation_id,
+        "memory": {
+            "chat_summaries": chat_summaries,
+            "layers": normalize_memory_list(memory.get("layers")),
+        }
+    })
+    return {"saved": item, "memory": saved}
+
+
+def normalize_memory_filters(value: Any) -> list[dict]:
+    filters: list[dict] = []
+    for item in normalize_memory_list(value):
+        field = compact_text(item.get("field"), 160)
+        operator = compact_text(item.get("operator") or "contains", 40)
+        filter_value = compact_text(item.get("value"), 320)
+        if not field or not filter_value:
+            continue
+        filters.append({
+            "field": field,
+            "operator": operator,
+            "value": filter_value,
+        })
+    return filters[:20]
+
+
+def normalize_memory_ids(value: Any) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    ids: list[str] = []
+    seen: set[str] = set()
+    for item in value:
+        text = compact_text(item, 120)
+        if not text or text in seen:
+            continue
+        ids.append(text)
+        seen.add(text)
+        if len(ids) >= 80:
+            break
+    return ids
+
+
+def memory_count(value: Any) -> int:
+    try:
+        return max(0, int(value))
+    except (TypeError, ValueError):
+        return 0
+
+
+def create_layer_memory(request: dict) -> dict:
+    investigation_id = str(request.get("investigation_id") or "").strip()
+    if not investigation_id:
+        raise ValueError("Missing investigation_id")
+    if not INVESTIGATION_ID_PATTERN.fullmatch(investigation_id):
+        raise ValueError("Invalid investigation id")
+
+    layer = request.get("layer")
+    if not isinstance(layer, dict):
+        raise ValueError("Missing layer")
+    label = compact_text(layer.get("label"), 240)
+    kind = compact_text(layer.get("kind"), 80)
+    if not label or not kind:
+        raise ValueError("Missing layer label or kind")
+
+    now = utc_now_iso()
+    item = {
+        "id": f"layer_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}_{secrets.token_hex(3)}",
+        "kind": "layer_filter_state",
+        "saved_at_utc": now,
+        "source": "manual_user_action",
+        "layer_id": compact_text(layer.get("id"), 240),
+        "label": label,
+        "layer_kind": kind,
+        "catalog_layer_id": compact_text(layer.get("catalog_layer_id") or layer.get("catalogLayerId"), 240),
+        "data_id": compact_text(layer.get("data_id") or layer.get("dataId"), 240),
+        "source_id": compact_text(layer.get("source_id") or layer.get("sourceId"), 240),
+        "source_label": compact_text(layer.get("source_label") or layer.get("sourceLabel"), 240),
+        "source_type": compact_text(layer.get("source_type"), 160),
+        "original_count": memory_count(layer.get("original_count")),
+        "filtered_count": memory_count(layer.get("filtered_count")),
+        "applied_filters": normalize_memory_filters(layer.get("applied_filters")),
+        "sample_ids": normalize_memory_ids(layer.get("sample_ids")),
+    }
+
+    existing = load_investigation_memory(investigation_id)
+    memory = existing.get("memory") if isinstance(existing.get("memory"), dict) else {}
+    layers = normalize_memory_list(memory.get("layers"))
+    layers.append(item)
+    saved = save_investigation_memory({
+        "investigation_id": investigation_id,
+        "name": request.get("name") or existing.get("name") or investigation_id,
+        "memory": {
+            "chat_summaries": normalize_memory_list(memory.get("chat_summaries")),
+            "layers": layers,
+        }
+    })
+    return {"saved": item, "memory": saved}
+
+
 def normalize_investigation_memory(request: dict) -> dict:
     investigation_id = str(request.get("investigation_id") or "").strip()
     if not investigation_id:
@@ -1520,6 +1679,73 @@ class HermesClient:
                 lines.append(" | ".join(parts))
             lines.append("כאשר שאלת האנליסט מתייחסת לשכבות, לתוצאות שנבחרו, או להקשר הנוכחי בממשק, השתמש בשכבות האלה כמסגרת צמצום ולא כנתון רק לתצוגה.")
 
+        saved_memory = inv_state.get("saved_memory") or {}
+        if isinstance(saved_memory, dict):
+            chat_summaries = saved_memory.get("chat_summaries") or []
+            if chat_summaries:
+                lines.append("זיכרון חקירה שנשמר ידנית על ידי האנליסט - ממצאי שיחה:")
+                for item in chat_summaries[:8]:
+                    if not isinstance(item, dict):
+                        continue
+                    prompt = str(item.get("prompt") or "").strip()
+                    summary = str(item.get("answer_summary") or item.get("answer_preview") or "").strip()
+                    evidence_ids = item.get("evidence_ids") or []
+                    ids_text = ", ".join(str(eid) for eid in evidence_ids[:60] if eid)
+                    parts = ["- ממצא שמור"]
+                    if prompt:
+                        parts.append(f"שאלה={prompt[:500]}")
+                    if summary:
+                        parts.append(f"סיכום={summary[:800]}")
+                    if ids_text:
+                        parts.append(f"evidence_ids={ids_text}")
+                    lines.append(" | ".join(parts))
+
+            memory_layers = saved_memory.get("layers") or []
+            if memory_layers:
+                lines.append("זיכרון חקירה שנשמר ידנית על ידי האנליסט - שכבות ומסננים:")
+                for layer in memory_layers[:12]:
+                    if not isinstance(layer, dict):
+                        continue
+                    label = str(layer.get("label") or layer.get("layer_id") or "שכבה שמורה")
+                    kind = str(layer.get("layer_kind") or layer.get("kind") or "unknown")
+                    catalog_id = str(layer.get("catalog_layer_id") or "")
+                    source_type = str(layer.get("source_type") or "").strip()
+                    filtered_count = layer.get("filtered_count")
+                    original_count = layer.get("original_count")
+                    count_text = ""
+                    if isinstance(filtered_count, int) and isinstance(original_count, int):
+                        count_text = f"{filtered_count}/{original_count}" if filtered_count != original_count else str(original_count)
+                    filters = layer.get("applied_filters") or []
+                    filter_parts = []
+                    if isinstance(filters, list):
+                        for item in filters[:8]:
+                            if not isinstance(item, dict):
+                                continue
+                            field = str(item.get("field") or "").strip()
+                            value = str(item.get("value") or "").strip()
+                            if field and value:
+                                filter_parts.append(f"{field} contains {value}")
+                    sample_ids = layer.get("sample_ids") or []
+                    ids_text = ", ".join(str(item) for item in sample_ids[:80] if item)
+                    restore_status = str(layer.get("restore_status") or "").strip()
+                    parts = [f"- {label}", f"kind={kind}"]
+                    if catalog_id:
+                        parts.append(f"catalog_layer_id={catalog_id}")
+                    if source_type:
+                        parts.append(f"source_type={source_type}")
+                    if count_text:
+                        parts.append(f"count={count_text}")
+                    if filter_parts:
+                        parts.append(f"filters={'; '.join(filter_parts)}")
+                    if ids_text:
+                        parts.append(f"sample_ids={ids_text}")
+                        if isinstance(filtered_count, int) and filtered_count > len(sample_ids):
+                            parts.append("sample_ids_are_partial=true")
+                    if restore_status:
+                        parts.append(f"restore_status={restore_status}")
+                    lines.append(" | ".join(parts))
+                lines.append("זיכרון זה נשמר ידנית; כאשר השאלה מתייחסת לחקירה הקודמת, המשך ממנו במקום להתחיל מאפס.")
+
         lines.append("--- המשך החקירה משאלת האנליסט הנוכחית ---")
         return "\n".join(lines)
 
@@ -2022,6 +2248,38 @@ class Handler(SimpleHTTPRequestHandler):
                 request = json.loads(self.rfile.read(length).decode("utf-8-sig"))
                 saved = create_saved_question(request)
                 self.send_json(201, saved_question_metadata(saved))
+            except ValueError as exc:
+                self.send_json(400, {"error": str(exc)})
+            except Exception as exc:
+                self.send_json(502, {"error": str(exc)})
+            return
+        if path == "/api/investigation-memory/chat-summary":
+            try:
+                length = int(self.headers.get("Content-Length", "0"))
+                if length > 2_000_000:
+                    self.send_json(413, {"error": "Investigation memory summary payload too large"})
+                    return
+                request = json.loads(self.rfile.read(length).decode("utf-8-sig"))
+                if not isinstance(request, dict):
+                    raise ValueError("Invalid investigation memory summary payload")
+                saved = create_chat_summary_memory(request)
+                self.send_json(201, saved)
+            except ValueError as exc:
+                self.send_json(400, {"error": str(exc)})
+            except Exception as exc:
+                self.send_json(502, {"error": str(exc)})
+            return
+        if path == "/api/investigation-memory/layer":
+            try:
+                length = int(self.headers.get("Content-Length", "0"))
+                if length > 2_000_000:
+                    self.send_json(413, {"error": "Investigation memory layer payload too large"})
+                    return
+                request = json.loads(self.rfile.read(length).decode("utf-8-sig"))
+                if not isinstance(request, dict):
+                    raise ValueError("Invalid investigation memory layer payload")
+                saved = create_layer_memory(request)
+                self.send_json(201, saved)
             except ValueError as exc:
                 self.send_json(400, {"error": str(exc)})
             except Exception as exc:

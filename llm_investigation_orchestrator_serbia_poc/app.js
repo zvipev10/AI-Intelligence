@@ -183,6 +183,10 @@ const state = {
   investigationId: createInvestigationId(),
   investigationName: DEFAULT_INVESTIGATION_NAME,
   investigations: [],
+  investigationMemory: null,
+  investigationMemoryLoading: false,
+  investigationMemoryError: "",
+  investigationMemoryLoadToken: 0,
   investigationSelectorOpen: false,
   recordedQuestions: [],
   savedQuestions: [],
@@ -812,6 +816,214 @@ function selectedLayerContextForAgent() {
     });
 }
 
+function normalizeMemoryList(value) {
+  return Array.isArray(value) ? value.filter(item => item && typeof item === "object") : [];
+}
+
+function currentSavedMemory() {
+  const memory = state.investigationMemory?.memory;
+  return memory && typeof memory === "object" ? memory : { chat_summaries: [], layers: [] };
+}
+
+function normalizeSavedMemoryForAgent(memory = currentSavedMemory()) {
+  const chatSummaries = normalizeMemoryList(memory.chat_summaries).slice(-8).map(item => ({
+    id: item.id || "",
+    kind: item.kind || "chat_result_summary",
+    saved_at_utc: item.saved_at_utc || "",
+    prompt: item.prompt || "",
+    answer_summary: item.answer_summary || item.answer_preview || "",
+    answer_preview: item.answer_preview || "",
+    source_run_id: item.source_run_id || "",
+    recommended_view: item.recommended_view || "",
+    step_count: Number(item.step_count || 0),
+    evidence_ids: Array.isArray(item.evidence_ids) ? item.evidence_ids.slice(0, 80) : []
+  }));
+  const layers = normalizeMemoryList(memory.layers).slice(-12).map(item => ({
+    id: item.id || "",
+    kind: item.kind || "layer_filter_state",
+    saved_at_utc: item.saved_at_utc || "",
+    layer_id: item.layer_id || "",
+    label: item.label || "",
+    layer_kind: item.layer_kind || item.kind || "",
+    catalog_layer_id: item.catalog_layer_id || "",
+    data_id: item.data_id || "",
+    source_id: item.source_id || "",
+    source_label: item.source_label || "",
+    source_type: item.source_type || "",
+    original_count: Number(item.original_count || 0),
+    filtered_count: Number(item.filtered_count || 0),
+    applied_filters: normalizeMemoryList(item.applied_filters).slice(0, 20).map(filter => ({
+      field: filter.field || "",
+      operator: filter.operator || "contains",
+      value: stringifyFilterValue(filter.value)
+    })).filter(filter => filter.field && filter.value),
+    sample_ids: Array.isArray(item.sample_ids) ? item.sample_ids.slice(0, 80) : [],
+    restore_status: item.restore_status || ""
+  }));
+  return {
+    chat_summaries: chatSummaries,
+    layers
+  };
+}
+
+function investigationMemoryForAgent() {
+  const memory = normalizeSavedMemoryForAgent();
+  if (!memory.chat_summaries.length && !memory.layers.length) return null;
+  return memory;
+}
+
+function filtersFromSavedMemory(savedLayer) {
+  return normalizeMemoryList(savedLayer?.applied_filters).map(filter => ({
+    id: createFilterId(),
+    field: filter.field || "",
+    value: stringifyFilterValue(filter.value)
+  })).filter(filter => filter.field && normalizeFilterText(filter.value));
+}
+
+function applySavedFiltersToLayer(layer, savedLayer) {
+  if (!layer) return;
+  ensureLayerFilterState(layer);
+  const filters = filtersFromSavedMemory(savedLayer);
+  layer.appliedFilters = cloneFilters(filters);
+  layer.draftFilters = cloneFilters(filters);
+  layer.filterError = "";
+  layer.investigation_memory_layer_id = savedLayer.id || true;
+}
+
+async function restoreMemorySavedLayers(memoryPayload, token) {
+  const savedLayers = normalizeMemoryList(memoryPayload?.memory?.layers);
+  if (!savedLayers.length) {
+    renderAllViews();
+    return;
+  }
+  const restoredMemoryLayers = [];
+  for (const savedLayer of savedLayers) {
+    if (token !== state.investigationMemoryLoadToken) return;
+    const catalogLayerId = savedLayer.catalog_layer_id || "";
+    if (!catalogLayerId) {
+      restoredMemoryLayers.push({ ...savedLayer, restore_status: "context_only" });
+      continue;
+    }
+    const openedLayer = await openCatalogLayer(catalogLayerId, {
+      silent: true,
+      savedLayer
+    });
+    restoredMemoryLayers.push({
+      ...savedLayer,
+      restore_status: openedLayer ? "opened" : "unavailable"
+    });
+  }
+  if (token !== state.investigationMemoryLoadToken) return;
+  const memory = memoryPayload.memory || {};
+  state.investigationMemory = {
+    ...memoryPayload,
+    memory: {
+      chat_summaries: normalizeMemoryList(memory.chat_summaries),
+      layers: restoredMemoryLayers
+    }
+  };
+  renderAllViews();
+  renderLayerSelector();
+  renderQueryLayersModal();
+}
+
+async function loadInvestigationMemory(options = {}) {
+  if (!state.investigationId) return null;
+  const token = ++state.investigationMemoryLoadToken;
+  state.investigationMemoryLoading = true;
+  state.investigationMemoryError = "";
+  try {
+    const response = await fetch(`/api/investigation-memory?id=${encodeURIComponent(state.investigationId)}`, { cache: "no-store" });
+    const payload = await response.json();
+    if (!response.ok) throw new Error(payload.error || "טעינת זיכרון החקירה נכשלה");
+    if (token !== state.investigationMemoryLoadToken) return null;
+    state.investigationMemory = payload;
+    if (options.restoreLayers) await restoreMemorySavedLayers(payload, token);
+    return payload;
+  } catch (error) {
+    if (token === state.investigationMemoryLoadToken) {
+      state.investigationMemoryError = error.message || "טעינת זיכרון החקירה נכשלה";
+      state.investigationMemory = null;
+    }
+    return null;
+  } finally {
+    if (token === state.investigationMemoryLoadToken) {
+      state.investigationMemoryLoading = false;
+    }
+  }
+}
+
+function layerMemoryPayload(layer) {
+  ensureLayerFilterState(layer);
+  const filteredItems = itemsForLayerPresentation(layer);
+  const appliedFilters = validAppliedFilters(layer).map(filter => ({
+    field: filter.field,
+    operator: "contains",
+    value: stringifyFilterValue(filter.value)
+  }));
+  const firstItem = filteredItems[0] || (layer.items || [])[0] || {};
+  const sourceType = layer.source_type
+    || firstItem.source_type
+    || (String(layer.catalogLayerId || "").startsWith("events:") ? String(layer.catalogLayerId).slice("events:".length) : "");
+  return {
+    id: layer.id,
+    label: layer.label,
+    kind: layer.kind,
+    catalog_layer_id: layer.catalogLayerId || "",
+    data_id: layer.dataId || "",
+    source_id: layer.sourceId || "",
+    source_label: layer.sourceLabel || "",
+    source_type: sourceType,
+    original_count: (layer.items || []).length,
+    filtered_count: filteredItems.length,
+    applied_filters: appliedFilters,
+    sample_ids: identifiersForLayerContext(layer, filteredItems)
+  };
+}
+
+function canSaveLayerToMemory(layer) {
+  return Boolean(
+    state.investigationId
+    && layer
+    && layer.capabilities?.table
+    && layer.label
+    && !layer.investigation_memory_layer_id
+  );
+}
+
+async function saveLayerToInvestigationMemory(layer, button) {
+  if (!canSaveLayerToMemory(layer) || state.busy || button?.dataset.memorySaving === "true") return;
+  button.dataset.memorySaving = "true";
+  button.title = "שומר שכבה לזיכרון החקירה";
+  button.setAttribute("aria-label", "שומר שכבה לזיכרון החקירה");
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15000);
+  try {
+    const response = await fetch("/api/investigation-memory/layer", {
+      method: "POST",
+      headers: { "Content-Type": "application/json; charset=utf-8" },
+      signal: controller.signal,
+      body: JSON.stringify({
+        investigation_id: state.investigationId,
+        name: state.investigationName,
+        layer: layerMemoryPayload(layer),
+      }),
+    });
+    const payload = await response.json();
+    if (!response.ok) throw new Error(payload.error || "שמירת השכבה לזיכרון נכשלה");
+    layer.investigation_memory_layer_id = payload.saved?.id || true;
+    button.title = "השכבה נשמרה לזיכרון החקירה";
+    button.setAttribute("aria-label", "השכבה נשמרה לזיכרון החקירה");
+    renderEvidence();
+  } catch (error) {
+    button.title = error.name === "AbortError" ? "שמירת השכבה נמשכה יותר מדי זמן. נסה שוב." : error.message;
+    button.setAttribute("aria-label", button.title);
+  } finally {
+    clearTimeout(timeout);
+    delete button.dataset.memorySaving;
+  }
+}
+
 function renderSelectedLayersButton() {
   if (!selectedLayersButton || !selectedLayersLabel || !selectedLayersSummary) return;
   const layers = state.layers.filter(layer => state.promptSelectedLayerIds.has(layer.id) && layer.capabilities?.table);
@@ -863,12 +1075,13 @@ function promptForAgentWithSelectedLayers(prompt, selectedLayers) {
 }
 
 function investigationStateForPrompt(selectedLayers) {
-  if (!selectedLayers.length) return null;
+  const savedMemory = investigationMemoryForAgent();
+  if (!selectedLayers.length && !savedMemory) return null;
   const userTurns = state.history.filter(item => item.role === "user").length + 1;
-  return {
-    turn: userTurns,
-    selected_layers: selectedLayers
-  };
+  const invState = { turn: userTurns };
+  if (selectedLayers.length) invState.selected_layers = selectedLayers;
+  if (savedMemory) invState.saved_memory = savedMemory;
+  return invState;
 }
 
 function normalizeInvestigationName(name) {
@@ -970,10 +1183,15 @@ function selectInvestigation(investigation, options = {}) {
   state.investigationId = investigation.id;
   state.investigationName = investigation.name;
   state.investigationSelectorOpen = false;
+  state.investigationMemoryLoadToken += 1;
+  state.investigationMemory = null;
+  state.investigationMemoryError = "";
+  state.investigationMemoryLoading = false;
   if (investigationInput) investigationInput.value = investigation.name;
   saveInvestigationRegistry();
   resetInvestigation({ keepInvestigation: true });
   renderInvestigationSelector();
+  loadInvestigationMemory({ restoreLayers: true });
   if (options.focusInput) investigationInput?.focus();
 }
 
@@ -1234,9 +1452,9 @@ async function loadLayerCatalog() {
   }
 }
 
-async function openCatalogLayer(layerId) {
+async function openCatalogLayer(layerId, options = {}) {
   const layer = state.layerCatalog.find(item => item.id === layerId);
-  if (!layer || state.openingLayerIds.has(layerId)) return;
+  if (!layer || state.openingLayerIds.has(layerId)) return null;
   const existing = state.layers.find(item => item.catalogLayerId === layerId);
   if (existing) {
     existing.visible = true;
@@ -1244,10 +1462,13 @@ async function openCatalogLayer(layerId) {
     state.rawOverlayMinimized = false;
     state.layerSearchQuery = "";
     state.layerSearchOpen = false;
-    renderAllViews();
-    renderLayerSelector();
-    renderQueryLayersModal();
-    return;
+    if (options.savedLayer) applySavedFiltersToLayer(existing, options.savedLayer);
+    if (!options.silent) {
+      renderAllViews();
+      renderLayerSelector();
+      renderQueryLayersModal();
+    }
+    return existing;
   }
 
     state.openingLayerIds.add(layerId);
@@ -1264,21 +1485,29 @@ async function openCatalogLayer(layerId) {
       preferredView: openedLayer.capabilities.map ? "map" : (openedLayer.capabilities.timeline ? "timeline" : "evidence"),
       layers: [openedLayer]
     });
+    const restoredLayer = added.find(item => item.catalogLayerId === layerId)
+      || state.layers.find(item => item.catalogLayerId === layerId)
+      || null;
+    if (restoredLayer && options.savedLayer) applySavedFiltersToLayer(restoredLayer, options.savedLayer);
     state.rawOverlayMinimized = false;
     state.layerSearchQuery = "";
     state.layerSearchOpen = false;
-    showResult(
+    if (!options.silent) showResult(
       "שכבה נפתחה",
       added.length
         ? `${openedLayer.label}: ${(openedLayer.items || []).length.toLocaleString("he-IL")} רשומות נטענו.`
         : "השכבה כבר פתוחה."
     );
+    return restoredLayer;
   } catch (error) {
     state.layerCatalogError = error.message || "טעינת נתוני השכבה נכשלה";
+    return null;
   } finally {
     state.openingLayerIds.delete(layerId);
-    renderLayerSelector();
-    renderQueryLayersModal();
+    if (!options.silent) {
+      renderLayerSelector();
+      renderQueryLayersModal();
+    }
   }
 }
 
@@ -1383,6 +1612,7 @@ function finalizeAssistantMessage(answer, options = {}) {
         <span class="final-answer-show-label">הצג תוצאות</span>
       </button>
       <button type="button" class="final-answer-save-btn" ${options.result.saved_question_id ? "disabled" : ""}>${options.result.saved_question_id ? "נשמר" : "שמור"}</button>
+      <button type="button" class="final-answer-memory-btn" ${options.result.investigation_memory_summary_id ? "disabled" : ""}>${options.result.investigation_memory_summary_id ? "נשמר בזיכרון" : "שמור לזיכרון"}</button>
     `;
     const finalShowBtn = actions.querySelector(".final-answer-show-btn");
     finalShowBtn.addEventListener("click", () => {
@@ -1390,6 +1620,9 @@ function finalizeAssistantMessage(answer, options = {}) {
     });
     actions.querySelector(".final-answer-save-btn").addEventListener("click", event => {
       saveResultQuestion(options.result, options.prompt || "", event.currentTarget);
+    });
+    actions.querySelector(".final-answer-memory-btn").addEventListener("click", event => {
+      saveResultToInvestigationMemory(options.result, options.prompt || "", event.currentTarget);
     });
     const evidenceToggle = answerBody.querySelector(".evidence-ids-toggle");
     if (evidenceToggle) {
@@ -1752,6 +1985,7 @@ async function submitStepInject() {
         prompt: continuationPrompt,
         history: state.history,
         investigation_id: state.investigationId,
+        investigation_state: investigationStateForPrompt(selectedLayerContextForAgent()),
         continuation_context: {
           original_classification: classificationContext,
           from_step: fromStep || null
@@ -2108,6 +2342,18 @@ function canSaveResult(result, prompt) {
   );
 }
 
+function canSaveResultToMemory(result, prompt) {
+  return Boolean(
+    state.investigationId
+    && prompt
+    && result
+    && result.answer
+    && !result.demo_replay
+    && !result.recorded_id
+    && !result.investigation_memory_summary_id
+  );
+}
+
 function formatSavedTime(value) {
   if (!value) return "זמן שמירה לא ידוע";
   const parsed = new Date(value);
@@ -2153,6 +2399,47 @@ async function saveResultQuestion(result, prompt, button) {
         button.disabled = false;
         button.textContent = "שמור";
         button.title = "שמור את תוצאת החקירה";
+      }
+    }, 2500);
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function saveResultToInvestigationMemory(result, prompt, button) {
+  if (!canSaveResultToMemory(result, prompt) || state.busy || button?.disabled) return;
+  button.disabled = true;
+  button.textContent = "שומר לזיכרון...";
+  button.title = "שומר את הממצא לזיכרון החקירה";
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15000);
+  try {
+    const response = await fetch("/api/investigation-memory/chat-summary", {
+      method: "POST",
+      headers: { "Content-Type": "application/json; charset=utf-8" },
+      signal: controller.signal,
+      body: JSON.stringify({
+        investigation_id: state.investigationId,
+        name: state.investigationName,
+        prompt,
+        result,
+      }),
+    });
+    const payload = await response.json();
+    if (!response.ok) throw new Error(payload.error || "שמירה לזיכרון החקירה נכשלה");
+    result.investigation_memory_summary_id = payload.saved?.id || true;
+    if (state.lastResult === result) state.lastResult = result;
+    button.textContent = "נשמר בזיכרון";
+    button.title = "הממצא נשמר לזיכרון החקירה";
+  } catch (error) {
+    const message = error.name === "AbortError" ? "שמירה לזיכרון נמשכה יותר מדי זמן. נסה שוב." : error.message;
+    button.textContent = "נכשל";
+    button.title = message;
+    setTimeout(() => {
+      if (!result.investigation_memory_summary_id) {
+        button.disabled = false;
+        button.textContent = "שמור לזיכרון";
+        button.title = "שמור את הממצא לזיכרון החקירה";
       }
     }, 2500);
   } finally {
@@ -2696,6 +2983,9 @@ function renderEvidence() {
       <span class="raw-source-filter ${layer.filterPanelOpen ? "active" : ""} ${validAppliedFilters(layer).length ? "has-filters" : ""}" data-layer-filter="${escapeHtml(layer.id)}" title="פתח מסננים" aria-label="פתח מסננים" aria-pressed="${layer.filterPanelOpen ? "true" : "false"}">
         <span class="filter-funnel-icon" aria-hidden="true"></span>
       </span>
+      <span class="raw-source-memory ${layer.investigation_memory_layer_id ? "saved" : ""}" data-layer-memory="${escapeHtml(layer.id)}" title="${layer.investigation_memory_layer_id ? "השכבה נשמרה לזיכרון החקירה" : "שמור שכבה לזיכרון החקירה"}" aria-label="${layer.investigation_memory_layer_id ? "השכבה נשמרה לזיכרון החקירה" : "שמור שכבה לזיכרון החקירה"}" aria-pressed="${layer.investigation_memory_layer_id ? "true" : "false"}">
+        <span class="memory-bookmark-icon" aria-hidden="true"></span>
+      </span>
         <span class="raw-source-eye" data-layer-visibility="${escapeHtml(layer.id)}" title="${layer.visible ? "הסתר שכבה" : "הצג שכבה"}" aria-label="${layer.visible ? "הסתר שכבה" : "הצג שכבה"}" aria-pressed="${layer.visible ? "true" : "false"}">
           <span class="visibility-eye-icon ${layer.visible ? "" : "off"}" aria-hidden="true"></span>
         </span>
@@ -2809,6 +3099,9 @@ function resetInvestigation(options = {}) {
   state.lastResult = null;
   state.lastPrompt = null;
   state.queryContext = null;
+  state.investigationMemory = null;
+  state.investigationMemoryError = "";
+  state.investigationMemoryLoading = false;
   state.layerSearchQuery = "";
   state.layerSearchOpen = false;
   setPromptOptionsOpen(false);
@@ -2922,6 +3215,13 @@ document.addEventListener("click", event => {
     const layer = state.layers.find(item => item.id === visibilityToggle.dataset.layerVisibility);
     if (layer) layer.visible = !layer.visible;
     renderAllViews();
+    return;
+  }
+  const memoryToggle = event.target.closest("[data-layer-memory]");
+  if (memoryToggle) {
+    event.stopPropagation();
+    const layer = state.layers.find(item => item.id === memoryToggle.dataset.layerMemory);
+    if (layer) saveLayerToInvestigationMemory(layer, memoryToggle);
     return;
   }
   const filterToggle = event.target.closest("[data-layer-filter]");
@@ -3137,7 +3437,8 @@ renderInvestigationSelector();
 
 async function boot() {
   initMap();
-  loadLayerCatalog();
+  await loadLayerCatalog();
+  await loadInvestigationMemory({ restoreLayers: true });
   try {
     const response = await fetch("./data/serbia_kosovo_events_projection.csv");
     if (!response.ok) throw new Error("dataset unavailable");
