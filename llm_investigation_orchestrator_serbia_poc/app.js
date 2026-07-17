@@ -381,6 +381,54 @@ function matchingTeamMembers(query) {
   });
 }
 
+function recognizedTeamMemberByMention(rawMention) {
+  const normalized = normalizeTeamMentionText(rawMention).replace(/^@/, "");
+  if (!normalized) return null;
+  return MICHLOL_MEMBERS.find(member => normalizeTeamMentionText(member.displayName) === normalized) || null;
+}
+
+function highlightedPromptHtml(value) {
+  const text = String(value || "");
+  if (!text) return "";
+  let html = "";
+  let lastIndex = 0;
+  const mentionPattern = /@([^\s@]+)/gu;
+  let match;
+  while ((match = mentionPattern.exec(text))) {
+    html += escapeHtml(text.slice(lastIndex, match.index));
+    const member = recognizedTeamMemberByMention(match[0]);
+    const mention = escapeHtml(match[0]);
+    html += member ? `<span class="mention-highlight-token">${mention}</span>` : mention;
+    lastIndex = match.index + match[0].length;
+  }
+  html += escapeHtml(text.slice(lastIndex));
+  return html.endsWith("\n") ? `${html}\n` : html;
+}
+
+function syncMentionHighlight(textarea) {
+  const highlights = textarea?.closest(".mention-editor")?.querySelector(".mention-highlights");
+  if (!highlights) return;
+  highlights.innerHTML = highlightedPromptHtml(textarea.value);
+  highlights.scrollTop = textarea.scrollTop;
+  highlights.scrollLeft = textarea.scrollLeft;
+}
+
+function enableMentionHighlight(textarea) {
+  if (!textarea || textarea.dataset.mentionHighlight === "true" || !textarea.parentNode) return;
+  const wrapper = document.createElement("div");
+  wrapper.className = "mention-editor";
+  const highlights = document.createElement("div");
+  highlights.className = "mention-highlights";
+  highlights.setAttribute("aria-hidden", "true");
+  textarea.parentNode.insertBefore(wrapper, textarea);
+  wrapper.append(highlights, textarea);
+  textarea.classList.add("mention-source");
+  textarea.dataset.mentionHighlight = "true";
+  textarea.addEventListener("input", () => syncMentionHighlight(textarea));
+  textarea.addEventListener("scroll", () => syncMentionHighlight(textarea));
+  syncMentionHighlight(textarea);
+}
+
 function positionTeamMentionMenu(textarea) {
   if (!teamMentionMenu || teamMentionMenu.hidden) return;
   const rect = textarea.getBoundingClientRect();
@@ -458,6 +506,7 @@ function chooseTeamMention(index = teamMentionState.activeIndex) {
   textarea.focus();
   textarea.setSelectionRange(caret, caret);
   state.activeTeamMentions = teamMentionsForPrompt(textarea.value);
+  syncMentionHighlight(textarea);
   closeTeamMentionMenu();
 }
 
@@ -494,6 +543,7 @@ function attachTeamMentionAutocomplete(textarea) {
   textarea.setAttribute("aria-controls", "teamMentionMenu");
   textarea.addEventListener("input", () => {
     state.activeTeamMentions = teamMentionsForPrompt(textarea.value);
+    syncMentionHighlight(textarea);
     updateTeamMentionMenu(textarea);
   });
   textarea.addEventListener("click", () => updateTeamMentionMenu(textarea));
@@ -2094,6 +2144,7 @@ function openStepInjectModal(stepLabel, stepNumber) {
   stepInjectModal.dataset.fromStep = stepNumber;
   stepInjectTitle.textContent = `צעד ${stepNumber}: ${stepLabel}`;
   stepInjectPrompt.value = "";
+  syncMentionHighlight(stepInjectPrompt);
   stepInjectError.hidden = true;
   stepInjectError.textContent = "";
 
@@ -3635,6 +3686,7 @@ promptForm.addEventListener("submit", event => {
   event.preventDefault();
   const prompt = promptInput.value;
   promptInput.value = "";
+  syncMentionHighlight(promptInput);
   closeTeamMentionMenu();
   runPrompt(prompt);
 });
@@ -3701,6 +3753,8 @@ recordedClose.addEventListener("click", closeRecordedModal);
 queryLayersClose.addEventListener("click", closeQueryLayersModal);
 queryLayersSubmit.addEventListener("click", submitQueryLayerSelection);
 renderMichlolTeam();
+enableMentionHighlight(promptInput);
+enableMentionHighlight(stepInjectPrompt);
 attachTeamMentionAutocomplete(promptInput);
 attachTeamMentionAutocomplete(stepInjectPrompt);
 initPanelResizers();

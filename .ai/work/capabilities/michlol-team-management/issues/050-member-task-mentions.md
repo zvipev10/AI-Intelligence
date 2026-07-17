@@ -31,6 +31,7 @@ Start defining the ability for the analyst to ask/request specific tasks from `×
 - [x] The autocomplete includes all five predefined members.
 - [x] Typing after `@` filters by member display name and role label.
 - [x] Choosing a suggestion inserts a readable mention token into the prompt.
+- [x] A recognized selected mention is visually highlighted in blue.
 - [x] Multiple member mentions can appear in the same prompt.
 - [x] Mention autocomplete works in step-continuation prompt surfaces as well as the main prompt.
 - [x] Keyboard and pointer selection are supported.
@@ -76,3 +77,7 @@ No blocking questions remain.
 ## Deployment checkpoint
 
 `../checkpoint-006.md`
+
+## UX follow-up checkpoint
+
+`../checkpoint-007.md`
