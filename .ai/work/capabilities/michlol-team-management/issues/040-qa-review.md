@@ -6,7 +6,7 @@ Define validation coverage for the `מכלול` MVP and protect existing investi
 
 ## Required action
 
-Review the capability brief and produce `qa-review.md`.
+Complete. QA review produced `qa-review.md`.
 
 ## Owner role
 
@@ -24,19 +24,20 @@ QA review with happy path, edge cases, regression areas, and suggested automatio
 
 ## Blocking
 
-Blocks execution planning.
+No longer blocking execution planning.
 
 ## Completion criteria
 
-- [ ] Happy path validation is defined.
-- [ ] Broken image fallback validation is defined.
-- [ ] Long/mixed-language name validation is defined.
-- [ ] Mobile/desktop validation is defined.
-- [ ] Regression checks cover chat, investigation memory, layers, filters, map, timeline, and table.
+- [x] Happy path validation is defined.
+- [x] Broken image fallback validation is defined.
+- [x] Long/mixed-language name validation is defined.
+- [x] Mobile/desktop validation is defined.
+- [x] Regression checks cover chat, investigation memory, layers, filters, map, timeline, and table.
 
 ## Related artifacts
 
 - `.ai/work/capabilities/michlol-team-management/capability-brief.md`
+- `.ai/work/capabilities/michlol-team-management/qa-review.md`
 - `.ai/work/capabilities/michlol-team-management/status.md`
 
 ## Parent capability
