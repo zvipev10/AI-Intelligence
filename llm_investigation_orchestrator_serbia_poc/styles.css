@@ -133,7 +133,7 @@ h3 { margin: 0; font-size: 14px; }
 .prompt-form .prompt-options-menu button:hover, .prompt-form .prompt-options-menu button:focus-visible { border-color: var(--blue); background: rgba(88,166,255,.13); color: #fff; outline: none; }
 .mention-editor { position: relative; width: 100%; min-width: 0; }
 .mention-highlights { position: absolute; z-index: 0; inset: 0; overflow: hidden; pointer-events: none; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--ink); direction: inherit; text-align: inherit; }
-.mention-highlight-token { color: var(--blue); font-weight: 900; }
+.mention-highlight-token { color: var(--blue); font-weight: inherit; }
 textarea.mention-source { display: block; position: relative; z-index: 1; color: transparent !important; caret-color: var(--ink); background: transparent !important; }
 textarea.mention-source::selection { background: rgba(88,166,255,.32); }
 textarea.mention-source::placeholder { color: var(--muted) !important; }

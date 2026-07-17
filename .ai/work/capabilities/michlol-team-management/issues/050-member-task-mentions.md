@@ -6,7 +6,7 @@
 
 ## Status
 
-Mobile visual fix deployed / Pending Product, UX, and QA review
+Second mobile correction implemented locally / Pending deployment and Product, UX, and QA review
 
 ## Request
 
@@ -85,3 +85,7 @@ No blocking questions remain.
 ## Mobile visual QA checkpoint
 
 `../checkpoint-008.md`
+
+## Mobile popup/caret correction checkpoint
+
+`../checkpoint-009.md`

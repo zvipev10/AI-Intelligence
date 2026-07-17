@@ -429,19 +429,61 @@ function enableMentionHighlight(textarea) {
   syncMentionHighlight(textarea);
 }
 
+function textareaCaretViewportRect(textarea) {
+  const style = window.getComputedStyle(textarea);
+  const mirror = document.createElement("div");
+  const marker = document.createElement("span");
+  const beforeCaret = textarea.value.slice(0, textarea.selectionStart || 0);
+  const mirrorStyles = [
+    "boxSizing", "width", "minHeight", "paddingTop", "paddingRight", "paddingBottom", "paddingLeft",
+    "borderTopWidth", "borderRightWidth", "borderBottomWidth", "borderLeftWidth", "fontFamily",
+    "fontSize", "fontWeight", "fontStyle", "letterSpacing", "lineHeight", "textTransform",
+    "textAlign", "direction", "wordSpacing", "tabSize"
+  ];
+  mirrorStyles.forEach(prop => {
+    mirror.style[prop] = style[prop];
+  });
+  mirror.style.position = "fixed";
+  mirror.style.top = `${textarea.getBoundingClientRect().top}px`;
+  mirror.style.left = `${textarea.getBoundingClientRect().left}px`;
+  mirror.style.height = "auto";
+  mirror.style.overflow = "hidden";
+  mirror.style.visibility = "hidden";
+  mirror.style.whiteSpace = "pre-wrap";
+  mirror.style.overflowWrap = "break-word";
+  mirror.style.pointerEvents = "none";
+  mirror.textContent = beforeCaret || "";
+  marker.textContent = "\u200b";
+  mirror.appendChild(marker);
+  document.body.appendChild(mirror);
+  const markerRect = marker.getBoundingClientRect();
+  const caretRect = {
+    top: markerRect.top - textarea.scrollTop,
+    right: markerRect.right - textarea.scrollLeft,
+    bottom: markerRect.bottom - textarea.scrollTop,
+    left: markerRect.left - textarea.scrollLeft
+  };
+  mirror.remove();
+  return caretRect;
+}
+
 function positionTeamMentionMenu(textarea) {
   if (!teamMentionMenu || teamMentionMenu.hidden) return;
   const rect = textarea.getBoundingClientRect();
+  const caretRect = textareaCaretViewportRect(textarea);
   const width = Math.min(260, Math.max(180, window.innerWidth - 24));
   teamMentionMenu.style.width = `${width}px`;
   const measuredHeight = Math.min(teamMentionMenu.offsetHeight || 186, 186);
-  const belowTop = rect.bottom + 6;
-  const aboveTop = rect.top - measuredHeight - 6;
+  const anchorTop = Number.isFinite(caretRect.top) ? Math.max(rect.top, Math.min(caretRect.top, rect.bottom)) : rect.top;
+  const anchorBottom = Number.isFinite(caretRect.bottom) ? Math.max(rect.top, Math.min(caretRect.bottom, rect.bottom)) : rect.bottom;
+  const anchorRight = Number.isFinite(caretRect.right) ? Math.max(rect.left, Math.min(caretRect.right, rect.right)) : rect.right;
+  const mobile = window.innerWidth <= 760;
+  const belowTop = mobile ? rect.bottom + 8 : anchorBottom + 8;
+  const aboveTop = mobile ? rect.top - measuredHeight - 8 : anchorTop - measuredHeight - 8;
   const hasRoomAbove = aboveTop >= 12;
   const hasRoomBelow = belowTop + measuredHeight <= window.innerHeight - 12;
-  const preferAbove = window.innerWidth <= 760 && hasRoomAbove;
-  const top = preferAbove || !hasRoomBelow ? Math.max(12, aboveTop) : belowTop;
-  const left = Math.max(12, Math.min(rect.right - width, window.innerWidth - width - 12));
+  const top = mobile && hasRoomAbove ? aboveTop : (hasRoomBelow ? belowTop : Math.max(12, aboveTop));
+  const left = Math.max(12, Math.min(anchorRight - width, window.innerWidth - width - 12));
   teamMentionMenu.style.top = `${Math.round(top)}px`;
   teamMentionMenu.style.left = `${Math.round(left)}px`;
 }
