@@ -76,7 +76,7 @@ def run(client: paramiko.SSHClient, command: str, timeout: int = 60, check: bool
 
 def upload_files(client: paramiko.SSHClient) -> str:
     staging = f"/tmp/serbia-poc-{int(time.time())}"
-    run(client, f"mkdir -p {shlex.quote(staging)}/mcp_server {shlex.quote(staging)}/data")
+    run(client, f"mkdir -p {shlex.quote(staging)}/mcp_server {shlex.quote(staging)}/data/serbian_intelligence_v2")
     files = {
         LOCAL_ROOT / "mcp_server" / "server.py": f"{staging}/mcp_server/server.py",
         LOCAL_ROOT / "mcp_server" / "semantic_index.py": f"{staging}/mcp_server/semantic_index.py",
@@ -85,6 +85,9 @@ def upload_files(client: paramiko.SSHClient) -> str:
         LOCAL_ROOT / "data" / "serbia_kosovo_events_projection.csv": f"{staging}/data/serbia_kosovo_events_projection.csv",
         LOCAL_ROOT / "data" / "serbia_kosovo_locations.json": f"{staging}/data/serbia_kosovo_locations.json",
         LOCAL_ROOT / "data" / "serbia_kosovo_entities.json": f"{staging}/data/serbia_kosovo_entities.json",
+        LOCAL_ROOT / "data" / "serbian_intelligence_v2" / "serbia_kosovo_events_projection_v2.csv": f"{staging}/data/serbian_intelligence_v2/serbia_kosovo_events_projection_v2.csv",
+        LOCAL_ROOT / "data" / "serbian_intelligence_v2" / "serbia_kosovo_locations_v2.json": f"{staging}/data/serbian_intelligence_v2/serbia_kosovo_locations_v2.json",
+        LOCAL_ROOT / "data" / "serbian_intelligence_v2" / "serbia_kosovo_entities_v2.json": f"{staging}/data/serbian_intelligence_v2/serbia_kosovo_entities_v2.json",
     }
     sftp = client.open_sftp()
     try:
@@ -99,7 +102,7 @@ def install_files(client: paramiko.SSHClient, staging: str) -> None:
     root = shlex.quote(REMOTE_ROOT)
     staging_q = shlex.quote(staging)
     command = (
-        f"sudo -n install -d -o {USER} -g {USER} -m 0755 {root}/mcp_server {root}/data "
+        f"sudo -n install -d -o {USER} -g {USER} -m 0755 {root}/mcp_server {root}/data {root}/data/serbian_intelligence_v2 "
         f"&& sudo -n install -o {USER} -g {USER} -m 0755 {staging_q}/mcp_server/server.py {root}/mcp_server/server.py "
         f"&& sudo -n install -o {USER} -g {USER} -m 0755 {staging_q}/mcp_server/semantic_index.py {root}/mcp_server/semantic_index.py "
         f"&& sudo -n install -o {USER} -g {USER} -m 0755 {staging_q}/mcp_server/smoke_client.py {root}/mcp_server/smoke_client.py "
@@ -107,6 +110,9 @@ def install_files(client: paramiko.SSHClient, staging: str) -> None:
         f"&& sudo -n install -o {USER} -g {USER} -m 0644 {staging_q}/data/serbia_kosovo_events_projection.csv {root}/data/serbia_kosovo_events_projection.csv "
         f"&& sudo -n install -o {USER} -g {USER} -m 0644 {staging_q}/data/serbia_kosovo_locations.json {root}/data/serbia_kosovo_locations.json "
         f"&& sudo -n install -o {USER} -g {USER} -m 0644 {staging_q}/data/serbia_kosovo_entities.json {root}/data/serbia_kosovo_entities.json "
+        f"&& sudo -n install -o {USER} -g {USER} -m 0644 {staging_q}/data/serbian_intelligence_v2/serbia_kosovo_events_projection_v2.csv {root}/data/serbian_intelligence_v2/serbia_kosovo_events_projection_v2.csv "
+        f"&& sudo -n install -o {USER} -g {USER} -m 0644 {staging_q}/data/serbian_intelligence_v2/serbia_kosovo_locations_v2.json {root}/data/serbian_intelligence_v2/serbia_kosovo_locations_v2.json "
+        f"&& sudo -n install -o {USER} -g {USER} -m 0644 {staging_q}/data/serbian_intelligence_v2/serbia_kosovo_entities_v2.json {root}/data/serbian_intelligence_v2/serbia_kosovo_entities_v2.json "
         f"&& sudo -n touch {root}/mcp_audit.jsonl "
         f"&& sudo -n chown {USER}:{USER} {root}/mcp_audit.jsonl "
         f"&& chmod 0644 {root}/mcp_audit.jsonl "
@@ -139,10 +145,11 @@ servers[settings["server_name"]] = {{
     "command": "/usr/bin/python3",
     "args": [f"{{settings['remote_root']}}/mcp_server/server.py"],
     "env": {{
-        "INTELLIGENCE_POC_DATA": f"{{settings['remote_root']}}/data/serbia_kosovo_events_projection.csv",
-        "INTELLIGENCE_POC_LOCATIONS": f"{{settings['remote_root']}}/data/serbia_kosovo_locations.json",
-        "INTELLIGENCE_POC_ENTITIES": f"{{settings['remote_root']}}/data/serbia_kosovo_entities.json",
-        "INTELLIGENCE_POC_SEMANTIC_INDEX": f"{{settings['remote_root']}}/data/semantic_index",
+        "INTELLIGENCE_POC_DATASET_VERSION": "v2",
+        "INTELLIGENCE_POC_DATA": f"{{settings['remote_root']}}/data/serbian_intelligence_v2/serbia_kosovo_events_projection_v2.csv",
+        "INTELLIGENCE_POC_LOCATIONS": f"{{settings['remote_root']}}/data/serbian_intelligence_v2/serbia_kosovo_locations_v2.json",
+        "INTELLIGENCE_POC_ENTITIES": f"{{settings['remote_root']}}/data/serbian_intelligence_v2/serbia_kosovo_entities_v2.json",
+        "INTELLIGENCE_POC_SEMANTIC_INDEX": f"{{settings['remote_root']}}/data/semantic_index/v2",
         "INTELLIGENCE_POC_AUDIT": f"{{settings['remote_root']}}/mcp_audit.jsonl",
     }},
     "timeout": 30,

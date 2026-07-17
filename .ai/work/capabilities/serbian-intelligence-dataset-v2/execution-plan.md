@@ -6,7 +6,7 @@ Serbian Intelligence Dataset V2
 
 ## Plan status
 
-Approved for generation by Product request; activation remains gated.
+Generation and local activation complete; deployment remains.
 
 ## Prerequisite review gate
 
@@ -51,10 +51,16 @@ Risk: medium.
 Reviewer: Product/QA.
 
 ### Slice 3
-Goal: separately decide runtime activation and UI/API impact.
+Goal: activate V2 in the UI, API, MCP server, and deployment configuration while preserving V1 rollback.
 Risk: high.
 Reviewer: Product/Development/QA.
-Stop after slice: Yes.
+Status: Complete locally.
+
+### Slice 4
+Goal: deploy and smoke-test the activated runtime.
+Risk: medium.
+Reviewer: Development/QA.
+Status: Pending.
 
 ## Rollback/fallback
 

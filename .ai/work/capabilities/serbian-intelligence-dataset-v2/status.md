@@ -6,38 +6,38 @@ Serbian Intelligence Dataset V2
 
 ## Current phase
 
-Generated; Product/QA review pending
+Activated locally; deployment pending
 
 ## Overall status
 
-Pending review
+Implementation complete
 
 ## Who needs to act now
 
 | Role | Status | Required action | Due before |
 |---|---|---|---|
-| Product | Approved | Review generated scenario distribution. | Before activation |
-| Development | Complete | Generated immutable v2 artifacts and validation report. | Done |
-| UX | Not triggered | No UI change in this slice. | Application activation |
-| QA | Pending | Validate counts, references, chronology, perspective, and v1 immutability. | Before acceptance |
-| Architecture/Security | Watch | Confirm synthetic/public provenance boundaries. | Before activation |
+| Product | Approved | None. | Done |
+| Development | Complete | Deploy the committed activation when requested. | Deployment |
+| UX | Complete | Dynamic V2 dataset/location loading and version display. | Done |
+| QA | Complete | Loader, API, rollback, syntax, and identifier smoke tests passed. | Done |
+| Architecture/Security | Watch | Preserve synthetic/public provenance boundaries. | Ongoing |
 
 ## Latest change since previous review
 
-Checkpoint 001 generated and validated the separate 14,800-record V2 corpus.
+Checkpoint 002 makes V2 the default runtime dataset while retaining an environment-controlled V1 rollback.
 
 ## Current blockers
 
-None. Structured observations without media assets are accepted as the working assumption.
+None. UAV observations are regular event records; detected objects and estimated counts are available in their text.
 
 ## Current risks
 
-- Perspective leakage through excessive Serbian-side reporting.
-- Broken movement continuity or dangling normalized references.
+- Production deployment has not yet been verified.
+- UAV counts are synthetic intelligence estimates, not ground truth.
 
 ## Next expected artifact
 
-Product/QA review of `checkpoint-001.md` and sampled V2 records.
+Production deployment and smoke test.
 
 Published branch: `codex/serbian-intelligence-dataset-v2` (`433976c`).
 
@@ -50,7 +50,7 @@ Local draft: `issues/parent-capability.md`
 | Issue | Role | Purpose | Status | Blocking? |
 |---|---|---|---|---|
 | `issues/010-generate-v2.md` | Development | Generate and validate v2 dataset. | Complete | No |
-| `issues/020-qa-v2.md` | QA | Review generated dataset. | Pending | Yes |
+| `issues/020-qa-v2.md` | QA | Review generated dataset and activation. | Complete | No |
 
 ## Artifact links
 
@@ -58,7 +58,7 @@ Local draft: `issues/parent-capability.md`
 - Developer review: `developer-review.md`
 - QA review: `qa-review.md`
 - Execution plan: `execution-plan.md`
-- Latest checkpoint: `checkpoint-001.md`
+- Latest checkpoint: `checkpoint-002.md`
 
 ## Gate checklist
 
