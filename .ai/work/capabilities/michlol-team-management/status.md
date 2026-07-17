@@ -6,25 +6,25 @@
 
 ## Current phase
 
-Compact header correction deployed to VM; review pending
+Three-dot outside-tap dismissal implemented; deployment and review pending
 
 ## Overall status
 
-Pending Product/UX/QA review
+Pending deployment and Product/UX/QA review
 
 ## Who needs to act now
 
 | Role | Status | Required action | Due before |
 |---|---|---|---|
 | Product | Complete | Product definition approved five predefined users, generated pictures, and compact placement near investigation-name combo. | Done |
-| Development | Complete | Implemented and deployed Product-requested compact header correction. | Done |
+| Development | Complete | Added outside-tap dismissal for the three-dot teammate expander. | Done |
 | UX | Review needed | Review corrected compact header on the VM. | Before Slice 2 |
 | QA | Review needed | Validate corrected compact header and regressions on the VM. | Before Slice 2 |
 | Architecture/Security | Watch | Review only if MVP stores team state or introduces real identity/user semantics. | Execution planning |
 
 ## Latest change since previous review
 
-Product requested compact upper-header corrections. Implemented and deployed `checkpoint-003.md`: renamed title to `סביבת מודיעין`, stacked statuses, narrowed the combo, moved `מכלול` inline, and added a three-dot expander for the remaining teammates. Public VM serves `styles.css?v=83`.
+Added the requested dismissal behavior in `checkpoint-004.md`: when the three-dot teammate expander is open, any pointer tap outside the control closes it. Interactions inside the expanded list remain available.
 
 ## Current blockers
 
@@ -37,7 +37,7 @@ No current blockers. Product/UX/QA VM review is pending.
 
 ## Next expected artifact
 
-Product/UX/QA review of corrected VM deployment in `checkpoint-003.md`.
+Deploy and review the outside-tap dismissal described in `checkpoint-004.md`.
 
 ## Parent issue
 
@@ -61,7 +61,7 @@ Local draft: `issues/000-parent-capability.md`
 - UX review: `ux-review.md`
 - QA review: `qa-review.md`
 - Execution plan: `execution-plan.md`
-- Latest checkpoint: `checkpoint-003.md`
+- Latest checkpoint: `checkpoint-004.md`
 - Handoff: not created yet
 
 ## Gate checklist

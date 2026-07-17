@@ -3412,6 +3412,11 @@ investigationList?.addEventListener("click", event => {
   const investigation = state.investigations.find(item => item.id === option.dataset.investigationId);
   selectInvestigation(investigation, { focusInput: true });
 });
+document.addEventListener("pointerdown", event => {
+  document.querySelectorAll("details.michlol-more[open]").forEach(details => {
+    if (!details.contains(event.target)) details.removeAttribute("open");
+  });
+});
 promptOptionsButton.addEventListener("click", event => {
   event.stopPropagation();
   setPromptOptionsOpen(!state.promptOptionsOpen);
