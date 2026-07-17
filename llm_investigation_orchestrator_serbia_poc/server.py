@@ -25,20 +25,38 @@ except ImportError:
 
 ROOT = Path(__file__).resolve().parent
 CONFIG_PATH = ROOT / ".hermes-api.json"
-PERFORMANCE_DIR = ROOT / "performance_logs"
-RECORDED_RUNS_DIR = ROOT / "recorded_runs"
-SAVED_QUESTIONS_DIR = ROOT / "saved_questions"
-INVESTIGATIONS_DIR = ROOT / "investigations"
 RECORDED_RUNS_PATH = ROOT / "test_runs" / "compact_demo_after_general_instructions_20260620T151848Z.json"
-LOCATIONS_PATH = ROOT / "data" / "serbia_kosovo_locations.json"
-EVENTS_PATH = ROOT / "data" / "serbia_kosovo_events_projection.csv"
-ENTITIES_PATH = ROOT / "data" / "serbia_kosovo_entities.json"
+DATASET_VERSION = os.environ.get("INTELLIGENCE_POC_DATASET_VERSION", "v2").strip().lower()
+if DATASET_VERSION == "v2":
+    DATASET_DIR = ROOT / "data" / "serbian_intelligence_v2"
+    LOCATIONS_PATH = DATASET_DIR / "serbia_kosovo_locations_v2.json"
+    EVENTS_PATH = DATASET_DIR / "serbia_kosovo_events_projection_v2.csv"
+    ENTITIES_PATH = DATASET_DIR / "serbia_kosovo_entities_v2.json"
+    DATASET_URL = "./data/serbian_intelligence_v2/serbia_kosovo_events_projection_v2.csv"
+    LOCATIONS_URL = "./data/serbian_intelligence_v2/serbia_kosovo_locations_v2.json"
+elif DATASET_VERSION == "v1":
+    DATASET_DIR = ROOT / "data"
+    LOCATIONS_PATH = DATASET_DIR / "serbia_kosovo_locations.json"
+    EVENTS_PATH = DATASET_DIR / "serbia_kosovo_events_projection.csv"
+    ENTITIES_PATH = DATASET_DIR / "serbia_kosovo_entities.json"
+    DATASET_URL = "./data/serbia_kosovo_events_projection.csv"
+    LOCATIONS_URL = "./data/serbia_kosovo_locations.json"
+else:
+    raise ValueError(f"Unsupported INTELLIGENCE_POC_DATASET_VERSION: {DATASET_VERSION}")
+
+# Keep replacement-scenario state separate from legacy V1 event identifiers.
+# Selecting V1 preserves the existing on-disk layout for rollback compatibility.
+STATE_SUFFIX = Path(DATASET_VERSION) if DATASET_VERSION != "v1" else Path()
+PERFORMANCE_DIR = ROOT / "performance_logs" / STATE_SUFFIX
+RECORDED_RUNS_DIR = ROOT / "recorded_runs" / STATE_SUFFIX
+SAVED_QUESTIONS_DIR = ROOT / "saved_questions" / STATE_SUFFIX
+INVESTIGATIONS_DIR = ROOT / "investigations" / STATE_SUFFIX
 TERMINAL_STATUSES = {"completed", "failed", "cancelled"}
-EVENT_ID_PATTERN = re.compile(r"\b(?:REC-\d{6}|LOC-\d{3})\b")
+EVENT_ID_PATTERN = re.compile(r"\b(?:REC-(?:V2-)?\d{6}|LOC-(?:V2-)?\d{3})\b")
 SAVED_QUESTION_ID_PATTERN = re.compile(r"^[A-Za-z0-9_.-]+$")
 INVESTIGATION_ID_PATTERN = re.compile(r"^[A-Za-z0-9_.-]+$")
 ACTIVE_RUN_STARTED_AT = None
-APP_BUILD = "serbia-poc-1"
+APP_BUILD = "serbia-poc-v2"
 REMOTE_AUDIT_PATH = "/opt/serbia-poc/mcp_audit.jsonl"
 HERMES_TOOL_PREFIX = "mcp_serbia_events_poc_"
 try:
@@ -1805,6 +1823,9 @@ class HermesClient:
             )
         instructions = (
             "אתה סוכן חקירה למערכת מודיעינית ניסיונית על תרחיש הסלמה בצפון קוסובו/סרביה. השב בעברית בלבד.\n"
+            "נקודת המבט היא של אנליסט מודיעין בצבא סרביה. המאגר מבוסס בעיקר על מקורות גלויים ועל תצפיות וידאו מכטב״ם סרביות סינתטיות כלפי כוחות היריב והסביבה. "
+            "הכיסוי חלקי ומוטה לאיסוף על היריב; היעדר דיווח על כוח סרבי אינו ראיה להיעדר פעילות סרבית. "
+            "הפרד תמיד בין תצפית, זיהוי והסקה, והתייחס לספירת עצמים בווידאו כהערכה הדורשת הצלבה.\n"
             f"השתמש אך ורק בכלי MCP ששמם מתחיל ב-{HERMES_TOOL_PREFIX} ובנתונים שהם מחזירים.\n"
             + classify_instruction +
             "עקרון כיסוי מחייב: ברירת המחדל בכל שאלת מודיעין היא Coverage / exhaustive mode."
@@ -2176,7 +2197,15 @@ class Handler(SimpleHTTPRequestHandler):
     def do_GET(self):
         path = urlparse(self.path)
         if path.path == "/api/status":
-            self.send_json(200, {"mode": "hermes", "configured": CONFIG_PATH.exists(), "build": APP_BUILD})
+            self.send_json(200, {
+                "mode": "hermes",
+                "configured": CONFIG_PATH.exists(),
+                "build": APP_BUILD,
+                "dataset_version": DATASET_VERSION,
+                "dataset_url": DATASET_URL,
+                "locations_url": LOCATIONS_URL,
+                "dataset_rows": len(load_ui_events()),
+            })
             return
         if path.path == "/api/layers":
             self.send_json(200, {"layers": list_ui_layers()})

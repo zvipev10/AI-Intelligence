@@ -1,0 +1,89 @@
+{
+  "checks": {
+    "friendly_records_public_only": true,
+    "friendly_share_at_or_below_10_percent": true,
+    "no_dangling_entities": true,
+    "no_dangling_locations": true,
+    "projection_columns_exact": true,
+    "target_rows": true,
+    "uav_minimum": true,
+    "unique_record_ids": true,
+    "v1_hashes_unchanged": true,
+    "v1_post_011_events_absent": true
+  },
+  "collection_counts": {
+    "airborne_isr_video_exploitation": 3800,
+    "public_source": 11000
+  },
+  "dangling_entities": [],
+  "dangling_locations": [],
+  "event_counts": {
+    "EVT-001": 136,
+    "EVT-002": 419,
+    "EVT-003": 642,
+    "EVT-004": 630,
+    "EVT-005": 337,
+    "EVT-006": 321,
+    "EVT-007": 360,
+    "EVT-008": 360,
+    "EVT-009": 374,
+    "EVT-010": 343,
+    "EVT-011": 578,
+    "EVT-012": 716,
+    "EVT-013": 782,
+    "EVT-014": 792,
+    "EVT-015": 765,
+    "EVT-016": 702,
+    "EVT-017": 754,
+    "EVT-018": 726,
+    "EVT-019": 737,
+    "EVT-020": 733,
+    "EVT-021": 714,
+    "EVT-022": 722,
+    "EVT-023": 719,
+    "EVT-024": 740,
+    "EVT-025": 698
+  },
+  "friendly_public_records": 950,
+  "friendly_share": 0.064189,
+  "notes": [
+    "All movements and operational events are fictional.",
+    "Public formation names do not imply current or historical participation.",
+    "No image or video media assets are included; UAV records are structured synthetic exploitation outputs.",
+    "Existing V1 files are untouched and the application is not switched to V2."
+  ],
+  "output_hashes": {
+    "north_kosovo_serbian_intelligence_v2_14800.csv": "b75ac0e283b2dd341f1db50e8f6c8245c2b9765c0d3962004e239d00c15bb909",
+    "north_kosovo_serbian_intelligence_v2_14800.jsonl": "cd14ad8e6aa1203071e561dd426bb60ed6ba5eb7f420a29e56486460d09166f4",
+    "serbia_kosovo_entities_v2.json": "fbde70e2f370fddfc1bce62642b189c76e9d18327edfe3b3975e3aae4750b739",
+    "serbia_kosovo_evaluator_labels_v2.csv": "92aa813f2082c8f8758f141088eb3fce4c5a0cf1c8f178075b314ea5c8bf354b",
+    "serbia_kosovo_events_projection_v2.csv": "9baf4d2ea33d7480de72ab37322f7fe875440f83fa2e3ad3ea58bd07e3be2f58",
+    "serbia_kosovo_locations_v2.json": "4dec03e8eaa713cb51661c6de728e31579937f90c24b08bd32378a509464df73",
+    "serbian_uav_observations_v2.jsonl": "6535efc50cbb46202dc44713c0ecd8d1d3ab96f66b27146827a4a2c7861046cb"
+  },
+  "prelude_rows": 4500,
+  "replacement_escalation_rows": 10300,
+  "rows": 14800,
+  "schema_version": 2,
+  "seed": 20260717,
+  "source_counts": {
+    "X": 1077,
+    "בלוג פוליטי": 1075,
+    "הודעת דובר": 1088,
+    "חדשות מקומיות": 1122,
+    "חיל האוויר הסרבי - ניצול וידאו מכטב״ם": 3800,
+    "טיקטוק": 1101,
+    "טלגרם": 1128,
+    "ערוץ חדשות בינלאומי": 1117,
+    "פייסבוק": 1103,
+    "קבוצת וואטסאפ": 1094,
+    "שמועה מקומית": 1095
+  },
+  "synthetic": true,
+  "uav_observations": 3800,
+  "v1_input_hashes": {
+    "north_kosovo_synthetic_dataset_he_10k_subset.csv": "a3f3fdcceffbf685a472678892f56444dde97a21bee03a5198e2e371cc0fabca",
+    "serbia_kosovo_entities.json": "b4d47a3e43a6ebe3d777767a384ba095326bf4e44d8460e703cdcacb0fdc99dc",
+    "serbia_kosovo_locations.json": "24916f9fdbba7c54bf10e5ba9b24c9ee4860ce46f66d714e5944b4db8c944ae4"
+  }
+}

@@ -157,7 +157,7 @@ const LOCATIONS = {
 };
 
 const PRIMARY_IDS = new Set([]);
-const EVENT_ID_PATTERN = /\b(?:REC-\d{6}|LOC-\d{3})\b/g;
+const EVENT_ID_PATTERN = /\b(?:REC-(?:V2-)?\d{6}|LOC-(?:V2-)?\d{3})\b/g;
 
 function createInvestigationId() {
   const random = crypto?.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
@@ -714,9 +714,9 @@ function collectAggregateLocations(result) {
     });
   });
   let locations = [...byLocation.values()].sort((a, b) => b.count - a.count);
-  const idsInAnswer = new Set((result.answer || "").match(/\bLOC-\d{3}\b/g) || []);
+  const idsInAnswer = new Set((result.answer || "").match(/\bLOC-(?:V2-)?\d{3}\b/g) || []);
   if (idsInAnswer.size) {
-    locations = locations.filter(item => idsInAnswer.has(item.location_id) || !String(item.location_id || "").match(/^LOC-\d{3}$/));
+    locations = locations.filter(item => idsInAnswer.has(item.location_id) || !String(item.location_id || "").match(/^LOC-(?:V2-)?\d{3}$/));
   }
   return locations;
 }
@@ -3859,17 +3859,32 @@ async function boot() {
   initMap();
   await loadLayerCatalog();
   await loadInvestigationMemory({ restoreLayers: true });
+  let runtimeStatus = null;
   try {
-    const response = await fetch("./data/serbia_kosovo_events_projection.csv");
+    runtimeStatus = await fetch("/api/status", { cache: "no-store" }).then(response => response.json());
+    if (runtimeStatus.locations_url) {
+      const runtimeLocations = await fetch(runtimeStatus.locations_url, { cache: "no-store" }).then(response => response.json());
+      Object.entries(runtimeLocations).forEach(([locationId, location]) => {
+        LOCATIONS[locationId] = {
+          name: location.name || locationId,
+          type: location.type || "",
+          lat: Number(location.latitude),
+          lon: Number(location.longitude)
+        };
+      });
+    }
+    const datasetUrl = runtimeStatus.dataset_url || "./data/serbia_kosovo_events_projection.csv";
+    const response = await fetch(datasetUrl, { cache: "no-store" });
     if (!response.ok) throw new Error("dataset unavailable");
     state.events = parseCsv(await response.text()).map(enrich);
-    document.getElementById("datasetStatus").textContent = `${state.events.length.toLocaleString("he-IL")} אירועים זמינים במאגר`;
+    const versionLabel = runtimeStatus.dataset_version ? ` · ${runtimeStatus.dataset_version.toUpperCase()}` : "";
+    document.getElementById("datasetStatus").textContent = `${state.events.length.toLocaleString("he-IL")} אירועים זמינים במאגר${versionLabel}`;
     document.querySelector(".status-dot").classList.add("ready");
   } catch (error) {
     document.getElementById("datasetStatus").textContent = "טעינת הנתונים נכשלה";
   }
   try {
-    const status = await fetch("/api/status").then(response => response.json());
+    const status = runtimeStatus || await fetch("/api/status", { cache: "no-store" }).then(response => response.json());
     if (!status.configured) throw new Error("not configured");
     agentStatus.textContent = "Hermes + MCP מחוברים";
     agentStatus.className = "agent-live";

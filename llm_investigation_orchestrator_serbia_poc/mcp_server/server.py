@@ -30,10 +30,23 @@ MAX_LIMIT = 2000
 MIN_COVERAGE_LIMIT = 2000
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-DATA_PATH = Path(os.environ.get("INTELLIGENCE_POC_DATA", BASE_DIR / "data" / "serbia_kosovo_events_projection.csv"))
-LOCATIONS_PATH = Path(os.environ.get("INTELLIGENCE_POC_LOCATIONS", BASE_DIR / "data" / "serbia_kosovo_locations.json"))
-ENTITIES_PATH = Path(os.environ.get("INTELLIGENCE_POC_ENTITIES", BASE_DIR / "data" / "serbia_kosovo_entities.json"))
-SEMANTIC_INDEX_DIR = Path(os.environ.get("INTELLIGENCE_POC_SEMANTIC_INDEX", BASE_DIR / "data" / "semantic_index"))
+DATASET_VERSION = os.environ.get("INTELLIGENCE_POC_DATASET_VERSION", "v2").strip().lower()
+if DATASET_VERSION == "v2":
+    DEFAULT_DATASET_DIR = BASE_DIR / "data" / "serbian_intelligence_v2"
+    DEFAULT_DATA_PATH = DEFAULT_DATASET_DIR / "serbia_kosovo_events_projection_v2.csv"
+    DEFAULT_LOCATIONS_PATH = DEFAULT_DATASET_DIR / "serbia_kosovo_locations_v2.json"
+    DEFAULT_ENTITIES_PATH = DEFAULT_DATASET_DIR / "serbia_kosovo_entities_v2.json"
+elif DATASET_VERSION == "v1":
+    DEFAULT_DATASET_DIR = BASE_DIR / "data"
+    DEFAULT_DATA_PATH = DEFAULT_DATASET_DIR / "serbia_kosovo_events_projection.csv"
+    DEFAULT_LOCATIONS_PATH = DEFAULT_DATASET_DIR / "serbia_kosovo_locations.json"
+    DEFAULT_ENTITIES_PATH = DEFAULT_DATASET_DIR / "serbia_kosovo_entities.json"
+else:
+    raise ValueError(f"Unsupported INTELLIGENCE_POC_DATASET_VERSION: {DATASET_VERSION}")
+DATA_PATH = Path(os.environ.get("INTELLIGENCE_POC_DATA", DEFAULT_DATA_PATH))
+LOCATIONS_PATH = Path(os.environ.get("INTELLIGENCE_POC_LOCATIONS", DEFAULT_LOCATIONS_PATH))
+ENTITIES_PATH = Path(os.environ.get("INTELLIGENCE_POC_ENTITIES", DEFAULT_ENTITIES_PATH))
+SEMANTIC_INDEX_DIR = Path(os.environ.get("INTELLIGENCE_POC_SEMANTIC_INDEX", BASE_DIR / "data" / "semantic_index" / DATASET_VERSION))
 SEMANTIC_BACKEND = os.environ.get("INTELLIGENCE_POC_SEMANTIC_BACKEND", "hybrid_embedding")
 AUDIT_PATH = Path(os.environ.get("INTELLIGENCE_POC_AUDIT", BASE_DIR / "mcp_audit.jsonl"))
 CLIENT_SUPPORTS_SAMPLING = False
@@ -58,8 +71,8 @@ AREA_ALIASES = {
 EVENT_REFERENCES = {}
 
 IDENTIFIER_PATTERNS = {
-    "record": re.compile(r"\bREC-\d{6}\b", re.IGNORECASE),
-    "location": re.compile(r"\bLOC-\d{3}\b", re.IGNORECASE),
+    "record": re.compile(r"\bREC-(?:V2-)?\d{6}\b", re.IGNORECASE),
+    "location": re.compile(r"\bLOC-(?:V2-)?\d{3}\b", re.IGNORECASE),
 }
 
 BENIGN_MARKERS = (
