@@ -82,7 +82,9 @@ def main() -> int:
         tools = request(process, {"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}})
         classified = call(process, 3, "classify_question_intent", {"question":"האם הטענה על חציית גבול מגובה במקור אמין? חפש מקורות, סתירות וחלופות."})
         location = call(process, 4, "resolve_location", {"query":"צפון מיטרוביצה"})
-        events = call(process, 5, "search_events", {"keywords":["חציית גבול"], "limit":50})
+        # KFOR is present in both scenario versions, so the deployment probe
+        # validates the active corpus without depending on a V1-only phrase.
+        events = call(process, 5, "search_events", {"keywords":["KFOR"], "limit":50})
         semantic_search = call(process, 6, "semantic_search_events", {"query":"טענת גבול לא מאומתת עם הכחשה", "limit":50})
         objects = call(process, 7, "get_objects", {"object_type":"event", "event_ids": (events["result"]["structuredContent"].get("event_ids") or [])[:3]})
         aggregate = call(process, 8, "aggregate_events", {"group_by":"location", "keywords":["חסימה"], "limit":500, "top_n":5})
