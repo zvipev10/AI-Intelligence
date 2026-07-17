@@ -6,33 +6,32 @@ Integrate `מכלול` team-management UI with Serbian intelligence dataset v2 r
 
 ## Current phase
 
-Integration merge prepared locally; validation and publishing in progress.
+Integrated branch published and deployed to the VM for review.
 
 ## Overall status
 
-In progress.
+Review pending.
 
 ## Who needs to act now
 
 | Role | Status | Required action | Due before |
 |---|---|---|---|
-| Development | In progress | Merge both branches, preserve both feature sets, validate, publish integration branch. | Current task |
-| Product/UX/QA | Pending | Review combined branch after publishing. | Before deployment/merge |
+| Development | Complete for current checkpoint | Monitor review feedback and address any deployment or integration defects. | After review |
+| Product/UX/QA | Pending | Review the VM deployment of the combined dataset-v2 runtime and `מכלול` member-selection UI. | Before merge to `main` |
 
 ## Latest change
 
-Created integration branch `codex/integrate-michlol-dataset-v2` from `codex/michlol-team-management` and merged `origin/codex/serbian-intelligence-dataset-v2`.
+Deployed the integrated UI files to the VM after verifying the VM backend was already on dataset v2 but the browser UI was still serving stale cache keys.
 
 ## Current blockers
 
-No blocking merge conflicts remain.
+No current blockers.
 
 ## Current risks
 
-- Python syntax validation is blocked in this shell because only Windows App Execution Alias stubs for `python`/`python3` are available.
-- The merged branch still needs deployment review before it should replace either existing deployed runtime.
+- Browser review should use a hard refresh if an existing tab cached old `app.js?v=105` or `styles.css?v=83`.
+- Python syntax validation remains blocked in this shell because only Windows App Execution Alias stubs for `python`/`python3` are available.
 
 ## Next expected artifact
 
-`checkpoint-001.md`
-
+`checkpoint-002.md`
