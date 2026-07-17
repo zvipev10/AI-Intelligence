@@ -39,6 +39,8 @@ None. Structured observations without media assets are accepted as the working a
 
 Product/QA review of `checkpoint-001.md` and sampled V2 records.
 
+Published branch: `codex/serbian-intelligence-dataset-v2` (`433976c`).
+
 ## Parent issue
 
 Local draft: `issues/parent-capability.md`

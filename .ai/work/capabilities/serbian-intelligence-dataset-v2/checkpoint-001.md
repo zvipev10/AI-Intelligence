@@ -61,4 +61,4 @@ Pause for Product/QA review of the generated V2 corpus before application activa
 
 ## Publishing status
 
-Pending commit and push on `codex/serbian-intelligence-dataset-v2`.
+Published on branch `codex/serbian-intelligence-dataset-v2` in commit `433976c`.
