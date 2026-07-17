@@ -22,6 +22,8 @@ Additional local verification screenshots:
 
 - `audit-mobile-mention-20260717/10-local-field-outside-one-result.png`
 - `audit-mobile-mention-20260717/11-local-field-outside-selected-text.png`
+- `audit-mobile-mention-20260717/12-public-field-outside-one-result.png`
+- `audit-mobile-mention-20260717/13-public-selected-text-caret-alignment.png`
 
 ## Root cause
 
@@ -43,6 +45,32 @@ Additional local verification screenshots:
 - `git diff --check`
 - Local mobile browser QA at 390 x 844.
 - Verified local patched metrics:
+  - one-result popup does not overlap the prompt field
+  - selected mention value: `@טליה מה נשמע`
+  - selected mention token color: `rgb(138, 180, 248)`
+  - selected mention token font weight: `400`
+  - textarea font weight: `400`
+
+## Deployment
+
+Deployed to the shared VM on 2026-07-17.
+
+- Host: `151.145.93.180`
+- Active UI directory: `/opt/serbia-poc-ui`
+- Service: `serbia-poc-ui.service`
+- Public review URL: `http://151.145.93.180/`
+
+## Deployment verification
+
+- Copied only `index.html`, `app.js`, and `styles.css` through a timestamped `/tmp/serbia-poc-ui-mobile-caret-*` staging directory.
+- Restarted `serbia-poc-ui.service`; it reported `active`.
+- VM-local `/api/status` returned `mode=hermes`, `configured=true`, and `build=serbia-poc-1`.
+- VM-local and public index both serve:
+  - `styles.css?v=87`
+  - `app.js?v=108`
+- Public `styles.css?v=87` contains `.mention-highlight-token { color: var(--blue); font-weight: inherit; }`.
+- Public `app.js?v=108` contains `textareaCaretViewportRect`.
+- Public mobile browser smoke at 390 x 844 verified:
   - one-result popup does not overlap the prompt field
   - selected mention value: `@טליה מה נשמע`
   - selected mention token color: `rgb(138, 180, 248)`

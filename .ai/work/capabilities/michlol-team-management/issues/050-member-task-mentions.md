@@ -6,7 +6,7 @@
 
 ## Status
 
-Second mobile correction implemented locally / Pending deployment and Product, UX, and QA review
+Second mobile correction deployed / Pending Product, UX, and QA review
 
 ## Request
 
