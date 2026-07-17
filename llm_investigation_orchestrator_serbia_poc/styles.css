@@ -131,6 +131,13 @@ h3 { margin: 0; font-size: 14px; }
 .prompt-options-menu[hidden] { display: none; }
 .prompt-form .prompt-options-menu button { width: 100%; min-width: 0; height: 30px; border: 1px solid transparent; border-radius: 6px; background: transparent; color: var(--ink); padding: 0 9px; text-align: right; font-size: 12px; }
 .prompt-form .prompt-options-menu button:hover, .prompt-form .prompt-options-menu button:focus-visible { border-color: var(--blue); background: rgba(88,166,255,.13); color: #fff; outline: none; }
+.team-mention-menu { position: fixed; z-index: 260; width: min(260px, calc(100vw - 24px)); max-height: 186px; overflow: auto; display: grid; gap: 4px; padding: 6px; border: 1px solid var(--map-control-border); border-radius: 8px; background: var(--panel); box-shadow: 0 18px 46px rgba(0,0,0,.42); }
+.team-mention-menu[hidden] { display: none; }
+.team-mention-option { width: 100%; min-width: 0; min-height: 38px; display: grid; grid-template-columns: 24px minmax(0, 1fr); align-items: center; gap: 8px; border: 1px solid transparent; border-radius: 6px; background: transparent; color: var(--ink); padding: 6px 7px; text-align: right; }
+.team-mention-option:hover, .team-mention-option:focus-visible, .team-mention-option.active { border-color: rgba(88,166,255,.42); background: rgba(88,166,255,.13); outline: none; }
+.team-mention-main { min-width: 0; display: grid; gap: 1px; }
+.team-mention-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; font-weight: 900; }
+.team-mention-role { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); font-size: 10px; font-weight: 700; }
 .modal-backdrop { position: fixed; inset: 0; z-index: 30; display: grid; place-items: center; padding: 24px; background: rgba(0,0,0,.58); }
 .modal-backdrop[hidden] { display: none; }
 .modal-close-button { display: inline-grid; place-items: center; flex: 0 0 auto; width: 30px; height: 30px; border: 1px solid var(--line); border-radius: 6px; background: transparent; color: var(--muted); font-size: 22px; line-height: 1; cursor: pointer; }

@@ -6,7 +6,7 @@
 
 ## Status
 
-Product/UX/Development clarifications complete / Ready for execution planning
+Implemented / Pending Product, UX, and QA review
 
 ## Request
 
@@ -27,19 +27,19 @@ Start defining the ability for the analyst to ask/request specific tasks from `×
 
 ## Acceptance criteria draft
 
-- [ ] Typing `@` in the main prompt opens member autocomplete.
-- [ ] The autocomplete includes all five predefined members.
-- [ ] Typing after `@` filters by member display name and role label.
-- [ ] Choosing a suggestion inserts a readable mention token into the prompt.
-- [ ] Multiple member mentions can appear in the same prompt.
-- [ ] Mention autocomplete works in step-continuation prompt surfaces as well as the main prompt.
-- [ ] Keyboard and pointer selection are supported.
-- [ ] Unknown `@text` does not block normal prompt submission.
+- [x] Typing `@` in the main prompt opens member autocomplete.
+- [x] The autocomplete includes all five predefined members.
+- [x] Typing after `@` filters by member display name and role label.
+- [x] Choosing a suggestion inserts a readable mention token into the prompt.
+- [x] Multiple member mentions can appear in the same prompt.
+- [x] Mention autocomplete works in step-continuation prompt surfaces as well as the main prompt.
+- [x] Keyboard and pointer selection are supported.
+- [x] Unknown `@text` does not block normal prompt submission.
 - [ ] Existing prompt submission, layer-context prompt selection, and prompt options behavior are not regressed.
-- [ ] The implementation keeps stable ids available client-side separately from display text.
-- [ ] No visible task record is created by using `@member`.
-- [ ] No structured `team_mentions` payload is sent to the backend.
-- [ ] Hermes is generally instructed to ignore `@member` names as investigation entities unless the user explicitly asks about those people.
+- [x] The implementation keeps stable ids available client-side separately from display text.
+- [x] No visible task record is created by using `@member`.
+- [x] No structured `team_mentions` payload is sent to the backend.
+- [x] Hermes is generally instructed to ignore `@member` names as investigation entities unless the user explicitly asks about those people.
 
 ## Product decisions
 
@@ -60,11 +60,15 @@ Start defining the ability for the analyst to ask/request specific tasks from `×
 
 ## Open questions
 
-No blocking questions remain before execution planning.
+No blocking questions remain.
 
 ## Review needed
 
 - Product: no blocking Product action after the latest clarifications.
 - UX: complete for planning based on approved implementation details.
 - Development: complete for planning based on approved client-only scope and always-on Hermes instruction.
-- QA: confirm RTL, keyboard, filtering, and prompt-regression coverage.
+- QA: validate RTL, keyboard, filtering, no-match behavior, prompt-regression coverage, selected-layer prompt context, and step-continuation submission.
+
+## Implementation checkpoint
+
+`../checkpoint-005.md`

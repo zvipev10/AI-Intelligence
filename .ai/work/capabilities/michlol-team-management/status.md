@@ -6,38 +6,29 @@
 
 ## Current phase
 
-Defining member task mentions with `@` autocomplete
+Slice 2 implemented; review pending
 
 ## Overall status
 
-Clarifications complete / Ready for execution planning
+Pending Product/UX/QA review
 
 ## Who needs to act now
 
 | Role | Status | Required action | Due before |
 |---|---|---|---|
 | Product | Complete | Clarified prompt-only behavior, multiple mentions, all prompt surfaces, client-only metadata, and Hermes ignore instruction. | Done |
-| Development | Complete for planning | Use shared member data, reusable prompt-surface autocomplete, transient client metadata, and always-on Hermes ignore instruction. | Done |
+| Development | Complete | Implemented shared member data, reusable prompt-surface autocomplete, transient client metadata, and always-on Hermes ignore instruction. | Done |
 | UX | Complete for planning | Approved caret/input-area popover, constrained scrolling, keyboard controls, and hidden no-match state. | Done |
-| QA | Review needed | Confirm RTL mention typing, keyboard selection, filtering, and prompt-regression coverage. | Before implementation |
-| Architecture/Security | Watch | Review only if MVP stores team state or introduces real identity/user semantics. | Execution planning |
+| QA | Review needed | Validate RTL mention typing, keyboard selection, filtering, no-match behavior, prompt submission, selected-layer prompt context, step-continuation submission, and header regression. | Before acceptance |
+| Architecture/Security | Watch | Review only if MVP stores team state or introduces real identity/user semantics. | Acceptance |
 
 ## Latest change since previous review
 
-Recorded Product clarifications for `@member` task mentions:
-
-- mentions only address prompts and do not create visible task records;
-- multiple members are supported in one prompt;
-- autocomplete should work in every prompt-entry surface, including step-continuation prompts;
-- structured mention metadata remains client-only for Slice 1;
-- Hermes should be generally instructed to ignore `@member` names as investigation entities for now.
-- UX/development implementation suggestions were approved: caret/input-area popover, constrained scrolling, Arrow Up/Down, Enter/Tab, Escape, hidden no-match state, and transient client metadata.
+Implemented Slice 2 in `checkpoint-005.md`: prompt-only `@member` autocomplete for the main prompt and step-continuation prompt, shared member catalog, transient client-side mention parsing, and always-on Hermes ignore instruction.
 
 ## Current blockers
 
-No blocking Product, UX, or Development questions remain before execution planning.
-
-QA review/test planning remains before implementation.
+No current blockers. Product/UX/QA review is pending.
 
 ## Current risks
 
@@ -46,7 +37,7 @@ QA review/test planning remains before implementation.
 
 ## Next expected artifact
 
-Execution plan update for the `@member` autocomplete slice, then QA review before implementation.
+Product/UX/QA review of `checkpoint-005.md`.
 
 ## Parent issue
 
@@ -60,7 +51,7 @@ Local draft: `issues/000-parent-capability.md`
 | `issues/020-developer-review.md` | Development | Review implementation approach and risks. | Complete | No |
 | `issues/030-ux-review.md` | UX | Review flow, layout, and avatar/name treatment. | Complete | No |
 | `issues/040-qa-review.md` | QA | Review test plan and regression surface. | Complete | No |
-| `issues/050-member-task-mentions.md` | Product/UX/Development/QA | Define `@member` autocomplete for asking/requesting tasks from team members. | Ready for planning | Yes |
+| `issues/050-member-task-mentions.md` | Product/UX/Development/QA | Define and implement `@member` autocomplete for asking/requesting tasks from team members. | Implemented; review pending | No |
 
 ## Artifact links
 
@@ -72,7 +63,7 @@ Local draft: `issues/000-parent-capability.md`
 - QA review: `qa-review.md`
 - Execution plan: `execution-plan.md`
 - Member task mentions: `member-task-mentions-brief.md`
-- Latest checkpoint: `checkpoint-004.md`
+- Latest checkpoint: `checkpoint-005.md`
 - Handoff: not created yet
 
 ## Gate checklist

@@ -6,7 +6,7 @@
   <title>סביבת מודיעין</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="./vendor/maplibre-gl.css">
-  <link rel="stylesheet" href="./styles.css?v=83">
+  <link rel="stylesheet" href="./styles.css?v=84">
 </head>
 <body>
   <a class="help-button" href="./help.html" target="_blank" rel="noopener" aria-label="פתח עזרה">?</a>
@@ -22,34 +22,7 @@
           <button id="investigationAddButton" type="button" title="צור חקירה חדשה" aria-label="צור חקירה חדשה">+</button>
           <div id="investigationList" class="investigation-list" role="listbox" hidden></div>
         </div>
-        <div class="michlol-team" role="list" aria-label="מכלול">
-          <span class="michlol-title">מכלול</span>
-          <span class="michlol-member" role="listitem" data-member-id="moshe-targets-officer" data-member-type="user" title="משה - קצין מטרות" aria-label="משה, קצין מטרות">
-            <span class="michlol-avatar"><span class="michlol-initial">מ</span><img src="./assets/michlol/moshe.png" alt="" loading="eager" onerror="this.remove()"></span>
-            <span class="michlol-name">משה</span>
-          </span>
-          <span class="michlol-member" role="listitem" data-member-id="talia-tama-officer" data-member-type="user" title="טליה - קצינת תמא" aria-label="טליה, קצינת תמא">
-            <span class="michlol-avatar"><span class="michlol-initial">ט</span><img src="./assets/michlol/talia.png" alt="" loading="eager" onerror="this.remove()"></span>
-            <span class="michlol-name">טליה</span>
-          </span>
-          <span class="michlol-member" role="listitem" data-member-id="naama-field-officer" data-member-type="user" title="נעמה - קצינת שטח" aria-label="נעמה, קצינת שטח">
-            <span class="michlol-avatar"><span class="michlol-initial">נ</span><img src="./assets/michlol/naama.png" alt="" loading="eager" onerror="this.remove()"></span>
-            <span class="michlol-name">נעמה</span>
-          </span>
-          <details class="michlol-more">
-            <summary title="הצג חברי מכלול נוספים" aria-label="הצג חברי מכלול נוספים">...</summary>
-            <div class="michlol-more-list">
-              <span class="michlol-member" role="listitem" data-member-id="gadi-collection-officer" data-member-type="user" title="גדי - קצין איסוף" aria-label="גדי, קצין איסוף">
-                <span class="michlol-avatar"><span class="michlol-initial">ג</span><img src="./assets/michlol/gadi.png" alt="" loading="eager" onerror="this.remove()"></span>
-                <span class="michlol-name">גדי</span>
-              </span>
-              <span class="michlol-member" role="listitem" data-member-id="yahli-processing-officer" data-member-type="user" title="יהלי - קצין עיבוד" aria-label="יהלי, קצין עיבוד">
-                <span class="michlol-avatar"><span class="michlol-initial">י</span><img src="./assets/michlol/yahli.png" alt="" loading="eager" onerror="this.remove()"></span>
-                <span class="michlol-name">יהלי</span>
-              </span>
-            </div>
-          </details>
-        </div>
+        <div id="michlolTeam" class="michlol-team" role="list" aria-label="מכלול"></div>
       </div>
     </section>
     <div class="header-status" aria-label="מצב מערכת">
@@ -229,6 +202,6 @@
   </div>
 
   <script src="./vendor/maplibre-gl.js"></script>
-  <script src="./app.js?v=104"></script>
+  <script src="./app.js?v=105"></script>
 </body>
 </html>

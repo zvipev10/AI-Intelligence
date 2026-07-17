@@ -6,7 +6,7 @@ Allow the analyst to direct a question or requested task to specific `מכלול
 
 ## Status
 
-Product/UX/Development clarifications complete / Ready for execution planning.
+Implemented / Pending Product, UX, and QA review.
 
 ## User story
 
@@ -99,4 +99,4 @@ Implementation details approved for Slice 1:
 
 ## Recommendation
 
-Proceed to execution planning for Slice 1: prompt-surface mention autocomplete plus stable transient client-side mention parsing. Do not create real task records, send backend mention metadata, or route work until Product defines task lifecycle, ownership, status, and future user/agent behavior.
+Slice 2 implementation is complete in `checkpoint-005.md`: prompt-surface mention autocomplete plus stable transient client-side mention parsing. Do not create real task records, send backend mention metadata, or route work until Product defines task lifecycle, ownership, status, and future user/agent behavior.
