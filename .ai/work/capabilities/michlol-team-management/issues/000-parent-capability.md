@@ -29,14 +29,15 @@ The analyst needs a visible team/workgroup context for investigations. In the fu
 ## Acceptance criteria
 
 - [ ] `מכלול` is represented in the investigation workspace.
-- [ ] The MVP uses a predefined member list.
+- [ ] The MVP uses the five predefined members approved in `product-review.md`.
 - [ ] Every predefined member has a name and picture.
+- [ ] The compact list is displayed near the investigation-name combo.
 - [ ] The model leaves room for future real users and agents.
 - [ ] Existing chat, layer, filter, map, timeline, table, and investigation-memory behavior is not regressed.
 
 ## Child tasks
 
-- [ ] Product review: `010-product-review.md`
+- [x] Product review: `010-product-review.md`
 - [ ] Developer review: `020-developer-review.md`
 - [ ] UX review: `030-ux-review.md`
 - [ ] QA review: `040-qa-review.md`
@@ -50,6 +51,7 @@ The analyst needs a visible team/workgroup context for investigations. In the fu
 
 - Capability brief: `.ai/work/capabilities/michlol-team-management/capability-brief.md`
 - Status: `.ai/work/capabilities/michlol-team-management/status.md`
+- Product review: `.ai/work/capabilities/michlol-team-management/product-review.md`
 - Decisions:
 - Developer review:
 - UX review:

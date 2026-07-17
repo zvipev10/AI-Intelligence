@@ -43,6 +43,7 @@ For the MVP:
   - picture/avatar
   - type, initially `user`
 - The team members are visible in the investigation workspace using the existing UI language and density.
+- The team list is displayed compactly near the investigation-name combo.
 - The MVP data is static/predefined, not managed by authentication or user administration.
 - The model should leave room for future member types, especially `agent`.
 
@@ -51,8 +52,21 @@ For the MVP:
 - Define a predefined team member catalog.
 - Present team members in the investigation UI.
 - Use each member picture and name.
-- Keep the UI read-only for the first slice unless Product explicitly asks for assignment/editing behavior.
+- Generate one picture/avatar asset for each predefined member.
+- Display the predefined team as a compact read-only list near the investigation-name combo.
 - Preserve compatibility with future real users and future agent participants.
+
+## Predefined MVP members
+
+| Stable id | Display name | Role label | Member type | Picture |
+|---|---|---|---|---|
+| `moshe-targets-officer` | משה | קצין מטרות | `user` | Generate picture |
+| `talia-tama-officer` | טליה | קצינת תמא | `user` | Generate picture |
+| `naama-field-officer` | נעמה | קצינת שטח | `user` | Generate picture |
+| `gadi-collection-officer` | גדי | קצין איסוף | `user` | Generate picture |
+| `yahli-processing-officer` | יהלי | קצין עיבוד | `user` | Generate picture |
+
+Implementation note: Product provided each member as name plus role phrase. The table separates the first token as display name and keeps the rest as role label.
 
 ## Non-goals
 
@@ -67,8 +81,9 @@ For the MVP:
 ## Acceptance criteria
 
 - A `מכלול` concept is visible and understandable in the investigation workspace.
-- The MVP uses a predefined member list.
+- The MVP uses the five predefined members listed above.
 - Every predefined member has a name and picture.
+- The list is displayed compactly near the investigation-name combo.
 - The implementation does not require login or real user accounts.
 - The data model can later support real users and agents without replacing the concept.
 - The feature does not interfere with chat, investigation memory, layer tabs, map, timeline, or table behavior.
@@ -86,15 +101,17 @@ For the MVP:
 - Current implementation should prefer a small static local data source unless developer review finds an existing stronger pattern.
 - Avoid adding authentication or server-side identity dependencies in the MVP.
 - If pictures are local assets, they should be committed and cacheable with the existing UI deploy flow.
-- If generated or placeholder pictures are used, licensing and consistency should be explicit.
+- Generated pictures should be stored as local assets, committed with the feature, and cacheable with the existing UI deploy flow.
+- Picture generation should use a consistent style across all five members.
 - The feature should remain independent from the investigation-memory storage model until Product defines what, if anything, should be persisted per investigation.
 
 ## UX notes
 
 - `מכלול` should feel like a workspace/team affordance, not a marketing panel.
 - Use compact presentation compatible with the current investigation UI.
-- Avatar/name treatment should support scanability and future status/role metadata.
+- Avatar/name treatment should support scanability and the provided role labels.
 - Avoid creating a separate landing page or modal-heavy flow for the MVP.
+- The compact list should sit near the existing investigation-name combo without disturbing the combo behavior.
 
 ## QA notes
 
@@ -111,25 +128,22 @@ For the MVP:
 
 ## Open questions
 
-1. Where should `מכלול` appear in the UI: header, side panel, investigation selector area, or a dedicated workspace panel?
-2. Should members be global predefined users, or should each investigation have a selected subset?
-3. Does MVP require choosing/assigning members to an investigation, or only displaying the predefined team?
-4. What predefined users should ship in the first version: names, pictures, and count?
-5. Should the initial model include roles such as lead analyst, OSINT, GEOINT, reviewer, or commander?
-6. Should future agents appear visually different from human users from day one?
-7. Should the capability persist selected team state server-side per investigation, or stay static/read-only for the first slice?
+No blocking product clarifications remain for MVP definition.
+
+Non-blocking UX/development details to close before implementation:
+
+1. Generated picture style: realistic headshots, illustrated avatars, or neutral operational portraits.
+2. Exact compact layout near the investigation-name combo: inline row, stacked mini-list, or avatar strip with names/tooltips.
+3. Whether future agents should have a reserved visual distinction in the initial data shape, even though no agent appears in the MVP.
 
 ## Missing inputs
 
-- Initial predefined user list.
-- Picture source/asset direction for each predefined user.
-- Desired UI placement.
-- Whether MVP is read-only or includes selecting team members per investigation.
-- Any required role labels or team hierarchy.
+- Exact generated-picture visual style.
+- Final UX treatment for compact list layout beside the investigation-name combo.
 
 ## Required reviewers
 
-- Product: define exact `מכלול` semantics, MVP behavior, and predefined users.
+- Product: approved initial MVP definition on 2026-07-17.
 - UX: define placement, compact member presentation, avatar fallback, mobile behavior.
 - Development: review data shape, asset strategy, and integration point.
 - QA: validate edge cases and regression surface.
@@ -137,7 +151,7 @@ For the MVP:
 
 ## Required child issues
 
-- [ ] Product review
+- [x] Product review
 - [ ] Developer review
 - [ ] UX review
 - [ ] QA review

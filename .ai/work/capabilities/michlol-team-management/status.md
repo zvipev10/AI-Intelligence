@@ -6,17 +6,17 @@
 
 ## Current phase
 
-Capability initiation
+Product review complete; developer/UX/QA review pending
 
 ## Overall status
 
-Draft / Pending review
+Pending role reviews
 
 ## Who needs to act now
 
 | Role | Status | Required action | Due before |
 |---|---|---|---|
-| Product | Pending | Confirm `מכלול` semantics, MVP scope, predefined users, and UI placement. | Developer review |
+| Product | Complete | Product definition approved five predefined users, generated pictures, and compact placement near investigation-name combo. | Done |
 | Development | Pending | Review feasibility, data model, asset strategy, and integration point. | Execution planning |
 | UX | Pending | Define compact presentation, avatar behavior, placement, and responsive states. | Execution planning |
 | QA | Pending | Define edge cases and regression checks. | Execution planning |
@@ -24,21 +24,20 @@ Draft / Pending review
 
 ## Latest change since previous review
 
-Initial capability workspace created from Product input: `מכלול` should represent a team that works with the analyst on investigations. MVP starts with predefined users, each with a picture and name. Future team members may be real users or agents.
+Product approved the MVP definition: five predefined users, generated picture for each, displayed compactly near the investigation-name combo. Future team members may be real users or agents, but that is not MVP behavior.
 
 ## Current blockers
 
-- Product has not yet provided the predefined users, pictures, count, roles, or exact UI placement.
-- MVP behavior is not yet closed: read-only display versus selecting/assigning members to an investigation.
+No current blockers for developer, UX, and QA review.
 
 ## Current risks
 
-- The Hebrew term `מכלול` may imply more operational structure than a simple member list.
 - Static predefined users must be modeled carefully so future real users and agents can be added without rework.
+- Generated picture style is not yet specified; UX/development should choose a consistent approach or request Product preference if needed.
 
 ## Next expected artifact
 
-Product review or Product-approved clarification for the open questions in `capability-brief.md`.
+Developer review and UX review.
 
 ## Parent issue
 
@@ -48,7 +47,7 @@ Local draft: `issues/000-parent-capability.md`
 
 | Issue | Role | Purpose | Status | Blocking? |
 |---|---|---|---|---|
-| `issues/010-product-review.md` | Product | Close semantics, MVP behavior, predefined users, and placement. | Draft | Yes |
+| `issues/010-product-review.md` | Product | Close semantics, MVP behavior, predefined users, and placement. | Complete | No |
 | `issues/020-developer-review.md` | Development | Review implementation approach and risks. | Draft | Yes |
 | `issues/030-ux-review.md` | UX | Review flow, layout, and avatar/name treatment. | Draft | Yes |
 | `issues/040-qa-review.md` | QA | Review test plan and regression surface. | Draft | Yes |
@@ -56,6 +55,7 @@ Local draft: `issues/000-parent-capability.md`
 ## Artifact links
 
 - Capability brief: `capability-brief.md`
+- Product review: `product-review.md`
 - Decisions: not created yet
 - Developer review: not created yet
 - UX review: not created yet

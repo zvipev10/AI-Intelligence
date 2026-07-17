@@ -6,7 +6,7 @@ Close the product definition for `מכלול` before developer/UX execution plan
 
 ## Required action
 
-Review `capability-brief.md` and answer or approve assumptions for the open product questions.
+Complete. Product reviewed and supplied MVP definition.
 
 ## Owner role
 
@@ -23,19 +23,34 @@ Product-approved capability scope, including MVP behavior and predefined users.
 
 ## Blocking
 
-Blocks developer review, UX review closure, and execution planning.
+No longer blocking. Developer, UX, and QA review can proceed.
 
 ## Completion criteria
 
-- [ ] Product confirms what `מכלול` means in the product.
-- [ ] Product provides or approves the predefined user list.
-- [ ] Product confirms picture direction for each user.
-- [ ] Product confirms whether MVP is read-only display or includes investigation-specific selection.
-- [ ] Product confirms desired UI placement or delegates it to UX.
+- [x] Product confirms what `מכלול` means in the product.
+- [x] Product provides or approves the predefined user list.
+- [x] Product confirms picture direction for each user: generate one picture per user.
+- [x] Product confirms MVP display behavior: compact predefined list.
+- [x] Product confirms desired UI placement: near the investigation-name combo.
+
+## Approved product definition
+
+Create five predefined users:
+
+- משה - קצין מטרות
+- טליה - קצינת תמא
+- נעמה - קצינת שטח
+- גדי - קצין איסוף
+- יהלי - קצין עיבוד
+
+Generate a picture for every user.
+
+Display the list compactly near the investigation-name combo.
 
 ## Related artifacts
 
 - `.ai/work/capabilities/michlol-team-management/capability-brief.md`
+- `.ai/work/capabilities/michlol-team-management/product-review.md`
 - `.ai/work/capabilities/michlol-team-management/status.md`
 
 ## Parent capability
