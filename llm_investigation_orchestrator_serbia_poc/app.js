@@ -180,6 +180,8 @@ const MICHLOL_MEMBERS = [
   { id: "yahli-processing-officer", displayName: "יהלי", roleLabel: "קצין עיבוד", memberType: "user", avatar: "./assets/michlol/yahli.png", initial: "י" }
 ];
 
+const MICHLOL_MEMBER_WELCOME = "אני מחובר עכשיו לשיחה הזו. שלח לי את המשימה או השאלה הבאה, ובשלב הבא נחבר כאן סוכן ייעודי לחבר המכלול.";
+
 const state = {
   events: [],
   current: [],
@@ -217,6 +219,7 @@ const state = {
   layerSearchOpen: false,
   promptOptionsOpen: false,
   promptSelectedLayerIds: new Set(),
+  activeConversationMemberId: null,
   openingLayerIds: new Set(),
   layers: [],
   activeLayerId: null,
@@ -313,11 +316,12 @@ function michlolAvatarHtml(member) {
 function michlolMemberHtml(member) {
   const title = `${member.displayName} - ${member.roleLabel}`;
   const aria = `${member.displayName}, ${member.roleLabel}`;
+  const active = state.activeConversationMemberId === member.id;
   return `
-    <span class="michlol-member" role="listitem" data-member-id="${escapeHtml(member.id)}" data-member-type="${escapeHtml(member.memberType)}" title="${escapeHtml(title)}" aria-label="${escapeHtml(aria)}">
+    <button class="michlol-member ${active ? "active" : ""}" type="button" data-member-id="${escapeHtml(member.id)}" data-member-type="${escapeHtml(member.memberType)}" title="${escapeHtml(title)}" aria-label="${escapeHtml(aria)}" aria-pressed="${active ? "true" : "false"}">
       ${michlolAvatarHtml(member)}
       <span class="michlol-name">${escapeHtml(member.displayName)}</span>
-    </span>`;
+    </button>`;
 }
 
 function renderMichlolTeam() {
@@ -334,6 +338,41 @@ function renderMichlolTeam() {
           ${hidden.map(michlolMemberHtml).join("")}
         </div>
       </details>` : ""}`;
+}
+
+function activeConversationMember() {
+  return MICHLOL_MEMBERS.find(member => member.id === state.activeConversationMemberId) || null;
+}
+
+function updatePromptPlaceholder() {
+  if (!promptInput) return;
+  const member = activeConversationMember();
+  promptInput.placeholder = member ? `כתוב אל ${member.displayName}...` : "כתוב שאלת חקירה...";
+}
+
+function memberMessageLabel(member) {
+  return `${member.displayName} · ${member.roleLabel}`;
+}
+
+function assistantMessageLabel() {
+  const member = activeConversationMember();
+  return member ? memberMessageLabel(member) : "סוכן חקירה";
+}
+
+function appendMemberWelcomeMessage(member) {
+  appendMessage("assistant", `
+    <p><strong>${escapeHtml(member.displayName)}</strong></p>
+    <p>${escapeHtml(MICHLOL_MEMBER_WELCOME)}</p>`, { label: memberMessageLabel(member), className: "member-welcome-message", memberId: member.id });
+}
+
+function selectConversationMember(memberId) {
+  const member = MICHLOL_MEMBERS.find(item => item.id === memberId);
+  if (!member || state.activeConversationMemberId === member.id) return;
+  state.activeConversationMemberId = member.id;
+  renderMichlolTeam();
+  updatePromptPlaceholder();
+  appendMemberWelcomeMessage(member);
+  conversation.scrollTop = conversation.scrollHeight;
 }
 
 function createTeamMentionMenu() {
@@ -1887,10 +1926,11 @@ function initMap() {
   state.map.on("load", () => { state.mapReady = true; renderMap(); });
 }
 
-function appendMessage(role, html) {
+function appendMessage(role, html, options = {}) {
   const article = document.createElement("article");
-  article.className = `message ${role === "user" ? "user-message" : "assistant-message"}`;
-  article.innerHTML = `<div class="message-label">${role === "user" ? "אנליסט" : "סוכן חקירה"}</div>${html}`;
+  article.className = `message ${role === "user" ? "user-message" : "assistant-message"}${options.className ? ` ${options.className}` : ""}`;
+  if (options.memberId) article.dataset.conversationMemberId = options.memberId;
+  article.innerHTML = `<div class="message-label">${escapeHtml(options.label || (role === "user" ? "אנליסט" : assistantMessageLabel()))}</div>${html}`;
   conversation.appendChild(article);
   return article;
 }
@@ -1899,7 +1939,7 @@ function startAssistantResearchMessage(message = "Hermes מנתח את הבקש�
   const article = document.createElement("article");
   article.className = "message assistant-message";
   article.innerHTML = `
-    <div class="message-label">סוכן חקירה</div>
+    <div class="message-label">${escapeHtml(assistantMessageLabel())}</div>
     <section class="research-process research-process-live">
       <h3>תהליך המחקר</h3>
       <div class="activity-empty">${escapeHtml(message)}</div>
@@ -3453,9 +3493,11 @@ function resetInvestigation(options = {}) {
   state.investigationMemoryLoading = false;
   state.layerSearchQuery = "";
   state.layerSearchOpen = false;
+  state.activeConversationMemberId = null;
   setPromptOptionsOpen(false);
   closeQueryLayersModal();
   conversation.innerHTML = '<article class="message assistant-message"><div class="message-label">סוכן חקירה</div><p>אפשר להתחיל בשאלה פתוחה. אשתמש בכלי החיפוש, הזמן והמפה כדי לבנות תשובה שניתן לבדוק מול האירועים הגולמיים.</p></article>';
+  updatePromptPlaceholder();
   if (resultTitle) resultTitle.textContent = "טרם בוצעה חקירה";
   if (resultSubtitle) resultSubtitle.textContent = "תוצאות, המחשות וראיות יופיעו כאן לאחר השאלה הראשונה.";
   if (resultCount) resultCount.textContent = "0 אירועים";
@@ -3466,6 +3508,7 @@ function resetInvestigation(options = {}) {
   renderQueryLayersModal();
   renderQueryInspector();
   renderInvestigationSelector();
+  renderMichlolTeam();
   if (state.map) setTimeout(() => state.map.resize(), 0);
 }
 
@@ -3474,6 +3517,11 @@ function escapeHtml(value) {
 }
 
 document.addEventListener("click", event => {
+  const michlolMember = event.target.closest(".michlol-member[data-member-id]");
+  if (michlolMember) {
+    selectConversationMember(michlolMember.dataset.memberId);
+    return;
+  }
   const suggestion = event.target.closest("[data-prompt]");
   if (suggestion) runPrompt(suggestion.dataset.prompt);
   if (event.target.closest("#queryToolName")) openQueryModal();
@@ -3798,6 +3846,7 @@ recordedClose.addEventListener("click", closeRecordedModal);
 queryLayersClose.addEventListener("click", closeQueryLayersModal);
 queryLayersSubmit.addEventListener("click", submitQueryLayerSelection);
 renderMichlolTeam();
+updatePromptPlaceholder();
 enableMentionHighlight(promptInput);
 enableMentionHighlight(stepInjectPrompt);
 attachTeamMentionAutocomplete(promptInput);
