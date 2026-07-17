@@ -57,6 +57,40 @@ Product requested a more compact upper header presentation after reviewing the d
 
 Note: browser smoke against the static server reported expected 404 console messages for API/server-backed resources that are not served by `python -m http.server`; these were unrelated to the header correction.
 
+## VM deployment
+
+Deployed to the shared review VM on 2026-07-17.
+
+VM target:
+
+- Public URL: `http://151.145.93.180/`
+- Active directory: `/opt/serbia-poc-ui`
+- Service: `serbia-poc-ui.service`
+- Port: `8769`
+
+Served versions:
+
+- `styles.css?v=83`
+- `app.js?v=103`
+
+VM verification:
+
+- Deploy script reported service `active`.
+- Deploy script verified local VM `/api/status`.
+- Public `http://151.145.93.180/api/status` returned `200 OK`.
+- Public index contains:
+  - `styles.css?v=83`
+  - `סביבת מודיעין`
+  - `michlol-more`
+  - stacked `status-line` markup
+  - `app.js?v=103`
+- Public `styles.css?v=83` contains:
+  - 250px combo track
+  - `michlol-more` rules
+  - stacked `header-status`
+  - workspace height based on 68px header
+- Public avatar URLs still return HTTP 200 for all five users.
+
 ## Review needed
 
 Product/UX/QA should review the corrected compact header after VM deployment.

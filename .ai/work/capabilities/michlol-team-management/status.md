@@ -6,29 +6,29 @@
 
 ## Current phase
 
-Compact header correction implemented; VM deployment pending
+Compact header correction deployed to VM; review pending
 
 ## Overall status
 
-In progress
+Pending Product/UX/QA review
 
 ## Who needs to act now
 
 | Role | Status | Required action | Due before |
 |---|---|---|---|
 | Product | Complete | Product definition approved five predefined users, generated pictures, and compact placement near investigation-name combo. | Done |
-| Development | Complete | Implemented Product-requested compact header correction. | Done |
-| UX | Review needed | Review corrected compact header after VM deployment. | Before Slice 2 |
-| QA | Review needed | Validate corrected compact header and regressions after VM deployment. | Before Slice 2 |
+| Development | Complete | Implemented and deployed Product-requested compact header correction. | Done |
+| UX | Review needed | Review corrected compact header on the VM. | Before Slice 2 |
+| QA | Review needed | Validate corrected compact header and regressions on the VM. | Before Slice 2 |
 | Architecture/Security | Watch | Review only if MVP stores team state or introduces real identity/user semantics. | Execution planning |
 
 ## Latest change since previous review
 
-Product requested compact upper-header corrections. Implemented `checkpoint-003.md`: renamed title to `סביבת מודיעין`, stacked statuses, narrowed the combo, moved `מכלול` inline, and added a three-dot expander for the remaining teammates.
+Product requested compact upper-header corrections. Implemented and deployed `checkpoint-003.md`: renamed title to `סביבת מודיעין`, stacked statuses, narrowed the combo, moved `מכלול` inline, and added a three-dot expander for the remaining teammates. Public VM serves `styles.css?v=83`.
 
 ## Current blockers
 
-No current blockers. VM deployment of the correction is pending.
+No current blockers. Product/UX/QA VM review is pending.
 
 ## Current risks
 
@@ -37,7 +37,7 @@ No current blockers. VM deployment of the correction is pending.
 
 ## Next expected artifact
 
-VM deployment checkpoint for the compact header correction.
+Product/UX/QA review of corrected VM deployment in `checkpoint-003.md`.
 
 ## Parent issue
 
