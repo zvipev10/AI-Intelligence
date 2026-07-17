@@ -6,7 +6,7 @@
 
 ## Current phase
 
-Mobile visual QA fix implemented locally; VM deployment pending
+Mobile visual QA fix deployed to VM; review pending
 
 ## Overall status
 
@@ -17,14 +17,14 @@ Pending Product/UX/QA review
 | Role | Status | Required action | Due before |
 |---|---|---|---|
 | Product | Complete | Clarified prompt-only behavior, multiple mentions, all prompt surfaces, client-only metadata, and Hermes ignore instruction. | Done |
-| Development | In progress | Implemented mobile visual fix for mention menu placement and highlight-layer alignment; deployment is pending. | Current task |
+| Development | Complete | Implemented and deployed mobile visual fix for mention menu placement and highlight-layer alignment. | Done |
 | UX | Complete for planning | Approved caret/input-area popover, constrained scrolling, keyboard controls, and hidden no-match state. | Done |
 | QA | Review needed | Validate RTL mention typing, keyboard selection, filtering, no-match behavior, prompt submission, selected-layer prompt context, step-continuation submission, and header regression. | Before acceptance |
 | Architecture/Security | Watch | Review only if MVP stores team state or introduces real identity/user semantics. | Acceptance |
 
 ## Latest change since previous review
 
-Investigated mobile visual bugs in `checkpoint-008.md` and implemented a focused fix: the mobile `@member` menu now prefers opening above the prompt, and the mention highlight layer aligns exactly with the textarea. Review cache keys are now `styles.css?v=86` and `app.js?v=107`.
+Investigated, fixed, and deployed mobile visual bugs in `checkpoint-008.md`: the mobile `@member` menu now prefers opening above the prompt, and the mention highlight layer aligns exactly with the textarea. Public `http://151.145.93.180/` now serves `styles.css?v=86` and `app.js?v=107`.
 
 ## Current blockers
 
@@ -37,7 +37,7 @@ No current blockers. Product/UX/QA review is pending.
 
 ## Next expected artifact
 
-Deploy the mobile visual fix described in `checkpoint-008.md`, then Product/UX/QA review on the shared VM.
+Product/UX/QA review of the VM deployment described in `checkpoint-008.md`.
 
 ## Parent issue
 
@@ -51,7 +51,7 @@ Local draft: `issues/000-parent-capability.md`
 | `issues/020-developer-review.md` | Development | Review implementation approach and risks. | Complete | No |
 | `issues/030-ux-review.md` | UX | Review flow, layout, and avatar/name treatment. | Complete | No |
 | `issues/040-qa-review.md` | QA | Review test plan and regression surface. | Complete | No |
-| `issues/050-member-task-mentions.md` | Product/UX/Development/QA | Define, implement, and deploy `@member` autocomplete for asking/requesting tasks from team members. | Mobile visual fix deployment pending | No |
+| `issues/050-member-task-mentions.md` | Product/UX/Development/QA | Define, implement, and deploy `@member` autocomplete for asking/requesting tasks from team members. | Mobile visual fix deployed; review pending | No |
 
 ## Artifact links
 

@@ -6,7 +6,7 @@
 
 ## Status
 
-Mobile visual fix implemented locally / Pending deployment and Product, UX, and QA review
+Mobile visual fix deployed / Pending Product, UX, and QA review
 
 ## Request
 
