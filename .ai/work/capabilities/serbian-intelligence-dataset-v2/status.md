@@ -6,7 +6,7 @@ Serbian Intelligence Dataset V2
 
 ## Current phase
 
-Activated locally; deployment pending
+Activated and deployed
 
 ## Overall status
 
@@ -17,7 +17,7 @@ Implementation complete
 | Role | Status | Required action | Due before |
 |---|---|---|---|
 | Product | Approved | None. | Done |
-| Development | Complete | Deploy the committed activation when requested. | Deployment |
+| Development | Complete | None. | Done |
 | UX | Complete | Dynamic V2 dataset/location loading and version display. | Done |
 | QA | Complete | Loader, API, rollback, syntax, and identifier smoke tests passed. | Done |
 | Architecture/Security | Watch | Preserve synthetic/public provenance boundaries. | Ongoing |
@@ -32,12 +32,11 @@ None. UAV observations are regular event records; detected objects and estimated
 
 ## Current risks
 
-- Production deployment has not yet been verified.
 - UAV counts are synthetic intelligence estimates, not ground truth.
 
 ## Next expected artifact
 
-Production deployment and smoke test.
+Product use and feedback on the activated scenario.
 
 Published branch: `codex/serbian-intelligence-dataset-v2` (`433976c`).
 

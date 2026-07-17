@@ -6,7 +6,7 @@ Serbian Intelligence Dataset V2
 
 ## Plan status
 
-Generation and local activation complete; deployment remains.
+Generation, activation, and deployment complete.
 
 ## Prerequisite review gate
 
@@ -60,7 +60,7 @@ Status: Complete locally.
 Goal: deploy and smoke-test the activated runtime.
 Risk: medium.
 Reviewer: Development/QA.
-Status: Pending.
+Status: Complete. UI/API health and a bounded MCP search were verified against V2.
 
 ## Rollback/fallback
 

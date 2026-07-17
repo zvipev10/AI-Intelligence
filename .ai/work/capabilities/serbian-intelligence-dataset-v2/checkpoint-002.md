@@ -25,6 +25,9 @@ UAV observations remain ordinary event records. Their `event_summary` text conta
 - V2 identifiers were recognized across runtime layers.
 - Git whitespace validation passed.
 
-## Remaining work
+## Deployment verification
 
-Deploy the committed activation and repeat the API/UI/MCP smoke checks against the production host.
+- `serbia-poc-ui.service` is active and listening on port 8769.
+- `/api/status` reports build `serbia-poc-v2`, dataset `v2`, and 14,800 rows.
+- The V2 MCP runtime loaded 14,800 rows and a bounded `KFOR` query returned V2 identifiers.
+- The legacy full semantic smoke suite exceeded the SSH verification window while building/searching the larger index; the bounded functional query passed.
