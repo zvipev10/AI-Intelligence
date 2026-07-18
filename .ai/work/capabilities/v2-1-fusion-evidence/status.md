@@ -2,15 +2,15 @@
 
 ## Phase
 
-Controlled execution - Slice 2
+Complete - ready for Moshe implementation
 
 ## Overall status
 
-In progress
+Complete
 
 ## Current owner
 
-Development
+Development and QA complete
 
 ## Blockers
 
@@ -18,7 +18,7 @@ None
 
 ## Next artifact
 
-Runtime compatibility and `checkpoint-002.md`
+Moshe capability brief and target-bank contract
 
 ## Latest decision
 

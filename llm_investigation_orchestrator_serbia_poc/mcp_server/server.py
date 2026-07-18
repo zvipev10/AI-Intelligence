@@ -32,7 +32,13 @@ MIN_COVERAGE_LIMIT = 2000
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 DATASET_VERSION = os.environ.get("INTELLIGENCE_POC_DATASET_VERSION", "v2").strip().lower()
-if DATASET_VERSION == "v2":
+if DATASET_VERSION in {"v2.1", "v2_1", "v21"}:
+    DATASET_VERSION = "v2.1"
+    DEFAULT_DATASET_DIR = BASE_DIR / "data" / "serbian_intelligence_v2_1"
+    DEFAULT_DATA_PATH = DEFAULT_DATASET_DIR / "serbia_kosovo_events_projection_v2_1.csv"
+    DEFAULT_LOCATIONS_PATH = DEFAULT_DATASET_DIR / "serbia_kosovo_locations_v2_1.json"
+    DEFAULT_ENTITIES_PATH = DEFAULT_DATASET_DIR / "serbia_kosovo_entities_v2_1.json"
+elif DATASET_VERSION == "v2":
     DEFAULT_DATASET_DIR = BASE_DIR / "data" / "serbian_intelligence_v2"
     DEFAULT_DATA_PATH = DEFAULT_DATASET_DIR / "serbia_kosovo_events_projection_v2.csv"
     DEFAULT_LOCATIONS_PATH = DEFAULT_DATASET_DIR / "serbia_kosovo_locations_v2.json"

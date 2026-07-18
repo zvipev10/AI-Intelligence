@@ -19,6 +19,16 @@ V21_DIR = ROOT / "serbian_intelligence_v2_1"
 GENERATOR = ROOT / "generate_serbian_intelligence_v2_1.py"
 MAX_DELTA_SECONDS = 8 * 60 * 60
 
+OBJECT_CONCEPTS = {
+    "שיירת כלי רכב": "concept:convoy_or_vehicle_column",
+    "רכב משוריין": "concept:armored_vehicle",
+    "מחסום דרכים": "concept:roadblock_position",
+    "עמדת תצפית": "concept:observation_post",
+    "מסוק": "concept:helicopter",
+    "משאית לוגיסטית": "concept:logistics_vehicle",
+    "עבודות הנדסיות": "concept:engineering_activity",
+}
+
 
 def sha256(path: Path) -> str:
     digest = hashlib.sha256()
@@ -65,6 +75,8 @@ def main() -> int:
     projection_by_id = {row["event_id"]: row for row in projections}
     label_by_id = {row["record_id"]: row for row in labels}
     truth_by_id = {item["fusion_truth_id"]: item for item in truth}
+    sys.path.insert(0, str(ROOT.parent / "mcp_server"))
+    from semantic_index import dense_features
 
     assert len(rows) == 14_800
     assert len(row_by_id) == len(rows)
@@ -125,6 +137,8 @@ def main() -> int:
         assert all(label_by_id[record_id]["same_object_truth"] == "true" for record_id in ids)
         for row in public_rows:
             text = row["text"]
+            features = {name for name, _ in dense_features(text)}
+            assert OBJECT_CONCEPTS[item["object_class"]] in features
             if "כ-" in text:
                 public_language_modes["approximate"] += 1
             elif "בין " in text:

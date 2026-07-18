@@ -33,7 +33,7 @@ except ImportError:  # pragma: no cover - depends on deployment image
     np = None
 
 
-INDEX_VERSION = "semantic-event-index-v10-v2-compact-portable-concepts"
+INDEX_VERSION = "semantic-event-index-v11-v2-1-fusion-terminology"
 TOKEN_RE = re.compile(r"[\w\u0590-\u05ff׳״'-]+", re.UNICODE)
 DEFAULT_DENSE_DIMENSIONS = 768
 
@@ -48,15 +48,15 @@ CONCEPT_FEATURES: tuple[tuple[str, float, tuple[str, ...]], ...] = (
     ("concept:blockade_or_road", 2.5, ("מחסום", "חסימה", "הכביש נחסם", "סגירת כבישים", "ציר")),
     ("concept:misidentification", 3.0, ("מייחסים", "מוצגת כ", "טוענים שמדובר", "לא ברור אם")),
     ("concept:uav_observation", 4.0, ("כטב״ם", "כטבם", "מל״ט", "מל״ט", "uav", "drone", "unmanned aerial", "aerial observation", "ניצול וידאו")),
-    ("concept:convoy_or_vehicle_column", 5.0, ("שיירת כלי רכב", "שיירה", "טור כלי רכב", "טור צבאי", "convoy", "vehicle column", "military column", "колона возила")),
+    ("concept:convoy_or_vehicle_column", 5.0, ("שיירת כלי רכב", "שיירה", "שיירה ממונעת", "טור כלי רכב", "מספר כלי רכב שנעו יחד", "טור צבאי", "convoy", "vehicle column", "military column", "колона возила")),
     ("concept:military_formation", 4.5, ("מבנה צבאי", "כוח גדודי", "כוח פלוגתי", "יחידה צבאית", "military formation", "unit formation", "troop formation", "војна формација")),
-    ("concept:armored_vehicle", 5.0, ("רכב משוריין", "רכבים משוריינים", "נגמ״ש", "נגמש", "טנק", "armored vehicle", "armoured vehicle", "armored personnel carrier", "armoured personnel carrier", "apc", "ifv", "оклопно возило")),
+    ("concept:armored_vehicle", 5.0, ("רכב משוריין", "רכבים משוריינים", "כלים משוריינים", "רכב כבד ממוגן", "כלי רכב בעלי מיגון", "נגמ״ש", "נגמש", "טנק", "armored vehicle", "armoured vehicle", "armored personnel carrier", "armoured personnel carrier", "apc", "ifv", "оклопно возило")),
     ("concept:air_defense", 5.0, ("הגנה אווירית", "נ״מ", "נמ", "סוללת טילים", "מערכת נ״מ", "מכ״ם", "air defense", "air-defence", "sam battery", "surface-to-air", "radar unit", "противваздушна одбрана")),
-    ("concept:logistics_vehicle", 3.5, ("משאית לוגיסטית", "רכב לוגיסטי", "שיירת אספקה", "logistics truck", "supply vehicle", "logistics convoy")),
-    ("concept:observation_post", 3.5, ("עמדת תצפית", "נקודת תצפית", "observation post", "lookout post", "осматрачница")),
-    ("concept:engineering_activity", 3.5, ("עבודות הנדסיות", "כלי הנדסי", "הקמת ביצורים", "engineering works", "engineering vehicle", "fortification work")),
-    ("concept:helicopter", 3.5, ("מסוק", "מסוקים", "helicopter", "rotary-wing", "хеликоптер")),
-    ("concept:roadblock_position", 4.0, ("מחסום דרכים", "נקודת חסימה", "עמדת חסימה", "roadblock", "blocking position", "контролни пункт")),
+    ("concept:logistics_vehicle", 3.5, ("משאית לוגיסטית", "רכב לוגיסטי", "רכב תובלה לוגיסטי", "משאית אספקה", "משאית שנשאה ציוד", "שיירת אספקה", "logistics truck", "supply vehicle", "logistics convoy")),
+    ("concept:observation_post", 3.5, ("עמדת תצפית", "נקודת תצפית", "נקודת תצפית מאוישת", "עמדה שולטת לצורכי תצפית", "צוות תצפית בעמדה", "observation post", "lookout post", "осматрачница")),
+    ("concept:engineering_activity", 3.5, ("עבודות הנדסיות", "פעילות הנדסית", "כלי הנדסי", "הכשרת שטח", "עבודות עפר", "הקמת ביצורים", "engineering works", "engineering vehicle", "fortification work")),
+    ("concept:helicopter", 3.5, ("מסוק", "מסוקים", "כלי טיס סובב כנף", "helicopter", "rotary-wing", "хеликоптер")),
+    ("concept:roadblock_position", 4.0, ("מחסום דרכים", "נקודת חסימה", "עמדת חסימה", "חסימה מאוישת", "עמדת בידוק החוסמת", "roadblock", "blocking position", "контролни пункт")),
     ("concept:movement", 4.5, ("בתנועה", "נע לעבר", "מתקדם", "התקדמות", "בנסיגה", "נסוג", "movement", "moving", "advancing", "withdrawing", "maneuvering", "у покрету", "повлачење")),
     ("concept:deployment_or_staging", 4.5, ("בפריסה", "נפרס", "פריסה", "בהיערכות", "שטח היערכות", "deployed", "deployment", "staging", "assembly area", "распоређивање")),
     ("concept:stationary_or_halted", 3.0, ("בעצירה", "ללא שינוי נראה", "חונה", "stationary", "halted", "parked", "заустављен")),

@@ -27,7 +27,15 @@ ROOT = Path(__file__).resolve().parent
 CONFIG_PATH = ROOT / ".hermes-api.json"
 RECORDED_RUNS_PATH = ROOT / "test_runs" / "compact_demo_after_general_instructions_20260620T151848Z.json"
 DATASET_VERSION = os.environ.get("INTELLIGENCE_POC_DATASET_VERSION", "v2").strip().lower()
-if DATASET_VERSION == "v2":
+if DATASET_VERSION in {"v2.1", "v2_1", "v21"}:
+    DATASET_VERSION = "v2.1"
+    DATASET_DIR = ROOT / "data" / "serbian_intelligence_v2_1"
+    LOCATIONS_PATH = DATASET_DIR / "serbia_kosovo_locations_v2_1.json"
+    EVENTS_PATH = DATASET_DIR / "serbia_kosovo_events_projection_v2_1.csv"
+    ENTITIES_PATH = DATASET_DIR / "serbia_kosovo_entities_v2_1.json"
+    DATASET_URL = "./data/serbian_intelligence_v2_1/serbia_kosovo_events_projection_v2_1.csv"
+    LOCATIONS_URL = "./data/serbian_intelligence_v2_1/serbia_kosovo_locations_v2_1.json"
+elif DATASET_VERSION == "v2":
     DATASET_DIR = ROOT / "data" / "serbian_intelligence_v2"
     LOCATIONS_PATH = DATASET_DIR / "serbia_kosovo_locations_v2.json"
     EVENTS_PATH = DATASET_DIR / "serbia_kosovo_events_projection_v2.csv"
@@ -56,7 +64,7 @@ EVENT_ID_PATTERN = re.compile(r"\b(?:REC-(?:V2-)?\d{6}|LOC-(?:V2-)?\d{3})\b")
 SAVED_QUESTION_ID_PATTERN = re.compile(r"^[A-Za-z0-9_.-]+$")
 INVESTIGATION_ID_PATTERN = re.compile(r"^[A-Za-z0-9_.-]+$")
 ACTIVE_RUN_STARTED_AT = None
-APP_BUILD = "serbia-poc-v2"
+APP_BUILD = f"serbia-poc-{DATASET_VERSION}"
 REMOTE_AUDIT_PATH = "/opt/serbia-poc/mcp_audit.jsonl"
 HERMES_TOOL_PREFIX = "mcp_serbia_events_poc_"
 try:
