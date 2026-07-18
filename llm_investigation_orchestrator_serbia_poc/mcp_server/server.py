@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import csv
+import hashlib
 import json
 import math
 import os
@@ -298,9 +299,12 @@ def semantic_index_signature() -> dict[str, Any]:
     signature = {}
     for label, path in [("events", DATA_PATH), ("locations", LOCATIONS_PATH), ("entities", ENTITIES_PATH)]:
         try:
-            stat = path.stat()
-            signature[f"{label}_mtime_ns"] = stat.st_mtime_ns
-            signature[f"{label}_size"] = stat.st_size
+            digest = hashlib.sha256()
+            with path.open("rb") as handle:
+                for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+                    digest.update(chunk)
+            signature[f"{label}_sha256"] = digest.hexdigest()
+            signature[f"{label}_size"] = path.stat().st_size
         except OSError:
             signature[f"{label}_missing"] = True
     return signature

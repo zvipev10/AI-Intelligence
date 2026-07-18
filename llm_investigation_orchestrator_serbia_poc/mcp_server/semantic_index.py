@@ -32,7 +32,7 @@ except ImportError:  # pragma: no cover - depends on deployment image
     np = None
 
 
-INDEX_VERSION = "semantic-event-index-v8-v2-military-concepts"
+INDEX_VERSION = "semantic-event-index-v9-v2-portable-military-concepts"
 TOKEN_RE = re.compile(r"[\w\u0590-\u05ff׳״'-]+", re.UNICODE)
 DEFAULT_DENSE_DIMENSIONS = 768
 

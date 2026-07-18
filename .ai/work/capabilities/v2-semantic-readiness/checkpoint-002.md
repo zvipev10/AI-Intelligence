@@ -2,7 +2,7 @@
 
 ## Completed
 
-- Bumped the semantic index to `semantic-event-index-v8-v2-military-concepts`.
+- Bumped the semantic index to `semantic-event-index-v9-v2-portable-military-concepts`.
 - Added multilingual deterministic concepts for UAV observation, convoys/formations, armored vehicles, air defense, logistics, observation posts, engineering activity, helicopters, roadblocks, movement, deployment/staging, stationary state, force concentration, counts, Serbian forces, NATO/KFOR, Kosovo Police, and KSF.
 - Added explicit numeric object-count features.
 - Included V2 collection, observation, mission, object, count, mobility, direction, and confidence values in semantic documents and MCP event results.
@@ -37,6 +37,7 @@
 - A generic movement field label caused false concept matches. Semantic documents now use the neutral label `mobility_status` while MCP results retain the public `movement_status` field.
 - Kosovo Police and KSF require distinct concepts; splitting them raised Police top-20 precision to the accepted 70% threshold.
 - The 1 GB VM cannot efficiently retain both Python sparse lexical and dense indexes; no-NumPy hybrid mode now reports `fallback_mode=dense_only`, preserving cross-language retrieval within its memory budget.
+- Cache signatures now use content SHA-256 values rather than file mtimes, allowing a validated off-host cache to be uploaded to the constrained VM without a memory-heavy rebuild.
 
 ## Remaining work
 
