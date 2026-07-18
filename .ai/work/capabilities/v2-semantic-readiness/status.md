@@ -2,15 +2,15 @@
 
 ## Phase
 
-Structured data and semantic implementation complete; runtime validation pending
+Complete
 
 ## Overall status
 
-In progress
+Complete
 
 ## Current owner
 
-Development — deploy and validate Slice 3.
+Development and QA complete.
 
 ## Blockers
 
@@ -18,12 +18,12 @@ None.
 
 ## Risks
 
-- Semantic overmatching and index-build latency.
 - Structured fields exist only for UAV records in the current corpus.
+- Geographic fusion and target-bank workflows are outside this capability.
 
 ## Next artifact
 
-`checkpoint-003.md` after deployment and runtime validation.
+None. See `checkpoint-003.md` for production verification.
 
 ## Parent issue
 
@@ -35,4 +35,4 @@ Local draft: `issues/000-parent-capability.md`
 |---|---|---|
 | `issues/010-structured-fields.md` | Preserve UAV fields in V2 projection. | Complete |
 | `issues/020-semantic-concepts.md` | Expand and validate V2 semantic retrieval. | Complete |
-| `issues/030-runtime-validation.md` | Deploy and smoke-test. | In progress |
+| `issues/030-runtime-validation.md` | Deploy and smoke-test. | Complete |
