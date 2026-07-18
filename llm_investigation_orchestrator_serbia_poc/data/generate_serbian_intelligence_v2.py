@@ -49,7 +49,9 @@ RAW_FIELDS = [
 PROJECTION_FIELDS = [
     "event_id", "timestamp_utc", "source_type", "source_reliability",
     "source_reliability_label", "certainty_level", "entity_id", "location_id",
-    "event_summary",
+    "event_summary", "collection_family", "observation_id", "mission_id",
+    "object_class", "estimated_object_count", "movement_status",
+    "movement_direction", "geolocation_confidence", "identification_confidence",
 ]
 
 LABEL_FIELDS = [
@@ -318,6 +320,15 @@ def main() -> int:
             "entity_id": entity_id,
             "location_id": raw["location_id"],
             "event_summary": raw["text"],
+            "collection_family": raw.get("collection_family", ""),
+            "observation_id": raw.get("observation_id", ""),
+            "mission_id": raw.get("mission_id", ""),
+            "object_class": raw.get("observed_object_class", ""),
+            "estimated_object_count": raw.get("estimated_object_count", ""),
+            "movement_status": raw.get("movement_status", ""),
+            "movement_direction": raw.get("movement_direction", ""),
+            "geolocation_confidence": raw.get("geolocation_confidence", ""),
+            "identification_confidence": raw.get("identification_confidence", ""),
         })
         labels.append({
             "event_id": raw["record_id"], "record_id": raw["record_id"], "source_type": raw["source_type"],
