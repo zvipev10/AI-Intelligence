@@ -1,0 +1,53 @@
+{
+  "checks": {
+    "hard_negative_target": true,
+    "positive_chain_target": true,
+    "target_rows": true,
+    "uav_count_preserved": true,
+    "unique_record_ids": true,
+    "v2_inputs_unchanged": true
+  },
+  "hard_negative_records": 100,
+  "notes": [
+    "V1 and V2 are immutable inputs and are not rewritten.",
+    "Fusion truth exists only in evaluator artifacts.",
+    "Canonical locations represent areas, not observation-level coordinates.",
+    "All operational events and movements are synthetic."
+  ],
+  "object_counts": {
+    "מחסום דרכים": 39,
+    "מסוק": 41,
+    "משאית לוגיסטית": 44,
+    "עבודות הנדסיות": 52,
+    "עמדת תצפית": 37,
+    "רכב משוריין": 40,
+    "שיירת כלי רכב": 47
+  },
+  "output_hashes": {
+    "README.md": "cf518f51259addfd194c901a5e68e516205fa18d0ca863227bb4e65532c436a2",
+    "fusion_target_truth_v2_1.jsonl": "a9a3ade6eea3dc5634ea374eec84efcd95e2c7df5af68f47855bef4a57642a77",
+    "north_kosovo_serbian_intelligence_v2_1_14800.csv": "cfa5b60ae176efa19e949a35bfda8cfbe2e4ba48653f4eaf58dd527b64fa815e",
+    "north_kosovo_serbian_intelligence_v2_1_14800.jsonl": "810e46e80b186b87d11fc0bacb1f8b54ce55e457ff6496ce32c4a7fc1c016bd0",
+    "serbia_kosovo_entities_v2_1.json": "fbde70e2f370fddfc1bce62642b189c76e9d18327edfe3b3975e3aae4750b739",
+    "serbia_kosovo_evaluator_labels_v2_1.csv": "49f8d2db91450b7d7a0288cf26cfed83556f4e4142fc2180e414a8cf6ce0b2d8",
+    "serbia_kosovo_events_projection_v2_1.csv": "e24d22e17fc887585a55af08882d786ac062906dec2266f0bc3c4b05f3dfb8fb",
+    "serbia_kosovo_locations_v2_1.json": "4dec03e8eaa713cb51661c6de728e31579937f90c24b08bd32378a509464df73",
+    "serbian_uav_observations_v2_1.jsonl": "d747d80418612efc93b7b01e10918c2dbff62f53b5cba4e803c6a0ae170c25f0"
+  },
+  "positive_evidence_records": 900,
+  "positive_fusion_chains": 300,
+  "public_source_records": 11000,
+  "rows": 14800,
+  "schema_version": "2.1",
+  "seed": 20260718,
+  "uav_observations": 3800,
+  "v2_input_hashes": {
+    "north_kosovo_serbian_intelligence_v2_14800.csv": "b75ac0e283b2dd341f1db50e8f6c8245c2b9765c0d3962004e239d00c15bb909",
+    "north_kosovo_serbian_intelligence_v2_14800.jsonl": "220b9c9d13a05201c8909919017d698dd75b4608ad218fdba1ef4a88b49c06ff",
+    "serbia_kosovo_entities_v2.json": "fbde70e2f370fddfc1bce62642b189c76e9d18327edfe3b3975e3aae4750b739",
+    "serbia_kosovo_evaluator_labels_v2.csv": "92aa813f2082c8f8758f141088eb3fce4c5a0cf1c8f178075b314ea5c8bf354b",
+    "serbia_kosovo_events_projection_v2.csv": "841ee6be4ddce17f0f859e82d93f6631c2d1a16b09fa9f0a968276cb1bbd7592",
+    "serbia_kosovo_locations_v2.json": "4dec03e8eaa713cb51661c6de728e31579937f90c24b08bd32378a509464df73",
+    "serbian_uav_observations_v2.jsonl": "d747d80418612efc93b7b01e10918c2dbff62f53b5cba4e803c6a0ae170c25f0"
+  }
+}
