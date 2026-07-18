@@ -32,7 +32,7 @@ except ImportError:  # pragma: no cover - depends on deployment image
     np = None
 
 
-INDEX_VERSION = "semantic-event-index-v7-v2-military-concepts"
+INDEX_VERSION = "semantic-event-index-v8-v2-military-concepts"
 TOKEN_RE = re.compile(r"[\w\u0590-\u05ff׳״'-]+", re.UNICODE)
 DEFAULT_DENSE_DIMENSIONS = 768
 
@@ -205,6 +205,7 @@ class SemanticEventIndex:
             "backend": self.backend,
             "dense_dimensions": self.dense_dimensions if self.backend in {"dense_hash_embedding", "hybrid_embedding"} else None,
             "dense_engine": ("numpy" if np is not None else "python") if self.backend in {"dense_hash_embedding", "hybrid_embedding"} else None,
+            "fallback_mode": "dense_only" if self.backend == "hybrid_embedding" and np is None else None,
             "record_count": len(self.records),
             **self.signature,
         }
@@ -250,6 +251,12 @@ class SemanticEventIndex:
                 pass
 
     def _build(self) -> None:
+        if self.backend == "hybrid_embedding" and np is None:
+            # On constrained deployments without NumPy, retaining both sparse
+            # lexical vectors and sparse dense vectors causes excessive memory
+            # pressure. Dense-only fallback preserves cross-language concepts.
+            self._build_dense()
+            return
         if self.backend in {"dense_hash_embedding", "hybrid_embedding"}:
             self._build_dense()
             if self.backend == "hybrid_embedding":
@@ -534,6 +541,8 @@ class SemanticEventIndex:
         return 0.08
 
     def _search_hybrid(self, query: str, filters: dict[str, Any], limit: int) -> list[dict[str, Any]]:
+        if np is None:
+            return self._search_dense(query, filters, limit)
         lexical_backend = self.backend
         self.backend = "lexical_tfidf"
         try:

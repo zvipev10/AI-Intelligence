@@ -2,7 +2,7 @@
 
 ## Completed
 
-- Bumped the semantic index to `semantic-event-index-v7-v2-military-concepts`.
+- Bumped the semantic index to `semantic-event-index-v8-v2-military-concepts`.
 - Added multilingual deterministic concepts for UAV observation, convoys/formations, armored vehicles, air defense, logistics, observation posts, engineering activity, helicopters, roadblocks, movement, deployment/staging, stationary state, force concentration, counts, Serbian forces, NATO/KFOR, Kosovo Police, and KSF.
 - Added explicit numeric object-count features.
 - Included V2 collection, observation, mission, object, count, mobility, direction, and confidence values in semantic documents and MCP event results.
@@ -17,7 +17,7 @@
 - Cold index build: 77.68 seconds in the bundled local runtime.
 - Warm index load: 7.373 seconds.
 - Warm queries: 0.098–0.284 seconds across nine probes.
-- Pure-Python/no-NumPy cold build: 37.142 seconds; queries: 0.217–0.360 seconds with identical precision gates.
+- Pure-Python/no-NumPy dense-only cold build: 33.221 seconds; queries: 0.192–0.407 seconds. All precision gates passed; KFOR was 85% and the other values remained at their accepted thresholds or above.
 - Top-20 precision:
   - armored vehicle: 100%
   - vehicle convoy: 100%
@@ -36,6 +36,7 @@
 - The initial dense query path spent 15–35 seconds generating rationale for every positive candidate. Rationale generation now runs only for selected results.
 - A generic movement field label caused false concept matches. Semantic documents now use the neutral label `mobility_status` while MCP results retain the public `movement_status` field.
 - Kosovo Police and KSF require distinct concepts; splitting them raised Police top-20 precision to the accepted 70% threshold.
+- The 1 GB VM cannot efficiently retain both Python sparse lexical and dense indexes; no-NumPy hybrid mode now reports `fallback_mode=dense_only`, preserving cross-language retrieval within its memory budget.
 
 ## Remaining work
 
