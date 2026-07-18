@@ -16,7 +16,7 @@ Analysts currently have raw events, entity metadata, location metadata, investig
 
 ## Product goal
 
-Introduce Moshe as the first specialized team agent and introduce a durable **Position Intelligence Bank** knowledge layer. Moshe should:
+Introduce Moshe as the first specialized team agent and introduce a durable global **attack targets** knowledge layer. Moshe should:
 
 1. search all authorized synthetic raw-data layers;
 2. identify candidate observations that may describe the same object near the same time and place;
@@ -77,7 +77,7 @@ The agent must preserve ambiguity. It must not merge two observations merely bec
 
 ### 6. Bank publication
 
-Accepted artifacts become a new catalog layer, proposed id `position-bank:all`. Raw data remains immutable. Updates create revisions rather than overwriting prior assessments.
+Drafts created by Moshe and human-approved artifacts become a new global catalog layer named `attack targets`, proposed id `attack-targets:all`. Status remains explicit so the same layer can show Moshe-created drafts and approved targets without presenting them as equivalent. Raw data remains immutable. Updates create revisions rather than overwriting prior assessments.
 
 ### 7. Expert retrieval
 
@@ -174,13 +174,13 @@ Write operations, initially approval-gated:
 
 ## MVP scope
 
-- One specialized Moshe agent profile for the synthetic scenario.
+- One specialized, command-triggered Hermes Moshe agent profile for the synthetic scenario.
 - Read access to all V2 raw-data layers.
 - Deterministic candidate clustering before LLM reasoning.
 - Minimum two independent source families.
 - Draft artifact creation with provenance and contradiction capture.
 - Human approval before bank publication.
-- Separate persisted position-bank store and UI layer.
+- Separate global persisted bank and `attack targets` UI layer containing both draft and approved artifacts.
 - Bank-specific question answering with artifact/evidence citations.
 - Immutable revisions and audit log.
 
@@ -188,7 +188,7 @@ Write operations, initially approval-gated:
 
 - Weapon selection, weapon suitability, attack sequencing, effects estimation, collateral analysis, strike recommendation, or target prioritization.
 - Live intelligence feeds or real-world operational use.
-- Automatic publication without review.
+- Scheduled or automatic mission creation; Moshe runs only after an explicit user command.
 - Changing or deleting raw records.
 - Inferring exact coordinates beyond evidence accuracy.
 - Treating two copied reports as independent corroboration.
@@ -204,7 +204,8 @@ Write operations, initially approval-gated:
 - Revision history is append-only and an artifact can be superseded or expired.
 - Moshe can answer bank questions and cite artifact ids plus underlying record ids.
 - Answers clearly label confidence, staleness, and contradictions.
-- Dataset V1 and V2 banks are isolated.
+- The bank is global within dataset V2; V1 and V2 remain isolated.
+- Before a new draft is created, Moshe searches existing draft and approved artifacts near the fused position for the same compatible object/entity.
 - All write actions are authenticated/audited or, for the current POC, explicitly bound to an approval action and audit record.
 - No response or artifact contains weapon pairing or attack recommendations.
 
@@ -227,10 +228,17 @@ Write operations, initially approval-gated:
 - QA: define gold clusters, false-fusion tests, provenance tests, and regression plan.
 - Security: approve write authorization, auditability, prompt/data isolation, and prohibition of live operational use.
 
-## Blocking product questions
+## Accepted product decisions
 
-1. Should the visible layer be named “Position Intelligence Bank” or “Target Bank” in the simulation UI? The recommended neutral name is “Position Intelligence Bank.”
-2. Who may approve a draft: any analyst, only Moshe’s human role owner, or a designated reviewer?
-3. What is the initial artifact freshness policy for stationary sites, parked vehicles, moving vehicles, and maneuvering units?
-4. Should an accepted artifact belong globally to dataset V2 or also be linked to the investigation that produced it?
-5. Is count agreement mandatory, or may two independent sources confirm presence while count remains a range/unknown?
+- Visible layer name: `attack targets`.
+- Scope: one global V2 bank, not investigation-local.
+- Contents: both Moshe-created drafts and approved targets, always distinguished by status.
+- Invocation: Moshe works only on an explicit mission command; no scheduled or automatic creation.
+- Duplicate prevention: search existing draft and approved targets before creating a new draft.
+- Runtime: Moshe should be a distinct Hermes agent/profile, not merely a change to the general investigation prompt.
+
+## Remaining product questions
+
+1. Who may approve a draft: any analyst, only Moshe’s human role owner, or a designated reviewer?
+2. What freshness policy should apply to stationary, semi-mobile, and mobile object classes?
+3. May two independent sources confirm presence while count remains a range or unknown? Draft recommendation: yes; represent presence confidence and count confidence separately.

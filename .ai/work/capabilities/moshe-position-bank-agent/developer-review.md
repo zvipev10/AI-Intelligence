@@ -47,6 +47,59 @@ Appropriate for multi-user production, but beyond the current POC and would trig
 - MCP tools for draft creation and bank retrieval.
 - UI catalog layer and review workflow.
 
+## Existing-tool assessment
+
+The existing Serbia MCP server already provides useful read-only building blocks:
+
+- `resolve_location`: resolves named areas to canonical location ids and map metadata.
+- `search_events`: retrieves raw records by location, time, entity, source type, reliability, and keywords.
+- `aggregate_events(group_by=location)`: identifies geographic concentrations and first/last observations.
+- `semantic_search_events`: retrieves semantically similar records and supports location/time/source filters.
+- `find_related_events`: expands from seed records using location, distance, time, entity, identifier, and semantic signals.
+- `explain_linkage`: explains pairwise linkage dimensions.
+- `compare_location_claims`: detects conflicting geographic claims; useful as a contradiction check, not as a fusion engine.
+
+These tools can support a manually orchestrated investigation, but they cannot yet guarantee target creation because they do not provide source-family independence, arbitrary geometry/radius search over raw coordinates, deterministic cluster formation, same-object validation, duplicate-bank search, or artifact writes.
+
+## Proposed geographic-first mission process
+
+1. Parse explicit mission scope: area/geometry, time range, optional object/entity constraints.
+2. Search `attack targets` first for nearby compatible draft or approved artifacts.
+3. Resolve the area and retrieve all raw records within it and the mission time range.
+4. Form geographic candidate clusters using observation coordinates and uncertainty, not only shared `location_id`.
+5. Split each geographic cluster by time window and mobility class.
+6. Within each cluster, normalize object class/entity/count and run semantic linkage across record text.
+7. Build a linkage graph; require one coherent component describing the same compatible object.
+8. Collapse derivative records into source families and require at least two independent families.
+9. Check contradictions, calculate fused geometry/uncertainty, and preserve uncertain count as a range.
+10. Re-run duplicate-bank matching against the fused result.
+11. If a compatible artifact exists, propose new evidence/revision instead of a new target.
+12. Otherwise create a draft, never an approved target; return an auditable mission report.
+
+The recommended implementation is one composite deterministic MCP operation, for example `build_attack_target_candidate`, rather than relying on an LLM to correctly repeat dozens of low-level calls. It may internally reuse the existing search and linkage functions and return intermediate evidence for inspection.
+
+## Hermes agent creation and invocation plan
+
+The current application invokes Hermes through `POST /v1/runs` with per-run `input`, `instructions`, conversation history, and `session_id`; the repository does not currently define a separate named Moshe agent. Plan the new agent as follows:
+
+1. Add a versioned Moshe agent profile containing identity, mission contract, system instructions, output schema, refusal boundary, and tool allowlist.
+2. Register a dedicated Hermes toolset that combines existing read tools with attack-target-bank tools. Enforce write permissions in the bank MCP server, not only in the prompt.
+3. Add an application endpoint such as `POST /api/agents/moshe/missions` accepting an explicit mission scope.
+4. The endpoint loads the Moshe profile and creates a Hermes run with a unique `moshe-mission-*` session id. Mission state is separate from ordinary investigation chat.
+5. Poll `/v1/runs/{run_id}` and stream `/v1/runs/{run_id}/events` using the existing Hermes session pattern.
+6. Persist mission status, tool trace, proposed artifact id, duplicate decision, and final report.
+7. Invoke it from an explicit UI action on Moshe (for example “Assign mission”), never from page load or a schedule.
+8. If the installed Hermes version supports native named agent profiles/toolsets, map the profile there; otherwise retain the same semantics in the application-level runner while still creating an isolated Hermes run. Confirm the native configuration schema during developer review before implementation.
+
+Proposed bank tools:
+
+- `search_attack_targets_near` (read-only, drafts and approved)
+- `get_attack_target` (read-only, evidence and revisions)
+- `build_attack_target_candidate` (read-only/draft payload generation)
+- `create_attack_target_draft` (write, Moshe mission only)
+- `append_attack_target_evidence` (write, draft/revision workflow)
+- `approve_attack_target` / `reject_attack_target` (human-authorized; unavailable to Moshe)
+
 ## Recommended execution slices after approval
 
 1. Data contract and offline gold-set validator; no agent writes.

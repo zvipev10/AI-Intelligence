@@ -16,7 +16,7 @@ Paused for human Product/Development/UX/QA/Security review; no implementation au
 
 | Role | Status | Required action | Due before |
 |---|---|---|---|
-| Product | Pending | Answer the five blocking product questions in `capability-brief.md`. | Execution plan |
+| Product | Partially complete | Decide approval authority, freshness policy, and count-confidence rule. | Execution plan |
 | Development/Architecture | Draft ready | Review architecture, persistence, lineage, and execution slices. | Execution plan |
 | UX | Pending | Define artifact review flow and bank-layer presentation. | Execution plan |
 | QA | Draft ready | Approve gold-set strategy and quality thresholds. | Execution plan |
@@ -33,6 +33,14 @@ Paused for human Product/Development/UX/QA/Security review; no implementation au
 - False fusion and false source independence.
 - False coordinate precision and stale mobile-object assessments.
 - The term “target bank” may imply unsupported weapon/attack functionality.
+
+## Accepted decisions
+
+- Layer name is `attack targets`.
+- The bank is global to V2 and includes both drafts and approved artifacts with visible status.
+- Moshe is a separate command-triggered Hermes mission agent.
+- Every creation flow checks the existing bank first and revises/extends a compatible artifact instead of duplicating it.
+- Geographic-first clustering followed by same-object semantic linkage is the proposed discovery flow.
 
 ## Next expected artifact
 
