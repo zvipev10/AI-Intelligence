@@ -65,4 +65,3 @@ Each slice changes data or behavior and requires a checkpoint before the next sl
 - Should confidence be an explainable rule score, a calibrated probability, or only an ordinal label in MVP?
 - How are mobile-object freshness and track continuity represented?
 - Should accepted bank artifacts be global and investigation links many-to-many?
-

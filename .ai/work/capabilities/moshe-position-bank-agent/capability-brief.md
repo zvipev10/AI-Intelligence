@@ -234,4 +234,3 @@ Write operations, initially approval-gated:
 3. What is the initial artifact freshness policy for stationary sites, parked vehicles, moving vehicles, and maneuvering units?
 4. Should an accepted artifact belong globally to dataset V2 or also be linked to the investigation that produced it?
 5. Is count agreement mandatory, or may two independent sources confirm presence while count remains a range/unknown?
-

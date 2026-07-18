@@ -15,4 +15,3 @@ Human-approved review with resolved blocking technical questions.
 ## Blocking
 
 Blocks execution planning.
-

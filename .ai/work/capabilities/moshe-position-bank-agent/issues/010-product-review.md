@@ -15,4 +15,3 @@ Approved product decisions recorded in the capability workspace.
 ## Blocking
 
 Blocks execution planning.
-

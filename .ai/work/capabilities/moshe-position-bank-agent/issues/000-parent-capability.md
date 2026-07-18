@@ -14,4 +14,3 @@ Capability definition and role review. No implementation.
 - Execution plan approved before coding.
 - Future implementation meets the acceptance criteria in `capability-brief.md`.
 - Parent remains open until final acceptance.
-

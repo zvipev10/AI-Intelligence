@@ -57,4 +57,3 @@ Local draft: `issues/000-parent-capability.md`
 - Developer/architecture review: `developer-review.md`
 - QA review: `qa-review.md`
 - Execution plan: not created; gate intentionally closed
-

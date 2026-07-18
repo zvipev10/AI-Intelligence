@@ -15,4 +15,3 @@ Approved QA and security gates.
 ## Blocking
 
 Blocks execution planning.
-
