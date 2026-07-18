@@ -19,6 +19,7 @@ import hashlib
 import os
 import pickle
 import re
+from array import array
 from collections import Counter
 from functools import lru_cache
 from pathlib import Path
@@ -32,7 +33,7 @@ except ImportError:  # pragma: no cover - depends on deployment image
     np = None
 
 
-INDEX_VERSION = "semantic-event-index-v9-v2-portable-military-concepts"
+INDEX_VERSION = "semantic-event-index-v10-v2-compact-portable-concepts"
 TOKEN_RE = re.compile(r"[\w\u0590-\u05ff׳״'-]+", re.UNICODE)
 DEFAULT_DENSE_DIMENSIONS = 768
 
@@ -310,10 +311,13 @@ class SemanticEventIndex:
         if np is None:
             vectors = []
             for features in document_features:
-                vector = self._sparse_embedding_from_features(features)
-                norm = math.sqrt(sum(weight * weight for weight in vector.values()))
+                sparse_vector = self._sparse_embedding_from_features(features)
+                norm = math.sqrt(sum(weight * weight for weight in sparse_vector.values()))
                 if norm > 0:
-                    vector = {bucket: weight / norm for bucket, weight in vector.items()}
+                    sparse_vector = {bucket: weight / norm for bucket, weight in sparse_vector.items()}
+                vector = array("f", [0.0]) * self.dense_dimensions
+                for bucket, weight in sparse_vector.items():
+                    vector[bucket] = weight
                 vectors.append(vector)
             self.embedding_matrix = vectors
             self.idf = {}
@@ -493,9 +497,11 @@ class SemanticEventIndex:
     def _sparse_embedding_similarity(first: dict[int, float], second: dict[int, float]) -> float:
         if not first or not second:
             return 0.0
-        if len(first) > len(second):
+        if hasattr(second, "get") and len(first) > len(second):
             first, second = second, first
-        return sum(weight * second.get(bucket, 0.0) for bucket, weight in first.items())
+        if hasattr(second, "get"):
+            return sum(weight * second.get(bucket, 0.0) for bucket, weight in first.items())
+        return sum(weight * second[bucket] for bucket, weight in first.items())
 
     def _record_index(self, record: dict[str, Any]) -> int | None:
         return self.record_index_by_id.get(record.get("event_id"))

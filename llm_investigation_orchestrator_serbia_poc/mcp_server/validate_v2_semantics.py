@@ -41,6 +41,7 @@ def main() -> int:
     parser.add_argument("--cache-dir", type=Path)
     parser.add_argument("--rebuild", action="store_true")
     parser.add_argument("--limit", type=int, default=20)
+    parser.add_argument("--summary-only", action="store_true")
     args = parser.parse_args()
 
     cache_dir = args.cache_dir or Path(tempfile.gettempdir()) / "serbia-v2-semantic-validation"
@@ -113,7 +114,8 @@ def main() -> int:
             "seconds": round(query_seconds, 3),
             "sample_event_ids": result["event_ids"][:5],
         }
-        print(json.dumps({case: query_results[case]}, ensure_ascii=True), flush=True)
+        if not args.summary_only:
+            print(json.dumps({case: query_results[case]}, ensure_ascii=True), flush=True)
         assert precision >= minimum_ratio, f"{case} precision {precision:.3f} < {minimum_ratio:.3f}"
 
     output = {

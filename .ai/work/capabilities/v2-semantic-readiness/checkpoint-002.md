@@ -2,7 +2,7 @@
 
 ## Completed
 
-- Bumped the semantic index to `semantic-event-index-v9-v2-portable-military-concepts`.
+- Bumped the semantic index to `semantic-event-index-v10-v2-compact-portable-concepts`.
 - Added multilingual deterministic concepts for UAV observation, convoys/formations, armored vehicles, air defense, logistics, observation posts, engineering activity, helicopters, roadblocks, movement, deployment/staging, stationary state, force concentration, counts, Serbian forces, NATO/KFOR, Kosovo Police, and KSF.
 - Added explicit numeric object-count features.
 - Included V2 collection, observation, mission, object, count, mobility, direction, and confidence values in semantic documents and MCP event results.
@@ -38,6 +38,14 @@
 - Kosovo Police and KSF require distinct concepts; splitting them raised Police top-20 precision to the accepted 70% threshold.
 - The 1 GB VM cannot efficiently retain both Python sparse lexical and dense indexes; no-NumPy hybrid mode now reports `fallback_mode=dense_only`, preserving cross-language retrieval within its memory budget.
 - Cache signatures now use content SHA-256 values rather than file mtimes, allowing a validated off-host cache to be uploaded to the constrained VM without a memory-heavy rebuild.
+- The pure-Python dense index now stores fixed-width float arrays instead of per-value dictionaries. The portable cache is 50,743,532 bytes (about 50.7 MB), avoiding the large in-memory expansion of the earlier sparse representation.
+
+## Compact portable-cache validation
+
+- Pure-Python/no-NumPy cold build: 27.09 seconds.
+- Warm load: 2.76 seconds.
+- Warm queries: 0.099-0.181 seconds across the nine retrieval probes.
+- All concept and precision gates remained unchanged and passed.
 
 ## Remaining work
 
