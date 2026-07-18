@@ -20,6 +20,7 @@ import os
 import pickle
 import re
 from collections import Counter
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
@@ -29,7 +30,7 @@ except ImportError:  # pragma: no cover - depends on deployment image
     np = None
 
 
-INDEX_VERSION = "semantic-event-index-v2"
+INDEX_VERSION = "semantic-event-index-v6-v2-military-concepts"
 TOKEN_RE = re.compile(r"[\w\u0590-\u05ff׳״'-]+", re.UNICODE)
 DEFAULT_DENSE_DIMENSIONS = 768
 
@@ -43,7 +44,52 @@ CONCEPT_FEATURES: tuple[tuple[str, float, tuple[str, ...]], ...] = (
     ("concept:buffer_or_friction_prevention", 4.0, ("למנוע חיכוך", "חיכוך ישיר", "חיץ", "להימנע מהגעה", "מוקדי חיכוך")),
     ("concept:blockade_or_road", 2.5, ("מחסום", "חסימה", "הכביש נחסם", "סגירת כבישים", "ציר")),
     ("concept:misidentification", 3.0, ("מייחסים", "מוצגת כ", "טוענים שמדובר", "לא ברור אם")),
+    ("concept:uav_observation", 4.0, ("כטב״ם", "כטבם", "מל״ט", "מל״ט", "uav", "drone", "unmanned aerial", "aerial observation", "ניצול וידאו")),
+    ("concept:convoy_or_vehicle_column", 5.0, ("שיירת כלי רכב", "שיירה", "טור כלי רכב", "טור צבאי", "convoy", "vehicle column", "military column", "колона возила")),
+    ("concept:military_formation", 4.5, ("מבנה צבאי", "כוח גדודי", "כוח פלוגתי", "יחידה צבאית", "military formation", "unit formation", "troop formation", "војна формација")),
+    ("concept:armored_vehicle", 5.0, ("רכב משוריין", "רכבים משוריינים", "נגמ״ש", "נגמש", "טנק", "armored vehicle", "armoured vehicle", "armored personnel carrier", "armoured personnel carrier", "apc", "ifv", "оклопно возило")),
+    ("concept:air_defense", 5.0, ("הגנה אווירית", "נ״מ", "נמ", "סוללת טילים", "מערכת נ״מ", "מכ״ם", "air defense", "air-defence", "sam battery", "surface-to-air", "radar unit", "противваздушна одбрана")),
+    ("concept:logistics_vehicle", 3.5, ("משאית לוגיסטית", "רכב לוגיסטי", "שיירת אספקה", "logistics truck", "supply vehicle", "logistics convoy")),
+    ("concept:observation_post", 3.5, ("עמדת תצפית", "נקודת תצפית", "observation post", "lookout post", "осматрачница")),
+    ("concept:engineering_activity", 3.5, ("עבודות הנדסיות", "כלי הנדסי", "הקמת ביצורים", "engineering works", "engineering vehicle", "fortification work")),
+    ("concept:helicopter", 3.5, ("מסוק", "מסוקים", "helicopter", "rotary-wing", "хеликоптер")),
+    ("concept:roadblock_position", 4.0, ("מחסום דרכים", "נקודת חסימה", "עמדת חסימה", "roadblock", "blocking position", "контролни пункт")),
+    ("concept:movement", 4.5, ("בתנועה", "נע לעבר", "מתקדם", "התקדמות", "בנסיגה", "נסוג", "movement", "moving", "advancing", "withdrawing", "maneuvering", "у покрету", "повлачење")),
+    ("concept:deployment_or_staging", 4.5, ("בפריסה", "נפרס", "פריסה", "בהיערכות", "שטח היערכות", "deployed", "deployment", "staging", "assembly area", "распоређивање")),
+    ("concept:stationary_or_halted", 3.0, ("בעצירה", "ללא שינוי נראה", "חונה", "stationary", "halted", "parked", "заустављен")),
+    ("concept:force_concentration", 5.0, ("ריכוז כוחות", "הצטברות כוחות", "תגבור כוחות", "כוח מתוגבר", "force concentration", "troop concentration", "force buildup", "massing forces", "груписање снага")),
+    ("concept:object_count", 3.0, ("הוערכו", "פריטים", "ספירת עצמים", "מספר כלי רכב", "כמות", "estimated count", "object count", "vehicle count", "units observed")),
+    ("concept:serbian_forces", 5.0, ("צבא סרביה", "הצבא הסרבי", "כוחות סרביים", "חיל האוויר הסרבי", "serbian army", "serbian armed forces", "vojska srbije", "војска србије")),
+    ("concept:nato_kfor_forces", 5.0, ("kfor", "nato", "נאט״ו", "נאטו", "כוחות נאט״ו", "כוחות קפור", "nato forces", "kfor forces")),
+    ("concept:kosovo_police", 5.0, ("משטרת קוסובו", "kosovo police", "kosovska policija", "косовска полиција")),
+    ("concept:kosovo_security_force", 5.0, ("כוח הביטחון של קוסובו", "ksf", "kosovo security force", "kosovske bezbednosne snage")),
+    ("concept:kosovo_forces", 3.5, ("כוחות קוסובו", "kosovo forces", "kosovske snage")),
 )
+
+COUNT_PATTERNS: tuple[re.Pattern[str], ...] = (
+    re.compile(r"(?:estimated_object_count|object_count|estimated count|object count|count|הוערכו|זוהו|נספרו)\s*[:=]?\s*(\d{1,3})", re.IGNORECASE),
+    re.compile(r"(\d{1,3})\s+(?:פריטים|כלי רכב|רכבים|עצמים|vehicles|objects|units)\b", re.IGNORECASE),
+)
+
+
+@lru_cache(maxsize=65_536)
+def concept_weights(text: str) -> dict[str, float]:
+    normalized = normalize_text(text)
+    return {
+        feature_name: weight
+        for feature_name, weight, markers in CONCEPT_FEATURES
+        if any(normalize_text(marker) in normalized for marker in markers)
+    }
+
+
+@lru_cache(maxsize=65_536)
+def object_counts(text: str) -> frozenset[int]:
+    normalized = normalize_text(text)
+    return frozenset(
+        int(match.group(1))
+        for pattern in COUNT_PATTERNS
+        for match in pattern.finditer(normalized)
+    )
 
 
 def normalize_text(value: str | None) -> str:
@@ -66,9 +112,8 @@ def dense_features(text: str) -> list[tuple[str, float]]:
     for size, weight in ((3, 0.35), (4, 0.45), (5, 0.55)):
         if len(compact) >= size:
             features.extend((f"char{size}:{compact[index:index + size]}", weight) for index in range(len(compact) - size + 1))
-    for feature_name, weight, markers in CONCEPT_FEATURES:
-        if any(normalize_text(marker) in normalized for marker in markers):
-            features.append((feature_name, weight))
+    features.extend(concept_weights(normalized).items())
+    features.extend((f"object_count:{count}", 4.0) for count in object_counts(normalized))
     return features
 
 
@@ -107,6 +152,9 @@ class SemanticEventIndex:
     ):
         self.records = records
         self.record_index_by_id = {record.get("event_id"): index for index, record in enumerate(records) if record.get("event_id")}
+        self.record_texts = [self.event_text(record) for record in records]
+        self.record_concept_weights = [concept_weights(text) for text in self.record_texts]
+        self.record_object_counts = [object_counts(text) for text in self.record_texts]
         self.cache_dir = Path(cache_dir) if cache_dir else None
         self.signature = signature or {}
         requested_backend = normalize_text(backend or os.environ.get("INTELLIGENCE_POC_SEMANTIC_BACKEND") or "lexical_tfidf")
@@ -132,6 +180,15 @@ class SemanticEventIndex:
             record.get("timestamp_utc"),
             record.get("certainty_level"),
             record.get("source_reliability_label"),
+            f"collection_family {record.get('collection_family')}" if record.get("collection_family") else None,
+            f"observation_id {record.get('observation_id')}" if record.get("observation_id") else None,
+            f"mission_id {record.get('mission_id')}" if record.get("mission_id") else None,
+            f"object_class {record.get('object_class')}" if record.get("object_class") else None,
+            f"estimated_object_count {record.get('estimated_object_count')}" if record.get("estimated_object_count") not in {None, ""} else None,
+            f"mobility_status {record.get('movement_status')}" if record.get("movement_status") else None,
+            f"travel_direction {record.get('movement_direction')}" if record.get("movement_direction") else None,
+            f"geolocation_confidence {record.get('geolocation_confidence')}" if record.get("geolocation_confidence") else None,
+            f"identification_confidence {record.get('identification_confidence')}" if record.get("identification_confidence") else None,
         ]
         return " ".join(str(part) for part in parts if part)
 
@@ -405,21 +462,26 @@ class SemanticEventIndex:
             if not self._passes_filters(record, filters):
                 continue
             if scores is None:
-                score = self._sparse_embedding_similarity(query_vector, self.embedding_matrix[index])
+                dense_score = self._sparse_embedding_similarity(query_vector, self.embedding_matrix[index])
             else:
-                score = float(scores[index])
+                dense_score = float(scores[index])
+            concept_score = min(self._concept_overlap_score(query, record) / 8.0, 1.0)
+            count_score = self._count_overlap_score(query, record)
+            score = (0.58 * max(dense_score, 0.0)) + (0.30 * concept_score) + (0.12 * count_score)
             if score <= 0:
                 continue
             scored.append(
                 {
                     "event_id": record.get("event_id"),
                     "semantic_score": round(score, 6),
-                    "rationale": self._dense_rationale(query, record, score),
                     "record": record,
                 }
             )
         scored.sort(key=lambda item: (-item["semantic_score"], item["record"].get("timestamp_utc", ""), item["event_id"] or ""))
-        return scored[:limit]
+        selected = scored[:limit]
+        for item in selected:
+            item["rationale"] = self._dense_rationale(query, item["record"], item["semantic_score"])
+        return selected
 
     @staticmethod
     def _sparse_embedding_similarity(first: dict[int, float], second: dict[int, float]) -> float:
@@ -429,17 +491,30 @@ class SemanticEventIndex:
             first, second = second, first
         return sum(weight * second.get(bucket, 0.0) for bucket, weight in first.items())
 
-    @staticmethod
-    def _concept_overlap_score(query: str, record: dict[str, Any]) -> float:
-        query_text = normalize_text(query)
-        record_text = normalize_text(SemanticEventIndex.event_text(record))
-        score = 0.0
-        for _, weight, markers in CONCEPT_FEATURES:
-            query_has = any(normalize_text(marker) in query_text for marker in markers)
-            record_has = any(normalize_text(marker) in record_text for marker in markers)
-            if query_has and record_has:
-                score += weight
-        return score
+    def _record_index(self, record: dict[str, Any]) -> int | None:
+        return self.record_index_by_id.get(record.get("event_id"))
+
+    def _concept_overlap_score(self, query: str, record: dict[str, Any]) -> float:
+        query_features = concept_weights(query)
+        record_index = self._record_index(record)
+        record_features = (
+            self.record_concept_weights[record_index]
+            if record_index is not None
+            else concept_weights(self.event_text(record))
+        )
+        return sum(weight for name, weight in query_features.items() if name in record_features)
+
+    def _count_overlap_score(self, query: str, record: dict[str, Any]) -> float:
+        query_values = object_counts(query)
+        if not query_values:
+            return 0.0
+        record_index = self._record_index(record)
+        record_values = (
+            self.record_object_counts[record_index]
+            if record_index is not None
+            else object_counts(self.event_text(record))
+        )
+        return 1.0 if query_values & record_values else 0.0
 
     @staticmethod
     def _specificity_penalty(query: str, record: dict[str, Any]) -> float:
@@ -500,15 +575,16 @@ class SemanticEventIndex:
             else:
                 dense_score = float(dense_scores[record_index]) if dense_scores is not None else 0.0
             concept_score = min(self._concept_overlap_score(query, record) / 8.0, 1.0)
+            count_score = self._count_overlap_score(query, record)
             specificity_penalty = self._specificity_penalty(query, record)
-            final_score = max(0.0, (0.58 * lexical_score) + (0.22 * max(dense_score, 0.0)) + (0.20 * concept_score) - specificity_penalty)
+            final_score = max(0.0, (0.48 * lexical_score) + (0.20 * max(dense_score, 0.0)) + (0.20 * concept_score) + (0.12 * count_score) - specificity_penalty)
             reranked.append(
                 {
                     "event_id": event_id,
                     "semantic_score": round(final_score, 6),
                     "rationale": (
                         f"hybrid lexical={lexical_score:.3f}; dense={dense_score:.3f}; "
-                        f"concept={concept_score:.3f}; penalty={specificity_penalty:.3f}; source={item.get('rationale')}"
+                        f"concept={concept_score:.3f}; count={count_score:.3f}; penalty={specificity_penalty:.3f}; source={item.get('rationale')}"
                     ),
                     "record": record,
                 }

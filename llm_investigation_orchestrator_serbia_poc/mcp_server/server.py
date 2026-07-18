@@ -282,6 +282,15 @@ def public_event(event: dict[str, Any]) -> dict[str, Any]:
         "location_name": event["location_name"],
         "location_type": event["location_type"],
         "event_summary": event["event_summary"],
+        "collection_family": event.get("collection_family", ""),
+        "observation_id": event.get("observation_id", ""),
+        "mission_id": event.get("mission_id", ""),
+        "object_class": event.get("object_class", ""),
+        "estimated_object_count": event.get("estimated_object_count", ""),
+        "movement_status": event.get("movement_status", ""),
+        "movement_direction": event.get("movement_direction", ""),
+        "geolocation_confidence": event.get("geolocation_confidence", ""),
+        "identification_confidence": event.get("identification_confidence", ""),
     }
 
 
