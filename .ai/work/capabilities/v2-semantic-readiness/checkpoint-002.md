@@ -2,13 +2,14 @@
 
 ## Completed
 
-- Bumped the semantic index to `semantic-event-index-v6-v2-military-concepts`.
+- Bumped the semantic index to `semantic-event-index-v7-v2-military-concepts`.
 - Added multilingual deterministic concepts for UAV observation, convoys/formations, armored vehicles, air defense, logistics, observation posts, engineering activity, helicopters, roadblocks, movement, deployment/staging, stationary state, force concentration, counts, Serbian forces, NATO/KFOR, Kosovo Police, and KSF.
 - Added explicit numeric object-count features.
 - Included V2 collection, observation, mission, object, count, mobility, direction, and confidence values in semantic documents and MCP event results.
 - Added explicit concept/count overlap to hybrid and dense scoring.
 - Precomputed record concepts and delayed rationale generation until after top-result selection.
 - Added `validate_v2_semantics.py` as a repeatable validation runner.
+- Enabled the existing sparse dense-vector implementation for hybrid mode when NumPy is unavailable, matching the Hermes VM runtime.
 
 ## Validation results
 
@@ -16,6 +17,7 @@
 - Cold index build: 77.68 seconds in the bundled local runtime.
 - Warm index load: 7.373 seconds.
 - Warm queries: 0.098–0.284 seconds across nine probes.
+- Pure-Python/no-NumPy cold build: 37.142 seconds; queries: 0.217–0.360 seconds with identical precision gates.
 - Top-20 precision:
   - armored vehicle: 100%
   - vehicle convoy: 100%

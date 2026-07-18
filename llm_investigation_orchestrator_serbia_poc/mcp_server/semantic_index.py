@@ -25,12 +25,14 @@ from pathlib import Path
 from typing import Any
 
 try:
+    if os.environ.get("INTELLIGENCE_POC_DISABLE_NUMPY") == "1":
+        raise ImportError("NumPy disabled for pure-Python semantic validation")
     import numpy as np
 except ImportError:  # pragma: no cover - depends on deployment image
     np = None
 
 
-INDEX_VERSION = "semantic-event-index-v6-v2-military-concepts"
+INDEX_VERSION = "semantic-event-index-v7-v2-military-concepts"
 TOKEN_RE = re.compile(r"[\w\u0590-\u05ff׳״'-]+", re.UNICODE)
 DEFAULT_DENSE_DIMENSIONS = 768
 
@@ -248,9 +250,6 @@ class SemanticEventIndex:
                 pass
 
     def _build(self) -> None:
-        if self.backend == "hybrid_embedding" and np is None:
-            self._build_lexical()
-            return
         if self.backend in {"dense_hash_embedding", "hybrid_embedding"}:
             self._build_dense()
             if self.backend == "hybrid_embedding":
