@@ -24,6 +24,10 @@ MOSHE_TOOLS = [
     "create_target_candidate", "update_target_candidate", "attach_target_evidence",
 ]
 FORBIDDEN_TOOL_FRAGMENTS = ("sql", "shell", "filesystem", "delete", "reset", "backup", "truth", "evaluator", "status")
+MESSAGING_ENV_PREFIXES = (
+    "TELEGRAM_", "DISCORD_", "WHATSAPP_", "SLACK_", "SIGNAL_", "TEAMS_",
+    "GOOGLE_CHAT_", "FEISHU_", "QQBOT_", "YUANBAO_", "HOMEASSISTANT_",
+)
 
 
 def restricted_config(config: dict[str, Any]) -> dict[str, Any]:
@@ -31,8 +35,7 @@ def restricted_config(config: dict[str, Any]) -> dict[str, Any]:
     platforms = dict(result.get("platforms") or {})
     api = dict(platforms.get("api_server") or {})
     api.update({"enabled": True, "host": "127.0.0.1", "port": MOSHE_PORT})
-    platforms["api_server"] = api
-    result["platforms"] = platforms
+    result["platforms"] = {"api_server": api}
     result["platform_toolsets"] = {"api_server": ["mcp-serbia-events-poc"]}
 
     servers = result.get("mcp_servers") or {}
@@ -81,6 +84,15 @@ def main() -> int:
     updated = restricted_config(config)
     config_path.write_text(yaml.safe_dump(updated, allow_unicode=True, sort_keys=False), encoding="utf-8")
     (profile_dir / "SOUL.md").write_text(args.soul.read_text(encoding="utf-8"), encoding="utf-8")
+    env_path = profile_dir / ".env"
+    if env_path.exists():
+        retained = []
+        for line in env_path.read_text(encoding="utf-8").splitlines():
+            key = line.split("=", 1)[0].strip().upper() if "=" in line and not line.lstrip().startswith("#") else ""
+            if key and any(key.startswith(prefix) for prefix in MESSAGING_ENV_PREFIXES):
+                continue
+            retained.append(line)
+        env_path.write_text("\n".join(retained) + "\n", encoding="utf-8")
     return 0
 
 

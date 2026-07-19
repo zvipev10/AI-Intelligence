@@ -6,7 +6,7 @@ Moshe Attack Targets MVP
 
 ## Current phase
 
-Slice 4 persistent Moshe gateway implemented; routing/security checkpoint required.
+Slice 4 persistent Moshe gateway deployed; user routing/resource test in progress.
 
 ## Overall status
 
@@ -17,19 +17,19 @@ Pending review
 | Role | Status | Required action | Due before |
 |---|---|---|---|
 | Product | Slice 1 approved | Approve proposed quantitative thresholds before full evaluation | Slice 6 |
-| Development | Pending checkpoint | Review dual-gateway routing, profile isolation, and session behavior | Slice 5 |
+| Development | Deployed | Monitor dual-gateway routing and VM resources during user test | Slice 5 |
 | UX | Approved | Routing experience, attribution, candidate presentation, evidence, and states accepted | Complete |
 | QA | Pending threshold review | Approve quantitative thresholds and release gates | Slice 6 |
 | Architecture/Security | Slice 2 approved | Review evaluator isolation and deterministic source boundary | Slice 4 |
 
 ## Latest change since previous review
 
-Implemented the approved persistent Moshe profile/gateway architecture with exact routing, session continuity, isolated audit/progress streaming, restricted tools, and resource guardrails.
+Deployed the persistent Moshe gateway and verified General routing, exact `@משה` routing, consecutive-session continuity, mission closure, target-bank permissions, service health, and initial resource use.
 
 ## Current blockers
 
 - Proposed quantitative fusion-quality thresholds require Product and QA approval before Slice 6.
-- Slice 4 routing/security checkpoint approval.
+- User routing/security/resource acceptance after deployed testing.
 - Capability artifacts and Slice 1 code are published on `codex/moshe-attack-targets`; draft PR creation is still pending.
 - Remote parent and child issues have not been created.
 
@@ -40,7 +40,7 @@ Implemented the approved persistent Moshe profile/gateway architecture with exac
 
 ## Next expected artifact
 
-Routing/security approval of `checkpoint-004.md`.
+User acceptance of deployed Slice 4 in `checkpoint-004.md`.
 
 ## Parent issue
 
@@ -59,7 +59,7 @@ Pending remote creation; local draft at `issues/parent-capability.md`.
 | Pending | Development | Slice 1 shared agent pipeline | Approved and complete | No |
 | Pending | Development | Slice 2 SQLite target bank | Approved and complete | No |
 | Pending | Development | Slice 3 fusion tools | Approved and complete | No |
-| Pending | Development | Slice 4 Moshe routing and sessions | Implemented; checkpoint pending | Yes |
+| Pending | Development | Slice 4 Moshe routing and sessions | Deployed; user testing | Yes |
 | Pending | Development and UX | Slice 5 shared presentation | Not started | Yes |
 | Pending | QA | Slice 6 full evaluation | Not started | Yes |
 | Pending | Operations and QA | Slice 7 release and handoff | Not started | Yes |

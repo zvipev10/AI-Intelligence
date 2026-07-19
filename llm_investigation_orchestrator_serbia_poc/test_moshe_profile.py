@@ -52,7 +52,9 @@ class MosheProfileTests(unittest.TestCase):
 
     def test_service_uses_named_profile_and_resource_guard(self):
         unit = (ROOT / "moshe_profile" / "hermes-moshe-gateway.service").read_text(encoding="utf-8")
-        self.assertIn("-p moshe gateway run", unit)
+        self.assertIn("bin/hermes gateway run", unit)
+        self.assertIn('Environment="HERMES_HOME=/home/ubuntu/.hermes/profiles/moshe"', unit)
+        self.assertIn('Environment="API_SERVER_PORT=8643"', unit)
         self.assertIn("MemoryHigh=400M", unit)
         self.assertIn("MemoryMax=600M", unit)
 

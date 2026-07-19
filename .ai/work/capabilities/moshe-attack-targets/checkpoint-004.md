@@ -6,7 +6,7 @@
 
 ## Checkpoint status
 
-Implemented; pending routing/security checkpoint approval
+Deployed for user testing; pending routing/security acceptance
 
 ## Completed
 
@@ -42,8 +42,8 @@ The on-demand CLI approach and an upstream gateway patch were rejected because t
 
 ## Not completed
 
-- Production deployment.
-- Real-model clarification behavior and dual-gateway load validation, which belong to deployment/evaluation checkpoints.
+- Real target-identification evaluation and Slice 5 attack-target presentation.
+- Sustained concurrent-load acceptance; initial smoke load is recorded below.
 
 ## Recommendation
 
@@ -55,3 +55,27 @@ Pause for routing/security review. If approved, proceed to Slice 5 shared attack
 - JavaScript syntax and Python compilation pass on the VM.
 - Profile tests prove the separate port/audit path, Serbia-only MCP selection, exact approved tool allowlist, and absence of evaluator contract markers.
 - Current VM capacity: 954 MB RAM, approximately 460 MB available at inspection, 2 GB swap; existing gateway current memory approximately 171 MB with a historical peak around 591 MB.
+
+## Deployment and smoke verification
+
+Deployment date: 2026-07-19
+
+- Backup: `/opt/serbia-poc-ui-backups/slice4-20260719T-routing`.
+- General gateway remains healthy on `127.0.0.1:8642`.
+- Moshe gateway is enabled and healthy on `127.0.0.1:8643`.
+- UI service is healthy on port `8769`, V2.1 reports 14,800 rows, and member UI assets remain installed.
+- Target bank initialized empty with directory `0700`, database `0600`, and counts `targets=0`, `evidence=0`.
+- Deployed Moshe profile exposes one Serbia MCP server with 24 selected tools.
+- Ordinary smoke request returned `responding_agent=general`.
+- First `@משה` smoke request returned `responding_agent=moshe` and a Moshe mission/session ID.
+- Consecutive `@משה` smoke request reused the same mission/session ID.
+- The next message without `@משה` returned `responding_agent=general` with no mission ID.
+- Moshe gateway after smoke load: approximately 186 MB current RAM, 196 MB peak, 9 MB current/peak swap, zero service restarts after corrected activation.
+- Whole VM after smoke load: 954 MB total RAM, approximately 214 MB available, 2 GB swap with approximately 489 MB used.
+
+Deployment corrections:
+
+- Hermes profile creation does not allow `--clone` with `--no-skills`; cloned configuration was subsequently restricted by the provisioner.
+- The persistent unit must set profile-scoped `HERMES_HOME` without `-p`, and `API_SERVER_PORT=8643` because the API adapter reads the port from the environment.
+- Cloned Telegram/WhatsApp and other messaging variables are removed; only the API-server platform remains.
+- Temporary deployment/validation directories, including copied configuration, were removed after verification.
