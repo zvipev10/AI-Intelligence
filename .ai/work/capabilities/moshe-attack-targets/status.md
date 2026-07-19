@@ -6,7 +6,7 @@ Moshe Attack Targets MVP
 
 ## Current phase
 
-Slice 1 implemented and deployed to the Serbia VM; validation and architecture/interface checkpoint review required.
+Slice 1 rebuilt on the member-enabled application and redeployed; user validation and architecture/interface checkpoint review required.
 
 ## Overall status
 
@@ -24,7 +24,7 @@ Pending review
 
 ## Latest change since previous review
 
-Deployed Slice 1 to the Serbia VM with a scoped rollback backup; V2.1 remains active with 14,800 rows and regression checks pass.
+Recovered the member-strip/mention regression by merging the current member-enabled baseline, adding explicit regression coverage, and redeploying. V2.1 remains active with 14,800 rows.
 
 ## Current blockers
 

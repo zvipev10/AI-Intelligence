@@ -14,7 +14,7 @@ Moshe Attack Targets MVP
 
 ## Checkpoint status
 
-Deployed to the Serbia VM; pending architecture/interface and user validation
+Rebuilt and redeployed on the member-enabled baseline; pending user and architecture/interface validation
 
 ## Handoff
 
@@ -80,6 +80,18 @@ Create reusable General/Moshe result infrastructure without changing General-age
 - Remote backend module and frontend `applyAgentResult` entry point are present.
 - Rollback backup: `/opt/serbia-poc-ui-backups/slice1-20260719T182108Z`.
 
+## Deployment regression and recovery
+
+- The first Slice 1 deployment replaced the member-enabled VM `app.js` with a stale branch version, removing member rendering and `@` autocomplete while leaving the dynamic member container empty.
+- Root cause: the Moshe branch did not contain the member UI commits from `codex/integrate-michlol-dataset-v2`; the original regression suite validated only the stale branch baseline.
+- Rebuilt Slice 1 by merging the current member-enabled baseline and retaining the shared `applyAgentResult` entry point.
+- Added `test_member_ui_regression.py` to require the member container, renderer, Moshe roster entry, mention autocomplete, and shared agent entry point together.
+- Local browser validation confirmed the member strip and all five `@` suggestions.
+- Redeployed on 2026-07-19. VM verification confirms `renderMichlolTeam`, `activeMentionRange`, `applyAgentResult`, and `michlolTeam` are all present.
+- V2.1 remains active with 14,800 rows and `serbia-poc-ui.service` is active.
+- Current rollback backup: `/opt/serbia-poc-ui-backups/slice1-20260719T183742Z`.
+- The user will perform final functional UI validation.
+
 ## Not completed yet
 
 - SQLite target storage and tools.
@@ -96,6 +108,7 @@ Create reusable General/Moshe result infrastructure without changing General-age
 
 - External consumers that strictly reject additional JSON fields could require confirmation, although the existing browser client is tolerant and passed smoke checks.
 - Full live Hermes investigation was not invoked because it would exercise remote state and is unnecessary for this compatibility refactor.
+- Future deployments must be based on the integrated member-enabled application, not only the V2.1 data branch.
 
 ## Open questions
 
