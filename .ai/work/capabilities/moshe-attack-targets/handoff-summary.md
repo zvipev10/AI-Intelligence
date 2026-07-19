@@ -2,7 +2,7 @@
 
 ## Current state
 
-Slices 1-5 are implemented, published, deployed, and user-approved. Slice 6 was authorized but is blocked by a VM resource incident before metrics were produced.
+Slices 1-5 are implemented, published, deployed, and user-approved. Slice 6 completed with failed quality gates and requires development changes before release closure.
 
 ## Latest implementation
 
@@ -23,8 +23,8 @@ Production smoke checks passed for General routing, exact `@משה` routing, emp
 
 ## Next action
 
-Recover VM responsiveness, terminate the dense evaluation process if still running, verify all services, then rerun the complete 300-positive/100-negative suite with a resource-bounded runtime. Keep `/root/moshe-evaluator-quarantine-20260719T203803Z` outside runtime trees.
+Review and implement evidence-pair ranking and semantic disambiguation using runtime-visible data only, add focused synonym/false-merge fixtures, then repeat all 300 positive and 100 hard-negative cases. Keep `/root/moshe-evaluator-quarantine-20260719T203803Z` outside runtime trees.
 
 ## Open decisions
 
-No product decision is pending. Operational recovery and a lower-memory evaluator are required before QA can assess Slice 6.
+No product decision is pending. QA requests development changes: final chain recall is 8%, evidence precision 49.27%, evidence recall 11.22%, and false merges 8.75%. Hard-negative rejection is 99%; duplicates, source grouping, isolation, and regressions pass.

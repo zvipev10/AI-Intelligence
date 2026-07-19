@@ -6,7 +6,7 @@
 
 ## Checkpoint status
 
-Blocked pending VM recovery; no evaluation acceptance result
+Completed with failed QA gates; development changes required
 
 ## Authorization
 
@@ -27,19 +27,74 @@ The hybrid dense semantic index build exceeded safe capacity on the 954 MB VM. B
 
 SSH subsequently stopped completing banner exchange and the application port stopped responding. Multiple kill-only SSH attempts could not connect. No further workload was started.
 
-## Evaluation result
+The dense attempt produced no valid metrics. It was superseded by the resource-bounded full runs below.
 
-No valid metrics were produced. The 400-case threshold gate remains untested and must not be marked pass or fail.
+## Recovery verification
 
-## Recovery and next run
+The VM was rebooted and recovered successfully on 2026-07-20. UI, General, and Moshe services were active with zero restarts; V2.1 status returned 14,800 rows; swap was clear after boot; the failed dense process was absent; and evaluator quarantine remained intact.
 
-1. Restore VM responsiveness through the infrastructure console or wait for the low-priority evaluation process to exit or be reclaimed.
-2. Kill `/tmp/moshe-slice6-runtime.py` if it is still running.
-3. Verify all three services and the application endpoint.
-4. Preserve the root-only evaluator quarantine; do not restore evaluator files into runtime trees.
-5. Rerun the complete suite with a resource-bounded lexical/disk-streaming runtime, not the hybrid dense index on this VM.
-6. Record all 300 positive and 100 hard-negative metrics before QA acceptance.
+## Resource-bounded full evaluation
 
-## Recommendation
+The complete suite was rerun with a public-data-only lexical runtime followed by the root-only evaluator. The runtime examined all 3,800 UAV anchors. Evaluator artifacts were unreadable by the runtime user and remained absent from `/opt/serbia-poc` and `/opt/serbia-poc-ui`.
 
-Pause Slice 6 until VM health is restored. The active Slice 6 child issue remains open, and the parent capability remains open.
+First complete run:
+
+- Predicted candidates: 1,863.
+- Chain recall: 0.67%.
+- Evidence precision: 8.25%.
+- Evidence recall: 29.89%.
+- Hard-negative rejection: 99%.
+- False-merge rate: 0.43%.
+- Duplicate-target rate: 0%.
+- Source-independence deterministic pass: 100%.
+
+Failure category: broad lexical selection over-generated candidates and selected unrelated public reports.
+
+The permitted runtime-only correction added visible object-class cue matching and required two distinct corroborating public source types. The entire suite was then repeated.
+
+Final repeated run:
+
+- Positive chains evaluated: 300.
+- Hard negatives evaluated: 100.
+- Predicted candidates: 80.
+- Matched chains: 24.
+- Chain recall: 8% (required at least 90%) — fail.
+- Evidence precision: 49.27% (required at least 90%) — fail.
+- Evidence recall: 11.22% (required at least 90%) — fail.
+- Hard-negative rejection: 99% (required at least 95%) — pass.
+- False-merge rate: 8.75% (required at most 5%) — fail.
+- Duplicate-target rate: 0% (required at most 2%) — pass.
+- Source-independence: 100% — pass.
+- Evaluator-truth leakage: zero — pass.
+
+Exact machine-readable results: `evaluation-006.json`.
+
+## Regression and operations
+
+- 37 shared result, member UI, routing, fusion, and target-bank tests pass on Linux.
+- JavaScript syntax passes.
+- UI, General, and Moshe services remained active during the lexical runs.
+- Post-run available RAM was approximately 471 MB with approximately 1.69 GB free swap.
+- The production target bank remained unchanged.
+
+## QA findings
+
+### Blocking issues
+
+- Candidate discovery misses most true cross-source chains.
+- Evidence selection cannot reliably choose the two corroborating public records from the retrieved neighborhood.
+- Object-cue filtering reduces over-generation but increases missed chains and still exceeds the false-merge ceiling.
+
+### Non-blocking comments
+
+- Resource-bounded lexical evaluation is viable on the current VM.
+- Hard-negative rejection, duplicate prevention, source grouping, evaluator isolation, and General regressions are currently acceptable.
+
+### Missing tests
+
+- Add focused development fixtures for semantic synonym matching and evidence-pair ranking before repeating the full suite.
+- Add false-merge fixtures where multiple potential chains share entity, canonical area, and time window.
+
+### Recommendation
+
+Request changes. Do not proceed to Slice 7. Development should implement a reviewed evidence-pair ranking/disambiguation change without using evaluator-only fields, then rerun all 400 cases.

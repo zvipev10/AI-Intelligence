@@ -1,0 +1,95 @@
+{
+  "status": "fail",
+  "thresholds": {
+    "chain_recall": 0.9,
+    "evidence_precision": 0.9,
+    "evidence_recall": 0.9,
+    "hard_negative_rejection": 0.95,
+    "false_merge_rate_max": 0.05,
+    "duplicate_target_rate_max": 0.02,
+    "source_independence": 1.0
+  },
+  "metrics": {
+    "positive_chains": 300,
+    "hard_negatives": 100,
+    "predicted_candidates": 80,
+    "matched_chains": 24,
+    "chain_recall": 0.08,
+    "evidence_precision": 0.4926829268292683,
+    "evidence_recall": 0.11222222222222222,
+    "hard_negative_rejection": 0.99,
+    "false_merge_rate": 0.0875,
+    "duplicate_target_rate": 0.0,
+    "source_independence": 1.0
+  },
+  "gates": {
+    "chain_recall": false,
+    "evidence_precision": false,
+    "evidence_recall": false,
+    "hard_negative_rejection": true,
+    "false_merge_rate": false,
+    "duplicate_target_rate": true,
+    "source_independence": true
+  },
+  "failure_categories": {
+    "false_merge": 7
+  },
+  "failures": [
+    {
+      "category": "false_merge",
+      "candidate_key": "REC-V2-004766",
+      "owners": [
+        "FUSION-TRUTH-V2-1-0249",
+        "FUSION-TRUTH-V2-1-0266"
+      ]
+    },
+    {
+      "category": "false_merge",
+      "candidate_key": "REC-V2-005196",
+      "owners": [
+        "FUSION-TRUTH-V2-1-0012",
+        "FUSION-TRUTH-V2-1-0092"
+      ]
+    },
+    {
+      "category": "false_merge",
+      "candidate_key": "REC-V2-005842",
+      "owners": [
+        "FUSION-TRUTH-V2-1-0012",
+        "FUSION-TRUTH-V2-1-0092"
+      ]
+    },
+    {
+      "category": "false_merge",
+      "candidate_key": "REC-V2-007578",
+      "owners": [
+        "FUSION-TRUTH-V2-1-0002",
+        "FUSION-TRUTH-V2-1-0284"
+      ]
+    },
+    {
+      "category": "false_merge",
+      "candidate_key": "REC-V2-007081",
+      "owners": [
+        "FUSION-TRUTH-V2-1-0002",
+        "FUSION-TRUTH-V2-1-0284"
+      ]
+    },
+    {
+      "category": "false_merge",
+      "candidate_key": "REC-V2-006211",
+      "owners": [
+        "FUSION-TRUTH-V2-1-0091",
+        "FUSION-TRUTH-V2-1-0292"
+      ]
+    },
+    {
+      "category": "false_merge",
+      "candidate_key": "REC-V2-007721",
+      "owners": [
+        "FUSION-TRUTH-V2-1-0091",
+        "FUSION-TRUTH-V2-1-0292"
+      ]
+    }
+  ]
+}
