@@ -1639,7 +1639,7 @@ function finalizeAssistantMessage(answer, options = {}) {
 
 function showFinalAnswerResult(result, prompt) {
   if (!result) return;
-  applyHermesResult(result, prompt, { keepRenderedSteps: true, restoreOnly: true });
+  applyAgentResult(result, prompt, { keepRenderedSteps: true, restoreOnly: true });
 }
 
 function toggleFinalAnswerVisibility(result, prompt, btn) {
@@ -2000,7 +2000,7 @@ async function submitStepInject() {
     // Merge prior steps with new steps so the full chain is in state
     const newSteps = result.investigation_steps || [];
     result.investigation_steps = [...priorSteps, ...newSteps];
-    applyHermesResult(result, continuationPrompt, { keepRenderedSteps: true });
+    applyAgentResult(result, continuationPrompt, { keepRenderedSteps: true });
   } catch (error) {
     addActivity("connection_error", "לא ניתן היה להשלים את המשך החקירה.", error.message);
     finalizeAssistantMessage(`<p>לא הצלחתי להשלים את המשך החקירה.</p><div class="answer-callout">${escapeHtml(error.message)}</div>`, { html: true });
@@ -2048,7 +2048,7 @@ function showStepResult(step) {
   const label = humanToolLabel(String(step.tool || "").replace(/^\d+\.\s*/, ""));
   state.queryContext = buildStepQueryContext(step, label);
 
-  // Build a synthetic result object compatible with applyHermesResult's visualization path
+  // Build a synthetic result object compatible with the shared agent visualization path.
   const evidence = new Set(eventIds);
   state.current = state.events.filter(event => evidence.has(event.event_id));
 
@@ -2460,7 +2460,7 @@ async function deleteSavedQuestion(savedId) {
   }
 }
 
-function applyHermesResult(result, prompt, options = {}) {
+function applyAgentResult(result, prompt, options = {}) {
   result.answer = cleanAssistantAnswer(result.answer);
   // Save last result so the step-view return button can restore it
   if (!options.restoreOnly) {
@@ -2570,7 +2570,7 @@ async function runSavedQuestion(savedId) {
     const prompt = (saved.question || "").trim();
     appendMessage("user", `<p>${escapeHtml(prompt)}</p>`);
     state.history.push({ role: "user", content: prompt }, { role: "assistant", content: result.answer || "" });
-    applyHermesResult(result, prompt);
+    applyAgentResult(result, prompt);
   } catch (error) {
     startAssistantResearchMessage("טעינת שאלה שמורה נכשלה.");
     finalizeAssistantMessage(`<p>לא הצלחתי להציג את השאלה השמורה.</p><div class="answer-callout">${escapeHtml(error.message)}</div>`, { html: true });
@@ -2706,7 +2706,7 @@ async function runPrompt(prompt) {
     result.answer = cleanAssistantAnswer(result.answer);
     state.history.push({ role: "user", content: clean }, { role: "assistant", content: result.answer });
     const renderStarted = performance.now();
-    applyHermesResult(result, clean);
+    applyAgentResult(result, clean);
     const renderEnded = performance.now();
     const clientPerformance = {
       total_ms: Number((renderEnded - clientStarted).toFixed(3)),
