@@ -14,19 +14,19 @@ Moshe Attack Targets MVP
 
 ## Checkpoint status
 
-Rebuilt and redeployed on the member-enabled baseline; user validation passed, architecture/interface validation pending
+Approved and complete
 
 ## Handoff
 
-Next role: Development/Architecture reviewer
+Next role: Development
 
-Required action: Review the shared result envelope, normalization extraction, and agent-neutral UI entry point.
+Required action: Begin Slice 2 only after explicit user instruction.
 
-Expected output: Approve Slice 1 or request focused changes.
+Expected output: SQLite target bank and constrained tools checkpoint.
 
-Do not proceed to: Slice 2 SQLite implementation.
+Do not proceed to: Slice 3 fusion implementation.
 
-Until: This checkpoint is approved.
+Until: Slice 2 is implemented and approved.
 
 ## What changed since previous review
 
@@ -120,7 +120,7 @@ Development/Architecture.
 
 ## Continue / pause recommendation
 
-Pause for checkpoint review.
+Slice 1 is approved by all required members as reported by the user on 2026-07-19. Continue to Slice 2 when explicitly instructed.
 
 ## Next planned slice
 
