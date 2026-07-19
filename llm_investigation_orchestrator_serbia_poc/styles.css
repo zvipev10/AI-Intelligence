@@ -308,6 +308,16 @@ textarea.mention-source::placeholder { color: var(--muted) !important; }
 .map-marker:hover { transform: scale(1.12); }
 .map-marker-dot { position: absolute; inset: 0; border-radius: inherit; background: var(--layer-color, #4f6f91); }
 .map-marker-count { position: absolute; right: 10px; top: -12px; min-width: 18px; height: 18px; padding: 0 4px; display: inline-grid; place-items: center; border: 1px solid rgba(255,255,255,.82); border-radius: 999px; background: rgba(24,29,38,.98); color: var(--ink); font-size: 9px; font-weight: 900; line-height: 1; }
+.attack-target-marker { width: 22px; height: 22px; border-radius: 5px; transform: rotate(45deg); box-shadow: 0 2px 12px rgba(0,0,0,.55), 0 0 0 5px rgba(255,179,71,.18); }
+.attack-target-marker:hover { transform: rotate(45deg) scale(1.14); }
+.target-map-popup p { margin: 5px 0 0; max-width: 260px; }
+.attack-target-row td:first-child strong, .attack-target-row td:first-child small { display: block; }
+.attack-target-row td:first-child small { margin-top: 3px; color: var(--muted); }
+.target-evidence-details { min-width: 220px; margin-top: 4px; }
+.target-evidence-details summary { color: var(--blue); cursor: pointer; font-weight: 800; }
+.target-evidence-details ol { margin: 7px 0 0; padding-inline-start: 20px; }
+.target-evidence-details li { margin-bottom: 8px; }
+.target-evidence-details li span, .target-evidence-details li q { display: block; margin-top: 2px; white-space: normal; }
 .map-popup { min-width: 130px; color: #1b1f29; text-align: right; }
 .map-popup strong, .map-popup span, .map-popup em { display: block; }
 .map-popup strong { font-size: 13px; }

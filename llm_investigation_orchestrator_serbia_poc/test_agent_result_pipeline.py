@@ -5,6 +5,7 @@ from agent_result_pipeline import (
     normalize_entity_layers,
     normalize_location_layers,
     normalize_map_locations,
+    normalize_attack_targets,
     normalize_typed_layers,
 )
 from server import HermesClient
@@ -38,6 +39,41 @@ class AgentResultPipelineTests(unittest.TestCase):
             {"kind": "locations", "rows": "bad"},
         ])
         self.assertEqual(layers, [{"kind": "events", "rows": [{"event_id": "REC-1"}]}])
+
+    def test_attack_target_is_a_shared_typed_layer(self):
+        layers = normalize_typed_layers([{"kind": "attack_targets", "rows": [{"target_id": "TGT-1"}]}])
+        self.assertEqual(layers[0]["kind"], "attack_targets")
+
+    def test_target_results_are_deduped_enriched_and_keep_full_evidence(self):
+        records = [
+            {"tool": "get_target_candidate", "result": {"candidate": {
+                "target_id": "TGT-1", "title": "A", "location_id": "LOC-1", "entity_id": "ENT-1",
+                "evidence": [{"record_id": "REC-1", "source_group": "G1"}],
+            }}},
+            {"tool": "search_target_candidates", "result": {"candidates": [{
+                "target_id": "TGT-1", "title": "A updated", "location_id": "LOC-1", "entity_id": "ENT-1",
+                "source_group_count": 2,
+            }]}},
+        ]
+        rows = normalize_attack_targets(
+            records,
+            locations={"LOC-1": {"name": "Area B", "latitude": 1.5, "longitude": 2.5}},
+            entities={"ENT-1": {"canonical_name": "Unit One"}},
+        )
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["title"], "A updated")
+        self.assertEqual(rows[0]["location_name"], "Area B")
+        self.assertEqual(rows[0]["entity_name"], "Unit One")
+        self.assertEqual(rows[0]["evidence"][0]["record_id"], "REC-1")
+        self.assertEqual(rows[0]["source_group_count"], 2)
+
+    def test_target_presentation_ignores_errors_and_empty_results(self):
+        rows = normalize_attack_targets([
+            {"tool": "get_target_candidate", "is_error": True, "result": {"candidate": {"target_id": "TGT-BAD"}}},
+            {"tool": "search_target_candidates", "result": {"candidates": []}},
+            {"tool": "search_events", "result": {"candidate": {"target_id": "TGT-WRONG-TOOL"}}},
+        ])
+        self.assertEqual(rows, [])
 
     def test_existing_location_and_entity_shapes_are_preserved(self):
         locations = normalize_location_layers({"location_layers": [{"location_id": "LOC-1", "name": "A", "count": 2}]})

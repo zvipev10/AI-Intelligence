@@ -23,6 +23,7 @@ from agent_result_pipeline import (
     normalize_entity_layers,
     normalize_location_layers,
     normalize_map_locations,
+    normalize_attack_targets,
 )
 from agent_routing import AgentRouteRegistry, MOSHE_AGENT_ID
 
@@ -2082,6 +2083,18 @@ class HermesClient:
                     "slowest_tool": performance["tools"].get("slowest_tool"),
                 }
                 performance_log_path = write_performance_log(run_id, performance, prompt)
+                target_rows = normalize_attack_targets(
+                    audit_records,
+                    locations=LOCATIONS,
+                    entities=load_ui_entity_db(),
+                )
+                result_layers = ([{
+                    "id": "attack-targets:candidates",
+                    "label": "מועמדי מטרות",
+                    "kind": "attack_targets",
+                    "rows": target_rows,
+                    "capabilities": {"table": True, "map": True, "timeline": False},
+                }] if target_rows else [])
                 return build_agent_result({
                     "run_id": run_id,
                     "answer": clean_output,
@@ -2093,7 +2106,7 @@ class HermesClient:
                     "events": events,
                     "usage": status.get("usage", {}),
                     "performance_log": performance_log_path.name,
-                }, responding_agent=responding_agent, session_id=session_id, mission_run_id=mission_run_id)
+                }, responding_agent=responding_agent, session_id=session_id, mission_run_id=mission_run_id, layers=result_layers)
             time.sleep(1)
         raise TimeoutError("Hermes investigation exceeded 480 seconds")
 

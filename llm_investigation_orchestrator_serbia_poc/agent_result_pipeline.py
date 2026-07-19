@@ -6,7 +6,11 @@ from typing import Any
 
 
 DEFAULT_AGENT_ID = "general"
-SUPPORTED_LAYER_KINDS = frozenset({"events", "map_locations", "aggregate_groups", "locations", "entities"})
+SUPPORTED_LAYER_KINDS = frozenset({"events", "map_locations", "aggregate_groups", "locations", "entities", "attack_targets"})
+TARGET_RESULT_TOOLS = frozenset({
+    "search_target_candidates", "get_target_candidate", "create_target_candidate",
+    "update_target_candidate", "attach_target_evidence",
+})
 
 
 def normalize_location_item(item: Any, default_count: int = 0) -> dict[str, Any] | None:
@@ -148,6 +152,53 @@ def normalize_typed_layers(value: Any) -> list[dict[str, Any]]:
         layer["rows"] = rows
         layers.append(layer)
     return layers
+
+
+def normalize_attack_targets(
+    audit_records: Any,
+    *,
+    locations: dict[str, dict[str, Any]] | None = None,
+    entities: dict[str, dict[str, Any]] | None = None,
+) -> list[dict[str, Any]]:
+    """Build presentation-ready target rows from successful target-tool results."""
+    locations = locations or {}
+    entities = entities or {}
+    by_id: dict[str, dict[str, Any]] = {}
+    for record in audit_records or []:
+        if not isinstance(record, dict) or record.get("is_error") or record.get("tool") not in TARGET_RESULT_TOOLS:
+            continue
+        result = record.get("result") or {}
+        if not isinstance(result, dict):
+            continue
+        candidates = result.get("candidates") or []
+        if not isinstance(candidates, list):
+            candidates = []
+        if isinstance(result.get("candidate"), dict):
+            candidates = [*candidates, result["candidate"]]
+        for candidate in candidates:
+            if not isinstance(candidate, dict) or not candidate.get("target_id"):
+                continue
+            target_id = str(candidate["target_id"])
+            previous = by_id.get(target_id, {})
+            merged = {**previous, **candidate}
+            if previous.get("evidence") and not candidate.get("evidence"):
+                merged["evidence"] = previous["evidence"]
+            location_id = str(merged.get("location_id") or "")
+            entity_id = str(merged.get("entity_id") or "")
+            location = locations.get(location_id, {})
+            entity = entities.get(entity_id, {})
+            evidence = merged.get("evidence") if isinstance(merged.get("evidence"), list) else []
+            merged.update({
+                "location_name": location.get("name") or merged.get("location_name") or location_id,
+                "latitude": location.get("latitude", merged.get("latitude")),
+                "longitude": location.get("longitude", merged.get("longitude")),
+                "entity_name": entity.get("canonical_name") or merged.get("entity_name") or entity_id or None,
+                "evidence": evidence,
+                "evidence_count": merged.get("evidence_count", len(evidence)),
+                "source_group_count": merged.get("source_group_count", len({item.get("source_group") for item in evidence if isinstance(item, dict) and item.get("source_group")})),
+            })
+            by_id[target_id] = merged
+    return list(by_id.values())
 
 
 def build_agent_result(

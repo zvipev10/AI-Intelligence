@@ -30,6 +30,12 @@ class MemberUiRegressionTests(unittest.TestCase):
         self.assertIn("function applyAgentResult(result, prompt, options = {})", self.app)
         self.assertNotIn("function applyHermesResult(", self.app)
 
+    def test_attack_targets_use_the_shared_layer_pipeline(self):
+        self.assertIn("function buildTypedResultLayers(result = {})", self.app)
+        self.assertIn('layer.kind === "attack_targets"', self.app)
+        self.assertNotIn("function renderMoshe", self.app)
+        self.assertNotIn("function applyMoshe", self.app)
+
 
 if __name__ == "__main__":
     unittest.main()

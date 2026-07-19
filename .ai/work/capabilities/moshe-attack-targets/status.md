@@ -6,7 +6,7 @@ Moshe Attack Targets MVP
 
 ## Current phase
 
-Slice 4 persistent Moshe gateway deployed; user routing/resource test in progress.
+Slice 5 shared attack-target presentation implemented; UX and General regression checkpoint pending.
 
 ## Overall status
 
@@ -17,19 +17,19 @@ Pending review
 | Role | Status | Required action | Due before |
 |---|---|---|---|
 | Product | Slice 1 approved | Approve proposed quantitative thresholds before full evaluation | Slice 6 |
-| Development | Deployed | Monitor dual-gateway routing and VM resources during user test | Slice 5 |
+| Development | Implemented | Hold Slice 5 deployment until checkpoint acceptance | Slice 5 |
 | UX | Approved | Routing experience, attribution, candidate presentation, evidence, and states accepted | Complete |
 | QA | Pending threshold review | Approve quantitative thresholds and release gates | Slice 6 |
 | Architecture/Security | Slice 2 approved | Review evaluator isolation and deterministic source boundary | Slice 4 |
 
 ## Latest change since previous review
 
-Deployed the persistent Moshe gateway, verified both routing paths and resources, and hot-fixed mission IDs to remain below OpenAI's 64-character prompt-cache-key limit.
+Implemented the shared `attack_targets` typed layer, audit-backed target extraction, refresh/deduplication, and common map/table/evidence presentation without a Moshe-specific renderer.
 
 ## Current blockers
 
 - Proposed quantitative fusion-quality thresholds require Product and QA approval before Slice 6.
-- User routing/security/resource acceptance after deployed testing.
+- UX and General-agent regression acceptance for Slice 5 before deployment.
 - Capability artifacts and Slice 1 code are published on `codex/moshe-attack-targets`; draft PR creation is still pending.
 - Remote parent and child issues have not been created.
 
@@ -40,7 +40,7 @@ Deployed the persistent Moshe gateway, verified both routing paths and resources
 
 ## Next expected artifact
 
-User acceptance of deployed Slice 4 in `checkpoint-004.md`.
+UX and General-agent regression acceptance in `checkpoint-005.md`.
 
 ## Parent issue
 
@@ -59,8 +59,8 @@ Pending remote creation; local draft at `issues/parent-capability.md`.
 | Pending | Development | Slice 1 shared agent pipeline | Approved and complete | No |
 | Pending | Development | Slice 2 SQLite target bank | Approved and complete | No |
 | Pending | Development | Slice 3 fusion tools | Approved and complete | No |
-| Pending | Development | Slice 4 Moshe routing and sessions | Deployed; user testing | Yes |
-| Pending | Development and UX | Slice 5 shared presentation | Not started | Yes |
+| Pending | Development | Slice 4 Moshe routing and sessions | Deployed; user accepted | No |
+| Pending | Development and UX | Slice 5 shared presentation | Implemented; checkpoint review | Yes |
 | Pending | QA | Slice 6 full evaluation | Not started | Yes |
 | Pending | Operations and QA | Slice 7 release and handoff | Not started | Yes |
 
@@ -75,8 +75,8 @@ Pending remote creation; local draft at `issues/parent-capability.md`.
 - QA review: `qa-review.md`
 - Architecture/security review: `architecture-security-review.md`
 - Execution plan: `execution-plan.md`
-- Latest checkpoint: `checkpoint-003.md`
-- Handoff: pending
+- Latest checkpoint: `checkpoint-005.md`
+- Handoff: `handoff-summary.md`
 
 ## Gate checklist
 

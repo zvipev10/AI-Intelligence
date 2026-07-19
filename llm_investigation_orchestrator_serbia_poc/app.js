@@ -946,6 +946,21 @@ function buildCatalogLayer(layer, rows = []) {
   };
 }
 
+function buildTypedResultLayers(result = {}) {
+  return (result.layers || [])
+    .filter(layer => layer && Array.isArray(layer.rows) && layer.rows.length)
+    .map(layer => ({
+      dataId: layer.id || layerId(layer.kind, "result"),
+      label: layer.label || "תוצאות הסוכן",
+      kind: layer.kind,
+      visible: true,
+      items: layer.kind === "events"
+        ? layer.rows.map(item => ({ ...item, date: new Date(item.timestamp_utc) }))
+        : layer.rows,
+      capabilities: layer.capabilities || { table: true, map: false, timeline: false }
+    }));
+}
+
 function sanitizeLayerKey(value) {
   return String(value || "unknown").replace(/[^\p{L}\p{N}_:-]+/gu, "-");
 }
@@ -986,6 +1001,14 @@ function addResultLayers({ sourceId, sourceLabel, preferredView = "map", layers 
   }
 
   layers.forEach(layer => {
+    if (layer.kind === "attack_targets") {
+      const incomingIds = new Set((layer.items || []).map(item => item.target_id).filter(Boolean));
+      state.layers.forEach(existingLayer => {
+        if (existingLayer.kind !== "attack_targets" || existingLayer.sourceId === cleanSourceId) return;
+        existingLayer.items = (existingLayer.items || []).filter(item => !incomingIds.has(item.target_id));
+      });
+      state.layers = state.layers.filter(existingLayer => existingLayer.kind !== "attack_targets" || existingLayer.items.length);
+    }
     const dataId = layer.dataId || layer.id || layerId(layer.kind, layer.label);
     const id = `${cleanSourceId}::${sanitizeLayerKey(dataId)}`;
     const existing = state.layers.find(item => item.id === id);
@@ -1151,6 +1174,38 @@ function itemsForLayerPresentation(layer) {
   const filters = validAppliedFilters(layer);
   if (!filters.length) return items;
   return items.filter(item => filters.every(filter => filterMatchesItem(item, filter)));
+}
+
+function targetQuantityLabel(target = {}) {
+  const min = target.count_min;
+  const max = target.count_max;
+  const estimate = target.count_estimate;
+  if (target.count_assessment === "range" && min != null && max != null) return `${Number(min).toLocaleString("he-IL")}–${Number(max).toLocaleString("he-IL")}`;
+  if (estimate != null) return `${target.count_assessment === "approximate" ? "כ־" : ""}${Number(estimate).toLocaleString("he-IL")}`;
+  if (min != null && max != null && min !== max) return `${Number(min).toLocaleString("he-IL")}–${Number(max).toLocaleString("he-IL")}`;
+  if (min != null) return Number(min).toLocaleString("he-IL");
+  if (max != null) return Number(max).toLocaleString("he-IL");
+  return "לא הוכרע";
+}
+
+function confidenceLabel(value) {
+  return value === "high" ? "גבוה" : value === "medium" ? "בינוני" : (value || "-");
+}
+
+function targetEvidenceHtml(target = {}) {
+  const evidence = Array.isArray(target.evidence) ? target.evidence : [];
+  const rows = evidence.map(item => `
+    <li>
+      <strong dir="ltr">${escapeHtml(String(item.record_id || "-"))}</strong>
+      <span>${escapeHtml(String(item.source_group || "-"))} · ${escapeHtml(String(item.source_type || "-"))} · <time dir="ltr">${escapeHtml(String(item.observed_at || "-"))}</time></span>
+      <span>${escapeHtml(String(item.reported_object || "-"))}${item.reported_count == null ? "" : ` · ${Number(item.reported_count).toLocaleString("he-IL")}`}</span>
+      <q>${escapeHtml(String(item.relevant_text || "-"))}</q>
+    </li>`).join("");
+  return `<details class="target-evidence-details">
+    <summary aria-label="הצג פירוט ראיות עבור ${escapeHtml(String(target.title || target.target_id || "המטרה"))}">פירוט ראיות (${Number(target.evidence_count || evidence.length || 0).toLocaleString("he-IL")})</summary>
+    <div><strong>הסבר מיזוג:</strong> ${escapeHtml(String(target.fusion_explanation || "לא סופק"))}</div>
+    ${rows ? `<ol>${rows}</ol>` : '<p>פירוט הרשומות אינו זמין בתוצאה זו.</p>'}
+  </details>`;
 }
 
 function identifiersForLayerContext(layer, items, limit = 80) {
@@ -2898,14 +2953,14 @@ function applyAgentResult(result, prompt, options = {}) {
       sourceId: finalSourceId(result),
       sourceLabel: "תשובת הסוכן",
       preferredView: result.recommended_view || inferRecommendedView(prompt, result.answer).view,
-      layers: buildResultLayers({
+      layers: [...buildResultLayers({
       events: state.current,
       locations: state.aggregateLocations,
       timeline: state.aggregateTimeline,
       groups: state.aggregateGroups,
       locationMetadata: state.locationMetadata,
       entityMetadata: state.entityMetadata
-      })
+      }), ...buildTypedResultLayers(result)]
     });
     // Just restore visualization state, don't touch the chat DOM
     showResult(
@@ -2938,6 +2993,18 @@ function applyAgentResult(result, prompt, options = {}) {
   }
   if (!options.keepRenderedSteps && !(result.investigation_steps || []).length && !(result.events || []).some(event => event.event === "tool.started")) {
     addActivity("Hermes", `שאלת החקירה שנשלחה: ${prompt}`, `התקבלה תשובה בריצה ${result.run_id}, ללא יומן כלי מפורט.`);
+  }
+
+  const typedLayers = buildTypedResultLayers(result);
+  if (typedLayers.length) {
+    const addedLayers = addResultLayers({
+      sourceId: finalSourceId(result),
+      sourceLabel: result.responding_agent === "moshe" ? "תשובת משה" : "תשובת הסוכן",
+      preferredView: result.recommended_view || "map",
+      layers: typedLayers
+    });
+    showResult("ממצאי הסוכן", `נוספו או רועננו ${addedLayers.length.toLocaleString("he-IL")} שכבות מתוך התשובה.`);
+    activateView(result.recommended_view || "map", { automatic: true, reason: result.view_reason || "נתונים מובנים בתשובת הסוכן" });
   }
 
   finalizeAssistantMessage(result.answer, { result, prompt });
@@ -3299,6 +3366,38 @@ function renderMap() {
     state.markers.push(marker);
     bounds.extend([location.lon, location.lat]);
   });
+  const targetLocationIndexes = new Map();
+  visibleLayers("map").filter(layer => layer.kind === "attack_targets").forEach(layer => {
+    itemsForLayerPresentation(layer).forEach(target => {
+      const canonical = LOCATIONS[target.location_id] || null;
+      const lon = canonical?.lon ?? target.longitude;
+      const lat = canonical?.lat ?? target.latitude;
+      if (lon == null || lat == null) return;
+      const locationKey = target.location_id || `${lon}:${lat}`;
+      const index = targetLocationIndexes.get(locationKey) || 0;
+      targetLocationIndexes.set(locationKey, index + 1);
+      const angle = index * 2.399963;
+      const radius = index ? 0.0018 * Math.ceil(index / 6 + 1) : 0;
+      const markerLon = Number(lon) + Math.cos(angle) * radius;
+      const markerLat = Number(lat) + Math.sin(angle) * radius;
+      const element = document.createElement("div");
+      element.className = "map-marker attack-target-marker";
+      element.style.setProperty("--layer-color", layer.color || "#ffb347");
+      element.setAttribute("role", "button");
+      element.setAttribute("aria-label", `מועמד מטרה: ${target.title || target.target_id}, ${target.location_name || target.location_id}`);
+      element.innerHTML = '<span class="map-marker-dot"></span>';
+      const popupHtml = `<div class="map-popup target-map-popup" dir="rtl">
+        <strong>${escapeHtml(String(target.title || target.target_id || "מועמד מטרה"))}</strong>
+        <span>${escapeHtml(String(target.object_class || "-"))} · ${escapeHtml(String(target.entity_name || target.entity_id || "ללא ישות"))}</span>
+        <span>ביטחון ${escapeHtml(String(confidenceLabel(target.confidence)))} · כמות ${escapeHtml(String(targetQuantityLabel(target)))}</span>
+        <p>${escapeHtml(String(target.summary || ""))}</p>
+      </div>`;
+      const popup = new maplibregl.Popup({ offset: 20, closeButton: true, closeOnClick: true }).setHTML(popupHtml);
+      const marker = new maplibregl.Marker({ element, anchor: "center" }).setLngLat([markerLon, markerLat]).setPopup(popup).addTo(state.map);
+      state.markers.push(marker);
+      bounds.extend([markerLon, markerLat]);
+    });
+  });
   if (!bounds.isEmpty()) state.map.fitBounds(bounds, { padding: 110, maxZoom: 10.2, duration: 450 });
 }
 
@@ -3394,6 +3493,21 @@ function renderEvidence() {
   ensureLayerFilterState(activeLayer);
   renderLayerFilterPanel(activeLayer);
   const activeItems = activeLayer.visible ? itemsForLayerPresentation(activeLayer) : [];
+  if (activeLayer.kind === "attack_targets") {
+    head.innerHTML = "<tr><th>מטרה</th><th>סוג אובייקט</th><th>ישות</th><th>מיקום קנוני</th><th>ביטחון</th><th>כמות</th><th>תקציר</th><th>מקורות עצמאיים וראיות</th></tr>";
+    body.innerHTML = activeItems.length ? activeItems.map(item => `
+      <tr class="attack-target-row">
+        <td><strong>${escapeHtml(String(item.title || item.target_id || "-"))}</strong><small dir="ltr">${escapeHtml(String(item.target_id || "-"))}</small></td>
+        <td>${escapeHtml(String(item.object_class || "-"))}</td>
+        <td>${escapeHtml(String(item.entity_name || item.entity_id || "-"))}</td>
+        <td>${escapeHtml(String(item.location_name || item.location_id || "-"))}</td>
+        <td>${escapeHtml(String(confidenceLabel(item.confidence)))}</td>
+        <td>${escapeHtml(String(targetQuantityLabel(item)))}</td>
+        <td>${escapeHtml(String(item.summary || "-"))}</td>
+        <td><strong>${Number(item.source_group_count || 0).toLocaleString("he-IL")}</strong> ${targetEvidenceHtml(item)}</td>
+      </tr>`).join("") : '<tr><td colspan="8" class="empty-cell">לא נמצאו מועמדי מטרות להצגה.</td></tr>';
+    return;
+  }
   if (activeLayer.kind === "location_metadata") {
     head.innerHTML = "<tr><th>מיקום</th><th>אירועים</th><th>רשות</th><th>סוג</th><th>דיוק</th><th>מזהה</th></tr>";
     body.innerHTML = activeItems.length ? activeItems.map(item => `
