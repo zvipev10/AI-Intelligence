@@ -2,7 +2,7 @@
 
 ## Current state
 
-Slices 1-4 are implemented and published; Slice 4 is deployed and user-accepted. Slice 5 shared target presentation is implemented locally and awaits UX/General regression acceptance before deployment.
+Slices 1-5 are implemented, published, deployed, and user-approved. Slice 6 full V2.1 evaluation is gated on Product and QA approval of quantitative thresholds.
 
 ## Latest implementation
 
@@ -17,11 +17,13 @@ Slices 1-4 are implemented and published; Slice 4 is deployed and user-accepted.
 
 ## Deployment state
 
-Slice 5 is not deployed. Production remains at commit `4eb3688`, with General on port 8642, Moshe on port 8643, and UI on port 8769.
+Slice 5 commit `7176657` is deployed. General remains on port 8642, Moshe on port 8643, and UI on port 8769. Rollback backup: `/opt/serbia-poc-ui-backups/slice5-20260719T202907Z`.
+
+Production smoke checks passed for General routing, exact `@משה` routing, empty-target behavior, typed target-layer enrichment, served UI assets, service health, and resources. The target bank remained empty.
 
 ## Next action
 
-Obtain UX and General-agent regression acceptance for `checkpoint-005.md`, then deploy Slice 5 and run a representative Moshe target-result smoke test. After acceptance, proceed to Slice 6 full V2.1 evaluation.
+Obtain Product and QA approval of the proposed thresholds, then execute Slice 6 full V2.1 evaluation with evaluator truth isolated from runtime.
 
 ## Open decisions
 

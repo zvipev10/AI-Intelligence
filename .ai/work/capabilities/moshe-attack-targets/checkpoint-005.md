@@ -6,7 +6,7 @@
 
 ## Checkpoint status
 
-Implemented and validated; pending UX and General-agent regression acceptance before deployment
+Approved, deployed, and production-smoke validated
 
 ## Completed
 
@@ -43,4 +43,23 @@ Implemented and validated; pending UX and General-agent regression acceptance be
 
 ## Recommendation
 
-Review the Slice 5 table/map behavior and General-agent regression boundary. If approved, deploy Slice 5 and run one representative target-result smoke test before starting Slice 6.
+Proceed to Slice 6 after Product and QA approve the quantitative evaluation thresholds.
+
+## Approval and deployment
+
+User approval: 2026-07-19.
+
+Deployment date: 2026-07-19.
+
+- Deployed shared backend and UI assets to `/opt/serbia-poc-ui`.
+- Rollback backup: `/opt/serbia-poc-ui-backups/slice5-20260719T202907Z`.
+- General, Moshe, and UI services are active with zero restarts.
+- V2.1 status reports 14,800 rows.
+- Live General smoke returned `responding_agent=general` and answer `4`.
+- Live `@משה` smoke returned `responding_agent=moshe`, a bounded Moshe mission ID, and correctly reported the empty target bank without emitting an empty `attack_targets` layer.
+- An in-memory production contract smoke proved target enrichment, two-source evidence, canonical location coordinates, and the shared `attack_targets` envelope without inserting a database row.
+- Served `app.js`, `styles.css`, and member UI contain the shared layer pipeline and target presentation assets.
+- Target bank remained empty after testing.
+- Post-test VM capacity: approximately 226 MB available RAM and 1.47 GB free swap. UI used approximately 38 MB, General approximately 231 MB, and Moshe approximately 176 MB current memory.
+
+The Codex in-app browser could not reach public port 8769 from its network. VM-local HTTP and asset checks passed; final visible interaction remains suitable for user testing.

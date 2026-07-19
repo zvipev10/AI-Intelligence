@@ -6,7 +6,7 @@ Moshe Attack Targets MVP
 
 ## Current phase
 
-Slice 5 shared attack-target presentation implemented; UX and General regression checkpoint pending.
+Slice 5 shared attack-target presentation deployed and smoke validated; Slice 6 threshold gate pending.
 
 ## Overall status
 
@@ -17,19 +17,18 @@ Pending review
 | Role | Status | Required action | Due before |
 |---|---|---|---|
 | Product | Slice 1 approved | Approve proposed quantitative thresholds before full evaluation | Slice 6 |
-| Development | Implemented | Hold Slice 5 deployment until checkpoint acceptance | Slice 5 |
+| Development | Slice 5 complete | Await Product/QA threshold approval before full evaluation | Slice 6 |
 | UX | Approved | Routing experience, attribution, candidate presentation, evidence, and states accepted | Complete |
 | QA | Pending threshold review | Approve quantitative thresholds and release gates | Slice 6 |
 | Architecture/Security | Slice 2 approved | Review evaluator isolation and deterministic source boundary | Slice 4 |
 
 ## Latest change since previous review
 
-Implemented the shared `attack_targets` typed layer, audit-backed target extraction, refresh/deduplication, and common map/table/evidence presentation without a Moshe-specific renderer.
+Deployed and production-smoke validated the shared `attack_targets` typed layer and common map/table/evidence presentation; live General and Moshe routing passed without changing the empty target bank.
 
 ## Current blockers
 
 - Proposed quantitative fusion-quality thresholds require Product and QA approval before Slice 6.
-- UX and General-agent regression acceptance for Slice 5 before deployment.
 - Capability artifacts and Slice 1 code are published on `codex/moshe-attack-targets`; draft PR creation is still pending.
 - Remote parent and child issues have not been created.
 
@@ -40,7 +39,7 @@ Implemented the shared `attack_targets` typed layer, audit-backed target extract
 
 ## Next expected artifact
 
-UX and General-agent regression acceptance in `checkpoint-005.md`.
+Product and QA approval of Slice 6 quantitative thresholds, followed by the full evaluation artifact.
 
 ## Parent issue
 
@@ -60,7 +59,7 @@ Pending remote creation; local draft at `issues/parent-capability.md`.
 | Pending | Development | Slice 2 SQLite target bank | Approved and complete | No |
 | Pending | Development | Slice 3 fusion tools | Approved and complete | No |
 | Pending | Development | Slice 4 Moshe routing and sessions | Deployed; user accepted | No |
-| Pending | Development and UX | Slice 5 shared presentation | Implemented; checkpoint review | Yes |
+| Pending | Development and UX | Slice 5 shared presentation | Approved, deployed, validated | No |
 | Pending | QA | Slice 6 full evaluation | Not started | Yes |
 | Pending | Operations and QA | Slice 7 release and handoff | Not started | Yes |
 
