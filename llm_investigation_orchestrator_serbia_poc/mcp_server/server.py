@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Read-only MCP server for the synthetic Hebrew intelligence event dataset."""
+"""Constrained MCP server for synthetic intelligence evidence and target candidates."""
 
 from __future__ import annotations
 
@@ -18,14 +18,16 @@ from typing import Any
 
 try:
     from semantic_index import SemanticEventIndex
+    from target_bank import TargetBank
 except ImportError:  # pragma: no cover - package-style execution fallback
     sys.path.insert(0, str(Path(__file__).resolve().parent))
     from semantic_index import SemanticEventIndex
+    from target_bank import TargetBank
 
 
 PROTOCOL_VERSION = "2025-06-18"
 SERVER_NAME = "serbia-events-poc"
-SERVER_VERSION = "0.2.0"
+SERVER_VERSION = "0.3.0"
 DEFAULT_LIMIT = 2000
 MAX_LIMIT = 2000
 MIN_COVERAGE_LIMIT = 2000
@@ -129,6 +131,7 @@ def load_events() -> list[dict[str, Any]]:
 
 
 EVENTS = load_events()
+EVENT_BY_ID = {event["event_id"]: event for event in EVENTS}
 EVENTS_BY_ID = {event["event_id"]: event for event in EVENTS}
 ENTITY_PRESENTATIONS: dict[str, dict[str, Any]] = {}
 LOCATION_PRESENTATIONS: dict[str, dict[str, Any]] = {}
@@ -2362,7 +2365,161 @@ def with_step_bridge(schema: dict[str, Any]) -> dict[str, Any]:
     return {**schema, "properties": properties}
 
 
+TARGET_BANK = TargetBank()
+
+
+def validate_target_references(candidate: dict[str, Any], evidence: list[dict[str, Any]] | None = None) -> None:
+    location_id = str(candidate.get("location_id") or "").strip()
+    if location_id not in LOCATIONS:
+        raise ValueError(f"unknown canonical location_id: {location_id}")
+    entity_id = str(candidate.get("entity_id") or "").strip()
+    if entity_id and entity_id not in ENTITY_PRESENTATIONS:
+        raise ValueError(f"unknown canonical entity_id: {entity_id}")
+    for item in evidence or []:
+        record_id = str(item.get("record_id") or "").strip()
+        evidence_location_id = str(item.get("location_id") or "").strip()
+        if record_id not in EVENT_BY_ID:
+            raise ValueError(f"unknown evidence record_id: {record_id}")
+        if evidence_location_id not in LOCATIONS:
+            raise ValueError(f"unknown evidence location_id: {evidence_location_id}")
+
+
+def search_target_candidates(arguments: dict[str, Any]) -> dict[str, Any]:
+    TARGET_BANK.initialize()
+    candidates = TARGET_BANK.search_candidates(arguments)
+    return {"candidates": candidates, "returned": len(candidates)}
+
+
+def get_target_candidate(arguments: dict[str, Any]) -> dict[str, Any]:
+    TARGET_BANK.initialize()
+    return {"candidate": TARGET_BANK.get_candidate(arguments.get("target_id"))}
+
+
+def create_target_candidate(arguments: dict[str, Any]) -> dict[str, Any]:
+    TARGET_BANK.initialize()
+    candidate = {**(arguments.get("candidate") or {}), "created_by": "moshe"}
+    evidence = arguments.get("evidence") or []
+    validate_target_references(candidate, evidence)
+    return {"candidate": TARGET_BANK.create_candidate(candidate, evidence)}
+
+
+def update_target_candidate(arguments: dict[str, Any]) -> dict[str, Any]:
+    TARGET_BANK.initialize()
+    target_id = arguments.get("target_id")
+    changes = arguments.get("changes") or {}
+    current = TARGET_BANK.get_candidate(target_id)
+    validate_target_references({**current, **changes})
+    return {"candidate": TARGET_BANK.update_candidate(target_id, changes)}
+
+
+def attach_target_evidence(arguments: dict[str, Any]) -> dict[str, Any]:
+    TARGET_BANK.initialize()
+    target_id = arguments.get("target_id")
+    evidence = arguments.get("evidence") or []
+    current = TARGET_BANK.get_candidate(target_id)
+    validate_target_references(current, evidence)
+    return {"candidate": TARGET_BANK.attach_evidence(target_id, evidence)}
+
+
+TARGET_CANDIDATE_PROPERTIES = {
+    "target_id": {"type": "string"},
+    "title": {"type": "string", "minLength": 1},
+    "summary": {"type": "string", "minLength": 1},
+    "object_class": {"type": "string", "minLength": 1},
+    "entity_id": {"type": ["string", "null"]},
+    "location_id": {"type": "string", "minLength": 1},
+    "confidence": {"type": "string", "enum": ["medium", "high"]},
+    "count_min": {"type": ["integer", "null"], "minimum": 0},
+    "count_max": {"type": ["integer", "null"], "minimum": 0},
+    "count_estimate": {"type": ["integer", "null"], "minimum": 0},
+    "count_assessment": {"type": "string", "enum": ["exact", "approximate", "range", "unresolved"]},
+    "fusion_explanation": {"type": "string", "minLength": 1},
+    "mission_run_id": {"type": "string", "minLength": 1},
+}
+TARGET_CREATE_REQUIRED = [
+    "title", "summary", "object_class", "location_id", "confidence", "count_assessment",
+    "fusion_explanation", "mission_run_id",
+]
+TARGET_EVIDENCE_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "record_id": {"type": "string", "minLength": 1},
+        "source_group": {"type": "string", "minLength": 1},
+        "source_type": {"type": "string", "minLength": 1},
+        "observed_at": {"type": "string", "minLength": 1},
+        "location_id": {"type": "string", "minLength": 1},
+        "reported_object": {"type": "string", "minLength": 1},
+        "reported_count": {"type": ["integer", "null"], "minimum": 0},
+        "relevant_text": {"type": "string", "minLength": 1},
+        "evidence_role": {"type": "string", "minLength": 1},
+    },
+    "required": ["record_id", "source_group", "source_type", "observed_at", "location_id", "reported_object", "relevant_text", "evidence_role"],
+    "additionalProperties": False,
+}
+
+
 TOOLS = [
+    {
+        "name": "search_target_candidates",
+        "title": "Search attack-target candidates",
+        "description": "Search final-state candidate targets by exact assessed object class, canonical entity/location, or mission run. Returns summaries only; use get_target_candidate for evidence.",
+        "inputSchema": with_step_bridge({
+            "type": "object",
+            "properties": {
+                "object_class": {"type": "string"}, "entity_id": {"type": "string"},
+                "location_id": {"type": "string"}, "mission_run_id": {"type": "string"},
+                "limit": {"type": "integer", "minimum": 1, "maximum": 500},
+            },
+            "additionalProperties": False,
+        }),
+        "annotations": {"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": False},
+    },
+    {
+        "name": "get_target_candidate",
+        "title": "Get attack-target candidate",
+        "description": "Read one candidate target and its compact evidence snapshots by target ID.",
+        "inputSchema": with_step_bridge({"type": "object", "properties": {"target_id": {"type": "string"}}, "required": ["target_id"], "additionalProperties": False}),
+        "annotations": {"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": False},
+    },
+    {
+        "name": "create_target_candidate",
+        "title": "Create attack-target candidate",
+        "description": "Create one medium/high-confidence final-state candidate and its evidence atomically. Requires at least two independent source groups and canonical record/location/entity IDs.",
+        "inputSchema": with_step_bridge({
+            "type": "object",
+            "properties": {
+                "candidate": {"type": "object", "properties": TARGET_CANDIDATE_PROPERTIES, "required": TARGET_CREATE_REQUIRED, "additionalProperties": False},
+                "evidence": {"type": "array", "items": TARGET_EVIDENCE_SCHEMA, "minItems": 2},
+            },
+            "required": ["candidate", "evidence"], "additionalProperties": False,
+        }),
+        "annotations": {"readOnlyHint": False, "destructiveHint": False, "idempotentHint": False, "openWorldHint": False},
+    },
+    {
+        "name": "update_target_candidate",
+        "title": "Update attack-target candidate",
+        "description": "Update assessed fields on an existing candidate. Status, creator, timestamps, review fields, raw SQL, and deletion are not accepted.",
+        "inputSchema": with_step_bridge({
+            "type": "object",
+            "properties": {
+                "target_id": {"type": "string"},
+                "changes": {"type": "object", "properties": {key: value for key, value in TARGET_CANDIDATE_PROPERTIES.items() if key not in {"target_id", "created_by"}}, "minProperties": 1, "additionalProperties": False},
+            },
+            "required": ["target_id", "changes"], "additionalProperties": False,
+        }),
+        "annotations": {"readOnlyHint": False, "destructiveHint": False, "idempotentHint": True, "openWorldHint": False},
+    },
+    {
+        "name": "attach_target_evidence",
+        "title": "Attach evidence to attack-target candidate",
+        "description": "Atomically attach new compact evidence snapshots to an existing candidate. Existing evidence cannot be edited or deleted.",
+        "inputSchema": with_step_bridge({
+            "type": "object",
+            "properties": {"target_id": {"type": "string"}, "evidence": {"type": "array", "items": TARGET_EVIDENCE_SCHEMA, "minItems": 1}},
+            "required": ["target_id", "evidence"], "additionalProperties": False,
+        }),
+        "annotations": {"readOnlyHint": False, "destructiveHint": False, "idempotentHint": False, "openWorldHint": False},
+    },
     {
         "name": "classify_question_intent",
         "title": "Classify analyst question intent",
@@ -2674,6 +2831,11 @@ TOOLS = [
 ]
 
 TOOL_HANDLERS = {
+    "search_target_candidates": search_target_candidates,
+    "get_target_candidate": get_target_candidate,
+    "create_target_candidate": create_target_candidate,
+    "update_target_candidate": update_target_candidate,
+    "attach_target_evidence": attach_target_evidence,
     "classify_question_intent": classify_question_intent,
     "plan_next_investigation_step": plan_next_investigation_step,
     "search_events": search_events,

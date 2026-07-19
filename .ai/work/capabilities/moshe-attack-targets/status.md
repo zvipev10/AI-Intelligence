@@ -6,29 +6,30 @@ Moshe Attack Targets MVP
 
 ## Current phase
 
-Slice 1 approved and complete; Slice 2 is ready to begin on explicit instruction.
+Slice 2 implemented and validated; data/security checkpoint review required.
 
 ## Overall status
 
-Ready for development
+Pending review
 
 ## Who needs to act now
 
 | Role | Status | Required action | Due before |
 |---|---|---|---|
 | Product | Slice 1 approved | Approve proposed quantitative thresholds before full evaluation | Slice 6 |
-| Development | Ready | Implement Slice 2 SQLite target bank and constrained tools after explicit instruction | Slice 2 checkpoint |
+| Development | Pending checkpoint | Review Slice 2 schema, tools, and recovery implementation | Slice 3 |
 | UX | Approved | Routing experience, attribution, candidate presentation, evidence, and states accepted | Complete |
 | QA | Pending threshold review | Approve quantitative thresholds and release gates | Slice 6 |
-| Architecture/Security | Approved | Slice 1 interface and compatibility checkpoint accepted | Complete |
+| Architecture/Security | Pending checkpoint | Review Slice 2 permissions, tool boundary, backups, restore, and reset | Slice 3 |
 
 ## Latest change since previous review
 
-Recorded approval of Slice 1 by all required members after corrected deployment and user validation.
+Implemented and validated Slice 2 locally and in a disposable Linux VM environment; production activation remains deferred.
 
 ## Current blockers
 
 - Proposed quantitative fusion-quality thresholds require Product and QA approval before Slice 6.
+- Slice 2 data/security checkpoint requires approval before Slice 3.
 - Capability artifacts and Slice 1 code are published on `codex/moshe-attack-targets`; draft PR creation is still pending.
 - Remote parent and child issues have not been created.
 
@@ -39,7 +40,7 @@ Recorded approval of Slice 1 by all required members after corrected deployment 
 
 ## Next expected artifact
 
-Explicit instruction to begin Slice 2.
+Data/security approval of `checkpoint-002.md`.
 
 ## Parent issue
 
@@ -56,7 +57,7 @@ Pending remote creation; local draft at `issues/parent-capability.md`.
 | Pending | Architecture/Security | Runtime security boundary | Approved locally | No |
 | Pending | Product and QA | Execution plan and thresholds | Slice 1 authorized; thresholds pending | No until Slice 6 |
 | Pending | Development | Slice 1 shared agent pipeline | Approved and complete | No |
-| Pending | Development | Slice 2 SQLite target bank | Not started | Yes |
+| Pending | Development | Slice 2 SQLite target bank | Implemented; checkpoint pending | Yes |
 | Pending | Development | Slice 3 fusion tools | Not started | Yes |
 | Pending | Development | Slice 4 Moshe routing and sessions | Not started | Yes |
 | Pending | Development and UX | Slice 5 shared presentation | Not started | Yes |
@@ -74,7 +75,7 @@ Pending remote creation; local draft at `issues/parent-capability.md`.
 - QA review: `qa-review.md`
 - Architecture/security review: `architecture-security-review.md`
 - Execution plan: `execution-plan.md`
-- Latest checkpoint: `checkpoint-001.md`
+- Latest checkpoint: `checkpoint-002.md`
 - Handoff: pending
 
 ## Gate checklist

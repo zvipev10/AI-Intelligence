@@ -82,6 +82,8 @@ def upload_files(client: paramiko.SSHClient) -> str:
         LOCAL_ROOT / "mcp_server" / "semantic_index.py": f"{staging}/mcp_server/semantic_index.py",
         LOCAL_ROOT / "mcp_server" / "smoke_client.py": f"{staging}/mcp_server/smoke_client.py",
         LOCAL_ROOT / "mcp_server" / "benchmark_tools.py": f"{staging}/mcp_server/benchmark_tools.py",
+        LOCAL_ROOT / "mcp_server" / "target_bank.py": f"{staging}/mcp_server/target_bank.py",
+        LOCAL_ROOT / "mcp_server" / "target_bank_admin.py": f"{staging}/mcp_server/target_bank_admin.py",
         LOCAL_ROOT / "data" / "serbia_kosovo_events_projection.csv": f"{staging}/data/serbia_kosovo_events_projection.csv",
         LOCAL_ROOT / "data" / "serbia_kosovo_locations.json": f"{staging}/data/serbia_kosovo_locations.json",
         LOCAL_ROOT / "data" / "serbia_kosovo_entities.json": f"{staging}/data/serbia_kosovo_entities.json",
@@ -103,10 +105,13 @@ def install_files(client: paramiko.SSHClient, staging: str) -> None:
     staging_q = shlex.quote(staging)
     command = (
         f"sudo -n install -d -o {USER} -g {USER} -m 0755 {root}/mcp_server {root}/data {root}/data/serbian_intelligence_v2 "
+        f"&& sudo -n install -d -o {USER} -g {USER} -m 0700 {root}/data/attack_targets {root}/backups/attack_targets "
         f"&& sudo -n install -o {USER} -g {USER} -m 0755 {staging_q}/mcp_server/server.py {root}/mcp_server/server.py "
         f"&& sudo -n install -o {USER} -g {USER} -m 0755 {staging_q}/mcp_server/semantic_index.py {root}/mcp_server/semantic_index.py "
         f"&& sudo -n install -o {USER} -g {USER} -m 0755 {staging_q}/mcp_server/smoke_client.py {root}/mcp_server/smoke_client.py "
         f"&& sudo -n install -o {USER} -g {USER} -m 0755 {staging_q}/mcp_server/benchmark_tools.py {root}/mcp_server/benchmark_tools.py "
+        f"&& sudo -n install -o {USER} -g {USER} -m 0644 {staging_q}/mcp_server/target_bank.py {root}/mcp_server/target_bank.py "
+        f"&& sudo -n install -o {USER} -g {USER} -m 0755 {staging_q}/mcp_server/target_bank_admin.py {root}/mcp_server/target_bank_admin.py "
         f"&& sudo -n install -o {USER} -g {USER} -m 0644 {staging_q}/data/serbia_kosovo_events_projection.csv {root}/data/serbia_kosovo_events_projection.csv "
         f"&& sudo -n install -o {USER} -g {USER} -m 0644 {staging_q}/data/serbia_kosovo_locations.json {root}/data/serbia_kosovo_locations.json "
         f"&& sudo -n install -o {USER} -g {USER} -m 0644 {staging_q}/data/serbia_kosovo_entities.json {root}/data/serbia_kosovo_entities.json "
@@ -151,6 +156,8 @@ servers[settings["server_name"]] = {{
         "INTELLIGENCE_POC_ENTITIES": f"{{settings['remote_root']}}/data/serbian_intelligence_v2/serbia_kosovo_entities_v2.json",
         "INTELLIGENCE_POC_SEMANTIC_INDEX": f"{{settings['remote_root']}}/data/semantic_index/v2",
         "INTELLIGENCE_POC_AUDIT": f"{{settings['remote_root']}}/mcp_audit.jsonl",
+        "INTELLIGENCE_POC_TARGET_BANK": f"{{settings['remote_root']}}/data/attack_targets/attack_targets.db",
+        "INTELLIGENCE_POC_TARGET_BACKUPS": f"{{settings['remote_root']}}/backups/attack_targets",
     }},
     "timeout": 30,
     "connect_timeout": 15,

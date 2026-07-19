@@ -3,7 +3,7 @@
 ## 2026-07-19 - Minimal final-state SQLite target bank
 
 Decision:
-Use SQLite with `targets` and `target_evidence` for an end-state V2.1 MVP. Use only `candidate`, `approved`, and `rejected`; omit revisions, movement, staleness, revocation, and concurrency workflows.
+Use SQLite with `targets` and `target_evidence` for an end-state V2.1 MVP. Implement only `candidate`; defer approval/rejection, revisions, movement, staleness, revocation, and concurrency workflows.
 
 Context:
 Moshe will initially run manually against the final state of a fixed synthetic dataset. The MVP goal is to validate fusion quality, not operational target lifecycle management.
@@ -12,7 +12,7 @@ Rationale:
 SQLite provides safe writes and queries while the reduced schema avoids implementing operational complexity before fusion value is demonstrated.
 
 Impact:
-Moshe creates summarized candidates with evidence snapshots. Humans approve or reject them. Targets reference canonical locations and entities by ID and appear through the existing layer conventions.
+Moshe creates summarized candidates with evidence snapshots. Human approval/rejection is outside the MVP. Targets reference canonical locations and entities by ID and appear through the existing layer conventions.
 
 Follow-ups:
 Developer, QA, UX, and architecture/security reviews remain required before execution planning.
