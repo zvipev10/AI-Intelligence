@@ -30,7 +30,7 @@ Implemented Slice 1 shared backend result envelope/normalizers and agent-neutral
 
 - Slice 1 architecture/interface checkpoint requires approval before Slice 2.
 - Proposed quantitative fusion-quality thresholds require Product and QA approval before Slice 6.
-- Remote artifacts and issues are not published.
+- Capability artifacts and Slice 1 code are published on `codex/moshe-attack-targets`; draft PR creation is still pending.
 - Remote parent and child issues have not been created.
 
 ## Current risks
