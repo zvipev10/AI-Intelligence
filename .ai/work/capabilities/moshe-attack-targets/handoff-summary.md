@@ -2,7 +2,7 @@
 
 ## Current state
 
-Slices 1-5 are implemented, published, deployed, and user-approved. Slice 6 full V2.1 evaluation is gated on Product and QA approval of quantitative thresholds.
+Slices 1-5 are implemented, published, deployed, and user-approved. Slice 6 was authorized but is blocked by a VM resource incident before metrics were produced.
 
 ## Latest implementation
 
@@ -23,8 +23,8 @@ Production smoke checks passed for General routing, exact `@משה` routing, emp
 
 ## Next action
 
-Obtain Product and QA approval of the proposed thresholds, then execute Slice 6 full V2.1 evaluation with evaluator truth isolated from runtime.
+Recover VM responsiveness, terminate the dense evaluation process if still running, verify all services, then rerun the complete 300-positive/100-negative suite with a resource-bounded runtime. Keep `/root/moshe-evaluator-quarantine-20260719T203803Z` outside runtime trees.
 
 ## Open decisions
 
-Product and QA must approve the proposed Slice 6 quantitative thresholds before the full evaluation starts.
+No product decision is pending. Operational recovery and a lower-memory evaluator are required before QA can assess Slice 6.

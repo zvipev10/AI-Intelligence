@@ -6,7 +6,7 @@ Moshe Attack Targets MVP
 
 ## Current phase
 
-Slice 5 shared attack-target presentation deployed and smoke validated; Slice 6 threshold gate pending.
+Slice 6 authorized and started; blocked by VM resource incident before metrics were produced.
 
 ## Overall status
 
@@ -16,19 +16,19 @@ Pending review
 
 | Role | Status | Required action | Due before |
 |---|---|---|---|
-| Product | Slice 1 approved | Approve proposed quantitative thresholds before full evaluation | Slice 6 |
-| Development | Slice 5 complete | Await Product/QA threshold approval before full evaluation | Slice 6 |
+| Product | Slice 6 approved | No action until recovery results are available | Slice 6 |
+| Development | Blocked | Recover VM and rerun with a resource-bounded evaluator | Slice 6 |
 | UX | Approved | Routing experience, attribution, candidate presentation, evidence, and states accepted | Complete |
 | QA | Pending threshold review | Approve quantitative thresholds and release gates | Slice 6 |
 | Architecture/Security | Slice 2 approved | Review evaluator isolation and deterministic source boundary | Slice 4 |
 
 ## Latest change since previous review
 
-Deployed and production-smoke validated the shared `attack_targets` typed layer and common map/table/evidence presentation; live General and Moshe routing passed without changing the empty target bank.
+Started the full Slice 6 evaluation after approval, quarantined legacy evaluator labels outside runtime, and stopped progressing when dense-index construction made the VM unresponsive.
 
 ## Current blockers
 
-- Proposed quantitative fusion-quality thresholds require Product and QA approval before Slice 6.
+- VM must recover before evaluation can continue; no valid Slice 6 metrics exist yet.
 - Capability artifacts and Slice 1 code are published on `codex/moshe-attack-targets`; draft PR creation is still pending.
 - Remote parent and child issues have not been created.
 
@@ -39,7 +39,7 @@ Deployed and production-smoke validated the shared `attack_targets` typed layer 
 
 ## Next expected artifact
 
-Product and QA approval of Slice 6 quantitative thresholds, followed by the full evaluation artifact.
+VM recovery evidence followed by a resource-bounded full evaluation artifact.
 
 ## Parent issue
 
@@ -60,7 +60,7 @@ Pending remote creation; local draft at `issues/parent-capability.md`.
 | Pending | Development | Slice 3 fusion tools | Approved and complete | No |
 | Pending | Development | Slice 4 Moshe routing and sessions | Deployed; user accepted | No |
 | Pending | Development and UX | Slice 5 shared presentation | Approved, deployed, validated | No |
-| Pending | QA | Slice 6 full evaluation | Not started | Yes |
+| Pending | QA | Slice 6 full evaluation | Started; blocked by VM resources | Yes |
 | Pending | Operations and QA | Slice 7 release and handoff | Not started | Yes |
 
 ## Artifact links
@@ -74,7 +74,7 @@ Pending remote creation; local draft at `issues/parent-capability.md`.
 - QA review: `qa-review.md`
 - Architecture/security review: `architecture-security-review.md`
 - Execution plan: `execution-plan.md`
-- Latest checkpoint: `checkpoint-005.md`
+- Latest checkpoint: `checkpoint-006.md`
 - Handoff: `handoff-summary.md`
 
 ## Gate checklist
