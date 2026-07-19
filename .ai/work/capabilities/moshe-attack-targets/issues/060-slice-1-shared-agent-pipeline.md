@@ -10,6 +10,10 @@ Extract reusable agent invocation, normalization, layer-result, and presentation
 - [x] General-agent regression suite passes.
 - [ ] Architecture/interface checkpoint approved.
 
+## Deployment status
+
+Deployed to the Serbia VM for validation on 2026-07-19. V2.1 remains active with 14,800 rows. Rollback backup: `/opt/serbia-poc-ui-backups/slice1-20260719T182108Z`.
+
 ## Checkpoint
 
 `../checkpoint-001.md`

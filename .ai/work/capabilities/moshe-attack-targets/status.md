@@ -6,7 +6,7 @@ Moshe Attack Targets MVP
 
 ## Current phase
 
-Slice 1 implemented; architecture/interface checkpoint review required.
+Slice 1 implemented and deployed to the Serbia VM; validation and architecture/interface checkpoint review required.
 
 ## Overall status
 
@@ -24,7 +24,7 @@ Pending review
 
 ## Latest change since previous review
 
-Implemented Slice 1 shared backend result envelope/normalizers and agent-neutral frontend result application; regression checks pass.
+Deployed Slice 1 to the Serbia VM with a scoped rollback backup; V2.1 remains active with 14,800 rows and regression checks pass.
 
 ## Current blockers
 
@@ -40,7 +40,7 @@ Implemented Slice 1 shared backend result envelope/normalizers and agent-neutral
 
 ## Next expected artifact
 
-Architecture/interface approval of `checkpoint-001.md`.
+User validation and architecture/interface approval of `checkpoint-001.md`.
 
 ## Parent issue
 

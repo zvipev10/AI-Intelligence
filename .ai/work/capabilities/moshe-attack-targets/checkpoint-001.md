@@ -14,7 +14,7 @@ Moshe Attack Targets MVP
 
 ## Checkpoint status
 
-Pending architecture/interface review
+Deployed to the Serbia VM; pending architecture/interface and user validation
 
 ## Handoff
 
@@ -70,6 +70,15 @@ Create reusable General/Moshe result infrastructure without changing General-age
 - Local HTTP smoke test returned 200 for `/` and `/api/status`, reporting Hermes mode and 14,800 V2 rows.
 - No stale `applyHermesResult` or nested extracted normalizer definitions remain.
 - `git diff --check` passed before checkpoint creation and will be rerun after it.
+
+## VM deployment
+
+- Deployed the approved Slice 1 runtime files on 2026-07-19 using a scoped, rollback-capable deployment.
+- Replaced only `server.py`, `app.js`, and `agent_result_pipeline.py`; dataset, MCP, Hermes configuration, and service unit were not replaced.
+- VM service `serbia-poc-ui.service` is active.
+- `/api/status` reports build `serbia-poc-v2.1`, dataset `v2.1`, and 14,800 rows.
+- Remote backend module and frontend `applyAgentResult` entry point are present.
+- Rollback backup: `/opt/serbia-poc-ui-backups/slice1-20260719T182108Z`.
 
 ## Not completed yet
 
