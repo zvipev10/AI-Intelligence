@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import re
 import secrets
 import threading
@@ -49,7 +50,8 @@ class AgentRouteRegistry:
 
     @staticmethod
     def _new_mission_id(conversation_id: str) -> str:
-        return f"moshe-mission-{conversation_id}-{secrets.token_hex(6)}"
+        conversation_hash = hashlib.sha256(conversation_id.encode("utf-8")).hexdigest()[:16]
+        return f"moshe-{conversation_hash}-{secrets.token_hex(6)}"
 
     def route(self, conversation_id: str, current_message: str) -> RouteDecision:
         key = self._conversation_id(conversation_id)

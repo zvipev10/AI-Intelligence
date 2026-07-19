@@ -24,7 +24,7 @@ Pending review
 
 ## Latest change since previous review
 
-Deployed the persistent Moshe gateway and verified General routing, exact `@משה` routing, consecutive-session continuity, mission closure, target-bank permissions, service health, and initial resource use.
+Deployed the persistent Moshe gateway, verified both routing paths and resources, and hot-fixed mission IDs to remain below OpenAI's 64-character prompt-cache-key limit.
 
 ## Current blockers
 

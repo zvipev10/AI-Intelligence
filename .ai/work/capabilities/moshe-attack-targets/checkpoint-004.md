@@ -79,3 +79,4 @@ Deployment corrections:
 - The persistent unit must set profile-scoped `HERMES_HOME` without `-p`, and `API_SERVER_PORT=8643` because the API adapter reads the port from the environment.
 - Cloned Telegram/WhatsApp and other messaging variables are removed; only the API-server platform remains.
 - Temporary deployment/validation directories, including copied configuration, were removed after verification.
+- User testing exposed OpenAI's 64-character `prompt_cache_key` limit because the initial mission ID embedded the full conversation ID. Mission/session IDs now use a fixed 35-character `moshe-<conversation-hash>-<nonce>` format. A 500-character conversation-ID boundary test and a deployed real Moshe request both pass without the previous HTTP 400 error.

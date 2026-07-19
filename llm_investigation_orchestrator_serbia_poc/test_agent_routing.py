@@ -47,6 +47,12 @@ class AgentRoutingTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "no longer active"):
             registry.bind_hermes_session("chat-1", first.mission_run_id, "stale")
 
+    def test_mission_id_stays_within_prompt_cache_key_limit(self):
+        registry = AgentRouteRegistry()
+        decision = registry.route("investigation-" + "x" * 500, "@משה בדוק")
+        self.assertLessEqual(len(decision.mission_run_id), 64)
+        self.assertRegex(decision.mission_run_id, r"^moshe-[0-9a-f]{16}-[0-9a-f]{12}$")
+
 
 if __name__ == "__main__":
     unittest.main()
