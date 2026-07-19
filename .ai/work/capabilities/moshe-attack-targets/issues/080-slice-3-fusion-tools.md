@@ -6,9 +6,9 @@ Implement deterministic source grouping, evidence snapshots, quantity fusion, an
 
 ## Completion criteria
 
-- [ ] Independence and repost/UAV grouping rules pass deterministic tests.
-- [ ] Candidate confidence and persistence gates pass.
-- [ ] Evaluator truth is inaccessible to runtime tools.
+- [x] Independence and repost/UAV grouping rules pass deterministic tests.
+- [x] Candidate confidence and persistence gates pass.
+- [x] Evaluator truth is inaccessible to runtime tools.
 - [ ] Fusion-contract checkpoint approved.
 
 ## Depends on

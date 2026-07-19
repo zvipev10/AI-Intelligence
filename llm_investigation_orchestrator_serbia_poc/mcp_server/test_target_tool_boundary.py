@@ -21,6 +21,8 @@ class TargetToolBoundaryTests(unittest.TestCase):
     def test_mcp_registry_contains_only_constrained_target_tools(self):
         target_tools = {item["name"] for item in server.TOOLS if "target" in item["name"]}
         self.assertEqual(target_tools, {
+            "prepare_target_candidate",
+            "find_duplicate_target_candidates",
             "search_target_candidates",
             "get_target_candidate",
             "create_target_candidate",
@@ -50,7 +52,7 @@ class TargetToolBoundaryTests(unittest.TestCase):
 
     def test_target_runtime_contains_no_evaluator_truth_contract(self):
         root = Path(__file__).resolve().parent
-        runtime_text = "\n".join((root / name).read_text(encoding="utf-8") for name in ("target_bank.py", "target_bank_admin.py"))
+        runtime_text = "\n".join((root / name).read_text(encoding="utf-8") for name in ("target_bank.py", "target_bank_admin.py", "fusion_tools.py"))
         for forbidden in ("fusion_target_truth", "truth_id", "expected_target", "evaluator_label"):
             self.assertNotIn(forbidden, runtime_text)
 
@@ -82,7 +84,8 @@ class TargetToolBoundaryTests(unittest.TestCase):
             try:
                 created = server.create_target_candidate(arguments)["candidate"]
                 self.assertEqual(created["created_by"], "moshe")
-                with self.assertRaisesRegex(ValueError, "unknown evidence record_id"):
+                self.assertNotEqual(created["evidence"][0]["source_group"], "group-a")
+                with self.assertRaisesRegex(ValueError, "unknown event_id"):
                     server.attach_target_evidence({"target_id": created["target_id"], "evidence": [{**arguments["evidence"][0], "record_id": "TRUTH-001"}]})
             finally:
                 server.TARGET_BANK = previous

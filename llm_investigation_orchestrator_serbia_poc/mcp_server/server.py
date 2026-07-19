@@ -17,10 +17,12 @@ from pathlib import Path
 from typing import Any
 
 try:
+    from fusion_tools import find_duplicate_candidates, prepare_candidate
     from semantic_index import SemanticEventIndex
     from target_bank import TargetBank
 except ImportError:  # pragma: no cover - package-style execution fallback
     sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from fusion_tools import find_duplicate_candidates, prepare_candidate
     from semantic_index import SemanticEventIndex
     from target_bank import TargetBank
 
@@ -2398,7 +2400,13 @@ def get_target_candidate(arguments: dict[str, Any]) -> dict[str, Any]:
 def create_target_candidate(arguments: dict[str, Any]) -> dict[str, Any]:
     TARGET_BANK.initialize()
     candidate = {**(arguments.get("candidate") or {}), "created_by": "moshe"}
-    evidence = arguments.get("evidence") or []
+    supplied_evidence = arguments.get("evidence") or []
+    event_ids = [str(item.get("record_id") or "").strip() for item in supplied_evidence]
+    fusion = prepare_candidate(_fusion_events(event_ids), candidate.get("confidence") or "")
+    if not fusion["persistence_eligible"]:
+        raise ValueError("candidate is not persistence eligible: " + "; ".join(fusion["persistence_block_reasons"]))
+    evidence = fusion["evidence"]
+    candidate.update(fusion["quantity"])
     validate_target_references(candidate, evidence)
     return {"candidate": TARGET_BANK.create_candidate(candidate, evidence)}
 
@@ -2415,10 +2423,53 @@ def update_target_candidate(arguments: dict[str, Any]) -> dict[str, Any]:
 def attach_target_evidence(arguments: dict[str, Any]) -> dict[str, Any]:
     TARGET_BANK.initialize()
     target_id = arguments.get("target_id")
-    evidence = arguments.get("evidence") or []
+    supplied_evidence = arguments.get("evidence") or []
     current = TARGET_BANK.get_candidate(target_id)
+    all_ids = [item["record_id"] for item in current["evidence"]] + [str(item.get("record_id") or "").strip() for item in supplied_evidence]
+    fusion = prepare_candidate(_fusion_events(all_ids), current["confidence"])
+    group_by_id = {item["record_id"]: item["source_group"] for item in fusion["evidence"]}
+    if any(group_by_id[item["record_id"]] != item["source_group"] for item in current["evidence"]):
+        raise ValueError("new evidence would change an existing immutable source group")
+    new_ids = {str(item.get("record_id") or "").strip() for item in supplied_evidence}
+    evidence = [item for item in fusion["evidence"] if item["record_id"] in new_ids]
     validate_target_references(current, evidence)
     return {"candidate": TARGET_BANK.attach_evidence(target_id, evidence)}
+
+
+def _fusion_events(event_ids: list[str]) -> list[dict[str, Any]]:
+    if not event_ids:
+        raise ValueError("at least one event_id is required")
+    if len(set(event_ids)) != len(event_ids):
+        raise ValueError("event_id values must be unique")
+    unknown = [event_id for event_id in event_ids if event_id not in EVENT_BY_ID]
+    if unknown:
+        raise ValueError(f"unknown event_id: {unknown[0]}")
+    return [public_event(EVENT_BY_ID[event_id]) for event_id in event_ids]
+
+
+def prepare_target_candidate(arguments: dict[str, Any]) -> dict[str, Any]:
+    """Build a deterministic save-ready fusion assessment without persisting it."""
+    return prepare_candidate(_fusion_events(arguments.get("event_ids") or []), arguments.get("confidence") or "")
+
+
+def find_duplicate_target_candidates(arguments: dict[str, Any]) -> dict[str, Any]:
+    """Find existing candidates that share the assessed target or selected evidence."""
+    TARGET_BANK.initialize()
+    filters = {
+        "object_class": arguments.get("object_class"),
+        "location_id": arguments.get("location_id"),
+        "entity_id": arguments.get("entity_id"),
+        "limit": arguments.get("limit", 100),
+    }
+    summaries = TARGET_BANK.search_candidates(filters)
+    candidates = [TARGET_BANK.get_candidate(item["target_id"]) for item in summaries]
+    return find_duplicate_candidates(
+        candidates,
+        arguments.get("event_ids") or [],
+        object_class=str(arguments.get("object_class") or "").strip(),
+        location_id=str(arguments.get("location_id") or "").strip(),
+        entity_id=str(arguments.get("entity_id") or "").strip() or None,
+    )
 
 
 TARGET_CANDIDATE_PROPERTIES = {
@@ -2459,6 +2510,37 @@ TARGET_EVIDENCE_SCHEMA = {
 
 
 TOOLS = [
+    {
+        "name": "prepare_target_candidate",
+        "title": "Prepare a fused target candidate",
+        "description": "Deterministically groups selected visible evidence, collapses reposts and one UAV mission, reconciles quantity, builds compact evidence snapshots, and reports whether medium/high-confidence persistence is allowed. It does not save anything.",
+        "inputSchema": with_step_bridge({
+            "type": "object",
+            "properties": {
+                "event_ids": {"type": "array", "items": {"type": "string"}, "minItems": 1, "maxItems": MAX_LIMIT},
+                "confidence": {"type": "string", "enum": ["low", "medium", "high"]},
+            },
+            "required": ["event_ids", "confidence"], "additionalProperties": False,
+        }),
+        "annotations": {"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": False},
+    },
+    {
+        "name": "find_duplicate_target_candidates",
+        "title": "Find duplicate target candidates",
+        "description": "Checks the candidate bank for the same assessed object, canonical location/entity, or overlapping evidence before creation.",
+        "inputSchema": with_step_bridge({
+            "type": "object",
+            "properties": {
+                "object_class": {"type": "string", "minLength": 1},
+                "location_id": {"type": "string", "minLength": 1},
+                "entity_id": {"type": "string"},
+                "event_ids": {"type": "array", "items": {"type": "string"}, "maxItems": MAX_LIMIT},
+                "limit": {"type": "integer", "minimum": 1, "maximum": 500},
+            },
+            "required": ["object_class", "location_id", "event_ids"], "additionalProperties": False,
+        }),
+        "annotations": {"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": False},
+    },
     {
         "name": "search_target_candidates",
         "title": "Search attack-target candidates",
@@ -2831,6 +2913,8 @@ TOOLS = [
 ]
 
 TOOL_HANDLERS = {
+    "prepare_target_candidate": prepare_target_candidate,
+    "find_duplicate_target_candidates": find_duplicate_target_candidates,
     "search_target_candidates": search_target_candidates,
     "get_target_candidate": get_target_candidate,
     "create_target_candidate": create_target_candidate,

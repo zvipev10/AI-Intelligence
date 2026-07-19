@@ -50,3 +50,20 @@ The database uses a protected production path, target writes flow only through M
 
 Follow-ups:
 QA must turn these boundaries into automated negative and deployment tests.
+
+## 2026-07-19 - Deterministic visible-evidence fusion gate
+
+Decision:
+Build candidate source groups only from runtime-visible event fields. Collapse one UAV mission, matching observation IDs, and substantially matching visible reposts. Persist only medium/high-confidence assessments with at least two independent groups; low confidence is report-only.
+
+Context:
+Slice 2 stored source-group labels but did not determine whether they were independent. Moshe must not be able to bypass independence by supplying arbitrary labels.
+
+Rationale:
+The deterministic tool boundary keeps the MVP simple, auditable, and isolated from evaluator truth while leaving classification and the final explanation to Moshe.
+
+Impact:
+Creation rebuilds evidence snapshots, source groups, and quantity from canonical event records. Separate UAV missions may count independently; same-mission records never do. A visible-text repost threshold is an evaluation parameter, not hidden truth.
+
+Follow-ups:
+Measure false splits and false merges in the complete V2.1 evaluation before release.

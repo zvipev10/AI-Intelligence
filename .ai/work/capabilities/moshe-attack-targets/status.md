@@ -6,7 +6,7 @@ Moshe Attack Targets MVP
 
 ## Current phase
 
-Slice 2 implemented and validated; data/security checkpoint review required.
+Slice 3 implemented and validated; fusion-contract checkpoint review required.
 
 ## Overall status
 
@@ -17,19 +17,19 @@ Pending review
 | Role | Status | Required action | Due before |
 |---|---|---|---|
 | Product | Slice 1 approved | Approve proposed quantitative thresholds before full evaluation | Slice 6 |
-| Development | Pending checkpoint | Review Slice 2 schema, tools, and recovery implementation | Slice 3 |
+| Development | Pending checkpoint | Review Slice 3 deterministic fusion contract | Slice 4 |
 | UX | Approved | Routing experience, attribution, candidate presentation, evidence, and states accepted | Complete |
 | QA | Pending threshold review | Approve quantitative thresholds and release gates | Slice 6 |
-| Architecture/Security | Pending checkpoint | Review Slice 2 permissions, tool boundary, backups, restore, and reset | Slice 3 |
+| Architecture/Security | Slice 2 approved | Review evaluator isolation and deterministic source boundary | Slice 4 |
 
 ## Latest change since previous review
 
-Implemented and validated Slice 2 locally and in a disposable Linux VM environment; production activation remains deferred.
+Implemented and validated Slice 3 fusion tools in a disposable Linux VM environment; production activation remains deferred.
 
 ## Current blockers
 
 - Proposed quantitative fusion-quality thresholds require Product and QA approval before Slice 6.
-- Slice 2 data/security checkpoint requires approval before Slice 3.
+- Slice 3 fusion-contract checkpoint requires approval before Slice 4.
 - Capability artifacts and Slice 1 code are published on `codex/moshe-attack-targets`; draft PR creation is still pending.
 - Remote parent and child issues have not been created.
 
@@ -40,7 +40,7 @@ Implemented and validated Slice 2 locally and in a disposable Linux VM environme
 
 ## Next expected artifact
 
-Data/security approval of `checkpoint-002.md`.
+Fusion-contract approval of `checkpoint-003.md`.
 
 ## Parent issue
 
@@ -57,8 +57,8 @@ Pending remote creation; local draft at `issues/parent-capability.md`.
 | Pending | Architecture/Security | Runtime security boundary | Approved locally | No |
 | Pending | Product and QA | Execution plan and thresholds | Slice 1 authorized; thresholds pending | No until Slice 6 |
 | Pending | Development | Slice 1 shared agent pipeline | Approved and complete | No |
-| Pending | Development | Slice 2 SQLite target bank | Implemented; checkpoint pending | Yes |
-| Pending | Development | Slice 3 fusion tools | Not started | Yes |
+| Pending | Development | Slice 2 SQLite target bank | Approved and complete | No |
+| Pending | Development | Slice 3 fusion tools | Implemented; checkpoint pending | Yes |
 | Pending | Development | Slice 4 Moshe routing and sessions | Not started | Yes |
 | Pending | Development and UX | Slice 5 shared presentation | Not started | Yes |
 | Pending | QA | Slice 6 full evaluation | Not started | Yes |
@@ -75,7 +75,7 @@ Pending remote creation; local draft at `issues/parent-capability.md`.
 - QA review: `qa-review.md`
 - Architecture/security review: `architecture-security-review.md`
 - Execution plan: `execution-plan.md`
-- Latest checkpoint: `checkpoint-002.md`
+- Latest checkpoint: `checkpoint-003.md`
 - Handoff: pending
 
 ## Gate checklist

@@ -9,7 +9,7 @@ Implement candidate-only `targets` and `target_evidence` persistence, constraine
 - [x] Schema and parameterized tools pass tests.
 - [x] No raw SQL, filesystem, delete, or lifecycle tools reach Moshe.
 - [x] Permissions, latest-five backups, and restore are verified.
-- [ ] Data/security checkpoint approved.
+- [x] Data/security checkpoint approved by the user on 2026-07-19.
 
 ## Checkpoint
 
