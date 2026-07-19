@@ -1,0 +1,35 @@
+import unittest
+from pathlib import Path
+
+
+ROOT = Path(__file__).resolve().parent
+
+
+class MemberUiRegressionTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.app = (ROOT / "app.js").read_text(encoding="utf-8")
+        cls.index = (ROOT / "index.html").read_text(encoding="utf-8")
+
+    def test_member_container_and_renderer_are_both_present(self):
+        self.assertIn('id="michlolTeam"', self.index)
+        self.assertIn("function renderMichlolTeam()", self.app)
+        self.assertIn("renderMichlolTeam();", self.app)
+
+    def test_member_roster_includes_moshe(self):
+        self.assertIn('displayName: "משה"', self.app)
+        self.assertIn('id: "moshe-targets-officer"', self.app)
+
+    def test_at_mention_autocomplete_is_wired(self):
+        self.assertIn("function activeMentionRange(textarea)", self.app)
+        self.assertIn("function matchingTeamMembers(query)", self.app)
+        self.assertIn("function chooseTeamMention(index = teamMentionState.activeIndex)", self.app)
+        self.assertIn('menu.setAttribute("aria-label", "בחירת חבר מכלול")', self.app)
+
+    def test_shared_agent_result_entry_point_is_retained(self):
+        self.assertIn("function applyAgentResult(result, prompt, options = {})", self.app)
+        self.assertNotIn("function applyHermesResult(", self.app)
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -166,6 +166,21 @@ function createInvestigationId() {
 
 const INVESTIGATIONS_STORAGE_KEY = "serbia-poc-investigations-v1";
 const DEFAULT_INVESTIGATION_NAME = "חקירה חדשה";
+const TEAM_MENTION_AGENT_INSTRUCTION = [
+  "הנחיית ממשק קבועה:",
+  "סימוני @ לפני שמות חברי מכלול, כגון @משה או @טליה, הם פנייה פנימית של המשתמש לצוות העבודה.",
+  "אל תתייחס לשמות חברי המכלול כאל ישויות מודיעיניות, אנשים לחקירה, מקורות, מיקומים או מילות מפתח, אלא אם המשתמש מבקש במפורש לנתח את חברי המכלול עצמם."
+].join("\n");
+
+const MICHLOL_MEMBERS = [
+  { id: "moshe-targets-officer", displayName: "משה", roleLabel: "קצין מטרות", memberType: "user", avatar: "./assets/michlol/moshe.png", initial: "מ" },
+  { id: "talia-tama-officer", displayName: "טליה", roleLabel: "קצינת תמא", memberType: "user", avatar: "./assets/michlol/talia.png", initial: "ט" },
+  { id: "naama-field-officer", displayName: "נעמה", roleLabel: "קצינת שטח", memberType: "user", avatar: "./assets/michlol/naama.png", initial: "נ" },
+  { id: "gadi-collection-officer", displayName: "גדי", roleLabel: "קצין איסוף", memberType: "user", avatar: "./assets/michlol/gadi.png", initial: "ג" },
+  { id: "yahli-processing-officer", displayName: "יהלי", roleLabel: "קצין עיבוד", memberType: "user", avatar: "./assets/michlol/yahli.png", initial: "י" }
+];
+
+const MICHLOL_MEMBER_WELCOME = "אני מחובר עכשיו לשיחה הזו. שלח לי את המשימה או השאלה הבאה, ובשלב הבא נחבר כאן סוכן ייעודי לחבר המכלול.";
 
 const state = {
   events: [],
@@ -204,13 +219,15 @@ const state = {
   layerSearchOpen: false,
   promptOptionsOpen: false,
   promptSelectedLayerIds: new Set(),
+  activeConversationMemberId: null,
   openingLayerIds: new Set(),
   layers: [],
   activeLayerId: null,
   rawOverlayMinimized: false,
   rawOverlayHeight: 28,
   queryEdited: false,
-  originalQuery: null
+  originalQuery: null,
+  activeTeamMentions: []
 };
 
 const conversation = document.getElementById("conversation");
@@ -224,6 +241,7 @@ const sendButton = document.getElementById("sendButton");
 const investigationInput = document.getElementById("investigationInput");
 const investigationAddButton = document.getElementById("investigationAddButton");
 const investigationList = document.getElementById("investigationList");
+const michlolTeam = document.getElementById("michlolTeam");
 const promptOptionsButton = document.getElementById("promptOptionsButton");
 const promptOptionsMenu = document.getElementById("promptOptionsMenu");
 const selectedLayersButton = document.getElementById("selectedLayersButton");
@@ -283,6 +301,367 @@ const LAYER_FAMILY_LABELS = {
   locations: "מיקומים",
   events: "אירועים לפי source_type"
 };
+
+const teamMentionState = {
+  textarea: null,
+  range: null,
+  matches: [],
+  activeIndex: 0
+};
+
+function michlolAvatarHtml(member) {
+  return `<span class="michlol-avatar"><span class="michlol-initial">${escapeHtml(member.initial)}</span><img src="${escapeHtml(member.avatar)}" alt="" loading="eager" onerror="this.remove()"></span>`;
+}
+
+function michlolMemberHtml(member) {
+  const title = `${member.displayName} - ${member.roleLabel}`;
+  const aria = `${member.displayName}, ${member.roleLabel}`;
+  const active = state.activeConversationMemberId === member.id;
+  return `
+    <button class="michlol-member ${active ? "active" : ""}" type="button" data-member-id="${escapeHtml(member.id)}" data-member-type="${escapeHtml(member.memberType)}" title="${escapeHtml(title)}" aria-label="${escapeHtml(aria)}" aria-pressed="${active ? "true" : "false"}">
+      ${michlolAvatarHtml(member)}
+      <span class="michlol-name">${escapeHtml(member.displayName)}</span>
+    </button>`;
+}
+
+function renderMichlolTeam() {
+  if (!michlolTeam) return;
+  const visible = MICHLOL_MEMBERS.slice(0, 3);
+  const hidden = MICHLOL_MEMBERS.slice(3);
+  michlolTeam.innerHTML = `
+    <span class="michlol-title">מכלול</span>
+    ${visible.map(michlolMemberHtml).join("")}
+    ${hidden.length ? `
+      <details class="michlol-more">
+        <summary title="הצג חברי מכלול נוספים" aria-label="הצג חברי מכלול נוספים">...</summary>
+        <div class="michlol-more-list">
+          ${hidden.map(michlolMemberHtml).join("")}
+        </div>
+      </details>` : ""}`;
+}
+
+function activeConversationMember() {
+  return MICHLOL_MEMBERS.find(member => member.id === state.activeConversationMemberId) || null;
+}
+
+function updatePromptPlaceholder() {
+  if (!promptInput) return;
+  const member = activeConversationMember();
+  promptInput.placeholder = member ? `כתוב אל ${member.displayName}...` : "כתוב שאלת חקירה...";
+}
+
+function memberMessageLabel(member) {
+  return `${member.displayName} · ${member.roleLabel}`;
+}
+
+function assistantMessageLabel() {
+  const member = activeConversationMember();
+  return member ? memberMessageLabel(member) : "סוכן חקירה";
+}
+
+function appendMemberWelcomeMessage(member) {
+  appendMessage("assistant", `
+    <p><strong>${escapeHtml(member.displayName)}</strong></p>
+    <p>${escapeHtml(MICHLOL_MEMBER_WELCOME)}</p>`, { label: memberMessageLabel(member), className: "member-welcome-message", memberId: member.id });
+}
+
+function selectConversationMember(memberId) {
+  const member = MICHLOL_MEMBERS.find(item => item.id === memberId);
+  if (!member || state.activeConversationMemberId === member.id) return;
+  state.activeConversationMemberId = member.id;
+  renderMichlolTeam();
+  updatePromptPlaceholder();
+  appendMemberWelcomeMessage(member);
+  conversation.scrollTop = conversation.scrollHeight;
+}
+
+function createTeamMentionMenu() {
+  const menu = document.createElement("div");
+  menu.id = "teamMentionMenu";
+  menu.className = "team-mention-menu";
+  menu.setAttribute("role", "listbox");
+  menu.setAttribute("aria-label", "בחירת חבר מכלול");
+  menu.hidden = true;
+  document.body.appendChild(menu);
+  menu.addEventListener("mousedown", event => event.preventDefault());
+  menu.addEventListener("click", event => {
+    const option = event.target.closest("[data-team-mention-index]");
+    if (!option) return;
+    chooseTeamMention(Number(option.dataset.teamMentionIndex));
+  });
+  return menu;
+}
+
+const teamMentionMenu = createTeamMentionMenu();
+
+function normalizeTeamMentionText(value) {
+  return String(value || "").normalize("NFKC").trim().toLocaleLowerCase("he-IL");
+}
+
+function activeMentionRange(textarea) {
+  const caret = textarea.selectionStart;
+  if (caret == null || textarea.selectionEnd !== caret) return null;
+  const beforeCaret = textarea.value.slice(0, caret);
+  const match = beforeCaret.match(/(^|[\s([{])@([^\s@]*)$/u);
+  if (!match) return null;
+  return {
+    start: caret - match[2].length - 1,
+    end: caret,
+    query: match[2]
+  };
+}
+
+function matchingTeamMembers(query) {
+  const normalized = normalizeTeamMentionText(query);
+  if (!normalized) return MICHLOL_MEMBERS;
+  return MICHLOL_MEMBERS.filter(member => {
+    const haystack = normalizeTeamMentionText(`${member.displayName} ${member.roleLabel} ${member.id}`);
+    return haystack.includes(normalized);
+  });
+}
+
+function recognizedTeamMemberByMention(rawMention) {
+  const normalized = normalizeTeamMentionText(rawMention).replace(/^@/, "");
+  if (!normalized) return null;
+  return MICHLOL_MEMBERS.find(member => normalizeTeamMentionText(member.displayName) === normalized) || null;
+}
+
+function highlightedPromptHtml(value) {
+  const text = String(value || "");
+  if (!text) return "";
+  let html = "";
+  let lastIndex = 0;
+  const mentionPattern = /@([^\s@]+)/gu;
+  let match;
+  while ((match = mentionPattern.exec(text))) {
+    html += escapeHtml(text.slice(lastIndex, match.index));
+    const member = recognizedTeamMemberByMention(match[0]);
+    const mention = escapeHtml(match[0]);
+    html += member ? `<span class="mention-highlight-token">${mention}</span>` : mention;
+    lastIndex = match.index + match[0].length;
+  }
+  html += escapeHtml(text.slice(lastIndex));
+  return html.endsWith("\n") ? `${html}\n` : html;
+}
+
+function syncMentionHighlight(textarea) {
+  const highlights = textarea?.closest(".mention-editor")?.querySelector(".mention-highlights");
+  if (!highlights) return;
+  highlights.innerHTML = highlightedPromptHtml(textarea.value);
+  highlights.scrollTop = textarea.scrollTop;
+  highlights.scrollLeft = textarea.scrollLeft;
+}
+
+function enableMentionHighlight(textarea) {
+  if (!textarea || textarea.dataset.mentionHighlight === "true" || !textarea.parentNode) return;
+  const wrapper = document.createElement("div");
+  wrapper.className = "mention-editor";
+  const highlights = document.createElement("div");
+  highlights.className = "mention-highlights";
+  highlights.setAttribute("aria-hidden", "true");
+  textarea.parentNode.insertBefore(wrapper, textarea);
+  wrapper.append(highlights, textarea);
+  textarea.classList.add("mention-source");
+  textarea.dataset.mentionHighlight = "true";
+  textarea.addEventListener("input", () => syncMentionHighlight(textarea));
+  textarea.addEventListener("scroll", () => syncMentionHighlight(textarea));
+  syncMentionHighlight(textarea);
+}
+
+function textareaCaretViewportRect(textarea) {
+  const style = window.getComputedStyle(textarea);
+  const mirror = document.createElement("div");
+  const marker = document.createElement("span");
+  const beforeCaret = textarea.value.slice(0, textarea.selectionStart || 0);
+  const mirrorStyles = [
+    "boxSizing", "width", "minHeight", "paddingTop", "paddingRight", "paddingBottom", "paddingLeft",
+    "borderTopWidth", "borderRightWidth", "borderBottomWidth", "borderLeftWidth", "fontFamily",
+    "fontSize", "fontWeight", "fontStyle", "letterSpacing", "lineHeight", "textTransform",
+    "textAlign", "direction", "wordSpacing", "tabSize"
+  ];
+  mirrorStyles.forEach(prop => {
+    mirror.style[prop] = style[prop];
+  });
+  mirror.style.position = "fixed";
+  mirror.style.top = `${textarea.getBoundingClientRect().top}px`;
+  mirror.style.left = `${textarea.getBoundingClientRect().left}px`;
+  mirror.style.height = "auto";
+  mirror.style.overflow = "hidden";
+  mirror.style.visibility = "hidden";
+  mirror.style.whiteSpace = "pre-wrap";
+  mirror.style.overflowWrap = "break-word";
+  mirror.style.pointerEvents = "none";
+  mirror.textContent = beforeCaret || "";
+  marker.textContent = "\u200b";
+  mirror.appendChild(marker);
+  document.body.appendChild(mirror);
+  const markerRect = marker.getBoundingClientRect();
+  const caretRect = {
+    top: markerRect.top - textarea.scrollTop,
+    right: markerRect.right - textarea.scrollLeft,
+    bottom: markerRect.bottom - textarea.scrollTop,
+    left: markerRect.left - textarea.scrollLeft
+  };
+  mirror.remove();
+  return caretRect;
+}
+
+function positionTeamMentionMenu(textarea) {
+  if (!teamMentionMenu || teamMentionMenu.hidden) return;
+  const rect = textarea.getBoundingClientRect();
+  const caretRect = textareaCaretViewportRect(textarea);
+  const width = Math.min(260, Math.max(180, window.innerWidth - 24));
+  teamMentionMenu.style.width = `${width}px`;
+  const measuredHeight = Math.min(teamMentionMenu.offsetHeight || 186, 186);
+  const anchorTop = Number.isFinite(caretRect.top) ? Math.max(rect.top, Math.min(caretRect.top, rect.bottom)) : rect.top;
+  const anchorBottom = Number.isFinite(caretRect.bottom) ? Math.max(rect.top, Math.min(caretRect.bottom, rect.bottom)) : rect.bottom;
+  const anchorRight = Number.isFinite(caretRect.right) ? Math.max(rect.left, Math.min(caretRect.right, rect.right)) : rect.right;
+  const mobile = window.innerWidth <= 760;
+  const belowTop = mobile ? rect.bottom + 8 : anchorBottom + 8;
+  const aboveTop = mobile ? rect.top - measuredHeight - 8 : anchorTop - measuredHeight - 8;
+  const hasRoomAbove = aboveTop >= 12;
+  const hasRoomBelow = belowTop + measuredHeight <= window.innerHeight - 12;
+  const top = mobile && hasRoomAbove ? aboveTop : (hasRoomBelow ? belowTop : Math.max(12, aboveTop));
+  const left = Math.max(12, Math.min(anchorRight - width, window.innerWidth - width - 12));
+  teamMentionMenu.style.top = `${Math.round(top)}px`;
+  teamMentionMenu.style.left = `${Math.round(left)}px`;
+}
+
+function renderTeamMentionMenu() {
+  if (!teamMentionMenu || !teamMentionState.textarea || !teamMentionState.matches.length) {
+    closeTeamMentionMenu();
+    return;
+  }
+  teamMentionMenu.innerHTML = teamMentionState.matches.map((member, index) => `
+    <button type="button" role="option" class="team-mention-option ${index === teamMentionState.activeIndex ? "active" : ""}" data-team-mention-index="${index}" aria-selected="${index === teamMentionState.activeIndex ? "true" : "false"}">
+      ${michlolAvatarHtml(member)}
+      <span class="team-mention-main">
+        <span class="team-mention-name">${escapeHtml(member.displayName)}</span>
+        <span class="team-mention-role">${escapeHtml(member.roleLabel)}</span>
+      </span>
+    </button>`).join("");
+  teamMentionMenu.hidden = false;
+  positionTeamMentionMenu(teamMentionState.textarea);
+  const activeOption = teamMentionMenu.querySelector(".team-mention-option.active");
+  activeOption?.scrollIntoView({ block: "nearest" });
+}
+
+function updateTeamMentionMenu(textarea) {
+  const range = activeMentionRange(textarea);
+  if (!range) {
+    closeTeamMentionMenu();
+    return;
+  }
+  const matches = matchingTeamMembers(range.query);
+  if (!matches.length) {
+    closeTeamMentionMenu();
+    return;
+  }
+  teamMentionState.textarea = textarea;
+  teamMentionState.range = range;
+  teamMentionState.matches = matches;
+  teamMentionState.activeIndex = Math.min(teamMentionState.activeIndex, matches.length - 1);
+  renderTeamMentionMenu();
+}
+
+function closeTeamMentionMenu() {
+  if (teamMentionMenu) {
+    teamMentionMenu.hidden = true;
+    teamMentionMenu.innerHTML = "";
+  }
+  teamMentionState.textarea = null;
+  teamMentionState.range = null;
+  teamMentionState.matches = [];
+  teamMentionState.activeIndex = 0;
+}
+
+function chooseTeamMention(index = teamMentionState.activeIndex) {
+  const textarea = teamMentionState.textarea;
+  const range = teamMentionState.range;
+  const member = teamMentionState.matches[index];
+  if (!textarea || !range || !member) return;
+  const before = textarea.value.slice(0, range.start);
+  const after = textarea.value.slice(range.end);
+  const mentionText = `@${member.displayName}`;
+  const spacing = after.startsWith(" ") || after.startsWith("\n") || !after ? " " : "";
+  const nextValue = `${before}${mentionText}${spacing}${after}`;
+  const caret = before.length + mentionText.length + spacing.length;
+  textarea.value = nextValue;
+  textarea.focus();
+  textarea.setSelectionRange(caret, caret);
+  state.activeTeamMentions = teamMentionsForPrompt(textarea.value);
+  syncMentionHighlight(textarea);
+  closeTeamMentionMenu();
+}
+
+function handleTeamMentionKeydown(event) {
+  if (!teamMentionState.textarea || event.target !== teamMentionState.textarea || teamMentionMenu.hidden) return false;
+  if (event.key === "ArrowDown") {
+    event.preventDefault();
+    teamMentionState.activeIndex = (teamMentionState.activeIndex + 1) % teamMentionState.matches.length;
+    renderTeamMentionMenu();
+    return true;
+  }
+  if (event.key === "ArrowUp") {
+    event.preventDefault();
+    teamMentionState.activeIndex = (teamMentionState.activeIndex - 1 + teamMentionState.matches.length) % teamMentionState.matches.length;
+    renderTeamMentionMenu();
+    return true;
+  }
+  if (event.key === "Enter" || event.key === "Tab") {
+    event.preventDefault();
+    chooseTeamMention();
+    return true;
+  }
+  if (event.key === "Escape") {
+    event.preventDefault();
+    closeTeamMentionMenu();
+    return true;
+  }
+  return false;
+}
+
+function attachTeamMentionAutocomplete(textarea) {
+  if (!textarea) return;
+  textarea.setAttribute("aria-autocomplete", "list");
+  textarea.setAttribute("aria-controls", "teamMentionMenu");
+  textarea.addEventListener("input", () => {
+    state.activeTeamMentions = teamMentionsForPrompt(textarea.value);
+    syncMentionHighlight(textarea);
+    updateTeamMentionMenu(textarea);
+  });
+  textarea.addEventListener("click", () => updateTeamMentionMenu(textarea));
+  textarea.addEventListener("keyup", event => {
+    if (["ArrowDown", "ArrowUp", "Enter", "Tab", "Escape"].includes(event.key)) return;
+    updateTeamMentionMenu(textarea);
+  });
+  textarea.addEventListener("blur", () => {
+    setTimeout(() => {
+      if (document.activeElement?.closest?.("#teamMentionMenu")) return;
+      closeTeamMentionMenu();
+    }, 100);
+  });
+}
+
+function teamMentionsForPrompt(prompt) {
+  const mentions = [];
+  const seen = new Set();
+  const mentionPattern = /@([^\s@]+)/gu;
+  let match;
+  while ((match = mentionPattern.exec(prompt || ""))) {
+    const query = normalizeTeamMentionText(match[1]);
+    const member = MICHLOL_MEMBERS.find(item => normalizeTeamMentionText(item.displayName) === query);
+    if (!member || seen.has(member.id)) continue;
+    seen.add(member.id);
+    mentions.push({
+      id: member.id,
+      display_name: member.displayName,
+      role_label: member.roleLabel,
+      member_type: member.memberType
+    });
+  }
+  return mentions;
+}
 
 function parseCsv(text) {
   const rows = [];
@@ -1071,7 +1450,11 @@ function selectedLayerContextText(layers) {
 
 function promptForAgentWithSelectedLayers(prompt, selectedLayers) {
   const context = selectedLayerContextText(selectedLayers);
-  return context ? `${prompt}\n\n${context}` : prompt;
+  return [prompt, context, TEAM_MENTION_AGENT_INSTRUCTION].filter(Boolean).join("\n\n");
+}
+
+function promptForAgent(prompt) {
+  return [prompt, TEAM_MENTION_AGENT_INSTRUCTION].filter(Boolean).join("\n\n");
 }
 
 function investigationStateForPrompt(selectedLayers) {
@@ -1543,10 +1926,11 @@ function initMap() {
   state.map.on("load", () => { state.mapReady = true; renderMap(); });
 }
 
-function appendMessage(role, html) {
+function appendMessage(role, html, options = {}) {
   const article = document.createElement("article");
-  article.className = `message ${role === "user" ? "user-message" : "assistant-message"}`;
-  article.innerHTML = `<div class="message-label">${role === "user" ? "אנליסט" : "סוכן חקירה"}</div>${html}`;
+  article.className = `message ${role === "user" ? "user-message" : "assistant-message"}${options.className ? ` ${options.className}` : ""}`;
+  if (options.memberId) article.dataset.conversationMemberId = options.memberId;
+  article.innerHTML = `<div class="message-label">${escapeHtml(options.label || (role === "user" ? "אנליסט" : assistantMessageLabel()))}</div>${html}`;
   conversation.appendChild(article);
   return article;
 }
@@ -1555,7 +1939,7 @@ function startAssistantResearchMessage(message = "Hermes מנתח את הבקש�
   const article = document.createElement("article");
   article.className = "message assistant-message";
   article.innerHTML = `
-    <div class="message-label">סוכן חקירה</div>
+    <div class="message-label">${escapeHtml(assistantMessageLabel())}</div>
     <section class="research-process research-process-live">
       <h3>תהליך המחקר</h3>
       <div class="activity-empty">${escapeHtml(message)}</div>
@@ -1845,6 +2229,7 @@ function openStepInjectModal(stepLabel, stepNumber) {
   stepInjectModal.dataset.fromStep = stepNumber;
   stepInjectTitle.textContent = `צעד ${stepNumber}: ${stepLabel}`;
   stepInjectPrompt.value = "";
+  syncMentionHighlight(stepInjectPrompt);
   stepInjectError.hidden = true;
   stepInjectError.textContent = "";
 
@@ -1933,7 +2318,9 @@ async function submitStepInject() {
   const priorResult = state.lastResult;
   const baseStepCount = priorSteps.length;
   const classificationContext = originalClassificationContext(priorSteps.length ? priorSteps : allPriorSteps);
+  state.activeTeamMentions = teamMentionsForPrompt(instruction);
   const continuationPrompt = buildContinuationPrompt(instruction, selectedLayers, classificationContext);
+  const agentContinuationPrompt = promptForAgent(continuationPrompt);
 
   // Start a new labeled continuation bubble
   startAssistantResearchMessage("Hermes ממשיך את החקירה...");
@@ -1982,7 +2369,7 @@ async function submitStepInject() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        prompt: continuationPrompt,
+        prompt: agentContinuationPrompt,
         history: state.history,
         investigation_id: state.investigationId,
         investigation_state: investigationStateForPrompt(selectedLayerContextForAgent()),
@@ -2016,6 +2403,7 @@ if (stepInjectClose) stepInjectClose.addEventListener("click", closeStepInjectMo
 if (stepInjectModal) stepInjectModal.addEventListener("click", e => { if (e.target === stepInjectModal) closeStepInjectModal(); });
 if (stepInjectSubmit) stepInjectSubmit.addEventListener("click", submitStepInject);
 if (stepInjectPrompt) stepInjectPrompt.addEventListener("keydown", e => {
+  if (handleTeamMentionKeydown(e)) return;
   if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) submitStepInject();
 });
 
@@ -2659,6 +3047,7 @@ async function runPrompt(prompt) {
   const clean = prompt.trim();
   if (!clean || state.busy) return;
   const selectedLayers = selectedLayerContextForAgent();
+  state.activeTeamMentions = teamMentionsForPrompt(clean);
   const agentPrompt = promptForAgentWithSelectedLayers(clean, selectedLayers);
   const investigationState = investigationStateForPrompt(selectedLayers);
   const clientStarted = performance.now();
@@ -3104,9 +3493,11 @@ function resetInvestigation(options = {}) {
   state.investigationMemoryLoading = false;
   state.layerSearchQuery = "";
   state.layerSearchOpen = false;
+  state.activeConversationMemberId = null;
   setPromptOptionsOpen(false);
   closeQueryLayersModal();
   conversation.innerHTML = '<article class="message assistant-message"><div class="message-label">סוכן חקירה</div><p>אפשר להתחיל בשאלה פתוחה. אשתמש בכלי החיפוש, הזמן והמפה כדי לבנות תשובה שניתן לבדוק מול האירועים הגולמיים.</p></article>';
+  updatePromptPlaceholder();
   if (resultTitle) resultTitle.textContent = "טרם בוצעה חקירה";
   if (resultSubtitle) resultSubtitle.textContent = "תוצאות, המחשות וראיות יופיעו כאן לאחר השאלה הראשונה.";
   if (resultCount) resultCount.textContent = "0 אירועים";
@@ -3117,6 +3508,7 @@ function resetInvestigation(options = {}) {
   renderQueryLayersModal();
   renderQueryInspector();
   renderInvestigationSelector();
+  renderMichlolTeam();
   if (state.map) setTimeout(() => state.map.resize(), 0);
 }
 
@@ -3125,6 +3517,11 @@ function escapeHtml(value) {
 }
 
 document.addEventListener("click", event => {
+  const michlolMember = event.target.closest(".michlol-member[data-member-id]");
+  if (michlolMember) {
+    selectConversationMember(michlolMember.dataset.memberId);
+    return;
+  }
   const suggestion = event.target.closest("[data-prompt]");
   if (suggestion) runPrompt(suggestion.dataset.prompt);
   if (event.target.closest("#queryToolName")) openQueryModal();
@@ -3382,10 +3779,13 @@ promptForm.addEventListener("submit", event => {
   event.preventDefault();
   const prompt = promptInput.value;
   promptInput.value = "";
+  syncMentionHighlight(promptInput);
+  closeTeamMentionMenu();
   runPrompt(prompt);
 });
 
 promptInput.addEventListener("keydown", event => {
+  if (handleTeamMentionKeydown(event)) return;
   if (event.key === "Enter" && !event.shiftKey) {
     event.preventDefault();
     promptForm.requestSubmit();
@@ -3416,7 +3816,16 @@ document.addEventListener("pointerdown", event => {
   document.querySelectorAll("details.michlol-more[open]").forEach(details => {
     if (!details.contains(event.target)) details.removeAttribute("open");
   });
+  if (!event.target.closest("#teamMentionMenu") && event.target !== teamMentionState.textarea) {
+    closeTeamMentionMenu();
+  }
 });
+window.addEventListener("resize", () => {
+  if (teamMentionState.textarea) positionTeamMentionMenu(teamMentionState.textarea);
+});
+document.addEventListener("scroll", () => {
+  if (teamMentionState.textarea) positionTeamMentionMenu(teamMentionState.textarea);
+}, true);
 promptOptionsButton.addEventListener("click", event => {
   event.stopPropagation();
   setPromptOptionsOpen(!state.promptOptionsOpen);
@@ -3436,6 +3845,12 @@ selectedLayersClear.addEventListener("keydown", event => {
 recordedClose.addEventListener("click", closeRecordedModal);
 queryLayersClose.addEventListener("click", closeQueryLayersModal);
 queryLayersSubmit.addEventListener("click", submitQueryLayerSelection);
+renderMichlolTeam();
+updatePromptPlaceholder();
+enableMentionHighlight(promptInput);
+enableMentionHighlight(stepInjectPrompt);
+attachTeamMentionAutocomplete(promptInput);
+attachTeamMentionAutocomplete(stepInjectPrompt);
 initPanelResizers();
 loadInvestigationRegistry();
 renderInvestigationSelector();
