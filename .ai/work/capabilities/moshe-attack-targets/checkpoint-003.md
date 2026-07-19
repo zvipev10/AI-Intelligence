@@ -6,15 +6,15 @@
 
 ## Checkpoint status
 
-Pending fusion-contract review
+Approved by the user on 2026-07-19
 
 ## Handoff
 
-Next role: Product, Development, QA, and Architecture/Security
+Next role: Development
 
-Required action: Review the deterministic source-group, persistence-gate, quantity, duplicate, and evaluator-isolation contracts.
+Required action: Implement Slice 4 routing and session continuity.
 
-Do not proceed to: Slice 4 Moshe profile, routing, and session continuity.
+Proceed to: Slice 4 Moshe profile, routing, and session continuity.
 
 ## What changed
 
@@ -57,4 +57,4 @@ Do not proceed to: Slice 4 Moshe profile, routing, and session continuity.
 
 ## Recommendation
 
-Pause for fusion-contract review. If approved, proceed to Slice 4.
+Approved; proceed to Slice 4.

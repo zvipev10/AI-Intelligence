@@ -6,7 +6,7 @@ Moshe Attack Targets MVP
 
 ## Current phase
 
-Slice 3 implemented and validated; fusion-contract checkpoint review required.
+Slice 4 routing core implemented; Hermes profile invocation decision required.
 
 ## Overall status
 
@@ -17,19 +17,19 @@ Pending review
 | Role | Status | Required action | Due before |
 |---|---|---|---|
 | Product | Slice 1 approved | Approve proposed quantitative thresholds before full evaluation | Slice 6 |
-| Development | Pending checkpoint | Review Slice 3 deterministic fusion contract | Slice 4 |
+| Development | In progress | Wire the approved Moshe profile invocation mechanism | Slice 4 checkpoint |
 | UX | Approved | Routing experience, attribution, candidate presentation, evidence, and states accepted | Complete |
 | QA | Pending threshold review | Approve quantitative thresholds and release gates | Slice 6 |
 | Architecture/Security | Slice 2 approved | Review evaluator isolation and deterministic source boundary | Slice 4 |
 
 ## Latest change since previous review
 
-Implemented and validated Slice 3 fusion tools in a disposable Linux VM environment; production activation remains deferred.
+Approved Slice 3 and implemented the transport-independent exact-mention router and mission/session registry. VM inspection found that Hermes `/v1/runs` cannot select a named profile per request.
 
 ## Current blockers
 
 - Proposed quantitative fusion-quality thresholds require Product and QA approval before Slice 6.
-- Slice 3 fusion-contract checkpoint requires approval before Slice 4.
+- Product/architecture choice between on-demand profile CLI invocation and modifying the Hermes gateway API.
 - Capability artifacts and Slice 1 code are published on `codex/moshe-attack-targets`; draft PR creation is still pending.
 - Remote parent and child issues have not been created.
 
@@ -40,7 +40,7 @@ Implemented and validated Slice 3 fusion tools in a disposable Linux VM environm
 
 ## Next expected artifact
 
-Fusion-contract approval of `checkpoint-003.md`.
+Profile invocation decision, then completion of `checkpoint-004.md`.
 
 ## Parent issue
 
@@ -58,8 +58,8 @@ Pending remote creation; local draft at `issues/parent-capability.md`.
 | Pending | Product and QA | Execution plan and thresholds | Slice 1 authorized; thresholds pending | No until Slice 6 |
 | Pending | Development | Slice 1 shared agent pipeline | Approved and complete | No |
 | Pending | Development | Slice 2 SQLite target bank | Approved and complete | No |
-| Pending | Development | Slice 3 fusion tools | Implemented; checkpoint pending | Yes |
-| Pending | Development | Slice 4 Moshe routing and sessions | Not started | Yes |
+| Pending | Development | Slice 3 fusion tools | Approved and complete | No |
+| Pending | Development | Slice 4 Moshe routing and sessions | Routing core implemented; invocation decision pending | Yes |
 | Pending | Development and UX | Slice 5 shared presentation | Not started | Yes |
 | Pending | QA | Slice 6 full evaluation | Not started | Yes |
 | Pending | Operations and QA | Slice 7 release and handoff | Not started | Yes |
