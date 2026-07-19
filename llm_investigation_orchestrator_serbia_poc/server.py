@@ -24,6 +24,7 @@ from agent_result_pipeline import (
     normalize_location_layers,
     normalize_map_locations,
 )
+from agent_routing import AgentRouteRegistry, MOSHE_AGENT_ID
 
 try:
     import paramiko
@@ -72,9 +73,11 @@ EVENT_ID_PATTERN = re.compile(r"\b(?:REC-(?:V2-)?\d{6}|LOC-(?:V2-)?\d{3})\b")
 SAVED_QUESTION_ID_PATTERN = re.compile(r"^[A-Za-z0-9_.-]+$")
 INVESTIGATION_ID_PATTERN = re.compile(r"^[A-Za-z0-9_.-]+$")
 ACTIVE_RUN_STARTED_AT = None
+ACTIVE_RUN_STARTED_AT_BY_AUDIT: dict[str, datetime] = {}
 APP_BUILD = f"serbia-poc-{DATASET_VERSION}"
 REMOTE_AUDIT_PATH = "/opt/serbia-poc/mcp_audit.jsonl"
 HERMES_TOOL_PREFIX = "mcp_serbia_events_poc_"
+AGENT_ROUTES = AgentRouteRegistry()
 try:
     LOCATIONS = json.loads(LOCATIONS_PATH.read_text(encoding="utf-8"))
 except (OSError, json.JSONDecodeError):
@@ -237,6 +240,29 @@ def get_ui_layer_rows(layer_id: str) -> tuple[dict[str, Any], list[dict[str, Any
 
 def load_hermes_config() -> dict:
     return json.loads(CONFIG_PATH.read_text(encoding="utf-8-sig"))
+
+
+def load_agent_hermes_config(agent_id: str) -> dict:
+    """Merge a non-secret per-agent endpoint override into the shared transport config."""
+    config = dict(load_hermes_config())
+    agents = config.pop("agents", {}) or {}
+    override = agents.get(agent_id, {}) if isinstance(agents, dict) else {}
+    if not isinstance(override, dict):
+        raise ValueError(f"Invalid Hermes configuration for agent: {agent_id}")
+    merged = {**config, **override}
+    merged["agent_id"] = agent_id
+    merged.setdefault("audit_path", REMOTE_AUDIT_PATH)
+    return merged
+
+
+def route_agent_request(request: dict[str, Any]):
+    """Route from the unmodified current user message, never enriched prompt/history text."""
+    routing_prompt = str(request.get("routing_prompt") or request.get("prompt") or "").strip()
+    conversation_id = str(request.get("investigation_id") or "").strip()
+    route = AGENT_ROUTES.route(conversation_id, routing_prompt)
+    if route.responding_agent == MOSHE_AGENT_ID and route.hermes_session_id is None:
+        AGENT_ROUTES.bind_hermes_session(conversation_id, route.mission_run_id, route.mission_run_id)
+    return route
 
 RECORDED_TOOL_TEXT = {
     "classify_question_intent": (
@@ -1655,9 +1681,10 @@ class HermesClient:
         return "\n".join(lines)
 
     def read_live_steps(self):
-        if ACTIVE_RUN_STARTED_AT is None:
+        audit_path = self.config.get("audit_path") or REMOTE_AUDIT_PATH
+        started_at = ACTIVE_RUN_STARTED_AT_BY_AUDIT.get(audit_path)
+        if started_at is None:
             return []
-        audit_path = REMOTE_AUDIT_PATH
         audit_text = self.ssh_command(f"cat {audit_path} 2>/dev/null || true", timeout=20)
         audit_records = []
         for line in audit_text.splitlines():
@@ -1666,14 +1693,14 @@ class HermesClient:
                 timestamp = record.get("timestamp_utc")
                 if timestamp:
                     parsed = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
-                    if parsed < ACTIVE_RUN_STARTED_AT:
+                    if parsed < started_at:
                         continue
                 audit_records.append(record)
             except json.JSONDecodeError:
                 continue
         return self.summarize_audit(audit_records)
 
-    def investigate(self, prompt, history, investigation_state=None, investigation_id=None, is_continuation=False, continuation_context=None):
+    def investigate(self, prompt, history, investigation_state=None, investigation_id=None, is_continuation=False, continuation_context=None, responding_agent="general", mission_run_id=None):
         global ACTIVE_RUN_STARTED_AT
         overall_started = time.perf_counter()
         performance = {
@@ -1681,7 +1708,7 @@ class HermesClient:
             "hermes": {"poll_count": 0, "status_request_total_ms": 0},
             "tools": {},
         }
-        audit_path = REMOTE_AUDIT_PATH
+        audit_path = self.config.get("audit_path") or REMOTE_AUDIT_PATH
         original_classification = {}
         if isinstance(continuation_context, dict):
             original_classification = continuation_context.get("original_classification") or {}
@@ -1884,6 +1911,14 @@ class HermesClient:
             "REASON הוא הסבר קצר בעברית, עד שמונה מילים, לבחירת התצוגה.\n"
             "אין להשתמש בכלי מערכת, קבצים, רשת או shell, ואין לבקש אישור לכלים."
         )
+        if responding_agent == MOSHE_AGENT_ID:
+            instructions += (
+                "\n\nאתה משה, קצין המטרות. המשתמש פנה אליך במפורש באמצעות @משה. "
+                "אתה אחראי לשאלות הבהרה, איתור ראיות, סיווג, מיזוג, בדיקת עצמאות מקורות, "
+                "בדיקת כפילויות, ויצירת מועמד מטרה רק כאשר כלי prepare_target_candidate מאשר persistence_eligible=true. "
+                "ממצא בביטחון נמוך מדווח למשתמש ואינו נשמר. אל תמציא source_group ואל תעקוף את כלי המיזוג. "
+                "אין לך הרשאה לכלי מערכת, filesystem, shell, SQL, מחיקה, reset, evaluator או שינוי סטטוס."
+            )
         state_block = self.render_investigation_state(investigation_state)
         full_instructions = f"{instructions}\n\n{state_block}" if state_block else instructions
         safe_investigation_id = re.sub(r"[^A-Za-z0-9_.:-]+", "-", str(investigation_id or "")).strip("-")
@@ -1895,6 +1930,7 @@ class HermesClient:
             session.ssh_command(f"truncate -s 0 {audit_path}")
             performance["gateway"]["audit_truncate_ms"] = elapsed_ms(stage_started)
             ACTIVE_RUN_STARTED_AT = datetime.now(timezone.utc)
+            ACTIVE_RUN_STARTED_AT_BY_AUDIT[audit_path] = ACTIVE_RUN_STARTED_AT
             create_started = time.perf_counter()
             created = session.request("POST", "/v1/runs", {
                 "input": prompt,
@@ -2057,7 +2093,7 @@ class HermesClient:
                     "events": events,
                     "usage": status.get("usage", {}),
                     "performance_log": performance_log_path.name,
-                }, responding_agent="general", session_id=session_id)
+                }, responding_agent=responding_agent, session_id=session_id, mission_run_id=mission_run_id)
             time.sleep(1)
         raise TimeoutError("Hermes investigation exceeded 480 seconds")
 
@@ -2145,7 +2181,9 @@ class Handler(SimpleHTTPRequestHandler):
             return
         if path.path == "/api/live-steps":
             try:
-                config = load_hermes_config()
+                requested_agent = (parse_qs(path.query).get("agent") or ["general"])[0]
+                agent_id = MOSHE_AGENT_ID if requested_agent == MOSHE_AGENT_ID else "general"
+                config = load_agent_hermes_config(agent_id)
                 steps = HermesClient(config).read_live_steps()
                 self.send_json(200, {"investigation_steps": steps})
             except Exception as exc:
@@ -2222,14 +2260,18 @@ class Handler(SimpleHTTPRequestHandler):
             if not prompt:
                 self.send_json(400, {"error": "Missing prompt"})
                 return
-            config = load_hermes_config()
+            conversation_id = str(request.get("investigation_id") or "").strip()
+            route = route_agent_request(request)
+            config = load_agent_hermes_config(route.responding_agent)
             result = HermesClient(config).investigate(
                 prompt,
                 request.get("history") or [],
                 investigation_state=request.get("investigation_state"),
-                investigation_id=request.get("investigation_id"),
-                is_continuation=bool(request.get("is_continuation")),
+                investigation_id=route.mission_run_id if route.responding_agent == MOSHE_AGENT_ID else conversation_id,
+                is_continuation=bool(request.get("is_continuation")) and not route.mission_started,
                 continuation_context=request.get("continuation_context"),
+                responding_agent=route.responding_agent,
+                mission_run_id=route.mission_run_id,
             )
             self.send_json(200, result)
         except Exception as exc:

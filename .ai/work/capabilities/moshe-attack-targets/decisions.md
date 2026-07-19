@@ -67,3 +67,20 @@ Creation rebuilds evidence snapshots, source groups, and quantity from canonical
 
 Follow-ups:
 Measure false splits and false merges in the complete V2.1 evaluation before release.
+
+## 2026-07-19 - Persistent isolated Moshe gateway
+
+Decision:
+Run Moshe as a persistent Hermes gateway on a dedicated named profile and local port. The application router sends only exact current-message `@משה` requests to it; General remains on its existing gateway.
+
+Context:
+The installed Hermes `/v1/runs` API cannot select a named profile or per-run tool allowlist. On-demand CLI invocation would lose the existing structured live-step stream.
+
+Rationale:
+A persistent profile preserves native sessions, restricted tools, structured run events, and the current intermediate-step UX without patching Hermes upstream.
+
+Impact:
+Moshe uses port `8643`, a separate audit file, a restricted Serbia-only MCP configuration, and its own systemd service. It remains idle until explicitly invoked. Deployment must enforce memory guards and validate both gateways because the VM has limited RAM.
+
+Follow-ups:
+Run representative dual-gateway load and rollback validation before production activation.

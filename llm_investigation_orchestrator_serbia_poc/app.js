@@ -164,6 +164,12 @@ function createInvestigationId() {
   return `investigation-${random}`;
 }
 
+function liveStepsUrl(currentPrompt) {
+  return /(^|[^\p{L}\p{N}_])@משה(?![\p{L}\p{N}_])/u.test(String(currentPrompt || ""))
+    ? "/api/live-steps?agent=moshe"
+    : "/api/live-steps?agent=general";
+}
+
 const INVESTIGATIONS_STORAGE_KEY = "serbia-poc-investigations-v1";
 const DEFAULT_INVESTIGATION_NAME = "חקירה חדשה";
 const TEAM_MENTION_AGENT_INSTRUCTION = [
@@ -2339,7 +2345,7 @@ async function submitStepInject() {
 
   const pollContinuationSteps = async () => {
     try {
-      const response = await fetch("/api/live-steps", { cache: "no-store" });
+      const response = await fetch(liveStepsUrl(instruction), { cache: "no-store" });
       if (!response.ok) return;
       const live = await response.json();
       const steps = live.investigation_steps || [];
@@ -2370,6 +2376,7 @@ async function submitStepInject() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         prompt: agentContinuationPrompt,
+        routing_prompt: instruction,
         history: state.history,
         investigation_id: state.investigationId,
         investigation_state: investigationStateForPrompt(selectedLayerContextForAgent()),
@@ -3062,7 +3069,7 @@ async function runPrompt(prompt) {
   let progressTimer = null;
   const pollLiveSteps = async () => {
     try {
-      const response = await fetch("/api/live-steps", { cache: "no-store" });
+      const response = await fetch(liveStepsUrl(clean), { cache: "no-store" });
       if (!response.ok) return;
       const live = await response.json();
       const steps = live.investigation_steps || [];
@@ -3081,6 +3088,7 @@ async function runPrompt(prompt) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         prompt: agentPrompt,
+        routing_prompt: clean,
         history: state.history,
         investigation_id: state.investigationId,
         investigation_state: investigationState

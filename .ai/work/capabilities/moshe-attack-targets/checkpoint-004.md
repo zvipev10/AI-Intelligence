@@ -6,7 +6,7 @@
 
 ## Checkpoint status
 
-Partial implementation; architecture decision required
+Implemented; pending routing/security checkpoint approval
 
 ## Completed
 
@@ -24,21 +24,34 @@ Partial implementation; architecture decision required
 - Read-only VM inspection confirmed Hermes 0.14 native named profiles and CLI session resume.
 - Read-only source inspection confirmed the installed `/v1/runs` handler accepts session/history/instructions but no named profile or per-run tool allowlist.
 
-## Decision required
+## Approved architecture
 
-Recommended for the MVP: invoke the native Moshe profile on demand through `hermes -p moshe chat -Q`, capture the returned session ID, and use `--resume` for consecutive mentions. This honors the no-second-gateway decision and provides profile-level MCP/tool isolation. The tradeoff is no live structured progress stream for Moshe; the final result still uses the shared normalization and presentation pipeline.
+The user approved a persistent isolated Moshe gateway. General remains on port `8642`; Moshe uses its named profile on port `8643`. Both use the same structured `/v1/runs` contract, preserving live steps and final shared-result normalization.
 
-Alternative: modify the installed Hermes gateway API to resolve a named profile per run. This keeps structured streaming but introduces an upstream patch, concurrent-profile security work, deployment coupling, and upgrade risk.
+The on-demand CLI approach and an upstream gateway patch were rejected because they respectively lose live structured events or create an upgrade/security burden.
 
-The previously rejected alternative is a second permanent gateway for Moshe.
+## Additional implementation
+
+- Added per-agent endpoint/audit configuration while keeping shared transport credentials.
+- Added a restricted Moshe profile provisioner, identity prompt, and systemd unit.
+- Restricted Moshe to the Serbia MCP and the approved investigation, fusion, duplicate, and candidate tools.
+- Separated General and Moshe audit files so live progress cannot overwrite the other agent's steps.
+- Routed live-step polling to the responding gateway while retaining the existing activity UI.
+- Routed on the unmodified current user message, preventing `@משה` examples in enriched system instructions from triggering Moshe.
+- Added a 400 MB memory-high guard and 600 MB hard service limit.
 
 ## Not completed
 
-- Moshe profile provisioning and restricted MCP configuration.
-- Backend invocation/resume integration.
-- Clarification and restricted-tool integration tests.
 - Production deployment.
+- Real-model clarification behavior and dual-gateway load validation, which belong to deployment/evaluation checkpoints.
 
 ## Recommendation
 
-Approve the on-demand native-profile CLI transport for the MVP, then complete Slice 4.
+Pause for routing/security review. If approved, proceed to Slice 5 shared attack-target presentation.
+
+## Validation results
+
+- 20 routing, session, shared-result, member-UI, and profile-isolation tests pass on Linux.
+- JavaScript syntax and Python compilation pass on the VM.
+- Profile tests prove the separate port/audit path, Serbia-only MCP selection, exact approved tool allowlist, and absence of evaluator contract markers.
+- Current VM capacity: 954 MB RAM, approximately 460 MB available at inspection, 2 GB swap; existing gateway current memory approximately 171 MB with a historical peak around 591 MB.

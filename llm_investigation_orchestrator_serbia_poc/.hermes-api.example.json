@@ -1,0 +1,13 @@
+{
+  "transport": "direct",
+  "remote_host": "127.0.0.1",
+  "remote_port": 8642,
+  "api_key": "replace-with-shared-secret",
+  "audit_path": "/opt/serbia-poc/mcp_audit.jsonl",
+  "agents": {
+    "moshe": {
+      "remote_port": 8643,
+      "audit_path": "/opt/serbia-poc/mcp_audit_moshe.jsonl"
+    }
+  }
+}
