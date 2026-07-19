@@ -14,6 +14,8 @@ Extract reusable agent invocation, normalization, layer-result, and presentation
 
 The first deployment regressed the member strip and `@` autocomplete because it used a stale frontend baseline. Slice 1 was rebuilt on `codex/integrate-michlol-dataset-v2`, explicit member/mention regression tests were added, and the corrected build was redeployed on 2026-07-19. V2.1 remains active with 14,800 rows. Current rollback backup: `/opt/serbia-poc-ui-backups/slice1-20260719T183742Z`.
 
+User functional validation passed on 2026-07-19: "Looks ok."
+
 ## Checkpoint
 
 `../checkpoint-001.md`

@@ -6,7 +6,7 @@ Moshe Attack Targets MVP
 
 ## Current phase
 
-Slice 1 rebuilt on the member-enabled application and redeployed; user validation and architecture/interface checkpoint review required.
+Slice 1 rebuilt on the member-enabled application and redeployed; user validation passed and architecture/interface checkpoint review remains.
 
 ## Overall status
 
@@ -40,7 +40,7 @@ Recovered the member-strip/mention regression by merging the current member-enab
 
 ## Next expected artifact
 
-User validation and architecture/interface approval of `checkpoint-001.md`.
+Architecture/interface approval of `checkpoint-001.md`.
 
 ## Parent issue
 

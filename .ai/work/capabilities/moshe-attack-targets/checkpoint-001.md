@@ -14,7 +14,7 @@ Moshe Attack Targets MVP
 
 ## Checkpoint status
 
-Rebuilt and redeployed on the member-enabled baseline; pending user and architecture/interface validation
+Rebuilt and redeployed on the member-enabled baseline; user validation passed, architecture/interface validation pending
 
 ## Handoff
 
@@ -90,7 +90,7 @@ Create reusable General/Moshe result infrastructure without changing General-age
 - Redeployed on 2026-07-19. VM verification confirms `renderMichlolTeam`, `activeMentionRange`, `applyAgentResult`, and `michlolTeam` are all present.
 - V2.1 remains active with 14,800 rows and `serbia-poc-ui.service` is active.
 - Current rollback backup: `/opt/serbia-poc-ui-backups/slice1-20260719T183742Z`.
-- The user will perform final functional UI validation.
+- User functional UI validation passed on 2026-07-19: "Looks ok."
 
 ## Not completed yet
 
