@@ -1,0 +1,37 @@
+{
+  "status": "pass",
+  "baseline_report": "evaluation-006.json",
+  "runtime": {
+    "dataset_version": "v2.1",
+    "dataset_rows": 14800,
+    "anchors_examined": 3800,
+    "predicted_candidates": 315,
+    "elapsed_seconds": 6.101
+  },
+  "metrics": {
+    "positive_chains": 300,
+    "hard_negatives": 100,
+    "matched_chains": 281,
+    "chain_recall": 0.9366666666666666,
+    "evidence_precision": 0.9210245464247598,
+    "evidence_recall": 0.9588888888888889,
+    "hard_negative_rejection": 1.0,
+    "false_merge_rate": 0.012698412698412698,
+    "duplicate_target_rate": 0.0,
+    "source_independence": 1.0
+  },
+  "gates": {
+    "chain_recall": true,
+    "evidence_precision": true,
+    "evidence_recall": true,
+    "hard_negative_rejection": true,
+    "false_merge_rate": true,
+    "duplicate_target_rate": true,
+    "source_independence": true,
+    "evaluator_truth_leakage": true,
+    "regressions": true
+  },
+  "aggregate_failures": {
+    "false_merge_count": 4
+  }
+}

@@ -17,12 +17,12 @@ from pathlib import Path
 from typing import Any
 
 try:
-    from fusion_tools import find_duplicate_candidates, prepare_candidate
+    from fusion_tools import discover_corroborating_evidence, find_duplicate_candidates, prepare_candidate
     from semantic_index import SemanticEventIndex
     from target_bank import TargetBank
 except ImportError:  # pragma: no cover - package-style execution fallback
     sys.path.insert(0, str(Path(__file__).resolve().parent))
-    from fusion_tools import find_duplicate_candidates, prepare_candidate
+    from fusion_tools import discover_corroborating_evidence, find_duplicate_candidates, prepare_candidate
     from semantic_index import SemanticEventIndex
     from target_bank import TargetBank
 
@@ -135,6 +135,9 @@ def load_events() -> list[dict[str, Any]]:
 EVENTS = load_events()
 EVENT_BY_ID = {event["event_id"]: event for event in EVENTS}
 EVENTS_BY_ID = {event["event_id"]: event for event in EVENTS}
+FUSION_EVENTS_BY_CONTEXT: dict[tuple[str, str], list[dict[str, Any]]] = defaultdict(list)
+for _fusion_event in EVENTS:
+    FUSION_EVENTS_BY_CONTEXT[(_fusion_event.get("location_id") or "", _fusion_event.get("entity_id") or "")].append(_fusion_event)
 ENTITY_PRESENTATIONS: dict[str, dict[str, Any]] = {}
 LOCATION_PRESENTATIONS: dict[str, dict[str, Any]] = {}
 ENTITIES: dict[str, dict[str, Any]] = {}
@@ -2448,8 +2451,22 @@ def _fusion_events(event_ids: list[str]) -> list[dict[str, Any]]:
 
 
 def prepare_target_candidate(arguments: dict[str, Any]) -> dict[str, Any]:
-    """Build a deterministic save-ready fusion assessment without persisting it."""
-    return prepare_candidate(_fusion_events(arguments.get("event_ids") or []), arguments.get("confidence") or "")
+    """Discover corroboration and build a deterministic save-ready assessment without persisting it."""
+    seeds = _fusion_events(arguments.get("event_ids") or [])
+    if arguments.get("discover_corroboration", True):
+        anchor = next((item for item in seeds if item.get("collection_family") == "airborne_isr_video_exploitation"), seeds[0])
+        corpus = [
+            public_event(item)
+            for item in FUSION_EVENTS_BY_CONTEXT.get((anchor.get("location_id") or "", anchor.get("entity_id") or ""), [])
+        ]
+        discovery = discover_corroborating_evidence(seeds, corpus)
+        selected = _fusion_events(discovery["selected_event_ids"])
+        assessment = prepare_candidate(selected, arguments.get("confidence") or "")
+        if discovery["ambiguous"]:
+            assessment["persistence_eligible"] = False
+            assessment["persistence_block_reasons"].append("corroborating evidence pair is ambiguous; report only")
+        return {**assessment, "discovery": discovery}
+    return prepare_candidate(seeds, arguments.get("confidence") or "")
 
 
 def find_duplicate_target_candidates(arguments: dict[str, Any]) -> dict[str, Any]:
@@ -2513,12 +2530,13 @@ TOOLS = [
     {
         "name": "prepare_target_candidate",
         "title": "Prepare a fused target candidate",
-        "description": "Deterministically groups selected visible evidence, collapses reposts and one UAV mission, reconciles quantity, builds compact evidence snapshots, and reports whether medium/high-confidence persistence is allowed. It does not save anything.",
+        "description": "Starting from visible seed evidence, retrieves and ranks nearby independent public corroboration, selects the strongest evidence pair, groups sources, reconciles quantity, builds compact evidence snapshots, and reports whether medium/high-confidence persistence is allowed. Returns pair scores, reasons, alternatives, and an ambiguity margin. It does not save anything.",
         "inputSchema": with_step_bridge({
             "type": "object",
             "properties": {
                 "event_ids": {"type": "array", "items": {"type": "string"}, "minItems": 1, "maxItems": MAX_LIMIT},
                 "confidence": {"type": "string", "enum": ["low", "medium", "high"]},
+                "discover_corroboration": {"type": "boolean", "description": "Defaults to true. Set false only to validate an already selected evidence set without retrieval."},
             },
             "required": ["event_ids", "confidence"], "additionalProperties": False,
         }),

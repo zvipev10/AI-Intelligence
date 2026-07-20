@@ -1,6 +1,6 @@
 import unittest
 
-from fusion_tools import find_duplicate_candidates, prepare_candidate, reconcile_quantity
+from fusion_tools import discover_corroborating_evidence, find_duplicate_candidates, prepare_candidate, reconcile_quantity
 
 
 def event(record_id, summary, *, mission="", count="3", source="X"):
@@ -13,6 +13,38 @@ def event(record_id, summary, *, mission="", count="3", source="X"):
 
 
 class FusionToolsTests(unittest.TestCase):
+    def test_discovers_and_ranks_independent_corroboration(self):
+        anchor = event("A", "UAV observation", mission="M-1", count="4", source="UAV")
+        anchor["collection_family"] = "airborne_isr_video_exploitation"
+        anchor["object_class"] = "משאית לוגיסטית"
+        anchor["timestamp_utc"] = "2026-01-01T10:00:00Z"
+        first = event("B", "תושבים דיווחו על משאית אספקה; נראו כ-4 פריטים", source="חדשות")
+        second = event("C", "תיעוד מציג רכב תובלה לוגיסטי ובין 2 ל-6 פריטים", source="טלגרם")
+        distractor = event("D", "דיווח על משאית אספקה אך אין סימן המקשר לאותו כוח", source="X")
+        for item, hour in ((first, 11), (second, 12), (distractor, 10)):
+            item["timestamp_utc"] = f"2026-01-01T{hour:02d}:00:00Z"
+            item["collection_family"] = "public_source"
+            item["object_class"] = ""
+        result = discover_corroborating_evidence([anchor], [first, second, distractor])
+        self.assertEqual(result["selected_event_ids"], ["A", "B", "C"])
+        self.assertFalse(result["ambiguous"])
+        self.assertNotIn("D", [item["record_id"] for item in result["retrieved"]])
+
+    def test_rejects_pair_that_does_not_clearly_beat_competing_anchor(self):
+        anchor = event("A", "UAV observation", mission="M-1", count="4", source="UAV")
+        competitor = event("Z", "Other UAV observation", mission="M-2", count="4", source="UAV")
+        for item, minute in ((anchor, 0), (competitor, 5)):
+            item.update({
+                "collection_family": "airborne_isr_video_exploitation", "object_class": "משאית לוגיסטית",
+                "timestamp_utc": f"2026-01-01T10:{minute:02d}:00Z",
+            })
+        first = event("B", "משאית אספקה; נראו כ-4 פריטים", source="חדשות")
+        second = event("C", "רכב תובלה לוגיסטי ובין 2 ל-6 פריטים", source="טלגרם")
+        for item, minute in ((first, 6), (second, 7)):
+            item.update({"collection_family": "public_source", "object_class": "", "timestamp_utc": f"2026-01-01T10:{minute:02d}:00Z"})
+        result = discover_corroborating_evidence([anchor], [anchor, competitor, first, second])
+        self.assertEqual(result["selected_event_ids"], ["A"])
+
     def test_same_uav_mission_is_one_group(self):
         result = prepare_candidate([event("A", "first", mission="M-1"), event("B", "different", mission="M-1")], "high")
         self.assertEqual(result["independent_source_group_count"], 1)

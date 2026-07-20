@@ -2,7 +2,7 @@
 
 ## Current state
 
-Slices 1-5 and checkpoints 006-007 are deployed. Slice 6 completed with failed quality gates, and its quality-recovery plan is ready for review.
+Slices 1-5 and checkpoints 006-007 are deployed. Slice 6 quality recovery is implemented locally and passes all approved gates; deployment is pending review.
 
 ## Latest implementation
 
@@ -29,8 +29,8 @@ The in-app browser blocked further access to the VM raw-IP URL under its URL pol
 
 ## Next action
 
-Product and QA review `slice-006-quality-recovery-plan.md`. If approved, Development starts only recovery slice A: synthetic diagnostic fixtures and a resource-bounded retrieval contract.
+Product and QA review checkpoint 008. If accepted, Development backs up the target bank and MCP runtime, deploys the focused MCP changes, and runs a read-only Moshe preparation smoke test.
 
 ## Open decisions
 
-No product decision is pending. QA requests development changes: final chain recall is 8%, evidence precision 49.27%, evidence recall 11.22%, and false merges 8.75%. Hard-negative rejection is 99%; duplicates, source grouping, isolation, and regressions pass.
+Checkpoint 008 passes every approved quantitative gate. Product/QA acceptance and deployment authorization remain pending. Residual false merges are 1.27%, below the approved 5% ceiling.

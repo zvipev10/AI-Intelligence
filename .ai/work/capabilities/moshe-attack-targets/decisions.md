@@ -84,3 +84,20 @@ Moshe uses port `8643`, a separate audit file, a restricted Serbia-only MCP conf
 
 Follow-ups:
 Run representative dual-gateway load and rollback validation before production activation.
+
+## 2026-07-20 - Single-tool target preparation with internal discovery
+
+Decision:
+Keep `prepare_target_candidate` as Moshe's single preparation interface. Starting from seed evidence, it performs bounded corroboration retrieval, evidence-pair ranking, competing-anchor disambiguation, and final preparation. Candidate creation independently revalidates the selected evidence before persistence.
+
+Context:
+The first complete Slice 6 evaluation showed that generic investigation retrieval left most true corroborating records undiscovered. The user requested that discovery and ranking remain part of preparation instead of adding another Moshe-facing tool.
+
+Rationale:
+One public tool keeps the MVP interaction simple while internal functions preserve testability and deterministic security boundaries.
+
+Impact:
+Preparation returns ranked public evidence, reasons, scores, alternatives, and ambiguity margins. Unclear results are report-only. SQLite schema, routing, presentation, and the write boundary do not change.
+
+Follow-ups:
+Deploy only after checkpoint 008 review, then run a read-only Moshe preparation smoke test.
