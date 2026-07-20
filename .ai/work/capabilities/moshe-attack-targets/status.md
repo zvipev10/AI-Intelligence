@@ -6,7 +6,7 @@ Moshe Attack Targets MVP
 
 ## Current phase
 
-Slice 6 full evaluation completed; QA gates failed and development changes are required.
+Slice 6 QA gates remain failed; requested UI follow-up is implemented and awaiting UX/deployment approval.
 
 ## Overall status
 
@@ -17,14 +17,14 @@ Pending review
 | Role | Status | Required action | Due before |
 |---|---|---|---|
 | Product | Slice 6 approved | No action until recovery results are available | Slice 6 |
-| Development | Changes required | Improve candidate discovery and evidence-pair ranking | Slice 6 |
+| Development | UI follow-up ready | Await UX approval; fusion-quality changes remain separately required | UI follow-up / Slice 6 |
 | UX | Approved | Routing experience, attribution, candidate presentation, evidence, and states accepted | Complete |
 | QA | Pending threshold review | Approve quantitative thresholds and release gates | Slice 6 |
 | Architecture/Security | Slice 2 approved | Review evaluator isolation and deterministic source boundary | Slice 4 |
 
 ## Latest change since previous review
 
-Recovered the VM, completed two isolated resource-bounded 400-case runs, and confirmed final failures in chain recall, evidence precision/recall, and false merges while isolation, negatives, duplicates, source grouping, and regressions passed.
+Implemented live Moshe member opening, punctuation-safe persistent mention highlighting, and raw evidence references in target map popups; fusion-quality failures remain unchanged.
 
 ## Current blockers
 
@@ -39,7 +39,7 @@ Recovered the VM, completed two isolated resource-bounded 400-case runs, and con
 
 ## Next expected artifact
 
-Reviewed development plan for evidence-pair ranking and semantic disambiguation.
+UX approval and deployment of `checkpoint-006-ui-fixes.md`, followed separately by a reviewed fusion-ranking plan.
 
 ## Parent issue
 
@@ -74,7 +74,7 @@ Pending remote creation; local draft at `issues/parent-capability.md`.
 - QA review: `qa-review.md`
 - Architecture/security review: `architecture-security-review.md`
 - Execution plan: `execution-plan.md`
-- Latest checkpoint: `checkpoint-006.md`
+- Latest checkpoint: `checkpoint-006-ui-fixes.md`
 - Handoff: `handoff-summary.md`
 
 ## Gate checklist

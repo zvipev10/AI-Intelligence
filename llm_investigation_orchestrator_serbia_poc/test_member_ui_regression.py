@@ -26,6 +26,15 @@ class MemberUiRegressionTests(unittest.TestCase):
         self.assertIn("function chooseTeamMention(index = teamMentionState.activeIndex)", self.app)
         self.assertIn('menu.setAttribute("aria-label", "בחירת חבר מכלול")', self.app)
 
+    def test_mentions_stop_before_punctuation_and_remain_highlighted_after_send(self):
+        self.assertIn(r'const mentionPattern = /@([\p{L}\p{N}_-]+)/gu;', self.app)
+        self.assertIn('appendMessage("user", `<p>${highlightedPromptHtml(clean)}</p>`);', self.app)
+
+    def test_moshe_member_opening_comes_from_agent(self):
+        self.assertIn("async function appendAgentMemberOpeningMessage(member)", self.app)
+        self.assertIn('routing_prompt: "@משה"', self.app)
+        self.assertIn("if (member.id === MOSHE_MEMBER_ID) appendAgentMemberOpeningMessage(member);", self.app)
+
     def test_shared_agent_result_entry_point_is_retained(self):
         self.assertIn("function applyAgentResult(result, prompt, options = {})", self.app)
         self.assertNotIn("function applyHermesResult(", self.app)
@@ -35,6 +44,8 @@ class MemberUiRegressionTests(unittest.TestCase):
         self.assertIn('layer.kind === "attack_targets"', self.app)
         self.assertNotIn("function renderMoshe", self.app)
         self.assertNotIn("function applyMoshe", self.app)
+        self.assertIn("target-raw-references", self.app)
+        self.assertIn("target.raw_data_references || []", self.app)
 
 
 if __name__ == "__main__":

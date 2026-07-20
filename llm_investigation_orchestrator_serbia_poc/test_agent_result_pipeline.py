@@ -65,6 +65,7 @@ class AgentResultPipelineTests(unittest.TestCase):
         self.assertEqual(rows[0]["location_name"], "Area B")
         self.assertEqual(rows[0]["entity_name"], "Unit One")
         self.assertEqual(rows[0]["evidence"][0]["record_id"], "REC-1")
+        self.assertEqual(rows[0]["raw_data_references"], ["REC-1"])
         self.assertEqual(rows[0]["source_group_count"], 2)
 
     def test_target_presentation_ignores_errors_and_empty_results(self):

@@ -311,6 +311,9 @@ textarea.mention-source::placeholder { color: var(--muted) !important; }
 .attack-target-marker { width: 22px; height: 22px; border-radius: 5px; transform: rotate(45deg); box-shadow: 0 2px 12px rgba(0,0,0,.55), 0 0 0 5px rgba(255,179,71,.18); }
 .attack-target-marker:hover { transform: rotate(45deg) scale(1.14); }
 .target-map-popup p { margin: 5px 0 0; max-width: 260px; }
+.target-raw-references { margin-top: 6px; padding-top: 6px; border-top: 1px solid rgba(27,31,41,.18); max-width: 300px; overflow-wrap: anywhere; }
+.target-raw-references code { font-size: 10px; }
+.member-opening-status { color: var(--muted); }
 .attack-target-row td:first-child strong, .attack-target-row td:first-child small { display: block; }
 .attack-target-row td:first-child small { margin-top: 3px; color: var(--muted); }
 .target-evidence-details { min-width: 220px; margin-top: 4px; }

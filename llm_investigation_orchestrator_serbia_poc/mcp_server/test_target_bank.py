@@ -114,6 +114,7 @@ class TargetBankTests(unittest.TestCase):
         self.bank.create_candidate(candidate(), [evidence("REC-001", "a"), evidence("REC-002", "b")])
         self.assertEqual(self.bank.search_candidates({"object_class": "vehicle' OR 1=1 --"}), [])
         self.assertEqual(len(self.bank.search_candidates({"location_id": "LOC-001"})), 1)
+        self.assertEqual(self.bank.search_candidates({"location_id": "LOC-001"})[0]["raw_data_references"], ["REC-001", "REC-002"])
 
     def test_backup_retains_latest_five_and_reset_requires_confirmation(self):
         self.bank.create_candidate(candidate(), [evidence("REC-001", "a"), evidence("REC-002", "b")])

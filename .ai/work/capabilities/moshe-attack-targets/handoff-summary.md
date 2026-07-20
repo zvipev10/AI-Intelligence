@@ -2,7 +2,7 @@
 
 ## Current state
 
-Slices 1-5 are implemented, published, deployed, and user-approved. Slice 6 completed with failed quality gates and requires development changes before release closure.
+Slices 1-5 are deployed. Slice 6 completed with failed quality gates. A requested UI follow-up is implemented locally and awaits UX approval/deployment.
 
 ## Latest implementation
 
@@ -10,6 +10,7 @@ Slices 1-5 are implemented, published, deployed, and user-approved. Slice 6 comp
 - Audit-backed target extraction and canonical presentation enrichment in `server.py`.
 - Shared typed-layer consumption, refresh/deduplication, map/table/evidence presentation in `app.js` and `styles.css`.
 - Focused backend and UI regression coverage.
+- UI follow-up adds a live Moshe-originated roster message, punctuation-safe and persistent mention highlighting, and raw record IDs in target map popups.
 
 ## Validation
 
@@ -23,7 +24,7 @@ Production smoke checks passed for General routing, exact `@משה` routing, emp
 
 ## Next action
 
-Review and implement evidence-pair ranking and semantic disambiguation using runtime-visible data only, add focused synonym/false-merge fixtures, then repeat all 300 positive and 100 hard-negative cases. Keep `/root/moshe-evaluator-quarantine-20260719T203803Z` outside runtime trees.
+Approve and deploy `checkpoint-006-ui-fixes.md`, then separately review and implement evidence-pair ranking and semantic disambiguation before repeating Slice 6.
 
 ## Open decisions
 

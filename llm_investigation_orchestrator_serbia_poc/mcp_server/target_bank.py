@@ -254,13 +254,20 @@ class TargetBank:
         with self.connect() as connection:
             rows = connection.execute(
                 f"""SELECT t.*, COUNT(e.record_id) AS evidence_count,
-                    COUNT(DISTINCT e.source_group) AS source_group_count
+                    COUNT(DISTINCT e.source_group) AS source_group_count,
+                    GROUP_CONCAT(e.record_id, ',') AS evidence_record_ids_csv
                     FROM targets t LEFT JOIN target_evidence e ON e.target_id = t.target_id
                     WHERE {' AND '.join(clauses)} GROUP BY t.target_id
                     ORDER BY t.updated_at DESC, t.target_id LIMIT ?""",
                 parameters,
             ).fetchall()
-        return [dict(row) for row in rows]
+        results = []
+        for row in rows:
+            item = dict(row)
+            references = [value for value in str(item.pop("evidence_record_ids_csv") or "").split(",") if value]
+            item["raw_data_references"] = references
+            results.append(item)
+        return results
 
     def update_candidate(self, target_id: str, changes: dict[str, Any]) -> dict[str, Any]:
         unknown = set(changes) - TARGET_MUTABLE_FIELDS

@@ -188,12 +188,15 @@ def normalize_attack_targets(
             location = locations.get(location_id, {})
             entity = entities.get(entity_id, {})
             evidence = merged.get("evidence") if isinstance(merged.get("evidence"), list) else []
+            raw_references = merged.get("raw_data_references") if isinstance(merged.get("raw_data_references"), list) else []
+            raw_references = list(dict.fromkeys([*raw_references, *(item.get("record_id") for item in evidence if isinstance(item, dict) and item.get("record_id"))]))
             merged.update({
                 "location_name": location.get("name") or merged.get("location_name") or location_id,
                 "latitude": location.get("latitude", merged.get("latitude")),
                 "longitude": location.get("longitude", merged.get("longitude")),
                 "entity_name": entity.get("canonical_name") or merged.get("entity_name") or entity_id or None,
                 "evidence": evidence,
+                "raw_data_references": raw_references,
                 "evidence_count": merged.get("evidence_count", len(evidence)),
                 "source_group_count": merged.get("source_group_count", len({item.get("source_group") for item in evidence if isinstance(item, dict) and item.get("source_group")})),
             })

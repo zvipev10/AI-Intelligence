@@ -187,6 +187,7 @@ const MICHLOL_MEMBERS = [
 ];
 
 const MICHLOL_MEMBER_WELCOME = "אני מחובר עכשיו לשיחה הזו. שלח לי את המשימה או השאלה הבאה, ובשלב הבא נחבר כאן סוכן ייעודי לחבר המכלול.";
+const MOSHE_MEMBER_ID = "moshe-targets-officer";
 
 const state = {
   events: [],
@@ -233,7 +234,8 @@ const state = {
   rawOverlayHeight: 28,
   queryEdited: false,
   originalQuery: null,
-  activeTeamMentions: []
+  activeTeamMentions: [],
+  memberOpeningRequestToken: 0
 };
 
 const conversation = document.getElementById("conversation");
@@ -366,9 +368,40 @@ function assistantMessageLabel() {
 }
 
 function appendMemberWelcomeMessage(member) {
-  appendMessage("assistant", `
+  conversation.querySelectorAll(".member-welcome-message").forEach(message => message.remove());
+  return appendMessage("assistant", `
     <p><strong>${escapeHtml(member.displayName)}</strong></p>
     <p>${escapeHtml(MICHLOL_MEMBER_WELCOME)}</p>`, { label: memberMessageLabel(member), className: "member-welcome-message", memberId: member.id });
+}
+
+async function appendAgentMemberOpeningMessage(member) {
+  const token = ++state.memberOpeningRequestToken;
+  conversation.querySelectorAll(".member-welcome-message").forEach(message => message.remove());
+  const article = appendMessage("assistant", '<p class="member-opening-status">משה מתחבר לשיחה...</p>', {
+    label: memberMessageLabel(member), className: "member-welcome-message member-agent-opening", memberId: member.id
+  });
+  try {
+    const response = await fetch("/api/investigate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        prompt: "@משה הצג הודעת פתיחה קצרה מטעמך כקצין המטרות, והסבר במשפט אחד כיצד אפשר להפעיל אותך בשיחה.",
+        routing_prompt: "@משה",
+        history: state.history,
+        investigation_id: state.investigationId
+      })
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || "Moshe opening message failed");
+    if (token !== state.memberOpeningRequestToken || state.activeConversationMemberId !== member.id) return;
+    article.querySelector(".message-label").textContent = memberMessageLabel(member);
+    article.innerHTML = `<div class="message-label">${escapeHtml(memberMessageLabel(member))}</div><div class="answer-body">${answerHtml(cleanAssistantAnswer(result.answer))}</div>`;
+    state.history.push({ role: "assistant", content: cleanAssistantAnswer(result.answer) });
+  } catch (error) {
+    if (token !== state.memberOpeningRequestToken || state.activeConversationMemberId !== member.id) return;
+    article.innerHTML = `<div class="message-label">${escapeHtml(memberMessageLabel(member))}</div><p>לא הצלחתי לטעון כרגע הודעה ממשה.</p>`;
+  }
+  conversation.scrollTop = conversation.scrollHeight;
 }
 
 function selectConversationMember(memberId) {
@@ -377,7 +410,8 @@ function selectConversationMember(memberId) {
   state.activeConversationMemberId = member.id;
   renderMichlolTeam();
   updatePromptPlaceholder();
-  appendMemberWelcomeMessage(member);
+  if (member.id === MOSHE_MEMBER_ID) appendAgentMemberOpeningMessage(member);
+  else appendMemberWelcomeMessage(member);
   conversation.scrollTop = conversation.scrollHeight;
 }
 
@@ -427,7 +461,7 @@ function matchingTeamMembers(query) {
 }
 
 function recognizedTeamMemberByMention(rawMention) {
-  const normalized = normalizeTeamMentionText(rawMention).replace(/^@/, "");
+  const normalized = normalizeTeamMentionText(rawMention).replace(/^@/, "").replace(/[^\p{L}\p{N}_-]+$/gu, "");
   if (!normalized) return null;
   return MICHLOL_MEMBERS.find(member => normalizeTeamMentionText(member.displayName) === normalized) || null;
 }
@@ -437,7 +471,7 @@ function highlightedPromptHtml(value) {
   if (!text) return "";
   let html = "";
   let lastIndex = 0;
-  const mentionPattern = /@([^\s@]+)/gu;
+  const mentionPattern = /@([\p{L}\p{N}_-]+)/gu;
   let match;
   while ((match = mentionPattern.exec(text))) {
     html += escapeHtml(text.slice(lastIndex, match.index));
@@ -652,7 +686,7 @@ function attachTeamMentionAutocomplete(textarea) {
 function teamMentionsForPrompt(prompt) {
   const mentions = [];
   const seen = new Set();
-  const mentionPattern = /@([^\s@]+)/gu;
+  const mentionPattern = /@([\p{L}\p{N}_-]+)/gu;
   let match;
   while ((match = mentionPattern.exec(prompt || ""))) {
     const query = normalizeTeamMentionText(match[1]);
@@ -3030,7 +3064,7 @@ async function runSavedQuestion(savedId) {
       source_run_id: saved.source_run_id || saved.result?.run_id,
     };
     const prompt = (saved.question || "").trim();
-    appendMessage("user", `<p>${escapeHtml(prompt)}</p>`);
+    appendMessage("user", `<p>${highlightedPromptHtml(prompt)}</p>`);
     state.history.push({ role: "user", content: prompt }, { role: "assistant", content: result.answer || "" });
     applyAgentResult(result, prompt);
   } catch (error) {
@@ -3126,7 +3160,7 @@ async function runPrompt(prompt) {
   const investigationState = investigationStateForPrompt(selectedLayers);
   const clientStarted = performance.now();
   let firstLiveStepAt = null;
-  appendMessage("user", `<p>${escapeHtml(clean)}</p>`);
+  appendMessage("user", `<p>${highlightedPromptHtml(clean)}</p>`);
   startAssistantResearchMessage();
   state.busy = true;
   sendButton.disabled = true;
@@ -3391,6 +3425,9 @@ function renderMap() {
         <span>${escapeHtml(String(target.object_class || "-"))} · ${escapeHtml(String(target.entity_name || target.entity_id || "ללא ישות"))}</span>
         <span>ביטחון ${escapeHtml(String(confidenceLabel(target.confidence)))} · כמות ${escapeHtml(String(targetQuantityLabel(target)))}</span>
         <p>${escapeHtml(String(target.summary || ""))}</p>
+        <span class="target-raw-references"><b>אסמכתאות גולמיות:</b> ${(target.raw_data_references || []).length
+          ? (target.raw_data_references || []).map(recordId => `<code dir="ltr">${escapeHtml(String(recordId || "-"))}</code>`).join(" · ")
+          : "לא נטענו אסמכתאות בתוצאה זו"}</span>
       </div>`;
       const popup = new maplibregl.Popup({ offset: 20, closeButton: true, closeOnClick: true }).setHTML(popupHtml);
       const marker = new maplibregl.Marker({ element, anchor: "center" }).setLngLat([markerLon, markerLat]).setPopup(popup).addTo(state.map);
