@@ -188,6 +188,7 @@ const MICHLOL_MEMBERS = [
 
 const MICHLOL_MEMBER_WELCOME = "אני מחובר עכשיו לשיחה הזו. שלח לי את המשימה או השאלה הבאה, ובשלב הבא נחבר כאן סוכן ייעודי לחבר המכלול.";
 const MOSHE_MEMBER_ID = "moshe-targets-officer";
+const MOSHE_MESSAGE_LABEL = "משה - קצין מטרות";
 
 const state = {
   events: [],
@@ -359,12 +360,18 @@ function updatePromptPlaceholder() {
 }
 
 function memberMessageLabel(member) {
+  if (member.id === MOSHE_MEMBER_ID) return MOSHE_MESSAGE_LABEL;
   return `${member.displayName} · ${member.roleLabel}`;
 }
 
 function assistantMessageLabel() {
   const member = activeConversationMember();
+  if (state.activeTeamMentions.some(mention => mention.id === MOSHE_MEMBER_ID)) return MOSHE_MESSAGE_LABEL;
   return member ? memberMessageLabel(member) : "סוכן חקירה";
+}
+
+function resultMessageLabel(result = {}) {
+  return result.responding_agent === "moshe" ? MOSHE_MESSAGE_LABEL : assistantMessageLabel();
 }
 
 function appendMemberWelcomeMessage(member) {
@@ -2063,6 +2070,8 @@ function setActiveResearchMessage(message) {
 function finalizeAssistantMessage(answer, options = {}) {
   ensureAssistantResearchMessage();
   const article = state.activeAssistantMessage;
+  const label = article.querySelector(".message-label");
+  if (label && options.result) label.textContent = resultMessageLabel(options.result);
   const existingList = state.activeActivityList;
   const stepsCount = existingList ? existingList.children.length : 0;
   const research = article.querySelector(".research-process");

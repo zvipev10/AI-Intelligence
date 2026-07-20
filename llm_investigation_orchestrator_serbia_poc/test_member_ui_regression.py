@@ -35,6 +35,11 @@ class MemberUiRegressionTests(unittest.TestCase):
         self.assertIn('routing_prompt: "@משה"', self.app)
         self.assertIn("if (member.id === MOSHE_MEMBER_ID) appendAgentMemberOpeningMessage(member);", self.app)
 
+    def test_moshe_answers_use_targets_officer_title(self):
+        self.assertIn('const MOSHE_MESSAGE_LABEL = "משה - קצין מטרות";', self.app)
+        self.assertIn('result.responding_agent === "moshe" ? MOSHE_MESSAGE_LABEL', self.app)
+        self.assertIn('label.textContent = resultMessageLabel(options.result);', self.app)
+
     def test_shared_agent_result_entry_point_is_retained(self):
         self.assertIn("function applyAgentResult(result, prompt, options = {})", self.app)
         self.assertNotIn("function applyHermesResult(", self.app)

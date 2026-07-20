@@ -2,7 +2,7 @@
 
 ## Current state
 
-Slices 1-5 and the requested UI follow-up are deployed. Slice 6 completed with failed quality gates.
+Slices 1-5 and checkpoint 006 are deployed. Checkpoint 007 changes Moshe's answer title and is pending deployment. Slice 6 completed with failed quality gates.
 
 ## Latest implementation
 
@@ -11,6 +11,7 @@ Slices 1-5 and the requested UI follow-up are deployed. Slice 6 completed with f
 - Shared typed-layer consumption, refresh/deduplication, map/table/evidence presentation in `app.js` and `styles.css`.
 - Focused backend and UI regression coverage.
 - UI follow-up adds a live Moshe-originated roster message, punctuation-safe and persistent mention highlighting, and raw record IDs in target map popups.
+- Checkpoint 007 labels Moshe responses as `משה - קצין מטרות` based on `responding_agent`, including explicit mentions without roster selection.
 
 ## Validation
 
@@ -26,7 +27,7 @@ The in-app browser blocked further access to the VM raw-IP URL under its URL pol
 
 ## Next action
 
-User verifies the four UI changes, then development separately reviews and implements evidence-pair ranking and semantic disambiguation before repeating Slice 6.
+Deploy and visually verify checkpoint 007, then development separately reviews and implements evidence-pair ranking and semantic disambiguation before repeating Slice 6.
 
 ## Open decisions
 
