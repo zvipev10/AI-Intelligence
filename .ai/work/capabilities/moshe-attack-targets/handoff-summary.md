@@ -2,7 +2,7 @@
 
 ## Current state
 
-Slices 1-5 and checkpoint 006 are deployed. Checkpoint 007 changes Moshe's answer title and is pending deployment. Slice 6 completed with failed quality gates.
+Slices 1-5 and checkpoint 006 are deployed. Checkpoint 007 changes Moshe's answer title and is pending deployment. Slice 6 completed with failed quality gates, and its quality-recovery plan is ready for review.
 
 ## Latest implementation
 
@@ -27,7 +27,7 @@ The in-app browser blocked further access to the VM raw-IP URL under its URL pol
 
 ## Next action
 
-Deploy and visually verify checkpoint 007, then development separately reviews and implements evidence-pair ranking and semantic disambiguation before repeating Slice 6.
+Product and QA review `slice-006-quality-recovery-plan.md`. If approved, Development starts only recovery slice A: synthetic diagnostic fixtures and a resource-bounded retrieval contract.
 
 ## Open decisions
 

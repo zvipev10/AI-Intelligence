@@ -6,7 +6,7 @@ Moshe Attack Targets MVP
 
 ## Current phase
 
-Slice 6 QA gates remain failed; the Moshe answer-title follow-up is implemented and pending deployment.
+Slice 6 QA gates remain failed; a focused quality-recovery plan is ready for review. The separate Moshe answer-title follow-up remains pending deployment.
 
 ## Overall status
 
@@ -16,15 +16,15 @@ Pending review
 
 | Role | Status | Required action | Due before |
 |---|---|---|---|
-| Product | Slice 6 approved | No action until recovery results are available | Slice 6 |
-| Development | Title follow-up ready | Deploy and verify checkpoint 007; fusion-quality changes remain separately required | UI follow-up / Slice 6 |
+| Product | Recovery review pending | Approve or amend recovery slices A-D | Slice 6 |
+| Development | Recovery plan ready | Await plan approval; title deployment remains separate | Slice 6 |
 | UX | Approved | Routing experience, attribution, candidate presentation, evidence, and states accepted | Complete |
-| QA | Pending threshold review | Approve quantitative thresholds and release gates | Slice 6 |
+| QA | Recovery review pending | Review synthetic gates, evaluator freeze, and aggregate-only feedback | Slice 6 |
 | Architecture/Security | Slice 2 approved | Review evaluator isolation and deterministic source boundary | Slice 4 |
 
 ## Latest change since previous review
 
-Moshe answers now derive the exact `משה - קצין מטרות` title from the returned agent identity, including explicit `@משה` invocation without roster selection. Fusion-quality failures remain unchanged.
+Added `slice-006-quality-recovery-plan.md`: bounded sparse retrieval, explainable evidence-pair scoring, conservative ambiguity handling, and a frozen isolated 400-case rerun. No implementation has begun.
 
 ## Current blockers
 
@@ -39,7 +39,7 @@ Moshe answers now derive the exact `משה - קצין מטרות` title from the
 
 ## Next expected artifact
 
-Deployment and visual verification of `checkpoint-007-moshe-answer-title.md`, followed separately by a reviewed fusion-ranking plan.
+Product and QA review of `slice-006-quality-recovery-plan.md`.
 
 ## Parent issue
 
@@ -74,6 +74,7 @@ Pending remote creation; local draft at `issues/parent-capability.md`.
 - QA review: `qa-review.md`
 - Architecture/security review: `architecture-security-review.md`
 - Execution plan: `execution-plan.md`
+- Slice 6 recovery plan: `slice-006-quality-recovery-plan.md`
 - Latest checkpoint: `checkpoint-007-moshe-answer-title.md`
 - Handoff: `handoff-summary.md`
 
