@@ -6,7 +6,7 @@ Moshe Attack Targets MVP
 
 ## Current phase
 
-Slice 6 QA gates remain failed; requested UI follow-up is implemented and awaiting UX/deployment approval.
+Slice 6 QA gates remain failed; requested UI follow-up is approved and deployed with the existing SQLite target bank preserved.
 
 ## Overall status
 
@@ -17,14 +17,14 @@ Pending review
 | Role | Status | Required action | Due before |
 |---|---|---|---|
 | Product | Slice 6 approved | No action until recovery results are available | Slice 6 |
-| Development | UI follow-up ready | Await UX approval; fusion-quality changes remain separately required | UI follow-up / Slice 6 |
+| Development | UI follow-up deployed | Fusion-quality changes remain separately required | Slice 6 |
 | UX | Approved | Routing experience, attribution, candidate presentation, evidence, and states accepted | Complete |
 | QA | Pending threshold review | Approve quantitative thresholds and release gates | Slice 6 |
 | Architecture/Security | Slice 2 approved | Review evaluator isolation and deterministic source boundary | Slice 4 |
 
 ## Latest change since previous review
 
-Implemented live Moshe member opening, punctuation-safe persistent mention highlighting, and raw evidence references in target map popups; fusion-quality failures remain unchanged.
+Deployed live Moshe member opening, punctuation-safe persistent mention highlighting, and raw evidence references in target map popups. Production SQLite integrity and the existing 3 targets / 14 evidence links were preserved; fusion-quality failures remain unchanged.
 
 ## Current blockers
 
@@ -39,7 +39,7 @@ Implemented live Moshe member opening, punctuation-safe persistent mention highl
 
 ## Next expected artifact
 
-UX approval and deployment of `checkpoint-006-ui-fixes.md`, followed separately by a reviewed fusion-ranking plan.
+User visual acceptance of `checkpoint-006-ui-fixes.md`, followed separately by a reviewed fusion-ranking plan.
 
 ## Parent issue
 

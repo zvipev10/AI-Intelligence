@@ -2,7 +2,7 @@
 
 ## Current state
 
-Slices 1-5 are deployed. Slice 6 completed with failed quality gates. A requested UI follow-up is implemented locally and awaits UX approval/deployment.
+Slices 1-5 and the requested UI follow-up are deployed. Slice 6 completed with failed quality gates.
 
 ## Latest implementation
 
@@ -14,17 +14,19 @@ Slices 1-5 are deployed. Slice 6 completed with failed quality gates. A requeste
 
 ## Validation
 
-20 tests pass on the Linux VM, along with JavaScript syntax, Python compilation, and `git diff --check`.
+32 focused tests pass on the Linux VM, along with JavaScript syntax, Python compilation, and `git diff --check`.
 
 ## Deployment state
 
-Slice 5 commit `7176657` is deployed. General remains on port 8642, Moshe on port 8643, and UI on port 8769. Rollback backup: `/opt/serbia-poc-ui-backups/slice5-20260719T202907Z`.
+UI follow-up commit `cf3e325` is deployed. General remains on port 8642, Moshe on port 8643, and UI on port 8769. Code rollback backup: `/opt/serbia-poc-ui-backups/ui-fixes-20260720T175638Z`.
 
-Production smoke checks passed for General routing, exact `@משה` routing, empty-target behavior, typed target-layer enrichment, served UI assets, service health, and resources. The target bank remained empty.
+Production smoke checks passed for service health, served assets, raw-reference search results, and a Moshe-attributed live member-opening response. The target bank was not cleared: SQLite integrity is `ok`, and the existing 3 targets and 14 evidence links remained unchanged. Pre-deployment database backup: `/opt/serbia-poc/backups/attack_targets/attack_targets-pre-ui-20260720T175618Z.db`.
+
+The in-app browser blocked further access to the VM raw-IP URL under its URL policy, so final visual interaction verification is assigned to the user.
 
 ## Next action
 
-Approve and deploy `checkpoint-006-ui-fixes.md`, then separately review and implement evidence-pair ranking and semantic disambiguation before repeating Slice 6.
+User verifies the four UI changes, then development separately reviews and implements evidence-pair ranking and semantic disambiguation before repeating Slice 6.
 
 ## Open decisions
 

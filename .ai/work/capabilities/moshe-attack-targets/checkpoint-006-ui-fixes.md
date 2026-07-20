@@ -6,7 +6,7 @@
 
 ## Checkpoint status
 
-Implemented and validated; pending UX approval before deployment
+Approved, deployed, and backend-validated; final visual interaction check remains manual
 
 ## User-requested changes
 
@@ -30,10 +30,15 @@ Implemented and validated; pending UX approval before deployment
 - `git diff --check` passes.
 - Static UX review confirms visible agent attribution, punctuation-safe mention styling, RTL-safe raw references, and no Moshe-specific target renderer.
 
-## Pending verification
+## Deployment verification
 
-- Live browser interaction after deployment: member click, punctuation variants, sent-message color, and target popup with a persisted candidate.
+- Deployed commit `cf3e325` to the production VM and restarted the UI, General gateway, and Moshe gateway; all three services are active with zero restart count after deployment.
+- Created and integrity-checked SQLite backup `/opt/serbia-poc/backups/attack_targets/attack_targets-pre-ui-20260720T175618Z.db` before deployment.
+- Created code rollback backup `/opt/serbia-poc-ui-backups/ui-fixes-20260720T175638Z`.
+- Confirmed the live target bank remained at 3 targets and 14 evidence links before and after deployment, with SQLite integrity `ok`.
+- Confirmed a persisted target search returns five raw record references and a live member-opening request is attributed to `moshe`.
+- The in-app browser subsequently blocked the VM raw-IP URL under its URL policy. The four final visual interactions therefore remain for user verification in the deployed UI.
 
 ## Recommendation
 
-Approve the focused UX changes, then deploy the UI/backend/MCP files and run the four live interaction checks.
+User to verify the four visual interactions in the deployed UI. Keep the protected SQLite backup until acceptance.
