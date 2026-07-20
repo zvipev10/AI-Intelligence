@@ -6,7 +6,7 @@ Moshe Attack Targets MVP
 
 ## Current phase
 
-Slice 6 QA gates remain failed; a focused quality-recovery plan is ready for review. The separate Moshe answer-title follow-up remains pending deployment.
+Slice 6 QA gates remain failed; a focused quality-recovery plan is ready for review. The separate Moshe answer-title follow-up is deployed and verified.
 
 ## Overall status
 
@@ -17,7 +17,7 @@ Pending review
 | Role | Status | Required action | Due before |
 |---|---|---|---|
 | Product | Recovery review pending | Approve or amend recovery slices A-D | Slice 6 |
-| Development | Recovery plan ready | Await plan approval; title deployment remains separate | Slice 6 |
+| Development | Recovery plan ready | Await plan approval | Slice 6 |
 | UX | Approved | Routing experience, attribution, candidate presentation, evidence, and states accepted | Complete |
 | QA | Recovery review pending | Review synthetic gates, evaluator freeze, and aggregate-only feedback | Slice 6 |
 | Architecture/Security | Slice 2 approved | Review evaluator isolation and deterministic source boundary | Slice 4 |

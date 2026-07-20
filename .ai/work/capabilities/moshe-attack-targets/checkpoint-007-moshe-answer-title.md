@@ -6,7 +6,7 @@
 
 ## Status
 
-Implemented; pending deployment
+Deployed and verified
 
 ## Change
 
@@ -21,6 +21,16 @@ Implemented; pending deployment
 - `git diff --check` passes.
 - Local Python and Node runtimes are unavailable on this Windows host, so executable tests remain to be run in the Linux deployment environment before release.
 
+## Deployment verification
+
+- Deployed `app.js` to `/opt/serbia-poc-ui/app.js` on 2026-07-20.
+- Rollback backup: `/opt/serbia-poc-ui-backups/moshe-title-20260720T200414Z`.
+- Eight focused member UI regression tests and JavaScript syntax passed on Linux before deployment.
+- The live served asset contains the exact `משה - קצין מטרות` label.
+- `serbia-poc-ui.service` is active with zero restarts; V2.1 reports 14,800 rows.
+- SQLite integrity is `ok`; the existing 3 targets and 14 evidence links remain unchanged.
+- Post-deployment VM available memory was approximately 224 MB.
+
 ## Next action
 
-Deploy the focused `app.js` change, run the regression suite on Linux, and verify one explicit `@משה` response visually.
+User visually verifies an explicit `@משה` answer. Slice 6 quality recovery remains a separate workstream.

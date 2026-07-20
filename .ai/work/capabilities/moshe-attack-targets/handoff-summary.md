@@ -2,7 +2,7 @@
 
 ## Current state
 
-Slices 1-5 and checkpoint 006 are deployed. Checkpoint 007 changes Moshe's answer title and is pending deployment. Slice 6 completed with failed quality gates, and its quality-recovery plan is ready for review.
+Slices 1-5 and checkpoints 006-007 are deployed. Slice 6 completed with failed quality gates, and its quality-recovery plan is ready for review.
 
 ## Latest implementation
 
@@ -22,6 +22,8 @@ Slices 1-5 and checkpoint 006 are deployed. Checkpoint 007 changes Moshe's answe
 UI follow-up commit `cf3e325` is deployed. General remains on port 8642, Moshe on port 8643, and UI on port 8769. Code rollback backup: `/opt/serbia-poc-ui-backups/ui-fixes-20260720T175638Z`.
 
 Production smoke checks passed for service health, served assets, raw-reference search results, and a Moshe-attributed live member-opening response. The target bank was not cleared: SQLite integrity is `ok`, and the existing 3 targets and 14 evidence links remained unchanged. Pre-deployment database backup: `/opt/serbia-poc/backups/attack_targets/attack_targets-pre-ui-20260720T175618Z.db`.
+
+Checkpoint 007 deployed the exact `משה - קצין מטרות` answer label. Rollback backup: `/opt/serbia-poc-ui-backups/moshe-title-20260720T200414Z`. Eight focused Linux tests and JavaScript syntax passed; the served asset, V2.1 14,800-row status, UI service health, and unchanged SQLite counts were verified.
 
 The in-app browser blocked further access to the VM raw-IP URL under its URL policy, so final visual interaction verification is assigned to the user.
 
