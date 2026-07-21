@@ -1235,22 +1235,6 @@ function confidenceLabel(value) {
   return value === "high" ? "גבוה" : value === "medium" ? "בינוני" : (value || "-");
 }
 
-function targetEvidenceHtml(target = {}) {
-  const evidence = Array.isArray(target.evidence) ? target.evidence : [];
-  const rows = evidence.map(item => `
-    <li>
-      <strong dir="ltr">${escapeHtml(String(item.record_id || "-"))}</strong>
-      <span>${escapeHtml(String(item.source_group || "-"))} · ${escapeHtml(String(item.source_type || "-"))} · <time dir="ltr">${escapeHtml(String(item.observed_at || "-"))}</time></span>
-      <span>${escapeHtml(String(item.reported_object || "-"))}${item.reported_count == null ? "" : ` · ${Number(item.reported_count).toLocaleString("he-IL")}`}</span>
-      <q>${escapeHtml(String(item.relevant_text || "-"))}</q>
-    </li>`).join("");
-  return `<details class="target-evidence-details">
-    <summary aria-label="הצג פירוט ראיות עבור ${escapeHtml(String(target.title || target.target_id || "המטרה"))}">פירוט ראיות (${Number(target.evidence_count || evidence.length || 0).toLocaleString("he-IL")})</summary>
-    <div><strong>הסבר מיזוג:</strong> ${escapeHtml(String(target.fusion_explanation || "לא סופק"))}</div>
-    ${rows ? `<ol>${rows}</ol>` : '<p>פירוט הרשומות אינו זמין בתוצאה זו.</p>'}
-  </details>`;
-}
-
 function identifiersForLayerContext(layer, items, limit = 80) {
   const idFields = layer?.kind === "entity_metadata"
     ? ["entity_id"]
@@ -3570,7 +3554,7 @@ function renderEvidence() {
   renderLayerFilterPanel(activeLayer);
   const activeItems = activeLayer.visible ? itemsForLayerPresentation(activeLayer) : [];
   if (activeLayer.kind === "attack_targets") {
-    head.innerHTML = "<tr><th>מטרה</th><th>סוג אובייקט</th><th>ישות</th><th>מיקום קנוני</th><th>ביטחון</th><th>כמות</th><th>תקציר</th><th>מקורות עצמאיים</th><th>סוגי מקור</th><th>רשומות גולמיות</th></tr>";
+    head.innerHTML = "<tr><th>מטרה</th><th>סוג אובייקט</th><th>ישות</th><th>מיקום קנוני</th><th>ביטחון</th><th>כמות</th><th>תקציר</th><th>סוגי מקור</th><th>רשומות גולמיות</th></tr>";
     body.innerHTML = activeItems.length ? activeItems.map(item => `
       <tr class="attack-target-row">
         <td><strong>${escapeHtml(String(item.title || item.target_id || "-"))}</strong><small dir="ltr">${escapeHtml(String(item.target_id || "-"))}</small></td>
@@ -3580,10 +3564,9 @@ function renderEvidence() {
         <td>${escapeHtml(String(confidenceLabel(item.confidence)))}</td>
         <td>${escapeHtml(String(targetQuantityLabel(item)))}</td>
         <td>${escapeHtml(String(item.summary || "-"))}</td>
-        <td><strong>${Number(item.source_group_count || 0).toLocaleString("he-IL")}</strong></td>
         <td>${(item.source_types || []).length ? (item.source_types || []).map(sourceType => `<span class="target-source-type">${escapeHtml(String(sourceType))}</span>`).join("<br>") : "-"}</td>
-        <td><strong>${Number(item.evidence_count || (item.raw_data_references || []).length || 0).toLocaleString("he-IL")}</strong> ${targetEvidenceHtml(item)}</td>
-      </tr>`).join("") : '<tr><td colspan="10" class="empty-cell">לא נמצאו מועמדי מטרות להצגה.</td></tr>';
+        <td><strong>${Number(item.evidence_count || (item.raw_data_references || []).length || 0).toLocaleString("he-IL")}</strong></td>
+      </tr>`).join("") : '<tr><td colspan="9" class="empty-cell">לא נמצאו מועמדי מטרות להצגה.</td></tr>';
     return;
   }
   if (activeLayer.kind === "location_metadata") {

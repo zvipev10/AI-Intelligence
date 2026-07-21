@@ -57,11 +57,13 @@ class MemberUiRegressionTests(unittest.TestCase):
         self.assertIn("async function refreshOpenAttackTargetCatalogLayer()", self.app)
         self.assertIn('typedLayers.some(layer => layer.kind === "attack_targets")', self.app)
 
-    def test_target_table_separates_independence_source_types_and_raw_records(self):
-        self.assertIn("<th>מקורות עצמאיים</th><th>סוגי מקור</th><th>רשומות גולמיות</th>", self.app)
-        self.assertIn("item.source_group_count || 0", self.app)
+    def test_target_table_shows_source_types_and_plain_raw_record_count(self):
+        self.assertIn("<th>סוגי מקור</th><th>רשומות גולמיות</th>", self.app)
+        self.assertNotIn("<th>מקורות עצמאיים</th>", self.app)
         self.assertIn("item.source_types || []", self.app)
         self.assertIn("item.evidence_count || (item.raw_data_references || []).length", self.app)
+        self.assertNotIn("function targetEvidenceHtml", self.app)
+        self.assertNotIn("הסבר מיזוג:", self.app)
 
 
 if __name__ == "__main__":
