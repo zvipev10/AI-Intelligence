@@ -16,6 +16,7 @@ Date: 2026-07-21
 - Updated all five V2.1 dataset projections containing the source value and the dataset generator constant.
 - Corrected the catalog projection field from `independent_source_count` to the UI contract `source_group_count`.
 - Added `source_types` and `evidence_count` consistently to catalog reads, target-bank reads, and normalized agent results.
+- Added an exact, transactional, idempotent migration for existing persisted evidence rows.
 - Preserved raw evidence references and the existing evidence detail control.
 
 ## Validation
