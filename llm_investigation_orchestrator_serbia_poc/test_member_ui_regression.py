@@ -44,6 +44,11 @@ class MemberUiRegressionTests(unittest.TestCase):
         self.assertIn("function applyAgentResult(result, prompt, options = {})", self.app)
         self.assertNotIn("function applyHermesResult(", self.app)
 
+    def test_csv_parser_only_opens_quotes_at_the_start_of_a_field(self):
+        self.assertIn("let atFieldStart = true;", self.app)
+        self.assertIn("else if (char === '\"' && atFieldStart)", self.app)
+        self.assertNotIn("else if (char === '\"') quoted = !quoted;", self.app)
+
     def test_attack_targets_use_the_shared_layer_pipeline(self):
         self.assertIn("function buildTypedResultLayers(result = {})", self.app)
         self.assertIn('layer.kind === "attack_targets"', self.app)

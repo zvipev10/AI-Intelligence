@@ -717,19 +717,25 @@ function parseCsv(text) {
   let row = [];
   let cell = "";
   let quoted = false;
+  let atFieldStart = true;
   for (let i = 0; i < text.length; i += 1) {
     const char = text[i];
     const next = text[i + 1];
     if (char === '"' && quoted && next === '"') { cell += '"'; i += 1; }
-    else if (char === '"') quoted = !quoted;
-    else if (char === ',' && !quoted) { row.push(cell); cell = ""; }
+    else if (char === '"' && quoted) quoted = false;
+    else if (char === '"' && atFieldStart) { quoted = true; atFieldStart = false; }
+    else if (char === ',' && !quoted) { row.push(cell); cell = ""; atFieldStart = true; }
     else if ((char === '\n' || char === '\r') && !quoted) {
       if (char === '\r' && next === '\n') i += 1;
       row.push(cell);
       if (row.some(value => value !== "")) rows.push(row);
       row = [];
       cell = "";
-    } else cell += char;
+      atFieldStart = true;
+    } else {
+      cell += char;
+      atFieldStart = false;
+    }
   }
   if (cell || row.length) { row.push(cell); rows.push(row); }
   const headers = rows.shift().map(header => header.replace(/^\uFEFF/, ""));
