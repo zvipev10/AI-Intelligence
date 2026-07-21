@@ -52,6 +52,11 @@ class MemberUiRegressionTests(unittest.TestCase):
         self.assertIn("target-raw-references", self.app)
         self.assertIn("target.raw_data_references || []", self.app)
 
+    def test_persisted_attack_targets_are_a_refreshable_catalog_layer(self):
+        self.assertIn('const ATTACK_TARGET_CATALOG_LAYER_ID = "attack-targets:all";', self.app)
+        self.assertIn("async function refreshOpenAttackTargetCatalogLayer()", self.app)
+        self.assertIn('typedLayers.some(layer => layer.kind === "attack_targets")', self.app)
+
 
 if __name__ == "__main__":
     unittest.main()

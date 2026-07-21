@@ -308,8 +308,11 @@ const LAYER_COLORS = [
 const LAYER_FAMILY_LABELS = {
   entities: "ישויות",
   locations: "מיקומים",
-  events: "אירועים לפי source_type"
+  events: "אירועים לפי source_type",
+  targets: "מטרות"
 };
+
+const ATTACK_TARGET_CATALOG_LAYER_ID = "attack-targets:all";
 
 const teamMentionState = {
   textarea: null,
@@ -1996,6 +1999,31 @@ async function openCatalogLayer(layerId, options = {}) {
   }
 }
 
+async function refreshOpenAttackTargetCatalogLayer() {
+  const existing = state.layers.find(item => item.catalogLayerId === ATTACK_TARGET_CATALOG_LAYER_ID);
+  if (!existing) return null;
+  try {
+    const response = await fetch(`/api/layers/${encodeURIComponent(ATTACK_TARGET_CATALOG_LAYER_ID)}/rows`, { cache: "no-store" });
+    const payload = await response.json();
+    if (!response.ok) throw new Error(payload.error || "רענון שכבת המטרות נכשל");
+    const refreshed = buildCatalogLayer(payload.layer, payload.rows || []);
+    existing.items = refreshed.items;
+    existing.visible = true;
+    state.layers = state.layers.filter(layer => layer.kind !== "attack_targets" || layer === existing);
+    const catalogEntry = state.layerCatalog.find(item => item.id === ATTACK_TARGET_CATALOG_LAYER_ID);
+    if (catalogEntry) catalogEntry.count = existing.items.length;
+    ensureLayerFilterState(existing);
+    ensureActiveLayer();
+    renderAllViews();
+    renderLayerSelector();
+    renderQueryLayersModal();
+    return existing;
+  } catch (error) {
+    state.layerCatalogError = error.message || "רענון שכבת המטרות נכשל";
+    return null;
+  }
+}
+
 function visibleEventItems() {
   return visibleLayers("timeline")
     .filter(layer => layer.kind === "events")
@@ -3048,6 +3076,9 @@ function applyAgentResult(result, prompt, options = {}) {
     });
     showResult("ממצאי הסוכן", `נוספו או רועננו ${addedLayers.length.toLocaleString("he-IL")} שכבות מתוך התשובה.`);
     activateView(result.recommended_view || "map", { automatic: true, reason: result.view_reason || "נתונים מובנים בתשובת הסוכן" });
+    if (typedLayers.some(layer => layer.kind === "attack_targets")) {
+      void refreshOpenAttackTargetCatalogLayer();
+    }
   }
 
   finalizeAssistantMessage(result.answer, { result, prompt });

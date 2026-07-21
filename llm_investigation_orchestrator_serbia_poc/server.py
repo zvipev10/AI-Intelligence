@@ -10,6 +10,7 @@ import re
 import sys
 import time
 import secrets
+import subprocess
 from collections import Counter, defaultdict
 from datetime import datetime, timezone
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
@@ -34,6 +35,15 @@ except ImportError:
 
 
 ROOT = Path(__file__).resolve().parent
+ATTACK_TARGET_CATALOG_LAYER_ID = "attack-targets:all"
+TARGET_CATALOG_READER = Path(os.environ.get(
+    "INTELLIGENCE_POC_TARGET_CATALOG_READER",
+    "/opt/serbia-poc/mcp_server/target_catalog_reader.py",
+))
+TARGET_BANK_PATH = Path(os.environ.get(
+    "INTELLIGENCE_POC_TARGET_BANK",
+    "/opt/serbia-poc/data/attack_targets/attack_targets.db",
+))
 CONFIG_PATH = ROOT / ".hermes-api.json"
 RECORDED_RUNS_PATH = ROOT / "test_runs" / "compact_demo_after_general_instructions_20260620T151848Z.json"
 DATASET_VERSION = os.environ.get("INTELLIGENCE_POC_DATASET_VERSION", "v2").strip().lower()
@@ -187,8 +197,30 @@ def ui_layer_data() -> tuple[list[dict[str, Any]], dict[str, dict[str, Any]], di
     return events, entities, locations
 
 
+def load_persisted_attack_targets(
+    entities: dict[str, dict[str, Any]], locations: dict[str, dict[str, Any]], limit: int = 500,
+) -> list[dict[str, Any]]:
+    if not TARGET_CATALOG_READER.is_file() or not TARGET_BANK_PATH.is_file():
+        return []
+    try:
+        completed = subprocess.run(
+            [sys.executable, str(TARGET_CATALOG_READER), "--db", str(TARGET_BANK_PATH), "--limit", str(limit)],
+            capture_output=True, text=True, encoding="utf-8", timeout=8, check=True, shell=False,
+        )
+        rows = json.loads(completed.stdout).get("rows", [])
+    except (OSError, subprocess.SubprocessError, json.JSONDecodeError):
+        return []
+    for row in rows:
+        entity = entities.get(row.get("entity_id") or "", {})
+        location = locations.get(row.get("location_id") or "", {})
+        row["entity_name"] = entity.get("canonical_name") or row.get("entity_id") or ""
+        row["location_name"] = location.get("location_name") or location.get("name") or row.get("location_id") or ""
+    return rows
+
+
 def list_ui_layers() -> list[dict[str, Any]]:
     events, entities, locations = ui_layer_data()
+    targets = load_persisted_attack_targets(entities, locations)
     layers = [
         {
             "id": "entity-metadata:all",
@@ -207,6 +239,14 @@ def list_ui_layers() -> list[dict[str, Any]]:
             "capabilities": {"table": True, "map": True, "timeline": False},
         },
     ]
+    layers.append({
+        "id": ATTACK_TARGET_CATALOG_LAYER_ID,
+        "label": "מועמדי מטרות",
+        "family": "targets",
+        "kind": "attack_targets",
+        "count": len(targets),
+        "capabilities": {"table": True, "map": True, "timeline": False},
+    })
     source_counts = Counter(event.get("source_type") or "מקור לא ידוע" for event in events)
     for source_type, count in sorted(source_counts.items(), key=lambda item: (-item[1], item[0])):
         layers.append({
@@ -231,6 +271,8 @@ def get_ui_layer_rows(layer_id: str) -> tuple[dict[str, Any], list[dict[str, Any
         rows = sorted(entities.values(), key=lambda item: (-int(item.get("event_count") or 0), str(item.get("canonical_name") or "")))
     elif layer_id == "location-metadata:all":
         rows = sorted(locations.values(), key=lambda item: (-int(item.get("event_count") or 0), str(item.get("location_name") or "")))
+    elif layer_id == ATTACK_TARGET_CATALOG_LAYER_ID:
+        rows = load_persisted_attack_targets(entities, locations)
     elif layer_id.startswith("events:"):
         source_type = layer.get("source_type") or layer_id.split(":", 1)[1]
         rows = [event for event in events if (event.get("source_type") or "מקור לא ידוע") == source_type]
