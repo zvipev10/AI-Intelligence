@@ -2,7 +2,7 @@
 
 ## Current state
 
-Slices 1-5 and checkpoints 006-008 are deployed. Slice 6 quality recovery passes all approved gates and production verification. Final Slice 7 acceptance remains.
+All implementation slices are deployed. Slice 6 quality gates pass, and Slice 7 production verification is technically complete. Final Product/QA capability acceptance remains.
 
 ## Latest implementation
 
@@ -15,7 +15,7 @@ Slices 1-5 and checkpoints 006-008 are deployed. Slice 6 quality recovery passes
 
 ## Validation
 
-32 focused tests pass on the Linux VM, along with JavaScript syntax, Python compilation, and `git diff --check`.
+53 focused Linux tests pass, along with JavaScript syntax, Python compilation, the complete 400-case evaluation, production routing/session checks, isolated restore, permissions, evaluator isolation, and `git diff --check`.
 
 ## Deployment state
 
@@ -31,8 +31,8 @@ The in-app browser blocked further access to the VM raw-IP URL under its URL pol
 
 ## Next action
 
-Complete final Slice 7 acceptance and handoff review.
+Product/QA accepts `checkpoint-009-slice-7-release.md` and the recorded residual risks. Then mark the parent capability complete.
 
 ## Open decisions
 
-Checkpoint 008 passes every approved quantitative gate and is deployed. Residual false merges are 1.27%, below the approved 5% ceiling. Final capability acceptance remains pending.
+No implementation decision remains. Acceptance must explicitly include the 1.27% residual false-merge rate, seven-class alias scope, and constrained-VM memory/swap risk.
