@@ -157,15 +157,38 @@ const LOCATIONS = {
 };
 
 const PRIMARY_IDS = new Set([]);
-const EVENT_ID_PATTERN = /\b(?:REC-\d{6}|LOC-\d{3})\b/g;
+const EVENT_ID_PATTERN = /\b(?:REC-(?:V2-)?\d{6}|LOC-(?:V2-)?\d{3})\b/g;
 
 function createInvestigationId() {
   const random = crypto?.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
   return `investigation-${random}`;
 }
 
+function liveStepsUrl(currentPrompt) {
+  return /(^|[^\p{L}\p{N}_])@משה(?![\p{L}\p{N}_])/u.test(String(currentPrompt || ""))
+    ? "/api/live-steps?agent=moshe"
+    : "/api/live-steps?agent=general";
+}
+
 const INVESTIGATIONS_STORAGE_KEY = "serbia-poc-investigations-v1";
 const DEFAULT_INVESTIGATION_NAME = "חקירה חדשה";
+const TEAM_MENTION_AGENT_INSTRUCTION = [
+  "הנחיית ממשק קבועה:",
+  "סימוני @ לפני שמות חברי מכלול, כגון @משה או @טליה, הם פנייה פנימית של המשתמש לצוות העבודה.",
+  "אל תתייחס לשמות חברי המכלול כאל ישויות מודיעיניות, אנשים לחקירה, מקורות, מיקומים או מילות מפתח, אלא אם המשתמש מבקש במפורש לנתח את חברי המכלול עצמם."
+].join("\n");
+
+const MICHLOL_MEMBERS = [
+  { id: "moshe-targets-officer", displayName: "משה", roleLabel: "קצין מטרות", memberType: "user", avatar: "./assets/michlol/moshe.png", initial: "מ" },
+  { id: "talia-tama-officer", displayName: "טליה", roleLabel: "קצינת תמא", memberType: "user", avatar: "./assets/michlol/talia.png", initial: "ט" },
+  { id: "naama-field-officer", displayName: "נעמה", roleLabel: "קצינת שטח", memberType: "user", avatar: "./assets/michlol/naama.png", initial: "נ" },
+  { id: "gadi-collection-officer", displayName: "גדי", roleLabel: "קצין איסוף", memberType: "user", avatar: "./assets/michlol/gadi.png", initial: "ג" },
+  { id: "yahli-processing-officer", displayName: "יהלי", roleLabel: "קצין עיבוד", memberType: "user", avatar: "./assets/michlol/yahli.png", initial: "י" }
+];
+
+const MICHLOL_MEMBER_WELCOME = "אני מחובר עכשיו לשיחה הזו. שלח לי את המשימה או השאלה הבאה, ובשלב הבא נחבר כאן סוכן ייעודי לחבר המכלול.";
+const MOSHE_MEMBER_ID = "moshe-targets-officer";
+const MOSHE_MESSAGE_LABEL = "משה - קצין מטרות";
 
 const state = {
   events: [],
@@ -204,13 +227,16 @@ const state = {
   layerSearchOpen: false,
   promptOptionsOpen: false,
   promptSelectedLayerIds: new Set(),
+  activeConversationMemberId: null,
   openingLayerIds: new Set(),
   layers: [],
   activeLayerId: null,
   rawOverlayMinimized: false,
   rawOverlayHeight: 28,
   queryEdited: false,
-  originalQuery: null
+  originalQuery: null,
+  activeTeamMentions: [],
+  memberOpeningRequestToken: 0
 };
 
 const conversation = document.getElementById("conversation");
@@ -224,6 +250,7 @@ const sendButton = document.getElementById("sendButton");
 const investigationInput = document.getElementById("investigationInput");
 const investigationAddButton = document.getElementById("investigationAddButton");
 const investigationList = document.getElementById("investigationList");
+const michlolTeam = document.getElementById("michlolTeam");
 const promptOptionsButton = document.getElementById("promptOptionsButton");
 const promptOptionsMenu = document.getElementById("promptOptionsMenu");
 const selectedLayersButton = document.getElementById("selectedLayersButton");
@@ -281,8 +308,409 @@ const LAYER_COLORS = [
 const LAYER_FAMILY_LABELS = {
   entities: "ישויות",
   locations: "מיקומים",
-  events: "אירועים לפי source_type"
+  events: "אירועים לפי source_type",
+  targets: "מטרות"
 };
+
+const ATTACK_TARGET_CATALOG_LAYER_ID = "attack-targets:all";
+const teamMentionState = {
+  textarea: null,
+  range: null,
+  matches: [],
+  activeIndex: 0
+};
+
+function michlolAvatarHtml(member) {
+  return `<span class="michlol-avatar"><span class="michlol-initial">${escapeHtml(member.initial)}</span><img src="${escapeHtml(member.avatar)}" alt="" loading="eager" onerror="this.remove()"></span>`;
+}
+
+function michlolMemberHtml(member) {
+  const title = `${member.displayName} - ${member.roleLabel}`;
+  const aria = `${member.displayName}, ${member.roleLabel}`;
+  const active = state.activeConversationMemberId === member.id;
+  return `
+    <button class="michlol-member ${active ? "active" : ""}" type="button" data-member-id="${escapeHtml(member.id)}" data-member-type="${escapeHtml(member.memberType)}" title="${escapeHtml(title)}" aria-label="${escapeHtml(aria)}" aria-pressed="${active ? "true" : "false"}">
+      ${michlolAvatarHtml(member)}
+      <span class="michlol-name">${escapeHtml(member.displayName)}</span>
+    </button>`;
+}
+
+function renderMichlolTeam() {
+  if (!michlolTeam) return;
+  const visible = MICHLOL_MEMBERS.slice(0, 3);
+  const hidden = MICHLOL_MEMBERS.slice(3);
+  michlolTeam.innerHTML = `
+    <span class="michlol-title">מכלול</span>
+    ${visible.map(michlolMemberHtml).join("")}
+    ${hidden.length ? `
+      <details class="michlol-more">
+        <summary title="הצג חברי מכלול נוספים" aria-label="הצג חברי מכלול נוספים">...</summary>
+        <div class="michlol-more-list">
+          ${hidden.map(michlolMemberHtml).join("")}
+        </div>
+      </details>` : ""}`;
+}
+
+function activeConversationMember() {
+  return MICHLOL_MEMBERS.find(member => member.id === state.activeConversationMemberId) || null;
+}
+
+function updatePromptPlaceholder() {
+  if (!promptInput) return;
+  const member = activeConversationMember();
+  promptInput.placeholder = member ? `כתוב אל ${member.displayName}...` : "כתוב שאלת חקירה...";
+}
+
+function memberMessageLabel(member) {
+  if (member.id === MOSHE_MEMBER_ID) return MOSHE_MESSAGE_LABEL;
+  return `${member.displayName} · ${member.roleLabel}`;
+}
+
+function assistantMessageLabel() {
+  const member = activeConversationMember();
+  if (state.activeTeamMentions.some(mention => mention.id === MOSHE_MEMBER_ID)) return MOSHE_MESSAGE_LABEL;
+  return member ? memberMessageLabel(member) : "סוכן חקירה";
+}
+
+function resultMessageLabel(result = {}) {
+  return result.responding_agent === "moshe" ? MOSHE_MESSAGE_LABEL : assistantMessageLabel();
+}
+
+function appendMemberWelcomeMessage(member) {
+  conversation.querySelectorAll(".member-welcome-message").forEach(message => message.remove());
+  return appendMessage("assistant", `
+    <p><strong>${escapeHtml(member.displayName)}</strong></p>
+    <p>${escapeHtml(MICHLOL_MEMBER_WELCOME)}</p>`, { label: memberMessageLabel(member), className: "member-welcome-message", memberId: member.id });
+}
+
+async function appendAgentMemberOpeningMessage(member) {
+  const token = ++state.memberOpeningRequestToken;
+  conversation.querySelectorAll(".member-welcome-message").forEach(message => message.remove());
+  const article = appendMessage("assistant", '<p class="member-opening-status">משה מתחבר לשיחה...</p>', {
+    label: memberMessageLabel(member), className: "member-welcome-message member-agent-opening", memberId: member.id
+  });
+  try {
+    const response = await fetch("/api/investigate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        prompt: "@משה הצג הודעת פתיחה קצרה מטעמך כקצין המטרות, והסבר במשפט אחד כיצד אפשר להפעיל אותך בשיחה.",
+        routing_prompt: "@משה",
+        history: state.history,
+        investigation_id: state.investigationId
+      })
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || "Moshe opening message failed");
+    if (token !== state.memberOpeningRequestToken || state.activeConversationMemberId !== member.id) return;
+    article.querySelector(".message-label").textContent = memberMessageLabel(member);
+    article.innerHTML = `<div class="message-label">${escapeHtml(memberMessageLabel(member))}</div><div class="answer-body">${answerHtml(cleanAssistantAnswer(result.answer))}</div>`;
+    state.history.push({ role: "assistant", content: cleanAssistantAnswer(result.answer) });
+  } catch (error) {
+    if (token !== state.memberOpeningRequestToken || state.activeConversationMemberId !== member.id) return;
+    article.innerHTML = `<div class="message-label">${escapeHtml(memberMessageLabel(member))}</div><p>לא הצלחתי לטעון כרגע הודעה ממשה.</p>`;
+  }
+  conversation.scrollTop = conversation.scrollHeight;
+}
+
+function selectConversationMember(memberId) {
+  const member = MICHLOL_MEMBERS.find(item => item.id === memberId);
+  if (!member || state.activeConversationMemberId === member.id) return;
+  state.activeConversationMemberId = member.id;
+  renderMichlolTeam();
+  updatePromptPlaceholder();
+  if (member.id === MOSHE_MEMBER_ID) appendAgentMemberOpeningMessage(member);
+  else appendMemberWelcomeMessage(member);
+  conversation.scrollTop = conversation.scrollHeight;
+}
+
+function createTeamMentionMenu() {
+  const menu = document.createElement("div");
+  menu.id = "teamMentionMenu";
+  menu.className = "team-mention-menu";
+  menu.setAttribute("role", "listbox");
+  menu.setAttribute("aria-label", "בחירת חבר מכלול");
+  menu.hidden = true;
+  document.body.appendChild(menu);
+  menu.addEventListener("mousedown", event => event.preventDefault());
+  menu.addEventListener("click", event => {
+    const option = event.target.closest("[data-team-mention-index]");
+    if (!option) return;
+    chooseTeamMention(Number(option.dataset.teamMentionIndex));
+  });
+  return menu;
+}
+
+const teamMentionMenu = createTeamMentionMenu();
+
+function normalizeTeamMentionText(value) {
+  return String(value || "").normalize("NFKC").trim().toLocaleLowerCase("he-IL");
+}
+
+function activeMentionRange(textarea) {
+  const caret = textarea.selectionStart;
+  if (caret == null || textarea.selectionEnd !== caret) return null;
+  const beforeCaret = textarea.value.slice(0, caret);
+  const match = beforeCaret.match(/(^|[\s([{])@([^\s@]*)$/u);
+  if (!match) return null;
+  return {
+    start: caret - match[2].length - 1,
+    end: caret,
+    query: match[2]
+  };
+}
+
+function matchingTeamMembers(query) {
+  const normalized = normalizeTeamMentionText(query);
+  if (!normalized) return MICHLOL_MEMBERS;
+  return MICHLOL_MEMBERS.filter(member => {
+    const haystack = normalizeTeamMentionText(`${member.displayName} ${member.roleLabel} ${member.id}`);
+    return haystack.includes(normalized);
+  });
+}
+
+function recognizedTeamMemberByMention(rawMention) {
+  const normalized = normalizeTeamMentionText(rawMention).replace(/^@/, "").replace(/[^\p{L}\p{N}_-]+$/gu, "");
+  if (!normalized) return null;
+  return MICHLOL_MEMBERS.find(member => normalizeTeamMentionText(member.displayName) === normalized) || null;
+}
+
+function highlightedPromptHtml(value) {
+  const text = String(value || "");
+  if (!text) return "";
+  let html = "";
+  let lastIndex = 0;
+  const mentionPattern = /@([\p{L}\p{N}_-]+)/gu;
+  let match;
+  while ((match = mentionPattern.exec(text))) {
+    html += escapeHtml(text.slice(lastIndex, match.index));
+    const member = recognizedTeamMemberByMention(match[0]);
+    const mention = escapeHtml(match[0]);
+    html += member ? `<span class="mention-highlight-token">${mention}</span>` : mention;
+    lastIndex = match.index + match[0].length;
+  }
+  html += escapeHtml(text.slice(lastIndex));
+  return html.endsWith("\n") ? `${html}\n` : html;
+}
+
+function syncMentionHighlight(textarea) {
+  const highlights = textarea?.closest(".mention-editor")?.querySelector(".mention-highlights");
+  if (!highlights) return;
+  highlights.innerHTML = highlightedPromptHtml(textarea.value);
+  highlights.scrollTop = textarea.scrollTop;
+  highlights.scrollLeft = textarea.scrollLeft;
+}
+
+function enableMentionHighlight(textarea) {
+  if (!textarea || textarea.dataset.mentionHighlight === "true" || !textarea.parentNode) return;
+  const wrapper = document.createElement("div");
+  wrapper.className = "mention-editor";
+  const highlights = document.createElement("div");
+  highlights.className = "mention-highlights";
+  highlights.setAttribute("aria-hidden", "true");
+  textarea.parentNode.insertBefore(wrapper, textarea);
+  wrapper.append(highlights, textarea);
+  textarea.classList.add("mention-source");
+  textarea.dataset.mentionHighlight = "true";
+  textarea.addEventListener("input", () => syncMentionHighlight(textarea));
+  textarea.addEventListener("scroll", () => syncMentionHighlight(textarea));
+  syncMentionHighlight(textarea);
+}
+
+function textareaCaretViewportRect(textarea) {
+  const style = window.getComputedStyle(textarea);
+  const mirror = document.createElement("div");
+  const marker = document.createElement("span");
+  const beforeCaret = textarea.value.slice(0, textarea.selectionStart || 0);
+  const mirrorStyles = [
+    "boxSizing", "width", "minHeight", "paddingTop", "paddingRight", "paddingBottom", "paddingLeft",
+    "borderTopWidth", "borderRightWidth", "borderBottomWidth", "borderLeftWidth", "fontFamily",
+    "fontSize", "fontWeight", "fontStyle", "letterSpacing", "lineHeight", "textTransform",
+    "textAlign", "direction", "wordSpacing", "tabSize"
+  ];
+  mirrorStyles.forEach(prop => {
+    mirror.style[prop] = style[prop];
+  });
+  mirror.style.position = "fixed";
+  mirror.style.top = `${textarea.getBoundingClientRect().top}px`;
+  mirror.style.left = `${textarea.getBoundingClientRect().left}px`;
+  mirror.style.height = "auto";
+  mirror.style.overflow = "hidden";
+  mirror.style.visibility = "hidden";
+  mirror.style.whiteSpace = "pre-wrap";
+  mirror.style.overflowWrap = "break-word";
+  mirror.style.pointerEvents = "none";
+  mirror.textContent = beforeCaret || "";
+  marker.textContent = "\u200b";
+  mirror.appendChild(marker);
+  document.body.appendChild(mirror);
+  const markerRect = marker.getBoundingClientRect();
+  const caretRect = {
+    top: markerRect.top - textarea.scrollTop,
+    right: markerRect.right - textarea.scrollLeft,
+    bottom: markerRect.bottom - textarea.scrollTop,
+    left: markerRect.left - textarea.scrollLeft
+  };
+  mirror.remove();
+  return caretRect;
+}
+
+function positionTeamMentionMenu(textarea) {
+  if (!teamMentionMenu || teamMentionMenu.hidden) return;
+  const rect = textarea.getBoundingClientRect();
+  const caretRect = textareaCaretViewportRect(textarea);
+  const width = Math.min(260, Math.max(180, window.innerWidth - 24));
+  teamMentionMenu.style.width = `${width}px`;
+  const measuredHeight = Math.min(teamMentionMenu.offsetHeight || 186, 186);
+  const anchorTop = Number.isFinite(caretRect.top) ? Math.max(rect.top, Math.min(caretRect.top, rect.bottom)) : rect.top;
+  const anchorBottom = Number.isFinite(caretRect.bottom) ? Math.max(rect.top, Math.min(caretRect.bottom, rect.bottom)) : rect.bottom;
+  const anchorRight = Number.isFinite(caretRect.right) ? Math.max(rect.left, Math.min(caretRect.right, rect.right)) : rect.right;
+  const mobile = window.innerWidth <= 760;
+  const belowTop = mobile ? rect.bottom + 8 : anchorBottom + 8;
+  const aboveTop = mobile ? rect.top - measuredHeight - 8 : anchorTop - measuredHeight - 8;
+  const hasRoomAbove = aboveTop >= 12;
+  const hasRoomBelow = belowTop + measuredHeight <= window.innerHeight - 12;
+  const top = mobile && hasRoomAbove ? aboveTop : (hasRoomBelow ? belowTop : Math.max(12, aboveTop));
+  const left = Math.max(12, Math.min(anchorRight - width, window.innerWidth - width - 12));
+  teamMentionMenu.style.top = `${Math.round(top)}px`;
+  teamMentionMenu.style.left = `${Math.round(left)}px`;
+}
+
+function renderTeamMentionMenu() {
+  if (!teamMentionMenu || !teamMentionState.textarea || !teamMentionState.matches.length) {
+    closeTeamMentionMenu();
+    return;
+  }
+  teamMentionMenu.innerHTML = teamMentionState.matches.map((member, index) => `
+    <button type="button" role="option" class="team-mention-option ${index === teamMentionState.activeIndex ? "active" : ""}" data-team-mention-index="${index}" aria-selected="${index === teamMentionState.activeIndex ? "true" : "false"}">
+      ${michlolAvatarHtml(member)}
+      <span class="team-mention-main">
+        <span class="team-mention-name">${escapeHtml(member.displayName)}</span>
+        <span class="team-mention-role">${escapeHtml(member.roleLabel)}</span>
+      </span>
+    </button>`).join("");
+  teamMentionMenu.hidden = false;
+  positionTeamMentionMenu(teamMentionState.textarea);
+  const activeOption = teamMentionMenu.querySelector(".team-mention-option.active");
+  activeOption?.scrollIntoView({ block: "nearest" });
+}
+
+function updateTeamMentionMenu(textarea) {
+  const range = activeMentionRange(textarea);
+  if (!range) {
+    closeTeamMentionMenu();
+    return;
+  }
+  const matches = matchingTeamMembers(range.query);
+  if (!matches.length) {
+    closeTeamMentionMenu();
+    return;
+  }
+  teamMentionState.textarea = textarea;
+  teamMentionState.range = range;
+  teamMentionState.matches = matches;
+  teamMentionState.activeIndex = Math.min(teamMentionState.activeIndex, matches.length - 1);
+  renderTeamMentionMenu();
+}
+
+function closeTeamMentionMenu() {
+  if (teamMentionMenu) {
+    teamMentionMenu.hidden = true;
+    teamMentionMenu.innerHTML = "";
+  }
+  teamMentionState.textarea = null;
+  teamMentionState.range = null;
+  teamMentionState.matches = [];
+  teamMentionState.activeIndex = 0;
+}
+
+function chooseTeamMention(index = teamMentionState.activeIndex) {
+  const textarea = teamMentionState.textarea;
+  const range = teamMentionState.range;
+  const member = teamMentionState.matches[index];
+  if (!textarea || !range || !member) return;
+  const before = textarea.value.slice(0, range.start);
+  const after = textarea.value.slice(range.end);
+  const mentionText = `@${member.displayName}`;
+  const spacing = after.startsWith(" ") || after.startsWith("\n") || !after ? " " : "";
+  const nextValue = `${before}${mentionText}${spacing}${after}`;
+  const caret = before.length + mentionText.length + spacing.length;
+  textarea.value = nextValue;
+  textarea.focus();
+  textarea.setSelectionRange(caret, caret);
+  state.activeTeamMentions = teamMentionsForPrompt(textarea.value);
+  syncMentionHighlight(textarea);
+  closeTeamMentionMenu();
+}
+
+function handleTeamMentionKeydown(event) {
+  if (!teamMentionState.textarea || event.target !== teamMentionState.textarea || teamMentionMenu.hidden) return false;
+  if (event.key === "ArrowDown") {
+    event.preventDefault();
+    teamMentionState.activeIndex = (teamMentionState.activeIndex + 1) % teamMentionState.matches.length;
+    renderTeamMentionMenu();
+    return true;
+  }
+  if (event.key === "ArrowUp") {
+    event.preventDefault();
+    teamMentionState.activeIndex = (teamMentionState.activeIndex - 1 + teamMentionState.matches.length) % teamMentionState.matches.length;
+    renderTeamMentionMenu();
+    return true;
+  }
+  if (event.key === "Enter" || event.key === "Tab") {
+    event.preventDefault();
+    chooseTeamMention();
+    return true;
+  }
+  if (event.key === "Escape") {
+    event.preventDefault();
+    closeTeamMentionMenu();
+    return true;
+  }
+  return false;
+}
+
+function attachTeamMentionAutocomplete(textarea) {
+  if (!textarea) return;
+  textarea.setAttribute("aria-autocomplete", "list");
+  textarea.setAttribute("aria-controls", "teamMentionMenu");
+  textarea.addEventListener("input", () => {
+    state.activeTeamMentions = teamMentionsForPrompt(textarea.value);
+    syncMentionHighlight(textarea);
+    updateTeamMentionMenu(textarea);
+  });
+  textarea.addEventListener("click", () => updateTeamMentionMenu(textarea));
+  textarea.addEventListener("keyup", event => {
+    if (["ArrowDown", "ArrowUp", "Enter", "Tab", "Escape"].includes(event.key)) return;
+    updateTeamMentionMenu(textarea);
+  });
+  textarea.addEventListener("blur", () => {
+    setTimeout(() => {
+      if (document.activeElement?.closest?.("#teamMentionMenu")) return;
+      closeTeamMentionMenu();
+    }, 100);
+  });
+}
+
+function teamMentionsForPrompt(prompt) {
+  const mentions = [];
+  const seen = new Set();
+  const mentionPattern = /@([\p{L}\p{N}_-]+)/gu;
+  let match;
+  while ((match = mentionPattern.exec(prompt || ""))) {
+    const query = normalizeTeamMentionText(match[1]);
+    const member = MICHLOL_MEMBERS.find(item => normalizeTeamMentionText(item.displayName) === query);
+    if (!member || seen.has(member.id)) continue;
+    seen.add(member.id);
+    mentions.push({
+      id: member.id,
+      display_name: member.displayName,
+      role_label: member.roleLabel,
+      member_type: member.memberType
+    });
+  }
+  return mentions;
+}
 
 function parseCsv(text) {
   const rows = [];
@@ -335,9 +763,9 @@ function collectAggregateLocations(result) {
     });
   });
   let locations = [...byLocation.values()].sort((a, b) => b.count - a.count);
-  const idsInAnswer = new Set((result.answer || "").match(/\bLOC-\d{3}\b/g) || []);
+  const idsInAnswer = new Set((result.answer || "").match(/\bLOC-(?:V2-)?\d{3}\b/g) || []);
   if (idsInAnswer.size) {
-    locations = locations.filter(item => idsInAnswer.has(item.location_id) || !String(item.location_id || "").match(/^LOC-\d{3}$/));
+    locations = locations.filter(item => idsInAnswer.has(item.location_id) || !String(item.location_id || "").match(/^LOC-(?:V2-)?\d{3}$/));
   }
   return locations;
 }
@@ -453,15 +881,15 @@ function layerId(kind, label) {
 function buildEventLayers(events) {
   const grouped = new Map();
   [...events].sort((a, b) => a.date - b.date).forEach(event => {
-    const label = event.source_type || "מקור לא ידוע";
-    if (!grouped.has(label)) grouped.set(label, []);
-    grouped.get(label).push(event);
+    const sourceType = event.source_type || "מקור לא ידוע";
+    if (!grouped.has(sourceType)) grouped.set(sourceType, []);
+    grouped.get(sourceType).push(event);
   });
   return [...grouped.entries()]
     .sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0], "he"))
-    .map(([label, items]) => ({
-      dataId: layerId("events", label),
-      label,
+    .map(([sourceType, items]) => ({
+      dataId: layerId("events", sourceType),
+      label: sourceType,
       kind: "events",
       visible: true,
       items,
@@ -561,6 +989,21 @@ function buildCatalogLayer(layer, rows = []) {
   };
 }
 
+function buildTypedResultLayers(result = {}) {
+  return (result.layers || [])
+    .filter(layer => layer && Array.isArray(layer.rows) && layer.rows.length)
+    .map(layer => ({
+      dataId: layer.id || layerId(layer.kind, "result"),
+      label: layer.label || "תוצאות הסוכן",
+      kind: layer.kind,
+      visible: true,
+      items: layer.kind === "events"
+        ? layer.rows.map(item => ({ ...item, date: new Date(item.timestamp_utc) }))
+        : layer.rows,
+      capabilities: layer.capabilities || { table: true, map: false, timeline: false }
+    }));
+}
+
 function sanitizeLayerKey(value) {
   return String(value || "unknown").replace(/[^\p{L}\p{N}_:-]+/gu, "-");
 }
@@ -601,6 +1044,14 @@ function addResultLayers({ sourceId, sourceLabel, preferredView = "map", layers 
   }
 
   layers.forEach(layer => {
+    if (layer.kind === "attack_targets") {
+      const incomingIds = new Set((layer.items || []).map(item => item.target_id).filter(Boolean));
+      state.layers.forEach(existingLayer => {
+        if (existingLayer.kind !== "attack_targets" || existingLayer.sourceId === cleanSourceId) return;
+        existingLayer.items = (existingLayer.items || []).filter(item => !incomingIds.has(item.target_id));
+      });
+      state.layers = state.layers.filter(existingLayer => existingLayer.kind !== "attack_targets" || existingLayer.items.length);
+    }
     const dataId = layer.dataId || layer.id || layerId(layer.kind, layer.label);
     const id = `${cleanSourceId}::${sanitizeLayerKey(dataId)}`;
     const existing = state.layers.find(item => item.id === id);
@@ -766,6 +1217,22 @@ function itemsForLayerPresentation(layer) {
   const filters = validAppliedFilters(layer);
   if (!filters.length) return items;
   return items.filter(item => filters.every(filter => filterMatchesItem(item, filter)));
+}
+
+function targetQuantityLabel(target = {}) {
+  const min = target.count_min;
+  const max = target.count_max;
+  const estimate = target.count_estimate;
+  if (target.count_assessment === "range" && min != null && max != null) return `${Number(min).toLocaleString("he-IL")}–${Number(max).toLocaleString("he-IL")}`;
+  if (estimate != null) return `${target.count_assessment === "approximate" ? "כ־" : ""}${Number(estimate).toLocaleString("he-IL")}`;
+  if (min != null && max != null && min !== max) return `${Number(min).toLocaleString("he-IL")}–${Number(max).toLocaleString("he-IL")}`;
+  if (min != null) return Number(min).toLocaleString("he-IL");
+  if (max != null) return Number(max).toLocaleString("he-IL");
+  return "לא הוכרע";
+}
+
+function confidenceLabel(value) {
+  return value === "high" ? "גבוה" : value === "medium" ? "בינוני" : (value || "-");
 }
 
 function identifiersForLayerContext(layer, items, limit = 80) {
@@ -1071,7 +1538,11 @@ function selectedLayerContextText(layers) {
 
 function promptForAgentWithSelectedLayers(prompt, selectedLayers) {
   const context = selectedLayerContextText(selectedLayers);
-  return context ? `${prompt}\n\n${context}` : prompt;
+  return [prompt, context, TEAM_MENTION_AGENT_INSTRUCTION].filter(Boolean).join("\n\n");
+}
+
+function promptForAgent(prompt) {
+  return [prompt, TEAM_MENTION_AGENT_INSTRUCTION].filter(Boolean).join("\n\n");
 }
 
 function investigationStateForPrompt(selectedLayers) {
@@ -1511,6 +1982,31 @@ async function openCatalogLayer(layerId, options = {}) {
   }
 }
 
+async function refreshOpenAttackTargetCatalogLayer() {
+  const existing = state.layers.find(item => item.catalogLayerId === ATTACK_TARGET_CATALOG_LAYER_ID);
+  if (!existing) return null;
+  try {
+    const response = await fetch(`/api/layers/${encodeURIComponent(ATTACK_TARGET_CATALOG_LAYER_ID)}/rows`, { cache: "no-store" });
+    const payload = await response.json();
+    if (!response.ok) throw new Error(payload.error || "רענון שכבת המטרות נכשל");
+    const refreshed = buildCatalogLayer(payload.layer, payload.rows || []);
+    existing.items = refreshed.items;
+    existing.visible = true;
+    state.layers = state.layers.filter(layer => layer.kind !== "attack_targets" || layer === existing);
+    const catalogEntry = state.layerCatalog.find(item => item.id === ATTACK_TARGET_CATALOG_LAYER_ID);
+    if (catalogEntry) catalogEntry.count = existing.items.length;
+    ensureLayerFilterState(existing);
+    ensureActiveLayer();
+    renderAllViews();
+    renderLayerSelector();
+    renderQueryLayersModal();
+    return existing;
+  } catch (error) {
+    state.layerCatalogError = error.message || "רענון שכבת המטרות נכשל";
+    return null;
+  }
+}
+
 function visibleEventItems() {
   return visibleLayers("timeline")
     .filter(layer => layer.kind === "events")
@@ -1543,10 +2039,11 @@ function initMap() {
   state.map.on("load", () => { state.mapReady = true; renderMap(); });
 }
 
-function appendMessage(role, html) {
+function appendMessage(role, html, options = {}) {
   const article = document.createElement("article");
-  article.className = `message ${role === "user" ? "user-message" : "assistant-message"}`;
-  article.innerHTML = `<div class="message-label">${role === "user" ? "אנליסט" : "סוכן חקירה"}</div>${html}`;
+  article.className = `message ${role === "user" ? "user-message" : "assistant-message"}${options.className ? ` ${options.className}` : ""}`;
+  if (options.memberId) article.dataset.conversationMemberId = options.memberId;
+  article.innerHTML = `<div class="message-label">${escapeHtml(options.label || (role === "user" ? "אנליסט" : assistantMessageLabel()))}</div>${html}`;
   conversation.appendChild(article);
   return article;
 }
@@ -1555,7 +2052,7 @@ function startAssistantResearchMessage(message = "Hermes מנתח את הבקש�
   const article = document.createElement("article");
   article.className = "message assistant-message";
   article.innerHTML = `
-    <div class="message-label">סוכן חקירה</div>
+    <div class="message-label">${escapeHtml(assistantMessageLabel())}</div>
     <section class="research-process research-process-live">
       <h3>תהליך המחקר</h3>
       <div class="activity-empty">${escapeHtml(message)}</div>
@@ -1584,6 +2081,8 @@ function setActiveResearchMessage(message) {
 function finalizeAssistantMessage(answer, options = {}) {
   ensureAssistantResearchMessage();
   const article = state.activeAssistantMessage;
+  const label = article.querySelector(".message-label");
+  if (label && options.result) label.textContent = resultMessageLabel(options.result);
   const existingList = state.activeActivityList;
   const stepsCount = existingList ? existingList.children.length : 0;
   const research = article.querySelector(".research-process");
@@ -1639,7 +2138,7 @@ function finalizeAssistantMessage(answer, options = {}) {
 
 function showFinalAnswerResult(result, prompt) {
   if (!result) return;
-  applyHermesResult(result, prompt, { keepRenderedSteps: true, restoreOnly: true });
+  applyAgentResult(result, prompt, { keepRenderedSteps: true, restoreOnly: true });
 }
 
 function toggleFinalAnswerVisibility(result, prompt, btn) {
@@ -1845,6 +2344,7 @@ function openStepInjectModal(stepLabel, stepNumber) {
   stepInjectModal.dataset.fromStep = stepNumber;
   stepInjectTitle.textContent = `צעד ${stepNumber}: ${stepLabel}`;
   stepInjectPrompt.value = "";
+  syncMentionHighlight(stepInjectPrompt);
   stepInjectError.hidden = true;
   stepInjectError.textContent = "";
 
@@ -1933,7 +2433,9 @@ async function submitStepInject() {
   const priorResult = state.lastResult;
   const baseStepCount = priorSteps.length;
   const classificationContext = originalClassificationContext(priorSteps.length ? priorSteps : allPriorSteps);
+  state.activeTeamMentions = teamMentionsForPrompt(instruction);
   const continuationPrompt = buildContinuationPrompt(instruction, selectedLayers, classificationContext);
+  const agentContinuationPrompt = promptForAgent(continuationPrompt);
 
   // Start a new labeled continuation bubble
   startAssistantResearchMessage("Hermes ממשיך את החקירה...");
@@ -1952,7 +2454,7 @@ async function submitStepInject() {
 
   const pollContinuationSteps = async () => {
     try {
-      const response = await fetch("/api/live-steps", { cache: "no-store" });
+      const response = await fetch(liveStepsUrl(instruction), { cache: "no-store" });
       if (!response.ok) return;
       const live = await response.json();
       const steps = live.investigation_steps || [];
@@ -1982,7 +2484,8 @@ async function submitStepInject() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        prompt: continuationPrompt,
+        prompt: agentContinuationPrompt,
+        routing_prompt: instruction,
         history: state.history,
         investigation_id: state.investigationId,
         investigation_state: investigationStateForPrompt(selectedLayerContextForAgent()),
@@ -2000,7 +2503,7 @@ async function submitStepInject() {
     // Merge prior steps with new steps so the full chain is in state
     const newSteps = result.investigation_steps || [];
     result.investigation_steps = [...priorSteps, ...newSteps];
-    applyHermesResult(result, continuationPrompt, { keepRenderedSteps: true });
+    applyAgentResult(result, continuationPrompt, { keepRenderedSteps: true });
   } catch (error) {
     addActivity("connection_error", "לא ניתן היה להשלים את המשך החקירה.", error.message);
     finalizeAssistantMessage(`<p>לא הצלחתי להשלים את המשך החקירה.</p><div class="answer-callout">${escapeHtml(error.message)}</div>`, { html: true });
@@ -2016,6 +2519,7 @@ if (stepInjectClose) stepInjectClose.addEventListener("click", closeStepInjectMo
 if (stepInjectModal) stepInjectModal.addEventListener("click", e => { if (e.target === stepInjectModal) closeStepInjectModal(); });
 if (stepInjectSubmit) stepInjectSubmit.addEventListener("click", submitStepInject);
 if (stepInjectPrompt) stepInjectPrompt.addEventListener("keydown", e => {
+  if (handleTeamMentionKeydown(e)) return;
   if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) submitStepInject();
 });
 
@@ -2048,7 +2552,7 @@ function showStepResult(step) {
   const label = humanToolLabel(String(step.tool || "").replace(/^\d+\.\s*/, ""));
   state.queryContext = buildStepQueryContext(step, label);
 
-  // Build a synthetic result object compatible with applyHermesResult's visualization path
+  // Build a synthetic result object compatible with the shared agent visualization path.
   const evidence = new Set(eventIds);
   state.current = state.events.filter(event => evidence.has(event.event_id));
 
@@ -2460,7 +2964,7 @@ async function deleteSavedQuestion(savedId) {
   }
 }
 
-function applyHermesResult(result, prompt, options = {}) {
+function applyAgentResult(result, prompt, options = {}) {
   result.answer = cleanAssistantAnswer(result.answer);
   // Save last result so the step-view return button can restore it
   if (!options.restoreOnly) {
@@ -2503,14 +3007,14 @@ function applyHermesResult(result, prompt, options = {}) {
       sourceId: finalSourceId(result),
       sourceLabel: "תשובת הסוכן",
       preferredView: result.recommended_view || inferRecommendedView(prompt, result.answer).view,
-      layers: buildResultLayers({
+      layers: [...buildResultLayers({
       events: state.current,
       locations: state.aggregateLocations,
       timeline: state.aggregateTimeline,
       groups: state.aggregateGroups,
       locationMetadata: state.locationMetadata,
       entityMetadata: state.entityMetadata
-      })
+      }), ...buildTypedResultLayers(result)]
     });
     // Just restore visualization state, don't touch the chat DOM
     showResult(
@@ -2545,6 +3049,21 @@ function applyHermesResult(result, prompt, options = {}) {
     addActivity("Hermes", `שאלת החקירה שנשלחה: ${prompt}`, `התקבלה תשובה בריצה ${result.run_id}, ללא יומן כלי מפורט.`);
   }
 
+  const typedLayers = buildTypedResultLayers(result);
+  if (typedLayers.length) {
+    const addedLayers = addResultLayers({
+      sourceId: finalSourceId(result),
+      sourceLabel: result.responding_agent === "moshe" ? "תשובת משה" : "תשובת הסוכן",
+      preferredView: result.recommended_view || "map",
+      layers: typedLayers
+    });
+    showResult("ממצאי הסוכן", `נוספו או רועננו ${addedLayers.length.toLocaleString("he-IL")} שכבות מתוך התשובה.`);
+    activateView(result.recommended_view || "map", { automatic: true, reason: result.view_reason || "נתונים מובנים בתשובת הסוכן" });
+    if (typedLayers.some(layer => layer.kind === "attack_targets")) {
+      void refreshOpenAttackTargetCatalogLayer();
+    }
+  }
+
   finalizeAssistantMessage(result.answer, { result, prompt });
   updateResultVisibilityButtons();
   renderQueryInspector();
@@ -2568,9 +3087,9 @@ async function runSavedQuestion(savedId) {
       source_run_id: saved.source_run_id || saved.result?.run_id,
     };
     const prompt = (saved.question || "").trim();
-    appendMessage("user", `<p>${escapeHtml(prompt)}</p>`);
+    appendMessage("user", `<p>${highlightedPromptHtml(prompt)}</p>`);
     state.history.push({ role: "user", content: prompt }, { role: "assistant", content: result.answer || "" });
-    applyHermesResult(result, prompt);
+    applyAgentResult(result, prompt);
   } catch (error) {
     startAssistantResearchMessage("טעינת שאלה שמורה נכשלה.");
     finalizeAssistantMessage(`<p>לא הצלחתי להציג את השאלה השמורה.</p><div class="answer-callout">${escapeHtml(error.message)}</div>`, { html: true });
@@ -2659,11 +3178,12 @@ async function runPrompt(prompt) {
   const clean = prompt.trim();
   if (!clean || state.busy) return;
   const selectedLayers = selectedLayerContextForAgent();
+  state.activeTeamMentions = teamMentionsForPrompt(clean);
   const agentPrompt = promptForAgentWithSelectedLayers(clean, selectedLayers);
   const investigationState = investigationStateForPrompt(selectedLayers);
   const clientStarted = performance.now();
   let firstLiveStepAt = null;
-  appendMessage("user", `<p>${escapeHtml(clean)}</p>`);
+  appendMessage("user", `<p>${highlightedPromptHtml(clean)}</p>`);
   startAssistantResearchMessage();
   state.busy = true;
   sendButton.disabled = true;
@@ -2673,7 +3193,7 @@ async function runPrompt(prompt) {
   let progressTimer = null;
   const pollLiveSteps = async () => {
     try {
-      const response = await fetch("/api/live-steps", { cache: "no-store" });
+      const response = await fetch(liveStepsUrl(clean), { cache: "no-store" });
       if (!response.ok) return;
       const live = await response.json();
       const steps = live.investigation_steps || [];
@@ -2692,6 +3212,7 @@ async function runPrompt(prompt) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         prompt: agentPrompt,
+        routing_prompt: clean,
         history: state.history,
         investigation_id: state.investigationId,
         investigation_state: investigationState
@@ -2706,7 +3227,7 @@ async function runPrompt(prompt) {
     result.answer = cleanAssistantAnswer(result.answer);
     state.history.push({ role: "user", content: clean }, { role: "assistant", content: result.answer });
     const renderStarted = performance.now();
-    applyHermesResult(result, clean);
+    applyAgentResult(result, clean);
     const renderEnded = performance.now();
     const clientPerformance = {
       total_ms: Number((renderEnded - clientStarted).toFixed(3)),
@@ -2902,6 +3423,41 @@ function renderMap() {
     state.markers.push(marker);
     bounds.extend([location.lon, location.lat]);
   });
+  const targetLocationIndexes = new Map();
+  visibleLayers("map").filter(layer => layer.kind === "attack_targets").forEach(layer => {
+    itemsForLayerPresentation(layer).forEach(target => {
+      const canonical = LOCATIONS[target.location_id] || null;
+      const lon = canonical?.lon ?? target.longitude;
+      const lat = canonical?.lat ?? target.latitude;
+      if (lon == null || lat == null) return;
+      const locationKey = target.location_id || `${lon}:${lat}`;
+      const index = targetLocationIndexes.get(locationKey) || 0;
+      targetLocationIndexes.set(locationKey, index + 1);
+      const angle = index * 2.399963;
+      const radius = index ? 0.0018 * Math.ceil(index / 6 + 1) : 0;
+      const markerLon = Number(lon) + Math.cos(angle) * radius;
+      const markerLat = Number(lat) + Math.sin(angle) * radius;
+      const element = document.createElement("div");
+      element.className = "map-marker attack-target-marker";
+      element.style.setProperty("--layer-color", layer.color || "#ffb347");
+      element.setAttribute("role", "button");
+      element.setAttribute("aria-label", `מועמד מטרה: ${target.title || target.target_id}, ${target.location_name || target.location_id}`);
+      element.innerHTML = '<span class="map-marker-dot"></span>';
+      const popupHtml = `<div class="map-popup target-map-popup" dir="rtl">
+        <strong>${escapeHtml(String(target.title || target.target_id || "מועמד מטרה"))}</strong>
+        <span>${escapeHtml(String(target.object_class || "-"))} · ${escapeHtml(String(target.entity_name || target.entity_id || "ללא ישות"))}</span>
+        <span>ביטחון ${escapeHtml(String(confidenceLabel(target.confidence)))} · כמות ${escapeHtml(String(targetQuantityLabel(target)))}</span>
+        <p>${escapeHtml(String(target.summary || ""))}</p>
+        <span class="target-raw-references"><b>אסמכתאות גולמיות:</b> ${(target.raw_data_references || []).length
+          ? (target.raw_data_references || []).map(recordId => `<code dir="ltr">${escapeHtml(String(recordId || "-"))}</code>`).join(" · ")
+          : "לא נטענו אסמכתאות בתוצאה זו"}</span>
+      </div>`;
+      const popup = new maplibregl.Popup({ offset: 20, closeButton: true, closeOnClick: true }).setHTML(popupHtml);
+      const marker = new maplibregl.Marker({ element, anchor: "center" }).setLngLat([markerLon, markerLat]).setPopup(popup).addTo(state.map);
+      state.markers.push(marker);
+      bounds.extend([markerLon, markerLat]);
+    });
+  });
   if (!bounds.isEmpty()) state.map.fitBounds(bounds, { padding: 110, maxZoom: 10.2, duration: 450 });
 }
 
@@ -2997,6 +3553,22 @@ function renderEvidence() {
   ensureLayerFilterState(activeLayer);
   renderLayerFilterPanel(activeLayer);
   const activeItems = activeLayer.visible ? itemsForLayerPresentation(activeLayer) : [];
+  if (activeLayer.kind === "attack_targets") {
+    head.innerHTML = "<tr><th>מטרה</th><th>סוג אובייקט</th><th>ישות</th><th>מיקום קנוני</th><th>ביטחון</th><th>כמות</th><th>תקציר</th><th>סוגי מקור</th><th>רשומות גולמיות</th></tr>";
+    body.innerHTML = activeItems.length ? activeItems.map(item => `
+      <tr class="attack-target-row">
+        <td><strong>${escapeHtml(String(item.title || item.target_id || "-"))}</strong><small dir="ltr">${escapeHtml(String(item.target_id || "-"))}</small></td>
+        <td>${escapeHtml(String(item.object_class || "-"))}</td>
+        <td>${escapeHtml(String(item.entity_name || item.entity_id || "-"))}</td>
+        <td>${escapeHtml(String(item.location_name || item.location_id || "-"))}</td>
+        <td>${escapeHtml(String(confidenceLabel(item.confidence)))}</td>
+        <td>${escapeHtml(String(targetQuantityLabel(item)))}</td>
+        <td>${escapeHtml(String(item.summary || "-"))}</td>
+        <td>${(item.source_types || []).length ? (item.source_types || []).map(sourceType => `<span class="target-source-type">${escapeHtml(String(sourceType))}</span>`).join("<br>") : "-"}</td>
+        <td><strong>${Number(item.evidence_count || (item.raw_data_references || []).length || 0).toLocaleString("he-IL")}</strong></td>
+      </tr>`).join("") : '<tr><td colspan="9" class="empty-cell">לא נמצאו מועמדי מטרות להצגה.</td></tr>';
+    return;
+  }
   if (activeLayer.kind === "location_metadata") {
     head.innerHTML = "<tr><th>מיקום</th><th>אירועים</th><th>רשות</th><th>סוג</th><th>דיוק</th><th>מזהה</th></tr>";
     body.innerHTML = activeItems.length ? activeItems.map(item => `
@@ -3104,9 +3676,11 @@ function resetInvestigation(options = {}) {
   state.investigationMemoryLoading = false;
   state.layerSearchQuery = "";
   state.layerSearchOpen = false;
+  state.activeConversationMemberId = null;
   setPromptOptionsOpen(false);
   closeQueryLayersModal();
   conversation.innerHTML = '<article class="message assistant-message"><div class="message-label">סוכן חקירה</div><p>אפשר להתחיל בשאלה פתוחה. אשתמש בכלי החיפוש, הזמן והמפה כדי לבנות תשובה שניתן לבדוק מול האירועים הגולמיים.</p></article>';
+  updatePromptPlaceholder();
   if (resultTitle) resultTitle.textContent = "טרם בוצעה חקירה";
   if (resultSubtitle) resultSubtitle.textContent = "תוצאות, המחשות וראיות יופיעו כאן לאחר השאלה הראשונה.";
   if (resultCount) resultCount.textContent = "0 אירועים";
@@ -3117,6 +3691,7 @@ function resetInvestigation(options = {}) {
   renderQueryLayersModal();
   renderQueryInspector();
   renderInvestigationSelector();
+  renderMichlolTeam();
   if (state.map) setTimeout(() => state.map.resize(), 0);
 }
 
@@ -3125,6 +3700,11 @@ function escapeHtml(value) {
 }
 
 document.addEventListener("click", event => {
+  const michlolMember = event.target.closest(".michlol-member[data-member-id]");
+  if (michlolMember) {
+    selectConversationMember(michlolMember.dataset.memberId);
+    return;
+  }
   const suggestion = event.target.closest("[data-prompt]");
   if (suggestion) runPrompt(suggestion.dataset.prompt);
   if (event.target.closest("#queryToolName")) openQueryModal();
@@ -3382,10 +3962,13 @@ promptForm.addEventListener("submit", event => {
   event.preventDefault();
   const prompt = promptInput.value;
   promptInput.value = "";
+  syncMentionHighlight(promptInput);
+  closeTeamMentionMenu();
   runPrompt(prompt);
 });
 
 promptInput.addEventListener("keydown", event => {
+  if (handleTeamMentionKeydown(event)) return;
   if (event.key === "Enter" && !event.shiftKey) {
     event.preventDefault();
     promptForm.requestSubmit();
@@ -3412,6 +3995,20 @@ investigationList?.addEventListener("click", event => {
   const investigation = state.investigations.find(item => item.id === option.dataset.investigationId);
   selectInvestigation(investigation, { focusInput: true });
 });
+document.addEventListener("pointerdown", event => {
+  document.querySelectorAll("details.michlol-more[open]").forEach(details => {
+    if (!details.contains(event.target)) details.removeAttribute("open");
+  });
+  if (!event.target.closest("#teamMentionMenu") && event.target !== teamMentionState.textarea) {
+    closeTeamMentionMenu();
+  }
+});
+window.addEventListener("resize", () => {
+  if (teamMentionState.textarea) positionTeamMentionMenu(teamMentionState.textarea);
+});
+document.addEventListener("scroll", () => {
+  if (teamMentionState.textarea) positionTeamMentionMenu(teamMentionState.textarea);
+}, true);
 promptOptionsButton.addEventListener("click", event => {
   event.stopPropagation();
   setPromptOptionsOpen(!state.promptOptionsOpen);
@@ -3431,6 +4028,12 @@ selectedLayersClear.addEventListener("keydown", event => {
 recordedClose.addEventListener("click", closeRecordedModal);
 queryLayersClose.addEventListener("click", closeQueryLayersModal);
 queryLayersSubmit.addEventListener("click", submitQueryLayerSelection);
+renderMichlolTeam();
+updatePromptPlaceholder();
+enableMentionHighlight(promptInput);
+enableMentionHighlight(stepInjectPrompt);
+attachTeamMentionAutocomplete(promptInput);
+attachTeamMentionAutocomplete(stepInjectPrompt);
 initPanelResizers();
 loadInvestigationRegistry();
 renderInvestigationSelector();
@@ -3439,17 +4042,32 @@ async function boot() {
   initMap();
   await loadLayerCatalog();
   await loadInvestigationMemory({ restoreLayers: true });
+  let runtimeStatus = null;
   try {
-    const response = await fetch("./data/serbia_kosovo_events_projection.csv");
+    runtimeStatus = await fetch("/api/status", { cache: "no-store" }).then(response => response.json());
+    if (runtimeStatus.locations_url) {
+      const runtimeLocations = await fetch(runtimeStatus.locations_url, { cache: "no-store" }).then(response => response.json());
+      Object.entries(runtimeLocations).forEach(([locationId, location]) => {
+        LOCATIONS[locationId] = {
+          name: location.name || locationId,
+          type: location.type || "",
+          lat: Number(location.latitude),
+          lon: Number(location.longitude)
+        };
+      });
+    }
+    const datasetUrl = runtimeStatus.dataset_url || "./data/serbia_kosovo_events_projection.csv";
+    const response = await fetch(datasetUrl, { cache: "no-store" });
     if (!response.ok) throw new Error("dataset unavailable");
     state.events = parseCsv(await response.text()).map(enrich);
-    document.getElementById("datasetStatus").textContent = `${state.events.length.toLocaleString("he-IL")} אירועים זמינים במאגר`;
+    const versionLabel = runtimeStatus.dataset_version ? ` · ${runtimeStatus.dataset_version.toUpperCase()}` : "";
+    document.getElementById("datasetStatus").textContent = `${state.events.length.toLocaleString("he-IL")} אירועים זמינים במאגר${versionLabel}`;
     document.querySelector(".status-dot").classList.add("ready");
   } catch (error) {
     document.getElementById("datasetStatus").textContent = "טעינת הנתונים נכשלה";
   }
   try {
-    const status = await fetch("/api/status").then(response => response.json());
+    const status = runtimeStatus || await fetch("/api/status", { cache: "no-store" }).then(response => response.json());
     if (!status.configured) throw new Error("not configured");
     agentStatus.textContent = "Hermes + MCP מחוברים";
     agentStatus.className = "agent-live";

@@ -10,12 +10,23 @@ import re
 import sys
 import time
 import secrets
+import subprocess
 from collections import Counter, defaultdict
 from datetime import datetime, timezone
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qs, unquote, urlparse
+
+from agent_result_pipeline import (
+    build_agent_result,
+    normalize_aggregate_groups,
+    normalize_entity_layers,
+    normalize_location_layers,
+    normalize_map_locations,
+    normalize_attack_targets,
+)
+from agent_routing import AgentRouteRegistry, MOSHE_AGENT_ID
 
 try:
     import paramiko
@@ -24,23 +35,60 @@ except ImportError:
 
 
 ROOT = Path(__file__).resolve().parent
+ATTACK_TARGET_CATALOG_LAYER_ID = "attack-targets:all"
+TARGET_CATALOG_READER = Path(os.environ.get(
+    "INTELLIGENCE_POC_TARGET_CATALOG_READER",
+    "/opt/serbia-poc/mcp_server/target_catalog_reader.py",
+))
+TARGET_BANK_PATH = Path(os.environ.get(
+    "INTELLIGENCE_POC_TARGET_BANK",
+    "/opt/serbia-poc/data/attack_targets/attack_targets.db",
+))
 CONFIG_PATH = ROOT / ".hermes-api.json"
-PERFORMANCE_DIR = ROOT / "performance_logs"
-RECORDED_RUNS_DIR = ROOT / "recorded_runs"
-SAVED_QUESTIONS_DIR = ROOT / "saved_questions"
-INVESTIGATIONS_DIR = ROOT / "investigations"
 RECORDED_RUNS_PATH = ROOT / "test_runs" / "compact_demo_after_general_instructions_20260620T151848Z.json"
-LOCATIONS_PATH = ROOT / "data" / "serbia_kosovo_locations.json"
-EVENTS_PATH = ROOT / "data" / "serbia_kosovo_events_projection.csv"
-ENTITIES_PATH = ROOT / "data" / "serbia_kosovo_entities.json"
+DATASET_VERSION = os.environ.get("INTELLIGENCE_POC_DATASET_VERSION", "v2").strip().lower()
+if DATASET_VERSION in {"v2.1", "v2_1", "v21"}:
+    DATASET_VERSION = "v2.1"
+    DATASET_DIR = ROOT / "data" / "serbian_intelligence_v2_1"
+    LOCATIONS_PATH = DATASET_DIR / "serbia_kosovo_locations_v2_1.json"
+    EVENTS_PATH = DATASET_DIR / "serbia_kosovo_events_projection_v2_1.csv"
+    ENTITIES_PATH = DATASET_DIR / "serbia_kosovo_entities_v2_1.json"
+    DATASET_URL = "./data/serbian_intelligence_v2_1/serbia_kosovo_events_projection_v2_1.csv"
+    LOCATIONS_URL = "./data/serbian_intelligence_v2_1/serbia_kosovo_locations_v2_1.json"
+elif DATASET_VERSION == "v2":
+    DATASET_DIR = ROOT / "data" / "serbian_intelligence_v2"
+    LOCATIONS_PATH = DATASET_DIR / "serbia_kosovo_locations_v2.json"
+    EVENTS_PATH = DATASET_DIR / "serbia_kosovo_events_projection_v2.csv"
+    ENTITIES_PATH = DATASET_DIR / "serbia_kosovo_entities_v2.json"
+    DATASET_URL = "./data/serbian_intelligence_v2/serbia_kosovo_events_projection_v2.csv"
+    LOCATIONS_URL = "./data/serbian_intelligence_v2/serbia_kosovo_locations_v2.json"
+elif DATASET_VERSION == "v1":
+    DATASET_DIR = ROOT / "data"
+    LOCATIONS_PATH = DATASET_DIR / "serbia_kosovo_locations.json"
+    EVENTS_PATH = DATASET_DIR / "serbia_kosovo_events_projection.csv"
+    ENTITIES_PATH = DATASET_DIR / "serbia_kosovo_entities.json"
+    DATASET_URL = "./data/serbia_kosovo_events_projection.csv"
+    LOCATIONS_URL = "./data/serbia_kosovo_locations.json"
+else:
+    raise ValueError(f"Unsupported INTELLIGENCE_POC_DATASET_VERSION: {DATASET_VERSION}")
+
+# Keep replacement-scenario state separate from legacy V1 event identifiers.
+# Selecting V1 preserves the existing on-disk layout for rollback compatibility.
+STATE_SUFFIX = Path(DATASET_VERSION) if DATASET_VERSION != "v1" else Path()
+PERFORMANCE_DIR = ROOT / "performance_logs" / STATE_SUFFIX
+RECORDED_RUNS_DIR = ROOT / "recorded_runs" / STATE_SUFFIX
+SAVED_QUESTIONS_DIR = ROOT / "saved_questions" / STATE_SUFFIX
+INVESTIGATIONS_DIR = ROOT / "investigations" / STATE_SUFFIX
 TERMINAL_STATUSES = {"completed", "failed", "cancelled"}
-EVENT_ID_PATTERN = re.compile(r"\b(?:REC-\d{6}|LOC-\d{3})\b")
+EVENT_ID_PATTERN = re.compile(r"\b(?:REC-(?:V2-)?\d{6}|LOC-(?:V2-)?\d{3})\b")
 SAVED_QUESTION_ID_PATTERN = re.compile(r"^[A-Za-z0-9_.-]+$")
 INVESTIGATION_ID_PATTERN = re.compile(r"^[A-Za-z0-9_.-]+$")
 ACTIVE_RUN_STARTED_AT = None
-APP_BUILD = "serbia-poc-1"
+ACTIVE_RUN_STARTED_AT_BY_AUDIT: dict[str, datetime] = {}
+APP_BUILD = f"serbia-poc-{DATASET_VERSION}"
 REMOTE_AUDIT_PATH = "/opt/serbia-poc/mcp_audit.jsonl"
 HERMES_TOOL_PREFIX = "mcp_serbia_events_poc_"
+AGENT_ROUTES = AgentRouteRegistry()
 try:
     LOCATIONS = json.loads(LOCATIONS_PATH.read_text(encoding="utf-8"))
 except (OSError, json.JSONDecodeError):
@@ -149,8 +197,30 @@ def ui_layer_data() -> tuple[list[dict[str, Any]], dict[str, dict[str, Any]], di
     return events, entities, locations
 
 
+def load_persisted_attack_targets(
+    entities: dict[str, dict[str, Any]], locations: dict[str, dict[str, Any]], limit: int = 500,
+) -> list[dict[str, Any]]:
+    if not TARGET_CATALOG_READER.is_file() or not TARGET_BANK_PATH.is_file():
+        return []
+    try:
+        completed = subprocess.run(
+            [sys.executable, str(TARGET_CATALOG_READER), "--db", str(TARGET_BANK_PATH), "--limit", str(limit)],
+            capture_output=True, text=True, encoding="utf-8", timeout=8, check=True, shell=False,
+        )
+        rows = json.loads(completed.stdout).get("rows", [])
+    except (OSError, subprocess.SubprocessError, json.JSONDecodeError):
+        return []
+    for row in rows:
+        entity = entities.get(row.get("entity_id") or "", {})
+        location = locations.get(row.get("location_id") or "", {})
+        row["entity_name"] = entity.get("canonical_name") or row.get("entity_id") or ""
+        row["location_name"] = location.get("location_name") or location.get("name") or row.get("location_id") or ""
+    return rows
+
+
 def list_ui_layers() -> list[dict[str, Any]]:
     events, entities, locations = ui_layer_data()
+    targets = load_persisted_attack_targets(entities, locations)
     layers = [
         {
             "id": "entity-metadata:all",
@@ -169,6 +239,14 @@ def list_ui_layers() -> list[dict[str, Any]]:
             "capabilities": {"table": True, "map": True, "timeline": False},
         },
     ]
+    layers.append({
+        "id": ATTACK_TARGET_CATALOG_LAYER_ID,
+        "label": "מועמדי מטרות",
+        "family": "targets",
+        "kind": "attack_targets",
+        "count": len(targets),
+        "capabilities": {"table": True, "map": True, "timeline": False},
+    })
     source_counts = Counter(event.get("source_type") or "מקור לא ידוע" for event in events)
     for source_type, count in sorted(source_counts.items(), key=lambda item: (-item[1], item[0])):
         layers.append({
@@ -193,6 +271,8 @@ def get_ui_layer_rows(layer_id: str) -> tuple[dict[str, Any], list[dict[str, Any
         rows = sorted(entities.values(), key=lambda item: (-int(item.get("event_count") or 0), str(item.get("canonical_name") or "")))
     elif layer_id == "location-metadata:all":
         rows = sorted(locations.values(), key=lambda item: (-int(item.get("event_count") or 0), str(item.get("location_name") or "")))
+    elif layer_id == ATTACK_TARGET_CATALOG_LAYER_ID:
+        rows = load_persisted_attack_targets(entities, locations)
     elif layer_id.startswith("events:"):
         source_type = layer.get("source_type") or layer_id.split(":", 1)[1]
         rows = [event for event in events if (event.get("source_type") or "מקור לא ידוע") == source_type]
@@ -203,6 +283,29 @@ def get_ui_layer_rows(layer_id: str) -> tuple[dict[str, Any], list[dict[str, Any
 
 def load_hermes_config() -> dict:
     return json.loads(CONFIG_PATH.read_text(encoding="utf-8-sig"))
+
+
+def load_agent_hermes_config(agent_id: str) -> dict:
+    """Merge a non-secret per-agent endpoint override into the shared transport config."""
+    config = dict(load_hermes_config())
+    agents = config.pop("agents", {}) or {}
+    override = agents.get(agent_id, {}) if isinstance(agents, dict) else {}
+    if not isinstance(override, dict):
+        raise ValueError(f"Invalid Hermes configuration for agent: {agent_id}")
+    merged = {**config, **override}
+    merged["agent_id"] = agent_id
+    merged.setdefault("audit_path", REMOTE_AUDIT_PATH)
+    return merged
+
+
+def route_agent_request(request: dict[str, Any]):
+    """Route from the unmodified current user message, never enriched prompt/history text."""
+    routing_prompt = str(request.get("routing_prompt") or request.get("prompt") or "").strip()
+    conversation_id = str(request.get("investigation_id") or "").strip()
+    route = AGENT_ROUTES.route(conversation_id, routing_prompt)
+    if route.responding_agent == MOSHE_AGENT_ID and route.hermes_session_id is None:
+        AGENT_ROUTES.bind_hermes_session(conversation_id, route.mission_run_id, route.mission_run_id)
+    return route
 
 RECORDED_TOOL_TEXT = {
     "classify_question_intent": (
@@ -1208,135 +1311,6 @@ class HermesClient:
                 expected = "לקבל פלט שיאשר, ישלול או ימקד את כיוון החקירה."
             return observed, decision, expected
 
-        def normalize_location_item(item, default_count=0):
-            if not isinstance(item, dict):
-                return None
-            location_id = item.get("location_id") or item.get("key")
-            location_name = item.get("location_name") or item.get("name") or item.get("label")
-            if not location_id and not location_name:
-                return None
-            return {
-                "location_id": location_id,
-                "location_name": location_name or location_id,
-                "latitude": item.get("latitude"),
-                "longitude": item.get("longitude"),
-                "municipality": item.get("municipality"),
-                "count": item.get("count", default_count),
-            }
-
-        def normalize_map_locations(tool, result):
-            locations = []
-
-            for item in result.get("map_locations") or []:
-                normalized = normalize_location_item(item)
-                if normalized:
-                    locations.append(normalized)
-
-            for item in result.get("locations") or []:
-                normalized = normalize_location_item(item, default_count=1)
-                if normalized:
-                    locations.append(normalized)
-
-            if tool == "aggregate_events" and result.get("group_by") in {"location", "municipality"}:
-                for item in result.get("groups") or []:
-                    normalized = normalize_location_item(item)
-                    if normalized:
-                        locations.append(normalized)
-
-            for item in result.get("route") or []:
-                normalized = normalize_location_item(item)
-                if normalized:
-                    locations.append(normalized)
-
-            for group in result.get("conflict_groups") or []:
-                for item in group.get("locations") or []:
-                    normalized = normalize_location_item(item)
-                    if normalized:
-                        locations.append(normalized)
-
-            deduped = {}
-            for item in locations:
-                key = item.get("location_id") or item.get("location_name")
-                if not key:
-                    continue
-                existing = deduped.get(key)
-                if not existing or int(item.get("count") or 0) > int(existing.get("count") or 0):
-                    deduped[key] = item
-            return list(deduped.values())
-
-        def normalize_aggregate_groups(result):
-            groups = []
-            group_by = result.get("group_by")
-            for item in result.get("groups") or []:
-                if not isinstance(item, dict):
-                    continue
-                key = item.get("key") or item.get("label")
-                label = item.get("label") or item.get("key")
-                if key is None and label is None:
-                    continue
-                groups.append({
-                    "key": key,
-                    "label": label,
-                    "count": item.get("count", 0),
-                    "group_by": group_by,
-                    "first_event_id": item.get("first_event_id"),
-                    "first_event_time": item.get("first_event_time"),
-                    "last_event_id": item.get("last_event_id"),
-                    "last_event_time": item.get("last_event_time"),
-                })
-            return groups
-
-        def normalize_location_layers(result):
-            layers = []
-            for item in result.get("location_layers") or []:
-                if not isinstance(item, dict):
-                    continue
-                location_id = item.get("location_id")
-                if not location_id:
-                    continue
-                layers.append({
-                    "location_id": location_id,
-                    "location_name": item.get("location_name") or item.get("name") or location_id,
-                    "name": item.get("name") or item.get("location_name") or location_id,
-                    "type": item.get("type"),
-                    "country": item.get("country"),
-                    "region": item.get("region"),
-                    "municipality": item.get("municipality"),
-                    "locality": item.get("locality"),
-                    "precision": item.get("precision"),
-                    "latitude": item.get("latitude"),
-                    "longitude": item.get("longitude"),
-                    "event_count": item.get("event_count", item.get("count", 0)),
-                    "top_entities": item.get("top_entities") or [],
-                    "top_sources": item.get("top_sources") or [],
-                    "certainty_breakdown": item.get("certainty_breakdown") or {},
-                    "reliability_breakdown": item.get("reliability_breakdown") or {},
-                })
-            return layers
-
-        def normalize_entity_layers(result):
-            layers = []
-            for item in result.get("entity_layers") or []:
-                if not isinstance(item, dict):
-                    continue
-                entity_id = item.get("entity_id")
-                if not entity_id:
-                    continue
-                layers.append({
-                    "entity_id": entity_id,
-                    "canonical_name": item.get("canonical_name") or entity_id,
-                    "entity_type": item.get("entity_type"),
-                    "confidence": item.get("confidence"),
-                    "basis": item.get("basis"),
-                    "aliases": item.get("aliases") or [],
-                    "event_count": item.get("event_count", item.get("count", 0)),
-                    "top_locations": item.get("top_locations") or [],
-                    "top_sources": item.get("top_sources") or [],
-                    "certainty_breakdown": item.get("certainty_breakdown") or {},
-                    "reliability_breakdown": item.get("reliability_breakdown") or {},
-                })
-            return layers
-
         def extract_event_ids(value, depth=0):
             if depth > 5:
                 return []
@@ -1750,9 +1724,10 @@ class HermesClient:
         return "\n".join(lines)
 
     def read_live_steps(self):
-        if ACTIVE_RUN_STARTED_AT is None:
+        audit_path = self.config.get("audit_path") or REMOTE_AUDIT_PATH
+        started_at = ACTIVE_RUN_STARTED_AT_BY_AUDIT.get(audit_path)
+        if started_at is None:
             return []
-        audit_path = REMOTE_AUDIT_PATH
         audit_text = self.ssh_command(f"cat {audit_path} 2>/dev/null || true", timeout=20)
         audit_records = []
         for line in audit_text.splitlines():
@@ -1761,14 +1736,14 @@ class HermesClient:
                 timestamp = record.get("timestamp_utc")
                 if timestamp:
                     parsed = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
-                    if parsed < ACTIVE_RUN_STARTED_AT:
+                    if parsed < started_at:
                         continue
                 audit_records.append(record)
             except json.JSONDecodeError:
                 continue
         return self.summarize_audit(audit_records)
 
-    def investigate(self, prompt, history, investigation_state=None, investigation_id=None, is_continuation=False, continuation_context=None):
+    def investigate(self, prompt, history, investigation_state=None, investigation_id=None, is_continuation=False, continuation_context=None, responding_agent="general", mission_run_id=None):
         global ACTIVE_RUN_STARTED_AT
         overall_started = time.perf_counter()
         performance = {
@@ -1776,7 +1751,7 @@ class HermesClient:
             "hermes": {"poll_count": 0, "status_request_total_ms": 0},
             "tools": {},
         }
-        audit_path = REMOTE_AUDIT_PATH
+        audit_path = self.config.get("audit_path") or REMOTE_AUDIT_PATH
         original_classification = {}
         if isinstance(continuation_context, dict):
             original_classification = continuation_context.get("original_classification") or {}
@@ -1805,6 +1780,9 @@ class HermesClient:
             )
         instructions = (
             "אתה סוכן חקירה למערכת מודיעינית ניסיונית על תרחיש הסלמה בצפון קוסובו/סרביה. השב בעברית בלבד.\n"
+            "נקודת המבט היא של אנליסט מודיעין בצבא סרביה. המאגר מבוסס בעיקר על מקורות גלויים ועל תצפיות וידאו מכטב״ם סרביות סינתטיות כלפי כוחות היריב והסביבה. "
+            "הכיסוי חלקי ומוטה לאיסוף על היריב; היעדר דיווח על כוח סרבי אינו ראיה להיעדר פעילות סרבית. "
+            "הפרד תמיד בין תצפית, זיהוי והסקה, והתייחס לספירת עצמים בווידאו כהערכה הדורשת הצלבה.\n"
             f"השתמש אך ורק בכלי MCP ששמם מתחיל ב-{HERMES_TOOL_PREFIX} ובנתונים שהם מחזירים.\n"
             + classify_instruction +
             "עקרון כיסוי מחייב: ברירת המחדל בכל שאלת מודיעין היא Coverage / exhaustive mode."
@@ -1976,6 +1954,14 @@ class HermesClient:
             "REASON הוא הסבר קצר בעברית, עד שמונה מילים, לבחירת התצוגה.\n"
             "אין להשתמש בכלי מערכת, קבצים, רשת או shell, ואין לבקש אישור לכלים."
         )
+        if responding_agent == MOSHE_AGENT_ID:
+            instructions += (
+                "\n\nאתה משה, קצין המטרות. המשתמש פנה אליך במפורש באמצעות @משה. "
+                "אתה אחראי לשאלות הבהרה, איתור ראיות, סיווג, מיזוג, בדיקת עצמאות מקורות, "
+                "בדיקת כפילויות, ויצירת מועמד מטרה רק כאשר כלי prepare_target_candidate מאשר persistence_eligible=true. "
+                "ממצא בביטחון נמוך מדווח למשתמש ואינו נשמר. אל תמציא source_group ואל תעקוף את כלי המיזוג. "
+                "אין לך הרשאה לכלי מערכת, filesystem, shell, SQL, מחיקה, reset, evaluator או שינוי סטטוס."
+            )
         state_block = self.render_investigation_state(investigation_state)
         full_instructions = f"{instructions}\n\n{state_block}" if state_block else instructions
         safe_investigation_id = re.sub(r"[^A-Za-z0-9_.:-]+", "-", str(investigation_id or "")).strip("-")
@@ -1987,6 +1973,7 @@ class HermesClient:
             session.ssh_command(f"truncate -s 0 {audit_path}")
             performance["gateway"]["audit_truncate_ms"] = elapsed_ms(stage_started)
             ACTIVE_RUN_STARTED_AT = datetime.now(timezone.utc)
+            ACTIVE_RUN_STARTED_AT_BY_AUDIT[audit_path] = ACTIVE_RUN_STARTED_AT
             create_started = time.perf_counter()
             created = session.request("POST", "/v1/runs", {
                 "input": prompt,
@@ -2138,7 +2125,19 @@ class HermesClient:
                     "slowest_tool": performance["tools"].get("slowest_tool"),
                 }
                 performance_log_path = write_performance_log(run_id, performance, prompt)
-                return {
+                target_rows = normalize_attack_targets(
+                    audit_records,
+                    locations=LOCATIONS,
+                    entities=load_ui_entity_db(),
+                )
+                result_layers = ([{
+                    "id": "attack-targets:candidates",
+                    "label": "מועמדי מטרות",
+                    "kind": "attack_targets",
+                    "rows": target_rows,
+                    "capabilities": {"table": True, "map": True, "timeline": False},
+                }] if target_rows else [])
+                return build_agent_result({
                     "run_id": run_id,
                     "answer": clean_output,
                     "event_ids": answer_event_ids,
@@ -2149,7 +2148,7 @@ class HermesClient:
                     "events": events,
                     "usage": status.get("usage", {}),
                     "performance_log": performance_log_path.name,
-                }
+                }, responding_agent=responding_agent, session_id=session_id, mission_run_id=mission_run_id, layers=result_layers)
             time.sleep(1)
         raise TimeoutError("Hermes investigation exceeded 480 seconds")
 
@@ -2176,7 +2175,15 @@ class Handler(SimpleHTTPRequestHandler):
     def do_GET(self):
         path = urlparse(self.path)
         if path.path == "/api/status":
-            self.send_json(200, {"mode": "hermes", "configured": CONFIG_PATH.exists(), "build": APP_BUILD})
+            self.send_json(200, {
+                "mode": "hermes",
+                "configured": CONFIG_PATH.exists(),
+                "build": APP_BUILD,
+                "dataset_version": DATASET_VERSION,
+                "dataset_url": DATASET_URL,
+                "locations_url": LOCATIONS_URL,
+                "dataset_rows": len(load_ui_events()),
+            })
             return
         if path.path == "/api/layers":
             self.send_json(200, {"layers": list_ui_layers()})
@@ -2229,7 +2236,9 @@ class Handler(SimpleHTTPRequestHandler):
             return
         if path.path == "/api/live-steps":
             try:
-                config = load_hermes_config()
+                requested_agent = (parse_qs(path.query).get("agent") or ["general"])[0]
+                agent_id = MOSHE_AGENT_ID if requested_agent == MOSHE_AGENT_ID else "general"
+                config = load_agent_hermes_config(agent_id)
                 steps = HermesClient(config).read_live_steps()
                 self.send_json(200, {"investigation_steps": steps})
             except Exception as exc:
@@ -2306,14 +2315,18 @@ class Handler(SimpleHTTPRequestHandler):
             if not prompt:
                 self.send_json(400, {"error": "Missing prompt"})
                 return
-            config = load_hermes_config()
+            conversation_id = str(request.get("investigation_id") or "").strip()
+            route = route_agent_request(request)
+            config = load_agent_hermes_config(route.responding_agent)
             result = HermesClient(config).investigate(
                 prompt,
                 request.get("history") or [],
                 investigation_state=request.get("investigation_state"),
-                investigation_id=request.get("investigation_id"),
-                is_continuation=bool(request.get("is_continuation")),
+                investigation_id=route.mission_run_id if route.responding_agent == MOSHE_AGENT_ID else conversation_id,
+                is_continuation=bool(request.get("is_continuation")) and not route.mission_started,
                 continuation_context=request.get("continuation_context"),
+                responding_agent=route.responding_agent,
+                mission_run_id=route.mission_run_id,
             )
             self.send_json(200, result)
         except Exception as exc:

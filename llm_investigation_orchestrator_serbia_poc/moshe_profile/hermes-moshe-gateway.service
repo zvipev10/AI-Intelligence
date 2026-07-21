@@ -1,0 +1,28 @@
+[Unit]
+Description=Hermes Agent Gateway - Moshe Target Officer
+After=network-online.target hermes-gateway.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ubuntu
+Group=ubuntu
+ExecStart=/home/ubuntu/.hermes/hermes-agent/venv/bin/hermes gateway run --replace
+WorkingDirectory=/home/ubuntu/.hermes/hermes-agent
+Environment="HOME=/home/ubuntu"
+Environment="USER=ubuntu"
+Environment="LOGNAME=ubuntu"
+Environment="PATH=/home/ubuntu/.hermes/hermes-agent/venv/bin:/home/ubuntu/.hermes/hermes-agent/node_modules/.bin:/usr/bin:/home/ubuntu/.local/bin:/home/ubuntu/.npm-global/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+Environment="VIRTUAL_ENV=/home/ubuntu/.hermes/hermes-agent/venv"
+Environment="HERMES_HOME=/home/ubuntu/.hermes/profiles/moshe"
+Environment="API_SERVER_PORT=8643"
+Restart=always
+RestartSec=5
+KillMode=mixed
+KillSignal=SIGTERM
+TimeoutStopSec=210
+MemoryHigh=400M
+MemoryMax=600M
+
+[Install]
+WantedBy=multi-user.target

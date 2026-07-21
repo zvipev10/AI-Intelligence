@@ -23,6 +23,7 @@ LOCAL_HERMES_CONFIG = LOCAL_ROOT / ".hermes-api.json"
 
 FILES = [
     "server.py",
+    "agent_result_pipeline.py",
     "index.html",
     "app.js",
     "styles.css",
@@ -31,6 +32,7 @@ FILES = [
 ]
 
 DIRS = [
+    "assets",
     "vendor",
     "data",
     "recorded_runs",

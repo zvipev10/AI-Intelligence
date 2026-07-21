@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Read-only MCP server for the synthetic Hebrew intelligence event dataset."""
+"""Constrained MCP server for synthetic intelligence evidence and target candidates."""
 
 from __future__ import annotations
 
 import csv
+import hashlib
 import json
 import math
 import os
@@ -16,24 +17,47 @@ from pathlib import Path
 from typing import Any
 
 try:
+    from fusion_tools import discover_corroborating_evidence, find_duplicate_candidates, prepare_candidate
     from semantic_index import SemanticEventIndex
+    from target_bank import TargetBank
 except ImportError:  # pragma: no cover - package-style execution fallback
     sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from fusion_tools import discover_corroborating_evidence, find_duplicate_candidates, prepare_candidate
     from semantic_index import SemanticEventIndex
+    from target_bank import TargetBank
 
 
 PROTOCOL_VERSION = "2025-06-18"
 SERVER_NAME = "serbia-events-poc"
-SERVER_VERSION = "0.2.0"
+SERVER_VERSION = "0.3.0"
 DEFAULT_LIMIT = 2000
 MAX_LIMIT = 2000
 MIN_COVERAGE_LIMIT = 2000
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-DATA_PATH = Path(os.environ.get("INTELLIGENCE_POC_DATA", BASE_DIR / "data" / "serbia_kosovo_events_projection.csv"))
-LOCATIONS_PATH = Path(os.environ.get("INTELLIGENCE_POC_LOCATIONS", BASE_DIR / "data" / "serbia_kosovo_locations.json"))
-ENTITIES_PATH = Path(os.environ.get("INTELLIGENCE_POC_ENTITIES", BASE_DIR / "data" / "serbia_kosovo_entities.json"))
-SEMANTIC_INDEX_DIR = Path(os.environ.get("INTELLIGENCE_POC_SEMANTIC_INDEX", BASE_DIR / "data" / "semantic_index"))
+DATASET_VERSION = os.environ.get("INTELLIGENCE_POC_DATASET_VERSION", "v2").strip().lower()
+if DATASET_VERSION in {"v2.1", "v2_1", "v21"}:
+    DATASET_VERSION = "v2.1"
+    DEFAULT_DATASET_DIR = BASE_DIR / "data" / "serbian_intelligence_v2_1"
+    DEFAULT_DATA_PATH = DEFAULT_DATASET_DIR / "serbia_kosovo_events_projection_v2_1.csv"
+    DEFAULT_LOCATIONS_PATH = DEFAULT_DATASET_DIR / "serbia_kosovo_locations_v2_1.json"
+    DEFAULT_ENTITIES_PATH = DEFAULT_DATASET_DIR / "serbia_kosovo_entities_v2_1.json"
+elif DATASET_VERSION == "v2":
+    DEFAULT_DATASET_DIR = BASE_DIR / "data" / "serbian_intelligence_v2"
+    DEFAULT_DATA_PATH = DEFAULT_DATASET_DIR / "serbia_kosovo_events_projection_v2.csv"
+    DEFAULT_LOCATIONS_PATH = DEFAULT_DATASET_DIR / "serbia_kosovo_locations_v2.json"
+    DEFAULT_ENTITIES_PATH = DEFAULT_DATASET_DIR / "serbia_kosovo_entities_v2.json"
+elif DATASET_VERSION == "v1":
+    DEFAULT_DATASET_DIR = BASE_DIR / "data"
+    DEFAULT_DATA_PATH = DEFAULT_DATASET_DIR / "serbia_kosovo_events_projection.csv"
+    DEFAULT_LOCATIONS_PATH = DEFAULT_DATASET_DIR / "serbia_kosovo_locations.json"
+    DEFAULT_ENTITIES_PATH = DEFAULT_DATASET_DIR / "serbia_kosovo_entities.json"
+else:
+    raise ValueError(f"Unsupported INTELLIGENCE_POC_DATASET_VERSION: {DATASET_VERSION}")
+DATA_PATH = Path(os.environ.get("INTELLIGENCE_POC_DATA", DEFAULT_DATA_PATH))
+LOCATIONS_PATH = Path(os.environ.get("INTELLIGENCE_POC_LOCATIONS", DEFAULT_LOCATIONS_PATH))
+ENTITIES_PATH = Path(os.environ.get("INTELLIGENCE_POC_ENTITIES", DEFAULT_ENTITIES_PATH))
+SEMANTIC_INDEX_DIR = Path(os.environ.get("INTELLIGENCE_POC_SEMANTIC_INDEX", BASE_DIR / "data" / "semantic_index" / DATASET_VERSION))
 SEMANTIC_BACKEND = os.environ.get("INTELLIGENCE_POC_SEMANTIC_BACKEND", "hybrid_embedding")
 AUDIT_PATH = Path(os.environ.get("INTELLIGENCE_POC_AUDIT", BASE_DIR / "mcp_audit.jsonl"))
 CLIENT_SUPPORTS_SAMPLING = False
@@ -58,8 +82,8 @@ AREA_ALIASES = {
 EVENT_REFERENCES = {}
 
 IDENTIFIER_PATTERNS = {
-    "record": re.compile(r"\bREC-\d{6}\b", re.IGNORECASE),
-    "location": re.compile(r"\bLOC-\d{3}\b", re.IGNORECASE),
+    "record": re.compile(r"\bREC-(?:V2-)?\d{6}\b", re.IGNORECASE),
+    "location": re.compile(r"\bLOC-(?:V2-)?\d{3}\b", re.IGNORECASE),
 }
 
 BENIGN_MARKERS = (
@@ -109,7 +133,11 @@ def load_events() -> list[dict[str, Any]]:
 
 
 EVENTS = load_events()
+EVENT_BY_ID = {event["event_id"]: event for event in EVENTS}
 EVENTS_BY_ID = {event["event_id"]: event for event in EVENTS}
+FUSION_EVENTS_BY_CONTEXT: dict[tuple[str, str], list[dict[str, Any]]] = defaultdict(list)
+for _fusion_event in EVENTS:
+    FUSION_EVENTS_BY_CONTEXT[(_fusion_event.get("location_id") or "", _fusion_event.get("entity_id") or "")].append(_fusion_event)
 ENTITY_PRESENTATIONS: dict[str, dict[str, Any]] = {}
 LOCATION_PRESENTATIONS: dict[str, dict[str, Any]] = {}
 ENTITIES: dict[str, dict[str, Any]] = {}
@@ -269,6 +297,15 @@ def public_event(event: dict[str, Any]) -> dict[str, Any]:
         "location_name": event["location_name"],
         "location_type": event["location_type"],
         "event_summary": event["event_summary"],
+        "collection_family": event.get("collection_family", ""),
+        "observation_id": event.get("observation_id", ""),
+        "mission_id": event.get("mission_id", ""),
+        "object_class": event.get("object_class", ""),
+        "estimated_object_count": event.get("estimated_object_count", ""),
+        "movement_status": event.get("movement_status", ""),
+        "movement_direction": event.get("movement_direction", ""),
+        "geolocation_confidence": event.get("geolocation_confidence", ""),
+        "identification_confidence": event.get("identification_confidence", ""),
     }
 
 
@@ -276,9 +313,12 @@ def semantic_index_signature() -> dict[str, Any]:
     signature = {}
     for label, path in [("events", DATA_PATH), ("locations", LOCATIONS_PATH), ("entities", ENTITIES_PATH)]:
         try:
-            stat = path.stat()
-            signature[f"{label}_mtime_ns"] = stat.st_mtime_ns
-            signature[f"{label}_size"] = stat.st_size
+            digest = hashlib.sha256()
+            with path.open("rb") as handle:
+                for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+                    digest.update(chunk)
+            signature[f"{label}_sha256"] = digest.hexdigest()
+            signature[f"{label}_size"] = path.stat().st_size
         except OSError:
             signature[f"{label}_missing"] = True
     return signature
@@ -2330,7 +2370,256 @@ def with_step_bridge(schema: dict[str, Any]) -> dict[str, Any]:
     return {**schema, "properties": properties}
 
 
+TARGET_BANK = TargetBank()
+
+
+def validate_target_references(candidate: dict[str, Any], evidence: list[dict[str, Any]] | None = None) -> None:
+    location_id = str(candidate.get("location_id") or "").strip()
+    if location_id not in LOCATIONS:
+        raise ValueError(f"unknown canonical location_id: {location_id}")
+    entity_id = str(candidate.get("entity_id") or "").strip()
+    if entity_id and entity_id not in ENTITY_PRESENTATIONS:
+        raise ValueError(f"unknown canonical entity_id: {entity_id}")
+    for item in evidence or []:
+        record_id = str(item.get("record_id") or "").strip()
+        evidence_location_id = str(item.get("location_id") or "").strip()
+        if record_id not in EVENT_BY_ID:
+            raise ValueError(f"unknown evidence record_id: {record_id}")
+        if evidence_location_id not in LOCATIONS:
+            raise ValueError(f"unknown evidence location_id: {evidence_location_id}")
+
+
+def search_target_candidates(arguments: dict[str, Any]) -> dict[str, Any]:
+    TARGET_BANK.initialize()
+    candidates = TARGET_BANK.search_candidates(arguments)
+    return {"candidates": candidates, "returned": len(candidates)}
+
+
+def get_target_candidate(arguments: dict[str, Any]) -> dict[str, Any]:
+    TARGET_BANK.initialize()
+    return {"candidate": TARGET_BANK.get_candidate(arguments.get("target_id"))}
+
+
+def create_target_candidate(arguments: dict[str, Any]) -> dict[str, Any]:
+    TARGET_BANK.initialize()
+    candidate = {**(arguments.get("candidate") or {}), "created_by": "moshe"}
+    supplied_evidence = arguments.get("evidence") or []
+    event_ids = [str(item.get("record_id") or "").strip() for item in supplied_evidence]
+    fusion = prepare_candidate(_fusion_events(event_ids), candidate.get("confidence") or "")
+    if not fusion["persistence_eligible"]:
+        raise ValueError("candidate is not persistence eligible: " + "; ".join(fusion["persistence_block_reasons"]))
+    evidence = fusion["evidence"]
+    candidate.update(fusion["quantity"])
+    validate_target_references(candidate, evidence)
+    return {"candidate": TARGET_BANK.create_candidate(candidate, evidence)}
+
+
+def update_target_candidate(arguments: dict[str, Any]) -> dict[str, Any]:
+    TARGET_BANK.initialize()
+    target_id = arguments.get("target_id")
+    changes = arguments.get("changes") or {}
+    current = TARGET_BANK.get_candidate(target_id)
+    validate_target_references({**current, **changes})
+    return {"candidate": TARGET_BANK.update_candidate(target_id, changes)}
+
+
+def attach_target_evidence(arguments: dict[str, Any]) -> dict[str, Any]:
+    TARGET_BANK.initialize()
+    target_id = arguments.get("target_id")
+    supplied_evidence = arguments.get("evidence") or []
+    current = TARGET_BANK.get_candidate(target_id)
+    all_ids = [item["record_id"] for item in current["evidence"]] + [str(item.get("record_id") or "").strip() for item in supplied_evidence]
+    fusion = prepare_candidate(_fusion_events(all_ids), current["confidence"])
+    group_by_id = {item["record_id"]: item["source_group"] for item in fusion["evidence"]}
+    if any(group_by_id[item["record_id"]] != item["source_group"] for item in current["evidence"]):
+        raise ValueError("new evidence would change an existing immutable source group")
+    new_ids = {str(item.get("record_id") or "").strip() for item in supplied_evidence}
+    evidence = [item for item in fusion["evidence"] if item["record_id"] in new_ids]
+    validate_target_references(current, evidence)
+    return {"candidate": TARGET_BANK.attach_evidence(target_id, evidence)}
+
+
+def _fusion_events(event_ids: list[str]) -> list[dict[str, Any]]:
+    if not event_ids:
+        raise ValueError("at least one event_id is required")
+    if len(set(event_ids)) != len(event_ids):
+        raise ValueError("event_id values must be unique")
+    unknown = [event_id for event_id in event_ids if event_id not in EVENT_BY_ID]
+    if unknown:
+        raise ValueError(f"unknown event_id: {unknown[0]}")
+    return [public_event(EVENT_BY_ID[event_id]) for event_id in event_ids]
+
+
+def prepare_target_candidate(arguments: dict[str, Any]) -> dict[str, Any]:
+    """Discover corroboration and build a deterministic save-ready assessment without persisting it."""
+    seeds = _fusion_events(arguments.get("event_ids") or [])
+    if arguments.get("discover_corroboration", True):
+        anchor = next((item for item in seeds if item.get("collection_family") == "airborne_isr_video_exploitation"), seeds[0])
+        corpus = [
+            public_event(item)
+            for item in FUSION_EVENTS_BY_CONTEXT.get((anchor.get("location_id") or "", anchor.get("entity_id") or ""), [])
+        ]
+        discovery = discover_corroborating_evidence(seeds, corpus)
+        selected = _fusion_events(discovery["selected_event_ids"])
+        assessment = prepare_candidate(selected, arguments.get("confidence") or "")
+        if discovery["ambiguous"]:
+            assessment["persistence_eligible"] = False
+            assessment["persistence_block_reasons"].append("corroborating evidence pair is ambiguous; report only")
+        return {**assessment, "discovery": discovery}
+    return prepare_candidate(seeds, arguments.get("confidence") or "")
+
+
+def find_duplicate_target_candidates(arguments: dict[str, Any]) -> dict[str, Any]:
+    """Find existing candidates that share the assessed target or selected evidence."""
+    TARGET_BANK.initialize()
+    filters = {
+        "object_class": arguments.get("object_class"),
+        "location_id": arguments.get("location_id"),
+        "entity_id": arguments.get("entity_id"),
+        "limit": arguments.get("limit", 100),
+    }
+    summaries = TARGET_BANK.search_candidates(filters)
+    candidates = [TARGET_BANK.get_candidate(item["target_id"]) for item in summaries]
+    return find_duplicate_candidates(
+        candidates,
+        arguments.get("event_ids") or [],
+        object_class=str(arguments.get("object_class") or "").strip(),
+        location_id=str(arguments.get("location_id") or "").strip(),
+        entity_id=str(arguments.get("entity_id") or "").strip() or None,
+    )
+
+
+TARGET_CANDIDATE_PROPERTIES = {
+    "target_id": {"type": "string"},
+    "title": {"type": "string", "minLength": 1},
+    "summary": {"type": "string", "minLength": 1},
+    "object_class": {"type": "string", "minLength": 1},
+    "entity_id": {"type": ["string", "null"]},
+    "location_id": {"type": "string", "minLength": 1},
+    "confidence": {"type": "string", "enum": ["medium", "high"]},
+    "count_min": {"type": ["integer", "null"], "minimum": 0},
+    "count_max": {"type": ["integer", "null"], "minimum": 0},
+    "count_estimate": {"type": ["integer", "null"], "minimum": 0},
+    "count_assessment": {"type": "string", "enum": ["exact", "approximate", "range", "unresolved"]},
+    "fusion_explanation": {"type": "string", "minLength": 1},
+    "mission_run_id": {"type": "string", "minLength": 1},
+}
+TARGET_CREATE_REQUIRED = [
+    "title", "summary", "object_class", "location_id", "confidence", "count_assessment",
+    "fusion_explanation", "mission_run_id",
+]
+TARGET_EVIDENCE_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "record_id": {"type": "string", "minLength": 1},
+        "source_group": {"type": "string", "minLength": 1},
+        "source_type": {"type": "string", "minLength": 1},
+        "observed_at": {"type": "string", "minLength": 1},
+        "location_id": {"type": "string", "minLength": 1},
+        "reported_object": {"type": "string", "minLength": 1},
+        "reported_count": {"type": ["integer", "null"], "minimum": 0},
+        "relevant_text": {"type": "string", "minLength": 1},
+        "evidence_role": {"type": "string", "minLength": 1},
+    },
+    "required": ["record_id", "source_group", "source_type", "observed_at", "location_id", "reported_object", "relevant_text", "evidence_role"],
+    "additionalProperties": False,
+}
+
+
 TOOLS = [
+    {
+        "name": "prepare_target_candidate",
+        "title": "Prepare a fused target candidate",
+        "description": "Starting from visible seed evidence, retrieves and ranks nearby independent public corroboration, selects the strongest evidence pair, groups sources, reconciles quantity, builds compact evidence snapshots, and reports whether medium/high-confidence persistence is allowed. Returns pair scores, reasons, alternatives, and an ambiguity margin. It does not save anything.",
+        "inputSchema": with_step_bridge({
+            "type": "object",
+            "properties": {
+                "event_ids": {"type": "array", "items": {"type": "string"}, "minItems": 1, "maxItems": MAX_LIMIT},
+                "confidence": {"type": "string", "enum": ["low", "medium", "high"]},
+                "discover_corroboration": {"type": "boolean", "description": "Defaults to true. Set false only to validate an already selected evidence set without retrieval."},
+            },
+            "required": ["event_ids", "confidence"], "additionalProperties": False,
+        }),
+        "annotations": {"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": False},
+    },
+    {
+        "name": "find_duplicate_target_candidates",
+        "title": "Find duplicate target candidates",
+        "description": "Checks the candidate bank for the same assessed object, canonical location/entity, or overlapping evidence before creation.",
+        "inputSchema": with_step_bridge({
+            "type": "object",
+            "properties": {
+                "object_class": {"type": "string", "minLength": 1},
+                "location_id": {"type": "string", "minLength": 1},
+                "entity_id": {"type": "string"},
+                "event_ids": {"type": "array", "items": {"type": "string"}, "maxItems": MAX_LIMIT},
+                "limit": {"type": "integer", "minimum": 1, "maximum": 500},
+            },
+            "required": ["object_class", "location_id", "event_ids"], "additionalProperties": False,
+        }),
+        "annotations": {"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": False},
+    },
+    {
+        "name": "search_target_candidates",
+        "title": "Search attack-target candidates",
+        "description": "Search final-state candidate targets by exact assessed object class, canonical entity/location, or mission run. Returns summaries only; use get_target_candidate for evidence.",
+        "inputSchema": with_step_bridge({
+            "type": "object",
+            "properties": {
+                "object_class": {"type": "string"}, "entity_id": {"type": "string"},
+                "location_id": {"type": "string"}, "mission_run_id": {"type": "string"},
+                "limit": {"type": "integer", "minimum": 1, "maximum": 500},
+            },
+            "additionalProperties": False,
+        }),
+        "annotations": {"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": False},
+    },
+    {
+        "name": "get_target_candidate",
+        "title": "Get attack-target candidate",
+        "description": "Read one candidate target and its compact evidence snapshots by target ID.",
+        "inputSchema": with_step_bridge({"type": "object", "properties": {"target_id": {"type": "string"}}, "required": ["target_id"], "additionalProperties": False}),
+        "annotations": {"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": False},
+    },
+    {
+        "name": "create_target_candidate",
+        "title": "Create attack-target candidate",
+        "description": "Create one medium/high-confidence final-state candidate and its evidence atomically. Requires at least two independent source groups and canonical record/location/entity IDs.",
+        "inputSchema": with_step_bridge({
+            "type": "object",
+            "properties": {
+                "candidate": {"type": "object", "properties": TARGET_CANDIDATE_PROPERTIES, "required": TARGET_CREATE_REQUIRED, "additionalProperties": False},
+                "evidence": {"type": "array", "items": TARGET_EVIDENCE_SCHEMA, "minItems": 2},
+            },
+            "required": ["candidate", "evidence"], "additionalProperties": False,
+        }),
+        "annotations": {"readOnlyHint": False, "destructiveHint": False, "idempotentHint": False, "openWorldHint": False},
+    },
+    {
+        "name": "update_target_candidate",
+        "title": "Update attack-target candidate",
+        "description": "Update assessed fields on an existing candidate. Status, creator, timestamps, review fields, raw SQL, and deletion are not accepted.",
+        "inputSchema": with_step_bridge({
+            "type": "object",
+            "properties": {
+                "target_id": {"type": "string"},
+                "changes": {"type": "object", "properties": {key: value for key, value in TARGET_CANDIDATE_PROPERTIES.items() if key not in {"target_id", "created_by"}}, "minProperties": 1, "additionalProperties": False},
+            },
+            "required": ["target_id", "changes"], "additionalProperties": False,
+        }),
+        "annotations": {"readOnlyHint": False, "destructiveHint": False, "idempotentHint": True, "openWorldHint": False},
+    },
+    {
+        "name": "attach_target_evidence",
+        "title": "Attach evidence to attack-target candidate",
+        "description": "Atomically attach new compact evidence snapshots to an existing candidate. Existing evidence cannot be edited or deleted.",
+        "inputSchema": with_step_bridge({
+            "type": "object",
+            "properties": {"target_id": {"type": "string"}, "evidence": {"type": "array", "items": TARGET_EVIDENCE_SCHEMA, "minItems": 1}},
+            "required": ["target_id", "evidence"], "additionalProperties": False,
+        }),
+        "annotations": {"readOnlyHint": False, "destructiveHint": False, "idempotentHint": False, "openWorldHint": False},
+    },
     {
         "name": "classify_question_intent",
         "title": "Classify analyst question intent",
@@ -2642,6 +2931,13 @@ TOOLS = [
 ]
 
 TOOL_HANDLERS = {
+    "prepare_target_candidate": prepare_target_candidate,
+    "find_duplicate_target_candidates": find_duplicate_target_candidates,
+    "search_target_candidates": search_target_candidates,
+    "get_target_candidate": get_target_candidate,
+    "create_target_candidate": create_target_candidate,
+    "update_target_candidate": update_target_candidate,
+    "attach_target_evidence": attach_target_evidence,
     "classify_question_intent": classify_question_intent,
     "plan_next_investigation_step": plan_next_investigation_step,
     "search_events": search_events,

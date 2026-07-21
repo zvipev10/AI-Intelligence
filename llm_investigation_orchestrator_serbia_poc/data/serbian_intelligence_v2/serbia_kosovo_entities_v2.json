@@ -1,0 +1,233 @@
+[
+  {
+    "entity_id": "ENT-KFOR",
+    "canonical_name": "KFOR",
+    "aliases": [
+      "KFOR"
+    ],
+    "entity_type": "גורם מדווח"
+  },
+  {
+    "entity_id": "ENT-EULEX",
+    "canonical_name": "EULEX",
+    "aliases": [
+      "EULEX"
+    ],
+    "entity_type": "גורם מדווח"
+  },
+  {
+    "entity_id": "ENT-KSF",
+    "canonical_name": "KSF",
+    "aliases": [
+      "KSF"
+    ],
+    "entity_type": "גורם מדווח"
+  },
+  {
+    "entity_id": "ENT-KOSOVO-POLICE",
+    "canonical_name": "משטרת קוסובו",
+    "aliases": [
+      "משטרת קוסובו"
+    ],
+    "entity_type": "גורם מדווח"
+  },
+  {
+    "entity_id": "ENT-KOSOVO-SPECIAL-POLICE",
+    "canonical_name": "יחידה מיוחדת של משטרת קוסובו",
+    "aliases": [
+      "יחידה מיוחדת של משטרת קוסובו"
+    ],
+    "entity_type": "גורם מדווח"
+  },
+  {
+    "entity_id": "ENT-KOSOVO-MOI",
+    "canonical_name": "משרד הפנים של קוסובו",
+    "aliases": [
+      "משרד הפנים של קוסובו"
+    ],
+    "entity_type": "גורם מדווח"
+  },
+  {
+    "entity_id": "ENT-KOSOVO-GOV",
+    "canonical_name": "ממשלת קוסובו",
+    "aliases": [
+      "ממשלת קוסובו"
+    ],
+    "entity_type": "גורם מדווח"
+  },
+  {
+    "entity_id": "ENT-SERBIA-GOV",
+    "canonical_name": "ממשלת סרביה",
+    "aliases": [
+      "ממשלת סרביה"
+    ],
+    "entity_type": "גורם מדווח"
+  },
+  {
+    "entity_id": "ENT-SERBIAN-ARMY",
+    "canonical_name": "צבא סרביה",
+    "aliases": [
+      "צבא סרביה"
+    ],
+    "entity_type": "גורם מדווח"
+  },
+  {
+    "entity_id": "ENT-SERBIAN-PROTESTERS",
+    "canonical_name": "מפגינים סרבים מקומיים",
+    "aliases": [
+      "מפגינים סרבים מקומיים"
+    ],
+    "entity_type": "גורם מדווח"
+  },
+  {
+    "entity_id": "ENT-LOCAL-SERBIAN-LEADERS",
+    "canonical_name": "מנהיגים מקומיים סרבים",
+    "aliases": [
+      "מנהיגים מקומיים סרבים"
+    ],
+    "entity_type": "גורם מדווח"
+  },
+  {
+    "entity_id": "ENT-LOCAL-RESIDENTS",
+    "canonical_name": "תושבים מקומיים",
+    "aliases": [
+      "תושבים מקומיים"
+    ],
+    "entity_type": "גורם מדווח"
+  },
+  {
+    "entity_id": "ENT-LOCAL-ARMED-GROUP",
+    "canonical_name": "קבוצה חמושה מקומית",
+    "aliases": [
+      "קבוצה חמושה מקומית"
+    ],
+    "entity_type": "גורם מדווח"
+  },
+  {
+    "entity_id": "ENT-UNIDENTIFIED-ACTORS",
+    "canonical_name": "גורמים לא מזוהים",
+    "aliases": [
+      "גורמים לא מזוהים"
+    ],
+    "entity_type": "גורם מדווח"
+  },
+  {
+    "entity_id": "ENT-LOCAL-JOURNALISTS",
+    "canonical_name": "עיתונאים מקומיים",
+    "aliases": [
+      "עיתונאים מקומיים"
+    ],
+    "entity_type": "גורם מדווח"
+  },
+  {
+    "entity_id": "ENT-AMBULANCES",
+    "canonical_name": "אמבולנסים",
+    "aliases": [
+      "אמבולנסים"
+    ],
+    "entity_type": "גורם מדווח"
+  },
+  {
+    "entity_id": "ENT-SAF-2BRIGADE",
+    "canonical_name": "החטיבה השנייה של צבא סרביה",
+    "aliases": [
+      "2nd Army Brigade",
+      "החטיבה השנייה"
+    ],
+    "entity_type": "כוח סרבי - מקור פומבי"
+  },
+  {
+    "entity_id": "ENT-SAF-21-INF",
+    "canonical_name": "גדוד החי״ר ה-21",
+    "aliases": [
+      "21st Infantry Battalion"
+    ],
+    "entity_type": "כוח סרבי - מקור פומבי"
+  },
+  {
+    "entity_id": "ENT-SAF-22-INF",
+    "canonical_name": "גדוד החי״ר ה-22",
+    "aliases": [
+      "22nd Infantry Battalion"
+    ],
+    "entity_type": "כוח סרבי - מקור פומבי"
+  },
+  {
+    "entity_id": "ENT-SAF-27-MECH",
+    "canonical_name": "הגדוד הממוכן ה-27",
+    "aliases": [
+      "27th Mechanized Battalion"
+    ],
+    "entity_type": "כוח סרבי - מקור פומבי"
+  },
+  {
+    "entity_id": "ENT-SAF-28-MECH",
+    "canonical_name": "הגדוד הממוכן ה-28",
+    "aliases": [
+      "28th Mechanized Battalion"
+    ],
+    "entity_type": "כוח סרבי - מקור פומבי"
+  },
+  {
+    "entity_id": "ENT-SAF-210-ENG",
+    "canonical_name": "גדוד ההנדסה ה-210",
+    "aliases": [
+      "210th Engineer Battalion"
+    ],
+    "entity_type": "כוח סרבי - מקור פומבי"
+  },
+  {
+    "entity_id": "ENT-SAF-3BRIGADE",
+    "canonical_name": "החטיבה השלישית של צבא סרביה",
+    "aliases": [
+      "3rd Army Brigade",
+      "החטיבה השלישית"
+    ],
+    "entity_type": "כוח סרבי - מקור פומבי"
+  },
+  {
+    "entity_id": "ENT-KFOR-RCE",
+    "canonical_name": "KFOR פיקוד אזורי מזרח",
+    "aliases": [
+      "KFOR RC-East",
+      "Regional Command East"
+    ],
+    "entity_type": "כוח נאטו"
+  },
+  {
+    "entity_id": "ENT-KFOR-KTRBN",
+    "canonical_name": "גדוד העתודה הטקטית של KFOR",
+    "aliases": [
+      "KTRBN",
+      "KFOR Tactical Reserve Battalion"
+    ],
+    "entity_type": "כוח נאטו"
+  },
+  {
+    "entity_id": "ENT-KFOR-MSU",
+    "canonical_name": "היחידה הרב-לאומית המיוחדת של KFOR",
+    "aliases": [
+      "KFOR MSU",
+      "Multinational Specialized Unit"
+    ],
+    "entity_type": "כוח נאטו"
+  },
+  {
+    "entity_id": "ENT-KFOR-AVIATION",
+    "canonical_name": "כוח התעופה של KFOR",
+    "aliases": [
+      "KFOR Aviation",
+      "Aviation Support Task Force"
+    ],
+    "entity_type": "כוח נאטו"
+  },
+  {
+    "entity_id": "ENT-NATO-RESERVE",
+    "canonical_name": "כוח עתודה אזורי של נאטו",
+    "aliases": [
+      "NATO reserve",
+      "כוח תגבור נאטו"
+    ],
+    "entity_type": "כוח נאטו"
+  }
+]
