@@ -1,12 +1,12 @@
 # AI Intelligence Project Handoff
 
-Last updated: 2026-07-16
+Last updated: 2026-07-21
 
-This is the primary handoff for continuing the AI Intelligence project in another assistant/chat. It reflects the current Serbia POC workspace after the data normalization, additive result-layer UI refactor, recorded-run refresh, map marker popup work, Phase 2 query builder planning, location/entity layer normalization, hybrid semantic retrieval/tool-quality work, filter panel simplification, step-button label and duplicate-layer bug fixes, the "המשך מכאן" step injection feature, multi-layer query filtering, the Codex-style prompt composer with explicit prompt-layer selection, the first investigation-selector slice, and Investigation Memory slices 1-5.
+This is the primary handoff for continuing the AI Intelligence project in another assistant/chat. It reflects the integrated Serbia POC on `main`, including investigation memory, the `מכלול` team interaction foundation, V2.1 fusion evidence, specialized Moshe routing and mission continuity, the persisted attack-target catalog, and the existing additive result-layer investigation experience.
 
 ## One-Line Summary
 
-The active project is the Serbia/North Kosovo intelligence-analysis POC: a Hebrew analyst UI backed by Hermes and MCP tools over a 10,000-record synthetic event corpus. The UI treats all visualization outputs as additive layers: event-source layers, location-summary layers, entity layers, group-aggregation layers, and time-aggregation layers can be shown/hidden/closed and rendered according to their own map/timeline/table capabilities.
+The active project is the Serbia/North Kosovo intelligence-analysis POC: a Hebrew analyst UI backed by General and Moshe Hermes runtimes plus MCP tools over the 14,800-record V2.1 synthetic intelligence dataset. The UI combines investigation memory and team-directed prompts with additive event, location, entity, aggregation, and attack-target layers rendered according to their map/timeline/table capabilities.
 
 ## Repository And Current State
 
@@ -17,18 +17,48 @@ Repository:
 Current branch:
 
 - Active branch: `main`
-- Latest observed head should be checked with `git log -1 --oneline`; `main` is expected to be clean and aligned with `origin/main` after each handoff.
+- PR #22 merged `codex/moshe-attack-targets` into `main` on 2026-07-21.
+- Merge commit at this handoff: `43ecd2e`.
+- Always fetch before continuing and verify the current head with `git log -1 --oneline`.
 
-Important local workspace:
+Important local workspace rule:
 
-- Active repo path used by Codex in the current Windows workspace: `C:\Users\user\Documents\AI Intelligence\.codex_ai_intelligence_repo_github_latest`
+- Workspace paths vary by session; use the current repository root rather than a historical absolute path.
 - The workspace may contain unrelated local files; do not stage or deploy them unless the user explicitly asks.
 
 Current local working tree expectation:
 
-- `main` should be clean and aligned with `origin/main`.
+- `main` should be aligned with `origin/main`; do not assume the current working branch or tree is clean.
 - Do not continue from stale local files if `git fetch origin` shows the active remote branch ahead.
-- At the time of this handoff update there are unrelated local untracked geospatial requirement files. Do not include them in UI, workflow, or deployment commits unless the user explicitly asks.
+- Identify and preserve unrelated dirty files before staging, switching branches, or deploying.
+
+## Latest Update: Moshe Agent And Integrated Main
+
+Date: 2026-07-21
+
+PR #22 merged the latest Serbia POC capability line into `main`. The integrated state includes:
+
+- the compact `מכלול` roster, reusable `@member` autocomplete, and header member conversation selection;
+- real specialized routing for exact current-message `@משה` prompts, with isolated Moshe configuration and mission continuity;
+- the V2.1 14,800-record dataset with evaluator-grounded fusion cases kept outside runtime data;
+- constrained target fusion tools, a protected SQLite target bank, and a refreshable `attack_targets` catalog layer;
+- shared General/Moshe answer and typed-layer presentation, including raw record references and source provenance;
+- the existing investigation selector, explicit memory saving/restoration, step continuation, prompt-layer selection, and additive visualization model.
+
+Production verification is technically complete. The recorded validation includes 53 focused Linux tests, JavaScript syntax and Python compilation, the complete 400-case evaluation, routing/session checks, read-only preparation, service health, permissions, isolated restore, evaluator isolation, and SQLite integrity. Final Product/QA capability acceptance remains pending.
+
+Important interaction boundary:
+
+- Moshe is a real specialized agent runtime.
+- Selecting Talia, Naama, Gadi, or Yahli currently changes conversation presentation and attribution but still uses the General execution path; dedicated runtimes for those members do not yet exist.
+- Team records remain predefined client-side members rather than authenticated users or a general agent identity model.
+
+Authoritative capability artifacts:
+
+- `.ai/work/capabilities/moshe-attack-targets/status.md`
+- `.ai/work/capabilities/moshe-attack-targets/handoff-summary.md`
+- `.ai/work/capabilities/moshe-attack-targets/checkpoint-009-slice-7-release.md`
+- `.ai/work/capabilities/michlol-team-management/status.md`
 
 ## Latest Update: Investigation Memory Slices 3-5 Review Deploy
 
@@ -306,23 +336,25 @@ Active UI service:
 - Service: `serbia-poc-ui.service`
 - Actual served path: `/opt/serbia-poc-ui`
 - This is important: an earlier deploy mistakenly copied to `/opt/serbia-poc/ui`, but the active service serves `/opt/serbia-poc-ui`.
-- Current served versions expected after the latest UI deploy (as of 2026-07-16):
-  - `styles.css?v=78`
-  - `app.js?v=100`
-- These versions include colored point markers, manual final-answer presentation via `הצג תוצאות`, additive layer tabs, table resize/minimize, close/clear result-window behavior, horizontal tab/table scrolling, query edit modal controls, `הצג תוצאות` / `הסתר תוצאות` toggle, simplified filter panel (inline הוסף/החל, no empty sections, white eye/filter icons when active), the full "המשך מכאן" step injection feature, and the Codex-style prompt composer with explicit removable prompt-layer selection.
+- Current source and deployed UI asset versions as of the Moshe release:
+  - `styles.css?v=88`
+  - `app.js?v=109`
+- These versions include the earlier additive-layer investigation experience plus the `מכלול` roster, member mention autocomplete, member selection, live Moshe opening/attribution, and shared attack-target presentation.
 
 Active MCP/Hermes service:
 
 - MCP path: `/opt/serbia-poc/mcp_server/server.py`
 - Data path: `/opt/serbia-poc/data/serbia_kosovo_events_projection.csv`
-- Hermes gateway service: `hermes-gateway.service`
-- Hermes local API port on VM: `127.0.0.1:8642`
+- Active dataset: V2.1, 14,800 rows.
+- General Hermes gateway service: `hermes-gateway.service`, local API port `127.0.0.1:8642`.
+- Moshe Hermes gateway service: `hermes-moshe-gateway.service`, local API port `127.0.0.1:8643`.
 
 Useful VM checks:
 
 ```bash
 sudo systemctl is-active serbia-poc-ui.service
 sudo systemctl is-active hermes-gateway.service
+sudo systemctl is-active hermes-moshe-gateway.service
 curl -k -fsS https://151.145.93.180/ | grep -E 'styles.css\?v=|app.js\?v='
 curl -fsS http://127.0.0.1:8769/api/status
 curl -fsS http://127.0.0.1:8769/api/live-steps
@@ -1022,7 +1054,7 @@ Expected: no matches in active data files.
 ## Suggested First Message To A New Assistant
 
 ```text
-Read PROJECT_HANDOFF.md first. Continue work on the Serbia/North Kosovo POC in llm_investigation_orchestrator_serbia_poc. The UI is deployed from /opt/serbia-poc-ui on VM 151.145.93.180 (port 8769) and currently serves styles.css?v=78 and app.js?v=100. Do not touch C:\Users\user\Downloads\oracle.key.
+Read PROJECT_HANDOFF.md first, then the status and handoff artifacts for the capability you are changing. Continue work on the Serbia/North Kosovo POC in llm_investigation_orchestrator_serbia_poc. The UI is deployed from /opt/serbia-poc-ui on VM 151.145.93.180 (port 8769) and the merged source references styles.css?v=88 and app.js?v=109. Do not modify any SSH key file.
 
 Current behavior: colored map point markers with popups; final answers do not auto-present visualization layers; final `הצג תוצאות` presents/restores final-answer layers manually. The result table is a flush transparent tabbed overlay with real horizontally scrollable layer tabs, standard eye/eye-off toggles (white when active, grey when inactive), per-tab filter icon (white when filters applied), per-tab `×` close, resize, `−` minimize, `□` restore/maximize, window `×` close/clear, and horizontal table scrolling. Filter panel is simplified: no title/active-section, inline הוסף/החל buttons.
 
@@ -1030,7 +1062,7 @@ Prompt composer behavior: the prompt box is Codex-style with plus and up-arrow c
 
 Each step card has a "המשך מכאן" button that opens a floating window for agent continuation. Continuation sends is_continuation:true to server.py which replaces the classify_question_intent instruction with a directive to continue from existing history using the original mode/budget. The continuation bubble renders all prior steps (up to the triggering step) plus new live steps, merged into state.lastResult.
 
-The UI uses an additive source/data layer architecture; preserve that model. Before deploying, fetch GitHub and verify the VM is not serving stale assets. The active branch is main.
+The UI uses an additive source/data layer architecture; preserve that model. V2.1 is active with 14,800 records. General uses port 8642 and exact current-message @משה routing uses the isolated Moshe runtime on port 8643. Moshe is a real specialized agent; the other selected members remain presentation-only over the General path. Before deploying, fetch GitHub and verify the VM is not serving stale assets. The authoritative integrated branch is main.
 ```
 
 ## File Review Order
