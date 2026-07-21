@@ -57,6 +57,10 @@ class MemberUiRegressionTests(unittest.TestCase):
         self.assertIn("async function refreshOpenAttackTargetCatalogLayer()", self.app)
         self.assertIn('typedLayers.some(layer => layer.kind === "attack_targets")', self.app)
 
+    def test_uav_video_source_uses_the_short_display_name(self):
+        self.assertIn('"חיל האוויר הסרבי - ניצול וידאו מכטב״ם": \'וידאו מכטב"מ\'', self.app)
+        self.assertIn("label: sourceTypeDisplayLabel(sourceType)", self.app)
+
 
 if __name__ == "__main__":
     unittest.main()

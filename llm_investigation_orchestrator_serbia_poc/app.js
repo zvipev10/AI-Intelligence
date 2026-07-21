@@ -313,6 +313,13 @@ const LAYER_FAMILY_LABELS = {
 };
 
 const ATTACK_TARGET_CATALOG_LAYER_ID = "attack-targets:all";
+const SOURCE_TYPE_DISPLAY_LABELS = {
+  "חיל האוויר הסרבי - ניצול וידאו מכטב״ם": 'וידאו מכטב"מ'
+};
+
+function sourceTypeDisplayLabel(sourceType) {
+  return SOURCE_TYPE_DISPLAY_LABELS[sourceType] || sourceType || "מקור לא ידוע";
+}
 
 const teamMentionState = {
   textarea: null,
@@ -882,15 +889,15 @@ function layerId(kind, label) {
 function buildEventLayers(events) {
   const grouped = new Map();
   [...events].sort((a, b) => a.date - b.date).forEach(event => {
-    const label = event.source_type || "מקור לא ידוע";
-    if (!grouped.has(label)) grouped.set(label, []);
-    grouped.get(label).push(event);
+    const sourceType = event.source_type || "מקור לא ידוע";
+    if (!grouped.has(sourceType)) grouped.set(sourceType, []);
+    grouped.get(sourceType).push(event);
   });
   return [...grouped.entries()]
     .sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0], "he"))
-    .map(([label, items]) => ({
-      dataId: layerId("events", label),
-      label,
+    .map(([sourceType, items]) => ({
+      dataId: layerId("events", sourceType),
+      label: sourceTypeDisplayLabel(sourceType),
       kind: "events",
       visible: true,
       items,
