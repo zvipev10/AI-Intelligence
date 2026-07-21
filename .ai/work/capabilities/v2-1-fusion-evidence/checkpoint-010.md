@@ -26,3 +26,11 @@ Date: 2026-07-21
 ## Deployment guard
 
 Back up the existing target database before installing or restarting. Deployment must not replace, initialize, or clear the database.
+
+## Deployment result
+
+- Deployed to the VM UI service on 2026-07-21 and restarted `serbia-poc-ui` successfully.
+- Production API advertises `attack-targets:all` with 3 rows and returns 14 raw-data references.
+- The original database and protected pre-deployment backup are both 36,864 bytes with mode `0600`.
+- UI restart count is 0; available memory after deployment is 226 MB with 423 MB swap in use.
+- General-agent and Moshe gateway health endpoints both returned `status: ok` (their processes are not represented by the attempted systemd unit names).
