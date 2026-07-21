@@ -33,6 +33,7 @@ SERVER_VERSION = "0.3.0"
 DEFAULT_LIMIT = 2000
 MAX_LIMIT = 2000
 MIN_COVERAGE_LIMIT = 2000
+MAX_SEMANTIC_LIMIT = 200
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 DATASET_VERSION = os.environ.get("INTELLIGENCE_POC_DATASET_VERSION", "v2").strip().lower()
@@ -1808,7 +1809,7 @@ def semantic_search_events(arguments: dict[str, Any]) -> dict[str, Any]:
         raise ValueError("semantic_search_events requires query or seed_event_ids")
 
     requested_limit = arguments.get("limit", 50)
-    limit = bounded_limit(requested_limit)
+    limit = min(bounded_limit(requested_limit), MAX_SEMANTIC_LIMIT)
     filters = {
         "start_time": arguments.get("start_time"),
         "end_time": arguments.get("end_time"),
@@ -2705,7 +2706,7 @@ TOOLS = [
                 "certainty_levels": {"type": "array", "items": {"type": "string"}},
                 "keywords": {"type": "array", "items": {"type": "string"}, "description": "Optional exact terms that must also appear in enriched event text."},
                 "match_all_keywords": {"type": "boolean", "description": "If true, all keywords must match; otherwise any keyword may match."},
-                "limit": {"type": "integer", "minimum": 1, "maximum": MAX_LIMIT, "description": "Maximum semantic candidates returned."},
+                "limit": {"type": "integer", "minimum": 1, "maximum": MAX_SEMANTIC_LIMIT, "description": "Maximum semantic candidates returned. Use deterministic search and aggregation for exhaustive coverage."},
             },
             "additionalProperties": False,
         }),
