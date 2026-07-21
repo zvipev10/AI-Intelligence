@@ -2,7 +2,7 @@
 
 ## Current state
 
-Slices 1-5 and checkpoints 006-007 are deployed. Slice 6 quality recovery is implemented locally and passes all approved gates; deployment is pending review.
+Slices 1-5 and checkpoints 006-008 are deployed. Slice 6 quality recovery passes all approved gates and production verification. Final Slice 7 acceptance remains.
 
 ## Latest implementation
 
@@ -25,12 +25,14 @@ Production smoke checks passed for service health, served assets, raw-reference 
 
 Checkpoint 007 deployed the exact `משה - קצין מטרות` answer label. Rollback backup: `/opt/serbia-poc-ui-backups/moshe-title-20260720T200414Z`. Eight focused Linux tests and JavaScript syntax passed; the served asset, V2.1 14,800-row status, UI service health, and unchanged SQLite counts were verified.
 
+Checkpoint 008 deployed bounded corroboration discovery and evidence-pair ranking inside `prepare_target_candidate`. Rollback backups: `/opt/serbia-poc-backups/moshe-quality-20260721T034228Z` and `/opt/serbia-poc/backups/attack_targets/attack_targets-pre-quality-20260721T034228Z.db`. A read-only preparation smoke test passed; all services are active, runtime evaluator artifacts remain absent, and SQLite remains unchanged.
+
 The in-app browser blocked further access to the VM raw-IP URL under its URL policy, so final visual interaction verification is assigned to the user.
 
 ## Next action
 
-Product and QA review checkpoint 008. If accepted, Development backs up the target bank and MCP runtime, deploys the focused MCP changes, and runs a read-only Moshe preparation smoke test.
+Complete final Slice 7 acceptance and handoff review.
 
 ## Open decisions
 
-Checkpoint 008 passes every approved quantitative gate. Product/QA acceptance and deployment authorization remain pending. Residual false merges are 1.27%, below the approved 5% ceiling.
+Checkpoint 008 passes every approved quantitative gate and is deployed. Residual false merges are 1.27%, below the approved 5% ceiling. Final capability acceptance remains pending.

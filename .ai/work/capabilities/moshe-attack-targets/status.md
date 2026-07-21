@@ -6,7 +6,7 @@ Moshe Attack Targets MVP
 
 ## Current phase
 
-Slice 6 quality recovery is implemented and all approved evaluation gates pass. Deployment review is pending.
+Slice 6 quality recovery is approved, deployed, and verified. Final Slice 7 acceptance and handoff remain.
 
 ## Overall status
 
@@ -16,19 +16,18 @@ Pending review
 
 | Role | Status | Required action | Due before |
 |---|---|---|---|
-| Product | Recovery result pending review | Accept checkpoint 008 metrics and residual risk | Slice 6 |
-| Development | Recovery complete | Await deployment approval | Slice 7 preparation |
+| Product | Recovery approved | Review final Slice 7 acceptance | Slice 7 |
+| Development | Recovery deployed | Prepare final handoff | Slice 7 |
 | UX | Approved | Routing experience, attribution, candidate presentation, evidence, and states accepted | Complete |
-| QA | Gates pass | Review checkpoint 008 and approve deployment preparation | Slice 6 |
+| QA | Gates pass | Confirm final production evidence in checkpoint 008 | Slice 7 |
 | Architecture/Security | Slice 2 approved | Review evaluator isolation and deterministic source boundary | Slice 4 |
 
 ## Latest change since previous review
 
-`prepare_target_candidate` now performs bounded discovery and pair ranking internally. The complete isolated rerun passes every gate: 93.67% chain recall, 92.10% evidence precision, 95.89% evidence recall, 100% hard-negative rejection, and 1.27% false merges.
+Checkpoint 008 is deployed. The complete isolated rerun passes every gate, and the production read-only smoke test, service health, evaluator isolation, resources, and unchanged SQLite counts all pass.
 
 ## Current blockers
 
-- Checkpoint 008 requires human acceptance before deployment preparation.
 - Capability artifacts and Slice 1 code are published on `codex/moshe-attack-targets`; draft PR creation is still pending.
 - Remote parent and child issues have not been created.
 
@@ -39,7 +38,7 @@ Pending review
 
 ## Next expected artifact
 
-Product and QA acceptance of `checkpoint-008-quality-recovery.md`.
+Final Slice 7 acceptance and handoff review.
 
 ## Parent issue
 
@@ -60,8 +59,8 @@ Pending remote creation; local draft at `issues/parent-capability.md`.
 | Pending | Development | Slice 3 fusion tools | Approved and complete | No |
 | Pending | Development | Slice 4 Moshe routing and sessions | Deployed; user accepted | No |
 | Pending | Development and UX | Slice 5 shared presentation | Approved, deployed, validated | No |
-| Pending | QA | Slice 6 full evaluation | Recovery passes; acceptance pending | Yes |
-| Pending | Operations and QA | Slice 7 release and handoff | Not started | Yes |
+| Pending | QA | Slice 6 full evaluation | Approved, deployed, and verified | No |
+| Pending | Operations and QA | Slice 7 release and handoff | In progress | Yes |
 
 ## Artifact links
 

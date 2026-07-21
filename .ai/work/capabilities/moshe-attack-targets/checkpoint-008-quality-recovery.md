@@ -6,7 +6,7 @@
 
 ## Status
 
-Implemented and validated; all approved quality gates pass. Pending human review before deployment.
+Approved by the user, deployed, and verified; all approved quality gates pass.
 
 ## Authorized change
 
@@ -62,4 +62,20 @@ None against the approved Slice 6 quantitative gates.
 
 ### Recommendation
 
-Approve checkpoint 008 for deployment preparation. Back up the target bank and MCP runtime before deploying; then smoke-test one Moshe preparation call without persisting a candidate.
+Checkpoint 008 was approved and deployed on 2026-07-21.
+
+## Production deployment
+
+- Code backup: `/opt/serbia-poc-backups/moshe-quality-20260721T034228Z`.
+- SQLite backup: `/opt/serbia-poc/backups/attack_targets/attack_targets-pre-quality-20260721T034228Z.db`.
+- Deployed only `mcp_server/server.py` and `mcp_server/fusion_tools.py`.
+- Restarted General and Moshe gateways; UI, General, and Moshe are active with zero failure restarts.
+- A direct read-only `prepare_target_candidate` smoke test selected three evidence records, returned persistence eligibility, pair score, and ambiguity data, and performed no SQLite write.
+- Post-deployment V2.1 status reports 14,800 rows.
+- SQLite integrity remains `ok` with the original 3 targets and 14 evidence links.
+- Runtime truth/evaluator scan remains zero.
+- Post-deployment available memory was approximately 305 MB.
+
+## Next action
+
+Proceed with final Slice 7 acceptance and handoff review.

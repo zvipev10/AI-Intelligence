@@ -6,10 +6,10 @@ Evaluate all 300 positive chains and 100 hard negatives with an isolated post-ru
 
 ## Completion criteria
 
-- [ ] All approved quantitative thresholds pass.
-- [ ] Evaluator-truth leakage is zero.
-- [ ] General-agent regression results are accepted.
-- [ ] QA checkpoint approved.
+- [x] All approved quantitative thresholds pass.
+- [x] Evaluator-truth leakage is zero.
+- [x] General-agent regression results are accepted.
+- [x] QA checkpoint approved.
 
 ## Depends on
 
@@ -24,3 +24,7 @@ The first complete evaluation failed the quality gates. Baseline and diagnosis a
 `slice-006-quality-recovery-plan.md`
 
 Implementation remains checkpointed into bounded retrieval, evidence-pair scoring, ambiguity control, and a frozen full rerun.
+
+## Completion
+
+Checkpoint 008 is approved and deployed. Local status: complete. Remote issue creation remains pending.
