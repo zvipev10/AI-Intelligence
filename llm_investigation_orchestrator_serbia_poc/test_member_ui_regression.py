@@ -57,9 +57,11 @@ class MemberUiRegressionTests(unittest.TestCase):
         self.assertIn("async function refreshOpenAttackTargetCatalogLayer()", self.app)
         self.assertIn('typedLayers.some(layer => layer.kind === "attack_targets")', self.app)
 
-    def test_uav_video_source_uses_the_short_display_name(self):
-        self.assertIn('"חיל האוויר הסרבי - ניצול וידאו מכטב״ם": \'וידאו מכטב"מ\'', self.app)
-        self.assertIn("label: sourceTypeDisplayLabel(sourceType)", self.app)
+    def test_target_table_separates_independence_source_types_and_raw_records(self):
+        self.assertIn("<th>מקורות עצמאיים</th><th>סוגי מקור</th><th>רשומות גולמיות</th>", self.app)
+        self.assertIn("item.source_group_count || 0", self.app)
+        self.assertIn("item.source_types || []", self.app)
+        self.assertIn("item.evidence_count || (item.raw_data_references || []).length", self.app)
 
 
 if __name__ == "__main__":

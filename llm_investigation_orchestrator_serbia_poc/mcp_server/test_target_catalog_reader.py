@@ -32,7 +32,8 @@ class TargetCatalogReaderTests(unittest.TestCase):
 
             self.assertEqual(rows[0]["target_id"], "TGT-1")
             self.assertEqual(rows[0]["raw_data_references"], ["REC-1"])
-            self.assertEqual(rows[0]["independent_source_count"], 1)
+            self.assertEqual(rows[0]["source_group_count"], 1)
+            self.assertEqual(rows[0]["source_types"], ["report"])
 
 
 if __name__ == "__main__":

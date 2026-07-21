@@ -36,9 +36,6 @@ except ImportError:
 
 ROOT = Path(__file__).resolve().parent
 ATTACK_TARGET_CATALOG_LAYER_ID = "attack-targets:all"
-SOURCE_TYPE_DISPLAY_LABELS = {
-    "חיל האוויר הסרבי - ניצול וידאו מכטב״ם": 'וידאו מכטב"מ',
-}
 TARGET_CATALOG_READER = Path(os.environ.get(
     "INTELLIGENCE_POC_TARGET_CATALOG_READER",
     "/opt/serbia-poc/mcp_server/target_catalog_reader.py",
@@ -254,7 +251,7 @@ def list_ui_layers() -> list[dict[str, Any]]:
     for source_type, count in sorted(source_counts.items(), key=lambda item: (-item[1], item[0])):
         layers.append({
             "id": f"events:{source_type}",
-            "label": SOURCE_TYPE_DISPLAY_LABELS.get(source_type, source_type),
+            "label": source_type,
             "family": "events",
             "kind": "events",
             "source_type": source_type,

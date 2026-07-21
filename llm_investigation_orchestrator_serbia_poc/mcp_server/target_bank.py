@@ -236,6 +236,8 @@ class TargetBank:
         result = dict(target)
         result["evidence"] = [dict(item) for item in evidence]
         result["source_group_count"] = len({item["source_group"] for item in result["evidence"]})
+        result["source_types"] = sorted({item["source_type"] for item in result["evidence"]})
+        result["evidence_count"] = len(result["evidence"])
         return result
 
     def search_candidates(self, filters: dict[str, Any] | None = None) -> list[dict[str, Any]]:
@@ -255,6 +257,7 @@ class TargetBank:
             rows = connection.execute(
                 f"""SELECT t.*, COUNT(e.record_id) AS evidence_count,
                     COUNT(DISTINCT e.source_group) AS source_group_count,
+                    GROUP_CONCAT(DISTINCT e.source_type) AS source_types_csv,
                     GROUP_CONCAT(e.record_id, ',') AS evidence_record_ids_csv
                     FROM targets t LEFT JOIN target_evidence e ON e.target_id = t.target_id
                     WHERE {' AND '.join(clauses)} GROUP BY t.target_id
@@ -264,6 +267,7 @@ class TargetBank:
         results = []
         for row in rows:
             item = dict(row)
+            item["source_types"] = [value for value in str(item.pop("source_types_csv") or "").split(",") if value]
             references = [value for value in str(item.pop("evidence_record_ids_csv") or "").split(",") if value]
             item["raw_data_references"] = references
             results.append(item)

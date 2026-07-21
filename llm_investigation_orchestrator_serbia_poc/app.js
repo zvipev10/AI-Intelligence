@@ -313,14 +313,6 @@ const LAYER_FAMILY_LABELS = {
 };
 
 const ATTACK_TARGET_CATALOG_LAYER_ID = "attack-targets:all";
-const SOURCE_TYPE_DISPLAY_LABELS = {
-  "חיל האוויר הסרבי - ניצול וידאו מכטב״ם": 'וידאו מכטב"מ'
-};
-
-function sourceTypeDisplayLabel(sourceType) {
-  return SOURCE_TYPE_DISPLAY_LABELS[sourceType] || sourceType || "מקור לא ידוע";
-}
-
 const teamMentionState = {
   textarea: null,
   range: null,
@@ -897,7 +889,7 @@ function buildEventLayers(events) {
     .sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0], "he"))
     .map(([sourceType, items]) => ({
       dataId: layerId("events", sourceType),
-      label: sourceTypeDisplayLabel(sourceType),
+      label: sourceType,
       kind: "events",
       visible: true,
       items,
@@ -3578,7 +3570,7 @@ function renderEvidence() {
   renderLayerFilterPanel(activeLayer);
   const activeItems = activeLayer.visible ? itemsForLayerPresentation(activeLayer) : [];
   if (activeLayer.kind === "attack_targets") {
-    head.innerHTML = "<tr><th>מטרה</th><th>סוג אובייקט</th><th>ישות</th><th>מיקום קנוני</th><th>ביטחון</th><th>כמות</th><th>תקציר</th><th>מקורות עצמאיים וראיות</th></tr>";
+    head.innerHTML = "<tr><th>מטרה</th><th>סוג אובייקט</th><th>ישות</th><th>מיקום קנוני</th><th>ביטחון</th><th>כמות</th><th>תקציר</th><th>מקורות עצמאיים</th><th>סוגי מקור</th><th>רשומות גולמיות</th></tr>";
     body.innerHTML = activeItems.length ? activeItems.map(item => `
       <tr class="attack-target-row">
         <td><strong>${escapeHtml(String(item.title || item.target_id || "-"))}</strong><small dir="ltr">${escapeHtml(String(item.target_id || "-"))}</small></td>
@@ -3588,8 +3580,10 @@ function renderEvidence() {
         <td>${escapeHtml(String(confidenceLabel(item.confidence)))}</td>
         <td>${escapeHtml(String(targetQuantityLabel(item)))}</td>
         <td>${escapeHtml(String(item.summary || "-"))}</td>
-        <td><strong>${Number(item.source_group_count || 0).toLocaleString("he-IL")}</strong> ${targetEvidenceHtml(item)}</td>
-      </tr>`).join("") : '<tr><td colspan="8" class="empty-cell">לא נמצאו מועמדי מטרות להצגה.</td></tr>';
+        <td><strong>${Number(item.source_group_count || 0).toLocaleString("he-IL")}</strong></td>
+        <td>${(item.source_types || []).length ? (item.source_types || []).map(sourceType => `<span class="target-source-type">${escapeHtml(String(sourceType))}</span>`).join("<br>") : "-"}</td>
+        <td><strong>${Number(item.evidence_count || (item.raw_data_references || []).length || 0).toLocaleString("he-IL")}</strong> ${targetEvidenceHtml(item)}</td>
+      </tr>`).join("") : '<tr><td colspan="10" class="empty-cell">לא נמצאו מועמדי מטרות להצגה.</td></tr>';
     return;
   }
   if (activeLayer.kind === "location_metadata") {

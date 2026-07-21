@@ -5,12 +5,6 @@ import server
 
 
 class TargetCatalogApiTests(unittest.TestCase):
-    def test_uav_video_catalog_layer_uses_short_display_label(self):
-        self.assertEqual(
-            server.SOURCE_TYPE_DISPLAY_LABELS["חיל האוויר הסרבי - ניצול וידאו מכטב״ם"],
-            'וידאו מכטב"מ',
-        )
-
     def test_catalog_advertises_persisted_attack_targets(self):
         with patch.object(server, "load_persisted_attack_targets", return_value=[{"target_id": "TGT-1"}]):
             layers = {layer["id"]: layer for layer in server.list_ui_layers()}

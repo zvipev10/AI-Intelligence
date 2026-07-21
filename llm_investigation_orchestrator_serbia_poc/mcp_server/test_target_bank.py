@@ -61,6 +61,7 @@ class TargetBankTests(unittest.TestCase):
         ])
         self.assertEqual(created["status"], "candidate")
         self.assertEqual(created["source_group_count"], 2)
+        self.assertEqual(created["source_types"], ["public-report", "uav"])
         self.assertEqual(len(created["evidence"]), 2)
         connection = sqlite3.connect(self.bank.db_path)
         try:
@@ -115,6 +116,7 @@ class TargetBankTests(unittest.TestCase):
         self.assertEqual(self.bank.search_candidates({"object_class": "vehicle' OR 1=1 --"}), [])
         self.assertEqual(len(self.bank.search_candidates({"location_id": "LOC-001"})), 1)
         self.assertEqual(self.bank.search_candidates({"location_id": "LOC-001"})[0]["raw_data_references"], ["REC-001", "REC-002"])
+        self.assertEqual(self.bank.search_candidates({"location_id": "LOC-001"})[0]["source_types"], ["public-report"])
 
     def test_backup_retains_latest_five_and_reset_requires_confirmation(self):
         self.bank.create_candidate(candidate(), [evidence("REC-001", "a"), evidence("REC-002", "b")])

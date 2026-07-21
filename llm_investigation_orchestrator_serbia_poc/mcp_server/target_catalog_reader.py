@@ -22,7 +22,8 @@ def read_target_catalog(db_path: Path | str, limit: int = MAX_ROWS) -> list[dict
             """
             SELECT t.*,
                    COUNT(e.record_id) AS evidence_count,
-                   COUNT(DISTINCT e.source_group) AS independent_source_count,
+                   COUNT(DISTINCT e.source_group) AS source_group_count,
+                   GROUP_CONCAT(DISTINCT e.source_type) AS source_types_csv,
                    GROUP_CONCAT(e.record_id) AS raw_record_ids
             FROM targets AS t
             LEFT JOIN target_evidence AS e ON e.target_id = t.target_id
@@ -38,6 +39,7 @@ def read_target_catalog(db_path: Path | str, limit: int = MAX_ROWS) -> list[dict
     result = []
     for row in rows:
         item = dict(row)
+        item["source_types"] = [value for value in str(item.pop("source_types_csv") or "").split(",") if value]
         raw_ids = [value for value in str(item.pop("raw_record_ids") or "").split(",") if value]
         item["raw_data_references"] = list(dict.fromkeys(raw_ids))
         result.append(item)
