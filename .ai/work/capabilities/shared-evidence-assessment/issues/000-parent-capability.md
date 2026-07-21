@@ -1,5 +1,7 @@
 # [Capability] Shared Evidence Assessment
 
+GitHub issue: #25
+
 ## Capability
 
 Create a persistent assessment that humans and agents jointly develop through attributable, reviewable contributions.
@@ -41,10 +43,10 @@ Agent work currently arrives mainly as conversation and result layers. Analysts 
 
 ## Child tasks
 
-- [ ] Product review: `010-product-review.md`
-- [ ] Developer/architecture review: `020-developer-architecture-review.md`
-- [ ] UX review: `030-ux-review.md`
-- [ ] QA/security review: `040-qa-security-review.md`
+- [ ] Product review: GitHub #26; `010-product-review.md`
+- [ ] Developer/architecture review: GitHub #27; `020-developer-architecture-review.md`
+- [ ] UX review: GitHub #28; `030-ux-review.md`
+- [ ] QA/security review: GitHub #29; `040-qa-security-review.md`
 - [ ] Execution plan
 - [ ] Slice 1 implementation
 - [ ] Slice 1 review

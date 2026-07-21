@@ -1,5 +1,7 @@
 # Developer/Architecture Review - Shared Evidence Assessment
 
+GitHub issue: #27; parent: #25
+
 ## Purpose
 
 Define a feasible persistence, API, revision, and bounded agent-write model.

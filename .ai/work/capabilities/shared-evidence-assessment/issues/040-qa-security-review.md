@@ -1,5 +1,7 @@
 # QA/Security Review - Shared Evidence Assessment
 
+GitHub issue: #29; parent: #25
+
 ## Purpose
 
 Define integrity, provenance, permissions, recovery, and regression requirements for shared human-agent artifact writes.

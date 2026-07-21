@@ -1,5 +1,7 @@
 # Product Review - Shared Evidence Assessment
 
+GitHub issue: #26; parent: #25
+
 ## Purpose
 
 Confirm that the proposed capability is the correct first practical expression of the collaborative human-agent workspace and explicit agent-value principles.

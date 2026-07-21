@@ -43,16 +43,16 @@ Human Product review recorded in `product-review.md`, followed by developer/arch
 
 ## Parent issue
 
-Local draft: `issues/000-parent-capability.md`
+GitHub issue #25; local source: `issues/000-parent-capability.md`
 
 ## Child issues
 
 | Issue | Role | Purpose | Status | Blocking? |
 |---|---|---|---|---|
-| `issues/010-product-review.md` | Product | Approve the product model and close MVP semantics. | Pending | Yes |
-| `issues/020-developer-architecture-review.md` | Development/Architecture | Define feasible schemas, APIs, and revision/write boundaries. | Pending | Yes |
-| `issues/030-ux-review.md` | UX | Define collaborative artifact flows and states. | Pending | Yes |
-| `issues/040-qa-security-review.md` | QA/Security | Define integrity, permissions, recovery, and regression gates. | Pending | Yes |
+| GitHub #26; `issues/010-product-review.md` | Product | Approve the product model and close MVP semantics. | Pending | Yes |
+| GitHub #27; `issues/020-developer-architecture-review.md` | Development/Architecture | Define feasible schemas, APIs, and revision/write boundaries. | Pending | Yes |
+| GitHub #28; `issues/030-ux-review.md` | UX | Define collaborative artifact flows and states. | Pending | Yes |
+| GitHub #29; `issues/040-qa-security-review.md` | QA/Security | Define integrity, permissions, recovery, and regression gates. | Pending | Yes |
 
 ## Artifact links
 

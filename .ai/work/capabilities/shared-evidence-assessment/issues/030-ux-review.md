@@ -1,5 +1,7 @@
 # UX Review - Shared Evidence Assessment
 
+GitHub issue: #28; parent: #25
+
 ## Purpose
 
 Define how shared work, contribution states, disagreement, and attention needs remain understandable without becoming a chat transcript or project-management dashboard.

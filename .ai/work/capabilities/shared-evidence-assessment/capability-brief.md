@@ -10,7 +10,7 @@ Shared Evidence Assessment
 
 ## Parent issue
 
-Local draft: `issues/000-parent-capability.md`
+GitHub issue #25; local source: `issues/000-parent-capability.md`
 
 ## Current status
 
