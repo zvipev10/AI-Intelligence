@@ -30,3 +30,12 @@ Date: 2026-07-21
 ## Deployment guard
 
 Back up the target SQLite database and deployed V2.1 projection before migration. Update only `target_evidence.source_type` rows matching the exact legacy value; verify target/evidence counts remain unchanged.
+
+## Deployment result
+
+- Deployed to the VM on 2026-07-21 after backing up the UI projection, MCP projection, code, and target database.
+- Migrated 8 persisted evidence rows; 0 legacy values remain and 8 rows use the canonical value.
+- Production layer catalog contains 3,800 `וידאו מכטב"מ` events and no legacy UAV-video layer.
+- Production targets expose independent/raw counts of 5/5, 5/6, and 2/3, plus their unique source types.
+- UI, General gateway, and Moshe gateway are active with zero restarts; both gateway health endpoints returned `status: ok`.
+- Post-deployment resources: 223 MB available memory and 151 MB swap used.
