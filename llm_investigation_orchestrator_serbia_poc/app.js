@@ -386,7 +386,7 @@ function appendMemberWelcomeMessage(member) {
 async function appendAgentMemberOpeningMessage(member) {
   const token = ++state.memberOpeningRequestToken;
   conversation.querySelectorAll(".member-welcome-message").forEach(message => message.remove());
-  const article = appendMessage("assistant", '<p class="member-opening-status">משה מתחבר לשיחה...</p>', {
+  const article = appendMessage("assistant", `<p class="member-opening-status">${thinkingIndicatorHtml()}</p>`, {
     label: memberMessageLabel(member), className: "member-welcome-message member-agent-opening", memberId: member.id
   });
   try {
@@ -2068,8 +2068,8 @@ function startAssistantResearchMessage(message = "") {
     <div class="message-label">${escapeHtml(assistantMessageLabel())}</div>
     <section class="research-process research-process-live">
       <h3>תהליך המחקר</h3>
-      <div class="activity-empty">${message ? escapeHtml(message) : thinkingIndicatorHtml()}</div>
       <ol class="activity-list"></ol>
+      <div class="activity-empty">${message ? escapeHtml(message) : thinkingIndicatorHtml()}</div>
     </section>`;
   conversation.appendChild(article);
   state.activeAssistantMessage = article;
@@ -2704,7 +2704,6 @@ function toggleStepVisibility(step, btn) {
 
 function addActivity(tool, detail, result, options = {}) {
   ensureAssistantResearchMessage();
-  state.activeActivityEmpty.hidden = true;
   const item = document.createElement("li");
   item.className = "activity-item";
   const stepNumber = options.stepNumber || state.activeActivityList.children.length + 1;

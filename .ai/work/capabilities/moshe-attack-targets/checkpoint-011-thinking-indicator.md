@@ -7,9 +7,10 @@ Every new General Agent or Moshe response begins with a temporary `חושב` ind
 ## Behavior
 
 - The dots animate in sequence while the request is pending.
-- The indicator is replaced by live tool steps when they arrive.
-- The pending indicator is removed when the final response is rendered.
+- Each completed live tool step is inserted above the indicator, leaving `חושב` as the temporary last item while the next step is running.
+- The pending indicator is removed only when the final response is rendered.
 - The same indicator is used for normal prompts and explicit continuation.
+- Moshe's agent-originated opening response uses the same pending indicator.
 - Reduced-motion users receive static dots.
 - Existing error-specific messages remain descriptive.
 

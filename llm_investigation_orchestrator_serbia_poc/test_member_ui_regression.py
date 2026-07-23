@@ -87,6 +87,13 @@ class MemberUiRegressionTests(unittest.TestCase):
         self.assertIn("@media (prefers-reduced-motion: reduce)", styles)
         self.assertNotIn("Hermes מנתח את הבקשה ומפעיל כלי חקירה", self.app)
         self.assertNotIn("Hermes ממשיך את החקירה", self.app)
+        self.assertNotIn("משה מתחבר לשיחה", self.app)
+        self.assertIn('class="member-opening-status">${thinkingIndicatorHtml()}</p>', self.app)
+        self.assertNotIn("state.activeActivityEmpty.hidden = true;", self.app)
+        self.assertLess(
+            self.app.index('<ol class="activity-list"></ol>'),
+            self.app.index('<div class="activity-empty">${message ? escapeHtml(message) : thinkingIndicatorHtml()}</div>')
+        )
         self.assertIn("if (research) research.replaceWith(details);", self.app)
 
 
