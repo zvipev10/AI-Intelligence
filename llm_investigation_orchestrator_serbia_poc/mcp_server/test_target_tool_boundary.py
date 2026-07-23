@@ -18,6 +18,90 @@ def general_deployment_tools():
 
 
 class TargetToolBoundaryTests(unittest.TestCase):
+    def test_attachment_preserves_stored_groups_when_only_ordinal_labels_swap(self):
+        current = [
+            {"record_id": "REC-A", "source_group": "visible-report:002"},
+            {"record_id": "REC-B", "source_group": "visible-report:001"},
+            {"record_id": "REC-C", "source_group": "visible-report:003"},
+        ]
+        fused = [
+            {"record_id": "REC-A", "source_group": "visible-report:001"},
+            {"record_id": "REC-B", "source_group": "visible-report:002"},
+            {"record_id": "REC-C", "source_group": "visible-report:003"},
+            {"record_id": "REC-D", "source_group": "uav-mission:UAV-MSN-021"},
+            {"record_id": "REC-E", "source_group": "uav-mission:UAV-MSN-021"},
+        ]
+
+        attached = server.reconcile_attached_evidence_groups(current, fused, {"REC-D", "REC-E"})
+
+        self.assertEqual({item["source_group"] for item in attached}, {"uav-mission:UAV-MSN-021"})
+
+    def test_attachment_rejects_real_merge_of_existing_groups(self):
+        current = [
+            {"record_id": "REC-A", "source_group": "visible-report:a"},
+            {"record_id": "REC-B", "source_group": "visible-report:b"},
+        ]
+        fused = [
+            {"record_id": "REC-A", "source_group": "visible-report:001"},
+            {"record_id": "REC-B", "source_group": "visible-report:001"},
+            {"record_id": "REC-C", "source_group": "visible-report:001"},
+        ]
+
+        with self.assertRaisesRegex(ValueError, "merge existing immutable source groups"):
+            server.reconcile_attached_evidence_groups(current, fused, {"REC-C"})
+
+    def test_new_visible_report_group_gets_stable_non_ordinal_id(self):
+        attached = server.reconcile_attached_evidence_groups(
+            [{"record_id": "REC-A", "source_group": "visible-report:001"}],
+            [
+                {"record_id": "REC-A", "source_group": "visible-report:001"},
+                {"record_id": "REC-B", "source_group": "visible-report:002"},
+            ],
+            {"REC-B"},
+        )
+        self.assertRegex(attached[0]["source_group"], r"^visible-report:[0-9a-f]{12}$")
+        self.assertNotEqual(attached[0]["source_group"], "visible-report:001")
+
+    def test_exact_production_label_swap_case_attaches_in_temporary_bank(self):
+        existing_ids = ["REC-V2-009058", "REC-V2-014385", "REC-V2-014425"]
+        new_ids = ["REC-V2-006452", "REC-V2-007655", "REC-V2-004558"]
+        initial = server.prepare_candidate(server._fusion_events(existing_ids), "medium")["evidence"]
+        first_group, second_group = initial[0]["source_group"], initial[1]["source_group"]
+        initial[0]["source_group"], initial[1]["source_group"] = second_group, first_group
+        with tempfile.TemporaryDirectory() as directory:
+            previous = server.TARGET_BANK
+            server.TARGET_BANK = TargetBank(Path(directory) / "targets.db", Path(directory) / "backups")
+            server.TARGET_BANK.initialize()
+            try:
+                created = server.TARGET_BANK.create_candidate({
+                    "title": "Production regression",
+                    "summary": "Ordinal labels must not block valid evidence.",
+                    "object_class": "observation_post",
+                    "entity_id": "ENT-KFOR",
+                    "location_id": "LOC-V2-005",
+                    "confidence": "medium",
+                    "count_assessment": "unresolved",
+                    "fusion_explanation": "Three independent visible reports.",
+                    "mission_run_id": "regression-run",
+                    "created_by": "moshe",
+                }, initial)
+                updated = server.attach_target_evidence({
+                    "target_id": created["target_id"],
+                    "evidence": [{"record_id": record_id} for record_id in new_ids],
+                })["candidate"]
+                self.assertEqual(len(updated["evidence"]), 6)
+                self.assertEqual(
+                    {item["source_group"] for item in updated["evidence"] if item["record_id"] in new_ids},
+                    {"uav-mission:UAV-MSN-021"},
+                )
+                stored_existing = {
+                    item["record_id"]: item["source_group"] for item in updated["evidence"]
+                    if item["record_id"] in existing_ids
+                }
+                self.assertEqual(stored_existing, {item["record_id"]: item["source_group"] for item in initial})
+            finally:
+                server.TARGET_BANK = previous
+
     def test_mcp_registry_contains_only_constrained_target_tools(self):
         target_tools = {item["name"] for item in server.TOOLS if "target" in item["name"]}
         self.assertEqual(target_tools, {

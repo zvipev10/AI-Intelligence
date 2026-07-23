@@ -2424,6 +2424,55 @@ def update_target_candidate(arguments: dict[str, Any]) -> dict[str, Any]:
     return {"candidate": TARGET_BANK.update_candidate(target_id, changes)}
 
 
+def reconcile_attached_evidence_groups(
+    current_evidence: list[dict[str, Any]], fused_evidence: list[dict[str, Any]], new_ids: set[str],
+) -> list[dict[str, Any]]:
+    """Preserve stored group identities while rejecting real regrouping of existing evidence."""
+    stored_by_id = {item["record_id"]: item["source_group"] for item in current_evidence}
+    fused_by_id = {item["record_id"]: item for item in fused_evidence}
+    missing = [record_id for record_id in stored_by_id if record_id not in fused_by_id]
+    if missing:
+        raise ValueError(f"fusion omitted existing evidence: {missing[0]}")
+
+    stored_groups_by_fused_group: dict[str, set[str]] = defaultdict(set)
+    fused_groups_by_stored_group: dict[str, set[str]] = defaultdict(set)
+    for record_id, stored_group in stored_by_id.items():
+        fused_group = fused_by_id[record_id]["source_group"]
+        stored_groups_by_fused_group[fused_group].add(stored_group)
+        fused_groups_by_stored_group[stored_group].add(fused_group)
+
+    if any(len(groups) > 1 for groups in stored_groups_by_fused_group.values()):
+        raise ValueError("new evidence would merge existing immutable source groups")
+    if any(len(groups) > 1 for groups in fused_groups_by_stored_group.values()):
+        raise ValueError("new evidence would split an existing immutable source group")
+
+    assigned_by_fused_group = {
+        fused_group: next(iter(stored_groups))
+        for fused_group, stored_groups in stored_groups_by_fused_group.items()
+        if stored_groups
+    }
+    occupied_groups = set(stored_by_id.values())
+    members_by_fused_group: dict[str, list[str]] = defaultdict(list)
+    for item in fused_evidence:
+        members_by_fused_group[item["source_group"]].append(item["record_id"])
+
+    for fused_group, members in members_by_fused_group.items():
+        if fused_group in assigned_by_fused_group:
+            continue
+        assigned_group = fused_group
+        if fused_group.startswith("visible-report:") or assigned_group in occupied_groups:
+            fingerprint = hashlib.sha256("\n".join(sorted(members)).encode("utf-8")).hexdigest()[:12]
+            assigned_group = f"visible-report:{fingerprint}"
+        assigned_by_fused_group[fused_group] = assigned_group
+        occupied_groups.add(assigned_group)
+
+    return [
+        {**item, "source_group": assigned_by_fused_group[item["source_group"]]}
+        for item in fused_evidence
+        if item["record_id"] in new_ids
+    ]
+
+
 def attach_target_evidence(arguments: dict[str, Any]) -> dict[str, Any]:
     TARGET_BANK.initialize()
     target_id = arguments.get("target_id")
@@ -2431,11 +2480,8 @@ def attach_target_evidence(arguments: dict[str, Any]) -> dict[str, Any]:
     current = TARGET_BANK.get_candidate(target_id)
     all_ids = [item["record_id"] for item in current["evidence"]] + [str(item.get("record_id") or "").strip() for item in supplied_evidence]
     fusion = prepare_candidate(_fusion_events(all_ids), current["confidence"])
-    group_by_id = {item["record_id"]: item["source_group"] for item in fusion["evidence"]}
-    if any(group_by_id[item["record_id"]] != item["source_group"] for item in current["evidence"]):
-        raise ValueError("new evidence would change an existing immutable source group")
     new_ids = {str(item.get("record_id") or "").strip() for item in supplied_evidence}
-    evidence = [item for item in fusion["evidence"] if item["record_id"] in new_ids]
+    evidence = reconcile_attached_evidence_groups(current["evidence"], fusion["evidence"], new_ids)
     validate_target_references(current, evidence)
     return {"candidate": TARGET_BANK.attach_evidence(target_id, evidence)}
 
