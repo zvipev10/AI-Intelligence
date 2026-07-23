@@ -130,6 +130,11 @@ class TargetToolBoundaryTests(unittest.TestCase):
         self.assertNotIn("created_by", update_properties)
         self.assertNotIn("created_by", create_properties)
 
+    def test_target_search_exposes_exact_raw_record_lookup(self):
+        search_tool = next(item for item in server.TOOLS if item["name"] == "search_target_candidates")
+        self.assertIn("record_id", search_tool["inputSchema"]["properties"])
+        self.assertIn("raw record ID", search_tool["description"])
+
     def test_admin_operations_are_not_mcp_handlers(self):
         for name in ("backup_target_bank", "reset_target_bank", "delete_target", "execute_sql"):
             self.assertNotIn(name, server.TOOL_HANDLERS)

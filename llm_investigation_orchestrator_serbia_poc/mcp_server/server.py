@@ -2609,12 +2609,13 @@ TOOLS = [
     {
         "name": "search_target_candidates",
         "title": "Search attack-target candidates",
-        "description": "Search final-state candidate targets by exact assessed object class, canonical entity/location, or mission run. Returns summaries only; use get_target_candidate for evidence.",
+        "description": "Search final-state candidate targets by exact assessed object class, canonical entity/location, mission run, or raw record ID. A record_id lookup returns every target containing that raw record while preserving each target's full summary. Returns summaries only; use get_target_candidate for evidence.",
         "inputSchema": with_step_bridge({
             "type": "object",
             "properties": {
                 "object_class": {"type": "string"}, "entity_id": {"type": "string"},
                 "location_id": {"type": "string"}, "mission_run_id": {"type": "string"},
+                "record_id": {"type": "string", "description": "Exact raw-data record ID, for example REC-V2-009058."},
                 "limit": {"type": "integer", "minimum": 1, "maximum": 500},
             },
             "additionalProperties": False,
