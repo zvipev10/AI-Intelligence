@@ -33,3 +33,10 @@ Date: 2026-07-23
 ## Evidence limit
 
 The embedded audit browser could not reach the VM, so screenshot-backed visual review was not completed. Validation covers the deployed rendering contract, code path, and current production audit payloads.
+
+## Deployment result
+
+- Deployed to the VM on 2026-07-23 after backing up the prior UI server and client files.
+- UI, General gateway, and Moshe gateway are active; both gateway health endpoints returned `status: ok`.
+- The deployed formatter replayed the current Moshe audit with target summaries bounded to 47–204 characters and identifiers retained.
+- UI restart count is 0. Post-deployment resources: 309 MB available memory and 684 MB swap used.
