@@ -2054,14 +2054,21 @@ function appendMessage(role, html, options = {}) {
   return article;
 }
 
-function startAssistantResearchMessage(message = "Hermes מנתח את הבקשה ומפעיל כלי חקירה...") {
+function thinkingIndicatorHtml() {
+  return `
+    <span class="thinking-indicator" role="status" aria-label="חושב">
+      <span>חושב</span><span class="thinking-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+    </span>`;
+}
+
+function startAssistantResearchMessage(message = "") {
   const article = document.createElement("article");
   article.className = "message assistant-message";
   article.innerHTML = `
     <div class="message-label">${escapeHtml(assistantMessageLabel())}</div>
     <section class="research-process research-process-live">
       <h3>תהליך המחקר</h3>
-      <div class="activity-empty">${escapeHtml(message)}</div>
+      <div class="activity-empty">${message ? escapeHtml(message) : thinkingIndicatorHtml()}</div>
       <ol class="activity-list"></ol>
     </section>`;
   conversation.appendChild(article);
@@ -2451,7 +2458,7 @@ async function submitStepInject() {
   const agentContinuationPrompt = promptForAgent(continuationPrompt);
 
   // Start a new labeled continuation bubble
-  startAssistantResearchMessage("Hermes ממשיך את החקירה...");
+  startAssistantResearchMessage();
   // Mark the article so CSS can show the ↩ continuation kicker
   if (state.activeAssistantMessage) {
     state.activeAssistantMessage.dataset.continuation = "true";

@@ -79,6 +79,16 @@ class MemberUiRegressionTests(unittest.TestCase):
         self.assertIn('options.result.saved_question_id ? "נשמר" : "שמור הקלטה"', self.app)
         self.assertIn('button.textContent = "שמור הקלטה";', self.app)
 
+    def test_agent_waiting_message_is_temporary_animated_thinking_indicator(self):
+        styles = (ROOT / "styles.css").read_text(encoding="utf-8")
+        self.assertIn("function thinkingIndicatorHtml()", self.app)
+        self.assertIn('aria-label="חושב"', self.app)
+        self.assertIn("thinking-dot 1.05s infinite", styles)
+        self.assertIn("@media (prefers-reduced-motion: reduce)", styles)
+        self.assertNotIn("Hermes מנתח את הבקשה ומפעיל כלי חקירה", self.app)
+        self.assertNotIn("Hermes ממשיך את החקירה", self.app)
+        self.assertIn("if (research) research.replaceWith(details);", self.app)
+
 
 if __name__ == "__main__":
     unittest.main()
