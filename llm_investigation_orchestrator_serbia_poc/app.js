@@ -2116,7 +2116,7 @@ function finalizeAssistantMessage(answer, options = {}) {
       <button type="button" class="final-answer-show-btn layers-hidden" data-source-id="${escapeHtml(finalId)}" title="הצג תוצאות" aria-label="הצג תוצאות" aria-pressed="false">
         <span class="final-answer-show-label">הצג תוצאות</span>
       </button>
-      <button type="button" class="final-answer-save-btn" ${options.result.saved_question_id ? "disabled" : ""}>${options.result.saved_question_id ? "נשמר" : "שמור"}</button>
+      <button type="button" class="final-answer-save-btn" ${options.result.saved_question_id ? "disabled" : ""}>${options.result.saved_question_id ? "נשמר" : "שמור הקלטה"}</button>
       <button type="button" class="final-answer-memory-btn" ${options.result.investigation_memory_summary_id ? "disabled" : ""}>${options.result.investigation_memory_summary_id ? "נשמר בזיכרון" : "שמור לזיכרון"}</button>
     `;
     const finalShowBtn = actions.querySelector(".final-answer-show-btn");
@@ -2914,8 +2914,8 @@ async function saveResultQuestion(result, prompt, button) {
     setTimeout(() => {
       if (!result.saved_question_id) {
         button.disabled = false;
-        button.textContent = "שמור";
-        button.title = "שמור את תוצאת החקירה";
+        button.textContent = "שמור הקלטה";
+        button.title = "שמור את הקלטת החקירה";
       }
     }, 2500);
   } finally {

@@ -75,6 +75,10 @@ class MemberUiRegressionTests(unittest.TestCase):
         self.assertIn('create_target_candidate: "יצירת מועמד מטרה"', self.app)
         self.assertIn('attach_target_evidence: "צירוף ראיות למטרה"', self.app)
 
+    def test_recording_save_button_uses_explicit_label(self):
+        self.assertIn('options.result.saved_question_id ? "נשמר" : "שמור הקלטה"', self.app)
+        self.assertIn('button.textContent = "שמור הקלטה";', self.app)
+
 
 if __name__ == "__main__":
     unittest.main()
