@@ -25,3 +25,11 @@ The latest production failure attempted to attach `REC-V2-006452`, `REC-V2-00765
 ## Deployment guard
 
 Back up the target database and MCP server before deployment. Restart Moshe’s gateway after installing the constrained MCP server. Do not automatically retry the previously failed write; the user can ask Moshe to retry after deployment.
+
+## Deployment result
+
+- Deployed to the VM on 2026-07-23 after backing up the MCP server and the 49,152-byte target database.
+- UI, General gateway, and Moshe gateway are active; both gateway health endpoints returned `status: ok` with zero gateway restarts.
+- A read-only dry reconciliation against `TGT-70C964B0ECC0` now accepts all three failed records and assigns them to `uav-mission:UAV-MSN-021`.
+- The failed attachment was not replayed; the target still has its original three records until Moshe retries it.
+- Post-deployment resources: 225 MB available memory and 169 MB swap used.
