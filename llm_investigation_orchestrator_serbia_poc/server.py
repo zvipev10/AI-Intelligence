@@ -1183,6 +1183,34 @@ class HermesClient:
         def public_args(args):
             return {key: value for key, value in args.items() if key != "step_bridge"}
 
+        def extract_identifiers(value, depth=0):
+            if depth > 6:
+                return []
+            identifiers = []
+            if isinstance(value, dict):
+                for key, item in value.items():
+                    if key.endswith("_id") and isinstance(item, (str, int)) and item:
+                        identifiers.append(item)
+                    elif key.endswith("_ids") and isinstance(item, list):
+                        identifiers.extend(entry for entry in item if isinstance(entry, (str, int)) and entry)
+                    else:
+                        identifiers.extend(extract_identifiers(item, depth + 1))
+            elif isinstance(value, list):
+                for item in value:
+                    identifiers.extend(extract_identifiers(item, depth + 1))
+            return list(dict.fromkeys(str(identifier) for identifier in identifiers if identifier))
+
+        def identifiers_text(*values):
+            identifiers = []
+            for value in values:
+                identifiers.extend(extract_identifiers(value))
+            identifiers = list(dict.fromkeys(identifiers))
+            return f' מזהים: {format_ids(identifiers)}.' if identifiers else ""
+
+        def target_candidate(result):
+            candidate = result.get("candidate")
+            return candidate if isinstance(candidate, dict) else {}
+
         def arg_clue(tool, args):
             if tool == "classify_question_intent":
                 return f'השאלה "{args.get("question", "")}"'
@@ -1207,6 +1235,16 @@ class HermesClient:
             if tool == "get_objects":
                 ids = (args.get("event_ids") or []) + (args.get("location_ids") or []) + (args.get("entity_ids") or [])
                 return f'מזהי האובייקטים {format_ids(ids)}'
+            if tool == "prepare_target_candidate":
+                return f'רשומות העוגן {format_ids(args.get("event_ids") or [])}'
+            if tool in {"get_target_candidate", "update_target_candidate", "attach_target_evidence"}:
+                return f'מועמד המטרה {args.get("target_id") or "לא צוין"}'
+            if tool == "find_duplicate_target_candidates":
+                return f'מועמד במיקום {args.get("location_id") or "לא צוין"} ובסוג {args.get("object_class") or "לא צוין"}'
+            if tool == "search_target_candidates":
+                return "מאגר מועמדי המטרות"
+            if tool == "create_target_candidate":
+                return f'המועמד {((args.get("candidate") or {}).get("target_id")) or "החדש"}'
             if tool == "find_related_events":
                 return f'אירועי העוגן {format_ids(args.get("seed_event_ids") or [])}'
             if tool == "explain_linkage":
@@ -1306,6 +1344,18 @@ class HermesClient:
             elif tool == "challenge_hypothesis":
                 decision = f'לפני חיזוק ההשערה, הסוכן בודק את {clue} מול חלופות ופערים.'
                 expected = "לגלות הסברים תמימים, סתירות או חסרים שמחלישים את הרצף."
+            elif tool == "prepare_target_candidate":
+                decision = f'משה בודק את {clue}, מאתר חיזוקים ומעריך אם ניתן ליצור מועמד מטרה.'
+                expected = "לקבל החלטת כשירות, ביטחון, כמות ורשומות תומכות בלי לשמור עדיין."
+            elif tool == "find_duplicate_target_candidates":
+                decision = f'לפני יצירה, משה בודק אם {clue} כבר קיים במאגר.'
+                expected = "למנוע יצירת מטרה כפולה ולהחזיר מזהי מועמדים דומים אם קיימים."
+            elif tool in {"search_target_candidates", "get_target_candidate"}:
+                decision = f'משה קורא את {clue} כדי להציג או להמשיך לעבוד על מטרה קיימת.'
+                expected = "לקבל תקציר מטרה ומזהים רלוונטיים מתוך המאגר."
+            elif tool in {"create_target_candidate", "update_target_candidate", "attach_target_evidence"}:
+                decision = f'משה מעדכן את {clue} לאחר בדיקות הכשירות והכפילויות.'
+                expected = "לקבל אישור קצר, מצב מעודכן ומזהים רלוונטיים."
             else:
                 decision = f'הסוכן משתמש ב-{clue} כדי לצמצם אי-ודאות ולהחליט על המשך החקירה.'
                 expected = "לקבל פלט שיאשר, ישלול או ימקד את כיוון החקירה."
@@ -1511,6 +1561,64 @@ class HermesClient:
                 alternatives = result.get("alternative_event_ids") or []
                 gaps = result.get("gaps") or []
                 outcome = f'נמצאו {len(alternatives)} אירועי חלופה ו-{len(gaps)} פערים; חלופות: {format_ids(alternatives)}.'
+            elif tool == "prepare_target_candidate":
+                requested = args.get("event_ids") or []
+                action = f'בדיקת {len(requested)} רשומות עוגן והשלמת חיזוקים למועמד מטרה: {format_ids(requested)}.'
+                evidence = result.get("evidence") or []
+                eligible = bool(result.get("persistence_eligible"))
+                blocks = result.get("persistence_block_reasons") or []
+                outcome = (
+                    f'נבדקו {len(evidence)} רשומות ב-{result.get("independent_source_group_count", 0)} קבוצות מקור; '
+                    f'ביטחון {result.get("confidence") or "לא נקבע"}; '
+                    f'המועמד {"כשיר לשמירה" if eligible else "אינו כשיר לשמירה"}.'
+                )
+                if blocks:
+                    outcome += f' סיבות: {"; ".join(str(item) for item in blocks[:3])}.'
+                outcome += identifiers_text(result)
+            elif tool == "find_duplicate_target_candidates":
+                action = (
+                    f'בדיקת מועמדים כפולים עבור סוג {args.get("object_class") or "לא צוין"}, '
+                    f'מיקום {args.get("location_id") or "לא צוין"} וישות {args.get("entity_id") or "לא צוינה"}.'
+                )
+                matches = result.get("matches") or []
+                outcome = f'{"נמצאו" if matches else "לא נמצאו"} {len(matches)} מועמדים דומים.' + identifiers_text(result)
+            elif tool == "search_target_candidates":
+                filters = {key: value for key, value in public_args(args).items() if value not in (None, "", [], False)}
+                action = f'חיפוש מועמדי מטרות לפי {", ".join(filters) if filters else "ללא מסננים"}.'
+                candidates = result.get("candidates") or []
+                outcome = f'הוחזרו {result.get("returned", len(candidates))} מועמדי מטרות.' + identifiers_text(result)
+            elif tool == "get_target_candidate":
+                action = f'שליפת מועמד המטרה {args.get("target_id") or "לא צוין"}.'
+                candidate = target_candidate(result)
+                outcome = (
+                    f'הוחזרה המטרה {candidate.get("title") or candidate.get("target_id") or "ללא כותרת"}; '
+                    f'ביטחון {candidate.get("confidence") or "לא נקבע"}; '
+                    f'{candidate.get("evidence_count", len(candidate.get("evidence") or []))} רשומות.'
+                    + identifiers_text(result)
+                )
+            elif tool == "create_target_candidate":
+                candidate_input = args.get("candidate") or {}
+                action = f'יצירת מועמד המטרה {candidate_input.get("target_id") or "חדש"} לאחר בדיקות הכשירות.'
+                candidate = target_candidate(result)
+                outcome = (
+                    f'נוצרה המטרה {candidate.get("title") or candidate.get("target_id") or "ללא כותרת"}; '
+                    f'ביטחון {candidate.get("confidence") or "לא נקבע"}; '
+                    f'{candidate.get("evidence_count", len(candidate.get("evidence") or []))} רשומות.'
+                    + identifiers_text(result)
+                )
+            elif tool == "update_target_candidate":
+                changed_fields = list((args.get("changes") or {}).keys())
+                action = f'עדכון המטרה {args.get("target_id") or "לא צוינה"}; שדות: {", ".join(changed_fields) if changed_fields else "אין"}.'
+                candidate = target_candidate(result)
+                outcome = f'המטרה {candidate.get("title") or candidate.get("target_id") or "לא צוינה"} עודכנה.' + identifiers_text(result)
+            elif tool == "attach_target_evidence":
+                supplied = args.get("evidence") or []
+                action = f'צירוף {len(supplied)} רשומות למטרה {args.get("target_id") or "לא צוינה"}.'
+                candidate = target_candidate(result)
+                if record.get("is_error") or result.get("error"):
+                    outcome = f'הצירוף נכשל: {result.get("error") or "שגיאה לא מפורטת"}.' + identifiers_text(args, result)
+                else:
+                    outcome = f'הרשומות צורפו; למטרה משויכות כעת {candidate.get("evidence_count", len(candidate.get("evidence") or []))} רשומות.' + identifiers_text(result)
             else:
                 action = f'קלט: {json.dumps(public_args(args), ensure_ascii=False)}.'
                 outcome = f'פלט: {json.dumps(result, ensure_ascii=False)}.'

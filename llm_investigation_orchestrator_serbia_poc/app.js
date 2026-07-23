@@ -2176,7 +2176,14 @@ const TOOL_LABELS = {
   trace_semantic_clues: "מעקב אחר רמזים סמנטיים",
   plan_next_investigation_step: "בקרת תהליך החקירה",
   find_related_events: "הרחבת מעגל הראיות",
-  challenge_hypothesis: "בדיקת ההשערה מול חלופות"
+  challenge_hypothesis: "בדיקת ההשערה מול חלופות",
+  prepare_target_candidate: "הכנת מועמד מטרה",
+  find_duplicate_target_candidates: "בדיקת כפילות מטרה",
+  search_target_candidates: "חיפוש מועמדי מטרות",
+  get_target_candidate: "שליפת מועמד מטרה",
+  create_target_candidate: "יצירת מועמד מטרה",
+  update_target_candidate: "עדכון מועמד מטרה",
+  attach_target_evidence: "צירוף ראיות למטרה"
 };
 
 function humanToolLabel(tool) {

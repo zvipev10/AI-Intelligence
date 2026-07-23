@@ -104,6 +104,38 @@ class AgentResultPipelineTests(unittest.TestCase):
         self.assertEqual(steps[0]["location_layers"][0]["location_id"], "LOC-1")
         self.assertEqual(steps[0]["entity_layers"][0]["entity_id"], "ENT-1")
 
+    def test_moshe_prepare_summary_is_bounded_and_keeps_identifiers(self):
+        result = {
+            "independent_source_group_count": 2,
+            "confidence": "high",
+            "persistence_eligible": True,
+            "evidence": [
+                {"record_id": "REC-1", "relevant_text": "x" * 2000},
+                {"record_id": "REC-2", "relevant_text": "y" * 2000},
+            ],
+        }
+        step = HermesClient.summarize_audit([{
+            "tool": "prepare_target_candidate",
+            "arguments": {"event_ids": ["REC-1"]},
+            "result": result,
+        }])[0]
+        self.assertIn("REC-1", step["result"])
+        self.assertIn("REC-2", step["result"])
+        self.assertIn("כשיר לשמירה", step["result"])
+        self.assertLess(len(step["result"]), 500)
+        self.assertNotIn("relevant_text", step["result"])
+
+    def test_moshe_target_update_summary_keeps_target_id_without_raw_json(self):
+        step = HermesClient.summarize_audit([{
+            "tool": "update_target_candidate",
+            "arguments": {"target_id": "TGT-1", "changes": {"summary": "z" * 2000}},
+            "result": {"candidate": {"target_id": "TGT-1", "title": "Target", "summary": "z" * 2000}},
+        }])[0]
+        self.assertIn("TGT-1", step["result"])
+        self.assertLess(len(step["action"]), 250)
+        self.assertLess(len(step["result"]), 250)
+        self.assertNotIn("z" * 100, step["action"] + step["result"])
+
 
 if __name__ == "__main__":
     unittest.main()

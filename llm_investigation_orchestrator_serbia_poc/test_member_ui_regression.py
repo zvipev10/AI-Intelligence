@@ -70,6 +70,11 @@ class MemberUiRegressionTests(unittest.TestCase):
         self.assertNotIn("function targetEvidenceHtml", self.app)
         self.assertNotIn("הסבר מיזוג:", self.app)
 
+    def test_moshe_tools_use_readable_shared_activity_labels(self):
+        self.assertIn('prepare_target_candidate: "הכנת מועמד מטרה"', self.app)
+        self.assertIn('create_target_candidate: "יצירת מועמד מטרה"', self.app)
+        self.assertIn('attach_target_evidence: "צירוף ראיות למטרה"', self.app)
+
 
 if __name__ == "__main__":
     unittest.main()
