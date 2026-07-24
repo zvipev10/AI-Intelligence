@@ -8,6 +8,7 @@ Collaborative Scenario Playback — Phase 1 persistent workstream foundation
 
 - Parent: #25
 - Phase 1 implementation: #30
+- Phase 1 chat UX: #32
 - Planning PR: #24
 
 ## Plan status
@@ -115,7 +116,18 @@ Yes. Publish checkpoint and request review before adding UI behavior.
 ### Slice 2 — Minimal workstream UI shell
 
 Goal:
-Create/reopen/archive an investigation-associated workstream and display objective, participants, responsibilities, and status.
+Create and interact with an investigation-associated workstream through the existing chat:
+
+- `מעקב` is selected from the existing plus menu.
+- Exactly one layer is attached explicitly.
+- The chat message supplies the objective.
+- The system derives a concise title and initial agent responsibility deterministically.
+- An agent-style chat message previews the workstream and requires confirmation before creation.
+- A minimal header indicator appears only while active workstreams exist.
+- Pressing the indicator returns status and actions to the chat; it does not open a separate management surface.
+- Archiving requires an explicit confirmation in chat.
+
+Product and UX approved this flow on 2026-07-24.
 
 Risk:
 Medium; changes product behavior and UX.

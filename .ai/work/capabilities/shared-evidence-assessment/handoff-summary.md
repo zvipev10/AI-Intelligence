@@ -39,3 +39,34 @@ Merge PR #31 and define the Slice 2 chat-based creation flow. The current Produc
 ## Publishing
 
 Planning PR #24 is merged. Slice 1 is on `capability/workstream-phase1` under issue #30 and is ready for a separate implementation PR.
+# Handoff Summary
+
+## Current state
+
+Phase 1 Slice 2 is implemented on `capability/workstream-chat` and ready for checkpoint review. Slice 1 persistence/API support is already on `main`.
+
+## What is new
+
+The existing chat now supports creation of a durable workstream through `+` → `מעקב`, one explicit layer attachment, an objective message, and an agent-style confirmation. Active workstreams expose only a minimal header indicator; pressing it returns status and actions into chat.
+
+## What remains unchanged
+
+Investigation Memory, Hermes query behavior, and layer ingestion remain separate. The slice adds no automatic agent execution, scenario playback, artifact model, or LLM-generated status.
+
+## Review requested
+
+- Product: confirm the implemented behavior matches the approved collaborative-workspace direction.
+- UX: validate entry, layer attachment, preview/confirmation, indicator, multiple-workstream choice, and archive confirmation.
+- Development/Architecture: confirm the client uses the existing workstream API contract without new coupling.
+- QA: perform the full manual create/reopen/archive flow and review regression coverage.
+
+## Evidence
+
+- Checkpoint: `checkpoint-002.md`
+- Decision: `decisions.md`
+- Execution plan: `execution-plan.md`
+- Focused UI assertions: `llm_investigation_orchestrator_serbia_poc/test_workstream_ui.py`
+
+## Next step
+
+Address checkpoint feedback, rerun validation, and merge only after the required reviewers accept the slice.

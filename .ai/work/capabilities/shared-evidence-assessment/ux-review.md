@@ -2,7 +2,27 @@
 
 ## Status
 
-AI-authored draft — pending human UX approval
+Phase 1 Slice 2 direction approved by the human Product owner; implemented checkpoint pending UX acceptance. Broader scenario-playback UX remains a draft.
+
+## Phase 1 Slice 2 approved flow
+
+- Enter tracking from the existing plus menu with `מעקב`.
+- Keep creation inside chat rather than introducing a separate form or management surface.
+- Require one explicitly attached layer and use the user's message as the objective.
+- Show derived title and initial responsibility in an agent-style chat preview before persistence.
+- Keep the active header indicator minimal.
+- On indicator press, return description, status, and user actions as an agent message in chat.
+- Ask the user to choose in chat when multiple workstreams are active.
+- Keep all updates manual and deterministic in this slice; automation may replace some messages later.
+- Require a second, explicit chat action before archiving.
+
+## Phase 1 Slice 2 review focus
+
+- Is tracking mode sufficiently distinct from ordinary chat?
+- Is the one-layer requirement clear at the point of attachment and submission?
+- Does the preview make the persistence boundary understandable?
+- Does the minimal indicator remain discoverable without becoming a management panel?
+- Are multiple-workstream selection and archive confirmation clear and accessible?
 
 ## Experience goal
 

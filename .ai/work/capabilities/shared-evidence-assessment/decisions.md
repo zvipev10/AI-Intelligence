@@ -1,5 +1,22 @@
 # Capability Decisions
 
+### 2026-07-24 — Use chat as the Phase 1 workstream interaction surface
+
+Decision:
+Create workstreams from the existing plus menu through a distinct `מעקב` composer mode. Require one explicit layer, treat the user's message as the objective, preview the derived title and responsibility in an agent-style message, and persist only after confirmation. Keep the active indicator minimal; pressing it returns status and actions to chat.
+
+Context:
+The existing chat already supports follow-up messages and layer attachments. A separate workstream form or management panel would duplicate those mechanics without demonstrating the intended collaborative-workspace direction.
+
+Rationale:
+The new behavior is durable shared work with explicit ownership and lifecycle, while chat remains the familiar surface for context, decisions, and actions.
+
+Impact:
+Phase 1 messages are deterministic and user-triggered. There is no automatic monitoring, LLM-generated status, drawer, or workstream management screen.
+
+Follow-ups:
+Review the implemented checkpoint with Product, UX, and QA before merge. Define automated agent updates only in a later slice.
+
 ### 2026-07-24 — Keep Phase 1 independent from Investigation Memory items
 
 Decision:

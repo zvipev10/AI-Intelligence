@@ -37,7 +37,12 @@ button { cursor: pointer; }
 .app-header p { margin: 0; color: var(--muted); font-size: 13px; }
 .investigation-switcher { min-width: 0; justify-self: center; width: min(560px, 100%); display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 10px; }
 .investigation-switcher label { color: var(--muted); font-size: 11px; font-weight: 800; text-align: right; white-space: nowrap; }
-.investigation-workgroup { min-width: 0; display: grid; grid-template-columns: minmax(190px, 250px) minmax(0, 1fr); align-items: center; gap: 8px; }
+.investigation-workgroup { min-width: 0; display: grid; grid-template-columns: minmax(190px, 250px) auto minmax(0, 1fr); align-items: center; gap: 8px; }
+.workstream-indicator { min-height: 30px; display: inline-flex; align-items: center; gap: 5px; border: 1px solid rgba(88,166,255,.38); border-radius: 999px; background: rgba(88,166,255,.08); color: var(--blue); padding: 0 10px; font-size: 11px; font-weight: 850; white-space: nowrap; cursor: pointer; }
+.workstream-indicator[hidden] { display: none; }
+.workstream-indicator:hover, .workstream-indicator:focus-visible { border-color: var(--blue); background: rgba(88,166,255,.15); color: #fff; outline: none; }
+.workstream-indicator-count { min-width: 17px; height: 17px; display: inline-grid; place-items: center; border-radius: 999px; background: rgba(88,166,255,.2); font-size: 10px; }
+.workstream-indicator-count[hidden] { display: none; }
 .investigation-combobox { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) 32px; align-items: center; gap: 5px; min-height: 36px; padding: 3px; border: 1px solid rgba(146,170,205,.34); border-radius: 12px; background: #10141b; box-shadow: inset 0 1px 0 rgba(255,255,255,.035); }
 .investigation-combobox:focus-within { border-color: rgba(146,170,205,.55); box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 0 0 1px rgba(255,255,255,.025); }
 .investigation-combobox input { min-width: 0; width: 100%; height: 28px; border: 0; outline: none; background: transparent; color: var(--ink); padding: 0 8px; font: inherit; font-size: 14px; font-weight: 800; }
@@ -110,6 +115,11 @@ h3 { margin: 0; font-size: 14px; }
 .suggestions button { flex: 0 0 auto; max-width: 270px; border: 1px solid #31573f; border-radius: 6px; background: var(--green-soft); color: var(--green); padding: 7px 9px; text-align: right; font-size: 11px; }
 .prompt-form { margin: 10px 12px 12px; padding: 12px; display: grid; gap: 9px; border: 1px solid rgba(146,170,205,.3); border-radius: 14px; background: #10141b; box-shadow: inset 0 1px 0 rgba(255,255,255,.035); }
 .prompt-form:focus-within { border-color: rgba(146,170,205,.48); box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 0 0 1px rgba(255,255,255,.02); }
+.prompt-form.tracking-mode { border-color: rgba(88,166,255,.5); box-shadow: inset 0 0 0 1px rgba(88,166,255,.16); }
+.workstream-composer-mode { display: flex; align-items: center; justify-content: space-between; color: var(--blue); font-size: 11px; font-weight: 850; }
+.workstream-composer-mode[hidden] { display: none; }
+.prompt-form .workstream-composer-mode button { width: 22px; height: 22px; padding: 0; border-radius: 50%; background: transparent; color: var(--muted); font-size: 17px; cursor: pointer; }
+.prompt-form .workstream-composer-mode button:hover, .prompt-form .workstream-composer-mode button:focus-visible { background: rgba(242,139,130,.12); color: var(--red); outline: none; }
 .prompt-form textarea { width: 100%; min-height: 58px; resize: none; border: 0; border-radius: 9px; padding: 7px 8px; color: var(--ink); background: transparent; font-size: 13px; line-height: 1.55; outline: none; }
 .prompt-form textarea::placeholder { color: var(--muted); }
 .prompt-actions { min-width: 0; display: flex; gap: 8px; align-items: center; }
@@ -135,6 +145,14 @@ h3 { margin: 0; font-size: 14px; }
 .prompt-options-menu[hidden] { display: none; }
 .prompt-form .prompt-options-menu button { width: 100%; min-width: 0; height: 30px; border: 1px solid transparent; border-radius: 6px; background: transparent; color: var(--ink); padding: 0 9px; text-align: right; font-size: 12px; }
 .prompt-form .prompt-options-menu button:hover, .prompt-form .prompt-options-menu button:focus-visible { border-color: var(--blue); background: rgba(88,166,255,.13); color: #fff; outline: none; }
+.workstream-message { border-color: rgba(88,166,255,.42); background: rgba(88,166,255,.08); }
+.workstream-message .message-label { color: var(--blue); }
+.workstream-message-title { margin-bottom: 5px; font-weight: 850; }
+.workstream-message-meta { color: var(--muted); font-size: 11px; }
+.workstream-message-actions { margin-top: 9px; display: flex; flex-wrap: wrap; gap: 6px; }
+.workstream-message-actions button { min-height: 28px; border: 1px solid rgba(88,166,255,.42); border-radius: 6px; background: rgba(88,166,255,.08); color: var(--blue); padding: 4px 9px; font: inherit; font-size: 11px; cursor: pointer; }
+.workstream-message-actions button:hover, .workstream-message-actions button:focus-visible { border-color: var(--blue); background: rgba(88,166,255,.16); color: #fff; outline: none; }
+.workstream-message-actions button.danger-button { border-color: rgba(242,139,130,.42); color: var(--red); }
 .mention-editor { position: relative; width: 100%; min-width: 0; }
 .mention-highlights { position: absolute; z-index: 0; inset: 0; overflow: hidden; pointer-events: none; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--ink); direction: inherit; text-align: inherit; }
 .mention-highlight-token { color: var(--blue); font-weight: inherit; }
@@ -401,7 +419,7 @@ th { position: sticky; top: 0; z-index: 1; background: #202530; }
   .app-header h1 { font-size: 19px; }
   .app-header p { font-size: 11px; }
   .investigation-switcher { width: min(470px, 100%); }
-  .investigation-workgroup { grid-template-columns: minmax(170px, 220px) minmax(0, 1fr); }
+  .investigation-workgroup { grid-template-columns: minmax(170px, 220px) auto minmax(0, 1fr); }
   .michlol-member { max-width: 66px; }
   .workspace { height: calc(100dvh - 68px); grid-template-columns: minmax(220px, var(--chat-width)) 8px minmax(340px, var(--result-width)); padding: 8px; gap: 6px; }
   h2 { font-size: 14px; }
@@ -419,7 +437,8 @@ th { position: sticky; top: 0; z-index: 1; background: #202530; }
   .app-header > * { min-width: 0; width: 100%; }
   .header-copy, .header-status, .investigation-switcher { justify-self: stretch; }
   .investigation-switcher { grid-template-columns: 1fr; gap: 6px; }
-  .investigation-workgroup { grid-template-columns: minmax(0, 1fr); gap: 6px; }
+  .investigation-workgroup { grid-template-columns: minmax(0, 1fr) auto; gap: 6px; }
+  .michlol-team { grid-column: 1 / -1; }
   .michlol-team { gap: 4px; }
   .michlol-member { max-width: none; }
   .app-header h1 { font-size: 18px; line-height: 1.25; overflow-wrap: anywhere; }
