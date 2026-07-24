@@ -6,7 +6,7 @@ Moshe Attack Targets MVP
 
 ## Current phase
 
-Slice 8 evidence-reference layer planning is pending Product and UX review.
+Slice 8 structured evidence-reference layers are deployed and production-verified.
 
 ## Overall status
 
@@ -17,14 +17,14 @@ In progress
 | Role | Status | Required action | Due before |
 |---|---|---|---|
 | Product | Final acceptance pending | Accept checkpoint 009 and residual risks | Complete capability |
-| Development | Draft plan ready | Review the proposed shared result-contract extension after Product approval | Slice 8.1 |
-| UX | Review requested | Review structured evidence-layer links, states, identifiers, and accessibility | Slice 8.2 |
+| Development | Complete | No implementation action pending | Product check |
+| UX | Implementation ready | Review deployed structured evidence-layer interaction | Product/UX check |
 | QA | Release evidence ready | Accept checkpoint 009 | Complete capability |
 | Architecture/Security | Slice 2 approved | Review evaluator isolation and deterministic source boundary | Slice 4 |
 
 ## Latest change since previous review
 
-The Slice 8 draft separates requested-result presentation from explicit, structured evidence-reference layers.
+Checkpoint 014 deploys explicit structured evidence-reference layers for both General and Moshe.
 
 ## Current blockers
 
@@ -39,7 +39,7 @@ The Slice 8 draft separates requested-result presentation from explicit, structu
 
 ## Next expected artifact
 
-Product decision on `slice-008-evidence-reference-layers-plan.md`, followed by Developer and UX review.
+Product visual review of `checkpoint-014-evidence-reference-layers.md`.
 
 ## Parent issue
 
@@ -76,7 +76,7 @@ Pending remote creation; local draft at `issues/parent-capability.md`.
 - Execution plan: `execution-plan.md`
 - Slice 6 recovery plan: `slice-006-quality-recovery-plan.md`
 - Slice 8 evidence-reference plan: `slice-008-evidence-reference-layers-plan.md`
-- Latest checkpoint: `checkpoint-013-manual-result-presentation.md`
+- Latest checkpoint: `checkpoint-014-evidence-reference-layers.md`
 - Handoff: `handoff-summary.md`
 
 ## Gate checklist

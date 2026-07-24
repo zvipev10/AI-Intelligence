@@ -20,6 +20,7 @@ from urllib.parse import parse_qs, unquote, urlparse
 
 from agent_result_pipeline import (
     build_agent_result,
+    evidence_reference_layers_from_audit,
     normalize_aggregate_groups,
     normalize_entity_layers,
     normalize_location_layers,
@@ -1358,7 +1359,7 @@ class HermesClient:
                 expected = "לקבל אישור קצר, מצב מעודכן ומזהים רלוונטיים."
             elif tool == "present_requested_results":
                 decision = "הסוכן בוחר רק את הנתונים שעונים ישירות לבקשת המשתמש עבור כפתור הצג תוצאות."
-                expected = "לקבל שכבות מאומתות ללא ראיות תומכות או תוצאות ביניים."
+                expected = "לקבל בנפרד שכבות תוצאה מבוקשות ושכבות ראיות תומכות מאומתות."
             else:
                 decision = f'הסוכן משתמש ב-{clue} כדי לצמצם אי-ודאות ולהחליט על המשך החקירה.'
                 expected = "לקבל פלט שיאשר, ישלול או ימקד את כיוון החקירה."
@@ -1624,8 +1625,12 @@ class HermesClient:
                     outcome = f'הרשומות צורפו; למטרה משויכות כעת {candidate.get("evidence_count", len(candidate.get("evidence") or []))} רשומות.' + identifiers_text(result)
             elif tool == "present_requested_results":
                 layers = result.get("requested_result_layers") or []
-                action = f'בחירת {len(args.get("layers") or [])} שכבות שעונות ישירות לבקשת המשתמש.'
-                outcome = f'אומתו {len(layers)} שכבות להצגה סופית בלבד.'
+                evidence_layers = result.get("evidence_reference_layers") or []
+                action = (
+                    f'בחירת {len(args.get("layers") or [])} שכבות שעונות ישירות לבקשת המשתמש '
+                    f'ו-{len(args.get("evidence_layers") or [])} שכבות ראיות תומכות.'
+                )
+                outcome = f'אומתו {len(layers)} שכבות תוצאה ו-{len(evidence_layers)} שכבות ראיות.'
             else:
                 action = f'קלט: {json.dumps(public_args(args), ensure_ascii=False)}.'
                 outcome = f'פלט: {json.dumps(result, ensure_ascii=False)}.'
@@ -2054,15 +2059,11 @@ class HermesClient:
             " סכם מה נבדק, מה נמצא, מהו הגשר הראייתי או הפער המרכזי, ומה נשאר לא ודאי."
             " אם יש רצף או דפוס, תאר אותו במשפט אחד או שניים בלבד."
             " אל תפרט את כל הצעדים הטכניים, הכלים והפרמטרים; יומן הפעילות בממשק מציג אותם בנפרד.\n"
-            "בכל מצב, סיים בשורה שמתחילה 'מזהי ראיות:' ובה רק מזהי האירועים שאתה בוחר כראיות התומכות בתשובה."
-            " הממשק משתמש בשורה זו כדי לדעת אילו רשומות להציג; לכן אל תשמיט מזהה מרכזי שעליו הסתמכת, ואל תכלול מזהים שלא שימשו כתמיכה לתשובה."
-            " אם המשתמש ביקש שליפה ממצה של רשומות וכלי search_events או get_objects החזיר event_ids, חובה לכלול בשורת 'מזהי ראיות:' את מזהי REC שהוחזרו או שנבחרו להצגה."
-            " אל תחליף רשימת מזהי REC בניסוח כמו '81 רשומות' או 'כיסוי מלא', כי הממשק אינו יכול להציג מזהים שלא נכתבו בתשובה."
-            " אפשר לציין בגוף התשובה את מספר הרשומות והכיסוי, אבל שורת 'מזהי ראיות:' חייבת להכיל מזהי REC כאשר קיימים כאלה בפלט הכלים."
-            " אם זו תוצאה אגרגטיבית ללא מזהי אירועים, כתוב 'מזהי ראיות: תוצאה אגרגטיבית ללא מזהי אירועים'.\n"
+            "אל תכתוב שורת טקסט חופשי שמתחילה 'מזהי ראיות:'. הממשק בונה את אזור מזהי הראיות רק מהשדה evidence_layers"
+            " בקריאה הסופית ל-present_requested_results. מזהים קנוניים יכולים להישאר בגוף התשובה כאשר הם נחוצים להבנת טענה מסוימת.\n"
             "אם באחד מצעדי החקירה התקבלה תוצאה מקוצצת או מדגם מדורג, אל תנסח היעדר ראיה כמסקנה מוחלטת."
             " כתוב במפורש שהבדיקה אינה ממצה ושנדרש צמצום נוסף או הרחבת limit כדי לשלול המשך שרשרת בביטחון גבוה.\n"
-            "לאחר שורת הראיות, הוסף שורה אחרונה בפורמט המדויק 'תצוגה מומלצת: VIEW | REASON'.\n"
+            "הוסף שורה אחרונה בפורמט המדויק 'תצוגה מומלצת: VIEW | REASON'.\n"
             "VIEW חייב להתבסס קודם על recommended_view_hint מ-classify_question_intent, אלא אם תוצאות הכלים מצדיקות שינוי ברור."
             " הערכים האפשריים: map כאשר הממצא הגאוגרפי או מסלול התנועה הוא העיקר;"
             " timeline כאשר סדר האירועים והעיתוי הם העיקר; evidence כאשר בדיקת המקורות והרשומות הגולמיות היא העיקר.\n"
@@ -2070,12 +2071,13 @@ class HermesClient:
             "אין להשתמש בכלי מערכת, קבצים, רשת או shell, ואין לבקש אישור לכלים."
             " מאגר המטרות תומך באיתור ישיר לפי מזהה רשומה גולמית באמצעות search_target_candidates עם record_id."
             " הכלי זמין למשה בלבד; הסוכן הכללי אינו טוען שביצע חיפוש כזה ואינו מנתב למשה ללא אזכור מפורש של @משה."
-            " לפני התשובה הסופית, כאשר הבקשה כוללת נתונים שניתן להציג, חובה לקרוא פעם אחת ל-present_requested_results."
-            " בחר שכבה אחת כברירת מחדל, ורק את הרשומות שעונות ישירות למה שהמשתמש ביקש."
-            " בחר כמה שכבות רק אם המשתמש ביקש במפורש כמה סוגי תוצאה."
-            " לעולם אל תכלול בשכבות הסופיות ראיות תומכות, תוצאות ביניים, פתרון מיקומים/ישויות, בדיקות כפילות, מועמדים שנדחו או פלט כלי שלא נדרש כתוצאה."
-            " אם הבקשה הסופית היא הסבר בלבד ואין אובייקט נתונים להצגה, אל תקרא לכלי."
-            " כפתור הצג תוצאות מבוסס רק על בחירה זו; אל תנסה לפצות עליה באמצעות רשימת מזהים בטקסט."
+            " לפני התשובה הסופית, כאשר קיימים נתונים מבוקשים להצגה או ראיות מהותיות לניווט, חובה לקרוא פעם אחת ל-present_requested_results."
+            " בשדה layers בחר רק את הרשומות שעונות ישירות למה שהמשתמש ביקש; שכבה אחת כברירת מחדל וכמה רק אם התבקשו כמה סוגי תוצאה."
+            " בשדה evidence_layers בחר מספר קטן של שכבות בעלות שמות משמעותיים, ורק רשומות קנוניות שתומכות מהותית במסקנה הסופית."
+            " קבץ ראיות לפי הסיבה שהן חשובות ולא לפי הכלי שהחזיר אותן, ובחר עבורן map או timeline."
+            " לעולם אל תכלול תוצאות ביניים, בדיקות כפילות, מועמדים שנדחו או פלט כלי שאינו רלוונטי ישירות לתוצאה או למסקנה."
+            " אם אין אובייקט נתונים להצגה ואין ראיות מהותיות לניווט, אל תקרא לכלי."
+            " כפתור הצג תוצאות מבוסס רק על layers; אזור מזהי ראיות מבוסס רק על evidence_layers."
         )
         if responding_agent == MOSHE_AGENT_ID:
             instructions += (
@@ -2254,6 +2256,11 @@ class HermesClient:
                     locations=LOCATIONS,
                     entities=load_ui_entity_db(),
                 )
+                evidence_reference_layers = evidence_reference_layers_from_audit(
+                    audit_records,
+                    locations=LOCATIONS,
+                    entities=load_ui_entity_db(),
+                )
                 return build_agent_result({
                     "run_id": run_id,
                     "answer": clean_output,
@@ -2266,7 +2273,8 @@ class HermesClient:
                     "usage": status.get("usage", {}),
                     "performance_log": performance_log_path.name,
                 }, responding_agent=responding_agent, session_id=session_id, mission_run_id=mission_run_id,
-                    requested_result_layers=requested_layers)
+                    requested_result_layers=requested_layers,
+                    evidence_reference_layers=evidence_reference_layers)
             time.sleep(1)
         raise TimeoutError("Hermes investigation exceeded 480 seconds")
 

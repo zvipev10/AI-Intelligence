@@ -157,13 +157,14 @@ def normalize_typed_layers(value: Any) -> list[dict[str, Any]]:
     return layers
 
 
-def requested_result_layers_from_audit(
+def _typed_layers_from_last_presentation(
     audit_records: Any,
+    field: str,
     *,
     locations: dict[str, dict[str, Any]] | None = None,
     entities: dict[str, dict[str, Any]] | None = None,
 ) -> list[dict[str, Any]]:
-    """Return only the last successful explicit requested-result selection."""
+    """Return one typed-layer field from the last successful final selection."""
     selected: list[dict[str, Any]] = []
     for record in audit_records or []:
         if (
@@ -174,7 +175,7 @@ def requested_result_layers_from_audit(
             continue
         result = record.get("result") or {}
         if isinstance(result, dict):
-            selected = normalize_typed_layers(result.get("requested_result_layers"))
+            selected = normalize_typed_layers(result.get(field))
 
     enriched = []
     for layer in selected:
@@ -188,6 +189,30 @@ def requested_result_layers_from_audit(
         )
         enriched.append({**layer, "rows": rows})
     return enriched
+
+
+def requested_result_layers_from_audit(
+    audit_records: Any,
+    *,
+    locations: dict[str, dict[str, Any]] | None = None,
+    entities: dict[str, dict[str, Any]] | None = None,
+) -> list[dict[str, Any]]:
+    """Return only the last successful explicit requested-result selection."""
+    return _typed_layers_from_last_presentation(
+        audit_records, "requested_result_layers", locations=locations, entities=entities
+    )
+
+
+def evidence_reference_layers_from_audit(
+    audit_records: Any,
+    *,
+    locations: dict[str, dict[str, Any]] | None = None,
+    entities: dict[str, dict[str, Any]] | None = None,
+) -> list[dict[str, Any]]:
+    """Return only explicitly selected evidence references from the final selection."""
+    return _typed_layers_from_last_presentation(
+        audit_records, "evidence_reference_layers", locations=locations, entities=entities
+    )
 
 
 def normalize_attack_targets(
@@ -251,6 +276,7 @@ def build_agent_result(
     mission_run_id: str | None = None,
     layers: Any = None,
     requested_result_layers: Any = None,
+    evidence_reference_layers: Any = None,
 ) -> dict[str, Any]:
     """Add the shared agent envelope while retaining the legacy result shape."""
     result = dict(payload)
@@ -267,6 +293,11 @@ def build_agent_result(
         else result.get("requested_result_layers")
     )
     result["requested_result_layers"] = normalized_requested
+    result["evidence_reference_layers"] = normalize_typed_layers(
+        evidence_reference_layers
+        if evidence_reference_layers is not None
+        else result.get("evidence_reference_layers")
+    )
     if mission_run_id:
         result["mission_run_id"] = mission_run_id
     else:

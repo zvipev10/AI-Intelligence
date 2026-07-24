@@ -1,5 +1,9 @@
 # Handoff Summary
 
+## 2026-07-24 — Structured evidence-reference layers
+
+Checkpoint 014 is deployed. General and Moshe now return separate `requested_result_layers` and `evidence_reference_layers` through the shared `present_requested_results` contract. The answer renders `מזהי ראיות` as independently controlled map/timeline layer links; no result or evidence layer is shown automatically. Eighty-six automated regressions pass, both live agent smokes produced structured evidence, and all VM services are healthy. Rollback backup: `/home/ubuntu/deploy-backups/evidence-reference-layers-20260724T140000Z`.
+
 ## Current state
 
 All implementation slices are deployed. Slice 6 quality gates pass, and Slice 7 production verification is technically complete. Final Product/QA capability acceptance remains.

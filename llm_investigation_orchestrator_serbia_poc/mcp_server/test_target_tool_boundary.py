@@ -151,6 +151,48 @@ class TargetToolBoundaryTests(unittest.TestCase):
         self.assertEqual([row["event_id"] for row in layer["rows"]], [event["event_id"]])
         self.assertNotIn(other["event_id"], str(layer))
 
+    def test_evidence_reference_layers_are_separate_and_map_or_timeline_only(self):
+        first, second = server.EVENTS[:2]
+        result = server.present_requested_results({
+            "layers": [{
+                "kind": "events",
+                "ids": [first["event_id"]],
+                "label": "Requested event",
+                "view": "map",
+            }],
+            "evidence_layers": [{
+                "kind": "events",
+                "ids": [second["event_id"]],
+                "label": "Supporting reports",
+                "view": "timeline",
+            }],
+        })
+        self.assertEqual(result["requested_result_layers"][0]["rows"][0]["event_id"], first["event_id"])
+        evidence = result["evidence_reference_layers"][0]
+        self.assertEqual(evidence["id"], "evidence-reference:1")
+        self.assertEqual(evidence["rows"][0]["event_id"], second["event_id"])
+        self.assertEqual(evidence["recommended_view"], "timeline")
+        with self.assertRaisesRegex(ValueError, "map or timeline"):
+            server.present_requested_results({"evidence_layers": [{
+                "kind": "events",
+                "ids": [first["event_id"]],
+                "label": "Table-only evidence",
+                "view": "evidence",
+            }]})
+
+    def test_evidence_only_selection_is_allowed_but_empty_call_is_rejected(self):
+        event = server.EVENTS[0]
+        result = server.present_requested_results({"evidence_layers": [{
+            "kind": "events",
+            "ids": [event["event_id"]],
+            "label": "Supporting report",
+            "view": "map",
+        }]})
+        self.assertEqual(result["requested_result_layers"], [])
+        self.assertEqual(result["returned_evidence_layers"], 1)
+        with self.assertRaisesRegex(ValueError, "at least one"):
+            server.present_requested_results({})
+
     def test_requested_aggregate_rows_must_exist_in_prior_audit(self):
         with tempfile.TemporaryDirectory() as directory:
             previous = server.AUDIT_PATH

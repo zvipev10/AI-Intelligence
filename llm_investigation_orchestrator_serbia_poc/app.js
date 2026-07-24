@@ -1011,6 +1011,105 @@ function buildTypedResultLayers(result = {}) {
     }));
 }
 
+function buildEvidenceReferenceLayers(result = {}) {
+  return (result.evidence_reference_layers || [])
+    .filter(layer => layer && Array.isArray(layer.rows) && layer.rows.length)
+    .map(layer => ({
+      dataId: layer.id || layerId(layer.kind, "evidence"),
+      label: layer.label || "ראיות תומכות",
+      kind: layer.kind,
+      visible: true,
+      items: layer.kind === "events"
+        ? layer.rows.map(item => ({ ...item, date: new Date(item.timestamp_utc) }))
+        : layer.rows,
+      capabilities: layer.capabilities || { table: true, map: false, timeline: false },
+      preferredView: layer.recommended_view
+    }));
+}
+
+function evidenceLayerIdentifiers(layer) {
+  const keysByKind = {
+    events: ["event_id", "record_id"],
+    locations: ["location_id", "key"],
+    location_metadata: ["location_id"],
+    entity_metadata: ["entity_id"],
+    attack_targets: ["target_id"],
+    time_aggregation: ["key", "sortKey", "label"],
+    group_aggregation: ["key", "label"]
+  };
+  const keys = keysByKind[layer.kind] || ["event_id", "location_id", "entity_id", "target_id", "key"];
+  return [...new Set((layer.items || []).map(item => {
+    const key = keys.find(candidate => item?.[candidate] != null && String(item[candidate]).trim());
+    return key ? String(item[key]).trim() : "";
+  }).filter(Boolean))];
+}
+
+function evidenceLayerSourceId(result, layer) {
+  return sanitizeLayerKey(`evidence:${finalSourceId(result)}:${layer.dataId}`);
+}
+
+function updateEvidenceReferenceButton(btn) {
+  const sourceLayers = state.layers.filter(layer => layer.sourceId === btn.dataset.sourceId);
+  const visible = sourceLayers.some(layer => layer.visible);
+  btn.classList.toggle("is-visible", visible);
+  btn.setAttribute("aria-pressed", visible ? "true" : "false");
+  btn.title = visible ? "הסתר שכבת ראיות" : "הצג שכבת ראיות";
+}
+
+function updateEvidenceReferenceButtons() {
+  document.querySelectorAll(".evidence-reference-link").forEach(updateEvidenceReferenceButton);
+}
+
+function toggleEvidenceReferenceLayer(result, layer, btn) {
+  const sourceId = evidenceLayerSourceId(result, layer);
+  const existing = state.layers.filter(item => item.sourceId === sourceId);
+  if (existing.some(item => item.visible)) {
+    existing.forEach(item => { item.visible = false; });
+    updateEvidenceReferenceButton(btn);
+    renderAllViews();
+    return;
+  }
+  addResultLayers({
+    sourceId,
+    sourceLabel: `ראיות: ${layer.label}`,
+    preferredView: layer.preferredView,
+    layers: [layer]
+  });
+  activateView(layer.preferredView, { reason: `שכבת ראיות: ${layer.label}` });
+  updateEvidenceReferenceButtons();
+}
+
+function buildEvidenceReferencesSection(result) {
+  const layers = buildEvidenceReferenceLayers(result);
+  if (!layers.length) return null;
+  const section = document.createElement("section");
+  section.className = "evidence-references";
+  section.setAttribute("aria-labelledby", `evidence-title-${sanitizeLayerKey(finalSourceId(result))}`);
+  section.innerHTML = `
+    <h3 id="evidence-title-${escapeHtml(sanitizeLayerKey(finalSourceId(result)))}">מזהי ראיות</h3>
+    <ul class="evidence-reference-list"></ul>`;
+  const list = section.querySelector(".evidence-reference-list");
+  layers.forEach(layer => {
+    const identifiers = evidenceLayerIdentifiers(layer);
+    const shown = identifiers.slice(0, 14);
+    const overflow = Math.max(0, identifiers.length - shown.length);
+    const item = document.createElement("li");
+    item.className = "evidence-reference-item";
+    item.innerHTML = `
+      <button type="button" class="evidence-reference-link" aria-pressed="false">
+        <span class="evidence-reference-label">${escapeHtml(layer.label)}</span>
+        <span class="evidence-reference-view">${layer.preferredView === "timeline" ? "ציר זמן" : "מפה"} · ${(layer.items || []).length.toLocaleString("he-IL")}</span>
+      </button>
+      ${shown.length ? `<div class="evidence-reference-identifiers" dir="ltr">${shown.map(escapeHtml).join(", ")}${overflow ? ` <span dir="rtl">ועוד ${overflow.toLocaleString("he-IL")}</span>` : ""}</div>` : ""}`;
+    const btn = item.querySelector(".evidence-reference-link");
+    btn.dataset.sourceId = evidenceLayerSourceId(result, layer);
+    btn.title = "הצג שכבת ראיות";
+    btn.addEventListener("click", () => toggleEvidenceReferenceLayer(result, layer, btn));
+    list.appendChild(item);
+  });
+  return section;
+}
+
 function sanitizeLayerKey(value) {
   return String(value || "unknown").replace(/[^\p{L}\p{N}_:-]+/gu, "-");
 }
@@ -2140,13 +2239,20 @@ function finalizeAssistantMessage(answer, options = {}) {
     actions.querySelector(".final-answer-memory-btn").addEventListener("click", event => {
       saveResultToInvestigationMemory(options.result, options.prompt || "", event.currentTarget);
     });
-    const evidenceToggle = answerBody.querySelector(".evidence-ids-toggle");
+    let evidenceToggle = answerBody.querySelector(".evidence-ids-toggle");
+    const evidenceReferences = buildEvidenceReferencesSection(options.result);
+    if (evidenceReferences && evidenceToggle) {
+      evidenceToggle.remove();
+      evidenceToggle = null;
+    }
     if (evidenceToggle) {
       answerBody.insertBefore(actions, evidenceToggle);
     } else {
       answerBody.appendChild(actions);
     }
+    if (evidenceReferences) answerBody.appendChild(evidenceReferences);
     if (finalShowBtn) updateSourceVisibilityBtn(finalShowBtn);
+    updateEvidenceReferenceButtons();
   }
   state.activeAssistantMessage = null;
   state.activeActivityList = null;
@@ -2676,6 +2782,7 @@ function updateStepVisibilityButtons() {
 function updateResultVisibilityButtons() {
   updateStepVisibilityButtons();
   document.querySelectorAll(".final-answer-show-btn").forEach(updateSourceVisibilityBtn);
+  updateEvidenceReferenceButtons();
 }
 
 function resolvedStepSourceId(step) {
@@ -2796,7 +2903,7 @@ function answerHtml(text) {
     const trimmed = block.trim();
     const evidenceMatch = trimmed.match(/^מזהי\s+(?:ראיות|אירועים)\s*:\s*(.+)$/s);
     if (evidenceMatch) {
-      return `<details class="evidence-ids-toggle"><summary>מזהי אירועים</summary><p>${evidenceMatch[1].replace(/\n/g, "<br>")}</p></details>`;
+      return `<details class="evidence-ids-toggle"><summary>מזהי ראיות</summary><p>${evidenceMatch[1].replace(/\n/g, "<br>")}</p></details>`;
     }
     const formatted = trimmed
       .replace(/^###?\s+(.+)$/gm, "<strong>$1</strong>")

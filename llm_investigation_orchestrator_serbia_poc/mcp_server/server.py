@@ -2411,10 +2411,12 @@ def _selected_aggregate_rows(group_by: str, row_ids: list[str]) -> list[dict[str
     return [{**available[row_id], "group_by": group_by} for row_id in row_ids]
 
 
-def present_requested_results(arguments: dict[str, Any]) -> dict[str, Any]:
-    selections = arguments.get("layers") or []
-    if not selections:
-        raise ValueError("at least one requested-result layer is required")
+def _materialize_presentation_layers(
+    selections: list[dict[str, Any]],
+    *,
+    id_prefix: str,
+    evidence_references: bool = False,
+) -> list[dict[str, Any]]:
     requested_layers = []
     for index, selection in enumerate(selections, start=1):
         kind = str(selection.get("kind") or "").strip()
@@ -2482,17 +2484,38 @@ def present_requested_results(arguments: dict[str, Any]) -> dict[str, Any]:
         view_capability = {"map": "map", "timeline": "timeline", "evidence": "table"}.get(view)
         if view_capability is None:
             raise ValueError(f"unsupported requested view: {view}")
+        if evidence_references and view not in {"map", "timeline"}:
+            raise ValueError("evidence-reference layers support map or timeline views only")
         if not capabilities.get(view_capability):
             raise ValueError(f"requested view {view} is incompatible with {result_kind}")
         requested_layers.append({
-            "id": f"requested-result:{index}",
+            "id": f"{id_prefix}:{index}",
             "label": label,
             "kind": result_kind,
             "rows": rows,
             "capabilities": capabilities,
             "recommended_view": view,
         })
-    return {"requested_result_layers": requested_layers, "returned_layers": len(requested_layers)}
+    return requested_layers
+
+
+def present_requested_results(arguments: dict[str, Any]) -> dict[str, Any]:
+    selections = arguments.get("layers") or []
+    evidence_selections = arguments.get("evidence_layers") or []
+    if not selections and not evidence_selections:
+        raise ValueError("at least one requested-result or evidence-reference layer is required")
+    requested_layers = _materialize_presentation_layers(
+        selections, id_prefix="requested-result"
+    )
+    evidence_layers = _materialize_presentation_layers(
+        evidence_selections, id_prefix="evidence-reference", evidence_references=True
+    )
+    return {
+        "requested_result_layers": requested_layers,
+        "evidence_reference_layers": evidence_layers,
+        "returned_layers": len(requested_layers),
+        "returned_evidence_layers": len(evidence_layers),
+    }
 
 
 def validate_target_references(candidate: dict[str, Any], evidence: list[dict[str, Any]] | None = None) -> None:
@@ -2698,13 +2721,12 @@ TOOLS = [
     {
         "name": "present_requested_results",
         "title": "Present only the requested results",
-        "description": "Final presentation-selection tool. Call once after analysis only when the user requested displayable data. Select only rows that directly answer the request; never include supporting evidence, intermediate searches, rejected candidates, duplicate checks, or other tool output. Canonical IDs are validated, and aggregate IDs must come from an earlier aggregate_events result in this run.",
+        "description": "Final presentation-selection tool. Call once after analysis when requested results or materially relevant evidence references exist. Put only data directly requested by the user in layers. Put only canonical records that materially support the final conclusion in evidence_layers, grouped into meaningful map/timeline layers. Never include intermediate searches, rejected candidates, duplicate checks, or unrelated tool output. Canonical IDs are validated, and aggregate IDs must come from an earlier aggregate_events result in this run.",
         "inputSchema": with_step_bridge({
             "type": "object",
             "properties": {
                 "layers": {
                     "type": "array",
-                    "minItems": 1,
                     "maxItems": 5,
                     "items": {
                         "type": "object",
@@ -2719,8 +2741,23 @@ TOOLS = [
                         "additionalProperties": False,
                     },
                 },
+                "evidence_layers": {
+                    "type": "array",
+                    "maxItems": 5,
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "kind": {"type": "string", "enum": ["events", "locations", "entities", "attack_targets", "aggregate_groups"]},
+                            "ids": {"type": "array", "items": {"type": "string", "minLength": 1}, "minItems": 1, "maxItems": MAX_LIMIT},
+                            "label": {"type": "string", "minLength": 1, "maxLength": 120},
+                            "view": {"type": "string", "enum": ["map", "timeline"]},
+                            "group_by": {"type": "string", "description": "Required only for aggregate_groups and must match an earlier aggregate_events call."},
+                        },
+                        "required": ["kind", "ids", "label", "view"],
+                        "additionalProperties": False,
+                    },
+                },
             },
-            "required": ["layers"],
             "additionalProperties": False,
         }),
         "annotations": {"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": False},

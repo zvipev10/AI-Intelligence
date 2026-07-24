@@ -2,6 +2,7 @@ import unittest
 
 from agent_result_pipeline import (
     build_agent_result,
+    evidence_reference_layers_from_audit,
     normalize_entity_layers,
     normalize_location_layers,
     normalize_map_locations,
@@ -67,6 +68,33 @@ class AgentResultPipelineTests(unittest.TestCase):
         )
         self.assertEqual(result["layers"][0]["rows"][0]["event_id"], "REC-SUPPORT")
         self.assertEqual(result["requested_result_layers"][0]["rows"][0]["event_id"], "REC-REQUESTED")
+
+    def test_evidence_references_are_explicit_separate_and_last_call_wins(self):
+        records = [
+            {"tool": "search_events", "result": {"event_ids": ["REC-NOISE"]}},
+            {"tool": "present_requested_results", "result": {
+                "requested_result_layers": [{"kind": "locations", "rows": [{"location_id": "LOC-1"}]}],
+                "evidence_reference_layers": [{"kind": "events", "rows": [{"event_id": "REC-OLD"}]}],
+            }},
+            {"tool": "present_requested_results", "result": {
+                "requested_result_layers": [],
+                "evidence_reference_layers": [{"kind": "events", "rows": [{"event_id": "REC-EVIDENCE"}]}],
+            }},
+        ]
+        evidence = evidence_reference_layers_from_audit(records)
+        requested = requested_result_layers_from_audit(records)
+        self.assertEqual([row["event_id"] for row in evidence[0]["rows"]], ["REC-EVIDENCE"])
+        self.assertEqual(requested, [])
+        self.assertNotIn("REC-NOISE", str(evidence))
+
+    def test_result_envelope_keeps_evidence_references_separate(self):
+        result = build_agent_result(
+            {"answer": "ok"},
+            requested_result_layers=[{"kind": "locations", "rows": [{"location_id": "LOC-1"}]}],
+            evidence_reference_layers=[{"kind": "events", "rows": [{"event_id": "REC-1"}]}],
+        )
+        self.assertEqual(result["requested_result_layers"][0]["kind"], "locations")
+        self.assertEqual(result["evidence_reference_layers"][0]["rows"][0]["event_id"], "REC-1")
 
     def test_target_results_are_deduped_enriched_and_keep_full_evidence(self):
         records = [
