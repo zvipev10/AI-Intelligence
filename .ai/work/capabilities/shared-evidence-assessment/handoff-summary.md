@@ -66,4 +66,4 @@ The human Product owner approved the checkpoint and instructed implementation to
 
 ## Next step
 
-Define the next slice before implementation: one generic durable artifact per workstream, explicit human/agent contributions, revision history, current responsibility, and a chat-based propose/accept/update flow. Keep execution manual and deterministic; continue to defer automatic triggers, scenario playback, and Investigation Memory selection.
+Review and approve `artifact-001-target-assessment-lead.md`. The draft defines a pre-assessment artifact containing attributable indications, contradictions, gaps, and assessment questions. It cannot create or update a target. After Product approval, Development/Architecture, UX, and QA should enrich the model before execution planning.

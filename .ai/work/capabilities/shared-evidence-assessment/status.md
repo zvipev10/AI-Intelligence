@@ -6,11 +6,11 @@ Collaborative Scenario Playback
 
 ## Current phase
 
-Phase 1 complete; next-slice definition
+Target Assessment Lead product definition
 
 ## Overall status
 
-Phase 1 persistence and chat-based workstream creation are merged to `main` through PRs #31 and #33
+Phase 1 is merged; the first shared artifact is defined as a draft Target Assessment Lead pending Product decisions and role review
 
 ## Accepted direction captured
 
@@ -25,15 +25,15 @@ Phase 1 persistence and chat-based workstream creation are merged to `main` thro
 
 | Role | Status | Required action |
 |---|---|---|
-| Product | Decision needed | Confirm the boundary for the first shared workstream artifact. |
-| Development/Architecture | Waiting | Review the artifact/revision model after Product definition. |
-| UX | Waiting | Review the chat-based propose/accept/update flow after Product definition. |
-| QA/Security | Waiting | Review persistence, concurrency, and contribution-history coverage after technical definition. |
+| Product | Decision needed | Approve the artifact definition and answer its four acceptance questions. |
+| Development/Architecture | Waiting | Review persistence, revision, and target-workflow separation after Product approval. |
+| UX | Waiting | Review proposal, correction, rejection, and assessment-handoff messages after Product approval. |
+| QA/Security | Waiting | Review provenance, contradiction preservation, and promotion-boundary tests after Product approval. |
 
 ## Current blockers
 
 - No Phase 1 blocker remains.
-- The next slice must define generic artifact and revision semantics before implementation.
+- The Target Assessment Lead draft requires Product approval before role reviews and execution planning.
 - Broader manifest, adapter, and trigger decisions remain deferred beyond Phase 1.
 
 ## Current risks
@@ -45,7 +45,7 @@ Phase 1 persistence and chat-based workstream creation are merged to `main` thro
 
 ## Next expected artifact
 
-Capability brief extension for a generic shared workstream artifact and explicit human/agent contribution ledger.
+Human Product decision on `artifact-001-target-assessment-lead.md`.
 
 ## Parent and child issues
 
@@ -58,6 +58,7 @@ Capability brief extension for a generic shared workstream artifact and explicit
 | #29 | QA/Security | Phase 1 Slice 1 approved; broader review remains open | No |
 | #30 | Phase 1 persistence | Closed; PR #31 merged | No |
 | #32 | Phase 1 chat UX | Closed; PR #33 merged | No |
+| #35 | Target Assessment Lead Product definition | Human Product review required | Yes |
 
 ## Artifact links
 
@@ -69,3 +70,4 @@ Capability brief extension for a generic shared workstream artifact and explicit
 - Execution plan: `execution-plan.md` (Phase 1 approved)
 - Latest checkpoint: `checkpoint-002.md`
 - Current handoff: `handoff-summary.md`
+- First artifact definition: `artifact-001-target-assessment-lead.md`
