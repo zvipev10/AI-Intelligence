@@ -43,7 +43,7 @@ Planning PR #24 is merged. Slice 1 is on `capability/workstream-phase1` under is
 
 ## Current state
 
-Phase 1 Slice 2 is implemented and accepted for merge on `capability/workstream-chat`. Slice 1 persistence/API support is already on `main`.
+Phase 1 is merged to `main`: PR #31 provides persistence/API support and PR #33 provides the approved chat-based creation and interaction flow.
 
 ## What is new
 
@@ -66,4 +66,4 @@ The human Product owner approved the checkpoint and instructed implementation to
 
 ## Next step
 
-Merge PR #33 and begin definition of the next slice: durable shared artifacts and explicit human/agent contributions inside the workstream.
+Define the next slice before implementation: one generic durable artifact per workstream, explicit human/agent contributions, revision history, current responsibility, and a chat-based propose/accept/update flow. Keep execution manual and deterministic; continue to defer automatic triggers, scenario playback, and Investigation Memory selection.

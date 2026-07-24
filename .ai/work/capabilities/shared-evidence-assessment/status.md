@@ -6,11 +6,11 @@ Collaborative Scenario Playback
 
 ## Current phase
 
-Phase 1 Slice 2 accepted
+Phase 1 complete; next-slice definition
 
 ## Overall status
 
-Slice 1 merged; Slice 2 chat-based workstream creation is accepted and ready to merge
+Phase 1 persistence and chat-based workstream creation are merged to `main` through PRs #31 and #33
 
 ## Accepted direction captured
 
@@ -25,14 +25,15 @@ Slice 1 merged; Slice 2 chat-based workstream creation is accepted and ready to 
 
 | Role | Status | Required action |
 |---|---|---|
-| Product | Approved | No action. |
-| Development/Architecture | Approved | No blocking PR feedback; proceed. |
-| UX | Approved | Human accepted the implemented checkpoint. |
-| QA/Security | Approved | Automated checks accepted with the documented manual-browser limitation. |
+| Product | Decision needed | Confirm the boundary for the first shared workstream artifact. |
+| Development/Architecture | Waiting | Review the artifact/revision model after Product definition. |
+| UX | Waiting | Review the chat-based propose/accept/update flow after Product definition. |
+| QA/Security | Waiting | Review persistence, concurrency, and contribution-history coverage after technical definition. |
 
 ## Current blockers
 
-- No blocker remains for Slice 2 merge.
+- No Phase 1 blocker remains.
+- The next slice must define generic artifact and revision semantics before implementation.
 - Broader manifest, adapter, and trigger decisions remain deferred beyond Phase 1.
 
 ## Current risks
@@ -44,7 +45,7 @@ Slice 1 merged; Slice 2 chat-based workstream creation is accepted and ready to 
 
 ## Next expected artifact
 
-Merge Slice 2, then define the next capability slice for shared artifacts and agent contribution.
+Capability brief extension for a generic shared workstream artifact and explicit human/agent contribution ledger.
 
 ## Parent and child issues
 
@@ -56,7 +57,7 @@ Merge Slice 2, then define the next capability slice for shared artifacts and ag
 | #28 | UX | Draft review ready; human approval pending | Yes |
 | #29 | QA/Security | Phase 1 Slice 1 approved; broader review remains open | No |
 | #30 | Phase 1 persistence | Closed; PR #31 merged | No |
-| #32 | Phase 1 chat UX | Accepted; closes with PR #33 | No |
+| #32 | Phase 1 chat UX | Closed; PR #33 merged | No |
 
 ## Artifact links
 
