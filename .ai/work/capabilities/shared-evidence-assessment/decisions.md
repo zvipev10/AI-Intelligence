@@ -1,5 +1,30 @@
 # Capability Decisions
 
+### 2026-07-24 — Make indications a pre-assessment artifact
+
+Decision:
+The first shared workstream artifact will group one or more indications into a lead for assessment toward possible target creation.
+
+Context:
+The existing target workflow can create a target candidate from fused evidence, but the collaborative workstream needs an earlier durable object for promising, incomplete, or contradictory signals.
+
+Rationale:
+Persisting a lead prevents useful patterns from remaining only in chat while keeping uncertainty explicit and avoiding premature target creation.
+
+Alternatives considered:
+- Create an evolving target assessment directly.
+- Let the workstream create a target candidate from selected indications.
+- Store indications only as chat messages.
+
+Impact:
+The flow becomes `raw records → indications → target assessment lead → assessment → target candidate`. Promotion is explicit, and the new artifact cannot mutate the target bank.
+
+Follow-ups:
+Approve terminology, multiplicity, indication-source requirements, and authority to send a lead to assessment.
+
+Product resolution:
+The internal type remains `target_assessment_lead`, but the UX exposes no formal artifact name. The MVP allows one active artifact per workstream, requires stable source references for all indications, treats free text as annotation only, and permits only the user to send the indications to assessment.
+
 ### 2026-07-24 — Use chat as the Phase 1 workstream interaction surface
 
 Decision:

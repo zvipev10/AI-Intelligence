@@ -6,11 +6,11 @@ Collaborative Scenario Playback
 
 ## Current phase
 
-Phase 1 complete; next-slice definition
+Target Assessment Lead role review
 
 ## Overall status
 
-Phase 1 persistence and chat-based workstream creation are merged to `main` through PRs #31 and #33
+Phase 1 is merged; Product approved the first shared artifact and Development/Architecture, UX, and QA reviews are next
 
 ## Accepted direction captured
 
@@ -25,15 +25,15 @@ Phase 1 persistence and chat-based workstream creation are merged to `main` thro
 
 | Role | Status | Required action |
 |---|---|---|
-| Product | Decision needed | Confirm the boundary for the first shared workstream artifact. |
-| Development/Architecture | Waiting | Review the artifact/revision model after Product definition. |
-| UX | Waiting | Review the chat-based propose/accept/update flow after Product definition. |
-| QA/Security | Waiting | Review persistence, concurrency, and contribution-history coverage after technical definition. |
+| Product | Approved | No action. |
+| Development/Architecture | Review needed | Review persistence, revision, and target-workflow separation. |
+| UX | Review needed | Review natural-language proposal, correction, rejection, and assessment-handoff messages without an artifact label. |
+| QA/Security | Review needed | Review provenance, contradiction preservation, and promotion-boundary tests. |
 
 ## Current blockers
 
 - No Phase 1 blocker remains.
-- The next slice must define generic artifact and revision semantics before implementation.
+- Execution planning is blocked until the artifact-specific role reviews are ready.
 - Broader manifest, adapter, and trigger decisions remain deferred beyond Phase 1.
 
 ## Current risks
@@ -45,7 +45,7 @@ Phase 1 persistence and chat-based workstream creation are merged to `main` thro
 
 ## Next expected artifact
 
-Capability brief extension for a generic shared workstream artifact and explicit human/agent contribution ledger.
+Artifact-specific Development/Architecture, UX, and QA review.
 
 ## Parent and child issues
 
@@ -58,6 +58,7 @@ Capability brief extension for a generic shared workstream artifact and explicit
 | #29 | QA/Security | Phase 1 Slice 1 approved; broader review remains open | No |
 | #30 | Phase 1 persistence | Closed; PR #31 merged | No |
 | #32 | Phase 1 chat UX | Closed; PR #33 merged | No |
+| #35 | Target Assessment Lead Product definition | Approved; closes with PR #36 | No |
 
 ## Artifact links
 
@@ -69,3 +70,4 @@ Capability brief extension for a generic shared workstream artifact and explicit
 - Execution plan: `execution-plan.md` (Phase 1 approved)
 - Latest checkpoint: `checkpoint-002.md`
 - Current handoff: `handoff-summary.md`
+- First artifact definition: `artifact-001-target-assessment-lead.md`
