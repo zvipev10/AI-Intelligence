@@ -6,7 +6,7 @@ Moshe Attack Targets MVP
 
 ## Current phase
 
-Manual requested-result presentation and location-map compatibility are deployed and production-verified.
+Slice 8 evidence-reference layer planning is pending Product and UX review.
 
 ## Overall status
 
@@ -17,14 +17,14 @@ In progress
 | Role | Status | Required action | Due before |
 |---|---|---|---|
 | Product | Final acceptance pending | Accept checkpoint 009 and residual risks | Complete capability |
-| Development | Manual presentation fix deployed | No implementation action pending | Product check |
-| UX | Approved | Routing experience, attribution, candidate presentation, evidence, and states accepted | Complete |
+| Development | Draft plan ready | Review the proposed shared result-contract extension after Product approval | Slice 8.1 |
+| UX | Review requested | Review structured evidence-layer links, states, identifiers, and accessibility | Slice 8.2 |
 | QA | Release evidence ready | Accept checkpoint 009 | Complete capability |
 | Architecture/Security | Slice 2 approved | Review evaluator isolation and deterministic source boundary | Slice 4 |
 
 ## Latest change since previous review
 
-Checkpoint 013 restores click-to-present behavior and fixes location aggregates so map selections produce map-capable layers.
+The Slice 8 draft separates requested-result presentation from explicit, structured evidence-reference layers.
 
 ## Current blockers
 
@@ -39,7 +39,7 @@ Checkpoint 013 restores click-to-present behavior and fixes location aggregates 
 
 ## Next expected artifact
 
-Product visual review of `checkpoint-013-manual-result-presentation.md`.
+Product decision on `slice-008-evidence-reference-layers-plan.md`, followed by Developer and UX review.
 
 ## Parent issue
 
@@ -75,6 +75,7 @@ Pending remote creation; local draft at `issues/parent-capability.md`.
 - Architecture/security review: `architecture-security-review.md`
 - Execution plan: `execution-plan.md`
 - Slice 6 recovery plan: `slice-006-quality-recovery-plan.md`
+- Slice 8 evidence-reference plan: `slice-008-evidence-reference-layers-plan.md`
 - Latest checkpoint: `checkpoint-013-manual-result-presentation.md`
 - Handoff: `handoff-summary.md`
 
