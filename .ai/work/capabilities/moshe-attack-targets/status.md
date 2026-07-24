@@ -6,7 +6,7 @@ Moshe Attack Targets MVP
 
 ## Current phase
 
-Slice 8 structured evidence-reference layers are deployed and production-verified.
+Checkpoint 015 collapsed evidence navigation is deployed and production-verified.
 
 ## Overall status
 
@@ -24,7 +24,7 @@ In progress
 
 ## Latest change since previous review
 
-Checkpoint 014 deploys explicit structured evidence-reference layers for both General and Moshe.
+Checkpoint 015 collapses the evidence section and each layer by default, and opens the selected map/timeline together with its results table.
 
 ## Current blockers
 
@@ -39,7 +39,7 @@ Checkpoint 014 deploys explicit structured evidence-reference layers for both Ge
 
 ## Next expected artifact
 
-Product visual review of `checkpoint-014-evidence-reference-layers.md`.
+Product visual review of `checkpoint-015-collapsed-evidence-navigation.md`.
 
 ## Parent issue
 
@@ -76,7 +76,7 @@ Pending remote creation; local draft at `issues/parent-capability.md`.
 - Execution plan: `execution-plan.md`
 - Slice 6 recovery plan: `slice-006-quality-recovery-plan.md`
 - Slice 8 evidence-reference plan: `slice-008-evidence-reference-layers-plan.md`
-- Latest checkpoint: `checkpoint-014-evidence-reference-layers.md`
+- Latest checkpoint: `checkpoint-015-collapsed-evidence-navigation.md`
 - Handoff: `handoff-summary.md`
 
 ## Gate checklist

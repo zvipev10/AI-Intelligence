@@ -62,18 +62,27 @@ class MemberUiRegressionTests(unittest.TestCase):
         self.assertIn("function buildEvidenceReferenceLayers(result = {})", self.app)
         self.assertIn("return (result.evidence_reference_layers || [])", self.app)
         self.assertIn("function buildEvidenceReferencesSection(result)", self.app)
-        self.assertIn(">מזהי ראיות</h3>", self.app)
+        self.assertIn("מזהי ראיות · ${layers.length.toLocaleString", self.app)
         self.assertIn("identifiers.slice(0, 14)", self.app)
         self.assertIn("function toggleEvidenceReferenceLayer(result, layer, btn)", self.app)
         self.assertIn("layers: [layer]", self.app)
         self.assertIn("if (evidenceReferences && evidenceToggle)", self.app)
         self.assertNotIn("buildResultLayers({\n      events:", self.app)
 
+    def test_evidence_section_and_layers_start_collapsed(self):
+        self.assertIn('const section = document.createElement("details");', self.app)
+        self.assertIn('class="evidence-references-summary"', self.app)
+        self.assertIn('<details class="evidence-reference-details">', self.app)
+        self.assertNotIn('<details open class="evidence-reference-details">', self.app)
+
     def test_evidence_layer_visibility_is_independent_from_requested_results(self):
         self.assertIn("evidenceLayerSourceId(result, layer)", self.app)
         self.assertIn("evidence:${finalSourceId(result)}:${layer.dataId}", self.app)
         self.assertIn("updateEvidenceReferenceButtons();", self.app)
         self.assertIn('layer.preferredView === "timeline" ? "ציר זמן" : "מפה"', self.app)
+        self.assertIn("state.rawOverlayMinimized = false;", self.app)
+        self.assertIn("activateView(layer.preferredView", self.app)
+        self.assertIn("renderAllViews();", self.app)
 
     def test_csv_parser_only_opens_quotes_at_the_start_of_a_field(self):
         self.assertIn("let atFieldStart = true;", self.app)

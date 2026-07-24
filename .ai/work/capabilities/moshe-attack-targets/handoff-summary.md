@@ -1,5 +1,9 @@
 # Handoff Summary
 
+## 2026-07-24 — Collapsed evidence navigation
+
+Checkpoint 015 is deployed. `מזהי ראיות` and every evidence layer now start collapsed. Opening a layer activates its map/timeline view and restores the results table with that layer selected. Eighty-seven regressions pass. Rollback backup: `/home/ubuntu/deploy-backups/evidence-collapse-table-20260724T150000Z`.
+
 ## 2026-07-24 — Structured evidence-reference layers
 
 Checkpoint 014 is deployed. General and Moshe now return separate `requested_result_layers` and `evidence_reference_layers` through the shared `present_requested_results` contract. The answer renders `מזהי ראיות` as independently controlled map/timeline layer links; no result or evidence layer is shown automatically. Eighty-six automated regressions pass, both live agent smokes produced structured evidence, and all VM services are healthy. Rollback backup: `/home/ubuntu/deploy-backups/evidence-reference-layers-20260724T140000Z`.

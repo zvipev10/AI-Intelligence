@@ -1075,18 +1075,19 @@ function toggleEvidenceReferenceLayer(result, layer, btn) {
     preferredView: layer.preferredView,
     layers: [layer]
   });
+  state.rawOverlayMinimized = false;
   activateView(layer.preferredView, { reason: `שכבת ראיות: ${layer.label}` });
+  renderAllViews();
   updateEvidenceReferenceButtons();
 }
 
 function buildEvidenceReferencesSection(result) {
   const layers = buildEvidenceReferenceLayers(result);
   if (!layers.length) return null;
-  const section = document.createElement("section");
+  const section = document.createElement("details");
   section.className = "evidence-references";
-  section.setAttribute("aria-labelledby", `evidence-title-${sanitizeLayerKey(finalSourceId(result))}`);
   section.innerHTML = `
-    <h3 id="evidence-title-${escapeHtml(sanitizeLayerKey(finalSourceId(result)))}">מזהי ראיות</h3>
+    <summary class="evidence-references-summary">מזהי ראיות · ${layers.length.toLocaleString("he-IL")} שכבות</summary>
     <ul class="evidence-reference-list"></ul>`;
   const list = section.querySelector(".evidence-reference-list");
   layers.forEach(layer => {
@@ -1096,11 +1097,13 @@ function buildEvidenceReferencesSection(result) {
     const item = document.createElement("li");
     item.className = "evidence-reference-item";
     item.innerHTML = `
-      <button type="button" class="evidence-reference-link" aria-pressed="false">
-        <span class="evidence-reference-label">${escapeHtml(layer.label)}</span>
-        <span class="evidence-reference-view">${layer.preferredView === "timeline" ? "ציר זמן" : "מפה"} · ${(layer.items || []).length.toLocaleString("he-IL")}</span>
-      </button>
-      ${shown.length ? `<div class="evidence-reference-identifiers" dir="ltr">${shown.map(escapeHtml).join(", ")}${overflow ? ` <span dir="rtl">ועוד ${overflow.toLocaleString("he-IL")}</span>` : ""}</div>` : ""}`;
+      <details class="evidence-reference-details">
+        <summary class="evidence-reference-link" aria-pressed="false">
+          <span class="evidence-reference-label">${escapeHtml(layer.label)}</span>
+          <span class="evidence-reference-view">${layer.preferredView === "timeline" ? "ציר זמן" : "מפה"} · ${(layer.items || []).length.toLocaleString("he-IL")}</span>
+        </summary>
+        ${shown.length ? `<div class="evidence-reference-identifiers" dir="ltr">${shown.map(escapeHtml).join(", ")}${overflow ? ` <span dir="rtl">ועוד ${overflow.toLocaleString("he-IL")}</span>` : ""}</div>` : ""}
+      </details>`;
     const btn = item.querySelector(".evidence-reference-link");
     btn.dataset.sourceId = evidenceLayerSourceId(result, layer);
     btn.title = "הצג שכבת ראיות";
