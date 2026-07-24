@@ -6,56 +6,39 @@ AI-authored draft — pending human Product approval
 
 ## Recommendation
 
-Approve the capability direction with these product decisions:
+Approve **Collaborative Scenario Playback** as a general capability with these decisions:
 
-1. Start from an existing target candidate. The product derives a scoped validation objective; the analyst may refine it but does not need to invent an assessment.
-2. Treat the workstream artifact, not chat, as the durable system of record.
-3. Let Moshe autonomously add or revise only proposed agent contributions and attention requests.
-4. Reserve target identity resolution, acceptance, and human-authored decisions for the analyst.
-5. Use an explicitly labeled, deterministic historical replay for the first demo.
-6. Use one demo-global replay state for the first slice, provided the environment prevents misleading concurrent use.
+1. A scenario can start from any supported object, investigation, question, or prepared context.
+2. The scenario definition declares stages, responsibilities, artifact types, visibility, decision points, and reset behavior.
+3. The workstream—not chat—is the durable system of record.
+4. Agents may autonomously update only contribution types allowed by their assignment contract.
+5. Human authority is required for protected decisions declared by the scenario.
+6. Historical scenarios are explicitly labeled and deterministic.
+7. A concrete target and record sequence are fixture data, not product semantics.
 
-## Product rationale
+## Why this is different from chat
 
-This is materially different from continuous chat because the agent owns an ongoing validation task, reacts to a changed evidence environment without another prompt, updates an inspectable artifact, and escalates a precise judgment instead of returning another answer.
+The agent owns a declared responsibility over time, reacts to relevant state changes without another prompt, updates durable artifacts, and escalates bounded decisions. Scenario playback provides the changing environment needed to demonstrate that behavior reproducibly.
 
-The selected target supports the story without inventing evidence. It also exposes a useful division of labor: Moshe can correlate, recheck, and preserve provenance; the analyst must decide whether later observations represent the same physical object.
+## Generic authority model
 
-## Human/agent authority
-
-| Action | Moshe | Analyst |
+| Action | Agent | Authorized human |
 |---|---:|---:|
-| Search visible corpus and propose links | Yes | Yes |
-| Add/revise agent-authored proposed interpretation | Yes | No approval required per edit |
-| Mark an agent proposal stale/superseded | Yes, with history | Yes |
-| Advance/reset replay | No | Yes |
-| Decide same object versus separate object | No | Yes |
-| Accept/reject a proposed contribution | No | Yes |
-| Mutate the production target row | No | Out of MVP |
+| Observe currently released scenario state | Yes | Yes |
+| Add/revise permitted proposed contributions | Yes | Yes |
+| Mark its own prior contribution stale | Yes, with history | Yes |
+| Advance/reset scenario | Only if scenario explicitly allows | Yes |
+| Make protected scenario decision | No | Yes |
+| Overwrite another participant's decision | No | No |
+| Mutate protected production objects | Out of MVP | Out of MVP |
 
-## MVP decision semantics
+## Product questions requiring approval
 
-The bounded human decision is one of:
-
-- same evolving object;
-- separate object;
-- insufficient evidence.
-
-The decision has an optional rationale and does not imply production target acceptance. Agent contributions use `proposed`, `stale`, `superseded`, or `needs-human-decision`; human decisions use `decided` or `deferred`.
-
-## Changes from the earlier brief
-
-- Replaced “create an assessment and invite Moshe” with “open a target and start a persistent validation workstream.”
-- Added automatic agent reevaluation on scenario advance.
-- Added historical replay honesty and data-visibility requirements.
-- Narrowed the demo to one real target and one identity ambiguity.
-- Removed contribution-by-contribution workflow complexity not needed to demonstrate the core value.
-
-## Product questions requiring explicit human approval
-
-- Is demo-global replay acceptable for the first slice?
-- Should only the presenter advance stages, or any demo user?
-- Is the three-outcome identity decision sufficient for the demo?
+- Which starting contexts must the first platform slice support?
+- Is manual advance sufficient for MVP, with condition-driven advance deferred?
+- Is one agent assignment sufficient to prove the generic model?
+- Should reset archive a run by default or clear its workstream instance?
+- Is a demo-global runtime acceptable as a deployment limitation, separate from product semantics?
 
 ## Approval
 

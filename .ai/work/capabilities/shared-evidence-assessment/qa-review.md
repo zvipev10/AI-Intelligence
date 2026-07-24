@@ -4,96 +4,62 @@
 
 AI-authored draft — pending human QA/Security approval
 
-## Highest-risk invariant
+## Highest-risk invariants
 
-At replay revision N, no record assigned to a future stage may be returned, inferred, counted, fused, summarized, or referenced by any user or agent retrieval path.
+1. Unreleased scenario information cannot be retrieved, counted, inferred, or referenced through any user or agent path.
+2. The core runtime behaves the same with multiple valid fixture definitions and contains no object-specific assumptions.
+3. Agents cannot overwrite protected human decisions or apply results to a stale runtime revision.
 
-## Required validation areas
+## Contract tests
 
-### Visibility and leakage
+- Validate manifest versions, references, stages, transitions, assignments, contribution types, decisions, and reset policies.
+- Reject unknown transition/contribution types unless provided by a registered adapter.
+- Load at least two structurally different fixture scenarios through the same runtime.
+- Verify no core API or UI shell requires fixture-specific identifiers or option wording.
+- Verify a scenario can use no simulated clock and still play correctly.
 
-- Direct future record-ID lookup returns not found/hidden.
-- Batch retrieval omits future records without revealing their existence.
-- Text, structured, and semantic search exclude future records.
-- Fusion, similarity, source grouping, counts, and target expansion exclude future records.
-- Moshe output and tool traces contain no future record IDs or facts.
-- Reset returns all retrieval surfaces to the baseline stage.
-- Replay inactive mode preserves existing full-corpus behavior.
+## Visibility and leakage
 
-Use a deny-list generated from the scenario manifest in integration tests, not model-output inspection alone.
+Each adapter must pass a capability matrix covering direct lookup, batch retrieval, text/structured/semantic search, aggregation, correlation/fusion, counts, and agent tools. Tests derive forbidden references from the active manifest revision.
 
-### State and concurrency
+## State, concurrency, and recovery
 
-- Start is idempotent.
-- Advance requires the expected revision and cannot skip stages.
-- Two concurrent advances create one new revision and one Moshe run.
-- Refresh/restart preserves current stage and workstream state.
-- A run completed against an old revision cannot modify the current artifact.
-- Reset while a run is active cancels, rejects, or stales its result.
-- Scenario state and workstream revisions cannot be partially committed.
+- Start and advance are idempotent.
+- Invalid/skipped transitions are rejected.
+- Concurrent advance produces one revision and expected assignment runs.
+- Unaffected assignments do not rerun.
+- Old-revision results cannot modify current artifacts.
+- Reset during active work cancels, rejects, or stales results according to policy.
+- Restart/refresh preserves runtime and workstream integrity.
 
-### Artifact integrity
+## Artifact and authority integrity
 
-- Every contribution contains author, timestamp, scenario revision, raw references, and status.
-- Human decisions cannot be overwritten by agent writes.
-- Superseded/stale content remains in history.
-- Full source rows are not duplicated into the artifact.
-- Invalid or hidden raw references are rejected.
-- The same stage/run cannot apply the same contribution twice.
+- Contributions retain participant, assignment, time, runtime revision, references, and state.
+- Contribution payloads conform to declared types.
+- Agents cannot exceed assignment authority.
+- Human decisions cannot be overwritten.
+- Stale/superseded history remains reviewable.
+- Protected domain sources are not mutated by reset.
 
-### Agent behavior
+## UX, accessibility, and regression
 
-- Baseline includes the same-place/different-entity challenge.
-- Stage 1 produces a proposed evolution/movement update, not a target acceptance.
-- Stage 2 presents alternatives and requests human judgment.
-- Moshe does not claim proven source independence from source-group counts.
-- No-evidence, timeout, malformed output, and gateway-unavailable paths are recoverable.
+- Playback/simulation labeling remains visible where applicable.
+- Generic shell and two distinct adapters work in RTL/LTR and keyboard flows.
+- Async changes are announced accessibly.
+- Inactive playback preserves existing chat, domain views, memory, search, and agent behavior.
 
-Behavioral checks should assert structured outputs and prohibited claims, while allowing wording variation.
+## Fixture-specific validation
 
-### UX and accessibility
-
-- Historical replay and simulated time remain visible.
-- Asynchronous status and errors are announced accessibly.
-- Keyboard and RTL flows cover stage advance, evidence inspection, and human decision.
-- Proposed agent work and human decisions remain distinguishable without color.
-
-### Regression
-
-- Non-replay investigations use existing event visibility.
-- Chat, layers, filters, memory, raw records, Moshe routing, and target catalog remain functional.
-- Replay reset does not mutate source events or the target database.
-- Performance remains acceptable when semantic results require over-fetching then filtering.
-
-## Security boundary
-
-The demo's current member identity is not authentication. Until real access control exists:
-
-- describe replay controls as demo controls, not user permissions;
-- restrict the environment operationally if concurrent or untrusted access is possible;
-- never expose evaluator truth;
-- validate scenario and target identifiers against the server-owned manifest;
-- reject arbitrary file paths, record-release lists, and stage numbers from clients;
-- log stage transitions and human decisions.
-
-## Required failure evidence before implementation acceptance
-
-- Automated leakage matrix covering every retrieval tool/path.
-- Concurrency/idempotency tests for start, advance, and reset.
-- Stale-run and partial-failure recovery tests.
-- Artifact history/integrity tests.
-- End-to-end deterministic replay of all stages.
-- RTL/accessibility check.
-- Regression suite results.
+The first historical target story may be tested for its expected releases and judgment point, but those tests live in fixture coverage. Passing that fixture alone is insufficient for platform acceptance.
 
 ## Release blockers
 
-- Any future-record leakage.
-- Agent ability to overwrite a human decision.
-- Non-idempotent stage advance or duplicate agent application.
-- Reset mutating the underlying corpus/target.
-- Missing historical-simulation labeling.
-- No recovery path after agent failure.
+- Future-information leakage.
+- Core coupling to a fixture object, identifier, agent name, or decision wording.
+- Agent overwrite of human decisions.
+- Duplicate transition/application.
+- Reset mutation of protected source data.
+- No recovery from agent failure.
 
 ## Approval
 

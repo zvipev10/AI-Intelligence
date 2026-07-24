@@ -6,118 +6,88 @@ AI-authored draft — pending human Development/Architecture approval
 
 ## Feasibility
 
-Feasible as a bounded demo capability, but replay visibility must be enforced below the prompt layer. The current UI and MCP runtimes load/index the full corpus; therefore a prompt telling Moshe to ignore future records is not sufficient.
+Feasible as a reusable scenario runtime if domain-specific content is isolated in adapters and fixture manifests. Prompt-only visibility remains invalid.
 
-## Recommended design
+## Recommended architecture
 
-### Scenario manifest
+### Versioned scenario definition
 
-Store an immutable manifest containing scenario ID, anchor target, ordered stages, simulated timestamps, and released record IDs. Do not store evaluator truth or expected conclusions.
+Define a validated manifest with:
 
-### Shared replay state
+- metadata and version;
+- generic context references;
+- stages and typed transitions/releases;
+- assignments and triggers;
+- artifact contribution contracts;
+- decision-point contracts;
+- visibility and reset policies.
 
-Store a small server-side state document with scenario ID, current stage, revision, status, and timestamps. Both the UI server and MCP processes resolve it on each retrieval operation. For MVP, one global demo state is the lowest-complexity option.
+The core runtime must not understand a specific target class, record ID, decision wording, or named agent.
 
-### Visibility boundary
+### Domain adapters
 
-Introduce a shared visibility predicate used by:
+Adapters resolve stable scenario references, apply visibility to domain retrieval, render domain summaries, and validate permitted artifact changes. The first evidence-corpus adapter can support the reference fixture without becoming the platform contract.
 
-- UI event loading and raw-record endpoints;
-- ID lookup and batch retrieval;
-- text and structured search;
-- semantic/vector results through post-filtering or an equivalent visibility-aware constraint;
-- fusion and source-group operations;
-- any target-evidence expansion used by Moshe.
+### Runtime and workstream state
 
-Hidden records must behave as nonexistent to the active replay context.
+Persist separately:
 
-### Workstream state
+- scenario runtime: definition/version, stage, revision, transition status;
+- workstream: responsibilities, artifacts, decisions, history, attention;
+- agent runs: assignment, trigger, input revision, status, result reference.
 
-Persist a separate workstream document keyed by target/scenario. It should contain objective, scenario revision, agent run status, structured contributions, human decisions, and append-only revisions. Keep it separate from investigation memory and the read-only target catalog.
+Keep these separate from investigation memory and domain databases.
 
-### Stage advance and agent trigger
+### Transition and trigger flow
 
-An advance operation should:
+1. Validate expected runtime revision and transition eligibility.
+2. Apply one stage's typed changes atomically.
+3. Calculate affected assignments.
+4. Schedule exactly one bounded run per affected assignment.
+5. Accept results only for the bound revision and contribution contract.
+6. Persist changes as attributable revisions.
 
-1. validate the expected current revision;
-2. atomically move to the next stage;
-3. append a workstream stage event;
-4. schedule one bounded Moshe reevaluation bound to the new revision;
-5. expose `running`, `current`, `needs-human-decision`, or `failed`.
+### Generic API candidates
 
-Only one run may be active. Duplicate advance requests must be idempotent. A result for an older revision must be stored as stale or discarded before artifact application.
+- `GET /api/scenarios`
+- `POST /api/scenario-runs`
+- `GET /api/scenario-runs/{run_id}`
+- `POST /api/scenario-runs/{run_id}/advance`
+- `POST /api/scenario-runs/{run_id}/reset`
+- `GET /api/workstreams/{workstream_id}`
+- `POST /api/workstreams/{workstream_id}/decisions`
 
-### Candidate API surface
+Avoid target IDs in endpoint structure.
 
-- `GET /api/scenario-replay`
-- `POST /api/scenario-replay/start`
-- `POST /api/scenario-replay/advance`
-- `POST /api/scenario-replay/reset`
-- `GET /api/validation-workstreams/{target_id}`
-- `POST /api/validation-workstreams/{target_id}/decisions`
+## Visibility boundary
 
-Exact naming is subject to implementation review.
+Every domain adapter must enforce the active release policy for direct lookup, batch retrieval, search, semantic retrieval, aggregation, fusion/correlation, counts, and agent tools. Hidden information must behave as unavailable.
 
-## Likely affected areas
+## Alternatives
 
-- UI server event-loading and API routing.
-- MCP server global event/index access and every retrieval/fusion tool.
-- Semantic retrieval filtering.
-- Moshe gateway invocation and result normalization.
-- New scenario manifest/state and workstream persistence modules.
-- Frontend target-bank/workstream presentation.
-
-## Reuse boundaries
-
-- Reuse target IDs, raw record references, Moshe gateway, investigation identity where needed, and existing presentation primitives.
-- Do not reuse investigation memory as the workstream database.
-- Do not write replay state or review decisions into the target SQLite database.
-- Do not duplicate full event rows into the workstream.
-
-## Alternatives considered
-
-### Prompt-only replay
-
-Rejected. It cannot prevent future-record retrieval and makes the demo unverifiable.
-
-### Per-user replay state
-
-Architecturally cleaner for concurrent use but larger than the first slice because MCP calls currently lack a reliable request-scoped scenario context.
-
-### Manual “run Moshe” after each stage
-
-Simpler operationally but fails to demonstrate agent initiative. Retain only as a recovery control.
-
-### Separate replay corpus/process
-
-Strong isolation but adds deployment/process cost and risks divergence from the real runtime. Reconsider if shared filtering proves unsafe.
-
-## Technical risks
-
-- Missed retrieval surfaces leak future records.
-- Process-level caches become inconsistent after reset/advance.
-- Semantic post-filtering returns too few results unless candidate depth is expanded.
-- A global replay state causes cross-user interference.
-- Background jobs duplicate or outlive the stage that created them.
-- Gateway/model latency makes stage transitions feel broken.
-- Current static identity is not an authorization boundary.
+- Hard-coded demo flow: rejected because it prevents reuse and hides coupling.
+- Prompt-only scenario: rejected because it leaks unreleased information.
+- Generic event-sourcing framework first: likely excessive for MVP.
+- Per-user runtime: desirable later; global demo state may be an initial deployment limitation.
 
 ## Required architecture decisions
 
-- Approve global demo state or require request-scoped state.
-- Choose persistence and atomicity mechanism for replay/workstream revisions.
-- Define how the UI and MCP processes receive the same scenario revision.
-- Define the bounded Moshe invocation contract and stale-result policy.
-- Enumerate every data-access path covered by visibility tests.
+- Manifest schema and extension/versioning strategy.
+- Stable generic reference envelope and adapter interface.
+- Atomic persistence mechanism for runtime/workstream revisions.
+- Assignment trigger and stale-result contract.
+- Contribution-type validation.
+- Global versus request-scoped runtime deployment.
 
-## Proposed implementation slices after approval
+## Proposed slices after approval
 
-1. Scenario manifest/state plus exhaustive visibility boundary and leakage tests.
-2. Persistent workstream shell and target-bank entry point.
-3. Stage advance, bounded Moshe trigger, stale-run protection, and structured update.
-4. Human ambiguity decision, history, reset/recovery, and end-to-end demo validation.
+1. Generic manifest validation, runtime state, adapter contract, and fixture-independence tests.
+2. First domain adapter plus exhaustive visibility tests.
+3. Generic workstream and artifact contribution model.
+4. Transition-triggered agent assignment and stale-run protection.
+5. Human decision points, history, reset/recovery, and reference fixture.
 
-These are review inputs, not an authorized execution plan.
+These are review inputs, not an execution plan.
 
 ## Approval
 

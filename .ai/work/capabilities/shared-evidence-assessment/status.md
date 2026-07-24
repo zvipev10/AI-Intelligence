@@ -2,7 +2,7 @@
 
 ## Capability
 
-Persistent Target Validation with Staged Scenario Replay
+Collaborative Scenario Playback
 
 ## Current phase
 
@@ -16,31 +16,32 @@ Draft reviews prepared — pending human approval
 
 - The product direction is a collaborative workspace where humans and agents jointly own tasks and artifacts.
 - Every agent must provide a concrete functional advantage.
-- The first experience starts from an existing candidate target, not an unprompted assessment form.
+- A scenario may start from a supported object, investigation, question, or prepared context.
 - The demo uses an explicitly labeled historical replay.
-- `TGT-D4DC7A7EBE02` is the proposed anchor.
+- Specific targets and records are reference fixtures, not capability semantics.
 
 ## Who needs to act now
 
 | Role | Status | Required action |
 |---|---|---|
-| Product | Human approval needed | Confirm start-from-target, human decision authority, scenario scope, and MVP boundary in `product-review.md`. |
-| Development/Architecture | Human approval needed | Review the AI-authored feasibility recommendation in `developer-review.md`. |
-| UX | Human approval needed | Review the AI-authored flow and state model in `ux-review.md`. |
-| QA/Security | Human approval needed | Review the leakage, integrity, concurrency, and recovery gates in `qa-review.md`. |
+| Product | Human approval needed | Confirm generic entry contexts, authority, scenario semantics, and MVP boundary in `product-review.md`. |
+| Development/Architecture | Human approval needed | Review manifest, adapter, runtime, and trigger recommendations in `developer-review.md`. |
+| UX | Human approval needed | Review the generic workstream shell, adapter views, and attention model in `ux-review.md`. |
+| QA/Security | Human approval needed | Review contract independence, leakage, integrity, concurrency, and recovery gates in `qa-review.md`. |
 
 ## Current blockers
 
 - Required role reviews are not yet human-approved.
-- Demo-global versus per-user scenario scope must be explicitly accepted; the draft recommends demo-global for the first slice.
-- The exact workstream persistence schema and runtime trigger contract require architecture approval.
+- Supported starting contexts for the first slice must be selected.
+- Manifest extensibility, adapter contract, persistence, and trigger model require architecture approval.
+- Demo-global versus per-user runtime remains a deployment decision, not capability semantics.
 
 ## Current risks
 
 - Future evidence may leak through retrieval paths not covered by replay filtering.
-- Global replay state may interfere with concurrent demo users.
+- A first demo deployment may still use global state and interfere with concurrent users.
 - Automatic reevaluation may race with repeated stage changes.
-- The experience may regress into chat if artifact-level changes are not primary.
+- Over-generalization may produce an abstract framework without a compelling first experience.
 
 ## Next expected artifact
 
