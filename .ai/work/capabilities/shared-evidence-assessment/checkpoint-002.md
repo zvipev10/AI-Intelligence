@@ -34,7 +34,7 @@ The automated browser run timed out while opening the layer selector, so the ful
 
 ## Review gate
 
-Stop for Product, UX, Development/Architecture, and QA review before merge.
+Accepted by the human Product owner on 2026-07-24 with authorization to proceed. Development/Architecture and QA approval from the preceding Phase 1 review remains applicable; no blocking PR feedback or CI status was reported.
 
 ## Risks
 

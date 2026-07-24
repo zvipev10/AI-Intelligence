@@ -6,11 +6,11 @@ Collaborative Scenario Playback
 
 ## Current phase
 
-Phase 1 Slice 2 checkpoint review
+Phase 1 Slice 2 accepted
 
 ## Overall status
 
-Slice 1 merged; Slice 2 chat-based workstream creation is implemented and awaiting Product/UX/QA checkpoint review
+Slice 1 merged; Slice 2 chat-based workstream creation is accepted and ready to merge
 
 ## Accepted direction captured
 
@@ -25,14 +25,14 @@ Slice 1 merged; Slice 2 chat-based workstream creation is implemented and awaiti
 
 | Role | Status | Required action |
 |---|---|---|
-| Product | Review needed | Accept the implemented chat behavior against the approved flow. |
-| Development/Architecture | Review needed | Confirm the UI/API integration remains within the Slice 1 contract. |
-| UX | Review needed | Review the composer mode, confirmation messages, minimal indicator, and chat actions. |
-| QA/Security | Review needed | Validate the Slice 2 interaction and regression coverage. |
+| Product | Approved | No action. |
+| Development/Architecture | Approved | No blocking PR feedback; proceed. |
+| UX | Approved | Human accepted the implemented checkpoint. |
+| QA/Security | Approved | Automated checks accepted with the documented manual-browser limitation. |
 
 ## Current blockers
 
-- Slice 2 merge is gated on Product/UX/QA checkpoint acceptance.
+- No blocker remains for Slice 2 merge.
 - Broader manifest, adapter, and trigger decisions remain deferred beyond Phase 1.
 
 ## Current risks
@@ -44,7 +44,7 @@ Slice 1 merged; Slice 2 chat-based workstream creation is implemented and awaiti
 
 ## Next expected artifact
 
-Checkpoint acceptance for the implemented `מעקב` flow.
+Merge Slice 2, then define the next capability slice for shared artifacts and agent contribution.
 
 ## Parent and child issues
 
@@ -56,7 +56,7 @@ Checkpoint acceptance for the implemented `מעקב` flow.
 | #28 | UX | Draft review ready; human approval pending | Yes |
 | #29 | QA/Security | Phase 1 Slice 1 approved; broader review remains open | No |
 | #30 | Phase 1 persistence | Closed; PR #31 merged | No |
-| #32 | Phase 1 chat UX | Implemented; checkpoint review pending | Yes |
+| #32 | Phase 1 chat UX | Accepted; closes with PR #33 | No |
 
 ## Artifact links
 

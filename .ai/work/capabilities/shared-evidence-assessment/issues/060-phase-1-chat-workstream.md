@@ -18,7 +18,7 @@ Expose the persistent workstream foundation through the existing chat without ad
 
 ## Status
 
-Implemented on `capability/workstream-chat`; checkpoint review pending.
+Implemented and accepted on `capability/workstream-chat`; closes with PR #33.
 
 ## Related
 

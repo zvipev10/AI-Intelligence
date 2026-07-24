@@ -2,7 +2,7 @@
 
 ## Status
 
-Phase 1 Slice 2 direction approved by the human Product owner; implemented checkpoint pending UX acceptance. Broader scenario-playback UX remains a draft.
+Phase 1 Slice 2 direction and implemented checkpoint approved by the human Product owner on 2026-07-24. Broader scenario-playback UX remains a draft.
 
 ## Phase 1 Slice 2 approved flow
 
