@@ -3018,36 +3018,21 @@ function applyAgentResult(result, prompt, options = {}) {
 
   if (options.restoreOnly) {
     state.queryContext = buildFinalQueryContext(result, prompt);
-    const idsFromAnswer = (result.answer || "").match(EVENT_ID_PATTERN) || [];
-    const evidence = new Set([...(result.event_ids || []), ...idsFromAnswer]);
-    state.current = state.events.filter(event => evidence.has(event.event_id));
-    state.aggregateLocations = collectAggregateLocations(result);
-    state.aggregateTimeline = collectAggregateTimeline(result);
-    state.aggregateGroups = collectGenericAggregateGroups(result);
-    state.locationMetadata = collectLocationMetadata(result);
-    state.entityMetadata = collectEntityMetadata(result);
+    const typedLayers = buildTypedResultLayers(result);
+    const requestedView = typedLayers[0]?.preferredView || result.recommended_view || "map";
     const addedLayers = addResultLayers({
       sourceId: finalSourceId(result),
-      sourceLabel: "תשובת הסוכן",
-      preferredView: result.recommended_view || inferRecommendedView(prompt, result.answer).view,
-      layers: [...buildResultLayers({
-      events: state.current,
-      locations: state.aggregateLocations,
-      timeline: state.aggregateTimeline,
-      groups: state.aggregateGroups,
-      locationMetadata: state.locationMetadata,
-      entityMetadata: state.entityMetadata
-      }), ...buildTypedResultLayers(result)]
+      sourceLabel: result.responding_agent === "moshe" ? "תשובת משה" : "תשובת הסוכן",
+      preferredView: requestedView,
+      layers: typedLayers
     });
-    // Just restore visualization state, don't touch the chat DOM
     showResult(
-      "ממצאי חקירת הסוכן",
+      "ממצאי הסוכן",
       addedLayers.length
-        ? `נוספו או הוצגו ${addedLayers.length.toLocaleString("he-IL")} שכבות מתוך תשובת הסוכן.`
-        : "הסוכן השיב, אך לא נמצאו בתשובה נתונים שניתן לקשר לתצוגה."
+        ? `נוספו או הוצגו ${addedLayers.length.toLocaleString("he-IL")} שכבות שנבחרו כתשובה.`
+        : "לא נבחרו נתונים להצגה."
     );
-    const inferred = inferRecommendedView(prompt, result.answer);
-    activateView(result.recommended_view || inferred.view, { automatic: true, reason: result.view_reason || inferred.reason });
+    activateView(requestedView, { reason: result.view_reason || "נתונים שנבחרו כתשובה לבקשת המשתמש" });
     renderQueryInspector();
     return;
   }
@@ -3072,23 +3057,10 @@ function applyAgentResult(result, prompt, options = {}) {
     addActivity("Hermes", `שאלת החקירה שנשלחה: ${prompt}`, `התקבלה תשובה בריצה ${result.run_id}, ללא יומן כלי מפורט.`);
   }
 
-  const typedLayers = buildTypedResultLayers(result);
-  if (typedLayers.length) {
-    const requestedView = typedLayers[0].preferredView || result.recommended_view || "map";
-    const addedLayers = addResultLayers({
-      sourceId: finalSourceId(result),
-      sourceLabel: result.responding_agent === "moshe" ? "תשובת משה" : "תשובת הסוכן",
-      preferredView: requestedView,
-      layers: typedLayers
-    });
-    showResult("ממצאי הסוכן", `נוספו או רועננו ${addedLayers.length.toLocaleString("he-IL")} שכבות מתוך התשובה.`);
-    activateView(requestedView, { automatic: true, reason: result.view_reason || "נתונים שנבחרו כתשובה לבקשת המשתמש" });
-    if (typedLayers.some(layer => layer.kind === "attack_targets")) {
-      void refreshOpenAttackTargetCatalogLayer();
-    }
-  }
-
   finalizeAssistantMessage(result.answer, { result, prompt });
+  if (buildTypedResultLayers(result).some(layer => layer.kind === "attack_targets")) {
+    void refreshOpenAttackTargetCatalogLayer();
+  }
   updateResultVisibilityButtons();
   renderQueryInspector();
   setSuggestions(["אילו הסברים תמימים יכולים להתאים לאותן ראיות?", "מה חסר כדי להעלות את רמת הביטחון?", "הצג את רצף האירועים לפי סדר הזמן"]);

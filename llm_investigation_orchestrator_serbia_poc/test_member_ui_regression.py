@@ -50,6 +50,14 @@ class MemberUiRegressionTests(unittest.TestCase):
         self.assertIn("const hasRequestedResults = buildTypedResultLayers(options.result).length > 0;", self.app)
         self.assertIn('${hasRequestedResults ? `<button type="button" class="final-answer-show-btn', self.app)
 
+    def test_final_requested_results_wait_for_explicit_button_press(self):
+        apply_body = self.app.split("function applyAgentResult(result, prompt, options = {})", 1)[1].split("async function runSavedQuestion", 1)[0]
+        self.assertEqual(apply_body.count("addResultLayers({"), 1)
+        self.assertIn("if (options.restoreOnly)", apply_body)
+        self.assertIn("layers: typedLayers", apply_body)
+        self.assertNotIn("activateView(requestedView, { automatic: true", apply_body)
+        self.assertIn("toggleFinalAnswerVisibility(options.result", self.app)
+
     def test_csv_parser_only_opens_quotes_at_the_start_of_a_field(self):
         self.assertIn("let atFieldStart = true;", self.app)
         self.assertIn("else if (char === '\"' && atFieldStart)", self.app)
@@ -66,7 +74,7 @@ class MemberUiRegressionTests(unittest.TestCase):
     def test_persisted_attack_targets_are_a_refreshable_catalog_layer(self):
         self.assertIn('const ATTACK_TARGET_CATALOG_LAYER_ID = "attack-targets:all";', self.app)
         self.assertIn("async function refreshOpenAttackTargetCatalogLayer()", self.app)
-        self.assertIn('typedLayers.some(layer => layer.kind === "attack_targets")', self.app)
+        self.assertIn('buildTypedResultLayers(result).some(layer => layer.kind === "attack_targets")', self.app)
 
     def test_target_table_shows_source_types_and_plain_raw_record_count(self):
         self.assertIn("<th>סוגי מקור</th><th>רשומות גולמיות</th>", self.app)

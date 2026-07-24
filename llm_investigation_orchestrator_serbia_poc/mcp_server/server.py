@@ -2461,10 +2461,29 @@ def present_requested_results(arguments: dict[str, Any]) -> dict[str, Any]:
                 raise ValueError(f"aggregate layer {index} requires group_by")
             rows = _selected_aggregate_rows(group_by, row_ids)
             is_time = group_by in {"date", "hour"}
-            result_kind = "time_aggregation" if is_time else "group_aggregation"
-            capabilities = {"table": True, "map": False, "timeline": is_time}
+            is_location = group_by == "location"
+            if is_location:
+                result_kind = "locations"
+                capabilities = {"table": True, "map": True, "timeline": False}
+            elif is_time:
+                result_kind = "time_aggregation"
+                capabilities = {"table": True, "map": False, "timeline": True}
+                rows = [{
+                    **row,
+                    "timeLabel": row.get("label") or row.get("key"),
+                    "sortKey": row.get("key") or row.get("label"),
+                    "summary": f'{row.get("count", 0)} events',
+                } for row in rows]
+            else:
+                result_kind = "group_aggregation"
+                capabilities = {"table": True, "map": False, "timeline": False}
         else:
             raise ValueError(f"unsupported requested-result kind: {kind}")
+        view_capability = {"map": "map", "timeline": "timeline", "evidence": "table"}.get(view)
+        if view_capability is None:
+            raise ValueError(f"unsupported requested view: {view}")
+        if not capabilities.get(view_capability):
+            raise ValueError(f"requested view {view} is incompatible with {result_kind}")
         requested_layers.append({
             "id": f"requested-result:{index}",
             "label": label,

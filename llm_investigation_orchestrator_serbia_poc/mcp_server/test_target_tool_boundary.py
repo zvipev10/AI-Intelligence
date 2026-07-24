@@ -184,6 +184,54 @@ class TargetToolBoundaryTests(unittest.TestCase):
             finally:
                 server.AUDIT_PATH = previous
 
+    def test_location_aggregate_becomes_map_layer_and_incompatible_views_are_rejected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            previous = server.AUDIT_PATH
+            server.AUDIT_PATH = Path(directory) / "audit.jsonl"
+            server.AUDIT_PATH.write_text("\n".join([
+                json.dumps({
+                    "tool": "aggregate_events",
+                    "result": {
+                        "group_by": "location",
+                        "groups": [{
+                            "key": "LOC-V2-005", "label": "Area B", "count": 7,
+                            "location_id": "LOC-V2-005", "latitude": 42.96, "longitude": 20.57,
+                        }],
+                    },
+                    "is_error": False,
+                }),
+                json.dumps({
+                    "tool": "aggregate_events",
+                    "result": {
+                        "group_by": "source_type",
+                        "groups": [{"key": "news", "label": "News", "count": 4}],
+                    },
+                    "is_error": False,
+                }),
+            ]) + "\n", encoding="utf-8")
+            try:
+                result = server.present_requested_results({"layers": [{
+                    "kind": "aggregate_groups",
+                    "ids": ["LOC-V2-005"],
+                    "group_by": "location",
+                    "label": "Requested locations",
+                    "view": "map",
+                }]})
+                layer = result["requested_result_layers"][0]
+                self.assertEqual(layer["kind"], "locations")
+                self.assertTrue(layer["capabilities"]["map"])
+                self.assertEqual(layer["rows"][0]["location_id"], "LOC-V2-005")
+                with self.assertRaisesRegex(ValueError, "incompatible"):
+                    server.present_requested_results({"layers": [{
+                        "kind": "aggregate_groups",
+                        "ids": ["news"],
+                        "group_by": "source_type",
+                        "label": "Not a map",
+                        "view": "map",
+                    }]})
+            finally:
+                server.AUDIT_PATH = previous
+
     def test_admin_operations_are_not_mcp_handlers(self):
         for name in ("backup_target_bank", "reset_target_bank", "delete_target", "execute_sql"):
             self.assertNotIn(name, server.TOOL_HANDLERS)

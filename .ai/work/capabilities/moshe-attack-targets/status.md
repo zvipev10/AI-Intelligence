@@ -6,7 +6,7 @@ Moshe Attack Targets MVP
 
 ## Current phase
 
-Requested-result layer refinement is deployed and production-verified.
+Manual requested-result presentation and location-map compatibility are deployed and production-verified.
 
 ## Overall status
 
@@ -17,14 +17,14 @@ In progress
 | Role | Status | Required action | Due before |
 |---|---|---|---|
 | Product | Final acceptance pending | Accept checkpoint 009 and residual risks | Complete capability |
-| Development | Requested-result refinement deployed | No implementation action pending | Product check |
+| Development | Manual presentation fix deployed | No implementation action pending | Product check |
 | UX | Approved | Routing experience, attribution, candidate presentation, evidence, and states accepted | Complete |
 | QA | Release evidence ready | Accept checkpoint 009 | Complete capability |
 | Architecture/Security | Slice 2 approved | Review evaluator isolation and deterministic source boundary | Slice 4 |
 
 ## Latest change since previous review
 
-Checkpoint 012 adds an explicit shared requested-result selection contract. `הצג תוצאות` now consumes only validated rows that directly answer the request; evidence-layer links remain deferred.
+Checkpoint 013 restores click-to-present behavior and fixes location aggregates so map selections produce map-capable layers.
 
 ## Current blockers
 
@@ -39,7 +39,7 @@ Checkpoint 012 adds an explicit shared requested-result selection contract. `ה�
 
 ## Next expected artifact
 
-Product review of `checkpoint-012-requested-result-layers.md`.
+Product visual review of `checkpoint-013-manual-result-presentation.md`.
 
 ## Parent issue
 
@@ -75,7 +75,7 @@ Pending remote creation; local draft at `issues/parent-capability.md`.
 - Architecture/security review: `architecture-security-review.md`
 - Execution plan: `execution-plan.md`
 - Slice 6 recovery plan: `slice-006-quality-recovery-plan.md`
-- Latest checkpoint: `checkpoint-012-requested-result-layers.md`
+- Latest checkpoint: `checkpoint-013-manual-result-presentation.md`
 - Handoff: `handoff-summary.md`
 
 ## Gate checklist
