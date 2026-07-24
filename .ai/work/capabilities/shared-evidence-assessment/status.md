@@ -6,11 +6,11 @@ Collaborative Scenario Playback
 
 ## Current phase
 
-Phase 1 Slice 2 Product/UX definition
+Phase 1 Slice 2 accepted
 
 ## Overall status
 
-Slice 1 approved and ready to merge; Slice 2 chat-based workstream creation is under Product/UX definition
+Slice 1 merged; Slice 2 chat-based workstream creation is accepted and ready to merge
 
 ## Accepted direction captured
 
@@ -25,14 +25,14 @@ Slice 1 approved and ready to merge; Slice 2 chat-based workstream creation is u
 
 | Role | Status | Required action |
 |---|---|---|
-| Product | Input in progress | Confirm the chat-based `מעקב` creation semantics and confirmation boundary. |
-| Development/Architecture | Slice 1 approved | No action until the approved Slice 2 flow is reviewed technically. |
-| UX | Review needed | Define the plus-menu `מעקב` flow, explicit layer attachment, confirmation, reopen, and error states. |
-| QA/Security | Slice 1 approved | No action until Slice 2 test planning. |
+| Product | Approved | No action. |
+| Development/Architecture | Approved | No blocking PR feedback; proceed. |
+| UX | Approved | Human accepted the implemented checkpoint. |
+| QA/Security | Approved | Automated checks accepted with the documented manual-browser limitation. |
 
 ## Current blockers
 
-- Slice 2 is gated on Product/UX approval of the chat-based creation flow.
+- No blocker remains for Slice 2 merge.
 - Broader manifest, adapter, and trigger decisions remain deferred beyond Phase 1.
 
 ## Current risks
@@ -44,7 +44,7 @@ Slice 1 approved and ready to merge; Slice 2 chat-based workstream creation is u
 
 ## Next expected artifact
 
-Focused Product/UX decision for the `מעקב` flow, followed by a Slice 2 execution issue and branch.
+Merge Slice 2, then define the next capability slice for shared artifacts and agent contribution.
 
 ## Parent and child issues
 
@@ -55,7 +55,8 @@ Focused Product/UX decision for the `מעקב` flow, followed by a Slice 2 execu
 | #27 | Development/Architecture | Phase 1 Slice 1 approved; broader review remains open | No |
 | #28 | UX | Draft review ready; human approval pending | Yes |
 | #29 | QA/Security | Phase 1 Slice 1 approved; broader review remains open | No |
-| #30 | Phase 1 implementation | Slice 1 approved; PR #31 ready to merge | No |
+| #30 | Phase 1 persistence | Closed; PR #31 merged | No |
+| #32 | Phase 1 chat UX | Accepted; closes with PR #33 | No |
 
 ## Artifact links
 
@@ -65,5 +66,5 @@ Focused Product/UX decision for the `מעקב` flow, followed by a Slice 2 execu
 - UX review: `ux-review.md`
 - QA/Security review: `qa-review.md`
 - Execution plan: `execution-plan.md` (Phase 1 approved)
-- Latest checkpoint: `checkpoint-001.md`
+- Latest checkpoint: `checkpoint-002.md`
 - Current handoff: `handoff-summary.md`

@@ -22,6 +22,9 @@
           <button id="investigationAddButton" type="button" title="צור חקירה חדשה" aria-label="צור חקירה חדשה">+</button>
           <div id="investigationList" class="investigation-list" role="listbox" hidden></div>
         </div>
+        <button id="workstreamIndicator" class="workstream-indicator" type="button" aria-label="הצג עדכון מעקב" hidden>
+          <span>מעקב</span><span id="workstreamIndicatorCount" class="workstream-indicator-count" hidden></span>
+        </button>
         <div id="michlolTeam" class="michlol-team" role="list" aria-label="מכלול"></div>
       </div>
     </section>
@@ -44,6 +47,10 @@
         <button type="button" data-prompt="איפה יש ריכוזי דיווחים מרכזיים בצפון קוסובו?">איפה יש ריכוזי דיווחים מרכזיים בצפון קוסובו?</button>
       </div>
       <form id="promptForm" class="prompt-form">
+        <div id="workstreamComposerMode" class="workstream-composer-mode" hidden>
+          <span>יצירת מעקב</span>
+          <button id="workstreamComposerCancel" type="button" title="בטל יצירת מעקב" aria-label="בטל יצירת מעקב">×</button>
+        </div>
         <textarea id="promptInput" rows="2" aria-label="שאלת חקירה" placeholder="כתוב שאלת חקירה..."></textarea>
         <div class="prompt-actions">
           <div class="prompt-options">
@@ -51,6 +58,7 @@
             <div id="promptOptionsMenu" class="prompt-options-menu" role="menu" hidden>
               <button type="button" role="menuitem" data-prompt-option="recordings">הקלטות</button>
               <button type="button" role="menuitem" data-prompt-option="layers">שכבות</button>
+              <button type="button" role="menuitem" data-prompt-option="workstream">מעקב</button>
             </div>
           </div>
           <button id="selectedLayersButton" class="selected-layers-button" type="button" aria-label="שנה שכבות לשאילתה" hidden>
