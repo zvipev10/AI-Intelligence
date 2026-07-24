@@ -65,4 +65,4 @@ Human decisions recorded in the four role-review files. Only after approval shou
 - QA/Security review: `qa-review.md`
 - Execution plan: blocked by role approvals
 - Checkpoint: not started
-- Handoff: not started
+- Current handoff: `handoff-summary.md`
