@@ -2,7 +2,7 @@
 
 ## Status
 
-Product draft based on the human-approved direction of 2026-07-24. Development, UX, and QA review are required before execution planning or implementation.
+Product definition approved by the human Product owner on 2026-07-24. Development/Architecture, UX, and QA review are required before execution planning or implementation.
 
 ## Purpose
 
@@ -98,12 +98,12 @@ The agent may propose and revise the lead. It may not promote the lead to assess
 
 ## Chat interaction
 
-The artifact remains visible through agent-style chat messages:
+The artifact has no formal user-facing name in the MVP. `target_assessment_lead` is an internal type only. The UX talks naturally about the indications, their meaning, and the next action through agent-style chat messages:
 
 - **Proposal:** “I found three indications that may describe the same operational object. Create a lead?”
 - **Update:** “One new indication supports the location, but source independence remains unresolved.”
 - **Attention request:** “Before assessment, decide whether the two public reports should be treated as one source family.”
-- **User action:** `אשר קצה חוט`, `דחה`, `בקש השלמה`, or `שלח להערכה`.
+- **User action:** `שמור במעקב`, `דחה`, `בקש השלמה`, or `שלח להערכה`.
 
 The minimal workstream indicator remains unchanged. Pressing it returns the current lead summary and available actions to chat.
 
@@ -117,6 +117,9 @@ Include:
 - proposal/accept/reject/update actions in chat;
 - status and revision history;
 - explicit handoff to assessment.
+- indications must reference a stable source record or layer item;
+- free text may annotate an indication but cannot be an indication by itself;
+- only the user may send the indications to assessment.
 
 Defer:
 
@@ -129,10 +132,10 @@ Defer:
 - Investigation Memory item import;
 - scenario playback.
 
-## Product acceptance questions
+## Accepted Product decisions
 
-1. Is the user-facing Hebrew term `קצה חוט להערכת מטרה` appropriate, or should the UI use `אינדיקציה למטרה`?
-2. Should the MVP require one accepted lead per workstream, or allow multiple concurrent leads?
-3. Who is authorized to select `שלח להערכה` in the demo?
-4. May the user add a free-text indication, or must every indication reference a source record/layer item?
-
+- Do not expose a formal artifact name in the UX.
+- Allow one active artifact of this type per workstream in the MVP.
+- Only the user may select `שלח להערכה`.
+- Every indication must reference a stable source record or layer item.
+- Free text is annotation, not a standalone indication.

@@ -22,6 +22,9 @@ The flow becomes `raw records → indications → target assessment lead → ass
 Follow-ups:
 Approve terminology, multiplicity, indication-source requirements, and authority to send a lead to assessment.
 
+Product resolution:
+The internal type remains `target_assessment_lead`, but the UX exposes no formal artifact name. The MVP allows one active artifact per workstream, requires stable source references for all indications, treats free text as annotation only, and permits only the user to send the indications to assessment.
+
 ### 2026-07-24 — Use chat as the Phase 1 workstream interaction surface
 
 Decision:

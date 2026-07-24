@@ -66,4 +66,4 @@ The human Product owner approved the checkpoint and instructed implementation to
 
 ## Next step
 
-Review and approve `artifact-001-target-assessment-lead.md`. The draft defines a pre-assessment artifact containing attributable indications, contradictions, gaps, and assessment questions. It cannot create or update a target. After Product approval, Development/Architecture, UX, and QA should enrich the model before execution planning.
+Product approved `artifact-001-target-assessment-lead.md`. The internal artifact has no formal UX name; the interface talks naturally about indications and actions. The MVP allows one active artifact per workstream, requires stable source references, treats free text as annotation, and reserves assessment handoff for the user. Development/Architecture, UX, and QA should now enrich the model before execution planning.

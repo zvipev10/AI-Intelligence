@@ -6,11 +6,11 @@ Collaborative Scenario Playback
 
 ## Current phase
 
-Target Assessment Lead product definition
+Target Assessment Lead role review
 
 ## Overall status
 
-Phase 1 is merged; the first shared artifact is defined as a draft Target Assessment Lead pending Product decisions and role review
+Phase 1 is merged; Product approved the first shared artifact and Development/Architecture, UX, and QA reviews are next
 
 ## Accepted direction captured
 
@@ -25,15 +25,15 @@ Phase 1 is merged; the first shared artifact is defined as a draft Target Assess
 
 | Role | Status | Required action |
 |---|---|---|
-| Product | Decision needed | Approve the artifact definition and answer its four acceptance questions. |
-| Development/Architecture | Waiting | Review persistence, revision, and target-workflow separation after Product approval. |
-| UX | Waiting | Review proposal, correction, rejection, and assessment-handoff messages after Product approval. |
-| QA/Security | Waiting | Review provenance, contradiction preservation, and promotion-boundary tests after Product approval. |
+| Product | Approved | No action. |
+| Development/Architecture | Review needed | Review persistence, revision, and target-workflow separation. |
+| UX | Review needed | Review natural-language proposal, correction, rejection, and assessment-handoff messages without an artifact label. |
+| QA/Security | Review needed | Review provenance, contradiction preservation, and promotion-boundary tests. |
 
 ## Current blockers
 
 - No Phase 1 blocker remains.
-- The Target Assessment Lead draft requires Product approval before role reviews and execution planning.
+- Execution planning is blocked until the artifact-specific role reviews are ready.
 - Broader manifest, adapter, and trigger decisions remain deferred beyond Phase 1.
 
 ## Current risks
@@ -45,7 +45,7 @@ Phase 1 is merged; the first shared artifact is defined as a draft Target Assess
 
 ## Next expected artifact
 
-Human Product decision on `artifact-001-target-assessment-lead.md`.
+Artifact-specific Development/Architecture, UX, and QA review.
 
 ## Parent and child issues
 
@@ -58,7 +58,7 @@ Human Product decision on `artifact-001-target-assessment-lead.md`.
 | #29 | QA/Security | Phase 1 Slice 1 approved; broader review remains open | No |
 | #30 | Phase 1 persistence | Closed; PR #31 merged | No |
 | #32 | Phase 1 chat UX | Closed; PR #33 merged | No |
-| #35 | Target Assessment Lead Product definition | Human Product review required | Yes |
+| #35 | Target Assessment Lead Product definition | Approved; closes with PR #36 | No |
 
 ## Artifact links
 
