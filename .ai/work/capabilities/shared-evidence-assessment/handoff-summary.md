@@ -19,19 +19,22 @@ The brief and four AI-authored role reviews define:
 
 ## Current gate
 
-Product, Development/Architecture, UX, and QA/Security reviews require human approval. No execution plan or product code is authorized yet.
+The human Product owner approved the revised Phase 1 boundary and instructed implementation to begin. Broader capability reviews remain pending.
 
 ## Decisions still required
 
-1. Select the starting contexts supported by the first slice.
-2. Approve manual versus condition-driven stage advance for MVP.
-3. Approve manifest, adapter, visibility, and stale-run contracts.
-4. Accept demo-global state as a deployment limitation or require per-user state.
-5. Choose workstream placement and default reset/archive behavior.
+Phase 1 decisions are recorded in `decisions.md` and `execution-plan.md`. Individual Investigation Memory item selection is explicitly deferred.
+
+Broader decisions still required:
+
+1. Approve manual versus condition-driven stage advance.
+2. Approve manifest, adapter, visibility, and stale-run contracts.
+3. Accept demo-global state as a deployment limitation or require per-user state.
+4. Choose the later workstream-context assembly and memory-promotion experience.
 
 ## Next step
 
-Review and mark the four role-review artifacts approved or record requested changes. After all required approvals, create `execution-plan.md` with checkpointed implementation slices.
+Merge planning PR #24, create a Phase 1 implementation branch from updated `main`, and execute Slice 1 under issue #30. Stop for Development/Architecture and QA review after the persistence/API checkpoint.
 
 ## Publishing
 

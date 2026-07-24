@@ -2,7 +2,7 @@
 
 ## Status
 
-AI-authored draft — pending human Product approval
+Phase 1 scope approved by the human Product owner on 2026-07-24. Broader capability decisions remain pending.
 
 ## Recommendation
 
@@ -40,9 +40,18 @@ The agent owns a declared responsibility over time, reacts to relevant state cha
 - Should reset archive a run by default or clear its workstream instance?
 - Is a demo-global runtime acceptable as a deployment limitation, separate from product semantics?
 
+## Approved Phase 1 boundary
+
+- Persist a minimal workstream associated with an investigation.
+- Include title, objective, participants, initial responsibilities, status, and optional generic starting-source reference.
+- Do not select, copy, or reference individual Investigation Memory items.
+- Defer scenario playback, artifacts, agent triggers, and human decisions.
+- Keep Investigation Memory behavior unchanged.
+
 ## Approval
 
-- [ ] Approved
+- [x] Phase 1 scope approved
+- [ ] Full capability approved
 - [ ] Approved with changes recorded below
 - [ ] Changes requested
 

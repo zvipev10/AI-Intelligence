@@ -6,11 +6,11 @@ Collaborative Scenario Playback
 
 ## Current phase
 
-Role-review gate
+Phase 1 execution planning
 
 ## Overall status
 
-Draft reviews prepared — pending human approval
+Phase 1 authorized; planning PR must merge before implementation branch
 
 ## Accepted direction captured
 
@@ -19,22 +19,22 @@ Draft reviews prepared — pending human approval
 - A scenario may start from a supported object, investigation, question, or prepared context.
 - The demo uses an explicitly labeled historical replay.
 - Specific targets and records are reference fixtures, not capability semantics.
+- Phase 1 excludes individual Investigation Memory item selection.
 
 ## Who needs to act now
 
 | Role | Status | Required action |
 |---|---|---|
-| Product | Human approval needed | Confirm generic entry contexts, authority, scenario semantics, and MVP boundary in `product-review.md`. |
-| Development/Architecture | Human approval needed | Review manifest, adapter, runtime, and trigger recommendations in `developer-review.md`. |
-| UX | Human approval needed | Review the generic workstream shell, adapter views, and attention model in `ux-review.md`. |
-| QA/Security | Human approval needed | Review contract independence, leakage, integrity, concurrency, and recovery gates in `qa-review.md`. |
+| Product | Phase 1 approved | Review the Slice 1 checkpoint after persistence/API implementation. |
+| Development/Architecture | Review after Slice 1 | Review the dedicated store, schema, API, and atomicity. |
+| UX | Review before Slice 2 | Approve the minimal workstream UI shell. |
+| QA/Security | Review after Slice 1 | Validate persistence, input boundaries, and memory regressions. |
 
 ## Current blockers
 
 - Required role reviews are not yet human-approved.
-- Supported starting contexts for the first slice must be selected.
-- Manifest extensibility, adapter contract, persistence, and trigger model require architecture approval.
-- Demo-global versus per-user runtime remains a deployment decision, not capability semantics.
+- PR #24 must merge before the Phase 1 implementation branch is created.
+- Broader manifest, adapter, and trigger decisions remain deferred beyond Phase 1.
 
 ## Current risks
 
@@ -45,7 +45,7 @@ Draft reviews prepared — pending human approval
 
 ## Next expected artifact
 
-Human decisions recorded in the four role-review files. Only after approval should `execution-plan.md` be created.
+Merge planning PR #24, branch from updated `main`, then execute Slice 1 from `execution-plan.md` under issue #30.
 
 ## Parent and child issues
 
@@ -56,6 +56,7 @@ Human decisions recorded in the four role-review files. Only after approval shou
 | #27 | Development/Architecture | Draft review ready; human approval pending | Yes |
 | #28 | UX | Draft review ready; human approval pending | Yes |
 | #29 | QA/Security | Draft review ready; human approval pending | Yes |
+| #30 | Phase 1 implementation | Approved scope; blocked on PR #24 merge | Yes |
 
 ## Artifact links
 
@@ -64,6 +65,6 @@ Human decisions recorded in the four role-review files. Only after approval shou
 - Developer review: `developer-review.md`
 - UX review: `ux-review.md`
 - QA/Security review: `qa-review.md`
-- Execution plan: blocked by role approvals
+- Execution plan: `execution-plan.md` (Phase 1 approved)
 - Checkpoint: not started
 - Current handoff: `handoff-summary.md`
