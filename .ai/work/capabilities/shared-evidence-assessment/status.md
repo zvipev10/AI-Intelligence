@@ -6,11 +6,11 @@ Collaborative Scenario Playback
 
 ## Current phase
 
-Phase 1 Slice 1 checkpoint review
+Phase 1 Slice 2 Product/UX definition
 
 ## Overall status
 
-Slice 1 persistence/API implementation complete; pending Development/Architecture and QA review
+Slice 1 approved and ready to merge; Slice 2 chat-based workstream creation is under Product/UX definition
 
 ## Accepted direction captured
 
@@ -25,14 +25,14 @@ Slice 1 persistence/API implementation complete; pending Development/Architectur
 
 | Role | Status | Required action |
 |---|---|---|
-| Product | Phase 1 approved | No action until Slice 2 UX review. |
-| Development/Architecture | Review needed | Review `checkpoint-001.md`, store, schema, API, and atomicity. |
-| UX | Review before Slice 2 | Approve the minimal workstream UI shell. |
-| QA/Security | Review needed | Validate `checkpoint-001.md`, persistence, input boundaries, and memory regressions. |
+| Product | Input in progress | Confirm the chat-based `מעקב` creation semantics and confirmation boundary. |
+| Development/Architecture | Slice 1 approved | No action until the approved Slice 2 flow is reviewed technically. |
+| UX | Review needed | Define the plus-menu `מעקב` flow, explicit layer attachment, confirmation, reopen, and error states. |
+| QA/Security | Slice 1 approved | No action until Slice 2 test planning. |
 
 ## Current blockers
 
-- Slice 2 is gated on Slice 1 Development/Architecture and QA review.
+- Slice 2 is gated on Product/UX approval of the chat-based creation flow.
 - Broader manifest, adapter, and trigger decisions remain deferred beyond Phase 1.
 
 ## Current risks
@@ -44,7 +44,7 @@ Slice 1 persistence/API implementation complete; pending Development/Architectur
 
 ## Next expected artifact
 
-Development/Architecture and QA review of `checkpoint-001.md`.
+Focused Product/UX decision for the `מעקב` flow, followed by a Slice 2 execution issue and branch.
 
 ## Parent and child issues
 
@@ -52,10 +52,10 @@ Development/Architecture and QA review of `checkpoint-001.md`.
 |---|---|---|---|
 | #25 | Parent capability | Open | — |
 | #26 | Product | Draft review ready; human approval pending | Yes |
-| #27 | Development/Architecture | Draft review ready; human approval pending | Yes |
+| #27 | Development/Architecture | Phase 1 Slice 1 approved; broader review remains open | No |
 | #28 | UX | Draft review ready; human approval pending | Yes |
-| #29 | QA/Security | Draft review ready; human approval pending | Yes |
-| #30 | Phase 1 implementation | Slice 1 complete; checkpoint review pending | Yes |
+| #29 | QA/Security | Phase 1 Slice 1 approved; broader review remains open | No |
+| #30 | Phase 1 implementation | Slice 1 approved; PR #31 ready to merge | No |
 
 ## Artifact links
 

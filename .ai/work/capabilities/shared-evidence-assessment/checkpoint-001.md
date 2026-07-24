@@ -14,24 +14,24 @@ Collaborative Scenario Playback
 
 ## Checkpoint status
 
-Complete — pending Development/Architecture and QA review
+Approved by Development/Architecture and QA on 2026-07-24
 
 ## Handoff
 
 Next role:
-Development/Architecture and QA
+Product and UX
 
 Required action:
-Review the dedicated workstream schema, validation, atomic persistence, API boundary, and tests.
+Define and approve the minimal workstream creation and reopening experience.
 
 Expected output:
-Approve Slice 1 or request changes.
+Approved Slice 2 UX flow and implementation boundary.
 
 Do not proceed to:
-Minimal workstream UI shell.
+Slice 2 implementation.
 
 Until:
-The Slice 1 checkpoint is reviewed.
+The chat-based `מעקב` flow is approved.
 
 ## Slice goal
 
@@ -92,7 +92,7 @@ Coverage includes create, list, load, update, archive, archive idempotency, inve
 
 ## Continue / pause recommendation
 
-Pause for Development/Architecture and QA review.
+Continue to focused Product/UX definition for Slice 2. Do not implement UI until that flow is approved.
 
 ## Next planned slice
 

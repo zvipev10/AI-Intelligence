@@ -23,7 +23,7 @@ The human Product owner approved the revised Phase 1 boundary and instructed imp
 
 ## Decisions still required
 
-Phase 1 decisions are recorded in `decisions.md` and `execution-plan.md`. Individual Investigation Memory item selection is explicitly deferred. Slice 1 persistence/API implementation is complete in `checkpoint-001.md`.
+Phase 1 decisions are recorded in `decisions.md` and `execution-plan.md`. Individual Investigation Memory item selection is explicitly deferred. Slice 1 persistence/API implementation is approved by Development/Architecture and QA in `checkpoint-001.md`.
 
 Broader decisions still required:
 
@@ -34,7 +34,7 @@ Broader decisions still required:
 
 ## Next step
 
-Review `checkpoint-001.md` and the Phase 1 implementation PR. Do not begin the minimal UI shell until Development/Architecture and QA approve the dedicated store and API boundary.
+Merge PR #31 and define the Slice 2 chat-based creation flow. The current Product direction is to add `מעקב` to the existing plus menu, gather details conversationally, and require an explicitly attached layer. Product/UX still need to settle confirmation, minimum information, reopen, and error behavior before implementation.
 
 ## Publishing
 

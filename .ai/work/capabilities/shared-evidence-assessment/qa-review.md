@@ -2,7 +2,7 @@
 
 ## Status
 
-AI-authored draft — pending human QA/Security approval
+Phase 1 Slice 1 persistence/API validation approved by the human QA owner on 2026-07-24. Broader scenario-runtime and security recommendations remain pending.
 
 ## Highest-risk invariants
 
