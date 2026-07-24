@@ -6,11 +6,11 @@ Collaborative Scenario Playback
 
 ## Current phase
 
-Phase 1 execution planning
+Phase 1 Slice 1 checkpoint review
 
 ## Overall status
 
-Phase 1 authorized; planning PR must merge before implementation branch
+Slice 1 persistence/API implementation complete; pending Development/Architecture and QA review
 
 ## Accepted direction captured
 
@@ -25,15 +25,14 @@ Phase 1 authorized; planning PR must merge before implementation branch
 
 | Role | Status | Required action |
 |---|---|---|
-| Product | Phase 1 approved | Review the Slice 1 checkpoint after persistence/API implementation. |
-| Development/Architecture | Review after Slice 1 | Review the dedicated store, schema, API, and atomicity. |
+| Product | Phase 1 approved | No action until Slice 2 UX review. |
+| Development/Architecture | Review needed | Review `checkpoint-001.md`, store, schema, API, and atomicity. |
 | UX | Review before Slice 2 | Approve the minimal workstream UI shell. |
-| QA/Security | Review after Slice 1 | Validate persistence, input boundaries, and memory regressions. |
+| QA/Security | Review needed | Validate `checkpoint-001.md`, persistence, input boundaries, and memory regressions. |
 
 ## Current blockers
 
-- Required role reviews are not yet human-approved.
-- PR #24 must merge before the Phase 1 implementation branch is created.
+- Slice 2 is gated on Slice 1 Development/Architecture and QA review.
 - Broader manifest, adapter, and trigger decisions remain deferred beyond Phase 1.
 
 ## Current risks
@@ -45,7 +44,7 @@ Phase 1 authorized; planning PR must merge before implementation branch
 
 ## Next expected artifact
 
-Merge planning PR #24, branch from updated `main`, then execute Slice 1 from `execution-plan.md` under issue #30.
+Development/Architecture and QA review of `checkpoint-001.md`.
 
 ## Parent and child issues
 
@@ -56,7 +55,7 @@ Merge planning PR #24, branch from updated `main`, then execute Slice 1 from `ex
 | #27 | Development/Architecture | Draft review ready; human approval pending | Yes |
 | #28 | UX | Draft review ready; human approval pending | Yes |
 | #29 | QA/Security | Draft review ready; human approval pending | Yes |
-| #30 | Phase 1 implementation | Approved scope; blocked on PR #24 merge | Yes |
+| #30 | Phase 1 implementation | Slice 1 complete; checkpoint review pending | Yes |
 
 ## Artifact links
 
@@ -66,5 +65,5 @@ Merge planning PR #24, branch from updated `main`, then execute Slice 1 from `ex
 - UX review: `ux-review.md`
 - QA/Security review: `qa-review.md`
 - Execution plan: `execution-plan.md` (Phase 1 approved)
-- Checkpoint: not started
+- Latest checkpoint: `checkpoint-001.md`
 - Current handoff: `handoff-summary.md`

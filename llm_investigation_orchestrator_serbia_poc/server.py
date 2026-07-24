@@ -79,10 +79,14 @@ PERFORMANCE_DIR = ROOT / "performance_logs" / STATE_SUFFIX
 RECORDED_RUNS_DIR = ROOT / "recorded_runs" / STATE_SUFFIX
 SAVED_QUESTIONS_DIR = ROOT / "saved_questions" / STATE_SUFFIX
 INVESTIGATIONS_DIR = ROOT / "investigations" / STATE_SUFFIX
+WORKSTREAMS_DIR = ROOT / "workstreams" / STATE_SUFFIX
 TERMINAL_STATUSES = {"completed", "failed", "cancelled"}
 EVENT_ID_PATTERN = re.compile(r"\b(?:REC-(?:V2-)?\d{6}|LOC-(?:V2-)?\d{3})\b")
 SAVED_QUESTION_ID_PATTERN = re.compile(r"^[A-Za-z0-9_.-]+$")
 INVESTIGATION_ID_PATTERN = re.compile(r"^[A-Za-z0-9_.-]+$")
+WORKSTREAM_ID_PATTERN = re.compile(r"^ws_[A-Za-z0-9_.-]+$")
+WORKSTREAM_STATUSES = {"active", "paused", "completed", "archived"}
+PARTICIPANT_KINDS = {"human", "agent"}
 ACTIVE_RUN_STARTED_AT = None
 ACTIVE_RUN_STARTED_AT_BY_AUDIT: dict[str, datetime] = {}
 APP_BUILD = f"serbia-poc-{DATASET_VERSION}"
@@ -892,6 +896,226 @@ def list_investigation_memory_metadata() -> list[dict]:
             continue
         items.append(investigation_memory_metadata(payload))
     return sorted(items, key=lambda item: str(item.get("updated_at_utc") or ""), reverse=True)
+
+
+def workstream_path(workstream_id: str) -> Path:
+    if not WORKSTREAM_ID_PATTERN.fullmatch(workstream_id or ""):
+        raise ValueError("Invalid workstream id")
+    path = (WORKSTREAMS_DIR / f"{workstream_id}.json").resolve()
+    if WORKSTREAMS_DIR.resolve() not in path.parents:
+        raise ValueError("Invalid workstream path")
+    return path
+
+
+def normalize_workstream_text(value: Any, field: str, limit: int, required: bool = False) -> str:
+    text = compact_text(value, limit)
+    if required and not text:
+        raise ValueError(f"Missing {field}")
+    return text
+
+
+def normalize_starting_source(value: Any) -> dict | None:
+    if value in (None, ""):
+        return None
+    if not isinstance(value, dict):
+        raise ValueError("Invalid starting_source")
+    kind = normalize_workstream_text(value.get("kind"), "starting_source kind", 80, required=True)
+    reference_id = normalize_workstream_text(
+        value.get("reference_id"), "starting_source reference_id", 240, required=True
+    )
+    label = normalize_workstream_text(value.get("label"), "starting_source label", 240)
+    return {"kind": kind, "reference_id": reference_id, "label": label}
+
+
+def normalize_participants(value: Any) -> list[dict]:
+    if value is None:
+        return []
+    if not isinstance(value, list):
+        raise ValueError("Invalid participants")
+    participants: list[dict] = []
+    seen: set[str] = set()
+    for raw in value[:20]:
+        if not isinstance(raw, dict):
+            raise ValueError("Invalid participant")
+        participant_id = normalize_workstream_text(raw.get("participant_id"), "participant_id", 120, required=True)
+        if participant_id in seen:
+            raise ValueError("Duplicate participant_id")
+        kind = normalize_workstream_text(raw.get("kind"), "participant kind", 20, required=True)
+        if kind not in PARTICIPANT_KINDS:
+            raise ValueError("Invalid participant kind")
+        participants.append({
+            "participant_id": participant_id,
+            "kind": kind,
+            "display_name": normalize_workstream_text(raw.get("display_name"), "participant display_name", 160),
+            "role": normalize_workstream_text(raw.get("role"), "participant role", 160),
+        })
+        seen.add(participant_id)
+    return participants
+
+
+def normalize_assignments(value: Any, participant_ids: set[str]) -> list[dict]:
+    if value is None:
+        return []
+    if not isinstance(value, list):
+        raise ValueError("Invalid assignments")
+    assignments: list[dict] = []
+    seen: set[str] = set()
+    for index, raw in enumerate(value[:30], start=1):
+        if not isinstance(raw, dict):
+            raise ValueError("Invalid assignment")
+        assignment_id = normalize_workstream_text(
+            raw.get("assignment_id") or f"assignment-{index}", "assignment_id", 120, required=True
+        )
+        if assignment_id in seen:
+            raise ValueError("Duplicate assignment_id")
+        owner_id = normalize_workstream_text(raw.get("owner_id"), "assignment owner_id", 120, required=True)
+        if owner_id not in participant_ids:
+            raise ValueError("Assignment owner is not a participant")
+        assignments.append({
+            "assignment_id": assignment_id,
+            "owner_id": owner_id,
+            "responsibility": normalize_workstream_text(
+                raw.get("responsibility"), "assignment responsibility", 1200, required=True
+            ),
+            "status": "active",
+        })
+        seen.add(assignment_id)
+    return assignments
+
+
+def normalize_workstream_request(request: dict, existing: dict | None = None) -> dict:
+    existing = existing or {}
+    investigation_id = str(request.get("investigation_id", existing.get("investigation_id") or "")).strip()
+    if not INVESTIGATION_ID_PATTERN.fullmatch(investigation_id):
+        raise ValueError("Invalid investigation id")
+    title = normalize_workstream_text(request.get("title", existing.get("title")), "title", 240, required=True)
+    objective = normalize_workstream_text(
+        request.get("objective", existing.get("objective")), "objective", 4000, required=True
+    )
+    status = normalize_workstream_text(request.get("status", existing.get("status") or "active"), "status", 30)
+    if status not in WORKSTREAM_STATUSES or status == "archived" and existing.get("status") != "archived":
+        raise ValueError("Invalid workstream status")
+    participants = normalize_participants(request.get("participants", existing.get("participants") or []))
+    assignments = normalize_assignments(
+        request.get("assignments", existing.get("assignments") or []),
+        {item["participant_id"] for item in participants},
+    )
+    return {
+        "investigation_id": investigation_id,
+        "title": title,
+        "objective": objective,
+        "status": status,
+        "starting_source": normalize_starting_source(
+            request.get("starting_source", existing.get("starting_source"))
+        ),
+        "participants": participants,
+        "assignments": assignments,
+    }
+
+
+def write_workstream(payload: dict) -> dict:
+    WORKSTREAMS_DIR.mkdir(parents=True, exist_ok=True)
+    path = workstream_path(payload["workstream_id"])
+    tmp_path = path.with_suffix(".json.tmp")
+    tmp_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    tmp_path.replace(path)
+    return payload
+
+
+def create_workstream(request: dict) -> dict:
+    normalized = normalize_workstream_request(request)
+    now = utc_now_iso()
+    workstream_id = f"ws_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}_{secrets.token_hex(4)}"
+    return write_workstream({
+        "schema_version": 1,
+        "workstream_id": workstream_id,
+        **normalized,
+        "artifacts": [],
+        "activity": [],
+        "attention_requests": [],
+        "created_at_utc": now,
+        "updated_at_utc": now,
+        "archived_at_utc": None,
+    })
+
+
+def load_workstream(workstream_id: str) -> dict | None:
+    path = workstream_path(workstream_id)
+    if not path.exists():
+        return None
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8-sig"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    if not isinstance(payload, dict) or payload.get("workstream_id") != workstream_id:
+        return None
+    return payload
+
+
+def workstream_metadata(payload: dict) -> dict:
+    return {
+        "workstream_id": payload.get("workstream_id"),
+        "investigation_id": payload.get("investigation_id"),
+        "title": payload.get("title"),
+        "objective": payload.get("objective"),
+        "status": payload.get("status"),
+        "participant_count": len(payload.get("participants") or []),
+        "assignment_count": len(payload.get("assignments") or []),
+        "created_at_utc": payload.get("created_at_utc"),
+        "updated_at_utc": payload.get("updated_at_utc"),
+        "archived_at_utc": payload.get("archived_at_utc"),
+    }
+
+
+def list_workstreams(investigation_id: str) -> list[dict]:
+    if not INVESTIGATION_ID_PATTERN.fullmatch(investigation_id or ""):
+        raise ValueError("Invalid investigation id")
+    if not WORKSTREAMS_DIR.exists():
+        return []
+    items: list[dict] = []
+    for path in WORKSTREAMS_DIR.glob("ws_*.json"):
+        payload = load_workstream(path.stem)
+        if payload and payload.get("investigation_id") == investigation_id:
+            items.append(workstream_metadata(payload))
+    return sorted(items, key=lambda item: str(item.get("updated_at_utc") or ""), reverse=True)
+
+
+def update_workstream(workstream_id: str, request: dict) -> dict | None:
+    existing = load_workstream(workstream_id)
+    if existing is None:
+        return None
+    if existing.get("status") == "archived":
+        raise ValueError("Archived workstream cannot be updated")
+    requested_investigation_id = request.get("investigation_id")
+    if requested_investigation_id is not None and str(requested_investigation_id).strip() != existing.get("investigation_id"):
+        raise ValueError("Workstream investigation cannot be changed")
+    normalized = normalize_workstream_request(request, existing)
+    payload = {
+        **existing,
+        **normalized,
+        "schema_version": 1,
+        "workstream_id": workstream_id,
+        "artifacts": normalize_memory_list(existing.get("artifacts")),
+        "activity": normalize_memory_list(existing.get("activity")),
+        "attention_requests": normalize_memory_list(existing.get("attention_requests")),
+        "updated_at_utc": utc_now_iso(),
+    }
+    return write_workstream(payload)
+
+
+def archive_workstream(workstream_id: str) -> dict | None:
+    existing = load_workstream(workstream_id)
+    if existing is None:
+        return None
+    if existing.get("status") == "archived":
+        return existing
+    now = utc_now_iso()
+    return write_workstream({
+        **existing,
+        "status": "archived",
+        "updated_at_utc": now,
+        "archived_at_utc": now,
+    })
 
 
 def saved_question_metadata(payload: dict) -> dict:
@@ -2222,6 +2446,25 @@ class Handler(SimpleHTTPRequestHandler):
                 return
             self.send_json(200, result)
             return
+        if path.path == "/api/workstreams":
+            investigation_id = (parse_qs(path.query).get("investigation_id") or [""])[0]
+            try:
+                self.send_json(200, {"workstreams": list_workstreams(investigation_id)})
+            except ValueError as exc:
+                self.send_json(400, {"error": str(exc)})
+            return
+        if path.path.startswith("/api/workstreams/"):
+            workstream_id = unquote(path.path[len("/api/workstreams/"):])
+            try:
+                result = load_workstream(workstream_id)
+            except ValueError as exc:
+                self.send_json(400, {"error": str(exc)})
+                return
+            if result is None:
+                self.send_json(404, {"error": "Workstream not found"})
+            else:
+                self.send_json(200, result)
+            return
         if path.path == "/api/recorded-questions":
             self.send_json(200, {"questions": recorded_questions(), "replay_delay_ms": 2000})
             return
@@ -2248,6 +2491,33 @@ class Handler(SimpleHTTPRequestHandler):
 
     def do_POST(self):
         path = urlparse(self.path).path
+        if path == "/api/workstreams":
+            try:
+                length = int(self.headers.get("Content-Length", "0"))
+                if length > 1_000_000:
+                    self.send_json(413, {"error": "Workstream payload too large"})
+                    return
+                request = json.loads(self.rfile.read(length).decode("utf-8-sig"))
+                if not isinstance(request, dict):
+                    raise ValueError("Invalid workstream payload")
+                self.send_json(201, create_workstream(request))
+            except ValueError as exc:
+                self.send_json(400, {"error": str(exc)})
+            except Exception as exc:
+                self.send_json(502, {"error": str(exc)})
+            return
+        if path.startswith("/api/workstreams/") and path.endswith("/archive"):
+            workstream_id = unquote(path[len("/api/workstreams/"):-len("/archive")].rstrip("/"))
+            try:
+                archived = archive_workstream(workstream_id)
+            except ValueError as exc:
+                self.send_json(400, {"error": str(exc)})
+                return
+            if archived is None:
+                self.send_json(404, {"error": "Workstream not found"})
+            else:
+                self.send_json(200, archived)
+            return
         if path == "/api/saved-question":
             try:
                 length = int(self.headers.get("Content-Length", "0"))
@@ -2334,6 +2604,26 @@ class Handler(SimpleHTTPRequestHandler):
 
     def do_PUT(self):
         path = urlparse(self.path).path
+        if path.startswith("/api/workstreams/"):
+            workstream_id = unquote(path[len("/api/workstreams/"):])
+            try:
+                length = int(self.headers.get("Content-Length", "0"))
+                if length > 1_000_000:
+                    self.send_json(413, {"error": "Workstream payload too large"})
+                    return
+                request = json.loads(self.rfile.read(length).decode("utf-8-sig"))
+                if not isinstance(request, dict):
+                    raise ValueError("Invalid workstream payload")
+                updated = update_workstream(workstream_id, request)
+                if updated is None:
+                    self.send_json(404, {"error": "Workstream not found"})
+                else:
+                    self.send_json(200, updated)
+            except ValueError as exc:
+                self.send_json(400, {"error": str(exc)})
+            except Exception as exc:
+                self.send_json(502, {"error": str(exc)})
+            return
         if path != "/api/investigation-memory":
             self.send_error(404)
             return

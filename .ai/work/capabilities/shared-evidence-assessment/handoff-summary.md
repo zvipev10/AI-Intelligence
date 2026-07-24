@@ -23,7 +23,7 @@ The human Product owner approved the revised Phase 1 boundary and instructed imp
 
 ## Decisions still required
 
-Phase 1 decisions are recorded in `decisions.md` and `execution-plan.md`. Individual Investigation Memory item selection is explicitly deferred.
+Phase 1 decisions are recorded in `decisions.md` and `execution-plan.md`. Individual Investigation Memory item selection is explicitly deferred. Slice 1 persistence/API implementation is complete in `checkpoint-001.md`.
 
 Broader decisions still required:
 
@@ -34,8 +34,8 @@ Broader decisions still required:
 
 ## Next step
 
-Merge planning PR #24, create a Phase 1 implementation branch from updated `main`, and execute Slice 1 under issue #30. Stop for Development/Architecture and QA review after the persistence/API checkpoint.
+Review `checkpoint-001.md` and the Phase 1 implementation PR. Do not begin the minimal UI shell until Development/Architecture and QA approve the dedicated store and API boundary.
 
 ## Publishing
 
-Artifacts are published on `capability/shared-evidence-assessment` and linked from draft PR #24 and issues #25–#29.
+Planning PR #24 is merged. Slice 1 is on `capability/workstream-phase1` under issue #30 and is ready for a separate implementation PR.
