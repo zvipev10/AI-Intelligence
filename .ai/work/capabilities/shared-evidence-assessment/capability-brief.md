@@ -2,11 +2,13 @@
 
 ## Capability name
 
-Shared Evidence Assessment
+Persistent Target Validation with Staged Scenario Replay
 
 ## Capability slug
 
 `shared-evidence-assessment`
+
+The existing slug and issue tree are retained because this is a refinement of the same collaborative-artifact capability, not a separate capability.
 
 ## Parent issue
 
@@ -14,238 +16,185 @@ GitHub issue #25; local source: `issues/000-parent-capability.md`
 
 ## Current status
 
-See `status.md` for operational owner, blockers, and next action.
+Product direction is provisionally defined from the human discussion. AI-authored Product, Development, UX, and QA/Security reviews are ready for human review. Execution planning remains blocked until those reviews are approved.
 
 ## Product direction
 
-Build a persistent collaborative intelligence workspace in which humans and agents contribute to shared tasks and evolving artifacts, while every contribution, uncertainty, disagreement, and decision remains attributable and reviewable.
+Build a persistent collaborative intelligence workspace in which humans and agents jointly own tasks and evolving artifacts. Chat remains a place to discuss and redirect work, but it is not the system of record for the work.
 
-Every participating agent must also have a legible functional advantage: work it can perform at a scale, speed, consistency, or technical depth that the user cannot reasonably perform manually or should not have to perform alone.
+Every agent collaborator must expose a functional advantage: work it can perform at a scale, speed, consistency, or technical depth that the user cannot reasonably perform manually or should not have to perform alone.
 
 ## User problem
 
-The current product can route a prompt to an agent and present its answer, steps, and result layers, but the analytical work remains primarily conversational. A user cannot open one durable assessment, share responsibility for developing it with an agent, see how each contributor changed it, or distinguish an agent's proposed contribution from an accepted intelligence conclusion.
+The current product can answer follow-up messages and update filtered result layers, but continuity depends on the user prompting again and reconstructing meaning from chat. It does not demonstrate that an agent:
 
-The roster also describes roles without explaining the concrete work advantage each future agent provides.
+- owns an ongoing analytical responsibility;
+- notices material evidence when the evidence environment changes;
+- updates a durable artifact without waiting for another user prompt;
+- distinguishes its proposed interpretation from an accepted conclusion;
+- asks for human judgment at a precise unresolved decision.
 
-## Business goal
-
-Prove the collaborative-workspace direction with one durable, jointly maintained intelligence artifact that makes both human judgment and agent leverage visible.
-
-## Target users
-
-- Intelligence analysts developing an assessment from large volumes of raw reporting.
-- Reviewers who need to understand evidence, reasoning, uncertainty, and contribution history.
-- Specialist agents contributing bounded analytical work to a shared investigation.
+A demo based on a static dataset also risks pretending to be live intelligence unless the historical replay is explicit and reproducible.
 
 ## Proposed capability
 
-An analyst creates a **Shared Evidence Assessment** inside an investigation for one explicit intelligence question, hypothesis, or candidate object.
+An analyst opens an existing candidate target and starts a **Target Validation Workstream**. The workstream has:
 
-The assessment is both:
+- a persistent objective and scope;
+- a working assessment and explicit unresolved questions;
+- supporting, contradicting, and potentially related evidence;
+- agent-owned and human-owned next actions;
+- attributable revisions and decisions;
+- a visible historical replay clock in demo mode.
 
-- a shared task: it records the objective, contributors, current work, blockers, and next actions;
-- a shared artifact: it contains the working assessment, supporting evidence, contradicting evidence, alternatives, gaps, and contribution history.
+For the demo, the system plays a fixed historical scenario one stage at a time. Each stage makes only a defined subset of records available to both the UI and agent tools. Advancing the scenario triggers Moshe to re-evaluate the workstream automatically. Moshe may add proposed evidence, revise his working interpretation, identify a conflict, or request a bounded human decision. He may not silently accept the target or conceal prior interpretations.
 
-For the first slice, the analyst can invite Moshe to contribute. Moshe does not merely return a chat answer. He performs a bounded evidence pass and adds reviewable proposed contributions to the assessment.
+This turns a stale dataset into an honest simulation of changing evidence while demonstrating persistent agent responsibility.
 
-The analyst can add evidence and notes, correct scope, accept or reject individual agent contributions, revise the working assessment, and request another bounded pass. Moshe can identify gaps, propose follow-up tasks, and revise his contribution in response to review.
+## Concrete demo scenario
 
-The artifact always preserves who contributed what and whether a contribution is proposed, accepted, rejected, superseded, or unresolved.
+### Anchor target
 
-## Why Moshe provides a functional advantage
+`TGT-D4DC7A7EBE02` — the candidate roadblock north of Gazivoda associated with NATO regional reserve forces.
 
-For this capability, Moshe's advantage is not personality or fluent explanation. It is the ability to:
+The target is suitable because it already has a coherent three-record evidence chain, a plausible hard negative involving another force at the same location, later movement reporting, and a later cluster whose relationship to the original object is genuinely ambiguous.
 
-- search and correlate the 14,800-record V2.1 corpus repeatedly;
-- discover candidate evidence beyond the records already visible to the analyst;
-- compare source families and test source independence consistently;
-- detect possible duplicates and competing object interpretations;
-- preserve raw record references and structured provenance;
-- repeat the same bounded evaluation after the analyst changes the scope or adds evidence.
+### Scenario stages
 
-The analyst should not have to manually scan thousands of records, reproduce deterministic fusion checks, or maintain cross-reference bookkeeping. The analyst remains essential for intent, contextual interpretation, correction, prioritization, and acceptance.
+| Stage | Simulated time / evidence release | Expected collaborative behavior |
+|---|---|---|
+| 0 — Open workstream | Baseline includes `REC-V2-006772`, `REC-V2-012725`, and `REC-V2-010155`; the candidate target already exists. `REC-V2-011567` is available as a same-place, different-entity challenge. | Analyst starts validation from the target. Moshe inventories the evidence, warns that three visible source groups do not prove three independent underlying sources, and records the different-entity report as contradicting or confounding evidence. |
+| 1 — Movement update | Release `REC-V2-007576` at 19:14:21Z: UAV reporting of the same entity/location/object class, approximately 20 personnel, moving east. | Moshe re-evaluates without a new prompt, links the record as a possible evolution of the target, updates the workstream, and marks the prior static-location interpretation stale or revised. |
+| 2 — Later checkpoint cluster | Release `REC-V2-011027`, `REC-V2-006585`, and `REC-V2-008550` from 23:25:58Z through 01:19:16Z: approximately 21 personnel and later withdrawal west. | Moshe detects a coherent later cluster but cannot establish whether it is the same evolving roadblock or a second roadblock. He creates two alternatives, explains the evidence for each, and requests a human identity judgment. |
+| 3 — Human resolution | No hidden evidence is released. | Analyst chooses “same evolving object,” “separate object,” or “insufficient evidence,” adds rationale, or assigns a follow-up. Moshe updates the artifact around that decision while preserving the rejected alternative and uncertainty. |
 
-## Agent value contract
+Evaluator-only truth labels must never be exposed to the runtime or user. They may be used only by QA to verify that the staged record manifest is correctly assembled.
 
-Every agent exposed as a collaborator must eventually declare:
+## Moshe's functional advantage
 
-| Contract field | Meaning |
+Moshe provides value that is materially different from follow-up chat:
+
+- repeatedly searches and correlates a corpus much larger than a user should scan manually;
+- performs the same validation checks after every evidence release;
+- keeps the evidence-to-claim graph and raw references current;
+- checks apparent corroboration for duplicate or shared-source risk;
+- detects competing object interpretations and changes over time;
+- owns the monitoring task and requests attention only when human judgment or authority is needed.
+
+The analyst provides intent, contextual interpretation, responsibility for identity decisions, correction, prioritization, and acceptance.
+
+## Agent value contract for the first slice
+
+| Contract field | Moshe |
 |---|---|
-| Functional advantage | The work the agent performs that the user should not have to do manually. |
-| Required inputs | The minimum task, artifact, and context needed to work reliably. |
-| Produced contribution | The structured change the agent can make to shared work. |
-| Evidence and provenance | How the contribution can be inspected and traced. |
-| Limits | What the agent cannot establish or should not decide. |
-| Authority | What it may propose, modify, or finalize without human action. |
-| Completion signal | How the workspace knows the contribution is complete, blocked, or stale. |
+| Functional advantage | Continuous, repeatable corpus-scale target validation and provenance bookkeeping. |
+| Required inputs | Target, workstream objective, visible replay stage, existing artifact state, and permitted record tools. |
+| Produced contribution | Proposed evidence links, assessment revisions, alternatives, gaps, and attention requests. |
+| Evidence and provenance | Stable raw record references, timestamps, source metadata, and contribution history. |
+| Limits | Cannot prove underlying source independence from visible metadata; cannot decide ambiguous physical identity; cannot use unreleased or evaluator-only data. |
+| Authority | May add and revise proposed agent work; may mark its own conclusions stale; may not accept the target, overwrite human decisions, or advance the scenario. |
+| Completion signal | Current for replay stage, needs human decision, blocked, failed, or stale after stage/context change. |
 
-The first Moshe value contract should be visible from the assessment invitation/assignment flow, not hidden in system documentation.
+## Primary user flow
 
-## Core user flow
+1. The analyst opens `TGT-D4DC7A7EBE02` in the target bank.
+2. The analyst selects **Start validation workstream**; the product creates a persistent artifact with a scoped default objective derived from the target.
+3. The workspace shows the target, current evidence, workstream status, replay stage/time, contributor responsibilities, and Moshe's value and limits.
+4. Moshe performs the baseline pass and adds attributable proposed findings.
+5. The presenter or analyst selects **Advance scenario**.
+6. The newly released record becomes visible everywhere it is permitted, and Moshe automatically starts one bounded re-evaluation.
+7. The artifact shows what changed, why it changed, and whether attention is required. Chat may explain or redirect the work but does not contain the only copy of the update.
+8. At the ambiguity stage, Moshe requests one explicit human decision with alternatives and evidence.
+9. The analyst decides, defers, or assigns follow-up work. The workstream preserves the decision and prior alternative.
+10. **Reset scenario** restores the deterministic demo baseline without mutating the underlying target database.
 
-1. From an investigation, the analyst creates an assessment and states the intelligence question or hypothesis.
-2. The analyst optionally attaches existing layers, records, saved memory, or an attack-target candidate as starting context.
-3. The workspace shows the shared artifact with the analyst as a contributor and no implied agent work yet.
-4. The analyst invites Moshe and sees his functional advantage, required inputs, permissions, and expected output.
-5. Moshe performs one bounded contribution run and updates his task state from working to completed, blocked, or needs review.
-6. Proposed evidence, gaps, alternatives, and assessment changes appear inside the artifact with Moshe attribution and raw references.
-7. The analyst accepts, rejects, edits, comments on, or requests revision of individual contributions.
-8. The artifact retains the decision and contribution history rather than replacing prior states silently.
-9. The analyst may mark the assessment reviewed when the required evidence and review conditions are satisfied.
+## Context model
+
+Context is layered and promoted deliberately:
+
+- **Investigation context:** broad shared mission and saved constraints.
+- **Workstream context:** objective, scope, responsibilities, status, and unresolved questions.
+- **Artifact context:** accepted/proposed evidence, assessment revisions, alternatives, and decisions.
+- **Agent run context:** temporary retrieval and reasoning state for one bounded pass.
+
+Agent run context is not durable by default. Only attributable contributions promoted into the artifact persist. Broader investigation context may be shared by other workstreams and team members without forcing all details into one memory blob.
 
 ## MVP scope
 
-- Create one Shared Evidence Assessment within the active investigation.
-- Support an explicit intelligence question or hypothesis as its objective.
-- Attach selected existing layers/records or a target candidate as initial context.
-- Show human and agent contributors with distinct identity and status.
-- Invite Moshe for one bounded evidence contribution at a time.
-- Display Moshe's functional advantage and limits before assignment.
-- Store structured supporting evidence, contradicting evidence, alternatives, gaps, and working assessment.
-- Mark each contribution as proposed, accepted, rejected, superseded, or unresolved.
-- Preserve attribution, timestamps, raw references, and review decisions.
-- Allow analyst-authored contributions and review actions.
-- Persist and reopen the assessment within its investigation.
-- Surface whether Moshe is working, blocked, complete, or awaiting review.
+- One demo-only scenario manifest anchored to `TGT-D4DC7A7EBE02`.
+- Start, advance one stage, and reset controls with a visible simulated time and demo label.
+- One persistent target-validation workstream.
+- Moshe as the only agent collaborator.
+- Automatic, bounded Moshe re-evaluation after a successful stage advance.
+- Structured evidence, alternatives, working assessment, gaps, and attention requests.
+- Proposed, human-decided, superseded, stale, and unresolved contribution states.
+- Human decision among the three identity outcomes.
+- Attribution, timestamps, raw references, stage provenance, and revision history.
+- Visibility enforcement across UI retrieval and all agent/MCP retrieval paths.
+- Deterministic reset without modifying the source event corpus or production target row.
 
 ## Non-goals
 
-- A generic project-management system.
-- Multiple new agent runtimes in the first slice.
+- A general scenario authoring studio.
+- Live ingestion or claims that the replay is real-time intelligence.
+- Multiple simultaneous scenarios or multiple agent collaborators.
 - Autonomous multi-agent planning or delegation.
-- Real-time multi-user collaboration.
-- Authentication, organizational roles, or production authorization.
-- Automatic acceptance of agent conclusions.
-- Full report authoring or publication workflow.
-- Continuous background monitoring.
-- Replacing the current chat, map, timeline, table, target bank, or investigation-memory experiences.
+- Real-time multi-user co-editing.
+- Production identity, authorization, or organization roles.
+- Automatic target acceptance or production target-bank mutation.
+- Continuous background monitoring outside an active demo scenario.
+- Establishing true source independence when lineage data is unavailable.
 
 ## Acceptance criteria
 
-- An assessment survives page reload and investigation switching.
-- The assessment objective, contributors, task state, evidence sections, working assessment, and review state are visible without reconstructing them from chat.
-- The analyst can understand Moshe's specific functional advantage and limits before inviting him.
-- Moshe's run produces structured contributions to the assessment rather than only a chat response.
-- Agent-proposed content is visually and semantically distinct from analyst-accepted content.
-- The analyst can accept, reject, edit, or request revision of individual agent contributions.
-- Supporting and contradicting evidence retain raw record references and provenance.
-- A rejected or superseded contribution remains in history.
-- Moshe cannot silently finalize the assessment or erase human contributions.
-- The existing investigation, chat, result-layer, memory, and target-bank flows continue to work.
-
-## Edge cases
-
-- The agent finds no relevant evidence.
-- The attached context is too broad, missing, stale, or references a closed layer.
-- Supporting and contradicting evidence point to the same raw record family.
-- The agent discovers that the objective combines multiple possible real-world objects.
-- The analyst edits the objective while an agent contribution is running.
-- A contribution run fails or times out after adding no changes.
-- The analyst rejects every proposed contribution.
-- The same record is proposed more than once across revision runs.
-- An accepted contribution becomes stale after the artifact objective changes.
-- The artifact is reopened when Moshe's runtime is unavailable.
+- The scenario clearly identifies itself as a historical simulation and displays current replay time/stage.
+- Before release, future-stage records cannot be retrieved through UI, raw-record APIs, semantic search, fusion, or any Moshe tool.
+- Starting from the target creates or reopens one durable validation workstream without requiring an artificial assessment statement.
+- Advancing a stage atomically updates replay visibility and schedules exactly one bounded Moshe re-evaluation.
+- Moshe's update appears in the shared artifact without a new user prompt and identifies what changed.
+- The later cluster results in explicit alternatives and a bounded human decision request rather than a fabricated identity conclusion.
+- Human decisions and rationale are attributable and cannot be overwritten by Moshe.
+- Prior and superseded interpretations remain reviewable.
+- Reset is deterministic and does not mutate the event corpus or target-bank record.
+- Failure, timeout, refresh, or duplicate advance cannot corrupt accepted human work or expose future records.
+- Existing non-demo investigation, chat, layers, memory, and target-bank behavior remains unchanged when replay mode is inactive.
 
 ## Technical constraints
 
-- Reuse the existing investigation identity, Moshe routing boundary, typed result pipeline, raw references, and target evidence primitives where feasible.
-- Do not treat current browser-local member records as authenticated identities.
-- Persist structured assessment state server-side; do not store full duplicated source rows in the artifact.
-- Store stable record/layer/target references and refetch display data through constrained APIs.
-- Agent writes must be additive or revision-based and auditable; no silent destructive overwrite.
-- Keep evaluator-only V2.1 truth outside runtime and assessment data.
-- Production authorization and data isolation require architecture/security review before real-user release.
+- Replay visibility is a data-access boundary, not a prompt instruction. The UI server and every MCP retrieval path must resolve the same current scenario state.
+- Existing process-global event indexes and semantic search can expose future records unless made visibility-aware.
+- The simplest first slice is one explicitly demo-global scenario state. This must be isolated, prominently labeled, access-controlled as appropriate for the environment, and resettable. Per-user replay requires a larger request-context design.
+- Scenario state and workstream state must be separate from investigation memory and the target database.
+- Agent contributions must be additive or revision-based, auditable, and protected against stale runs.
+- Only one scenario-advance job may run at a time. A run must bind to a scenario revision and be rejected or marked stale if the stage changes.
+- VM memory and process topology constrain additional long-lived workers; prefer bounded reuse of the existing Moshe gateway.
+- Evaluator-only truth remains outside runtime.
 
-## UX notes
+## UX principles
 
-- The assessment should feel like a shared working surface, not an agent transcript embedded in a card.
-- Contributions should appear in the relevant artifact section, with activity history available separately.
-- Agent status must distinguish working, blocked, awaiting review, and completed.
-- Review controls should operate on meaningful contributions, not require accepting an entire answer at once.
-- The functional-advantage explanation should be concise and task-specific.
-- Disagreement and contradicting evidence must remain first-class, not visually demoted as errors.
+- Lead with the workstream and evolving artifact, not a transcript.
+- Make the simulated clock and released-versus-future boundary unmistakable.
+- Show a compact “what changed” diff after each stage.
+- Separate agent proposals from human decisions through labels, visual treatment, and permissions.
+- Treat uncertainty, contradictory evidence, and deferred decisions as valid states.
+- Notify the analyst only for material updates, blockers, failures, or required judgment.
+- Keep chat available for discussion and redirection, with durable outcomes promoted to the workstream.
 
-## QA notes
+## Key risks
 
-- Validate persistence, attribution, contribution-state transitions, and immutable history.
-- Validate that agent failure cannot corrupt or partially overwrite accepted human work.
-- Validate raw-reference integrity and duplicate handling.
-- Validate stale objective/context behavior.
-- Validate RTL layout and accessible status/review controls.
-- Regress existing chat, Moshe routing, investigation memory, layers, filters, and attack-target catalog behavior.
+- Hidden records may leak through one overlooked retrieval or semantic-search path.
+- A global demo state can affect concurrent users or processes.
+- Automatic agent runs can duplicate, race, or apply to the wrong stage.
+- The UI may still feel like chat plus a status card if artifact changes are not first-class.
+- Users may interpret source-group counts as proven independence.
+- A deterministic script may feel theatrical unless the agent's evidence-linked changes remain inspectable and honest.
+- Static/local identities cannot support production-grade authorization.
 
-## Risks
+## Required reviews and gate
 
-- “Joint ownership” may be implemented as superficial co-author labels without genuinely shared, editable work.
-- Too many contribution states could make the artifact difficult to scan.
-- Reusing investigation memory directly may blur curated memory with live collaborative artifact state.
-- Agent-generated task proposals could create noise without clear attention rules.
-- Users may infer that accepted evidence automatically makes the working assessment correct.
-- Current lack of authentication limits identity and authorization claims.
+- Product: approve the start-from-target flow, agent/human authority, demo-global replay boundary, and decision semantics.
+- Development/Architecture: approve visibility enforcement, state model, stale-run protection, and process integration.
+- UX: approve the workstream layout, staged reveal, change presentation, and attention states.
+- QA/Security: approve leakage tests, concurrency/recovery invariants, and demo access boundary.
 
-## Open questions
-
-1. Should the first assessment start from a free intelligence question, an existing target candidate, or support both?
-2. Can Moshe directly revise his own proposed contribution, or must each pass create a new revision?
-3. What minimum review action changes a contribution from proposed to accepted?
-4. Can the analyst edit an agent contribution directly, or should editing create a separate human-authored revision?
-5. When the objective changes, which accepted contributions become stale automatically?
-6. Is “reviewed” sufficient for MVP, or is a separate “accepted intelligence” state required?
-7. Where should assessment attention requests appear in the existing workspace?
-
-## Missing inputs
-
-- Product decision on the assessment starting object.
-- Product decision on review/acceptance semantics.
-- UX definition for artifact layout, contribution comparison, and attention states.
-- Developer review of persistence, revision, and agent-write boundaries.
-- QA/security review of immutable history, permissions, and failure recovery.
-
-## Required reviewers
-
-- Product: objective, joint-ownership semantics, review authority, and MVP boundary.
-- Development/Architecture: assessment schema, persistence, revision model, and Moshe contribution contract.
-- UX: shared artifact flow, contribution states, disagreement, and attention management.
-- QA: integrity, state transitions, regressions, and recovery.
-- Security: agent write permissions and future human identity/authorization boundary.
-
-## Required child issues
-
-- [ ] Product review
-- [ ] Developer/architecture review
-- [ ] UX review
-- [ ] QA/security review
-- [ ] Execution planning
-
-## Proposed execution checkpoints
-
-1. Product review of the shared artifact and agent value contract.
-2. Developer/architecture review of assessment persistence and revision semantics.
-3. UX and QA/security review of contribution, disagreement, and approval states.
-4. Human-approved execution plan.
-5. Slice 1: persistent analyst-authored assessment shell.
-6. Slice 2: bounded Moshe contribution and attribution.
-7. Slice 3: contribution review, revision history, and recovery validation.
-8. Final product/UX/QA acceptance.
-
-## Handoff to developer
-
-Questions for developer:
-
-- Which existing investigation-memory and target-bank primitives can be reused without coupling distinct state models?
-- What minimal assessment and contribution schemas preserve attribution and revision history?
-- How should a bounded Moshe contribution run write proposed changes atomically?
-- How can stale runs be rejected when the analyst changes the objective or attached context?
-- Which APIs can refetch referenced records without persisting full source rows?
-- What authorization boundary should be designed now even though MVP identity remains local/static?
-
-Expected developer output:
-
-- feasibility notes
-- likely affected files/services
-- implementation options
-- recommended approach
-- technical risks
-- test strategy
-- proposed execution slices
+No `execution-plan.md` or product implementation should be created until these reviews are human-approved.

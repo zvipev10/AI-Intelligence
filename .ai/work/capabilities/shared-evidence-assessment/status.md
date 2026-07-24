@@ -2,74 +2,67 @@
 
 ## Capability
 
-Shared Evidence Assessment
+Persistent Target Validation with Staged Scenario Replay
 
 ## Current phase
 
-Capability definition and Product review
+Role-review gate
 
 ## Overall status
 
-Draft - pending human Product review
+Draft reviews prepared — pending human approval
+
+## Accepted direction captured
+
+- The product direction is a collaborative workspace where humans and agents jointly own tasks and artifacts.
+- Every agent must provide a concrete functional advantage.
+- The first experience starts from an existing candidate target, not an unprompted assessment form.
+- The demo uses an explicitly labeled historical replay.
+- `TGT-D4DC7A7EBE02` is the proposed anchor.
 
 ## Who needs to act now
 
-| Role | Status | Required action | Due before |
-|---|---|---|---|
-| Product | Review needed | Confirm the capability direction, starting object, joint-ownership semantics, and review authority. | Role enrichment |
-| Development/Architecture | Pending | Review persistence, revision history, atomic agent contributions, and reuse boundaries. | Execution planning |
-| UX | Pending | Define the shared artifact, contribution comparison, disagreement, and attention experience. | Execution planning |
-| QA | Pending | Define state-transition, provenance, corruption-recovery, and regression coverage. | Execution planning |
-| Security | Pending | Review agent write authority and future human identity boundary. | Execution planning |
-
-## Latest change since previous review
-
-Created the initial proposal around two accepted directions: a persistent collaborative human-agent workspace, and explicit functional advantages for every agent collaborator.
+| Role | Status | Required action |
+|---|---|---|
+| Product | Human approval needed | Confirm start-from-target, human decision authority, scenario scope, and MVP boundary in `product-review.md`. |
+| Development/Architecture | Human approval needed | Review the AI-authored feasibility recommendation in `developer-review.md`. |
+| UX | Human approval needed | Review the AI-authored flow and state model in `ux-review.md`. |
+| QA/Security | Human approval needed | Review the leakage, integrity, concurrency, and recovery gates in `qa-review.md`. |
 
 ## Current blockers
 
-- Product has not selected whether the MVP assessment begins from a free question, target candidate, or both.
-- Product has not defined the transition from proposed contribution to reviewed or accepted intelligence.
+- Required role reviews are not yet human-approved.
+- Demo-global versus per-user scenario scope must be explicitly accepted; the draft recommends demo-global for the first slice.
+- The exact workstream persistence schema and runtime trigger contract require architecture approval.
 
 ## Current risks
 
-- Joint ownership could degrade into chat attribution without shared artifact state.
-- The assessment may become too complex if contribution and review states are not tightly scoped.
-- Current static member identity cannot support production authorization claims.
+- Future evidence may leak through retrieval paths not covered by replay filtering.
+- Global replay state may interfere with concurrent demo users.
+- Automatic reevaluation may race with repeated stage changes.
+- The experience may regress into chat if artifact-level changes are not primary.
 
 ## Next expected artifact
 
-Human Product review recorded in `product-review.md`, followed by developer/architecture review. No execution plan or product code should be created before these gates.
+Human decisions recorded in the four role-review files. Only after approval should `execution-plan.md` be created.
 
-## Parent issue
+## Parent and child issues
 
-GitHub issue #25; local source: `issues/000-parent-capability.md`
-
-## Child issues
-
-| Issue | Role | Purpose | Status | Blocking? |
-|---|---|---|---|---|
-| GitHub #26; `issues/010-product-review.md` | Product | Approve the product model and close MVP semantics. | Pending | Yes |
-| GitHub #27; `issues/020-developer-architecture-review.md` | Development/Architecture | Define feasible schemas, APIs, and revision/write boundaries. | Pending | Yes |
-| GitHub #28; `issues/030-ux-review.md` | UX | Define collaborative artifact flows and states. | Pending | Yes |
-| GitHub #29; `issues/040-qa-security-review.md` | QA/Security | Define integrity, permissions, recovery, and regression gates. | Pending | Yes |
+| Issue | Role | Status | Blocking? |
+|---|---|---|---|
+| #25 | Parent capability | Open | — |
+| #26 | Product | Draft review ready; human approval pending | Yes |
+| #27 | Development/Architecture | Draft review ready; human approval pending | Yes |
+| #28 | UX | Draft review ready; human approval pending | Yes |
+| #29 | QA/Security | Draft review ready; human approval pending | Yes |
 
 ## Artifact links
 
 - Capability brief: `capability-brief.md`
-- Decisions: not created; no capability decision accepted yet
-- Product review: pending
-- Developer review: pending
-- UX review: pending
-- QA review: pending
-- Execution plan: blocked by role reviews
-- Latest checkpoint: not started
+- Product review: `product-review.md`
+- Developer review: `developer-review.md`
+- UX review: `ux-review.md`
+- QA/Security review: `qa-review.md`
+- Execution plan: blocked by role approvals
+- Checkpoint: not started
 - Handoff: not started
-
-## Gate checklist
-
-- [x] Current owner is explicit.
-- [x] Required action is explicit.
-- [x] Blockers are separated from risks.
-- [x] Next artifact is explicit.
-- [x] Parent and child issue links are current as local drafts.

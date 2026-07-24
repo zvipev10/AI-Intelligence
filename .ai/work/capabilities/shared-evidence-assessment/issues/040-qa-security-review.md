@@ -1,10 +1,10 @@
-# QA/Security Review - Shared Evidence Assessment
+# QA/Security Review - Scenario Replay and Workstream Integrity
 
 GitHub issue: #29; parent: #25
 
 ## Purpose
 
-Define integrity, provenance, permissions, recovery, and regression requirements for shared human-agent artifact writes.
+Approve future-record leakage prevention, replay concurrency, artifact integrity, recovery, and regression gates.
 
 ## Owner role
 
@@ -13,16 +13,16 @@ QA / Security
 ## Inputs
 
 - `../capability-brief.md`
-- Approved Product review
-- Developer/architecture draft when available
+- `../qa-review.md`
+- Developer/architecture draft
 
 ## Required action
 
-Define state-transition tests, immutable-history expectations, raw-reference integrity, duplicate/stale contribution behavior, partial-write recovery, agent permission boundaries, and regression coverage.
+Review the proposed leakage matrix, concurrency and stale-run invariants, artifact history, demo access boundary, accessibility, and regression coverage.
 
 ## Expected output
 
-`qa-review.md` with security gates and an executable validation strategy.
+Human approval or requested changes recorded in `../qa-review.md`.
 
 ## Blocking relationship
 
@@ -30,7 +30,7 @@ Blocks execution planning and implementation authorization.
 
 ## Completion criteria
 
-- Contribution-state and revision invariants are testable.
-- Failure and recovery behavior are defined.
-- Agent write boundaries are reviewable.
-- Existing product regression surface is covered.
+- Every data-access path has a future-record leakage test.
+- Stage/run concurrency and recovery behavior are testable.
+- Human decision and artifact-history invariants are protected.
+- Demo access caveats and existing-product regressions are covered.

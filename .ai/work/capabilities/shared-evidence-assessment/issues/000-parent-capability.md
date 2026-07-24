@@ -1,18 +1,18 @@
-# [Capability] Shared Evidence Assessment
+# [Capability] Persistent Target Validation with Staged Scenario Replay
 
 GitHub issue: #25
 
 ## Capability
 
-Create a persistent assessment that humans and agents jointly develop through attributable, reviewable contributions.
+Demonstrate a persistent human-agent validation workstream by replaying historical evidence around a real candidate target in deterministic stages.
 
 ## Current phase
 
-Capability definition and Product review
+Role-review gate
 
 ## Overall status
 
-Draft - pending human Product review
+Draft role reviews ready - pending human approval
 
 ## Operational status
 
@@ -20,26 +20,26 @@ See `.ai/work/capabilities/shared-evidence-assessment/status.md`.
 
 ## User problem
 
-Agent work currently arrives mainly as conversation and result layers. Analysts cannot jointly maintain one durable assessment with an agent, review contribution-level changes, or see the functional advantage the agent brings before assigning work.
+Follow-up chat can update answers and layers, but it does not show an agent owning an ongoing validation task, reacting autonomously to changed evidence, or maintaining a durable shared artifact.
 
 ## MVP scope
 
-- Persistent Shared Evidence Assessment inside an investigation.
-- Human and Moshe contributors.
-- One bounded Moshe evidence contribution at a time.
-- Structured supporting/contradicting evidence, alternatives, gaps, and working assessment.
-- Proposed/accepted/rejected/superseded/unresolved contribution states.
-- Attribution, raw references, review decisions, and revision history.
-- Visible Moshe functional advantage and limits before invitation.
+- Start a persistent validation workstream from `TGT-D4DC7A7EBE02`.
+- Explicit historical replay with a visible simulated clock.
+- Deterministic staged evidence release enforced across UI and agent tools.
+- Automatic bounded Moshe reevaluation after each advance.
+- Structured evidence, alternatives, gaps, human decisions, and history.
+- Deterministic reset without source-corpus or target mutation.
 
 ## Acceptance criteria
 
-- [ ] Assessment state survives reload and investigation switching.
-- [ ] Human and agent contributions remain attributable and reviewable.
-- [ ] Moshe contributes structured evidence work, not only a chat response.
-- [ ] Moshe's concrete functional advantage and limits are visible before assignment.
-- [ ] Rejected and superseded contributions remain in history.
-- [ ] Existing investigation, memory, layer, and target-bank behavior does not regress.
+- [ ] Future-stage records cannot leak through any retrieval path.
+- [ ] Workstream state survives reload and agent runs remain revision-bound.
+- [ ] Moshe updates the artifact after stage advance without a new prompt.
+- [ ] Ambiguous identity becomes a bounded human decision.
+- [ ] Human decisions and prior interpretations remain attributable.
+- [ ] Replay reset is deterministic and does not mutate source data.
+- [ ] Existing non-replay behavior does not regress.
 
 ## Child tasks
 
@@ -57,10 +57,10 @@ Agent work currently arrives mainly as conversation and result layers. Analysts 
 
 - Capability brief: `.ai/work/capabilities/shared-evidence-assessment/capability-brief.md`
 - Status: `.ai/work/capabilities/shared-evidence-assessment/status.md`
-- Decisions: pending
-- Developer review: pending
-- UX review: pending
-- QA review: pending
+- Product review: `.ai/work/capabilities/shared-evidence-assessment/product-review.md`
+- Developer review: `.ai/work/capabilities/shared-evidence-assessment/developer-review.md`
+- UX review: `.ai/work/capabilities/shared-evidence-assessment/ux-review.md`
+- QA review: `.ai/work/capabilities/shared-evidence-assessment/qa-review.md`
 - Execution plan: pending
 - Checkpoints: pending
 - Handoff: pending

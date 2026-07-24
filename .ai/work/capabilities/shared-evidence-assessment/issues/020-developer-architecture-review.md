@@ -1,10 +1,10 @@
-# Developer/Architecture Review - Shared Evidence Assessment
+# Developer/Architecture Review - Staged Scenario Replay
 
 GitHub issue: #27; parent: #25
 
 ## Purpose
 
-Define a feasible persistence, API, revision, and bounded agent-write model.
+Approve a feasible replay visibility boundary, shared state, workstream persistence, and bounded automatic agent-run model.
 
 ## Owner role
 
@@ -13,16 +13,16 @@ Development / Architecture
 ## Inputs
 
 - `../capability-brief.md`
-- Approved Product review
-- Existing investigation memory, Moshe routing, target bank, and typed-layer implementation
+- `../developer-review.md`
+- Existing UI event loading, MCP retrieval/indexes, Moshe routing, target bank, and semantic search
 
 ## Required action
 
-Evaluate schemas, API boundaries, atomic contribution writes, stale-run protection, raw-reference refetching, identity limitations, and implementation slices.
+Review the draft, enumerate all retrieval paths, choose global versus request-scoped replay state, and approve atomic stage/run revision behavior.
 
 ## Expected output
 
-`developer-review.md` with recommendation, risks, tests, and review gates.
+Human approval or requested changes recorded in `../developer-review.md`.
 
 ## Blocking relationship
 
@@ -30,7 +30,7 @@ Blocks execution planning.
 
 ## Completion criteria
 
-- Recommended persistence and revision model is explicit.
-- Agent-write authority and stale-run behavior are explicit.
-- Reuse versus separation from investigation memory is explicit.
-- Testable implementation slices are proposed.
+- Future-record visibility enforcement is complete and testable.
+- Persistence, concurrency, and stale-run behavior are explicit.
+- Workstream, memory, target DB, and replay-state boundaries are explicit.
+- Proposed implementation slices are feasible.

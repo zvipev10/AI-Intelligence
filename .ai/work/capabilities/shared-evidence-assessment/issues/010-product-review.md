@@ -1,10 +1,10 @@
-# Product Review - Shared Evidence Assessment
+# Product Review - Persistent Target Validation with Staged Scenario Replay
 
 GitHub issue: #26; parent: #25
 
 ## Purpose
 
-Confirm that the proposed capability is the correct first practical expression of the collaborative human-agent workspace and explicit agent-value principles.
+Approve the start-from-target, persistent-workstream, historical-replay, and human/agent authority model.
 
 ## Owner role
 
@@ -18,17 +18,11 @@ Product / human decision owner
 
 ## Required action
 
-Decide:
-
-1. Does the assessment begin from a free intelligence question, an existing target candidate, or both?
-2. What does joint ownership allow Moshe to change without per-change approval?
-3. Can analysts directly edit agent contributions, or must they create human revisions?
-4. Is the MVP terminal state `reviewed`, `accepted intelligence`, or both?
-5. Which agent contribution states are necessary for MVP?
+Review the recommendation in `../product-review.md`, especially demo-global replay scope, stage-control authority, and the three-outcome identity decision.
 
 ## Expected output
 
-`product-review.md` marked approved, changes requested, or pending further input.
+Human approval or requested changes recorded in `../product-review.md`.
 
 ## Blocking relationship
 
@@ -36,7 +30,7 @@ Blocks developer/architecture finalization and execution planning.
 
 ## Completion criteria
 
-- MVP starting object is explicit.
-- Human and agent ownership semantics are explicit.
-- Review/acceptance authority is explicit.
-- MVP/non-goal boundary is accepted.
+- Start-from-target flow and anchor target are accepted.
+- Human and agent authority are explicit.
+- Historical replay scope and honesty requirements are accepted.
+- Human identity-decision semantics and MVP boundary are accepted.
