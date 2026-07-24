@@ -34,6 +34,7 @@ class MosheProfileTests(unittest.TestCase):
         self.assertEqual(serbia["tools"]["include"], MOSHE_TOOLS)
         self.assertEqual(serbia["env"]["INTELLIGENCE_POC_AUDIT"], MOSHE_AUDIT_PATH)
         self.assertIn("create_target_candidate", MOSHE_TOOLS)
+        self.assertIn("present_requested_results", MOSHE_TOOLS)
         self.assertNotIn("execute_sql", MOSHE_TOOLS)
 
     def test_backend_merges_only_selected_agent_endpoint(self):

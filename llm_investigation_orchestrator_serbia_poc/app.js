@@ -996,7 +996,7 @@ function buildCatalogLayer(layer, rows = []) {
 }
 
 function buildTypedResultLayers(result = {}) {
-  return (result.layers || [])
+  return (result.requested_result_layers || [])
     .filter(layer => layer && Array.isArray(layer.rows) && layer.rows.length)
     .map(layer => ({
       dataId: layer.id || layerId(layer.kind, "result"),
@@ -1006,7 +1006,8 @@ function buildTypedResultLayers(result = {}) {
       items: layer.kind === "events"
         ? layer.rows.map(item => ({ ...item, date: new Date(item.timestamp_utc) }))
         : layer.rows,
-      capabilities: layer.capabilities || { table: true, map: false, timeline: false }
+      capabilities: layer.capabilities || { table: true, map: false, timeline: false },
+      preferredView: layer.recommended_view
     }));
 }
 
@@ -1073,7 +1074,7 @@ function addResultLayers({ sourceId, sourceLabel, preferredView = "map", layers 
       dataId,
       sourceId: cleanSourceId,
       sourceLabel,
-      preferredView,
+      preferredView: layer.preferredView || preferredView,
       color: nextLayerColor(),
       visible: true
     };
@@ -2119,17 +2120,20 @@ function finalizeAssistantMessage(answer, options = {}) {
     const actions = document.createElement("div");
     actions.className = "final-answer-actions";
     const finalId = finalSourceId(options.result);
+    const hasRequestedResults = buildTypedResultLayers(options.result).length > 0;
     actions.innerHTML = `
-      <button type="button" class="final-answer-show-btn layers-hidden" data-source-id="${escapeHtml(finalId)}" title="הצג תוצאות" aria-label="הצג תוצאות" aria-pressed="false">
+      ${hasRequestedResults ? `<button type="button" class="final-answer-show-btn layers-hidden" data-source-id="${escapeHtml(finalId)}" title="הצג תוצאות" aria-label="הצג תוצאות" aria-pressed="false">
         <span class="final-answer-show-label">הצג תוצאות</span>
-      </button>
+      </button>` : ""}
       <button type="button" class="final-answer-save-btn" ${options.result.saved_question_id ? "disabled" : ""}>${options.result.saved_question_id ? "נשמר" : "שמור הקלטה"}</button>
       <button type="button" class="final-answer-memory-btn" ${options.result.investigation_memory_summary_id ? "disabled" : ""}>${options.result.investigation_memory_summary_id ? "נשמר בזיכרון" : "שמור לזיכרון"}</button>
     `;
     const finalShowBtn = actions.querySelector(".final-answer-show-btn");
-    finalShowBtn.addEventListener("click", () => {
-      toggleFinalAnswerVisibility(options.result, options.prompt || "", finalShowBtn);
-    });
+    if (finalShowBtn) {
+      finalShowBtn.addEventListener("click", () => {
+        toggleFinalAnswerVisibility(options.result, options.prompt || "", finalShowBtn);
+      });
+    }
     actions.querySelector(".final-answer-save-btn").addEventListener("click", event => {
       saveResultQuestion(options.result, options.prompt || "", event.currentTarget);
     });
@@ -2142,7 +2146,7 @@ function finalizeAssistantMessage(answer, options = {}) {
     } else {
       answerBody.appendChild(actions);
     }
-    updateSourceVisibilityBtn(finalShowBtn);
+    if (finalShowBtn) updateSourceVisibilityBtn(finalShowBtn);
   }
   state.activeAssistantMessage = null;
   state.activeActivityList = null;
@@ -3070,14 +3074,15 @@ function applyAgentResult(result, prompt, options = {}) {
 
   const typedLayers = buildTypedResultLayers(result);
   if (typedLayers.length) {
+    const requestedView = typedLayers[0].preferredView || result.recommended_view || "map";
     const addedLayers = addResultLayers({
       sourceId: finalSourceId(result),
       sourceLabel: result.responding_agent === "moshe" ? "תשובת משה" : "תשובת הסוכן",
-      preferredView: result.recommended_view || "map",
+      preferredView: requestedView,
       layers: typedLayers
     });
     showResult("ממצאי הסוכן", `נוספו או רועננו ${addedLayers.length.toLocaleString("he-IL")} שכבות מתוך התשובה.`);
-    activateView(result.recommended_view || "map", { automatic: true, reason: result.view_reason || "נתונים מובנים בתשובת הסוכן" });
+    activateView(requestedView, { automatic: true, reason: result.view_reason || "נתונים שנבחרו כתשובה לבקשת המשתמש" });
     if (typedLayers.some(layer => layer.kind === "attack_targets")) {
       void refreshOpenAttackTargetCatalogLayer();
     }

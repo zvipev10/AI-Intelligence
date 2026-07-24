@@ -24,7 +24,7 @@ from agent_result_pipeline import (
     normalize_entity_layers,
     normalize_location_layers,
     normalize_map_locations,
-    normalize_attack_targets,
+    requested_result_layers_from_audit,
 )
 from agent_routing import AgentRouteRegistry, MOSHE_AGENT_ID
 
@@ -1356,6 +1356,9 @@ class HermesClient:
             elif tool in {"create_target_candidate", "update_target_candidate", "attach_target_evidence"}:
                 decision = f'משה מעדכן את {clue} לאחר בדיקות הכשירות והכפילויות.'
                 expected = "לקבל אישור קצר, מצב מעודכן ומזהים רלוונטיים."
+            elif tool == "present_requested_results":
+                decision = "הסוכן בוחר רק את הנתונים שעונים ישירות לבקשת המשתמש עבור כפתור הצג תוצאות."
+                expected = "לקבל שכבות מאומתות ללא ראיות תומכות או תוצאות ביניים."
             else:
                 decision = f'הסוכן משתמש ב-{clue} כדי לצמצם אי-ודאות ולהחליט על המשך החקירה.'
                 expected = "לקבל פלט שיאשר, ישלול או ימקד את כיוון החקירה."
@@ -1619,6 +1622,10 @@ class HermesClient:
                     outcome = f'הצירוף נכשל: {result.get("error") or "שגיאה לא מפורטת"}.' + identifiers_text(args, result)
                 else:
                     outcome = f'הרשומות צורפו; למטרה משויכות כעת {candidate.get("evidence_count", len(candidate.get("evidence") or []))} רשומות.' + identifiers_text(result)
+            elif tool == "present_requested_results":
+                layers = result.get("requested_result_layers") or []
+                action = f'בחירת {len(args.get("layers") or [])} שכבות שעונות ישירות לבקשת המשתמש.'
+                outcome = f'אומתו {len(layers)} שכבות להצגה סופית בלבד.'
             else:
                 action = f'קלט: {json.dumps(public_args(args), ensure_ascii=False)}.'
                 outcome = f'פלט: {json.dumps(result, ensure_ascii=False)}.'
@@ -2063,6 +2070,12 @@ class HermesClient:
             "אין להשתמש בכלי מערכת, קבצים, רשת או shell, ואין לבקש אישור לכלים."
             " מאגר המטרות תומך באיתור ישיר לפי מזהה רשומה גולמית באמצעות search_target_candidates עם record_id."
             " הכלי זמין למשה בלבד; הסוכן הכללי אינו טוען שביצע חיפוש כזה ואינו מנתב למשה ללא אזכור מפורש של @משה."
+            " לפני התשובה הסופית, כאשר הבקשה כוללת נתונים שניתן להציג, חובה לקרוא פעם אחת ל-present_requested_results."
+            " בחר שכבה אחת כברירת מחדל, ורק את הרשומות שעונות ישירות למה שהמשתמש ביקש."
+            " בחר כמה שכבות רק אם המשתמש ביקש במפורש כמה סוגי תוצאה."
+            " לעולם אל תכלול בשכבות הסופיות ראיות תומכות, תוצאות ביניים, פתרון מיקומים/ישויות, בדיקות כפילות, מועמדים שנדחו או פלט כלי שלא נדרש כתוצאה."
+            " אם הבקשה הסופית היא הסבר בלבד ואין אובייקט נתונים להצגה, אל תקרא לכלי."
+            " כפתור הצג תוצאות מבוסס רק על בחירה זו; אל תנסה לפצות עליה באמצעות רשימת מזהים בטקסט."
         )
         if responding_agent == MOSHE_AGENT_ID:
             instructions += (
@@ -2236,18 +2249,11 @@ class HermesClient:
                     "slowest_tool": performance["tools"].get("slowest_tool"),
                 }
                 performance_log_path = write_performance_log(run_id, performance, prompt)
-                target_rows = normalize_attack_targets(
+                requested_layers = requested_result_layers_from_audit(
                     audit_records,
                     locations=LOCATIONS,
                     entities=load_ui_entity_db(),
                 )
-                result_layers = ([{
-                    "id": "attack-targets:candidates",
-                    "label": "מועמדי מטרות",
-                    "kind": "attack_targets",
-                    "rows": target_rows,
-                    "capabilities": {"table": True, "map": True, "timeline": False},
-                }] if target_rows else [])
                 return build_agent_result({
                     "run_id": run_id,
                     "answer": clean_output,
@@ -2259,7 +2265,8 @@ class HermesClient:
                     "events": events,
                     "usage": status.get("usage", {}),
                     "performance_log": performance_log_path.name,
-                }, responding_agent=responding_agent, session_id=session_id, mission_run_id=mission_run_id, layers=result_layers)
+                }, responding_agent=responding_agent, session_id=session_id, mission_run_id=mission_run_id,
+                    requested_result_layers=requested_layers)
             time.sleep(1)
         raise TimeoutError("Hermes investigation exceeded 480 seconds")
 

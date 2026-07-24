@@ -44,6 +44,12 @@ class MemberUiRegressionTests(unittest.TestCase):
         self.assertIn("function applyAgentResult(result, prompt, options = {})", self.app)
         self.assertNotIn("function applyHermesResult(", self.app)
 
+    def test_show_results_uses_only_explicit_requested_result_layers(self):
+        self.assertIn("return (result.requested_result_layers || [])", self.app)
+        self.assertNotIn("return (result.layers || [])", self.app)
+        self.assertIn("const hasRequestedResults = buildTypedResultLayers(options.result).length > 0;", self.app)
+        self.assertIn('${hasRequestedResults ? `<button type="button" class="final-answer-show-btn', self.app)
+
     def test_csv_parser_only_opens_quotes_at_the_start_of_a_field(self):
         self.assertIn("let atFieldStart = true;", self.app)
         self.assertIn("else if (char === '\"' && atFieldStart)", self.app)

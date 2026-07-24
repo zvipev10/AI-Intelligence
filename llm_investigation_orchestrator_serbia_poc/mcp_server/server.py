@@ -2374,6 +2374,108 @@ def with_step_bridge(schema: dict[str, Any]) -> dict[str, Any]:
 TARGET_BANK = TargetBank()
 
 
+def _prior_successful_audit_records() -> list[dict[str, Any]]:
+    if not AUDIT_PATH.exists():
+        return []
+    records = []
+    for line in AUDIT_PATH.read_text(encoding="utf-8").splitlines():
+        try:
+            record = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(record, dict) and not record.get("is_error"):
+            records.append(record)
+    return records
+
+
+def _selected_aggregate_rows(group_by: str, row_ids: list[str]) -> list[dict[str, Any]]:
+    available: dict[str, dict[str, Any]] = {}
+    for record in _prior_successful_audit_records():
+        if record.get("tool") != "aggregate_events":
+            continue
+        result = record.get("result") or {}
+        if result.get("group_by") != group_by:
+            continue
+        for row in result.get("groups") or []:
+            if not isinstance(row, dict):
+                continue
+            key = str(row.get("key") or row.get("label") or "").strip()
+            label = str(row.get("label") or row.get("key") or "").strip()
+            if key:
+                available[key] = row
+            if label:
+                available[label] = row
+    missing = [row_id for row_id in row_ids if row_id not in available]
+    if missing:
+        raise ValueError(f"aggregate result IDs were not returned by an earlier aggregate_events call: {', '.join(missing)}")
+    return [{**available[row_id], "group_by": group_by} for row_id in row_ids]
+
+
+def present_requested_results(arguments: dict[str, Any]) -> dict[str, Any]:
+    selections = arguments.get("layers") or []
+    if not selections:
+        raise ValueError("at least one requested-result layer is required")
+    requested_layers = []
+    for index, selection in enumerate(selections, start=1):
+        kind = str(selection.get("kind") or "").strip()
+        row_ids = list(dict.fromkeys(
+            str(value or "").strip()
+            for value in selection.get("ids") or []
+            if str(value or "").strip()
+        ))
+        if not row_ids:
+            raise ValueError(f"layer {index} requires at least one ID")
+        label = str(selection.get("label") or "").strip()
+        if not label:
+            raise ValueError(f"layer {index} requires a user-facing label")
+        view = str(selection.get("view") or "").strip()
+        if kind == "events":
+            missing = [row_id for row_id in row_ids if row_id not in EVENT_BY_ID]
+            if missing:
+                raise ValueError(f"unknown event IDs: {', '.join(missing)}")
+            rows = [public_event(EVENT_BY_ID[row_id]) for row_id in row_ids]
+            result_kind = "events"
+            capabilities = {"table": True, "map": True, "timeline": True}
+        elif kind == "locations":
+            missing = [row_id for row_id in row_ids if row_id not in LOCATION_PRESENTATIONS]
+            if missing:
+                raise ValueError(f"unknown location IDs: {', '.join(missing)}")
+            rows = [LOCATION_PRESENTATIONS[row_id] for row_id in row_ids]
+            result_kind = "location_metadata"
+            capabilities = {"table": True, "map": True, "timeline": False}
+        elif kind == "entities":
+            missing = [row_id for row_id in row_ids if row_id not in ENTITY_PRESENTATIONS]
+            if missing:
+                raise ValueError(f"unknown entity IDs: {', '.join(missing)}")
+            rows = [ENTITY_PRESENTATIONS[row_id] for row_id in row_ids]
+            result_kind = "entity_metadata"
+            capabilities = {"table": True, "map": True, "timeline": False}
+        elif kind == "attack_targets":
+            TARGET_BANK.initialize()
+            rows = [TARGET_BANK.get_candidate(row_id) for row_id in row_ids]
+            result_kind = "attack_targets"
+            capabilities = {"table": True, "map": True, "timeline": False}
+        elif kind == "aggregate_groups":
+            group_by = str(selection.get("group_by") or "").strip()
+            if not group_by:
+                raise ValueError(f"aggregate layer {index} requires group_by")
+            rows = _selected_aggregate_rows(group_by, row_ids)
+            is_time = group_by in {"date", "hour"}
+            result_kind = "time_aggregation" if is_time else "group_aggregation"
+            capabilities = {"table": True, "map": False, "timeline": is_time}
+        else:
+            raise ValueError(f"unsupported requested-result kind: {kind}")
+        requested_layers.append({
+            "id": f"requested-result:{index}",
+            "label": label,
+            "kind": result_kind,
+            "rows": rows,
+            "capabilities": capabilities,
+            "recommended_view": view,
+        })
+    return {"requested_result_layers": requested_layers, "returned_layers": len(requested_layers)}
+
+
 def validate_target_references(candidate: dict[str, Any], evidence: list[dict[str, Any]] | None = None) -> None:
     location_id = str(candidate.get("location_id") or "").strip()
     if location_id not in LOCATIONS:
@@ -2574,6 +2676,36 @@ TARGET_EVIDENCE_SCHEMA = {
 
 
 TOOLS = [
+    {
+        "name": "present_requested_results",
+        "title": "Present only the requested results",
+        "description": "Final presentation-selection tool. Call once after analysis only when the user requested displayable data. Select only rows that directly answer the request; never include supporting evidence, intermediate searches, rejected candidates, duplicate checks, or other tool output. Canonical IDs are validated, and aggregate IDs must come from an earlier aggregate_events result in this run.",
+        "inputSchema": with_step_bridge({
+            "type": "object",
+            "properties": {
+                "layers": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 5,
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "kind": {"type": "string", "enum": ["events", "locations", "entities", "attack_targets", "aggregate_groups"]},
+                            "ids": {"type": "array", "items": {"type": "string", "minLength": 1}, "minItems": 1, "maxItems": MAX_LIMIT},
+                            "label": {"type": "string", "minLength": 1, "maxLength": 120},
+                            "view": {"type": "string", "enum": ["map", "timeline", "evidence"]},
+                            "group_by": {"type": "string", "description": "Required only for aggregate_groups and must match an earlier aggregate_events call."},
+                        },
+                        "required": ["kind", "ids", "label", "view"],
+                        "additionalProperties": False,
+                    },
+                },
+            },
+            "required": ["layers"],
+            "additionalProperties": False,
+        }),
+        "annotations": {"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": False},
+    },
     {
         "name": "prepare_target_candidate",
         "title": "Prepare a fused target candidate",
@@ -2979,6 +3111,7 @@ TOOLS = [
 ]
 
 TOOL_HANDLERS = {
+    "present_requested_results": present_requested_results,
     "prepare_target_candidate": prepare_target_candidate,
     "find_duplicate_target_candidates": find_duplicate_target_candidates,
     "search_target_candidates": search_target_candidates,

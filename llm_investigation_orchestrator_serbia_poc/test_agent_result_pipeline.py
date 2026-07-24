@@ -7,6 +7,7 @@ from agent_result_pipeline import (
     normalize_map_locations,
     normalize_attack_targets,
     normalize_typed_layers,
+    requested_result_layers_from_audit,
 )
 from server import HermesClient
 
@@ -43,6 +44,29 @@ class AgentResultPipelineTests(unittest.TestCase):
     def test_attack_target_is_a_shared_typed_layer(self):
         layers = normalize_typed_layers([{"kind": "attack_targets", "rows": [{"target_id": "TGT-1"}]}])
         self.assertEqual(layers[0]["kind"], "attack_targets")
+
+    def test_only_last_explicit_requested_result_selection_becomes_final_layers(self):
+        records = [
+            {"tool": "search_events", "result": {"event_ids": ["REC-SUPPORT"]}},
+            {"tool": "present_requested_results", "result": {"requested_result_layers": [
+                {"kind": "events", "rows": [{"event_id": "REC-OLD"}]},
+            ]}},
+            {"tool": "present_requested_results", "result": {"requested_result_layers": [
+                {"kind": "events", "rows": [{"event_id": "REC-REQUESTED"}]},
+            ]}},
+        ]
+        layers = requested_result_layers_from_audit(records)
+        self.assertEqual([row["event_id"] for row in layers[0]["rows"]], ["REC-REQUESTED"])
+        self.assertNotIn("REC-SUPPORT", str(layers))
+
+    def test_result_envelope_keeps_requested_layers_separate_from_legacy_layers(self):
+        result = build_agent_result(
+            {"answer": "ok"},
+            layers=[{"kind": "events", "rows": [{"event_id": "REC-SUPPORT"}]}],
+            requested_result_layers=[{"kind": "events", "rows": [{"event_id": "REC-REQUESTED"}]}],
+        )
+        self.assertEqual(result["layers"][0]["rows"][0]["event_id"], "REC-SUPPORT")
+        self.assertEqual(result["requested_result_layers"][0]["rows"][0]["event_id"], "REC-REQUESTED")
 
     def test_target_results_are_deduped_enriched_and_keep_full_evidence(self):
         records = [

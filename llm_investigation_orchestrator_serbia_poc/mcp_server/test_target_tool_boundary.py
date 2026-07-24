@@ -1,4 +1,5 @@
 import ast
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -119,6 +120,7 @@ class TargetToolBoundaryTests(unittest.TestCase):
     def test_general_deployment_allowlist_does_not_expose_target_writes(self):
         write_tools = {"create_target_candidate", "update_target_candidate", "attach_target_evidence"}
         self.assertTrue(write_tools.isdisjoint(general_deployment_tools()))
+        self.assertIn("present_requested_results", general_deployment_tools())
 
     def test_tool_schemas_do_not_expose_lifecycle_or_review_mutation(self):
         by_name = {item["name"]: item for item in server.TOOLS}
@@ -134,6 +136,53 @@ class TargetToolBoundaryTests(unittest.TestCase):
         search_tool = next(item for item in server.TOOLS if item["name"] == "search_target_candidates")
         self.assertIn("record_id", search_tool["inputSchema"]["properties"])
         self.assertIn("raw record ID", search_tool["description"])
+
+    def test_requested_result_tool_materializes_only_selected_canonical_rows(self):
+        event = server.EVENTS[0]
+        other = server.EVENTS[1]
+        result = server.present_requested_results({"layers": [{
+            "kind": "events",
+            "ids": [event["event_id"]],
+            "label": "Requested event",
+            "view": "timeline",
+        }]})
+        layer = result["requested_result_layers"][0]
+        self.assertEqual(layer["kind"], "events")
+        self.assertEqual([row["event_id"] for row in layer["rows"]], [event["event_id"]])
+        self.assertNotIn(other["event_id"], str(layer))
+
+    def test_requested_aggregate_rows_must_exist_in_prior_audit(self):
+        with tempfile.TemporaryDirectory() as directory:
+            previous = server.AUDIT_PATH
+            server.AUDIT_PATH = Path(directory) / "audit.jsonl"
+            server.AUDIT_PATH.write_text(json.dumps({
+                "tool": "aggregate_events",
+                "arguments": {"group_by": "source_type"},
+                "result": {
+                    "group_by": "source_type",
+                    "groups": [{"key": "news", "label": "חדשות", "count": 4}],
+                },
+                "is_error": False,
+            }, ensure_ascii=False) + "\n", encoding="utf-8")
+            try:
+                result = server.present_requested_results({"layers": [{
+                    "kind": "aggregate_groups",
+                    "ids": ["news"],
+                    "group_by": "source_type",
+                    "label": "Requested count",
+                    "view": "evidence",
+                }]})
+                self.assertEqual(result["requested_result_layers"][0]["rows"][0]["count"], 4)
+                with self.assertRaisesRegex(ValueError, "were not returned"):
+                    server.present_requested_results({"layers": [{
+                        "kind": "aggregate_groups",
+                        "ids": ["invented"],
+                        "group_by": "source_type",
+                        "label": "Bad",
+                        "view": "evidence",
+                    }]})
+            finally:
+                server.AUDIT_PATH = previous
 
     def test_admin_operations_are_not_mcp_handlers(self):
         for name in ("backup_target_bank", "reset_target_bank", "delete_target", "execute_sql"):

@@ -27,6 +27,7 @@ LOCAL_ROOT = Path(__file__).resolve().parent.parent
 LOCAL_CONFIG = LOCAL_ROOT / ".hermes-api.json"
 
 TOOLS = [
+    "present_requested_results",
     "classify_question_intent",
     "plan_next_investigation_step",
     "search_events",
