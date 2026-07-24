@@ -6,11 +6,11 @@ Collaborative Scenario Playback
 
 ## Current phase
 
-Phase 1 execution planning
+Phase 1 Slice 2 Product/UX definition
 
 ## Overall status
 
-Phase 1 authorized; planning PR must merge before implementation branch
+Slice 1 approved and ready to merge; Slice 2 chat-based workstream creation is under Product/UX definition
 
 ## Accepted direction captured
 
@@ -25,15 +25,14 @@ Phase 1 authorized; planning PR must merge before implementation branch
 
 | Role | Status | Required action |
 |---|---|---|
-| Product | Phase 1 approved | Review the Slice 1 checkpoint after persistence/API implementation. |
-| Development/Architecture | Review after Slice 1 | Review the dedicated store, schema, API, and atomicity. |
-| UX | Review before Slice 2 | Approve the minimal workstream UI shell. |
-| QA/Security | Review after Slice 1 | Validate persistence, input boundaries, and memory regressions. |
+| Product | Input in progress | Confirm the chat-based `מעקב` creation semantics and confirmation boundary. |
+| Development/Architecture | Slice 1 approved | No action until the approved Slice 2 flow is reviewed technically. |
+| UX | Review needed | Define the plus-menu `מעקב` flow, explicit layer attachment, confirmation, reopen, and error states. |
+| QA/Security | Slice 1 approved | No action until Slice 2 test planning. |
 
 ## Current blockers
 
-- Required role reviews are not yet human-approved.
-- PR #24 must merge before the Phase 1 implementation branch is created.
+- Slice 2 is gated on Product/UX approval of the chat-based creation flow.
 - Broader manifest, adapter, and trigger decisions remain deferred beyond Phase 1.
 
 ## Current risks
@@ -45,7 +44,7 @@ Phase 1 authorized; planning PR must merge before implementation branch
 
 ## Next expected artifact
 
-Merge planning PR #24, branch from updated `main`, then execute Slice 1 from `execution-plan.md` under issue #30.
+Focused Product/UX decision for the `מעקב` flow, followed by a Slice 2 execution issue and branch.
 
 ## Parent and child issues
 
@@ -53,10 +52,10 @@ Merge planning PR #24, branch from updated `main`, then execute Slice 1 from `ex
 |---|---|---|---|
 | #25 | Parent capability | Open | — |
 | #26 | Product | Draft review ready; human approval pending | Yes |
-| #27 | Development/Architecture | Draft review ready; human approval pending | Yes |
+| #27 | Development/Architecture | Phase 1 Slice 1 approved; broader review remains open | No |
 | #28 | UX | Draft review ready; human approval pending | Yes |
-| #29 | QA/Security | Draft review ready; human approval pending | Yes |
-| #30 | Phase 1 implementation | Approved scope; blocked on PR #24 merge | Yes |
+| #29 | QA/Security | Phase 1 Slice 1 approved; broader review remains open | No |
+| #30 | Phase 1 implementation | Slice 1 approved; PR #31 ready to merge | No |
 
 ## Artifact links
 
@@ -66,5 +65,5 @@ Merge planning PR #24, branch from updated `main`, then execute Slice 1 from `ex
 - UX review: `ux-review.md`
 - QA/Security review: `qa-review.md`
 - Execution plan: `execution-plan.md` (Phase 1 approved)
-- Checkpoint: not started
+- Latest checkpoint: `checkpoint-001.md`
 - Current handoff: `handoff-summary.md`

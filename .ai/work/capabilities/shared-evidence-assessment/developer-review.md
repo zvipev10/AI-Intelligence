@@ -2,7 +2,7 @@
 
 ## Status
 
-AI-authored draft — pending human Development/Architecture approval
+Phase 1 Slice 1 persistence/API boundary approved by the human Development/Architecture owner on 2026-07-24. Broader scenario-runtime recommendations remain pending.
 
 ## Feasibility
 
