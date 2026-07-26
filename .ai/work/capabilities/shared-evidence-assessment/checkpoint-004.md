@@ -16,7 +16,7 @@
 ## Validation
 
 - Python compilation passed for the server, result pipeline, artifact service, MCP server, and Moshe profile provisioning.
-- Main test discovery: 52 tests passed.
+- Main test discovery: 53 tests passed.
 - Focused MCP workstream-tool tests: 3 tests passed.
 - `git diff --check` passed.
 

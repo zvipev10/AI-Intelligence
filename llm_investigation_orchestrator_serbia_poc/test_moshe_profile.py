@@ -1,7 +1,6 @@
 import unittest
 import json
 from pathlib import Path
-from pathlib import Path
 from unittest.mock import patch
 
 import server

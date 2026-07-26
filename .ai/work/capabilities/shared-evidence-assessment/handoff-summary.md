@@ -17,7 +17,7 @@ Slice 1 persistence/API is merged. Slice 2 Moshe general-chat integration is imp
 
 ## Validation
 
-- 52 main Python tests passed.
+- 53 main Python tests passed.
 - 3 focused MCP tool tests passed.
 - Python compilation and `git diff --check` passed.
 
