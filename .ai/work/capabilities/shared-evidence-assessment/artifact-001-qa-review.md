@@ -2,7 +2,7 @@
 
 ## Status
 
-AI-authored recommendation — pending human QA/Security approval.
+Approved by the human owner on 2026-07-26 with the Product refinements recorded in this review.
 
 ## Highest-risk invariants
 

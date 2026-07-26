@@ -2,7 +2,7 @@
 
 ## Status
 
-AI-authored recommendation — pending human Development/Architecture approval.
+Approved by the human owner on 2026-07-26 with the Product refinements recorded in this review.
 
 ## Scope reviewed
 

@@ -6,11 +6,11 @@ Collaborative Scenario Playback
 
 ## Current phase
 
-Indication artifact role-review checkpoint
+Indication artifact execution planning
 
 ## Overall status
 
-Phase 1 is merged; Product approved the first shared artifact; artifact-specific Development/Architecture, UX, and QA draft recommendations are ready for human acceptance
+Phase 1 is merged; Product and all artifact-specific role reviews are approved; execution planning is next
 
 ## Accepted direction captured
 
@@ -26,14 +26,15 @@ Phase 1 is merged; Product approved the first shared artifact; artifact-specific
 | Role | Status | Required action |
 |---|---|---|
 | Product | Approved | No action. |
-| Development/Architecture | Approval needed | Accept or revise `artifact-001-developer-review.md`. |
-| UX | Approval needed | Accept or revise the Moshe-interpreted general-chat flow in `artifact-001-ux-review.md`. |
-| QA/Security | Approval needed | Accept or revise `artifact-001-qa-review.md`. |
+| Development/Architecture | Approved | No action before execution-plan review. |
+| UX | Approved | No action before execution-plan review. |
+| QA/Security | Approved | No action before execution-plan review. |
 
 ## Current blockers
 
 - No Phase 1 blocker remains.
-- Execution planning is blocked until the artifact-specific role reviews are ready.
+- No blocker remains for execution planning.
+- Product code remains blocked until the execution plan is reviewed.
 - Broader manifest, adapter, and trigger decisions remain deferred beyond Phase 1.
 
 ## Current risks
@@ -45,7 +46,7 @@ Phase 1 is merged; Product approved the first shared artifact; artifact-specific
 
 ## Next expected artifact
 
-Human acceptance or requested changes for the three artifact-specific role reviews.
+Execution plan for artifact persistence/API and Moshe-interpreted general-chat integration.
 
 ## Parent and child issues
 
@@ -59,9 +60,9 @@ Human acceptance or requested changes for the three artifact-specific role revie
 | #30 | Phase 1 persistence | Closed; PR #31 merged | No |
 | #32 | Phase 1 chat UX | Closed; PR #33 merged | No |
 | #35 | Target Assessment Lead Product definition | Approved; closes with PR #36 | No |
-| #37 | Artifact Development/Architecture review | Draft ready | Yes |
-| #38 | Artifact UX review | Draft ready | Yes |
-| #39 | Artifact QA/Security review | Draft ready | Yes |
+| #37 | Artifact Development/Architecture review | Approved; closes with PR #40 | No |
+| #38 | Artifact UX review | Approved; closes with PR #40 | No |
+| #39 | Artifact QA/Security review | Approved; closes with PR #40 | No |
 
 ## Artifact links
 

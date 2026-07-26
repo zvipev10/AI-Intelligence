@@ -66,4 +66,4 @@ The human Product owner approved the checkpoint and instructed implementation to
 
 ## Next step
 
-Product approved `artifact-001-target-assessment-lead.md` and requires all interaction through existing general chat interpreted by Moshe without predefined expressions or new modes. `REC-...` references supply indications; an optional `TGT-...` identifies an existing target under reassessment. Draft reviews now combine the artifact envelope/API with staged Moshe proposals and later-turn confirmation. They remain pending human acceptance. No execution plan or product code is authorized yet.
+Product and the artifact-specific Development/Architecture, UX, and QA reviews are approved. All interaction remains in existing general chat interpreted by Moshe without predefined expressions or new modes. `REC-...` references supply indications; an optional `TGT-...` identifies an existing target under reassessment. The next artifact is the execution plan; no product code is authorized until that plan is reviewed.
