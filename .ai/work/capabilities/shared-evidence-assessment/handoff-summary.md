@@ -66,4 +66,4 @@ The human Product owner approved the checkpoint and instructed implementation to
 
 ## Next step
 
-Product, role reviews, and `artifact-001-execution-plan.md` are approved. Slice 1 (#41), local artifact persistence/API, is authorized. Moshe/general-chat integration (#42) remains blocked until the Slice 1 Architecture/QA checkpoint is accepted.
+Slice 1 (#41) is implemented and accepted with all 48 Python tests passing. Merge PR #45, then begin Slice 2 (#42): bounded Moshe proposal/decision tools, general-chat handoff, staged proposal state, later-turn confirmation, and independent app-server persistence validation.
