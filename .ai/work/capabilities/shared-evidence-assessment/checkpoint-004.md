@@ -58,3 +58,10 @@ Deployed PR #46 head commit `28b35d4` to the demo VM using a state-preserving, f
 - VM UI server: contains the artifact service and confirmed-action bridge.
 - VM MCP server and Moshe profile: expose both workstream proposal/decision tools.
 - Rollback backup: `/opt/serbia-poc-ui-backups/workstream-slice2-20260726T182421Z`.
+
+Deployment correction:
+
+- The first scoped deployment omitted `index.html`, leaving the VM `+` menu without the already-implemented `מעקב` entry even though the new JavaScript was present.
+- The deployment contract now includes `index.html` and verifies both the rendered menu entry and the Slice 2 JavaScript.
+- The cache key was advanced to `app.js?v=112`.
+- Corrected deployment backup: `/opt/serbia-poc-ui-backups/workstream-slice2-20260726T184041Z`.
