@@ -36,3 +36,15 @@ None found in local validation.
 ## Recommendation
 
 Deploy to the demo VM and run one incomplete and one complete Moshe creation conversation before product acceptance.
+
+## VM deployment
+
+- Deployed commit `108f7b4` to the demo VM.
+- UI service: active.
+- Moshe gateway service: active.
+- Dataset: `v2.1`, 14,800 rows.
+- Public HTML uses `app.js?v=114` and `styles.css?v=114`.
+- Public UI contains the upper-bar `workstreamMenu`.
+- Public JavaScript contains `workstream_creation_requested` and no local pending-draft or creation-confirmation controls.
+- Deployed MCP server and Moshe profile expose `prepare_workstream_creation`.
+- Rollback backup: `/opt/serbia-poc-ui-backups/workstream-slice2-20260726T194238Z`.

@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import json
 import shlex
+import sys
 import time
 from pathlib import Path, PurePosixPath
 
@@ -97,6 +98,8 @@ def deploy(client) -> tuple[str, dict]:
 
 
 def main() -> int:
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")
     parser = argparse.ArgumentParser()
     parser.add_argument("--key", required=True, type=Path)
     args = parser.parse_args()

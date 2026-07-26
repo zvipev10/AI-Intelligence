@@ -10,7 +10,7 @@ Conversational workstream UX correction validation
 
 ## Overall status
 
-Checkpoint 005 corrections are implemented locally and require demo-environment validation
+Checkpoint 005 corrections are deployed; real Moshe clarification and completion conversations require product validation
 
 ## Accepted direction captured
 
