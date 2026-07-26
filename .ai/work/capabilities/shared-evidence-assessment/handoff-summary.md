@@ -66,4 +66,4 @@ The human Product owner approved the checkpoint and instructed implementation to
 
 ## Next step
 
-Product and all artifact-specific reviews are approved. `artifact-001-execution-plan.md` now defines the app-server/MCP boundary and two gated implementation slices: local artifact persistence/API (#41), then Moshe-interpreted general-chat integration (#42), followed by final validation (#43). No product code is authorized until the plan checkpoint is approved.
+Product, role reviews, and `artifact-001-execution-plan.md` are approved. Slice 1 (#41), local artifact persistence/API, is authorized. Moshe/general-chat integration (#42) remains blocked until the Slice 1 Architecture/QA checkpoint is accepted.

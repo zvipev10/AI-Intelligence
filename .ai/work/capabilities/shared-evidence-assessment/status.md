@@ -6,11 +6,11 @@ Collaborative Scenario Playback
 
 ## Current phase
 
-Indication artifact execution-plan checkpoint
+Indication artifact Slice 1 implementation
 
 ## Overall status
 
-Phase 1 and role reviews are complete; the indication artifact execution plan is ready for human approval before coding
+The execution plan is approved; Slice 1 artifact persistence/API implementation is authorized
 
 ## Accepted direction captured
 
@@ -25,15 +25,15 @@ Phase 1 and role reviews are complete; the indication artifact execution plan is
 
 | Role | Status | Required action |
 |---|---|---|
-| Product | Approval needed | Review Slice 2 behavior and accepted MVP assumptions. |
-| Development/Architecture | Approval needed | Review cross-runtime handoff, APIs, revisions, and slices. |
-| UX | Approval needed | Confirm chat-only behavior and no new interaction surface. |
-| QA/Security | Approval needed | Confirm slice gates and final validation coverage. |
+| Product | Approved | No action during Slice 1. |
+| Development/Architecture | Waiting for checkpoint | Review Slice 1 implementation after publication. |
+| UX | Approved | No action during backend-only Slice 1. |
+| QA/Security | Waiting for checkpoint | Review Slice 1 tests and persistence boundaries. |
 
 ## Current blockers
 
 - No Phase 1 blocker remains.
-- Product code is blocked until `artifact-001-execution-plan.md` is approved.
+- Slice 2 remains blocked until Slice 1 checkpoint acceptance.
 - Broader manifest, adapter, and trigger decisions remain deferred beyond Phase 1.
 
 ## Current risks
@@ -45,7 +45,7 @@ Phase 1 and role reviews are complete; the indication artifact execution plan is
 
 ## Next expected artifact
 
-Human approval or requested changes for `artifact-001-execution-plan.md`.
+Slice 1 implementation and checkpoint for issue #41.
 
 ## Parent and child issues
 
@@ -62,7 +62,7 @@ Human approval or requested changes for `artifact-001-execution-plan.md`.
 | #37 | Artifact Development/Architecture review | Approved; closes with PR #40 | No |
 | #38 | Artifact UX review | Approved; closes with PR #40 | No |
 | #39 | Artifact QA/Security review | Approved; closes with PR #40 | No |
-| #41 | Artifact persistence/API | Planned; blocked by plan approval | Yes |
+| #41 | Artifact persistence/API | In progress | Yes |
 | #42 | Moshe general-chat integration | Planned; blocked by Slice 1 acceptance | Yes |
 | #43 | Final MVP validation | Planned; blocked by Slices 1–2 | Yes |
 

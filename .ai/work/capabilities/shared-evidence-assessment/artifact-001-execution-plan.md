@@ -2,7 +2,7 @@
 
 ## Status
 
-Ready for human checkpoint review. Product, Development/Architecture, UX, and QA/Security prerequisites are approved. No product-code implementation is authorized until this plan is accepted.
+Approved by the human owner on 2026-07-26. Slice 1 implementation is authorized; later slices remain gated by their preceding checkpoints.
 
 ## Related work
 
@@ -235,12 +235,9 @@ Issue: #43
 - Explicit `@משה` remains the route to Moshe in general chat.
 - A staged proposal may be lost on refresh before confirmation; only accepted artifacts are durable in this MVP.
 
-## Checkpoint decision required
-
-Approve or revise:
+## Approved checkpoint decisions
 
 1. the structured cross-runtime handoff rather than direct MCP workstream writes;
 2. the two implementation slices and their stop points;
 3. the accepted non-durable pending-proposal limitation;
 4. retaining explicit `@משה` routing for the MVP.
-
