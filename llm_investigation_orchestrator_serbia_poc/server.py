@@ -27,6 +27,13 @@ from agent_result_pipeline import (
     normalize_attack_targets,
 )
 from agent_routing import AgentRouteRegistry, MOSHE_AGENT_ID
+from workstream_artifacts import (
+    ArtifactConflictError,
+    create_artifact,
+    get_artifact,
+    list_artifacts,
+    revise_artifact,
+)
 
 try:
     import paramiko
@@ -1116,6 +1123,42 @@ def archive_workstream(workstream_id: str) -> dict | None:
         "updated_at_utc": now,
         "archived_at_utc": now,
     })
+
+
+def artifact_id(prefix: str) -> str:
+    return f"{prefix}_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}_{secrets.token_hex(4)}"
+
+
+def resolve_workstream_event(layer_id: str, record_id: str) -> dict | None:
+    result = get_ui_layer_rows(layer_id)
+    if result is None:
+        return None
+    layer, rows = result
+    if layer.get("kind") != "events":
+        return None
+    return next((row for row in rows if row.get("record_id") == record_id), None)
+
+
+def resolve_workstream_target(target_id: str) -> dict | None:
+    result = get_ui_layer_rows(ATTACK_TARGET_CATALOG_LAYER_ID)
+    if result is None:
+        return None
+    _, rows = result
+    return next((row for row in rows if row.get("target_id") == target_id), None)
+
+
+def parse_artifact_api_path(path: str) -> tuple[str, str | None, bool] | None:
+    prefix = "/api/workstreams/"
+    if not path.startswith(prefix):
+        return None
+    parts = [unquote(part) for part in path[len(prefix):].split("/") if part]
+    if len(parts) == 2 and parts[1] == "artifacts":
+        return parts[0], None, False
+    if len(parts) == 3 and parts[1] == "artifacts":
+        return parts[0], parts[2], False
+    if len(parts) == 4 and parts[1] == "artifacts" and parts[3] == "revisions":
+        return parts[0], parts[2], True
+    return None
 
 
 def saved_question_metadata(payload: dict) -> dict:
@@ -2453,6 +2496,29 @@ class Handler(SimpleHTTPRequestHandler):
             except ValueError as exc:
                 self.send_json(400, {"error": str(exc)})
             return
+        artifact_route = parse_artifact_api_path(path.path)
+        if artifact_route is not None:
+            workstream_id, artifact_id_value, is_revisions = artifact_route
+            if is_revisions:
+                self.send_error(405)
+                return
+            try:
+                workstream = load_workstream(workstream_id)
+            except ValueError as exc:
+                self.send_json(400, {"error": str(exc)})
+                return
+            if workstream is None:
+                self.send_json(404, {"error": "Workstream not found"})
+                return
+            if artifact_id_value is None:
+                self.send_json(200, {"artifacts": list_artifacts(workstream)})
+                return
+            artifact = get_artifact(workstream, artifact_id_value)
+            if artifact is None:
+                self.send_json(404, {"error": "Artifact not found"})
+            else:
+                self.send_json(200, artifact)
+            return
         if path.path.startswith("/api/workstreams/"):
             workstream_id = unquote(path.path[len("/api/workstreams/"):])
             try:
@@ -2501,6 +2567,56 @@ class Handler(SimpleHTTPRequestHandler):
                 if not isinstance(request, dict):
                     raise ValueError("Invalid workstream payload")
                 self.send_json(201, create_workstream(request))
+            except ValueError as exc:
+                self.send_json(400, {"error": str(exc)})
+            except Exception as exc:
+                self.send_json(502, {"error": str(exc)})
+            return
+        artifact_route = parse_artifact_api_path(path)
+        if artifact_route is not None:
+            workstream_id, artifact_id_value, is_revisions = artifact_route
+            try:
+                length = int(self.headers.get("Content-Length", "0"))
+                if length > 1_000_000:
+                    self.send_json(413, {"error": "Artifact payload too large"})
+                    return
+                request = json.loads(self.rfile.read(length).decode("utf-8-sig"))
+                if not isinstance(request, dict):
+                    raise ValueError("Invalid artifact payload")
+                workstream = load_workstream(workstream_id)
+                if workstream is None:
+                    self.send_json(404, {"error": "Workstream not found"})
+                    return
+                now = utc_now_iso()
+                if artifact_id_value is None and not is_revisions:
+                    artifact = create_artifact(
+                        workstream,
+                        request,
+                        resolve_event=resolve_workstream_event,
+                        resolve_target=resolve_workstream_target,
+                        now=now,
+                        id_factory=artifact_id,
+                    )
+                    write_workstream(workstream)
+                    self.send_json(201, artifact)
+                    return
+                if artifact_id_value is not None and is_revisions:
+                    artifact = revise_artifact(
+                        workstream,
+                        artifact_id_value,
+                        request,
+                        resolve_event=resolve_workstream_event,
+                        now=now,
+                        id_factory=artifact_id,
+                    )
+                    write_workstream(workstream)
+                    self.send_json(200, artifact)
+                    return
+                self.send_error(405)
+            except ArtifactConflictError as exc:
+                self.send_json(409, {"error": str(exc), "current_revision": exc.current_revision})
+            except LookupError as exc:
+                self.send_json(404, {"error": str(exc)})
             except ValueError as exc:
                 self.send_json(400, {"error": str(exc)})
             except Exception as exc:

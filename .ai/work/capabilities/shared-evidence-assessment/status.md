@@ -6,11 +6,11 @@ Collaborative Scenario Playback
 
 ## Current phase
 
-Indication artifact Slice 1 implementation
+Indication artifact Slice 1 checkpoint
 
 ## Overall status
 
-The execution plan is approved; Slice 1 artifact persistence/API implementation is authorized
+Slice 1 artifact persistence/API is implemented and awaiting Development/Architecture and QA/Security acceptance
 
 ## Accepted direction captured
 
@@ -26,9 +26,9 @@ The execution plan is approved; Slice 1 artifact persistence/API implementation 
 | Role | Status | Required action |
 |---|---|---|
 | Product | Approved | No action during Slice 1. |
-| Development/Architecture | Waiting for checkpoint | Review Slice 1 implementation after publication. |
+| Development/Architecture | Review needed | Review `checkpoint-003.md` and the persistence/API contract. |
 | UX | Approved | No action during backend-only Slice 1. |
-| QA/Security | Waiting for checkpoint | Review Slice 1 tests and persistence boundaries. |
+| QA/Security | Review needed | Review `checkpoint-003.md`, tests, and mutation boundaries. |
 
 ## Current blockers
 
@@ -45,7 +45,7 @@ The execution plan is approved; Slice 1 artifact persistence/API implementation 
 
 ## Next expected artifact
 
-Slice 1 implementation and checkpoint for issue #41.
+Human Development/Architecture and QA/Security acceptance for `checkpoint-003.md`.
 
 ## Parent and child issues
 
@@ -62,7 +62,7 @@ Slice 1 implementation and checkpoint for issue #41.
 | #37 | Artifact Development/Architecture review | Approved; closes with PR #40 | No |
 | #38 | Artifact UX review | Approved; closes with PR #40 | No |
 | #39 | Artifact QA/Security review | Approved; closes with PR #40 | No |
-| #41 | Artifact persistence/API | In progress | Yes |
+| #41 | Artifact persistence/API | Implemented; checkpoint review pending | Yes |
 | #42 | Moshe general-chat integration | Planned; blocked by Slice 1 acceptance | Yes |
 | #43 | Final MVP validation | Planned; blocked by Slices 1–2 | Yes |
 
@@ -81,3 +81,4 @@ Slice 1 implementation and checkpoint for issue #41.
 - Artifact UX review: `artifact-001-ux-review.md`
 - Artifact QA/Security review: `artifact-001-qa-review.md`
 - Artifact execution plan: `artifact-001-execution-plan.md`
+- Latest checkpoint: `checkpoint-003.md`

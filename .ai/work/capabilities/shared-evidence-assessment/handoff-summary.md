@@ -66,4 +66,4 @@ The human Product owner approved the checkpoint and instructed implementation to
 
 ## Next step
 
-Product, role reviews, and `artifact-001-execution-plan.md` are approved. Slice 1 (#41), local artifact persistence/API, is authorized. Moshe/general-chat integration (#42) remains blocked until the Slice 1 Architecture/QA checkpoint is accepted.
+Slice 1 (#41) is implemented in the app server with a focused artifact service, validated `REC-...` evidence and optional read-only `TGT-...` subjects, optimistic revisions, append-only history, and additive APIs. All 48 Python tests pass. `checkpoint-003.md` requires Development/Architecture and QA/Security acceptance before Moshe/general-chat Slice 2 (#42) begins.
