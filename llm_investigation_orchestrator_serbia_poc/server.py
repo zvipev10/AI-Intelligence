@@ -1131,13 +1131,20 @@ def artifact_id(prefix: str) -> str:
 
 
 def resolve_workstream_event(layer_id: str, record_id: str) -> dict | None:
-    result = get_ui_layer_rows(layer_id)
-    if result is None:
+    event = next(
+        (
+            row for row in load_ui_events()
+            if (row.get("record_id") or row.get("event_id")) == record_id
+        ),
+        None,
+    )
+    if event is None:
         return None
-    layer, rows = result
-    if layer.get("kind") != "events":
-        return None
-    return next((row for row in rows if row.get("record_id") == record_id), None)
+    canonical = dict(event)
+    canonical["record_id"] = event.get("record_id") or event.get("event_id")
+    canonical["summary"] = event.get("summary") or event.get("event_summary") or ""
+    canonical["_canonical_layer_id"] = f"events:{event.get('source_type') or 'מקור לא ידוע'}"
+    return canonical
 
 
 def resolve_workstream_target(target_id: str) -> dict | None:
@@ -1205,7 +1212,6 @@ def apply_workstream_action(context: dict | None, action: Any) -> tuple[dict | N
     actor = {"participant_id": human["participant_id"], "kind": "human"}
     now = utc_now_iso()
     proposal_action = "send_to_assessment" if decision == "send_to_assessment" else proposal.get("action")
-    layer_id = str((workstream.get("starting_source") or {}).get("reference_id") or "")
     if proposal_action == "create":
         content = {
             "subject_reference": (
@@ -1217,7 +1223,6 @@ def apply_workstream_action(context: dict | None, action: Any) -> tuple[dict | N
                 {
                     "source_reference": {
                         "kind": "event_record",
-                        "layer_id": layer_id,
                         "record_id": item.get("record_id"),
                     },
                     "role": item.get("role"),
@@ -1252,7 +1257,7 @@ def apply_workstream_action(context: dict | None, action: Any) -> tuple[dict | N
                 raise ValueError("add_indication requires exactly one indication")
             item = indications[0]
             payload = {"indication": {
-                "source_reference": {"kind": "event_record", "layer_id": layer_id, "record_id": item.get("record_id")},
+                "source_reference": {"kind": "event_record", "record_id": item.get("record_id")},
                 "role": item.get("role"), "relevance": item.get("relevance"), "annotation": item.get("annotation"),
             }}
         artifact = revise_artifact(

@@ -153,6 +153,13 @@ class WorkstreamApiTests(unittest.TestCase):
         status, error = self.request("GET", "/api/workstreams/../escape")
         self.assertIn(status, {400, 404})
 
+    def test_workstream_can_be_created_without_starting_source(self):
+        payload = self.create_payload()
+        payload.pop("starting_source")
+        status, created = self.request("POST", "/api/workstreams", payload)
+        self.assertEqual(status, 201)
+        self.assertIsNone(created["starting_source"])
+
     def test_listing_is_scoped_to_investigation(self):
         first = self.create_payload()
         second = self.create_payload()

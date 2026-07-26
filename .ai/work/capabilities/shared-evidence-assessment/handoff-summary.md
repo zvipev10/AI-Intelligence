@@ -14,10 +14,13 @@ Slice 1 persistence/API is merged. Slice 2 Moshe general-chat integration is imp
 - distinct-later-turn confirmation;
 - app-server-owned, independently validated artifact creation and revision;
 - ordinary-chat success/conflict feedback with no new UX surface.
+- workstream creation without mandatory layer selection;
+- per-indication canonical source resolution and provenance;
+- full active-artifact summary when the workstream indicator returns the workstream to chat.
 
 ## Validation
 
-- 53 main Python tests passed.
+- 56 main Python tests passed.
 - 3 focused MCP tool tests passed.
 - Python compilation and `git diff --check` passed.
 

@@ -6,11 +6,11 @@ Collaborative Scenario Playback
 
 ## Current phase
 
-Indication artifact Slice 1 accepted
+Indication artifact Slice 2 checkpoint review
 
 ## Overall status
 
-Slice 1 artifact persistence/API is accepted and ready to merge; Slice 2 is authorized after merge
+Slice 2 is implemented in draft PR #46 and awaits Product, Development/Architecture, UX, and QA/Security approval
 
 ## Accepted direction captured
 
@@ -25,15 +25,15 @@ Slice 1 artifact persistence/API is accepted and ready to merge; Slice 2 is auth
 
 | Role | Status | Required action |
 |---|---|---|
-| Product | Approved | No action during Slice 1. |
-| Development/Architecture | Approved | No action until Slice 2 checkpoint. |
-| UX | Approved | No action during backend-only Slice 1. |
-| QA/Security | Approved | No action until Slice 2 checkpoint. |
+| Product | Review required | Review the amended layer-free flow and reopened artifact summary. |
+| Development/Architecture | Review required | Review canonical source resolution and persistence boundary. |
+| UX | Review required | Review the indicator-to-chat artifact summary. |
+| QA/Security | Review required | Review amended checkpoint and final-validation coverage. |
 
 ## Current blockers
 
 - No Phase 1 blocker remains.
-- No blocker remains for Slice 1 merge or Slice 2 start.
+- Slice 2 merge is blocked on checkpoint approval.
 - Broader manifest, adapter, and trigger decisions remain deferred beyond Phase 1.
 
 ## Current risks
@@ -45,7 +45,7 @@ Slice 1 artifact persistence/API is accepted and ready to merge; Slice 2 is auth
 
 ## Next expected artifact
 
-Merge Slice 1 and implement Slice 2 issue #42.
+Checkpoint 004 approval, then final validation issue #43.
 
 ## Parent and child issues
 
@@ -63,7 +63,7 @@ Merge Slice 1 and implement Slice 2 issue #42.
 | #38 | Artifact UX review | Approved; closes with PR #40 | No |
 | #39 | Artifact QA/Security review | Approved; closes with PR #40 | No |
 | #41 | Artifact persistence/API | Accepted; closes with PR #45 | No |
-| #42 | Moshe general-chat integration | Authorized after PR #45 merge | Yes |
+| #42 | Moshe general-chat integration | Implemented in draft PR #46; checkpoint review pending | Yes |
 | #43 | Final MVP validation | Planned; blocked by Slices 1–2 | Yes |
 
 ## Artifact links
@@ -81,4 +81,4 @@ Merge Slice 1 and implement Slice 2 issue #42.
 - Artifact UX review: `artifact-001-ux-review.md`
 - Artifact QA/Security review: `artifact-001-qa-review.md`
 - Artifact execution plan: `artifact-001-execution-plan.md`
-- Latest checkpoint: `checkpoint-003.md`
+- Latest checkpoint: `checkpoint-004.md`

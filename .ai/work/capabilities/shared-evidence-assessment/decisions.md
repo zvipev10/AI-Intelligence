@@ -128,3 +128,25 @@ The implementation branch must start from `main` after PR #24 merges.
 
 Follow-ups:
 Create the Phase 1 implementation branch and PR after merge.
+
+### 2026-07-26 — Resolve indication sources canonically instead of attaching a workstream layer
+
+Decision:
+Workstream creation no longer requires or attaches an event layer. Each confirmed `REC-...` indication is resolved by the app server against the canonical event dataset, and the server records its canonical source-layer reference.
+
+Context:
+The earlier Phase 1 flow required one layer as an evidence boundary. Once the MVP shifted to explicit record identifiers interpreted by Moshe, choosing a layer became redundant friction and prevented realistic multi-source leads.
+
+Rationale:
+The explicit record identifier plus server-side canonical resolution preserves existence checks and provenance without making the analyst locate or preselect a layer. It also permits one lead to contain indications from different source types.
+
+Alternatives considered:
+- Keep the mandatory workstream layer.
+- Make layer attachment optional but restrict records when present.
+- Store record IDs without canonical source provenance.
+
+Impact:
+The 2026-07-24 decision to require one explicit layer is superseded. Existing workstreams that retain `starting_source` remain readable, but new workstreams do not create it. Reopening a workstream in chat shows the active artifact rather than relying on the starting layer for context.
+
+Follow-ups:
+Validate multi-source indications and canonical provenance in final MVP validation.

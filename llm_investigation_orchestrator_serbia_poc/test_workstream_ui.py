@@ -17,11 +17,10 @@ class WorkstreamUiTests(unittest.TestCase):
         self.assertIn('promptOption.dataset.promptOption === "workstream"', self.app)
         self.assertIn("startWorkstreamComposerMode()", self.app)
 
-    def test_tracking_requires_one_explicit_layer(self):
-        self.assertIn('state.workstreamComposerMode ? "radio" : "checkbox"', self.app)
-        self.assertIn("layers.length !== 1", self.app)
-        self.assertIn("כדי ליצור מעקב יש לצרף שכבה אחת במפורש.", self.app)
-        self.assertIn("starting_source: workstreamLayerReference(layer)", self.app)
+    def test_tracking_does_not_require_or_attach_a_layer(self):
+        self.assertNotIn("כדי ליצור מעקב יש לצרף שכבה אחת במפורש.", self.app)
+        self.assertNotIn("starting_source: workstreamLayerReference(layer)", self.app)
+        self.assertNotIn("if (state.promptSelectedLayerIds.size !== 1) openQueryLayersModal()", self.app)
 
     def test_creation_requires_inline_confirmation(self):
         self.assertIn("state.pendingWorkstreamDraft = draft", self.app)
@@ -43,9 +42,16 @@ class WorkstreamUiTests(unittest.TestCase):
 
     def test_update_is_deterministic_and_discloses_manual_trigger(self):
         self.assertIn("workstream.objective", self.app)
-        self.assertIn("workstream.starting_source", self.app)
         self.assertIn("workstream.assignments", self.app)
         self.assertIn("העדכון מוצג לפי בקשתך ולא נוצר אוטומטית", self.app)
+
+    def test_reopened_workstream_shows_active_artifact_details(self):
+        self.assertIn("function workstreamArtifactHtml(workstream)", self.app)
+        self.assertIn("content.lead_statement", self.app)
+        self.assertIn("content.indications", self.app)
+        self.assertIn("content.gaps", self.app)
+        self.assertIn("artifact.revision", self.app)
+        self.assertIn("WORKSTREAM_ARTIFACT_STATUS_LABELS", self.app)
 
     def test_archive_requires_chat_confirmation(self):
         self.assertIn("requestWorkstreamArchive", self.app)

@@ -101,14 +101,17 @@ def _indication(
     reference = value.get("source_reference")
     if not isinstance(reference, dict) or reference.get("kind") != "event_record":
         raise ValueError("Invalid indication source_reference")
-    layer_id = _text(reference.get("layer_id"), "layer_id", 240, required=True)
+    requested_layer_id = _text(reference.get("layer_id"), "layer_id", 240)
     record_id = _text(reference.get("record_id"), "record_id", 160, required=True)
-    starting_source = workstream.get("starting_source") or {}
-    if starting_source.get("kind") != "catalog_layer" or starting_source.get("reference_id") != layer_id:
-        raise ValueError("Indication is outside the attached event layer")
-    event = resolve_event(layer_id, record_id)
+    event = resolve_event(requested_layer_id, record_id)
     if event is None:
         raise ValueError(f"Unknown event reference: {record_id}")
+    layer_id = _text(
+        event.get("_canonical_layer_id") or requested_layer_id,
+        "canonical layer_id",
+        240,
+        required=True,
+    )
     role = _text(value.get("role") or "context", "indication role", 30)
     if role not in INDICATION_ROLES:
         raise ValueError("Invalid indication role")

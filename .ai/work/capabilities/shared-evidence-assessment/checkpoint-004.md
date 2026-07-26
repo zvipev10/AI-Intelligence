@@ -11,12 +11,14 @@
 - Applied confirmed create/revision actions through the Slice 1 artifact service only after a distinct later user turn.
 - Kept persistence in the app server and independently revalidated the workstream, actor, layer, references, revision, and action.
 - Returned success and conflicts in ordinary chat without adding a proposal panel, buttons, or dedicated artifact surface.
+- Removed the mandatory workstream layer attachment; each indication is now resolved and attributed canonically by `REC-...`.
+- Extended the existing indicator-to-chat flow to display the active lead statement, indications, gaps, questions, revision, and assessment status.
 - Added natural-language evaluation fixtures and focused MCP, pipeline, bridge, profile, UI, and regression tests.
 
 ## Validation
 
 - Python compilation passed for the server, result pipeline, artifact service, MCP server, and Moshe profile provisioning.
-- Main test discovery: 53 tests passed.
+- Main test discovery: 56 tests passed.
 - Focused MCP workstream-tool tests: 3 tests passed.
 - `git diff --check` passed.
 
@@ -32,6 +34,7 @@ None found by automated implementation review.
 - When more than one active workstream exists, the current chat bridge does not guess which workstream should receive a proposal; the existing chat selection flow remains the disambiguation mechanism.
 - Human attribution remains the existing synthetic single-user participant contract, not production authentication.
 - Natural-language fixtures define acceptance cases but require deployment-level evaluation against the running Moshe profile in final validation.
+- Existing workstreams may still contain a legacy `starting_source`; it remains readable and its source-layer button is shown only when present.
 
 ## Required checkpoint reviewers
 
