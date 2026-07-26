@@ -54,7 +54,7 @@ Actions: `הצג אינדיקציות`, `הוסף`, `בקש השלמה`, `שלח
 
 Each indication is shown as a compact chat row containing:
 
-- source label and stable record identifier;
+- source label and stable item identifier;
 - observed claim;
 - role label: `תומכת`, `סותרת`, or `הקשר`;
 - optional user annotation;
@@ -91,4 +91,3 @@ Do not use color alone to distinguish roles. Include text and an icon or shape.
 ## Recommendation
 
 Approve the temporary layer-selection mode plus chat confirmation. Do not build a separate artifact management surface for the MVP.
-

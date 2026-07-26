@@ -19,7 +19,7 @@ AI-authored recommendation — pending human QA/Security approval.
 - Reject a second active artifact of the same type in one workstream.
 - Enforce server-owned IDs, timestamps, and revisions.
 - Validate bounded payloads, arrays, strings, enums, and participant attribution.
-- Reject missing, malformed, cross-layer, and unknown record references.
+- Reject missing, malformed, cross-layer, unknown item references, and item IDs using the wrong key for the layer kind.
 - Add, remove, annotate, and classify indications with correct revision increments.
 - Reject stale `expected_revision` with `409` and preserve the stored document.
 - Reject mutation of archived workstreams.
@@ -72,4 +72,3 @@ AI-authored recommendation — pending human QA/Security approval.
 ## Recommendation
 
 Continue after architecture confirms reference resolution and the team accepts client-supplied actor attribution as a demo limitation.
-

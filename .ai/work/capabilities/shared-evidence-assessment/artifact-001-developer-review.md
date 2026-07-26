@@ -49,9 +49,9 @@ Each indication uses a stable reference:
 {
   "indication_id": "indication_...",
   "source_reference": {
-    "kind": "layer_record",
+    "kind": "layer_item",
     "layer_id": "catalog-layer-id",
-    "record_id": "stable-record-id"
+    "item_id": "stable-item-id"
   },
   "observed_claim": "bounded source-derived text",
   "relevance": "why it matters to the lead",
@@ -98,7 +98,8 @@ Supported MVP actions:
 - One non-closed `target_assessment_lead` per workstream.
 - At least one active indication for an accepted artifact.
 - Every indication references a stable record/item in the workstream's explicitly attached layer.
-- Reference existence and layer membership are checked through the existing layer/catalog resolver.
+- Reference existence and layer membership are checked through a server-side layer-item resolver.
+- The resolver maps the generic `item_id` to the layer's canonical key: `record_id` for events, `entity_id` for entities, `location_id` for locations, and `target_id` for the target layer.
 - Bounded strings, arrays, and payload sizes.
 - Valid participant attribution.
 - Only a human participant may perform `send_to_assessment`.
@@ -115,7 +116,7 @@ Supported MVP actions:
 
 ## Technical risks
 
-- Layer records do not all expose one uniform stable-record identifier.
+- Layer rows do not expose one uniform identifier today; the new resolver must own the explicit layer-kind-to-ID-field mapping and reject unsupported layer kinds.
 - Whole-workstream JSON writes require explicit revision conflict handling.
 - Storing source text snapshots may drift from source truth; references should remain authoritative.
 - Client-supplied actor identity is demo-only and is not production authorization.
@@ -130,12 +131,11 @@ Supported MVP actions:
 
 Each slice changes an interface or product behavior and must stop at a checkpoint.
 
-## Blocking questions
+## Resolved assumptions
 
-1. Confirm that the existing layer/catalog resolver can validate every record reference required by the demo.
-2. Confirm that demo actor attribution may remain client-supplied until authentication exists.
+- `get_ui_layer_rows` already resolves each supported catalog layer and its rows. The implementation must add a small server-side stable-item resolver over that function because no uniform item-ID contract exists today.
+- Client-supplied actor attribution remains a bounded demo limitation already accepted in the Phase 1 authorization boundary. The server still verifies that the actor is a participant in the workstream. This does not constitute production authentication.
 
 ## Recommendation
 
-Continue to execution planning after the two blocking assumptions are explicitly accepted and UX/QA reviews are accepted.
-
+Continue to execution planning after Development/Architecture, UX, and QA accept these recommendations.
