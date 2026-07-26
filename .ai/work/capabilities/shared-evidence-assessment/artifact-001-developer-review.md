@@ -6,7 +6,7 @@ AI-authored recommendation — pending human Development/Architecture approval.
 
 ## Scope reviewed
 
-The artifact foundation and manual chat flow only. Agent execution, assessment execution, and target-bank mutation are excluded.
+The artifact foundation and Moshe-interpreted general-chat flow. Assessment execution and target-bank mutation are excluded.
 
 ## Feasibility
 
@@ -34,6 +34,7 @@ Keep a generic artifact envelope in `workstream.artifacts`:
 
 The first artifact content contains:
 
+- optional `subject_reference` for an existing `TGT-...`;
 - `lead_statement`;
 - `indications`;
 - `supporting_signals`;
@@ -63,6 +64,17 @@ Each indication uses a stable reference:
 }
 ```
 
+An optional target subject uses:
+
+```json
+{
+  "kind": "target",
+  "target_id": "TGT-..."
+}
+```
+
+The target reference identifies what may be reassessed or updated. It is not counted as supporting evidence.
+
 ## Revision and concurrency contract
 
 - Every mutation supplies `expected_revision`.
@@ -79,7 +91,7 @@ Each indication uses a stable reference:
 - `GET /api/workstreams/{workstream_id}/artifacts/{artifact_id}`
 - `POST /api/workstreams/{workstream_id}/artifacts/{artifact_id}/revisions`
 
-The create request supplies `artifact_type`, initial content, and actor. Revision requests supply `expected_revision`, actor, action, and action-specific payload.
+The create request supplies `artifact_type`, initial content, and actor. Revision requests supply `expected_revision`, actor, action, and action-specific payload. Moshe accesses these operations through bounded MCP tools, not direct target-bank writes.
 
 Supported MVP actions:
 
@@ -91,7 +103,7 @@ Supported MVP actions:
 - `request_completion`
 - `send_to_assessment`
 
-`send_to_assessment` changes status to `ready_for_assessment`; it does not call an agent or target API in this slice.
+Moshe first creates a staged proposal. After the user responds in a later chat turn, Moshe may accept or reject that proposal through a tool. No fixed confirmation phrase is required; Moshe interprets the response under his instructions and records the attributable user turn. `send_to_assessment` changes status to `ready_for_assessment`; it does not call an assessment or target API in this slice.
 
 ## Validation rules
 
@@ -100,9 +112,12 @@ Supported MVP actions:
 - Every indication references a stable record/item in the workstream's explicitly attached layer.
 - Reference existence and layer membership are checked against `get_ui_layer_rows` for the explicitly attached event layer.
 - The MVP accepts only identifiers matching the existing `REC-...` event-record convention.
+- Optional `TGT-...` references are resolved through the read-only target catalog and stored as `subject_reference`.
 - Bounded strings, arrays, and payload sizes.
 - Valid participant attribution.
 - Only a human participant may perform `send_to_assessment`.
+- A target subject cannot be added to `indications` or satisfy the minimum-indication requirement.
+- Persistent mutations require a staged proposal followed by a distinct user chat turn interpreted as confirmation.
 - Status transitions are allow-listed.
 - Target-bank APIs are never called from artifact routes.
 
@@ -112,11 +127,12 @@ Supported MVP actions:
 - new focused module for artifact validation and mutations, rather than further expanding `server.py`
 - `llm_investigation_orchestrator_serbia_poc/app.js`
 - `llm_investigation_orchestrator_serbia_poc/styles.css`
+- Moshe profile instructions and bounded artifact MCP tools
 - focused server/API and UI-regression tests
 
 ## Technical risks
 
-- The MVP is intentionally limited to event records. Supporting entity, location, target, or generic layer-item identifiers is deferred.
+- Indications are limited to event records. An existing target is supported only as the optional assessment subject.
 - Whole-workstream JSON writes require explicit revision conflict handling.
 - Storing source text snapshots may drift from source truth; references should remain authoritative.
 - Client-supplied actor identity is demo-only and is not production authorization.
@@ -125,8 +141,8 @@ Supported MVP actions:
 ## Recommended implementation slices
 
 1. Generic artifact envelope, validator registry, revision engine, API, and tests.
-2. Manual chat interaction, `REC-...` parsing/resolution, and UI regression tests.
-3. Agent contribution tools and Moshe prompt/routing changes.
+2. Moshe artifact tools, profile instructions, ordinary-chat proposal/confirmation flow, and UI regression tests.
+3. Broader agent contribution quality and evaluation.
 4. Assessment execution and target-candidate handoff.
 
 Each slice changes an interface or product behavior and must stop at a checkpoint.
@@ -134,6 +150,8 @@ Each slice changes an interface or product behavior and must stop at a checkpoin
 ## Resolved assumptions
 
 - `get_ui_layer_rows` already resolves event layers and their rows. The implementation needs a bounded lookup that confirms each supplied `REC-...` exists in the workstream's attached event layer.
+- The target catalog reader resolves `TGT-...` subjects without granting artifact tools target-bank write access.
+- The existing explicit `@משה` route in general chat is reused; no new composer or phrase-based router is introduced.
 - Client-supplied actor attribution remains a bounded demo limitation already accepted in the Phase 1 authorization boundary. The server still verifies that the actor is a participant in the workstream. This does not constitute production authentication.
 
 ## Recommendation

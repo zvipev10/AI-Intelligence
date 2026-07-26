@@ -1,9 +1,31 @@
 # Capability Decisions
 
+### 2026-07-26 — Let Moshe interpret artifact intent in general chat
+
+Decision:
+All indication-artifact interaction occurs through the existing general chat. Users address Moshe naturally; his instructions and bounded tools interpret intent and resolve `REC-...` evidence references plus an optional `TGT-...` assessment subject. No predefined phrases, saved expressions, dedicated composer, command buttons, or layer-selection UI are required.
+
+Context:
+The earlier manual-ID proposal still assumed a phrase-driven interaction and explicit UI actions. Product requires the collaboration to behave as a conversation with Moshe.
+
+Rationale:
+Natural-language interpretation is the agent's functional contribution, while staged proposals, reference resolvers, revision checks, and explicit later-turn confirmation keep persistence controlled.
+
+Alternatives considered:
+- Deterministic parsing of predefined chat commands.
+- Manual chat mode with action buttons.
+- Temporary record selection in the layer.
+
+Impact:
+Agent integration moves into the second MVP implementation slice immediately after the artifact API. `REC-...` identifies evidence; `TGT-...` optionally identifies an existing target under reassessment and is not evidence.
+
+Follow-ups:
+Define Moshe tool schemas, staged proposal semantics, instruction/evaluation cases, and ambiguous-confirmation behavior in the execution plan.
+
 ### 2026-07-26 — Use manual REC identifiers for indication entry
 
 Decision:
-For the MVP, users add indications by typing one or more `REC-...` identifiers in chat. The system resolves them against the workstream's explicitly attached event layer and previews the resolved records before persistence.
+For the MVP, users may supply one or more `REC-...` identifiers naturally in chat. Moshe resolves them against the workstream's explicitly attached event layer and previews the resolved records before persistence.
 
 Context:
 A temporary selection mode in the existing layer view introduced unnecessary UX and implementation scope for the first artifact slice.

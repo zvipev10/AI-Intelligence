@@ -27,8 +27,8 @@ Promotion between steps is explicit. Adding indications to a lead never creates 
 ## Primary user flow
 
 1. The user creates or opens a workstream with an objective and one attached layer.
-2. A user-triggered agent review finds records that may be relevant to the objective.
-3. The agent proposes a Target Assessment Lead in chat.
+2. In the ordinary chat, the user addresses Moshe naturally and may mention one or more `REC-...` identifiers and an optional `TGT-...` identifier.
+3. Moshe interprets the intent from his instructions, resolves the references through tools, and proposes a Target Assessment Lead in chat.
 4. The proposal explains the possible pattern, lists the indications, separates observation from inference, and identifies missing assessment questions.
 5. The user may:
    - accept the lead into the workstream;
@@ -49,6 +49,7 @@ Promotion between steps is explicit. Adding indications to a lead never creates 
 | `workstream_id` | Owning collaborative workstream. |
 | `title` | Concise description of the possible pattern. |
 | `lead_statement` | What the indications may collectively suggest, explicitly framed as a hypothesis. |
+| `subject_reference` | Optional existing `TGT-...` target being reconsidered; absent when the lead may produce a new target candidate. |
 | `status` | `proposed`, `active`, `ready_for_assessment`, `under_assessment`, `closed`, or `rejected`. |
 | `indications` | Attributable references to records or layer items with a short relevance explanation. |
 | `supporting_signals` | Observed facts that strengthen the lead. |
@@ -75,6 +76,7 @@ Each indication should include:
 ## Artifact invariants
 
 - At least one explicit indication is required.
+- `REC-...` references are indications. An optional `TGT-...` reference identifies an existing target under reconsideration and is not itself an indication.
 - A lead statement must use hypothesis language and must not claim target validity.
 - Raw source records remain immutable.
 - Contradictory indications are preserved, not silently removed.
@@ -87,6 +89,8 @@ Each indication should include:
 
 The assigned agent performs work the user should not need to do manually:
 
+- interpret natural-language intent without requiring predefined commands or saved expressions;
+- resolve `REC-...` and `TGT-...` references through bounded tools;
 - scan the attached layer for potentially related indications;
 - group signals by identity, location, time, and source relationship;
 - identify possible duplicates or derivative reporting;
@@ -98,12 +102,12 @@ The agent may propose and revise the lead. It may not promote the lead to assess
 
 ## Chat interaction
 
-The artifact has no formal user-facing name in the MVP. `target_assessment_lead` is an internal type only. The UX talks naturally about the indications, their meaning, and the next action through agent-style chat messages:
+The artifact has no formal user-facing name in the MVP. `target_assessment_lead` is an internal type only. All interaction happens in the existing general chat. Moshe interprets natural language according to his instructions; the UX does not require predefined phrases, command buttons, a dedicated composer, or saved expressions.
 
 - **Proposal:** “I found three indications that may describe the same operational object. Create a lead?”
 - **Update:** “One new indication supports the location, but source independence remains unresolved.”
 - **Attention request:** “Before assessment, decide whether the two public reports should be treated as one source family.”
-- **User action:** `שמור במעקב`, `דחה`, `בקש השלמה`, or `שלח להערכה`.
+- **User action:** the user confirms, rejects, asks for completion, or requests assessment in natural language.
 
 The minimal workstream indicator remains unchanged. Pressing it returns the current lead summary and available actions to chat.
 
@@ -112,8 +116,9 @@ The minimal workstream indicator remains unchanged. Pressing it returns the curr
 Include:
 
 - one Target Assessment Lead per workstream;
-- manual, user-triggered creation and updates;
-- indication references entered as `REC-...` identifiers in chat and validated against the explicitly attached event layer;
+- user-triggered creation and updates interpreted by Moshe from ordinary chat;
+- indication references supplied as `REC-...` identifiers and resolved through tools;
+- an optional `TGT-...` subject reference resolved through the target catalog;
 - proposal/accept/reject/update actions in chat;
 - status and revision history;
 - explicit handoff to assessment.
@@ -132,7 +137,7 @@ Defer:
 - Investigation Memory item import;
 - scenario playback.
 
-The MVP accepts event records only. Generic layer-item selection and non-event identifiers are deferred.
+The MVP accepts event records as indications and one optional target as the assessment subject. Generic layer-item selection and other identifier types are deferred.
 
 ## Accepted Product decisions
 

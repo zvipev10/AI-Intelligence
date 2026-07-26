@@ -2,6 +2,6 @@
 
 Owner: UX.
 
-Review `artifact-001-ux-review.md`, especially temporary record-selection mode, chat preview/confirmation, natural-language states, conflict recovery, and accessibility.
+Review `artifact-001-ux-review.md`, especially Moshe's natural-language interpretation in general chat, staged preview/confirmation, `REC-...` evidence, optional `TGT-...` subject, conflict recovery, and accessibility.
 
 Blocks execution planning. Complete when the manual flow is approved or revised.

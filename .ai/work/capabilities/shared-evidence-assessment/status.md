@@ -27,7 +27,7 @@ Phase 1 is merged; Product approved the first shared artifact; artifact-specific
 |---|---|---|
 | Product | Approved | No action. |
 | Development/Architecture | Approval needed | Accept or revise `artifact-001-developer-review.md`. |
-| UX | Approval needed | Accept or revise `artifact-001-ux-review.md`. |
+| UX | Approval needed | Accept or revise the Moshe-interpreted general-chat flow in `artifact-001-ux-review.md`. |
 | QA/Security | Approval needed | Accept or revise `artifact-001-qa-review.md`. |
 
 ## Current blockers

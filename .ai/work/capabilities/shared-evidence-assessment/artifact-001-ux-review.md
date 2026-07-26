@@ -8,20 +8,18 @@ AI-authored recommendation — pending human UX approval.
 
 Do not expose an artifact name, management panel, or new navigation concept. The user sees indications, what they may mean, and the next available action through chat. The minimal active-workstream indicator remains unchanged.
 
-## Manual MVP flow
+## MVP chat flow
 
-1. The user presses the active-workstream indicator.
-2. The agent-style message summarizes how many indications are saved, their support/contradiction balance, gaps, and current responsibility.
-3. If no indications exist, the message says so and offers `הוסף אינדיקציות מהשכבה`.
-4. The action asks the user to type one or more `REC-...` identifiers in chat.
-5. The user sends a message such as `REC-V2-000142, REC-V2-000207`.
-6. The system validates the identifiers against the explicitly attached event layer.
-7. Chat shows a preview listing the resolved records and asks `לשמור את האינדיקציות במעקב?`.
-8. On confirmation, the references persist and chat reports the updated count and unresolved gaps.
-9. The user may later remove an indication, add an annotation, request completion, or choose `שלח להערכה`.
-10. `שלח להערכה` requires a second confirmation and only changes the artifact status in this slice.
+1. The user writes naturally to Moshe in the existing general chat, for example: “@משה, בדוק אם REC-V2-000142 ו־REC-V2-000207 מצדיקים המשך הערכה לגבי TGT-D4DC7A7EBE02.”
+2. Moshe interprets the request from his instructions; there is no required command wording.
+3. Tools resolve the `REC-...` indications and optional `TGT-...` assessment subject.
+4. Moshe explains what resolved, what failed, the possible relationship, contradictions, and gaps.
+5. Moshe asks in natural language whether to persist the proposed workstream change.
+6. The user replies naturally in a later turn.
+7. Moshe interprets that turn and confirms or rejects the staged proposal through a bounded tool.
+8. Later additions, removals, annotations, completion requests, and assessment handoff follow the same conversational pattern.
 
-There is no selection mode, checkbox, layer-view mutation, separate artifact screen, or drawer in the MVP.
+There are no command buttons, saved expressions, dedicated composer, selection mode, checkbox, layer-view mutation, separate artifact screen, or drawer in the MVP.
 
 ## Agent-style message states
 
@@ -29,19 +27,19 @@ There is no selection mode, checkbox, layer-view mutation, separate artifact scr
 
 “עדיין לא נשמרו אינדיקציות במעקב הזה.”
 
-Actions: `הוסף מזהי רשומות`.
+Moshe asks what the user wants to investigate or which `REC-...` / `TGT-...` references are relevant.
 
 ### Proposed
 
 “מצאתי 3 רשומות בשכבה המצורפת. לשמור אותן במעקב כאינדיקציות לבדיקה?”
 
-Actions: `שמור במעקב`, `חזור לבחירה`, `ביטול`.
+Moshe asks for confirmation in natural language; the user is not constrained to specific response wording.
 
 ### Active
 
 “במעקב שמורות 4 אינדיקציות: 2 תומכות באפשרות, 1 סותרת ו־1 מספקת הקשר. זיהוי המקור עדיין דורש בדיקה.”
 
-Actions: `הצג אינדיקציות`, `הוסף`, `בקש השלמה`, `שלח להערכה`.
+Moshe describes possible next actions in prose; the user responds naturally.
 
 ### Conflict
 
@@ -69,6 +67,7 @@ Do not use color alone to distinguish roles. Include text and an icon or shape.
 - No attached event layer: explain that this workstream has no event layer against which the identifiers can be validated.
 - Layer unavailable: retain saved references and show them as temporarily unavailable.
 - Invalid or unknown `REC-...`: list unresolved identifiers and do not include them in the confirmation.
+- Invalid or unavailable `TGT-...`: distinguish a missing subject from invalid evidence.
 - Archived workstream: read-only message; no mutation actions.
 - Network/save failure: preserve the pending selection locally and offer retry.
 - Stale revision: reload the latest state and require renewed confirmation.
@@ -77,7 +76,7 @@ Do not use color alone to distinguish roles. Include text and an icon or shape.
 
 ## Accessibility
 
-- The prompt explicitly states the required `REC-...` format and supports pasted comma-, space-, or line-separated identifiers.
+- Mixed free text, `REC-...`, and `TGT-...` references remain readable.
 - Focus remains in chat throughout the flow.
 - Mixed RTL/LTR record IDs remain readable.
 - Dynamic chat updates use the existing accessible message pattern and do not steal focus unexpectedly.
@@ -90,4 +89,4 @@ Do not use color alone to distinguish roles. Include text and an icon or shape.
 
 ## Recommendation
 
-Approve manual `REC-...` entry plus chat resolution and confirmation. Do not change the layer UI or build a separate artifact management surface for the MVP.
+Approve ordinary general-chat interaction interpreted by Moshe, with bounded reference-resolution and staged artifact tools. Do not add phrase-based commands, new chat modes, layer UI, or a separate artifact surface.
