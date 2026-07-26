@@ -49,9 +49,9 @@ Each indication uses a stable reference:
 {
   "indication_id": "indication_...",
   "source_reference": {
-    "kind": "layer_item",
+    "kind": "event_record",
     "layer_id": "catalog-layer-id",
-    "item_id": "stable-item-id"
+    "record_id": "REC-V2-000001"
   },
   "observed_claim": "bounded source-derived text",
   "relevance": "why it matters to the lead",
@@ -98,8 +98,8 @@ Supported MVP actions:
 - One non-closed `target_assessment_lead` per workstream.
 - At least one active indication for an accepted artifact.
 - Every indication references a stable record/item in the workstream's explicitly attached layer.
-- Reference existence and layer membership are checked through a server-side layer-item resolver.
-- The resolver maps the generic `item_id` to the layer's canonical key: `record_id` for events, `entity_id` for entities, `location_id` for locations, and `target_id` for the target layer.
+- Reference existence and layer membership are checked against `get_ui_layer_rows` for the explicitly attached event layer.
+- The MVP accepts only identifiers matching the existing `REC-...` event-record convention.
 - Bounded strings, arrays, and payload sizes.
 - Valid participant attribution.
 - Only a human participant may perform `send_to_assessment`.
@@ -116,7 +116,7 @@ Supported MVP actions:
 
 ## Technical risks
 
-- Layer rows do not expose one uniform identifier today; the new resolver must own the explicit layer-kind-to-ID-field mapping and reject unsupported layer kinds.
+- The MVP is intentionally limited to event records. Supporting entity, location, target, or generic layer-item identifiers is deferred.
 - Whole-workstream JSON writes require explicit revision conflict handling.
 - Storing source text snapshots may drift from source truth; references should remain authoritative.
 - Client-supplied actor identity is demo-only and is not production authorization.
@@ -125,7 +125,7 @@ Supported MVP actions:
 ## Recommended implementation slices
 
 1. Generic artifact envelope, validator registry, revision engine, API, and tests.
-2. Manual chat interaction and source-record selection with UI regression tests.
+2. Manual chat interaction, `REC-...` parsing/resolution, and UI regression tests.
 3. Agent contribution tools and Moshe prompt/routing changes.
 4. Assessment execution and target-candidate handoff.
 
@@ -133,7 +133,7 @@ Each slice changes an interface or product behavior and must stop at a checkpoin
 
 ## Resolved assumptions
 
-- `get_ui_layer_rows` already resolves each supported catalog layer and its rows. The implementation must add a small server-side stable-item resolver over that function because no uniform item-ID contract exists today.
+- `get_ui_layer_rows` already resolves event layers and their rows. The implementation needs a bounded lookup that confirms each supplied `REC-...` exists in the workstream's attached event layer.
 - Client-supplied actor attribution remains a bounded demo limitation already accepted in the Phase 1 authorization boundary. The server still verifies that the actor is a participant in the workstream. This does not constitute production authentication.
 
 ## Recommendation

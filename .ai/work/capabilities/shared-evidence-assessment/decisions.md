@@ -1,5 +1,27 @@
 # Capability Decisions
 
+### 2026-07-26 — Use manual REC identifiers for indication entry
+
+Decision:
+For the MVP, users add indications by typing one or more `REC-...` identifiers in chat. The system resolves them against the workstream's explicitly attached event layer and previews the resolved records before persistence.
+
+Context:
+A temporary selection mode in the existing layer view introduced unnecessary UX and implementation scope for the first artifact slice.
+
+Rationale:
+Manual identifiers preserve the chat-first flow and prove persistence, validation, revision, and confirmation semantics without changing layer interactions.
+
+Alternatives considered:
+- Temporary multi-select mode in the existing layer view.
+- Per-record `הוסף למעקב` actions.
+- Agent-selected records.
+
+Impact:
+The MVP supports event-record indications only. Generic layer-item selection and non-event identifiers are deferred.
+
+Follow-ups:
+Reconsider layer-based selection after the manual artifact workflow is validated.
+
 ### 2026-07-24 — Make indications a pre-assessment artifact
 
 Decision:

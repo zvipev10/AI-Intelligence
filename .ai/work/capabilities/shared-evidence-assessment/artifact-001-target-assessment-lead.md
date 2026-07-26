@@ -113,7 +113,7 @@ Include:
 
 - one Target Assessment Lead per workstream;
 - manual, user-triggered creation and updates;
-- indication references from the explicitly attached layer;
+- indication references entered as `REC-...` identifiers in chat and validated against the explicitly attached event layer;
 - proposal/accept/reject/update actions in chat;
 - status and revision history;
 - explicit handoff to assessment.
@@ -131,6 +131,8 @@ Defer:
 - target creation or target-bank mutation;
 - Investigation Memory item import;
 - scenario playback.
+
+The MVP accepts event records only. Generic layer-item selection and non-event identifiers are deferred.
 
 ## Accepted Product decisions
 

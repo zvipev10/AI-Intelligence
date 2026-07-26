@@ -66,4 +66,4 @@ The human Product owner approved the checkpoint and instructed implementation to
 
 ## Next step
 
-Product approved `artifact-001-target-assessment-lead.md`. Artifact-specific Development/Architecture, UX, and QA draft reviews now define the proposed envelope/API/revision contract, manual chat and temporary layer-selection flow, and validation strategy. They remain pending human acceptance. No execution plan or product code is authorized yet.
+Product approved `artifact-001-target-assessment-lead.md` and narrowed indication entry to manual `REC-...` identifiers in chat. Artifact-specific Development/Architecture, UX, and QA draft reviews define the envelope/API/revision contract, chat resolution/confirmation flow, and validation strategy. They remain pending human acceptance. No execution plan or product code is authorized yet.

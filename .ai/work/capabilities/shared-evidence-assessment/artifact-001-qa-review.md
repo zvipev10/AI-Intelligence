@@ -19,7 +19,8 @@ AI-authored recommendation — pending human QA/Security approval.
 - Reject a second active artifact of the same type in one workstream.
 - Enforce server-owned IDs, timestamps, and revisions.
 - Validate bounded payloads, arrays, strings, enums, and participant attribution.
-- Reject missing, malformed, cross-layer, unknown item references, and item IDs using the wrong key for the layer kind.
+- Parse comma-, space-, and line-separated `REC-...` identifiers.
+- Reject malformed, unknown, duplicate, and cross-layer record references.
 - Add, remove, annotate, and classify indications with correct revision increments.
 - Reject stale `expected_revision` with `409` and preserve the stored document.
 - Reject mutation of archived workstreams.
@@ -46,16 +47,15 @@ AI-authored recommendation — pending human QA/Security approval.
 
 - Indicator behavior remains minimal and unchanged.
 - Empty, proposed, active, conflict, read-only, unavailable-source, save-error, and ready states render.
-- Record-selection mode does not change layer visibility/filtering after cancel.
-- Keyboard selection, confirmation, cancel, and focus return work.
+- Manual ID entry, resolution preview, confirmation, cancellation, and retry work entirely in chat.
 - Long record IDs and mixed RTL/LTR copy remain usable.
 - Ordinary chat, Hermes routing, Investigation Memory, workstream creation/archive, map, timeline, and target-layer behavior do not regress.
 
 ## Manual demo acceptance
 
 1. Create a workstream with one attached historical layer.
-2. Open the indicator and enter record-selection mode.
-3. Select a supporting and contradictory record.
+2. Open the indicator and choose to add record identifiers.
+3. Type the identifiers of a supporting and contradictory record.
 4. Confirm in chat and refresh the page.
 5. Verify both indications and their roles persist.
 6. Remove one indication and verify history remains.
