@@ -6,11 +6,11 @@ Collaborative Scenario Playback
 
 ## Current phase
 
-Indication artifact Slice 1 checkpoint
+Indication artifact Slice 1 accepted
 
 ## Overall status
 
-Slice 1 artifact persistence/API is implemented and awaiting Development/Architecture and QA/Security acceptance
+Slice 1 artifact persistence/API is accepted and ready to merge; Slice 2 is authorized after merge
 
 ## Accepted direction captured
 
@@ -26,14 +26,14 @@ Slice 1 artifact persistence/API is implemented and awaiting Development/Archite
 | Role | Status | Required action |
 |---|---|---|
 | Product | Approved | No action during Slice 1. |
-| Development/Architecture | Review needed | Review `checkpoint-003.md` and the persistence/API contract. |
+| Development/Architecture | Approved | No action until Slice 2 checkpoint. |
 | UX | Approved | No action during backend-only Slice 1. |
-| QA/Security | Review needed | Review `checkpoint-003.md`, tests, and mutation boundaries. |
+| QA/Security | Approved | No action until Slice 2 checkpoint. |
 
 ## Current blockers
 
 - No Phase 1 blocker remains.
-- Slice 2 remains blocked until Slice 1 checkpoint acceptance.
+- No blocker remains for Slice 1 merge or Slice 2 start.
 - Broader manifest, adapter, and trigger decisions remain deferred beyond Phase 1.
 
 ## Current risks
@@ -45,7 +45,7 @@ Slice 1 artifact persistence/API is implemented and awaiting Development/Archite
 
 ## Next expected artifact
 
-Human Development/Architecture and QA/Security acceptance for `checkpoint-003.md`.
+Merge Slice 1 and implement Slice 2 issue #42.
 
 ## Parent and child issues
 
@@ -62,8 +62,8 @@ Human Development/Architecture and QA/Security acceptance for `checkpoint-003.md
 | #37 | Artifact Development/Architecture review | Approved; closes with PR #40 | No |
 | #38 | Artifact UX review | Approved; closes with PR #40 | No |
 | #39 | Artifact QA/Security review | Approved; closes with PR #40 | No |
-| #41 | Artifact persistence/API | Implemented; checkpoint review pending | Yes |
-| #42 | Moshe general-chat integration | Planned; blocked by Slice 1 acceptance | Yes |
+| #41 | Artifact persistence/API | Accepted; closes with PR #45 | No |
+| #42 | Moshe general-chat integration | Authorized after PR #45 merge | Yes |
 | #43 | Final MVP validation | Planned; blocked by Slices 1–2 | Yes |
 
 ## Artifact links
