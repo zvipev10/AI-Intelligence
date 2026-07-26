@@ -400,7 +400,7 @@ function appendMemberWelcomeMessage(member) {
 async function appendAgentMemberOpeningMessage(member) {
   const token = ++state.memberOpeningRequestToken;
   conversation.querySelectorAll(".member-welcome-message").forEach(message => message.remove());
-  const article = appendMessage("assistant", '<p class="member-opening-status">משה מתחבר לשיחה...</p>', {
+  const article = appendMessage("assistant", `<p class="member-opening-status">${thinkingIndicatorHtml()}</p>`, {
     label: memberMessageLabel(member), className: "member-welcome-message member-agent-opening", memberId: member.id
   });
   try {
@@ -2093,6 +2093,13 @@ function appendMessage(role, html, options = {}) {
   return article;
 }
 
+function thinkingIndicatorHtml() {
+  return `
+    <span class="thinking-indicator" role="status" aria-label="חושב">
+      <span>חושב</span><span class="thinking-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+    </span>`;
+}
+
 function scrollConversationToLatest() {
   conversation.scrollTop = conversation.scrollHeight;
 }
@@ -2374,15 +2381,15 @@ async function requestWorkstreamArchive(workstreamId) {
   }
 }
 
-function startAssistantResearchMessage(message = "Hermes מנתח את הבקשה ומפעיל כלי חקירה...") {
+function startAssistantResearchMessage(message = "") {
   const article = document.createElement("article");
   article.className = "message assistant-message";
   article.innerHTML = `
     <div class="message-label">${escapeHtml(assistantMessageLabel())}</div>
     <section class="research-process research-process-live">
       <h3>תהליך המחקר</h3>
-      <div class="activity-empty">${escapeHtml(message)}</div>
       <ol class="activity-list"></ol>
+      <div class="activity-empty">${message ? escapeHtml(message) : thinkingIndicatorHtml()}</div>
     </section>`;
   conversation.appendChild(article);
   state.activeAssistantMessage = article;

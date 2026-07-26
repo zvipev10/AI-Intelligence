@@ -77,6 +77,13 @@ class WorkstreamUiTests(unittest.TestCase):
         self.assertIn("result.workstream_artifact", self.app)
         self.assertNotIn("data-workstream-proposal-confirm", self.app)
 
+    def test_thinking_indicator_is_preserved(self):
+        self.assertIn("function thinkingIndicatorHtml()", self.app)
+        self.assertIn('aria-label="חושב"', self.app)
+        self.assertIn("thinkingIndicatorHtml()}</p>", self.app)
+        self.assertIn(".thinking-indicator", self.styles)
+        self.assertIn("@keyframes thinking-dot", self.styles)
+
 
 if __name__ == "__main__":
     unittest.main()

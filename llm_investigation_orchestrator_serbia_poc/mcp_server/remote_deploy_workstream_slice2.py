@@ -73,7 +73,8 @@ def deploy(client) -> tuple[str, dict]:
         "status": "curl -fsS http://127.0.0.1:8769/api/status",
         "public": (
             f"curl -k -LfsS https://{HOST}/ | grep -q 'data-prompt-option=\"workstream\"' "
-            f"&& curl -k -LfsS https://{HOST}/app.js | grep -q 'workstreamArtifactHtml' && echo present"
+            f"&& curl -k -LfsS https://{HOST}/app.js | grep -q 'workstreamArtifactHtml' "
+            f"&& curl -k -LfsS https://{HOST}/app.js | grep -q 'thinkingIndicatorHtml' && echo present"
         ),
         "ui_contract": f"grep -q 'workstreamArtifactHtml' {root_q}/app.js && ! grep -q 'starting_source' {root_q}/app.js && echo present",
         "server_contract": f"grep -q 'apply_workstream_action' {root_q}/server.py && test -f {root_q}/workstream_artifacts.py && echo present",
