@@ -16,6 +16,7 @@ TARGET_RESULT_TOOLS = frozenset({
 })
 WORKSTREAM_PROPOSAL_TOOL = "prepare_workstream_indication_proposal"
 WORKSTREAM_DECISION_TOOL = "decide_workstream_indication_proposal"
+WORKSTREAM_CREATION_TOOL = "prepare_workstream_creation"
 
 
 def normalize_location_item(item: Any, default_count: int = 0) -> dict[str, Any] | None:
@@ -279,7 +280,9 @@ def normalize_workstream_collaboration(audit_records: Any) -> dict[str, Any]:
         result = record.get("result")
         if not isinstance(result, dict):
             continue
-        if record.get("tool") == WORKSTREAM_PROPOSAL_TOOL and isinstance(result.get("workstream_proposal"), dict):
+        if record.get("tool") == WORKSTREAM_CREATION_TOOL and isinstance(result.get("workstream_creation"), dict):
+            normalized["workstream_creation"] = result["workstream_creation"]
+        elif record.get("tool") == WORKSTREAM_PROPOSAL_TOOL and isinstance(result.get("workstream_proposal"), dict):
             normalized["workstream_proposal"] = result["workstream_proposal"]
         elif record.get("tool") == WORKSTREAM_DECISION_TOOL and isinstance(result.get("workstream_action"), dict):
             normalized["workstream_action"] = result["workstream_action"]

@@ -17,6 +17,9 @@ from server import HermesClient
 class AgentResultPipelineTests(unittest.TestCase):
     def test_normalizes_successful_workstream_handoffs(self):
         records = [
+            {"tool": "prepare_workstream_creation", "result": {
+                "workstream_creation": {"title": "מעקב", "objective": "בדיקה", "responsibility": "לאתר שינוי"}
+            }},
             {"tool": "prepare_workstream_indication_proposal", "result": {
                 "workstream_proposal": {"proposal_type": "target_assessment_lead", "action": "create"}
             }},
@@ -28,6 +31,7 @@ class AgentResultPipelineTests(unittest.TestCase):
             }},
         ]
         self.assertEqual({
+            "workstream_creation": {"title": "מעקב", "objective": "בדיקה", "responsibility": "לאתר שינוי"},
             "workstream_proposal": {"proposal_type": "target_assessment_lead", "action": "create"},
             "workstream_action": {"decision": "confirm"},
         }, normalize_workstream_collaboration(records))

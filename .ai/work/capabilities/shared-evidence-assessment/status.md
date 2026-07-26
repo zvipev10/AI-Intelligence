@@ -6,11 +6,11 @@ Collaborative Scenario Playback
 
 ## Current phase
 
-Indication artifact Slice 2 checkpoint review
+Conversational workstream UX correction validation
 
 ## Overall status
 
-Slice 2 is implemented in draft PR #46 and awaits Product, Development/Architecture, UX, and QA/Security approval
+Checkpoint 005 corrections are implemented locally and require demo-environment validation
 
 ## Accepted direction captured
 
@@ -45,7 +45,7 @@ Slice 2 is implemented in draft PR #46 and awaits Product, Development/Architect
 
 ## Next expected artifact
 
-Checkpoint 004 approval, then final validation issue #43.
+Checkpoint 005 deployment result, then final validation issue #43.
 
 ## Parent and child issues
 
@@ -63,7 +63,7 @@ Checkpoint 004 approval, then final validation issue #43.
 | #38 | Artifact UX review | Approved; closes with PR #40 | No |
 | #39 | Artifact QA/Security review | Approved; closes with PR #40 | No |
 | #41 | Artifact persistence/API | Accepted; closes with PR #45 | No |
-| #42 | Moshe general-chat integration | Implemented in draft PR #46; checkpoint review pending | Yes |
+| #42 | Moshe general-chat integration | UX corrections implemented in draft PR #46; deployment validation pending | Yes |
 | #43 | Final MVP validation | Planned; blocked by Slices 1–2 | Yes |
 
 ## Artifact links
@@ -82,3 +82,4 @@ Checkpoint 004 approval, then final validation issue #43.
 - Artifact QA/Security review: `artifact-001-qa-review.md`
 - Artifact execution plan: `artifact-001-execution-plan.md`
 - Latest checkpoint: `checkpoint-004.md`
+- UX correction checkpoint: `checkpoint-005.md`

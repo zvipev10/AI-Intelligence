@@ -46,6 +46,7 @@ class MosheProfileTests(unittest.TestCase):
         self.assertIn("create_target_candidate", MOSHE_TOOLS)
         self.assertIn("prepare_workstream_indication_proposal", MOSHE_TOOLS)
         self.assertIn("decide_workstream_indication_proposal", MOSHE_TOOLS)
+        self.assertIn("prepare_workstream_creation", MOSHE_TOOLS)
         self.assertIn("present_requested_results", MOSHE_TOOLS)
         self.assertNotIn("execute_sql", MOSHE_TOOLS)
 
@@ -78,7 +79,7 @@ class MosheProfileTests(unittest.TestCase):
 
     def test_frontend_sends_unmodified_current_message_for_routing(self):
         frontend = (ROOT / "app.js").read_text(encoding="utf-8")
-        self.assertIn("routing_prompt: clean", frontend)
+        self.assertIn("routing_prompt: workstreamCreationRequested ? `@משה ${clean}` : clean", frontend)
         self.assertIn("routing_prompt: instruction", frontend)
         self.assertIn("/api/live-steps?agent=moshe", frontend)
 

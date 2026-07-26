@@ -228,7 +228,6 @@ const state = {
   promptOptionsOpen: false,
   promptSelectedLayerIds: new Set(),
   workstreamComposerMode: false,
-  pendingWorkstreamDraft: null,
   workstreams: [],
   workstreamsLoading: false,
   workstreamLoadToken: 0,
@@ -259,8 +258,11 @@ const investigationList = document.getElementById("investigationList");
 const michlolTeam = document.getElementById("michlolTeam");
 const promptOptionsButton = document.getElementById("promptOptionsButton");
 const promptOptionsMenu = document.getElementById("promptOptionsMenu");
+const workstreamControl = document.getElementById("workstreamControl");
 const workstreamIndicator = document.getElementById("workstreamIndicator");
+const workstreamIndicatorStatus = document.getElementById("workstreamIndicatorStatus");
 const workstreamIndicatorCount = document.getElementById("workstreamIndicatorCount");
+const workstreamMenu = document.getElementById("workstreamMenu");
 const workstreamComposerMode = document.getElementById("workstreamComposerMode");
 const workstreamComposerCancel = document.getElementById("workstreamComposerCancel");
 const selectedLayersButton = document.getElementById("selectedLayersButton");
@@ -359,6 +361,12 @@ function renderMichlolTeam() {
           ${hidden.map(michlolMemberHtml).join("")}
         </div>
       </details>` : ""}`;
+  renderPromptOptions();
+}
+
+function renderPromptOptions() {
+  const option = promptOptionsMenu?.querySelector('[data-prompt-option="workstream"]');
+  if (option) option.hidden = state.activeConversationMemberId !== MOSHE_MEMBER_ID;
 }
 
 function activeConversationMember() {
@@ -430,6 +438,9 @@ async function appendAgentMemberOpeningMessage(member) {
 function selectConversationMember(memberId) {
   const member = MICHLOL_MEMBERS.find(item => item.id === memberId);
   if (!member || state.activeConversationMemberId === member.id) return;
+  if (member.id !== MOSHE_MEMBER_ID && state.workstreamComposerMode) {
+    setWorkstreamComposerMode(false);
+  }
   state.activeConversationMemberId = member.id;
   renderMichlolTeam();
   updatePromptPlaceholder();
@@ -1691,6 +1702,14 @@ function workstreamContextForChat(messageId) {
 }
 
 function applyWorkstreamChatResult(result) {
+  if (result.workstream_created) {
+    state.workstreams = [
+      result.workstream_created,
+      ...state.workstreams.filter(item => item.workstream_id !== result.workstream_created.workstream_id)
+    ];
+    setWorkstreamComposerMode(false);
+    renderWorkstreamIndicator();
+  }
   if (result.workstream_proposal) {
     state.pendingMosheWorkstreamProposal = result.workstream_proposal;
   }
@@ -1701,7 +1720,7 @@ function applyWorkstreamChatResult(result) {
   }
   if (result.workstream_artifact) {
     state.pendingMosheWorkstreamProposal = null;
-    result.answer = `${result.answer}\n\nהשינוי אושר ונשמר במעקב (גרסה ${result.workstream_artifact.revision}).`;
+    result.answer = `${result.answer}\n\nהשינוי נשמר במעקב (גרסה ${result.workstream_artifact.revision}).`;
     void loadWorkstreams();
   } else if (result.workstream_conflict?.error) {
     result.answer = `${result.answer}\n\nלא שמרתי את השינוי: ${result.workstream_conflict.error}`;
@@ -2217,15 +2236,32 @@ function activeWorkstreams() {
   return state.workstreams.filter(item => item?.status !== "archived");
 }
 
+const WORKSTREAM_STATUS_LABELS = {
+  active: "פעיל",
+  paused: "מושהה",
+  completed: "הושלם",
+  archived: "בארכיון"
+};
+
 function renderWorkstreamIndicator() {
-  if (!workstreamIndicator || !workstreamIndicatorCount) return;
+  if (!workstreamControl || !workstreamIndicator || !workstreamIndicatorCount || !workstreamMenu) return;
   const workstreams = activeWorkstreams();
-  workstreamIndicator.hidden = workstreams.length === 0;
+  workstreamControl.hidden = workstreams.length === 0;
   workstreamIndicatorCount.hidden = workstreams.length <= 1;
   workstreamIndicatorCount.textContent = workstreams.length > 1 ? String(workstreams.length) : "";
+  if (workstreamIndicatorStatus) {
+    workstreamIndicatorStatus.textContent = workstreams.length === 1
+      ? `· ${WORKSTREAM_STATUS_LABELS[workstreams[0].status] || workstreams[0].status || "פעיל"}`
+      : `· ${workstreams.length.toLocaleString("he-IL")} פעילים`;
+  }
   workstreamIndicator.title = workstreams.length > 1
-    ? `${workstreams.length} מעקבים פעילים — לחץ לעדכון`
-    : "לחץ לעדכון המעקב";
+    ? `${workstreams.length} מעקבים פעילים — לחץ לבחירה`
+    : "לחץ להצגת מצב המעקב";
+  workstreamMenu.innerHTML = workstreams.map(item => `
+    <button type="button" role="menuitem" data-workstream-show="${escapeHtml(item.workstream_id)}">
+      <span>${escapeHtml(item.title || "מעקב")}</span>
+      <span class="workstream-menu-status">${escapeHtml(WORKSTREAM_STATUS_LABELS[item.status] || item.status || "פעיל")}</span>
+    </button>`).join("");
 }
 
 async function loadWorkstreams() {
@@ -2253,7 +2289,6 @@ async function loadWorkstreams() {
 
 function setWorkstreamComposerMode(enabled) {
   state.workstreamComposerMode = Boolean(enabled);
-  if (!state.workstreamComposerMode) state.pendingWorkstreamDraft = null;
   promptForm.classList.toggle("tracking-mode", state.workstreamComposerMode);
   if (workstreamComposerMode) workstreamComposerMode.hidden = !state.workstreamComposerMode;
   updatePromptPlaceholder();
@@ -2263,22 +2298,9 @@ function setWorkstreamComposerMode(enabled) {
 }
 
 function startWorkstreamComposerMode() {
+  if (state.activeConversationMemberId !== MOSHE_MEMBER_ID) return;
   setWorkstreamComposerMode(true);
   promptInput.focus();
-}
-
-function compactWorkstreamTitle(objective) {
-  const compact = String(objective || "").replace(/\s+/g, " ").trim();
-  if (compact.length <= 58) return compact;
-  return `${compact.slice(0, 55).trim()}...`;
-}
-
-function assignedWorkstreamMember() {
-  return activeConversationMember() || {
-    id: "general-investigation-agent",
-    displayName: "סוכן חקירה",
-    roleLabel: "אחראי מעקב",
-  };
 }
 
 function workstreamMessage(html, options = {}) {
@@ -2289,77 +2311,6 @@ function workstreamMessage(html, options = {}) {
   });
   scrollConversationToLatest();
   return article;
-}
-
-function proposeWorkstreamFromChat(objective) {
-  if (state.pendingWorkstreamDraft) {
-    workstreamMessage("<p>כבר מוצעת יצירת מעקב. יש לאשר או לבטל אותה לפני הצעה נוספת.</p>");
-    return false;
-  }
-  const member = assignedWorkstreamMember();
-  const draft = {
-    investigation_id: state.investigationId,
-    title: compactWorkstreamTitle(objective),
-    objective,
-    participants: [
-      { participant_id: "current-analyst", kind: "human", display_name: "אנליסט", role: "owner" },
-      { participant_id: member.id, kind: "agent", display_name: member.displayName, role: member.roleLabel },
-    ],
-    assignments: [{
-      assignment_id: "initial-responsibility",
-      owner_id: member.id,
-      responsibility: objective,
-    }],
-  };
-  state.pendingWorkstreamDraft = draft;
-  appendMessage("user", `<p>${highlightedPromptHtml(objective)}</p>`);
-  const summary = `הצעת מעקב: ${draft.title}; מטרה: ${draft.objective}; אחראי: ${member.displayName}`;
-  state.history.push({ role: "user", content: objective }, { role: "assistant", content: summary });
-  workstreamMessage(`
-    <p class="workstream-message-title">יצירת מעקב — ${escapeHtml(draft.title)}</p>
-    <p>${escapeHtml(draft.objective)}</p>
-    <p class="workstream-message-meta">אחראי: ${escapeHtml(member.displayName)}</p>
-    <div class="workstream-message-actions">
-      <button type="button" data-workstream-confirm>יצירת המעקב</button>
-      <button type="button" data-workstream-cancel>ביטול</button>
-    </div>`, { label: `${member.displayName} · עדכון מעקב`, memberId: member.id });
-  return true;
-}
-
-async function confirmPendingWorkstream(button) {
-  const draft = state.pendingWorkstreamDraft;
-  if (!draft || state.busy) return;
-  const actions = button.closest(".workstream-message-actions");
-  actions?.querySelectorAll("button").forEach(item => { item.disabled = true; });
-  try {
-    const response = await fetch("/api/workstreams", {
-      method: "POST",
-      headers: { "Content-Type": "application/json; charset=utf-8" },
-      body: JSON.stringify(draft),
-    });
-    const created = await response.json();
-    if (!response.ok) throw new Error(created.error || "יצירת המעקב נכשלה");
-    state.workstreams = [created, ...state.workstreams.filter(item => item.workstream_id !== created.workstream_id)];
-    state.pendingWorkstreamDraft = null;
-    setWorkstreamComposerMode(false);
-    renderWorkstreamIndicator();
-    const article = button.closest(".workstream-message");
-    if (article) article.innerHTML = `
-      <div class="message-label">${escapeHtml(`${draft.participants[1].display_name} · עדכון מעקב`)}</div>
-      <p class="workstream-message-title">המעקב נוצר — ${escapeHtml(created.title)}</p>
-      <p>${escapeHtml(created.objective)}</p>
-      <p class="workstream-message-meta">סטטוס: פעיל</p>`;
-  } catch (error) {
-    actions?.querySelectorAll("button").forEach(item => { item.disabled = false; });
-    workstreamMessage(`<p>לא הצלחתי ליצור את המעקב.</p><div class="answer-callout">${escapeHtml(error.message)}</div>`);
-  }
-  scrollConversationToLatest();
-}
-
-function cancelPendingWorkstream() {
-  state.pendingWorkstreamDraft = null;
-  setWorkstreamComposerMode(false);
-  workstreamMessage("<p>יצירת המעקב בוטלה. לא נשמר מעקב חדש.</p>");
 }
 
 async function fetchWorkstream(workstreamId) {
@@ -2419,10 +2370,13 @@ function workstreamArtifactHtml(workstream) {
 }
 
 function appendWorkstreamUpdate(workstream) {
+  conversation.querySelectorAll("[data-workstream-update-id]").forEach(message => {
+    if (message.dataset.workstreamUpdateId === workstream.workstream_id) message.remove();
+  });
   const agent = workstreamAgent(workstream);
   const assignment = (workstream.assignments || []).find(item => item.status === "active")
     || (workstream.assignments || [])[0];
-  workstreamMessage(`
+  const message = workstreamMessage(`
     <p class="workstream-message-title">עדכון מעקב — ${escapeHtml(workstream.title || "מעקב")}</p>
     <p>${escapeHtml(workstream.objective || "")}</p>
     <p class="workstream-message-meta">אחריות: ${escapeHtml(assignment?.responsibility || "לא הוגדרה")}</p>
@@ -2434,24 +2388,16 @@ function appendWorkstreamUpdate(workstream) {
       label: agent ? `${agent.display_name} · עדכון מעקב` : "עדכון מעקב",
       memberId: agent?.participant_id,
     });
+  message.dataset.workstreamUpdateId = workstream.workstream_id;
 }
 
 async function requestWorkstreamUpdate() {
   if (state.workstreamsLoading) return;
   const workstreams = activeWorkstreams();
-  if (!workstreams.length) {
-    workstreamMessage("<p>אין מעקבים פעילים בחקירה הזו.</p>");
-    return;
-  }
-  if (workstreams.length > 1) {
-    workstreamMessage(`
-      <p>יש ${workstreams.length.toLocaleString("he-IL")} מעקבים פעילים. על איזה מהם להציג עדכון?</p>
-      <div class="workstream-message-actions">
-        ${workstreams.map(item => `<button type="button" data-workstream-show="${escapeHtml(item.workstream_id)}">${escapeHtml(item.title || "מעקב")}</button>`).join("")}
-      </div>`);
-    return;
-  }
-  await showWorkstreamUpdate(workstreams[0].workstream_id);
+  if (!workstreams.length || !workstreamMenu) return;
+  const open = workstreamMenu.hidden;
+  workstreamMenu.hidden = !open;
+  workstreamIndicator?.setAttribute("aria-expanded", open ? "true" : "false");
 }
 
 async function showWorkstreamUpdate(workstreamId) {
@@ -3611,12 +3557,19 @@ async function loadRecordedQuestions() {
   }
 }
 
-async function runPrompt(prompt) {
+async function runPrompt(prompt, options = {}) {
   const clean = prompt.trim();
   if (!clean || state.busy) return;
+  const workstreamCreationRequested = options.workstreamCreation === true;
   const selectedLayers = selectedLayerContextForAgent();
   state.activeTeamMentions = teamMentionsForPrompt(clean);
-  const agentPrompt = promptForAgentWithSelectedLayers(clean, selectedLayers);
+  const workstreamInstruction = workstreamCreationRequested
+    ? "המשתמש נמצא בזרימת יצירת מעקב. נהל שיחה טבעית: אם חסר מידע חיוני שאל שאלה קצרה; כאשר המטרה והאחריות ברורות, השתמש בכלי יצירת המעקב."
+    : "";
+  const agentPrompt = promptForAgentWithSelectedLayers(
+    [clean, workstreamInstruction].filter(Boolean).join("\n\n"),
+    selectedLayers
+  );
   const investigationState = investigationStateForPrompt(selectedLayers);
   const currentTurnMessageId = globalThis.crypto?.randomUUID?.()
     || `turn_${Date.now()}_${Math.random().toString(16).slice(2)}`;
@@ -3651,11 +3604,12 @@ async function runPrompt(prompt) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         prompt: agentPrompt,
-        routing_prompt: clean,
+        routing_prompt: workstreamCreationRequested ? `@משה ${clean}` : clean,
         history: state.history,
         investigation_id: state.investigationId,
         investigation_state: investigationState,
-        workstream_context: workstreamContextForChat(currentTurnMessageId)
+        workstream_context: workstreamContextForChat(currentTurnMessageId),
+        workstream_creation_requested: workstreamCreationRequested
       })
     });
     progressTimer = setInterval(pollLiveSteps, 1800);
@@ -4104,7 +4058,6 @@ function resetInvestigation(options = {}) {
   state.workstreams = [];
   state.workstreamsLoading = false;
   state.pendingMosheWorkstreamProposal = null;
-  state.pendingWorkstreamDraft = null;
   state.workstreamComposerMode = false;
   if (!options.keepInvestigation) {
     const investigation = ensureInvestigationRecord(DEFAULT_INVESTIGATION_NAME);
@@ -4180,22 +4133,10 @@ document.addEventListener("click", event => {
     if (promptOption.dataset.promptOption === "workstream") startWorkstreamComposerMode();
     return;
   }
-  const chooseWorkstreamLayer = event.target.closest("[data-workstream-choose-layer]");
-  if (chooseWorkstreamLayer) {
-    openQueryLayersModal();
-    return;
-  }
-  const confirmWorkstream = event.target.closest("[data-workstream-confirm]");
-  if (confirmWorkstream) {
-    confirmPendingWorkstream(confirmWorkstream);
-    return;
-  }
-  if (event.target.closest("[data-workstream-cancel]")) {
-    cancelPendingWorkstream();
-    return;
-  }
   const showWorkstream = event.target.closest("[data-workstream-show]");
   if (showWorkstream) {
+    if (workstreamMenu) workstreamMenu.hidden = true;
+    workstreamIndicator?.setAttribute("aria-expanded", "false");
     showWorkstreamUpdate(showWorkstream.dataset.workstreamShow);
     return;
   }
@@ -4447,10 +4388,10 @@ promptForm.addEventListener("submit", event => {
   const prompt = promptInput.value;
   if (state.workstreamComposerMode) {
     if (!prompt.trim()) return;
-    if (!proposeWorkstreamFromChat(prompt.trim())) return;
     promptInput.value = "";
     syncMentionHighlight(promptInput);
     closeTeamMentionMenu();
+    runPrompt(prompt, { workstreamCreation: true });
     return;
   }
   promptInput.value = "";
@@ -4493,6 +4434,10 @@ document.addEventListener("pointerdown", event => {
   });
   if (!event.target.closest("#teamMentionMenu") && event.target !== teamMentionState.textarea) {
     closeTeamMentionMenu();
+  }
+  if (workstreamMenu && !event.target.closest("#workstreamControl")) {
+    workstreamMenu.hidden = true;
+    workstreamIndicator?.setAttribute("aria-expanded", "false");
   }
 });
 window.addEventListener("resize", () => {

@@ -4,6 +4,22 @@ import server
 
 
 class WorkstreamIndicationToolsTest(unittest.TestCase):
+    def test_prepares_complete_workstream_creation_handoff(self):
+        result = server.prepare_workstream_creation({
+            "title": "מעקב רחפנים",
+            "objective": "לזהות אינדיקציות למרכז פיקוד",
+            "responsibility": "לאתר, להצליב ולהציג פערים",
+        })
+        self.assertFalse(result["persisted"])
+        self.assertEqual("מעקב רחפנים", result["workstream_creation"]["title"])
+
+    def test_workstream_creation_requires_conversationally_complete_data(self):
+        with self.assertRaisesRegex(ValueError, "responsibility is required"):
+            server.prepare_workstream_creation({
+                "title": "מעקב רחפנים",
+                "objective": "לזהות אינדיקציות למרכז פיקוד",
+            })
+
     def test_prepare_resolves_records_without_persisting(self):
         record_id = next(iter(server.EVENT_BY_ID))
         result = server.prepare_workstream_indication_proposal({

@@ -6,7 +6,7 @@
   <title>סביבת מודיעין</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="./vendor/maplibre-gl.css">
-  <link rel="stylesheet" href="./styles.css?v=113">
+  <link rel="stylesheet" href="./styles.css?v=114">
 </head>
 <body>
   <a class="help-button" href="./help.html" target="_blank" rel="noopener" aria-label="פתח עזרה">?</a>
@@ -22,9 +22,12 @@
           <button id="investigationAddButton" type="button" title="צור חקירה חדשה" aria-label="צור חקירה חדשה">+</button>
           <div id="investigationList" class="investigation-list" role="listbox" hidden></div>
         </div>
-        <button id="workstreamIndicator" class="workstream-indicator" type="button" aria-label="הצג עדכון מעקב" hidden>
-          <span>מעקב</span><span id="workstreamIndicatorCount" class="workstream-indicator-count" hidden></span>
-        </button>
+        <div id="workstreamControl" class="workstream-control" hidden>
+          <button id="workstreamIndicator" class="workstream-indicator" type="button" aria-label="בחר מעקב" aria-expanded="false" aria-controls="workstreamMenu">
+            <span>מעקב</span><span id="workstreamIndicatorStatus" class="workstream-indicator-status"></span><span id="workstreamIndicatorCount" class="workstream-indicator-count" hidden></span>
+          </button>
+          <div id="workstreamMenu" class="workstream-menu" role="menu" aria-label="בחירת מעקב" hidden></div>
+        </div>
         <div id="michlolTeam" class="michlol-team" role="list" aria-label="מכלול"></div>
       </div>
     </section>
@@ -210,6 +213,6 @@
   </div>
 
   <script src="./vendor/maplibre-gl.js"></script>
-  <script src="./app.js?v=113"></script>
+  <script src="./app.js?v=114"></script>
 </body>
 </html>

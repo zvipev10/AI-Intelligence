@@ -24,23 +24,35 @@ class WorkstreamUiTests(unittest.TestCase):
         self.assertNotIn("starting_source", self.app)
         self.assertNotIn("data-workstream-open-layer", self.app)
 
-    def test_creation_requires_inline_confirmation(self):
-        self.assertIn("state.pendingWorkstreamDraft = draft", self.app)
-        self.assertIn("data-workstream-confirm", self.app)
-        self.assertIn("data-workstream-cancel", self.app)
-        self.assertIn('fetch("/api/workstreams"', self.app)
-        self.assertNotIn("await createWorkstreamFromChat", self.app)
+    def test_creation_is_a_moshe_conversation_without_inline_confirmation(self):
+        self.assertIn("workstream_creation_requested: workstreamCreationRequested", self.app)
+        self.assertIn('routing_prompt: workstreamCreationRequested ? `@משה ${clean}` : clean', self.app)
+        self.assertIn("result.workstream_created", self.app)
+        self.assertNotIn("pendingWorkstreamDraft", self.app)
+        self.assertNotIn("data-workstream-confirm", self.app)
+        self.assertNotIn("data-workstream-cancel", self.app)
 
-    def test_indicator_is_minimal_and_returns_update_to_chat(self):
+    def test_indicator_status_and_selection_are_in_upper_bar(self):
+        self.assertIn('id="workstreamControl"', self.index)
         self.assertIn('id="workstreamIndicator"', self.index)
+        self.assertIn('id="workstreamIndicatorStatus"', self.index)
+        self.assertIn('id="workstreamMenu"', self.index)
         self.assertIn("function requestWorkstreamUpdate()", self.app)
         self.assertIn("appendWorkstreamUpdate", self.app)
-        self.assertNotIn("workstream-popover", self.index)
         self.assertNotIn("workstream-drawer", self.index)
 
-    def test_multiple_workstreams_are_selected_in_chat(self):
+    def test_multiple_workstreams_are_selected_in_upper_bar(self):
         self.assertIn("data-workstream-show", self.app)
-        self.assertIn("על איזה מהם להציג עדכון?", self.app)
+        self.assertIn("workstreamMenu.innerHTML", self.app)
+        self.assertNotIn("על איזה מהם להציג עדכון?", self.app)
+
+    def test_tracking_option_is_only_visible_for_moshe(self):
+        self.assertIn("option.hidden = state.activeConversationMemberId !== MOSHE_MEMBER_ID", self.app)
+        self.assertIn("if (state.activeConversationMemberId !== MOSHE_MEMBER_ID) return;", self.app)
+
+    def test_reopening_replaces_the_previous_copy(self):
+        self.assertIn("data-workstream-update-id", self.app)
+        self.assertIn("message.dataset.workstreamUpdateId = workstream.workstream_id", self.app)
 
     def test_update_is_deterministic_and_discloses_manual_trigger(self):
         self.assertIn("workstream.objective", self.app)
@@ -68,7 +80,8 @@ class WorkstreamUiTests(unittest.TestCase):
     def test_tracking_and_workstream_messages_have_visible_states(self):
         self.assertIn(".prompt-form.tracking-mode", self.styles)
         self.assertIn(".workstream-message", self.styles)
-        self.assertIn(".workstream-indicator[hidden]", self.styles)
+        self.assertIn(".workstream-control[hidden]", self.styles)
+        self.assertIn(".workstream-menu[hidden]", self.styles)
 
     def test_moshe_proposal_is_staged_in_general_chat_state(self):
         self.assertIn("pendingMosheWorkstreamProposal", self.app)

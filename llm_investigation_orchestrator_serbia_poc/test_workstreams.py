@@ -132,6 +132,16 @@ class WorkstreamApiTests(unittest.TestCase):
         self.assertEqual(status, 400)
         self.assertEqual(error["error"], "Archived workstream cannot be updated")
 
+    def test_moshe_creation_handoff_persists_owned_workstream(self):
+        created = server.apply_workstream_creation("investigation-42", {
+            "title": "UAV indications",
+            "objective": "Track indications of a command position.",
+            "responsibility": "Corroborate reports and expose gaps.",
+        })
+        self.assertEqual("investigation-42", created["investigation_id"])
+        self.assertEqual("moshe-targets-officer", created["assignments"][0]["owner_id"])
+        self.assertEqual("משה", created["participants"][1]["display_name"])
+
     def test_rejects_invalid_input_and_cross_participant_assignment(self):
         invalid = self.create_payload()
         invalid["investigation_id"] = "../escape"

@@ -1033,6 +1033,41 @@ def create_workstream(request: dict) -> dict:
     })
 
 
+def apply_workstream_creation(investigation_id: str, creation: Any) -> dict | None:
+    """Persist a Moshe creation handoff after the dedicated chat mode authorized this turn."""
+    if not isinstance(creation, dict):
+        return None
+    title = normalize_workstream_text(creation.get("title"), "title", 240, required=True)
+    objective = normalize_workstream_text(creation.get("objective"), "objective", 4000, required=True)
+    responsibility = normalize_workstream_text(
+        creation.get("responsibility"), "responsibility", 2000, required=True
+    )
+    return create_workstream({
+        "investigation_id": investigation_id,
+        "title": title,
+        "objective": objective,
+        "participants": [
+            {
+                "participant_id": "current-analyst",
+                "kind": "human",
+                "display_name": "אנליסט",
+                "role": "owner",
+            },
+            {
+                "participant_id": "moshe-targets-officer",
+                "kind": "agent",
+                "display_name": "משה",
+                "role": "קצין מטרות",
+            },
+        ],
+        "assignments": [{
+            "assignment_id": "initial-responsibility",
+            "owner_id": "moshe-targets-officer",
+            "responsibility": responsibility,
+        }],
+    })
+
+
 def load_workstream(workstream_id: str) -> dict | None:
     path = workstream_path(workstream_id)
     if not path.exists():
@@ -2972,6 +3007,18 @@ class Handler(SimpleHTTPRequestHandler):
                 responding_agent=route.responding_agent,
                 mission_run_id=route.mission_run_id,
             )
+            if (
+                request.get("workstream_creation_requested") is True
+                and route.responding_agent == MOSHE_AGENT_ID
+            ):
+                try:
+                    created = apply_workstream_creation(
+                        conversation_id, result.get("workstream_creation")
+                    )
+                    if created:
+                        result["workstream_created"] = created
+                except ValueError as exc:
+                    result["workstream_conflict"] = {"error": str(exc)}
             try:
                 artifact, conflict = apply_workstream_action(
                     workstream_context, result.get("workstream_action")

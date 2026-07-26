@@ -2666,6 +2666,27 @@ WORKSTREAM_ACTIONS = {
 }
 
 
+def prepare_workstream_creation(arguments: dict[str, Any]) -> dict[str, Any]:
+    """Return a bounded workstream creation handoff; persistence stays in the app server."""
+    title = str(arguments.get("title") or "").strip()
+    objective = str(arguments.get("objective") or "").strip()
+    responsibility = str(arguments.get("responsibility") or "").strip()
+    if not title:
+        raise ValueError("title is required")
+    if not objective:
+        raise ValueError("objective is required")
+    if not responsibility:
+        raise ValueError("responsibility is required")
+    return {
+        "workstream_creation": {
+            "title": title,
+            "objective": objective,
+            "responsibility": responsibility,
+        },
+        "persisted": False,
+    }
+
+
 def prepare_workstream_indication_proposal(arguments: dict[str, Any]) -> dict[str, Any]:
     """Resolve references and prepare an uncommitted workstream change."""
     action = str(arguments.get("action") or "create").strip()
@@ -2804,6 +2825,22 @@ TARGET_EVIDENCE_SCHEMA = {
 
 
 TOOLS = [
+    {
+        "name": "prepare_workstream_creation",
+        "title": "Prepare a workstream for creation",
+        "description": "Use only in the dedicated workstream-creation conversation after title, objective, and Moshe's responsibility are clear. If any are unclear, ask the user instead of calling this tool. The app server persists the returned handoff immediately; there is no separate approval step.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "title": {"type": "string", "minLength": 1, "maxLength": 240},
+                "objective": {"type": "string", "minLength": 1, "maxLength": 4000},
+                "responsibility": {"type": "string", "minLength": 1, "maxLength": 2000},
+            },
+            "required": ["title", "objective", "responsibility"],
+            "additionalProperties": False,
+        },
+        "annotations": {"readOnlyHint": True, "destructiveHint": False, "idempotentHint": False, "openWorldHint": False},
+    },
     {
         "name": "prepare_workstream_indication_proposal",
         "title": "Prepare a workstream indication proposal",
@@ -3313,6 +3350,7 @@ TOOLS = [
 ]
 
 TOOL_HANDLERS = {
+    "prepare_workstream_creation": prepare_workstream_creation,
     "prepare_workstream_indication_proposal": prepare_workstream_indication_proposal,
     "decide_workstream_indication_proposal": decide_workstream_indication_proposal,
     "present_requested_results": present_requested_results,

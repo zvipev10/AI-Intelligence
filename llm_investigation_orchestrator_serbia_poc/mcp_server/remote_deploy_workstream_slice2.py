@@ -20,7 +20,7 @@ REMOTE_BACKUP_ROOT = "/opt/serbia-poc-ui-backups"
 MOSHE_HOME = "/home/ubuntu/.hermes/profiles/moshe"
 UI_SERVICE = "serbia-poc-ui.service"
 MOSHE_SERVICE = "hermes-moshe-gateway.service"
-UI_FILES = ("server.py", "index.html", "app.js", "agent_result_pipeline.py", "workstream_artifacts.py")
+UI_FILES = ("server.py", "index.html", "app.js", "styles.css", "agent_result_pipeline.py", "workstream_artifacts.py")
 
 
 def upload(client, staging: str) -> None:
@@ -73,13 +73,16 @@ def deploy(client) -> tuple[str, dict]:
         "status": "curl -fsS http://127.0.0.1:8769/api/status",
         "public": (
             f"curl -k -LfsS https://{HOST}/ | grep -q 'data-prompt-option=\"workstream\"' "
+            f"&& curl -k -LfsS https://{HOST}/ | grep -q 'id=\"workstreamMenu\"' "
             f"&& curl -k -LfsS https://{HOST}/app.js | grep -q 'workstreamArtifactHtml' "
-            f"&& curl -k -LfsS https://{HOST}/app.js | grep -q 'thinkingIndicatorHtml' && echo present"
+            f"&& curl -k -LfsS https://{HOST}/app.js | grep -q 'thinkingIndicatorHtml' "
+            f"&& curl -k -LfsS https://{HOST}/app.js | grep -q 'workstream_creation_requested' "
+            f"&& curl -k -LfsS https://{HOST}/styles.css | grep -q 'workstream-menu' && echo present"
         ),
         "ui_contract": f"grep -q 'workstreamArtifactHtml' {root_q}/app.js && ! grep -q 'starting_source' {root_q}/app.js && echo present",
         "server_contract": f"grep -q 'apply_workstream_action' {root_q}/server.py && test -f {root_q}/workstream_artifacts.py && echo present",
-        "mcp_tools": f"grep -q 'prepare_workstream_indication_proposal' {mcp_q}/server.py && grep -q 'decide_workstream_indication_proposal' {mcp_q}/server.py && echo present",
-        "moshe_tools": f"grep -q 'prepare_workstream_indication_proposal' {MOSHE_HOME}/config.yaml && grep -q 'decide_workstream_indication_proposal' {MOSHE_HOME}/config.yaml && echo present",
+        "mcp_tools": f"grep -q 'prepare_workstream_creation' {mcp_q}/server.py && grep -q 'prepare_workstream_indication_proposal' {mcp_q}/server.py && grep -q 'decide_workstream_indication_proposal' {mcp_q}/server.py && echo present",
+        "moshe_tools": f"grep -q 'prepare_workstream_creation' {MOSHE_HOME}/config.yaml && grep -q 'prepare_workstream_indication_proposal' {MOSHE_HOME}/config.yaml && grep -q 'decide_workstream_indication_proposal' {MOSHE_HOME}/config.yaml && echo present",
         "logs": f"journalctl -u {UI_SERVICE} -u {MOSHE_SERVICE} -n 50 --no-pager",
     }
     result, failed = {}, False

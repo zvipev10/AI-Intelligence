@@ -1,5 +1,44 @@
 # Capability Decisions
 
+### 2026-07-26 — Make workstream creation a Moshe-owned conversation
+
+Decision:
+Expose `מעקב` only while Moshe is the selected conversation member. Keep the user in a dedicated Moshe chat mode while required information is incomplete. Once Moshe has a clear title, objective, and functional responsibility, the app persists the workstream from his structured handoff in that same turn without a separate preview or approval action.
+
+Context:
+The implemented Phase 1 flow still behaved as a deterministic local UI wizard, allowed assignment to any selected member, and required approve/cancel buttons. This contradicted the accepted chat-first direction.
+
+Rationale:
+Moshe contributes interpretation and clarification rather than merely labeling a client-generated record. Server-owned validation and persistence preserve the authority boundary without adding a redundant approval step.
+
+Alternatives considered:
+- Keep the local preview and confirmation controls.
+- Allow every visible team member to own workstreams despite having no implemented agent contract.
+- Create incomplete workstreams and request missing information afterward.
+
+Impact:
+The 2026-07-24 preview-and-confirm creation decision is superseded. Artifact promotion and archiving retain their existing protected-decision semantics.
+
+Follow-ups:
+Validate the real Moshe profile against complete and incomplete creation prompts in the demo environment.
+
+### 2026-07-26 — Consolidate workstream status and selection in the upper bar
+
+Decision:
+The upper workstream control displays compact status and count and contains the selector when multiple workstreams exist. Selecting a workstream returns its detailed update and actions to chat. Reopening the same workstream replaces its earlier open-summary message instead of adding a duplicate.
+
+Context:
+The first implementation asked the user to choose among workstreams inside chat and could append repeated copies of the same open summary.
+
+Rationale:
+Status and navigation belong to persistent workspace chrome; content, explanation, and actions belong to the conversation.
+
+Impact:
+The indicator remains compact but is now a small upper-bar menu rather than a button that emits a selection prompt into chat.
+
+Follow-ups:
+Review status labels and long-title truncation during demo acceptance.
+
 ### 2026-07-26 — Let Moshe interpret artifact intent in general chat
 
 Decision:
