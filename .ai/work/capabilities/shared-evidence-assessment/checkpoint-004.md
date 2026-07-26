@@ -45,3 +45,16 @@ None found by automated implementation review.
 ## Recommendation
 
 Approve Slice 2 for merge, then run final validation issue #43 against the deployed demo and stale dataset before closing the parent capability.
+
+## VM deployment
+
+Deployed PR #46 head commit `28b35d4` to the demo VM using a state-preserving, file-scoped deployment.
+
+- UI service: active.
+- Moshe gateway service: active.
+- `/api/status`: dataset `v2.1`, 14,800 rows.
+- Public application: HTTP 200 after the existing HTTPS-to-HTTP redirect.
+- Public `app.js`: contains `workstreamArtifactHtml` and no `starting_source`.
+- VM UI server: contains the artifact service and confirmed-action bridge.
+- VM MCP server and Moshe profile: expose both workstream proposal/decision tools.
+- Rollback backup: `/opt/serbia-poc-ui-backups/workstream-slice2-20260726T182421Z`.
