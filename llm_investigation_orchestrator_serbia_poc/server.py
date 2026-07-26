@@ -922,19 +922,6 @@ def normalize_workstream_text(value: Any, field: str, limit: int, required: bool
     return text
 
 
-def normalize_starting_source(value: Any) -> dict | None:
-    if value in (None, ""):
-        return None
-    if not isinstance(value, dict):
-        raise ValueError("Invalid starting_source")
-    kind = normalize_workstream_text(value.get("kind"), "starting_source kind", 80, required=True)
-    reference_id = normalize_workstream_text(
-        value.get("reference_id"), "starting_source reference_id", 240, required=True
-    )
-    label = normalize_workstream_text(value.get("label"), "starting_source label", 240)
-    return {"kind": kind, "reference_id": reference_id, "label": label}
-
-
 def normalize_participants(value: Any) -> list[dict]:
     if value is None:
         return []
@@ -1013,9 +1000,6 @@ def normalize_workstream_request(request: dict, existing: dict | None = None) ->
         "title": title,
         "objective": objective,
         "status": status,
-        "starting_source": normalize_starting_source(
-            request.get("starting_source", existing.get("starting_source"))
-        ),
         "participants": participants,
         "assignments": assignments,
     }
@@ -1176,7 +1160,6 @@ def bounded_workstream_context(value: Any, investigation_id: str) -> dict | None
         "workstream_id": workstream_id,
         "title": workstream.get("title"),
         "objective": workstream.get("objective"),
-        "starting_source": workstream.get("starting_source"),
         "active_artifact": active_artifact,
         "pending_proposal": pending,
         "current_turn_message_id": str(value.get("current_turn_message_id") or "").strip()[:160],

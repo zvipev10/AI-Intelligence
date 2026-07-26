@@ -92,11 +92,6 @@ class WorkstreamArtifactApiTests(unittest.TestCase):
             "investigation_id": "investigation-42",
             "title": "Indication tracking",
             "objective": "Review indications before assessment.",
-            "starting_source": {
-                "kind": "catalog_layer",
-                "reference_id": "events:UAV",
-                "label": "UAV events",
-            },
             "participants": [
                 {"participant_id": "analyst-1", "kind": "human", "display_name": "Analyst"},
                 {"participant_id": "moshe", "kind": "agent", "display_name": "Moshe"},

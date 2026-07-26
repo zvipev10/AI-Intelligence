@@ -34,7 +34,6 @@ None found by automated implementation review.
 - When more than one active workstream exists, the current chat bridge does not guess which workstream should receive a proposal; the existing chat selection flow remains the disambiguation mechanism.
 - Human attribution remains the existing synthetic single-user participant contract, not production authentication.
 - Natural-language fixtures define acceptance cases but require deployment-level evaluation against the running Moshe profile in final validation.
-- Existing workstreams may still contain a legacy `starting_source`; it remains readable and its source-layer button is shown only when present.
 
 ## Required checkpoint reviewers
 

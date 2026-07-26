@@ -21,6 +21,8 @@ class WorkstreamUiTests(unittest.TestCase):
         self.assertNotIn("כדי ליצור מעקב יש לצרף שכבה אחת במפורש.", self.app)
         self.assertNotIn("starting_source: workstreamLayerReference(layer)", self.app)
         self.assertNotIn("if (state.promptSelectedLayerIds.size !== 1) openQueryLayersModal()", self.app)
+        self.assertNotIn("starting_source", self.app)
+        self.assertNotIn("data-workstream-open-layer", self.app)
 
     def test_creation_requires_inline_confirmation(self):
         self.assertIn("state.pendingWorkstreamDraft = draft", self.app)

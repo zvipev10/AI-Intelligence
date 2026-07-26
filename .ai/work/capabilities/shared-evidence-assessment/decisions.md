@@ -146,7 +146,7 @@ Alternatives considered:
 - Store record IDs without canonical source provenance.
 
 Impact:
-The 2026-07-24 decision to require one explicit layer is superseded. Existing workstreams that retain `starting_source` remain readable, but new workstreams do not create it. Reopening a workstream in chat shows the active artifact rather than relying on the starting layer for context.
+The 2026-07-24 decision to require one explicit layer is superseded. `starting_source` and its source-layer action are removed from the MVP contract. Reopening a workstream in chat shows the active artifact.
 
 Follow-ups:
 Validate multi-source indications and canonical provenance in final MVP validation.

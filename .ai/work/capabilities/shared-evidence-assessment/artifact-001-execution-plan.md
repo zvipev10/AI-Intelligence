@@ -169,7 +169,7 @@ Changes:
 - add a focused artifact service/module;
 - implement generic envelope and type registry;
 - implement the first content validator;
-- resolve `REC-...` from the attached event layer;
+- resolve each `REC-...` canonically from the event dataset and store its canonical source provenance;
 - resolve optional `TGT-...` read-only from the target catalog;
 - add optimistic revisions, append-only history, atomic writes, and APIs;
 - initialize existing workstreams safely when artifact fields are absent;

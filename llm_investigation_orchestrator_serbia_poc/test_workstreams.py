@@ -47,11 +47,6 @@ class WorkstreamApiTests(unittest.TestCase):
             "investigation_id": "investigation-42",
             "title": "Regional assessment",
             "objective": "Maintain one durable shared unit of analytical work.",
-            "starting_source": {
-                "kind": "investigation",
-                "reference_id": "investigation-42",
-                "label": "Regional investigation",
-            },
             "participants": [
                 {
                     "participant_id": "analyst-1",
@@ -153,18 +148,15 @@ class WorkstreamApiTests(unittest.TestCase):
         status, error = self.request("GET", "/api/workstreams/../escape")
         self.assertIn(status, {400, 404})
 
-    def test_workstream_can_be_created_without_starting_source(self):
-        payload = self.create_payload()
-        payload.pop("starting_source")
-        status, created = self.request("POST", "/api/workstreams", payload)
+    def test_workstream_contract_has_no_starting_source(self):
+        status, created = self.request("POST", "/api/workstreams", self.create_payload())
         self.assertEqual(status, 201)
-        self.assertIsNone(created["starting_source"])
+        self.assertNotIn("starting_source", created)
 
     def test_listing_is_scoped_to_investigation(self):
         first = self.create_payload()
         second = self.create_payload()
         second["investigation_id"] = "investigation-99"
-        second["starting_source"]["reference_id"] = "investigation-99"
         self.assertEqual(self.request("POST", "/api/workstreams", first)[0], 201)
         self.assertEqual(self.request("POST", "/api/workstreams", second)[0], 201)
 

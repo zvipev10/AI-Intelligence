@@ -2313,7 +2313,6 @@ function appendWorkstreamUpdate(workstream) {
     ${workstreamArtifactHtml(workstream)}
     <p>המעקב פעיל. בשלב זה העדכון מוצג לפי בקשתך ולא נוצר אוטומטית.</p>
     <div class="workstream-message-actions">
-      ${workstream.starting_source?.reference_id ? `<button type="button" data-workstream-open-layer="${escapeHtml(workstream.workstream_id)}">פתיחת שכבת המקור</button>` : ""}
       <button type="button" class="danger-button" data-workstream-archive="${escapeHtml(workstream.workstream_id)}">העברה לארכיון</button>
     </div>`, {
       label: agent ? `${agent.display_name} · עדכון מעקב` : "עדכון מעקב",
@@ -2344,22 +2343,6 @@ async function showWorkstreamUpdate(workstreamId) {
     appendWorkstreamUpdate(await fetchWorkstream(workstreamId));
   } catch (error) {
     workstreamMessage(`<p>לא הצלחתי לטעון את עדכון המעקב.</p><div class="answer-callout">${escapeHtml(error.message)}</div>`);
-  }
-}
-
-async function openWorkstreamLayer(workstreamId) {
-  try {
-    const workstream = await fetchWorkstream(workstreamId);
-    const source = workstream.starting_source || {};
-    let layer = state.layers.find(item => item.id === source.reference_id || item.catalogLayerId === source.reference_id);
-    if (!layer && source.kind === "catalog_layer") layer = await openCatalogLayer(source.reference_id);
-    if (!layer) throw new Error("השכבה אינה זמינה כרגע.");
-    layer.visible = true;
-    state.activeLayerId = layer.id;
-    state.rawOverlayMinimized = false;
-    renderAllViews();
-  } catch (error) {
-    workstreamMessage(`<p>לא הצלחתי לפתוח את שכבת המעקב.</p><div class="answer-callout">${escapeHtml(error.message)}</div>`);
   }
 }
 
@@ -4108,11 +4091,6 @@ document.addEventListener("click", event => {
   const showWorkstream = event.target.closest("[data-workstream-show]");
   if (showWorkstream) {
     showWorkstreamUpdate(showWorkstream.dataset.workstreamShow);
-    return;
-  }
-  const openWorkstreamSource = event.target.closest("[data-workstream-open-layer]");
-  if (openWorkstreamSource) {
-    openWorkstreamLayer(openWorkstreamSource.dataset.workstreamOpenLayer);
     return;
   }
   const archiveWorkstream = event.target.closest("[data-workstream-archive]");
