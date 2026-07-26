@@ -731,19 +731,25 @@ function parseCsv(text) {
   let row = [];
   let cell = "";
   let quoted = false;
+  let atFieldStart = true;
   for (let i = 0; i < text.length; i += 1) {
     const char = text[i];
     const next = text[i + 1];
     if (char === '"' && quoted && next === '"') { cell += '"'; i += 1; }
-    else if (char === '"') quoted = !quoted;
-    else if (char === ',' && !quoted) { row.push(cell); cell = ""; }
+    else if (char === '"' && quoted) quoted = false;
+    else if (char === '"' && atFieldStart) { quoted = true; atFieldStart = false; }
+    else if (char === ',' && !quoted) { row.push(cell); cell = ""; atFieldStart = true; }
     else if ((char === '\n' || char === '\r') && !quoted) {
       if (char === '\r' && next === '\n') i += 1;
       row.push(cell);
       if (row.some(value => value !== "")) rows.push(row);
       row = [];
       cell = "";
-    } else cell += char;
+      atFieldStart = true;
+    } else {
+      cell += char;
+      atFieldStart = false;
+    }
   }
   if (cell || row.length) { row.push(cell); rows.push(row); }
   const headers = rows.shift().map(header => header.replace(/^\uFEFF/, ""));
@@ -1004,7 +1010,7 @@ function buildCatalogLayer(layer, rows = []) {
 }
 
 function buildTypedResultLayers(result = {}) {
-  return (result.layers || [])
+  return (result.requested_result_layers || [])
     .filter(layer => layer && Array.isArray(layer.rows) && layer.rows.length)
     .map(layer => ({
       dataId: layer.id || layerId(layer.kind, "result"),
@@ -1014,8 +1020,111 @@ function buildTypedResultLayers(result = {}) {
       items: layer.kind === "events"
         ? layer.rows.map(item => ({ ...item, date: new Date(item.timestamp_utc) }))
         : layer.rows,
-      capabilities: layer.capabilities || { table: true, map: false, timeline: false }
+      capabilities: layer.capabilities || { table: true, map: false, timeline: false },
+      preferredView: layer.recommended_view
     }));
+}
+
+function buildEvidenceReferenceLayers(result = {}) {
+  return (result.evidence_reference_layers || [])
+    .filter(layer => layer && Array.isArray(layer.rows) && layer.rows.length)
+    .map(layer => ({
+      dataId: layer.id || layerId(layer.kind, "evidence"),
+      label: layer.label || "ראיות תומכות",
+      kind: layer.kind,
+      visible: true,
+      items: layer.kind === "events"
+        ? layer.rows.map(item => ({ ...item, date: new Date(item.timestamp_utc) }))
+        : layer.rows,
+      capabilities: layer.capabilities || { table: true, map: false, timeline: false },
+      preferredView: layer.recommended_view
+    }));
+}
+
+function evidenceLayerIdentifiers(layer) {
+  const keysByKind = {
+    events: ["event_id", "record_id"],
+    locations: ["location_id", "key"],
+    location_metadata: ["location_id"],
+    entity_metadata: ["entity_id"],
+    attack_targets: ["target_id"],
+    time_aggregation: ["key", "sortKey", "label"],
+    group_aggregation: ["key", "label"]
+  };
+  const keys = keysByKind[layer.kind] || ["event_id", "location_id", "entity_id", "target_id", "key"];
+  return [...new Set((layer.items || []).map(item => {
+    const key = keys.find(candidate => item?.[candidate] != null && String(item[candidate]).trim());
+    return key ? String(item[key]).trim() : "";
+  }).filter(Boolean))];
+}
+
+function evidenceLayerSourceId(result, layer) {
+  return sanitizeLayerKey(`evidence:${finalSourceId(result)}:${layer.dataId}`);
+}
+
+function updateEvidenceReferenceButton(btn) {
+  const sourceLayers = state.layers.filter(layer => layer.sourceId === btn.dataset.sourceId);
+  const visible = sourceLayers.some(layer => layer.visible);
+  btn.classList.toggle("is-visible", visible);
+  btn.setAttribute("aria-pressed", visible ? "true" : "false");
+  btn.title = visible ? "הסתר שכבת ראיות" : "הצג שכבת ראיות";
+}
+
+function updateEvidenceReferenceButtons() {
+  document.querySelectorAll(".evidence-reference-link").forEach(updateEvidenceReferenceButton);
+}
+
+function toggleEvidenceReferenceLayer(result, layer, btn) {
+  const sourceId = evidenceLayerSourceId(result, layer);
+  const existing = state.layers.filter(item => item.sourceId === sourceId);
+  if (existing.some(item => item.visible)) {
+    existing.forEach(item => { item.visible = false; });
+    updateEvidenceReferenceButton(btn);
+    renderAllViews();
+    return;
+  }
+  addResultLayers({
+    sourceId,
+    sourceLabel: `ראיות: ${layer.label}`,
+    preferredView: layer.preferredView,
+    layers: [layer]
+  });
+  state.rawOverlayMinimized = false;
+  activateView(layer.preferredView, { reason: `שכבת ראיות: ${layer.label}` });
+  renderAllViews();
+  updateEvidenceReferenceButtons();
+}
+
+function buildEvidenceReferencesSection(result) {
+  const layers = buildEvidenceReferenceLayers(result);
+  if (!layers.length) return null;
+  const section = document.createElement("details");
+  section.className = "evidence-references";
+  section.innerHTML = `
+    <summary class="evidence-references-summary">מזהי ראיות · ${layers.length.toLocaleString("he-IL")} שכבות</summary>
+    <ul class="evidence-reference-list"></ul>`;
+  const list = section.querySelector(".evidence-reference-list");
+  layers.forEach(layer => {
+    const identifiers = evidenceLayerIdentifiers(layer);
+    const shown = identifiers.slice(0, 14);
+    const overflow = Math.max(0, identifiers.length - shown.length);
+    const item = document.createElement("li");
+    item.className = "evidence-reference-item";
+    item.innerHTML = `
+      <details class="evidence-reference-details">
+        <summary class="evidence-reference-link" aria-pressed="false">
+          <span class="evidence-reference-label">${escapeHtml(layer.label)}</span>
+          <span class="evidence-reference-view">${layer.preferredView === "timeline" ? "ציר זמן" : "מפה"} · ${(layer.items || []).length.toLocaleString("he-IL")}</span>
+        </summary>
+        ${shown.length ? `<div class="evidence-reference-identifiers" dir="ltr">${shown.map(escapeHtml).join(", ")}${overflow ? ` <span dir="rtl">ועוד ${overflow.toLocaleString("he-IL")}</span>` : ""}</div>` : ""}
+      </details>`;
+    const btn = item.querySelector(".evidence-reference-link");
+    btn.dataset.sourceId = evidenceLayerSourceId(result, layer);
+    btn.title = "הצג שכבת ראיות";
+    btn.addEventListener("click", () => toggleEvidenceReferenceLayer(result, layer, btn));
+    list.appendChild(item);
+  });
+  return section;
 }
 
 function sanitizeLayerKey(value) {
@@ -1081,7 +1190,7 @@ function addResultLayers({ sourceId, sourceLabel, preferredView = "map", layers 
       dataId,
       sourceId: cleanSourceId,
       sourceLabel,
-      preferredView,
+      preferredView: layer.preferredView || preferredView,
       color: nextLayerColor(),
       visible: true
     };
@@ -2439,30 +2548,40 @@ function finalizeAssistantMessage(answer, options = {}) {
     const actions = document.createElement("div");
     actions.className = "final-answer-actions";
     const finalId = finalSourceId(options.result);
+    const hasRequestedResults = buildTypedResultLayers(options.result).length > 0;
     actions.innerHTML = `
-      <button type="button" class="final-answer-show-btn layers-hidden" data-source-id="${escapeHtml(finalId)}" title="הצג תוצאות" aria-label="הצג תוצאות" aria-pressed="false">
+      ${hasRequestedResults ? `<button type="button" class="final-answer-show-btn layers-hidden" data-source-id="${escapeHtml(finalId)}" title="הצג תוצאות" aria-label="הצג תוצאות" aria-pressed="false">
         <span class="final-answer-show-label">הצג תוצאות</span>
-      </button>
-      <button type="button" class="final-answer-save-btn" ${options.result.saved_question_id ? "disabled" : ""}>${options.result.saved_question_id ? "נשמר" : "שמור"}</button>
+      </button>` : ""}
+      <button type="button" class="final-answer-save-btn" ${options.result.saved_question_id ? "disabled" : ""}>${options.result.saved_question_id ? "נשמר" : "שמור הקלטה"}</button>
       <button type="button" class="final-answer-memory-btn" ${options.result.investigation_memory_summary_id ? "disabled" : ""}>${options.result.investigation_memory_summary_id ? "נשמר בזיכרון" : "שמור לזיכרון"}</button>
     `;
     const finalShowBtn = actions.querySelector(".final-answer-show-btn");
-    finalShowBtn.addEventListener("click", () => {
-      toggleFinalAnswerVisibility(options.result, options.prompt || "", finalShowBtn);
-    });
+    if (finalShowBtn) {
+      finalShowBtn.addEventListener("click", () => {
+        toggleFinalAnswerVisibility(options.result, options.prompt || "", finalShowBtn);
+      });
+    }
     actions.querySelector(".final-answer-save-btn").addEventListener("click", event => {
       saveResultQuestion(options.result, options.prompt || "", event.currentTarget);
     });
     actions.querySelector(".final-answer-memory-btn").addEventListener("click", event => {
       saveResultToInvestigationMemory(options.result, options.prompt || "", event.currentTarget);
     });
-    const evidenceToggle = answerBody.querySelector(".evidence-ids-toggle");
+    let evidenceToggle = answerBody.querySelector(".evidence-ids-toggle");
+    const evidenceReferences = buildEvidenceReferencesSection(options.result);
+    if (evidenceReferences && evidenceToggle) {
+      evidenceToggle.remove();
+      evidenceToggle = null;
+    }
     if (evidenceToggle) {
       answerBody.insertBefore(actions, evidenceToggle);
     } else {
       answerBody.appendChild(actions);
     }
-    updateSourceVisibilityBtn(finalShowBtn);
+    if (evidenceReferences) answerBody.appendChild(evidenceReferences);
+    if (finalShowBtn) updateSourceVisibilityBtn(finalShowBtn);
+    updateEvidenceReferenceButtons();
   }
   state.activeAssistantMessage = null;
   state.activeActivityList = null;
@@ -2503,7 +2622,14 @@ const TOOL_LABELS = {
   trace_semantic_clues: "מעקב אחר רמזים סמנטיים",
   plan_next_investigation_step: "בקרת תהליך החקירה",
   find_related_events: "הרחבת מעגל הראיות",
-  challenge_hypothesis: "בדיקת ההשערה מול חלופות"
+  challenge_hypothesis: "בדיקת ההשערה מול חלופות",
+  prepare_target_candidate: "הכנת מועמד מטרה",
+  find_duplicate_target_candidates: "בדיקת כפילות מטרה",
+  search_target_candidates: "חיפוש מועמדי מטרות",
+  get_target_candidate: "שליפת מועמד מטרה",
+  create_target_candidate: "יצירת מועמד מטרה",
+  update_target_candidate: "עדכון מועמד מטרה",
+  attach_target_evidence: "צירוף ראיות למטרה"
 };
 
 function humanToolLabel(tool) {
@@ -2771,7 +2897,7 @@ async function submitStepInject() {
   const agentContinuationPrompt = promptForAgent(continuationPrompt);
 
   // Start a new labeled continuation bubble
-  startAssistantResearchMessage("Hermes ממשיך את החקירה...");
+  startAssistantResearchMessage();
   // Mark the article so CSS can show the ↩ continuation kicker
   if (state.activeAssistantMessage) {
     state.activeAssistantMessage.dataset.continuation = "true";
@@ -2985,6 +3111,7 @@ function updateStepVisibilityButtons() {
 function updateResultVisibilityButtons() {
   updateStepVisibilityButtons();
   document.querySelectorAll(".final-answer-show-btn").forEach(updateSourceVisibilityBtn);
+  updateEvidenceReferenceButtons();
 }
 
 function resolvedStepSourceId(step) {
@@ -3017,7 +3144,6 @@ function toggleStepVisibility(step, btn) {
 
 function addActivity(tool, detail, result, options = {}) {
   ensureAssistantResearchMessage();
-  state.activeActivityEmpty.hidden = true;
   const item = document.createElement("li");
   item.className = "activity-item";
   const stepNumber = options.stepNumber || state.activeActivityList.children.length + 1;
@@ -3106,7 +3232,7 @@ function answerHtml(text) {
     const trimmed = block.trim();
     const evidenceMatch = trimmed.match(/^מזהי\s+(?:ראיות|אירועים)\s*:\s*(.+)$/s);
     if (evidenceMatch) {
-      return `<details class="evidence-ids-toggle"><summary>מזהי אירועים</summary><p>${evidenceMatch[1].replace(/\n/g, "<br>")}</p></details>`;
+      return `<details class="evidence-ids-toggle"><summary>מזהי ראיות</summary><p>${evidenceMatch[1].replace(/\n/g, "<br>")}</p></details>`;
     }
     const formatted = trimmed
       .replace(/^###?\s+(.+)$/gm, "<strong>$1</strong>")
@@ -3234,8 +3360,8 @@ async function saveResultQuestion(result, prompt, button) {
     setTimeout(() => {
       if (!result.saved_question_id) {
         button.disabled = false;
-        button.textContent = "שמור";
-        button.title = "שמור את תוצאת החקירה";
+        button.textContent = "שמור הקלטה";
+        button.title = "שמור את הקלטת החקירה";
       }
     }, 2500);
   } finally {
@@ -3328,36 +3454,21 @@ function applyAgentResult(result, prompt, options = {}) {
 
   if (options.restoreOnly) {
     state.queryContext = buildFinalQueryContext(result, prompt);
-    const idsFromAnswer = (result.answer || "").match(EVENT_ID_PATTERN) || [];
-    const evidence = new Set([...(result.event_ids || []), ...idsFromAnswer]);
-    state.current = state.events.filter(event => evidence.has(event.event_id));
-    state.aggregateLocations = collectAggregateLocations(result);
-    state.aggregateTimeline = collectAggregateTimeline(result);
-    state.aggregateGroups = collectGenericAggregateGroups(result);
-    state.locationMetadata = collectLocationMetadata(result);
-    state.entityMetadata = collectEntityMetadata(result);
+    const typedLayers = buildTypedResultLayers(result);
+    const requestedView = typedLayers[0]?.preferredView || result.recommended_view || "map";
     const addedLayers = addResultLayers({
       sourceId: finalSourceId(result),
-      sourceLabel: "תשובת הסוכן",
-      preferredView: result.recommended_view || inferRecommendedView(prompt, result.answer).view,
-      layers: [...buildResultLayers({
-      events: state.current,
-      locations: state.aggregateLocations,
-      timeline: state.aggregateTimeline,
-      groups: state.aggregateGroups,
-      locationMetadata: state.locationMetadata,
-      entityMetadata: state.entityMetadata
-      }), ...buildTypedResultLayers(result)]
+      sourceLabel: result.responding_agent === "moshe" ? "תשובת משה" : "תשובת הסוכן",
+      preferredView: requestedView,
+      layers: typedLayers
     });
-    // Just restore visualization state, don't touch the chat DOM
     showResult(
-      "ממצאי חקירת הסוכן",
+      "ממצאי הסוכן",
       addedLayers.length
-        ? `נוספו או הוצגו ${addedLayers.length.toLocaleString("he-IL")} שכבות מתוך תשובת הסוכן.`
-        : "הסוכן השיב, אך לא נמצאו בתשובה נתונים שניתן לקשר לתצוגה."
+        ? `נוספו או הוצגו ${addedLayers.length.toLocaleString("he-IL")} שכבות שנבחרו כתשובה.`
+        : "לא נבחרו נתונים להצגה."
     );
-    const inferred = inferRecommendedView(prompt, result.answer);
-    activateView(result.recommended_view || inferred.view, { automatic: true, reason: result.view_reason || inferred.reason });
+    activateView(requestedView, { reason: result.view_reason || "נתונים שנבחרו כתשובה לבקשת המשתמש" });
     renderQueryInspector();
     return;
   }
@@ -3382,22 +3493,10 @@ function applyAgentResult(result, prompt, options = {}) {
     addActivity("Hermes", `שאלת החקירה שנשלחה: ${prompt}`, `התקבלה תשובה בריצה ${result.run_id}, ללא יומן כלי מפורט.`);
   }
 
-  const typedLayers = buildTypedResultLayers(result);
-  if (typedLayers.length) {
-    const addedLayers = addResultLayers({
-      sourceId: finalSourceId(result),
-      sourceLabel: result.responding_agent === "moshe" ? "תשובת משה" : "תשובת הסוכן",
-      preferredView: result.recommended_view || "map",
-      layers: typedLayers
-    });
-    showResult("ממצאי הסוכן", `נוספו או רועננו ${addedLayers.length.toLocaleString("he-IL")} שכבות מתוך התשובה.`);
-    activateView(result.recommended_view || "map", { automatic: true, reason: result.view_reason || "נתונים מובנים בתשובת הסוכן" });
-    if (typedLayers.some(layer => layer.kind === "attack_targets")) {
-      void refreshOpenAttackTargetCatalogLayer();
-    }
-  }
-
   finalizeAssistantMessage(result.answer, { result, prompt });
+  if (buildTypedResultLayers(result).some(layer => layer.kind === "attack_targets")) {
+    void refreshOpenAttackTargetCatalogLayer();
+  }
   updateResultVisibilityButtons();
   renderQueryInspector();
   setSuggestions(["אילו הסברים תמימים יכולים להתאים לאותן ראיות?", "מה חסר כדי להעלות את רמת הביטחון?", "הצג את רצף האירועים לפי סדר הזמן"]);

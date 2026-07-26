@@ -15,7 +15,7 @@ MOSHE_AUDIT_PATH = "/opt/serbia-poc/mcp_audit_moshe.jsonl"
 MOSHE_DB_PATH = "/opt/serbia-poc/data/attack_targets/attack_targets.db"
 MOSHE_BACKUP_PATH = "/opt/serbia-poc/backups/attack_targets"
 MOSHE_TOOLS = [
-    "classify_question_intent", "plan_next_investigation_step", "search_events",
+    "present_requested_results", "classify_question_intent", "plan_next_investigation_step", "search_events",
     "semantic_search_events", "get_objects", "resolve_location", "resolve_event_reference",
     "find_actor_history", "aggregate_events", "explain_linkage", "build_event_sequence",
     "resolve_entity", "trace_identifier", "trace_semantic_clues", "find_related_events",

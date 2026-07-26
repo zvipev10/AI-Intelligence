@@ -46,7 +46,13 @@ class MosheProfileTests(unittest.TestCase):
         self.assertIn("create_target_candidate", MOSHE_TOOLS)
         self.assertIn("prepare_workstream_indication_proposal", MOSHE_TOOLS)
         self.assertIn("decide_workstream_indication_proposal", MOSHE_TOOLS)
+        self.assertIn("present_requested_results", MOSHE_TOOLS)
         self.assertNotIn("execute_sql", MOSHE_TOOLS)
+
+    def test_profile_selects_structured_evidence_references(self):
+        soul = (ROOT / "moshe_profile" / "SOUL.md").read_text(encoding="utf-8")
+        self.assertIn("evidence_layers", soul)
+        self.assertIn("אל תכתוב שורת טקסט חופשי `מזהי ראיות:`", soul)
 
     def test_backend_merges_only_selected_agent_endpoint(self):
         base = {

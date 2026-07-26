@@ -65,3 +65,14 @@ Deployment correction:
 - The deployment contract now includes `index.html` and verifies both the rendered menu entry and the Slice 2 JavaScript.
 - The cache key was advanced to `app.js?v=112`.
 - Corrected deployment backup: `/opt/serbia-poc-ui-backups/workstream-slice2-20260726T184041Z`.
+
+Regression correction:
+
+- The corrected deployment exposed an environment-drift regression: the VM contained later Moshe frontend behavior from `codex/moshe-attack-targets` that had not been merged into `main`, including the persistent `חושב…` thinking indicator.
+- Reconciled `origin/codex/moshe-attack-targets` into this capability branch instead of maintaining a VM-only patch.
+- The combined codebase preserves the workstream flow, thinking indicator, and structured evidence-result presentation.
+- Main test discovery: 73 tests passed.
+- MCP test discovery: 42 tests passed, 1 skipped.
+- Python compilation and `git diff --check` passed.
+- The public deployment verifies both `data-prompt-option="workstream"` and `thinkingIndicatorHtml`.
+- Reconciled deployment backup: `/opt/serbia-poc-ui-backups/workstream-slice2-20260726T184851Z`.

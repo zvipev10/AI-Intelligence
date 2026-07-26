@@ -33,6 +33,7 @@ SERVER_VERSION = "0.3.0"
 DEFAULT_LIMIT = 2000
 MAX_LIMIT = 2000
 MIN_COVERAGE_LIMIT = 2000
+MAX_SEMANTIC_LIMIT = 200
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 DATASET_VERSION = os.environ.get("INTELLIGENCE_POC_DATASET_VERSION", "v2").strip().lower()
@@ -1808,7 +1809,7 @@ def semantic_search_events(arguments: dict[str, Any]) -> dict[str, Any]:
         raise ValueError("semantic_search_events requires query or seed_event_ids")
 
     requested_limit = arguments.get("limit", 50)
-    limit = bounded_limit(requested_limit)
+    limit = min(bounded_limit(requested_limit), MAX_SEMANTIC_LIMIT)
     filters = {
         "start_time": arguments.get("start_time"),
         "end_time": arguments.get("end_time"),
@@ -2373,6 +2374,150 @@ def with_step_bridge(schema: dict[str, Any]) -> dict[str, Any]:
 TARGET_BANK = TargetBank()
 
 
+def _prior_successful_audit_records() -> list[dict[str, Any]]:
+    if not AUDIT_PATH.exists():
+        return []
+    records = []
+    for line in AUDIT_PATH.read_text(encoding="utf-8").splitlines():
+        try:
+            record = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(record, dict) and not record.get("is_error"):
+            records.append(record)
+    return records
+
+
+def _selected_aggregate_rows(group_by: str, row_ids: list[str]) -> list[dict[str, Any]]:
+    available: dict[str, dict[str, Any]] = {}
+    for record in _prior_successful_audit_records():
+        if record.get("tool") != "aggregate_events":
+            continue
+        result = record.get("result") or {}
+        if result.get("group_by") != group_by:
+            continue
+        for row in result.get("groups") or []:
+            if not isinstance(row, dict):
+                continue
+            key = str(row.get("key") or row.get("label") or "").strip()
+            label = str(row.get("label") or row.get("key") or "").strip()
+            if key:
+                available[key] = row
+            if label:
+                available[label] = row
+    missing = [row_id for row_id in row_ids if row_id not in available]
+    if missing:
+        raise ValueError(f"aggregate result IDs were not returned by an earlier aggregate_events call: {', '.join(missing)}")
+    return [{**available[row_id], "group_by": group_by} for row_id in row_ids]
+
+
+def _materialize_presentation_layers(
+    selections: list[dict[str, Any]],
+    *,
+    id_prefix: str,
+    evidence_references: bool = False,
+) -> list[dict[str, Any]]:
+    requested_layers = []
+    for index, selection in enumerate(selections, start=1):
+        kind = str(selection.get("kind") or "").strip()
+        row_ids = list(dict.fromkeys(
+            str(value or "").strip()
+            for value in selection.get("ids") or []
+            if str(value or "").strip()
+        ))
+        if not row_ids:
+            raise ValueError(f"layer {index} requires at least one ID")
+        label = str(selection.get("label") or "").strip()
+        if not label:
+            raise ValueError(f"layer {index} requires a user-facing label")
+        view = str(selection.get("view") or "").strip()
+        if kind == "events":
+            missing = [row_id for row_id in row_ids if row_id not in EVENT_BY_ID]
+            if missing:
+                raise ValueError(f"unknown event IDs: {', '.join(missing)}")
+            rows = [public_event(EVENT_BY_ID[row_id]) for row_id in row_ids]
+            result_kind = "events"
+            capabilities = {"table": True, "map": True, "timeline": True}
+        elif kind == "locations":
+            missing = [row_id for row_id in row_ids if row_id not in LOCATION_PRESENTATIONS]
+            if missing:
+                raise ValueError(f"unknown location IDs: {', '.join(missing)}")
+            rows = [LOCATION_PRESENTATIONS[row_id] for row_id in row_ids]
+            result_kind = "location_metadata"
+            capabilities = {"table": True, "map": True, "timeline": False}
+        elif kind == "entities":
+            missing = [row_id for row_id in row_ids if row_id not in ENTITY_PRESENTATIONS]
+            if missing:
+                raise ValueError(f"unknown entity IDs: {', '.join(missing)}")
+            rows = [ENTITY_PRESENTATIONS[row_id] for row_id in row_ids]
+            result_kind = "entity_metadata"
+            capabilities = {"table": True, "map": True, "timeline": False}
+        elif kind == "attack_targets":
+            TARGET_BANK.initialize()
+            rows = [TARGET_BANK.get_candidate(row_id) for row_id in row_ids]
+            result_kind = "attack_targets"
+            capabilities = {"table": True, "map": True, "timeline": False}
+        elif kind == "aggregate_groups":
+            group_by = str(selection.get("group_by") or "").strip()
+            if not group_by:
+                raise ValueError(f"aggregate layer {index} requires group_by")
+            rows = _selected_aggregate_rows(group_by, row_ids)
+            is_time = group_by in {"date", "hour"}
+            is_location = group_by == "location"
+            if is_location:
+                result_kind = "locations"
+                capabilities = {"table": True, "map": True, "timeline": False}
+            elif is_time:
+                result_kind = "time_aggregation"
+                capabilities = {"table": True, "map": False, "timeline": True}
+                rows = [{
+                    **row,
+                    "timeLabel": row.get("label") or row.get("key"),
+                    "sortKey": row.get("key") or row.get("label"),
+                    "summary": f'{row.get("count", 0)} events',
+                } for row in rows]
+            else:
+                result_kind = "group_aggregation"
+                capabilities = {"table": True, "map": False, "timeline": False}
+        else:
+            raise ValueError(f"unsupported requested-result kind: {kind}")
+        view_capability = {"map": "map", "timeline": "timeline", "evidence": "table"}.get(view)
+        if view_capability is None:
+            raise ValueError(f"unsupported requested view: {view}")
+        if evidence_references and view not in {"map", "timeline"}:
+            raise ValueError("evidence-reference layers support map or timeline views only")
+        if not capabilities.get(view_capability):
+            raise ValueError(f"requested view {view} is incompatible with {result_kind}")
+        requested_layers.append({
+            "id": f"{id_prefix}:{index}",
+            "label": label,
+            "kind": result_kind,
+            "rows": rows,
+            "capabilities": capabilities,
+            "recommended_view": view,
+        })
+    return requested_layers
+
+
+def present_requested_results(arguments: dict[str, Any]) -> dict[str, Any]:
+    selections = arguments.get("layers") or []
+    evidence_selections = arguments.get("evidence_layers") or []
+    if not selections and not evidence_selections:
+        raise ValueError("at least one requested-result or evidence-reference layer is required")
+    requested_layers = _materialize_presentation_layers(
+        selections, id_prefix="requested-result"
+    )
+    evidence_layers = _materialize_presentation_layers(
+        evidence_selections, id_prefix="evidence-reference", evidence_references=True
+    )
+    return {
+        "requested_result_layers": requested_layers,
+        "evidence_reference_layers": evidence_layers,
+        "returned_layers": len(requested_layers),
+        "returned_evidence_layers": len(evidence_layers),
+    }
+
+
 def validate_target_references(candidate: dict[str, Any], evidence: list[dict[str, Any]] | None = None) -> None:
     location_id = str(candidate.get("location_id") or "").strip()
     if location_id not in LOCATIONS:
@@ -2423,6 +2568,55 @@ def update_target_candidate(arguments: dict[str, Any]) -> dict[str, Any]:
     return {"candidate": TARGET_BANK.update_candidate(target_id, changes)}
 
 
+def reconcile_attached_evidence_groups(
+    current_evidence: list[dict[str, Any]], fused_evidence: list[dict[str, Any]], new_ids: set[str],
+) -> list[dict[str, Any]]:
+    """Preserve stored group identities while rejecting real regrouping of existing evidence."""
+    stored_by_id = {item["record_id"]: item["source_group"] for item in current_evidence}
+    fused_by_id = {item["record_id"]: item for item in fused_evidence}
+    missing = [record_id for record_id in stored_by_id if record_id not in fused_by_id]
+    if missing:
+        raise ValueError(f"fusion omitted existing evidence: {missing[0]}")
+
+    stored_groups_by_fused_group: dict[str, set[str]] = defaultdict(set)
+    fused_groups_by_stored_group: dict[str, set[str]] = defaultdict(set)
+    for record_id, stored_group in stored_by_id.items():
+        fused_group = fused_by_id[record_id]["source_group"]
+        stored_groups_by_fused_group[fused_group].add(stored_group)
+        fused_groups_by_stored_group[stored_group].add(fused_group)
+
+    if any(len(groups) > 1 for groups in stored_groups_by_fused_group.values()):
+        raise ValueError("new evidence would merge existing immutable source groups")
+    if any(len(groups) > 1 for groups in fused_groups_by_stored_group.values()):
+        raise ValueError("new evidence would split an existing immutable source group")
+
+    assigned_by_fused_group = {
+        fused_group: next(iter(stored_groups))
+        for fused_group, stored_groups in stored_groups_by_fused_group.items()
+        if stored_groups
+    }
+    occupied_groups = set(stored_by_id.values())
+    members_by_fused_group: dict[str, list[str]] = defaultdict(list)
+    for item in fused_evidence:
+        members_by_fused_group[item["source_group"]].append(item["record_id"])
+
+    for fused_group, members in members_by_fused_group.items():
+        if fused_group in assigned_by_fused_group:
+            continue
+        assigned_group = fused_group
+        if fused_group.startswith("visible-report:") or assigned_group in occupied_groups:
+            fingerprint = hashlib.sha256("\n".join(sorted(members)).encode("utf-8")).hexdigest()[:12]
+            assigned_group = f"visible-report:{fingerprint}"
+        assigned_by_fused_group[fused_group] = assigned_group
+        occupied_groups.add(assigned_group)
+
+    return [
+        {**item, "source_group": assigned_by_fused_group[item["source_group"]]}
+        for item in fused_evidence
+        if item["record_id"] in new_ids
+    ]
+
+
 def attach_target_evidence(arguments: dict[str, Any]) -> dict[str, Any]:
     TARGET_BANK.initialize()
     target_id = arguments.get("target_id")
@@ -2430,11 +2624,8 @@ def attach_target_evidence(arguments: dict[str, Any]) -> dict[str, Any]:
     current = TARGET_BANK.get_candidate(target_id)
     all_ids = [item["record_id"] for item in current["evidence"]] + [str(item.get("record_id") or "").strip() for item in supplied_evidence]
     fusion = prepare_candidate(_fusion_events(all_ids), current["confidence"])
-    group_by_id = {item["record_id"]: item["source_group"] for item in fusion["evidence"]}
-    if any(group_by_id[item["record_id"]] != item["source_group"] for item in current["evidence"]):
-        raise ValueError("new evidence would change an existing immutable source group")
     new_ids = {str(item.get("record_id") or "").strip() for item in supplied_evidence}
-    evidence = [item for item in fusion["evidence"] if item["record_id"] in new_ids]
+    evidence = reconcile_attached_evidence_groups(current["evidence"], fusion["evidence"], new_ids)
     validate_target_references(current, evidence)
     return {"candidate": TARGET_BANK.attach_evidence(target_id, evidence)}
 
@@ -2674,6 +2865,50 @@ TOOLS = [
         "annotations": {"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": False},
     },
     {
+        "name": "present_requested_results",
+        "title": "Present only the requested results",
+        "description": "Final presentation-selection tool. Call once after analysis when requested results or materially relevant evidence references exist. Put only data directly requested by the user in layers. Put only canonical records that materially support the final conclusion in evidence_layers, grouped into meaningful map/timeline layers. Never include intermediate searches, rejected candidates, duplicate checks, or unrelated tool output. Canonical IDs are validated, and aggregate IDs must come from an earlier aggregate_events result in this run.",
+        "inputSchema": with_step_bridge({
+            "type": "object",
+            "properties": {
+                "layers": {
+                    "type": "array",
+                    "maxItems": 5,
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "kind": {"type": "string", "enum": ["events", "locations", "entities", "attack_targets", "aggregate_groups"]},
+                            "ids": {"type": "array", "items": {"type": "string", "minLength": 1}, "minItems": 1, "maxItems": MAX_LIMIT},
+                            "label": {"type": "string", "minLength": 1, "maxLength": 120},
+                            "view": {"type": "string", "enum": ["map", "timeline", "evidence"]},
+                            "group_by": {"type": "string", "description": "Required only for aggregate_groups and must match an earlier aggregate_events call."},
+                        },
+                        "required": ["kind", "ids", "label", "view"],
+                        "additionalProperties": False,
+                    },
+                },
+                "evidence_layers": {
+                    "type": "array",
+                    "maxItems": 5,
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "kind": {"type": "string", "enum": ["events", "locations", "entities", "attack_targets", "aggregate_groups"]},
+                            "ids": {"type": "array", "items": {"type": "string", "minLength": 1}, "minItems": 1, "maxItems": MAX_LIMIT},
+                            "label": {"type": "string", "minLength": 1, "maxLength": 120},
+                            "view": {"type": "string", "enum": ["map", "timeline"]},
+                            "group_by": {"type": "string", "description": "Required only for aggregate_groups and must match an earlier aggregate_events call."},
+                        },
+                        "required": ["kind", "ids", "label", "view"],
+                        "additionalProperties": False,
+                    },
+                },
+            },
+            "additionalProperties": False,
+        }),
+        "annotations": {"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": False},
+    },
+    {
         "name": "prepare_target_candidate",
         "title": "Prepare a fused target candidate",
         "description": "Starting from visible seed evidence, retrieves and ranks nearby independent public corroboration, selects the strongest evidence pair, groups sources, reconciles quantity, builds compact evidence snapshots, and reports whether medium/high-confidence persistence is allowed. Returns pair scores, reasons, alternatives, and an ambiguity margin. It does not save anything.",
@@ -2708,12 +2943,13 @@ TOOLS = [
     {
         "name": "search_target_candidates",
         "title": "Search attack-target candidates",
-        "description": "Search final-state candidate targets by exact assessed object class, canonical entity/location, or mission run. Returns summaries only; use get_target_candidate for evidence.",
+        "description": "Search final-state candidate targets by exact assessed object class, canonical entity/location, mission run, or raw record ID. A record_id lookup returns every target containing that raw record while preserving each target's full summary. Returns summaries only; use get_target_candidate for evidence.",
         "inputSchema": with_step_bridge({
             "type": "object",
             "properties": {
                 "object_class": {"type": "string"}, "entity_id": {"type": "string"},
                 "location_id": {"type": "string"}, "mission_run_id": {"type": "string"},
+                "record_id": {"type": "string", "description": "Exact raw-data record ID, for example REC-V2-009058."},
                 "limit": {"type": "integer", "minimum": 1, "maximum": 500},
             },
             "additionalProperties": False,
@@ -2851,7 +3087,7 @@ TOOLS = [
                 "certainty_levels": {"type": "array", "items": {"type": "string"}},
                 "keywords": {"type": "array", "items": {"type": "string"}, "description": "Optional exact terms that must also appear in enriched event text."},
                 "match_all_keywords": {"type": "boolean", "description": "If true, all keywords must match; otherwise any keyword may match."},
-                "limit": {"type": "integer", "minimum": 1, "maximum": MAX_LIMIT, "description": "Maximum semantic candidates returned."},
+                "limit": {"type": "integer", "minimum": 1, "maximum": MAX_SEMANTIC_LIMIT, "description": "Maximum semantic candidates returned. Use deterministic search and aggregation for exhaustive coverage."},
             },
             "additionalProperties": False,
         }),
@@ -3079,6 +3315,7 @@ TOOLS = [
 TOOL_HANDLERS = {
     "prepare_workstream_indication_proposal": prepare_workstream_indication_proposal,
     "decide_workstream_indication_proposal": decide_workstream_indication_proposal,
+    "present_requested_results": present_requested_results,
     "prepare_target_candidate": prepare_target_candidate,
     "find_duplicate_target_candidates": find_duplicate_target_candidates,
     "search_target_candidates": search_target_candidates,

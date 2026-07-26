@@ -20,12 +20,14 @@ from urllib.parse import parse_qs, unquote, urlparse
 
 from agent_result_pipeline import (
     build_agent_result,
+    evidence_reference_layers_from_audit,
     normalize_aggregate_groups,
     normalize_entity_layers,
     normalize_location_layers,
     normalize_map_locations,
     normalize_attack_targets,
     normalize_workstream_collaboration,
+    requested_result_layers_from_audit,
 )
 from agent_routing import AgentRouteRegistry, MOSHE_AGENT_ID
 from workstream_artifacts import (
@@ -1557,6 +1559,34 @@ class HermesClient:
         def public_args(args):
             return {key: value for key, value in args.items() if key != "step_bridge"}
 
+        def extract_identifiers(value, depth=0):
+            if depth > 6:
+                return []
+            identifiers = []
+            if isinstance(value, dict):
+                for key, item in value.items():
+                    if key.endswith("_id") and isinstance(item, (str, int)) and item:
+                        identifiers.append(item)
+                    elif key.endswith("_ids") and isinstance(item, list):
+                        identifiers.extend(entry for entry in item if isinstance(entry, (str, int)) and entry)
+                    else:
+                        identifiers.extend(extract_identifiers(item, depth + 1))
+            elif isinstance(value, list):
+                for item in value:
+                    identifiers.extend(extract_identifiers(item, depth + 1))
+            return list(dict.fromkeys(str(identifier) for identifier in identifiers if identifier))
+
+        def identifiers_text(*values):
+            identifiers = []
+            for value in values:
+                identifiers.extend(extract_identifiers(value))
+            identifiers = list(dict.fromkeys(identifiers))
+            return f' מזהים: {format_ids(identifiers)}.' if identifiers else ""
+
+        def target_candidate(result):
+            candidate = result.get("candidate")
+            return candidate if isinstance(candidate, dict) else {}
+
         def arg_clue(tool, args):
             if tool == "classify_question_intent":
                 return f'השאלה "{args.get("question", "")}"'
@@ -1581,6 +1611,16 @@ class HermesClient:
             if tool == "get_objects":
                 ids = (args.get("event_ids") or []) + (args.get("location_ids") or []) + (args.get("entity_ids") or [])
                 return f'מזהי האובייקטים {format_ids(ids)}'
+            if tool == "prepare_target_candidate":
+                return f'רשומות העוגן {format_ids(args.get("event_ids") or [])}'
+            if tool in {"get_target_candidate", "update_target_candidate", "attach_target_evidence"}:
+                return f'מועמד המטרה {args.get("target_id") or "לא צוין"}'
+            if tool == "find_duplicate_target_candidates":
+                return f'מועמד במיקום {args.get("location_id") or "לא צוין"} ובסוג {args.get("object_class") or "לא צוין"}'
+            if tool == "search_target_candidates":
+                return "מאגר מועמדי המטרות"
+            if tool == "create_target_candidate":
+                return f'המועמד {((args.get("candidate") or {}).get("target_id")) or "החדש"}'
             if tool == "find_related_events":
                 return f'אירועי העוגן {format_ids(args.get("seed_event_ids") or [])}'
             if tool == "explain_linkage":
@@ -1680,6 +1720,21 @@ class HermesClient:
             elif tool == "challenge_hypothesis":
                 decision = f'לפני חיזוק ההשערה, הסוכן בודק את {clue} מול חלופות ופערים.'
                 expected = "לגלות הסברים תמימים, סתירות או חסרים שמחלישים את הרצף."
+            elif tool == "prepare_target_candidate":
+                decision = f'משה בודק את {clue}, מאתר חיזוקים ומעריך אם ניתן ליצור מועמד מטרה.'
+                expected = "לקבל החלטת כשירות, ביטחון, כמות ורשומות תומכות בלי לשמור עדיין."
+            elif tool == "find_duplicate_target_candidates":
+                decision = f'לפני יצירה, משה בודק אם {clue} כבר קיים במאגר.'
+                expected = "למנוע יצירת מטרה כפולה ולהחזיר מזהי מועמדים דומים אם קיימים."
+            elif tool in {"search_target_candidates", "get_target_candidate"}:
+                decision = f'משה קורא את {clue} כדי להציג או להמשיך לעבוד על מטרה קיימת.'
+                expected = "לקבל תקציר מטרה ומזהים רלוונטיים מתוך המאגר."
+            elif tool in {"create_target_candidate", "update_target_candidate", "attach_target_evidence"}:
+                decision = f'משה מעדכן את {clue} לאחר בדיקות הכשירות והכפילויות.'
+                expected = "לקבל אישור קצר, מצב מעודכן ומזהים רלוונטיים."
+            elif tool == "present_requested_results":
+                decision = "הסוכן בוחר רק את הנתונים שעונים ישירות לבקשת המשתמש עבור כפתור הצג תוצאות."
+                expected = "לקבל בנפרד שכבות תוצאה מבוקשות ושכבות ראיות תומכות מאומתות."
             else:
                 decision = f'הסוכן משתמש ב-{clue} כדי לצמצם אי-ודאות ולהחליט על המשך החקירה.'
                 expected = "לקבל פלט שיאשר, ישלול או ימקד את כיוון החקירה."
@@ -1885,6 +1940,72 @@ class HermesClient:
                 alternatives = result.get("alternative_event_ids") or []
                 gaps = result.get("gaps") or []
                 outcome = f'נמצאו {len(alternatives)} אירועי חלופה ו-{len(gaps)} פערים; חלופות: {format_ids(alternatives)}.'
+            elif tool == "prepare_target_candidate":
+                requested = args.get("event_ids") or []
+                action = f'בדיקת {len(requested)} רשומות עוגן והשלמת חיזוקים למועמד מטרה: {format_ids(requested)}.'
+                evidence = result.get("evidence") or []
+                eligible = bool(result.get("persistence_eligible"))
+                blocks = result.get("persistence_block_reasons") or []
+                outcome = (
+                    f'נבדקו {len(evidence)} רשומות ב-{result.get("independent_source_group_count", 0)} קבוצות מקור; '
+                    f'ביטחון {result.get("confidence") or "לא נקבע"}; '
+                    f'המועמד {"כשיר לשמירה" if eligible else "אינו כשיר לשמירה"}.'
+                )
+                if blocks:
+                    outcome += f' סיבות: {"; ".join(str(item) for item in blocks[:3])}.'
+                outcome += identifiers_text(result)
+            elif tool == "find_duplicate_target_candidates":
+                action = (
+                    f'בדיקת מועמדים כפולים עבור סוג {args.get("object_class") or "לא צוין"}, '
+                    f'מיקום {args.get("location_id") or "לא צוין"} וישות {args.get("entity_id") or "לא צוינה"}.'
+                )
+                matches = result.get("matches") or []
+                outcome = f'{"נמצאו" if matches else "לא נמצאו"} {len(matches)} מועמדים דומים.' + identifiers_text(result)
+            elif tool == "search_target_candidates":
+                filters = {key: value for key, value in public_args(args).items() if value not in (None, "", [], False)}
+                action = f'חיפוש מועמדי מטרות לפי {", ".join(filters) if filters else "ללא מסננים"}.'
+                candidates = result.get("candidates") or []
+                outcome = f'הוחזרו {result.get("returned", len(candidates))} מועמדי מטרות.' + identifiers_text(result)
+            elif tool == "get_target_candidate":
+                action = f'שליפת מועמד המטרה {args.get("target_id") or "לא צוין"}.'
+                candidate = target_candidate(result)
+                outcome = (
+                    f'הוחזרה המטרה {candidate.get("title") or candidate.get("target_id") or "ללא כותרת"}; '
+                    f'ביטחון {candidate.get("confidence") or "לא נקבע"}; '
+                    f'{candidate.get("evidence_count", len(candidate.get("evidence") or []))} רשומות.'
+                    + identifiers_text(result)
+                )
+            elif tool == "create_target_candidate":
+                candidate_input = args.get("candidate") or {}
+                action = f'יצירת מועמד המטרה {candidate_input.get("target_id") or "חדש"} לאחר בדיקות הכשירות.'
+                candidate = target_candidate(result)
+                outcome = (
+                    f'נוצרה המטרה {candidate.get("title") or candidate.get("target_id") or "ללא כותרת"}; '
+                    f'ביטחון {candidate.get("confidence") or "לא נקבע"}; '
+                    f'{candidate.get("evidence_count", len(candidate.get("evidence") or []))} רשומות.'
+                    + identifiers_text(result)
+                )
+            elif tool == "update_target_candidate":
+                changed_fields = list((args.get("changes") or {}).keys())
+                action = f'עדכון המטרה {args.get("target_id") or "לא צוינה"}; שדות: {", ".join(changed_fields) if changed_fields else "אין"}.'
+                candidate = target_candidate(result)
+                outcome = f'המטרה {candidate.get("title") or candidate.get("target_id") or "לא צוינה"} עודכנה.' + identifiers_text(result)
+            elif tool == "attach_target_evidence":
+                supplied = args.get("evidence") or []
+                action = f'צירוף {len(supplied)} רשומות למטרה {args.get("target_id") or "לא צוינה"}.'
+                candidate = target_candidate(result)
+                if record.get("is_error") or result.get("error"):
+                    outcome = f'הצירוף נכשל: {result.get("error") or "שגיאה לא מפורטת"}.' + identifiers_text(args, result)
+                else:
+                    outcome = f'הרשומות צורפו; למטרה משויכות כעת {candidate.get("evidence_count", len(candidate.get("evidence") or []))} רשומות.' + identifiers_text(result)
+            elif tool == "present_requested_results":
+                layers = result.get("requested_result_layers") or []
+                evidence_layers = result.get("evidence_reference_layers") or []
+                action = (
+                    f'בחירת {len(args.get("layers") or [])} שכבות שעונות ישירות לבקשת המשתמש '
+                    f'ו-{len(args.get("evidence_layers") or [])} שכבות ראיות תומכות.'
+                )
+                outcome = f'אומתו {len(layers)} שכבות תוצאה ו-{len(evidence_layers)} שכבות ראיות.'
             else:
                 action = f'קלט: {json.dumps(public_args(args), ensure_ascii=False)}.'
                 outcome = f'פלט: {json.dumps(result, ensure_ascii=False)}.'
@@ -2322,26 +2443,32 @@ class HermesClient:
             " סכם מה נבדק, מה נמצא, מהו הגשר הראייתי או הפער המרכזי, ומה נשאר לא ודאי."
             " אם יש רצף או דפוס, תאר אותו במשפט אחד או שניים בלבד."
             " אל תפרט את כל הצעדים הטכניים, הכלים והפרמטרים; יומן הפעילות בממשק מציג אותם בנפרד.\n"
-            "בכל מצב, סיים בשורה שמתחילה 'מזהי ראיות:' ובה רק מזהי האירועים שאתה בוחר כראיות התומכות בתשובה."
-            " הממשק משתמש בשורה זו כדי לדעת אילו רשומות להציג; לכן אל תשמיט מזהה מרכזי שעליו הסתמכת, ואל תכלול מזהים שלא שימשו כתמיכה לתשובה."
-            " אם המשתמש ביקש שליפה ממצה של רשומות וכלי search_events או get_objects החזיר event_ids, חובה לכלול בשורת 'מזהי ראיות:' את מזהי REC שהוחזרו או שנבחרו להצגה."
-            " אל תחליף רשימת מזהי REC בניסוח כמו '81 רשומות' או 'כיסוי מלא', כי הממשק אינו יכול להציג מזהים שלא נכתבו בתשובה."
-            " אפשר לציין בגוף התשובה את מספר הרשומות והכיסוי, אבל שורת 'מזהי ראיות:' חייבת להכיל מזהי REC כאשר קיימים כאלה בפלט הכלים."
-            " אם זו תוצאה אגרגטיבית ללא מזהי אירועים, כתוב 'מזהי ראיות: תוצאה אגרגטיבית ללא מזהי אירועים'.\n"
+            "אל תכתוב שורת טקסט חופשי שמתחילה 'מזהי ראיות:'. הממשק בונה את אזור מזהי הראיות רק מהשדה evidence_layers"
+            " בקריאה הסופית ל-present_requested_results. מזהים קנוניים יכולים להישאר בגוף התשובה כאשר הם נחוצים להבנת טענה מסוימת.\n"
             "אם באחד מצעדי החקירה התקבלה תוצאה מקוצצת או מדגם מדורג, אל תנסח היעדר ראיה כמסקנה מוחלטת."
             " כתוב במפורש שהבדיקה אינה ממצה ושנדרש צמצום נוסף או הרחבת limit כדי לשלול המשך שרשרת בביטחון גבוה.\n"
-            "לאחר שורת הראיות, הוסף שורה אחרונה בפורמט המדויק 'תצוגה מומלצת: VIEW | REASON'.\n"
+            "הוסף שורה אחרונה בפורמט המדויק 'תצוגה מומלצת: VIEW | REASON'.\n"
             "VIEW חייב להתבסס קודם על recommended_view_hint מ-classify_question_intent, אלא אם תוצאות הכלים מצדיקות שינוי ברור."
             " הערכים האפשריים: map כאשר הממצא הגאוגרפי או מסלול התנועה הוא העיקר;"
             " timeline כאשר סדר האירועים והעיתוי הם העיקר; evidence כאשר בדיקת המקורות והרשומות הגולמיות היא העיקר.\n"
             "REASON הוא הסבר קצר בעברית, עד שמונה מילים, לבחירת התצוגה.\n"
             "אין להשתמש בכלי מערכת, קבצים, רשת או shell, ואין לבקש אישור לכלים."
+            " מאגר המטרות תומך באיתור ישיר לפי מזהה רשומה גולמית באמצעות search_target_candidates עם record_id."
+            " הכלי זמין למשה בלבד; הסוכן הכללי אינו טוען שביצע חיפוש כזה ואינו מנתב למשה ללא אזכור מפורש של @משה."
+            " לפני התשובה הסופית, כאשר קיימים נתונים מבוקשים להצגה או ראיות מהותיות לניווט, חובה לקרוא פעם אחת ל-present_requested_results."
+            " בשדה layers בחר רק את הרשומות שעונות ישירות למה שהמשתמש ביקש; שכבה אחת כברירת מחדל וכמה רק אם התבקשו כמה סוגי תוצאה."
+            " בשדה evidence_layers בחר מספר קטן של שכבות בעלות שמות משמעותיים, ורק רשומות קנוניות שתומכות מהותית במסקנה הסופית."
+            " קבץ ראיות לפי הסיבה שהן חשובות ולא לפי הכלי שהחזיר אותן, ובחר עבורן map או timeline."
+            " לעולם אל תכלול תוצאות ביניים, בדיקות כפילות, מועמדים שנדחו או פלט כלי שאינו רלוונטי ישירות לתוצאה או למסקנה."
+            " אם אין אובייקט נתונים להצגה ואין ראיות מהותיות לניווט, אל תקרא לכלי."
+            " כפתור הצג תוצאות מבוסס רק על layers; אזור מזהי ראיות מבוסס רק על evidence_layers."
         )
         if responding_agent == MOSHE_AGENT_ID:
             instructions += (
                 "\n\nאתה משה, קצין המטרות. המשתמש פנה אליך במפורש באמצעות @משה. "
                 "אתה אחראי לשאלות הבהרה, איתור ראיות, סיווג, מיזוג, בדיקת עצמאות מקורות, "
                 "בדיקת כפילויות, ויצירת מועמד מטרה רק כאשר כלי prepare_target_candidate מאשר persistence_eligible=true. "
+                "כאשר המשתמש מספק מזהה REC, השתמש ב-search_target_candidates עם record_id כדי למצוא כל מטרה קיימת שמכילה את הרשומה. "
                 "ממצא בביטחון נמוך מדווח למשתמש ואינו נשמר. אל תמציא source_group ואל תעקוף את כלי המיזוג. "
                 "בבקשה הנוגעת למעקב, פרש שפה טבעית ללא ביטויי פקודה שמורים. REC הוא אינדיקציה; TGT הוא נושא אפשרי בלבד ולעולם אינו ראיה. "
                 "פתור את המזהים והשתמש ב-prepare_workstream_indication_proposal כדי להציג הצעה לפני שמירה. "
@@ -2513,18 +2640,16 @@ class HermesClient:
                     "slowest_tool": performance["tools"].get("slowest_tool"),
                 }
                 performance_log_path = write_performance_log(run_id, performance, prompt)
-                target_rows = normalize_attack_targets(
+                requested_layers = requested_result_layers_from_audit(
                     audit_records,
                     locations=LOCATIONS,
                     entities=load_ui_entity_db(),
                 )
-                result_layers = ([{
-                    "id": "attack-targets:candidates",
-                    "label": "מועמדי מטרות",
-                    "kind": "attack_targets",
-                    "rows": target_rows,
-                    "capabilities": {"table": True, "map": True, "timeline": False},
-                }] if target_rows else [])
+                evidence_reference_layers = evidence_reference_layers_from_audit(
+                    audit_records,
+                    locations=LOCATIONS,
+                    entities=load_ui_entity_db(),
+                )
                 collaboration = normalize_workstream_collaboration(audit_records)
                 return build_agent_result({
                     "run_id": run_id,
@@ -2538,7 +2663,9 @@ class HermesClient:
                     "usage": status.get("usage", {}),
                     "performance_log": performance_log_path.name,
                     **collaboration,
-                }, responding_agent=responding_agent, session_id=session_id, mission_run_id=mission_run_id, layers=result_layers)
+                }, responding_agent=responding_agent, session_id=session_id, mission_run_id=mission_run_id,
+                    requested_result_layers=requested_layers,
+                    evidence_reference_layers=evidence_reference_layers)
             time.sleep(1)
         raise TimeoutError("Hermes investigation exceeded 480 seconds")
 
