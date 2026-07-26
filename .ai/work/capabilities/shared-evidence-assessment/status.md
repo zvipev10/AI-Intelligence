@@ -6,11 +6,11 @@ Collaborative Scenario Playback
 
 ## Current phase
 
-Target Assessment Lead role review
+Indication artifact execution planning
 
 ## Overall status
 
-Phase 1 is merged; Product approved the first shared artifact and Development/Architecture, UX, and QA reviews are next
+Phase 1 is merged; Product and all artifact-specific role reviews are approved; execution planning is next
 
 ## Accepted direction captured
 
@@ -26,14 +26,15 @@ Phase 1 is merged; Product approved the first shared artifact and Development/Ar
 | Role | Status | Required action |
 |---|---|---|
 | Product | Approved | No action. |
-| Development/Architecture | Review needed | Review persistence, revision, and target-workflow separation. |
-| UX | Review needed | Review natural-language proposal, correction, rejection, and assessment-handoff messages without an artifact label. |
-| QA/Security | Review needed | Review provenance, contradiction preservation, and promotion-boundary tests. |
+| Development/Architecture | Approved | No action before execution-plan review. |
+| UX | Approved | No action before execution-plan review. |
+| QA/Security | Approved | No action before execution-plan review. |
 
 ## Current blockers
 
 - No Phase 1 blocker remains.
-- Execution planning is blocked until the artifact-specific role reviews are ready.
+- No blocker remains for execution planning.
+- Product code remains blocked until the execution plan is reviewed.
 - Broader manifest, adapter, and trigger decisions remain deferred beyond Phase 1.
 
 ## Current risks
@@ -45,7 +46,7 @@ Phase 1 is merged; Product approved the first shared artifact and Development/Ar
 
 ## Next expected artifact
 
-Artifact-specific Development/Architecture, UX, and QA review.
+Execution plan for artifact persistence/API and Moshe-interpreted general-chat integration.
 
 ## Parent and child issues
 
@@ -59,6 +60,9 @@ Artifact-specific Development/Architecture, UX, and QA review.
 | #30 | Phase 1 persistence | Closed; PR #31 merged | No |
 | #32 | Phase 1 chat UX | Closed; PR #33 merged | No |
 | #35 | Target Assessment Lead Product definition | Approved; closes with PR #36 | No |
+| #37 | Artifact Development/Architecture review | Approved; closes with PR #40 | No |
+| #38 | Artifact UX review | Approved; closes with PR #40 | No |
+| #39 | Artifact QA/Security review | Approved; closes with PR #40 | No |
 
 ## Artifact links
 
@@ -71,3 +75,6 @@ Artifact-specific Development/Architecture, UX, and QA review.
 - Latest checkpoint: `checkpoint-002.md`
 - Current handoff: `handoff-summary.md`
 - First artifact definition: `artifact-001-target-assessment-lead.md`
+- Artifact Development/Architecture review: `artifact-001-developer-review.md`
+- Artifact UX review: `artifact-001-ux-review.md`
+- Artifact QA/Security review: `artifact-001-qa-review.md`

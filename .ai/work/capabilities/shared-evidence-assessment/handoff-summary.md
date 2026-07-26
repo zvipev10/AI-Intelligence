@@ -66,4 +66,4 @@ The human Product owner approved the checkpoint and instructed implementation to
 
 ## Next step
 
-Product approved `artifact-001-target-assessment-lead.md`. The internal artifact has no formal UX name; the interface talks naturally about indications and actions. The MVP allows one active artifact per workstream, requires stable source references, treats free text as annotation, and reserves assessment handoff for the user. Development/Architecture, UX, and QA should now enrich the model before execution planning.
+Product and the artifact-specific Development/Architecture, UX, and QA reviews are approved. All interaction remains in existing general chat interpreted by Moshe without predefined expressions or new modes. `REC-...` references supply indications; an optional `TGT-...` identifies an existing target under reassessment. The next artifact is the execution plan; no product code is authorized until that plan is reviewed.
