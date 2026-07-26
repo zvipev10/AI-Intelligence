@@ -66,4 +66,4 @@ The human Product owner approved the checkpoint and instructed implementation to
 
 ## Next step
 
-Product and the artifact-specific Development/Architecture, UX, and QA reviews are approved. All interaction remains in existing general chat interpreted by Moshe without predefined expressions or new modes. `REC-...` references supply indications; an optional `TGT-...` identifies an existing target under reassessment. The next artifact is the execution plan; no product code is authorized until that plan is reviewed.
+Product, role reviews, and `artifact-001-execution-plan.md` are approved. Slice 1 (#41), local artifact persistence/API, is authorized. Moshe/general-chat integration (#42) remains blocked until the Slice 1 Architecture/QA checkpoint is accepted.

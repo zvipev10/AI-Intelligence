@@ -6,11 +6,11 @@ Collaborative Scenario Playback
 
 ## Current phase
 
-Indication artifact execution planning
+Indication artifact Slice 1 implementation
 
 ## Overall status
 
-Phase 1 is merged; Product and all artifact-specific role reviews are approved; execution planning is next
+The execution plan is approved; Slice 1 artifact persistence/API implementation is authorized
 
 ## Accepted direction captured
 
@@ -25,16 +25,15 @@ Phase 1 is merged; Product and all artifact-specific role reviews are approved; 
 
 | Role | Status | Required action |
 |---|---|---|
-| Product | Approved | No action. |
-| Development/Architecture | Approved | No action before execution-plan review. |
-| UX | Approved | No action before execution-plan review. |
-| QA/Security | Approved | No action before execution-plan review. |
+| Product | Approved | No action during Slice 1. |
+| Development/Architecture | Waiting for checkpoint | Review Slice 1 implementation after publication. |
+| UX | Approved | No action during backend-only Slice 1. |
+| QA/Security | Waiting for checkpoint | Review Slice 1 tests and persistence boundaries. |
 
 ## Current blockers
 
 - No Phase 1 blocker remains.
-- No blocker remains for execution planning.
-- Product code remains blocked until the execution plan is reviewed.
+- Slice 2 remains blocked until Slice 1 checkpoint acceptance.
 - Broader manifest, adapter, and trigger decisions remain deferred beyond Phase 1.
 
 ## Current risks
@@ -46,7 +45,7 @@ Phase 1 is merged; Product and all artifact-specific role reviews are approved; 
 
 ## Next expected artifact
 
-Execution plan for artifact persistence/API and Moshe-interpreted general-chat integration.
+Slice 1 implementation and checkpoint for issue #41.
 
 ## Parent and child issues
 
@@ -63,6 +62,9 @@ Execution plan for artifact persistence/API and Moshe-interpreted general-chat i
 | #37 | Artifact Development/Architecture review | Approved; closes with PR #40 | No |
 | #38 | Artifact UX review | Approved; closes with PR #40 | No |
 | #39 | Artifact QA/Security review | Approved; closes with PR #40 | No |
+| #41 | Artifact persistence/API | In progress | Yes |
+| #42 | Moshe general-chat integration | Planned; blocked by Slice 1 acceptance | Yes |
+| #43 | Final MVP validation | Planned; blocked by Slices 1–2 | Yes |
 
 ## Artifact links
 
@@ -78,3 +80,4 @@ Execution plan for artifact persistence/API and Moshe-interpreted general-chat i
 - Artifact Development/Architecture review: `artifact-001-developer-review.md`
 - Artifact UX review: `artifact-001-ux-review.md`
 - Artifact QA/Security review: `artifact-001-qa-review.md`
+- Artifact execution plan: `artifact-001-execution-plan.md`
