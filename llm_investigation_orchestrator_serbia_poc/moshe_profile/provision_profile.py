@@ -22,6 +22,7 @@ MOSHE_TOOLS = [
     "compare_location_claims", "challenge_hypothesis", "prepare_target_candidate",
     "find_duplicate_target_candidates", "search_target_candidates", "get_target_candidate",
     "create_target_candidate", "update_target_candidate", "attach_target_evidence",
+    "prepare_workstream_indication_proposal", "decide_workstream_indication_proposal",
 ]
 FORBIDDEN_TOOL_FRAGMENTS = ("sql", "shell", "filesystem", "delete", "reset", "backup", "truth", "evaluator", "status")
 MESSAGING_ENV_PREFIXES = (

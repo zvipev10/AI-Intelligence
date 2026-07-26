@@ -7,11 +7,29 @@ from agent_result_pipeline import (
     normalize_map_locations,
     normalize_attack_targets,
     normalize_typed_layers,
+    normalize_workstream_collaboration,
 )
 from server import HermesClient
 
 
 class AgentResultPipelineTests(unittest.TestCase):
+    def test_normalizes_successful_workstream_handoffs(self):
+        records = [
+            {"tool": "prepare_workstream_indication_proposal", "result": {
+                "workstream_proposal": {"proposal_type": "target_assessment_lead", "action": "create"}
+            }},
+            {"tool": "decide_workstream_indication_proposal", "result": {
+                "workstream_action": {"decision": "confirm"}
+            }},
+            {"tool": "prepare_workstream_indication_proposal", "is_error": True, "result": {
+                "workstream_proposal": {"action": "bad"}
+            }},
+        ]
+        self.assertEqual({
+            "workstream_proposal": {"proposal_type": "target_assessment_lead", "action": "create"},
+            "workstream_action": {"decision": "confirm"},
+        }, normalize_workstream_collaboration(records))
+
     def test_general_result_preserves_legacy_payload_and_adds_identity(self):
         payload = {"run_id": "run-7", "answer": "ok", "event_ids": ["REC-V2-000001"]}
         result = build_agent_result(payload, session_id="session-3")

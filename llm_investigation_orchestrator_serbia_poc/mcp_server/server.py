@@ -2469,6 +2469,92 @@ def prepare_target_candidate(arguments: dict[str, Any]) -> dict[str, Any]:
     return prepare_candidate(seeds, arguments.get("confidence") or "")
 
 
+WORKSTREAM_ACTIONS = {
+    "create", "add_indication", "remove_indication", "update_annotation",
+    "update_lead_statement", "request_completion", "send_to_assessment", "reject",
+}
+
+
+def prepare_workstream_indication_proposal(arguments: dict[str, Any]) -> dict[str, Any]:
+    """Resolve references and prepare an uncommitted workstream change."""
+    action = str(arguments.get("action") or "create").strip()
+    if action not in WORKSTREAM_ACTIONS:
+        raise ValueError("unsupported workstream action")
+    record_ids = [str(value).strip() for value in arguments.get("record_ids") or []]
+    events = _fusion_events(record_ids) if record_ids else []
+    if action in {"create", "add_indication"} and not events:
+        raise ValueError("at least one REC record_id is required for this action")
+    target_id = str(arguments.get("target_id") or "").strip()
+    target = None
+    if target_id:
+        TARGET_BANK.initialize()
+        target = TARGET_BANK.get_candidate(target_id)
+        if target is None:
+            raise ValueError(f"unknown target_id: {target_id}")
+    indications = []
+    supplied = arguments.get("indications") or []
+    supplied_by_id = {
+        str(item.get("record_id") or "").strip(): item
+        for item in supplied if isinstance(item, dict)
+    }
+    for event in events:
+        record_id = event["event_id"]
+        detail = supplied_by_id.get(record_id, {})
+        indications.append({
+            "record_id": record_id,
+            "role": str(detail.get("role") or "context").strip(),
+            "relevance": str(detail.get("relevance") or "").strip(),
+            "annotation": str(detail.get("annotation") or "").strip(),
+            "observed_claim": event.get("event_summary") or record_id,
+        })
+    proposal = {
+        "proposal_type": "target_assessment_lead",
+        "action": action,
+        "proposed_turn_message_id": str(arguments.get("proposed_turn_message_id") or "").strip(),
+        "expected_revision": arguments.get("expected_revision"),
+        "artifact_id": str(arguments.get("artifact_id") or "").strip() or None,
+        "target_id": target_id or None,
+        "target_label": (target or {}).get("title") if target else None,
+        "lead_statement": str(arguments.get("lead_statement") or "").strip(),
+        "indications": indications,
+        "payload": arguments.get("payload") if isinstance(arguments.get("payload"), dict) else {},
+        "supporting_signals": arguments.get("supporting_signals") or [],
+        "contradictions": arguments.get("contradictions") or [],
+        "assessment_questions": arguments.get("assessment_questions") or [],
+        "gaps": arguments.get("gaps") or [],
+        "assigned_to": str(arguments.get("assigned_to") or "").strip(),
+        "annotation": str(arguments.get("annotation") or "").strip(),
+    }
+    if action == "create" and not proposal["lead_statement"]:
+        raise ValueError("lead_statement is required for create")
+    return {"workstream_proposal": proposal, "persisted": False}
+
+
+def decide_workstream_indication_proposal(arguments: dict[str, Any]) -> dict[str, Any]:
+    """Interpret a later user turn without persisting any workstream state."""
+    proposal = arguments.get("proposal")
+    if not isinstance(proposal, dict) or proposal.get("proposal_type") != "target_assessment_lead":
+        raise ValueError("invalid proposal")
+    decision = str(arguments.get("decision") or "").strip()
+    if decision not in {"confirm", "reject", "correct", "clarify", "send_to_assessment"}:
+        raise ValueError("unsupported proposal decision")
+    proposed_turn = str(proposal.get("proposed_turn_message_id") or "").strip()
+    current_turn = str(arguments.get("current_turn_message_id") or "").strip()
+    if decision in {"confirm", "send_to_assessment"}:
+        if not proposed_turn or not current_turn or proposed_turn == current_turn:
+            raise ValueError("confirmation requires a distinct later user turn")
+    corrected = arguments.get("corrected_proposal")
+    return {
+        "workstream_action": {
+            "decision": decision,
+            "proposal": corrected if decision == "correct" and isinstance(corrected, dict) else proposal,
+            "current_turn_message_id": current_turn,
+            "confirmation_text": str(arguments.get("confirmation_text") or "").strip(),
+        },
+        "persisted": False,
+    }
+
+
 def find_duplicate_target_candidates(arguments: dict[str, Any]) -> dict[str, Any]:
     """Find existing candidates that share the assessed target or selected evidence."""
     TARGET_BANK.initialize()
@@ -2527,6 +2613,66 @@ TARGET_EVIDENCE_SCHEMA = {
 
 
 TOOLS = [
+    {
+        "name": "prepare_workstream_indication_proposal",
+        "title": "Prepare a workstream indication proposal",
+        "description": "Resolve REC evidence and an optional read-only TGT subject, then return a bounded proposal for the user to review in chat. Never persists an artifact or changes a target.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "action": {"type": "string", "enum": sorted(WORKSTREAM_ACTIONS)},
+                "proposed_turn_message_id": {"type": "string", "minLength": 1},
+                "record_ids": {"type": "array", "items": {"type": "string"}, "maxItems": 100},
+                "target_id": {"type": "string"},
+                "artifact_id": {"type": "string"},
+                "expected_revision": {"type": "integer", "minimum": 1},
+                "lead_statement": {"type": "string"},
+                "indications": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "record_id": {"type": "string"},
+                            "role": {"type": "string", "enum": ["supports", "contradicts", "context"]},
+                            "relevance": {"type": "string"},
+                            "annotation": {"type": "string"},
+                        },
+                        "required": ["record_id"],
+                        "additionalProperties": False,
+                    },
+                    "maxItems": 100,
+                },
+                "payload": {"type": "object"},
+                "supporting_signals": {"type": "array", "items": {"type": "string"}, "maxItems": 50},
+                "contradictions": {"type": "array", "items": {"type": "string"}, "maxItems": 50},
+                "assessment_questions": {"type": "array", "items": {"type": "string"}, "maxItems": 50},
+                "gaps": {"type": "array", "items": {"type": "string"}, "maxItems": 50},
+                "assigned_to": {"type": "string"},
+                "annotation": {"type": "string"},
+            },
+            "required": ["action", "proposed_turn_message_id"],
+            "additionalProperties": False,
+        },
+        "annotations": {"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": False},
+    },
+    {
+        "name": "decide_workstream_indication_proposal",
+        "title": "Interpret a workstream proposal decision",
+        "description": "Return a structured confirm, reject, correction, clarification, or assessment-handoff decision for an existing staged proposal. Never persists state.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "proposal": {"type": "object"},
+                "decision": {"type": "string", "enum": ["confirm", "reject", "correct", "clarify", "send_to_assessment"]},
+                "current_turn_message_id": {"type": "string", "minLength": 1},
+                "confirmation_text": {"type": "string"},
+                "corrected_proposal": {"type": "object"},
+            },
+            "required": ["proposal", "decision", "current_turn_message_id"],
+            "additionalProperties": False,
+        },
+        "annotations": {"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": False},
+    },
     {
         "name": "prepare_target_candidate",
         "title": "Prepare a fused target candidate",
@@ -2931,6 +3077,8 @@ TOOLS = [
 ]
 
 TOOL_HANDLERS = {
+    "prepare_workstream_indication_proposal": prepare_workstream_indication_proposal,
+    "decide_workstream_indication_proposal": decide_workstream_indication_proposal,
     "prepare_target_candidate": prepare_target_candidate,
     "find_duplicate_target_candidates": find_duplicate_target_candidates,
     "search_target_candidates": search_target_candidates,

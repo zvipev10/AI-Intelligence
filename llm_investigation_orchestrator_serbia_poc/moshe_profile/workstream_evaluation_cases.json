@@ -1,0 +1,34 @@
+[
+  {
+    "name": "natural_language_create_with_record",
+    "turns": [
+      "@משה נראה לי שכדאי לעקוב אחרי REC-V2-000001 כהובלה להערכה",
+      "@משה כן, שמור את ההצעה במעקב"
+    ],
+    "expected": ["proposal_without_persistence", "create_after_distinct_confirmation"]
+  },
+  {
+    "name": "target_is_subject_not_evidence",
+    "turns": [
+      "@משה בדוק את REC-V2-000001 בהקשר של TGT-D4DC7A7EBE02"
+    ],
+    "expected": ["record_is_indication", "target_is_optional_subject", "proposal_without_persistence"]
+  },
+  {
+    "name": "ambiguous_confirmation",
+    "turns": [
+      "@משה הצע מעקב על REC-V2-000001",
+      "@משה אולי"
+    ],
+    "expected": ["proposal_without_persistence", "clarification_without_persistence"]
+  },
+  {
+    "name": "correction_then_confirmation",
+    "turns": [
+      "@משה הצע מעקב על REC-V2-000001",
+      "@משה שנה את הניסוח, זו אינדיקציית הקשר ולא תמיכה",
+      "@משה עכשיו אפשר לשמור"
+    ],
+    "expected": ["proposal_without_persistence", "corrected_proposal_without_persistence", "create_after_distinct_confirmation"]
+  }
+]

@@ -131,6 +131,52 @@ class WorkstreamArtifactApiTests(unittest.TestCase):
         self.assertEqual(status, 201)
         return artifact
 
+    def test_chat_bridge_applies_only_a_distinct_confirmed_turn(self):
+        context = server.bounded_workstream_context({
+            "workstream_id": self.workstream["workstream_id"],
+            "current_turn_message_id": "turn-2",
+            "pending_proposal": {
+                "proposal_type": "target_assessment_lead",
+                "action": "create",
+                "proposed_turn_message_id": "turn-1",
+                "lead_statement": "The records may justify reassessment.",
+                "indications": [{
+                    "record_id": "REC-V2-000001",
+                    "role": "supports",
+                    "relevance": "Possible change in activity.",
+                }],
+            },
+        }, "investigation-42")
+        self.assertEqual([], server.list_artifacts(server.load_workstream(self.workstream["workstream_id"])))
+        artifact, conflict = server.apply_workstream_action(context, {
+            "decision": "confirm",
+            "proposal": context["pending_proposal"],
+            "current_turn_message_id": "turn-2",
+            "confirmation_text": "Yes, save it.",
+        })
+        self.assertIsNone(conflict)
+        self.assertEqual(1, artifact["revision"])
+        self.assertEqual(
+            ["REC-V2-000001"],
+            [item["source_reference"]["record_id"] for item in artifact["content"]["indications"]],
+        )
+
+    def test_chat_bridge_rejects_same_turn_confirmation(self):
+        context = {
+            "workstream_id": self.workstream["workstream_id"],
+            "current_turn_message_id": "turn-1",
+        }
+        with self.assertRaisesRegex(ValueError, "distinct later"):
+            server.apply_workstream_action(context, {
+                "decision": "confirm",
+                "proposal": {
+                    "proposal_type": "target_assessment_lead",
+                    "action": "create",
+                    "proposed_turn_message_id": "turn-1",
+                },
+                "current_turn_message_id": "turn-1",
+            })
+
     def test_create_list_load_and_persist_validated_artifact(self):
         artifact = self.create_artifact()
         self.assertRegex(artifact["artifact_id"], r"^artifact_")

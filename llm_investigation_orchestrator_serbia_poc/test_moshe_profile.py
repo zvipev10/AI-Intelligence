@@ -1,4 +1,6 @@
 import unittest
+import json
+from pathlib import Path
 from pathlib import Path
 from unittest.mock import patch
 
@@ -11,6 +13,15 @@ ROOT = Path(__file__).resolve().parent
 
 
 class MosheProfileTests(unittest.TestCase):
+    def test_workstream_natural_language_evaluation_cases_are_present(self):
+        cases = json.loads(
+            (Path(__file__).parent / "moshe_profile" / "workstream_evaluation_cases.json").read_text(encoding="utf-8")
+        )
+        self.assertGreaterEqual(len(cases), 4)
+        expected = {value for case in cases for value in case["expected"]}
+        self.assertIn("proposal_without_persistence", expected)
+        self.assertIn("create_after_distinct_confirmation", expected)
+        self.assertIn("clarification_without_persistence", expected)
     def source_config(self):
         return {
             "platforms": {"api_server": {"enabled": True, "host": "127.0.0.1", "port": 8642, "key": "secret"}},
@@ -34,6 +45,8 @@ class MosheProfileTests(unittest.TestCase):
         self.assertEqual(serbia["tools"]["include"], MOSHE_TOOLS)
         self.assertEqual(serbia["env"]["INTELLIGENCE_POC_AUDIT"], MOSHE_AUDIT_PATH)
         self.assertIn("create_target_candidate", MOSHE_TOOLS)
+        self.assertIn("prepare_workstream_indication_proposal", MOSHE_TOOLS)
+        self.assertIn("decide_workstream_indication_proposal", MOSHE_TOOLS)
         self.assertNotIn("execute_sql", MOSHE_TOOLS)
 
     def test_backend_merges_only_selected_agent_endpoint(self):

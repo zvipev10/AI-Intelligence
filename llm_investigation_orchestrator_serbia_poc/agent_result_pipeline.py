@@ -11,6 +11,8 @@ TARGET_RESULT_TOOLS = frozenset({
     "search_target_candidates", "get_target_candidate", "create_target_candidate",
     "update_target_candidate", "attach_target_evidence",
 })
+WORKSTREAM_PROPOSAL_TOOL = "prepare_workstream_indication_proposal"
+WORKSTREAM_DECISION_TOOL = "decide_workstream_indication_proposal"
 
 
 def normalize_location_item(item: Any, default_count: int = 0) -> dict[str, Any] | None:
@@ -205,6 +207,22 @@ def normalize_attack_targets(
             })
             by_id[target_id] = merged
     return list(by_id.values())
+
+
+def normalize_workstream_collaboration(audit_records: Any) -> dict[str, Any]:
+    """Return only bounded, successful workstream handoff payloads from the audit."""
+    normalized: dict[str, Any] = {}
+    for record in audit_records or []:
+        if not isinstance(record, dict) or record.get("is_error"):
+            continue
+        result = record.get("result")
+        if not isinstance(result, dict):
+            continue
+        if record.get("tool") == WORKSTREAM_PROPOSAL_TOOL and isinstance(result.get("workstream_proposal"), dict):
+            normalized["workstream_proposal"] = result["workstream_proposal"]
+        elif record.get("tool") == WORKSTREAM_DECISION_TOOL and isinstance(result.get("workstream_action"), dict):
+            normalized["workstream_action"] = result["workstream_action"]
+    return normalized
 
 
 def build_agent_result(

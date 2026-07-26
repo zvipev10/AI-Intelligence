@@ -62,6 +62,13 @@ class WorkstreamUiTests(unittest.TestCase):
         self.assertIn(".workstream-message", self.styles)
         self.assertIn(".workstream-indicator[hidden]", self.styles)
 
+    def test_moshe_proposal_is_staged_in_general_chat_state(self):
+        self.assertIn("pendingMosheWorkstreamProposal", self.app)
+        self.assertIn("workstreamContextForChat(currentTurnMessageId)", self.app)
+        self.assertIn("applyWorkstreamChatResult(result)", self.app)
+        self.assertIn("result.workstream_artifact", self.app)
+        self.assertNotIn("data-workstream-proposal-confirm", self.app)
+
 
 if __name__ == "__main__":
     unittest.main()

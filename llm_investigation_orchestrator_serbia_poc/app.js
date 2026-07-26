@@ -232,6 +232,7 @@ const state = {
   workstreams: [],
   workstreamsLoading: false,
   workstreamLoadToken: 0,
+  pendingMosheWorkstreamProposal: null,
   activeConversationMemberId: null,
   openingLayerIds: new Set(),
   layers: [],
@@ -1568,6 +1569,34 @@ function investigationStateForPrompt(selectedLayers) {
   if (selectedLayers.length) invState.selected_layers = selectedLayers;
   if (savedMemory) invState.saved_memory = savedMemory;
   return invState;
+}
+
+function workstreamContextForChat(messageId) {
+  const workstreams = activeWorkstreams();
+  if (workstreams.length !== 1) return null;
+  return {
+    workstream_id: workstreams[0].workstream_id,
+    pending_proposal: state.pendingMosheWorkstreamProposal,
+    current_turn_message_id: messageId
+  };
+}
+
+function applyWorkstreamChatResult(result) {
+  if (result.workstream_proposal) {
+    state.pendingMosheWorkstreamProposal = result.workstream_proposal;
+  }
+  const decision = result.workstream_action?.decision;
+  if (decision === "reject") state.pendingMosheWorkstreamProposal = null;
+  if (decision === "correct" && result.workstream_action?.proposal) {
+    state.pendingMosheWorkstreamProposal = result.workstream_action.proposal;
+  }
+  if (result.workstream_artifact) {
+    state.pendingMosheWorkstreamProposal = null;
+    result.answer = `${result.answer}\n\nהשינוי אושר ונשמר במעקב (גרסה ${result.workstream_artifact.revision}).`;
+    void loadWorkstreams();
+  } else if (result.workstream_conflict?.error) {
+    result.answer = `${result.answer}\n\nלא שמרתי את השינוי: ${result.workstream_conflict.error}`;
+  }
 }
 
 function normalizeInvestigationName(name) {
@@ -3479,6 +3508,8 @@ async function runPrompt(prompt) {
   state.activeTeamMentions = teamMentionsForPrompt(clean);
   const agentPrompt = promptForAgentWithSelectedLayers(clean, selectedLayers);
   const investigationState = investigationStateForPrompt(selectedLayers);
+  const currentTurnMessageId = globalThis.crypto?.randomUUID?.()
+    || `turn_${Date.now()}_${Math.random().toString(16).slice(2)}`;
   const clientStarted = performance.now();
   let firstLiveStepAt = null;
   appendMessage("user", `<p>${highlightedPromptHtml(clean)}</p>`);
@@ -3513,7 +3544,8 @@ async function runPrompt(prompt) {
         routing_prompt: clean,
         history: state.history,
         investigation_id: state.investigationId,
-        investigation_state: investigationState
+        investigation_state: investigationState,
+        workstream_context: workstreamContextForChat(currentTurnMessageId)
       })
     });
     progressTimer = setInterval(pollLiveSteps, 1800);
@@ -3522,6 +3554,7 @@ async function runPrompt(prompt) {
     const responseReceivedAt = performance.now();
     const result = await response.json();
     if (!response.ok) throw new Error(result.error || "Hermes request failed");
+    applyWorkstreamChatResult(result);
     result.answer = cleanAssistantAnswer(result.answer);
     state.history.push({ role: "user", content: clean }, { role: "assistant", content: result.answer });
     const renderStarted = performance.now();
@@ -3960,6 +3993,7 @@ function resetInvestigation(options = {}) {
   state.workstreamLoadToken += 1;
   state.workstreams = [];
   state.workstreamsLoading = false;
+  state.pendingMosheWorkstreamProposal = null;
   state.pendingWorkstreamDraft = null;
   state.workstreamComposerMode = false;
   if (!options.keepInvestigation) {

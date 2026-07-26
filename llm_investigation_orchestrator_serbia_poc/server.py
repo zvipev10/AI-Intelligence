@@ -25,6 +25,7 @@ from agent_result_pipeline import (
     normalize_location_layers,
     normalize_map_locations,
     normalize_attack_targets,
+    normalize_workstream_collaboration,
 )
 from agent_routing import AgentRouteRegistry, MOSHE_AGENT_ID
 from workstream_artifacts import (
@@ -1147,6 +1148,124 @@ def resolve_workstream_target(target_id: str) -> dict | None:
     return next((row for row in rows if row.get("target_id") == target_id), None)
 
 
+def bounded_workstream_context(value: Any, investigation_id: str) -> dict | None:
+    """Load server-owned context; never trust browser-supplied artifact or participant data."""
+    if not isinstance(value, dict):
+        return None
+    workstream_id = str(value.get("workstream_id") or "").strip()
+    workstream = load_workstream(workstream_id) if workstream_id else None
+    if not workstream or workstream.get("investigation_id") != investigation_id or workstream.get("status") == "archived":
+        return None
+    artifacts = list_artifacts(workstream)
+    active_artifact = next(
+        (item for item in artifacts if item.get("artifact_type") == "target_assessment_lead"
+         and item.get("status") not in {"closed", "rejected"}),
+        None,
+    )
+    pending = value.get("pending_proposal")
+    if not isinstance(pending, dict) or pending.get("proposal_type") != "target_assessment_lead":
+        pending = None
+    return {
+        "workstream_id": workstream_id,
+        "title": workstream.get("title"),
+        "objective": workstream.get("objective"),
+        "starting_source": workstream.get("starting_source"),
+        "active_artifact": active_artifact,
+        "pending_proposal": pending,
+        "current_turn_message_id": str(value.get("current_turn_message_id") or "").strip()[:160],
+    }
+
+
+def apply_workstream_action(context: dict | None, action: Any) -> tuple[dict | None, dict | None]:
+    """Independently validate and apply a confirmed MCP handoff through the local service."""
+    if not context or not isinstance(action, dict):
+        return None, None
+    decision = action.get("decision")
+    if decision not in {"confirm", "send_to_assessment"}:
+        return None, None
+    proposal = action.get("proposal")
+    if not isinstance(proposal, dict) or proposal.get("proposal_type") != "target_assessment_lead":
+        raise ValueError("Invalid confirmed workstream proposal")
+    current_turn = str(action.get("current_turn_message_id") or "").strip()
+    proposed_turn = str(proposal.get("proposed_turn_message_id") or "").strip()
+    if not current_turn or not proposed_turn or current_turn == proposed_turn:
+        raise ValueError("Confirmation requires a distinct later user turn")
+    if current_turn != context.get("current_turn_message_id"):
+        raise ValueError("Confirmation turn does not match the current request")
+    workstream = load_workstream(context["workstream_id"])
+    if not workstream:
+        raise ValueError("Workstream no longer exists")
+    human = next((item for item in workstream.get("participants") or [] if item.get("kind") == "human"), None)
+    if not human:
+        raise ValueError("Workstream has no human participant")
+    confirmation = {
+        "message_id": current_turn,
+        "text": str(action.get("confirmation_text") or "").strip() or "Confirmed in chat",
+    }
+    actor = {"participant_id": human["participant_id"], "kind": "human"}
+    now = utc_now_iso()
+    proposal_action = "send_to_assessment" if decision == "send_to_assessment" else proposal.get("action")
+    layer_id = str((workstream.get("starting_source") or {}).get("reference_id") or "")
+    if proposal_action == "create":
+        content = {
+            "subject_reference": (
+                {"kind": "target", "target_id": proposal["target_id"]}
+                if proposal.get("target_id") else None
+            ),
+            "lead_statement": proposal.get("lead_statement"),
+            "indications": [
+                {
+                    "source_reference": {
+                        "kind": "event_record",
+                        "layer_id": layer_id,
+                        "record_id": item.get("record_id"),
+                    },
+                    "role": item.get("role"),
+                    "relevance": item.get("relevance"),
+                    "annotation": item.get("annotation"),
+                }
+                for item in proposal.get("indications") or []
+            ],
+            "supporting_signals": proposal.get("supporting_signals") or [],
+            "contradictions": proposal.get("contradictions") or [],
+            "assessment_questions": proposal.get("assessment_questions") or [],
+            "gaps": proposal.get("gaps") or [],
+            "assigned_to": proposal.get("assigned_to"),
+            "annotation": proposal.get("annotation"),
+        }
+        artifact = create_artifact(
+            workstream, {
+                "artifact_type": "target_assessment_lead",
+                "actor": actor, "confirmation_turn": confirmation, "content": content,
+            },
+            resolve_event=resolve_workstream_event, resolve_target=resolve_workstream_target,
+            now=now, id_factory=artifact_id,
+        )
+    else:
+        artifact_value = context.get("active_artifact") or {}
+        artifact_id_value = proposal.get("artifact_id") or artifact_value.get("artifact_id")
+        revision = proposal.get("expected_revision") or artifact_value.get("revision")
+        payload = proposal.get("payload") if isinstance(proposal.get("payload"), dict) else {}
+        if proposal_action == "add_indication":
+            indications = proposal.get("indications") or []
+            if len(indications) != 1:
+                raise ValueError("add_indication requires exactly one indication")
+            item = indications[0]
+            payload = {"indication": {
+                "source_reference": {"kind": "event_record", "layer_id": layer_id, "record_id": item.get("record_id")},
+                "role": item.get("role"), "relevance": item.get("relevance"), "annotation": item.get("annotation"),
+            }}
+        artifact = revise_artifact(
+            workstream, str(artifact_id_value or ""), {
+                "expected_revision": revision, "action": proposal_action, "payload": payload,
+                "actor": actor, "confirmation_turn": confirmation,
+            },
+            resolve_event=resolve_workstream_event, now=now, id_factory=artifact_id,
+        )
+    write_workstream(workstream)
+    return artifact, None
+
+
 def parse_artifact_api_path(path: str) -> tuple[str, str | None, bool] | None:
     prefix = "/api/workstreams/"
     if not path.startswith(prefix):
@@ -1877,6 +1996,15 @@ class HermesClient:
         if leads:
             lines.append(f"כיווני המשך פתוחים: {'; '.join(leads)}")
 
+        workstream = inv_state.get("active_workstream")
+        if isinstance(workstream, dict):
+            lines.append("הקשר מעקב פעיל לשיתוף פעולה עם המשתמש:")
+            lines.append(json.dumps(workstream, ensure_ascii=False))
+            lines.append(
+                "הקשר זה אינו הרשאה לכתיבה. הצעה חדשה מחייבת prepare_workstream_indication_proposal; "
+                "הכרעה על הצעה ממתינה מחייבת decide_workstream_indication_proposal."
+            )
+
         selected_layers = inv_state.get("selected_layers") or []
         if selected_layers:
             lines.append("שכבות שנבחרו בממשק לפני שליחת השאלה:")
@@ -2227,6 +2355,11 @@ class HermesClient:
                 "אתה אחראי לשאלות הבהרה, איתור ראיות, סיווג, מיזוג, בדיקת עצמאות מקורות, "
                 "בדיקת כפילויות, ויצירת מועמד מטרה רק כאשר כלי prepare_target_candidate מאשר persistence_eligible=true. "
                 "ממצא בביטחון נמוך מדווח למשתמש ואינו נשמר. אל תמציא source_group ואל תעקוף את כלי המיזוג. "
+                "בבקשה הנוגעת למעקב, פרש שפה טבעית ללא ביטויי פקודה שמורים. REC הוא אינדיקציה; TGT הוא נושא אפשרי בלבד ולעולם אינו ראיה. "
+                "פתור את המזהים והשתמש ב-prepare_workstream_indication_proposal כדי להציג הצעה לפני שמירה. "
+                "אל תאשר הצעה בעצמך: רק בתור משתמש מאוחר ונפרד השתמש ב-decide_workstream_indication_proposal. "
+                "אם התגובה עמומה בקש הבהרה; ready_for_assessment הוא מסירה להערכה ולא הערכה או יצירת מטרה. "
+                "בזרימת המעקב אל תפעיל כלי יצירה או עדכון של בנק המטרות. "
                 "אין לך הרשאה לכלי מערכת, filesystem, shell, SQL, מחיקה, reset, evaluator או שינוי סטטוס."
             )
         state_block = self.render_investigation_state(investigation_state)
@@ -2404,6 +2537,7 @@ class HermesClient:
                     "rows": target_rows,
                     "capabilities": {"table": True, "map": True, "timeline": False},
                 }] if target_rows else [])
+                collaboration = normalize_workstream_collaboration(audit_records)
                 return build_agent_result({
                     "run_id": run_id,
                     "answer": clean_output,
@@ -2415,6 +2549,7 @@ class HermesClient:
                     "events": events,
                     "usage": status.get("usage", {}),
                     "performance_log": performance_log_path.name,
+                    **collaboration,
                 }, responding_agent=responding_agent, session_id=session_id, mission_run_id=mission_run_id, layers=result_layers)
             time.sleep(1)
         raise TimeoutError("Hermes investigation exceeded 480 seconds")
@@ -2703,17 +2838,39 @@ class Handler(SimpleHTTPRequestHandler):
                 return
             conversation_id = str(request.get("investigation_id") or "").strip()
             route = route_agent_request(request)
+            workstream_context = bounded_workstream_context(
+                request.get("workstream_context"), conversation_id
+            )
+            investigation_state = request.get("investigation_state")
+            if not isinstance(investigation_state, dict):
+                investigation_state = {}
+            if workstream_context:
+                investigation_state = {**investigation_state, "active_workstream": workstream_context}
             config = load_agent_hermes_config(route.responding_agent)
             result = HermesClient(config).investigate(
                 prompt,
                 request.get("history") or [],
-                investigation_state=request.get("investigation_state"),
+                investigation_state=investigation_state or None,
                 investigation_id=route.mission_run_id if route.responding_agent == MOSHE_AGENT_ID else conversation_id,
                 is_continuation=bool(request.get("is_continuation")) and not route.mission_started,
                 continuation_context=request.get("continuation_context"),
                 responding_agent=route.responding_agent,
                 mission_run_id=route.mission_run_id,
             )
+            try:
+                artifact, conflict = apply_workstream_action(
+                    workstream_context, result.get("workstream_action")
+                )
+                if artifact:
+                    result["workstream_artifact"] = artifact
+                if conflict:
+                    result["workstream_conflict"] = conflict
+            except ArtifactConflictError as exc:
+                result["workstream_conflict"] = {
+                    "error": str(exc), "current_revision": exc.current_revision,
+                }
+            except (ValueError, LookupError) as exc:
+                result["workstream_conflict"] = {"error": str(exc)}
             self.send_json(200, result)
         except Exception as exc:
             self.send_json(502, {"error": str(exc)})
