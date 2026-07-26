@@ -1,0 +1,75 @@
+# QA / Security Review — Indication Artifact
+
+## Status
+
+AI-authored recommendation — pending human QA/Security approval.
+
+## Highest-risk invariants
+
+1. An indication always resolves to a stable item in the explicitly attached layer.
+2. Artifact mutations cannot modify raw layer data, Investigation Memory, or the target bank.
+3. Removed or contradictory indications remain attributable in revision history.
+4. A stale client cannot overwrite a newer revision.
+5. Only a human action can mark the artifact ready for assessment.
+6. Ready for assessment does not create an assessment or target.
+
+## API and persistence tests
+
+- Create the first supported artifact and reload it after server restart.
+- Reject a second active artifact of the same type in one workstream.
+- Enforce server-owned IDs, timestamps, and revisions.
+- Validate bounded payloads, arrays, strings, enums, and participant attribution.
+- Reject missing, malformed, cross-layer, and unknown record references.
+- Add, remove, annotate, and classify indications with correct revision increments.
+- Reject stale `expected_revision` with `409` and preserve the stored document.
+- Reject mutation of archived workstreams.
+- Confirm atomic write behavior and recovery from malformed stored JSON.
+- Confirm status-transition allow-list.
+
+## Authority and separation tests
+
+- Reject `send_to_assessment` from an agent participant.
+- Accept it from a human participant with the current revision.
+- Assert that artifact routes never open or mutate the target-bank SQLite database.
+- Assert that raw layer files and Investigation Memory files remain byte-identical.
+- Treat all client actor fields as untrusted demo attribution; document that this is not production authorization.
+
+## Revision-history tests
+
+- Every accepted action appends actor, action, timestamp, prior revision, and summary.
+- Removed indications remain in history and cannot be silently reused with a new identity.
+- Contradictions cannot disappear through a partial update.
+- Reload produces the same current content and ordered history.
+- A rejected artifact remains reviewable and cannot be silently reactivated without a new revision action.
+
+## UX and regression tests
+
+- Indicator behavior remains minimal and unchanged.
+- Empty, proposed, active, conflict, read-only, unavailable-source, save-error, and ready states render.
+- Record-selection mode does not change layer visibility/filtering after cancel.
+- Keyboard selection, confirmation, cancel, and focus return work.
+- Long record IDs and mixed RTL/LTR copy remain usable.
+- Ordinary chat, Hermes routing, Investigation Memory, workstream creation/archive, map, timeline, and target-layer behavior do not regress.
+
+## Manual demo acceptance
+
+1. Create a workstream with one attached historical layer.
+2. Open the indicator and enter record-selection mode.
+3. Select a supporting and contradictory record.
+4. Confirm in chat and refresh the page.
+5. Verify both indications and their roles persist.
+6. Remove one indication and verify history remains.
+7. Trigger a deliberate stale-revision conflict in a second tab.
+8. Send to assessment and verify no target or assessment is created.
+
+## Security risks
+
+- Source text displayed in chat must be escaped.
+- Reference validation must not allow path traversal or arbitrary layer access.
+- Payload limits must prevent oversized workstream files.
+- Production authorization remains unresolved and blocks production release, but not the bounded single-user demo.
+
+## Recommendation
+
+Continue after architecture confirms reference resolution and the team accepts client-supplied actor attribution as a demo limitation.
+

@@ -6,11 +6,11 @@ Collaborative Scenario Playback
 
 ## Current phase
 
-Target Assessment Lead role review
+Indication artifact role-review checkpoint
 
 ## Overall status
 
-Phase 1 is merged; Product approved the first shared artifact and Development/Architecture, UX, and QA reviews are next
+Phase 1 is merged; Product approved the first shared artifact; artifact-specific Development/Architecture, UX, and QA draft recommendations are ready for human acceptance
 
 ## Accepted direction captured
 
@@ -26,9 +26,9 @@ Phase 1 is merged; Product approved the first shared artifact and Development/Ar
 | Role | Status | Required action |
 |---|---|---|
 | Product | Approved | No action. |
-| Development/Architecture | Review needed | Review persistence, revision, and target-workflow separation. |
-| UX | Review needed | Review natural-language proposal, correction, rejection, and assessment-handoff messages without an artifact label. |
-| QA/Security | Review needed | Review provenance, contradiction preservation, and promotion-boundary tests. |
+| Development/Architecture | Approval needed | Accept or revise `artifact-001-developer-review.md`. |
+| UX | Approval needed | Accept or revise `artifact-001-ux-review.md`. |
+| QA/Security | Approval needed | Accept or revise `artifact-001-qa-review.md`. |
 
 ## Current blockers
 
@@ -45,7 +45,7 @@ Phase 1 is merged; Product approved the first shared artifact and Development/Ar
 
 ## Next expected artifact
 
-Artifact-specific Development/Architecture, UX, and QA review.
+Human acceptance or requested changes for the three artifact-specific role reviews.
 
 ## Parent and child issues
 
@@ -59,6 +59,9 @@ Artifact-specific Development/Architecture, UX, and QA review.
 | #30 | Phase 1 persistence | Closed; PR #31 merged | No |
 | #32 | Phase 1 chat UX | Closed; PR #33 merged | No |
 | #35 | Target Assessment Lead Product definition | Approved; closes with PR #36 | No |
+| #37 | Artifact Development/Architecture review | Draft ready | Yes |
+| #38 | Artifact UX review | Draft ready | Yes |
+| #39 | Artifact QA/Security review | Draft ready | Yes |
 
 ## Artifact links
 
@@ -71,3 +74,6 @@ Artifact-specific Development/Architecture, UX, and QA review.
 - Latest checkpoint: `checkpoint-002.md`
 - Current handoff: `handoff-summary.md`
 - First artifact definition: `artifact-001-target-assessment-lead.md`
+- Artifact Development/Architecture review: `artifact-001-developer-review.md`
+- Artifact UX review: `artifact-001-ux-review.md`
+- Artifact QA/Security review: `artifact-001-qa-review.md`

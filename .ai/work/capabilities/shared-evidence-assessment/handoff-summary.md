@@ -66,4 +66,4 @@ The human Product owner approved the checkpoint and instructed implementation to
 
 ## Next step
 
-Product approved `artifact-001-target-assessment-lead.md`. The internal artifact has no formal UX name; the interface talks naturally about indications and actions. The MVP allows one active artifact per workstream, requires stable source references, treats free text as annotation, and reserves assessment handoff for the user. Development/Architecture, UX, and QA should now enrich the model before execution planning.
+Product approved `artifact-001-target-assessment-lead.md`. Artifact-specific Development/Architecture, UX, and QA draft reviews now define the proposed envelope/API/revision contract, manual chat and temporary layer-selection flow, and validation strategy. They remain pending human acceptance. No execution plan or product code is authorized yet.
