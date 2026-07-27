@@ -77,10 +77,10 @@ class MosheProfileTests(unittest.TestCase):
         self.assertIn("MemoryHigh=400M", unit)
         self.assertIn("MemoryMax=600M", unit)
 
-    def test_frontend_sends_unmodified_current_message_for_routing(self):
+    def test_frontend_routes_with_selected_or_explicit_current_addressee(self):
         frontend = (ROOT / "app.js").read_text(encoding="utf-8")
-        self.assertIn("routing_prompt: workstreamCreationRequested ? `@משה ${clean}` : clean", frontend)
-        self.assertIn("routing_prompt: instruction", frontend)
+        self.assertIn("routing_prompt: addressedPrompt", frontend)
+        self.assertIn("routing_prompt: addressedInstruction", frontend)
         self.assertIn("/api/live-steps?agent=moshe", frontend)
 
     def test_backend_ignores_mentions_in_enriched_agent_prompt(self):

@@ -30,6 +30,16 @@ class MemberUiRegressionTests(unittest.TestCase):
         self.assertIn(r'const mentionPattern = /@([\p{L}\p{N}_-]+)/gu;', self.app)
         self.assertIn('appendMessage("user", `<p>${highlightedPromptHtml(clean)}</p>`);', self.app)
 
+    def test_selected_member_is_implicitly_addressed_without_changing_visible_message(self):
+        self.assertIn("function addressedPromptForSelectedMember(prompt)", self.app)
+        self.assertIn("return member ? `@${member.displayName} ${clean}` : clean;", self.app)
+        self.assertIn("const addressedPrompt = addressedPromptForSelectedMember(clean);", self.app)
+        self.assertIn("routing_prompt: addressedPrompt", self.app)
+        self.assertIn('appendMessage("user", `<p>${highlightedPromptHtml(clean)}</p>`);', self.app)
+
+    def test_explicit_mentions_take_precedence_over_selected_member(self):
+        self.assertIn("if (!clean || teamMentionsForPrompt(clean).length) return clean;", self.app)
+
     def test_moshe_member_opening_comes_from_agent(self):
         self.assertIn("async function appendAgentMemberOpeningMessage(member)", self.app)
         self.assertIn('routing_prompt: "@משה"', self.app)

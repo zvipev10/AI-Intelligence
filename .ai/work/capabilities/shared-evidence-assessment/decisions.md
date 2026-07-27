@@ -1,5 +1,27 @@
 # Capability Decisions
 
+### 2026-07-27 — Treat the selected teammate as the implicit chat addressee
+
+Decision:
+Selecting a teammate in the upper team bar addresses subsequent chat messages and continuation requests to that teammate without requiring the user to type `@name`. An explicit teammate mention in the typed message takes precedence. The visible user message remains unchanged.
+
+Context:
+Team selection previously changed only the prompt placeholder and response label. Backend routing still saw an unaddressed message and could fall back to the general agent, including after the user had selected Moshe.
+
+Rationale:
+The selected conversation participant is persistent interaction context and should carry the same routing meaning as repeatedly typing their mention.
+
+Alternatives considered:
+- Require an explicit mention on every message.
+- Insert a visible mention into the composer.
+- Keep selection as visual decoration only.
+
+Impact:
+Moshe selection routes to his dedicated profile. Other currently displayed teammates remain on the shared backend until they receive dedicated profiles, but their selected identity and role are transmitted as the conversation addressee.
+
+Follow-ups:
+Add dedicated routing profiles as other teammate agents become functional.
+
 ### 2026-07-26 — Make workstream creation a Moshe-owned conversation
 
 Decision:

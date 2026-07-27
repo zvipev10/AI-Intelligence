@@ -737,6 +737,13 @@ function teamMentionsForPrompt(prompt) {
   return mentions;
 }
 
+function addressedPromptForSelectedMember(prompt) {
+  const clean = String(prompt || "").trim();
+  if (!clean || teamMentionsForPrompt(clean).length) return clean;
+  const member = activeConversationMember();
+  return member ? `@${member.displayName} ${clean}` : clean;
+}
+
 function parseCsv(text) {
   const rows = [];
   let row = [];
@@ -2838,8 +2845,9 @@ async function submitStepInject() {
   const priorResult = state.lastResult;
   const baseStepCount = priorSteps.length;
   const classificationContext = originalClassificationContext(priorSteps.length ? priorSteps : allPriorSteps);
-  state.activeTeamMentions = teamMentionsForPrompt(instruction);
-  const continuationPrompt = buildContinuationPrompt(instruction, selectedLayers, classificationContext);
+  const addressedInstruction = addressedPromptForSelectedMember(instruction);
+  state.activeTeamMentions = teamMentionsForPrompt(addressedInstruction);
+  const continuationPrompt = buildContinuationPrompt(addressedInstruction, selectedLayers, classificationContext);
   const agentContinuationPrompt = promptForAgent(continuationPrompt);
 
   // Start a new labeled continuation bubble
@@ -2859,7 +2867,7 @@ async function submitStepInject() {
 
   const pollContinuationSteps = async () => {
     try {
-      const response = await fetch(liveStepsUrl(instruction), { cache: "no-store" });
+      const response = await fetch(liveStepsUrl(addressedInstruction), { cache: "no-store" });
       if (!response.ok) return;
       const live = await response.json();
       const steps = live.investigation_steps || [];
@@ -2890,7 +2898,7 @@ async function submitStepInject() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         prompt: agentContinuationPrompt,
-        routing_prompt: instruction,
+        routing_prompt: addressedInstruction,
         history: state.history,
         investigation_id: state.investigationId,
         investigation_state: investigationStateForPrompt(selectedLayerContextForAgent()),
@@ -3561,13 +3569,14 @@ async function runPrompt(prompt, options = {}) {
   const clean = prompt.trim();
   if (!clean || state.busy) return;
   const workstreamCreationRequested = options.workstreamCreation === true;
+  const addressedPrompt = addressedPromptForSelectedMember(clean);
   const selectedLayers = selectedLayerContextForAgent();
-  state.activeTeamMentions = teamMentionsForPrompt(clean);
+  state.activeTeamMentions = teamMentionsForPrompt(addressedPrompt);
   const workstreamInstruction = workstreamCreationRequested
     ? "המשתמש נמצא בזרימת יצירת מעקב. נהל שיחה טבעית: אם חסר מידע חיוני שאל שאלה קצרה; כאשר המטרה והאחריות ברורות, השתמש בכלי יצירת המעקב."
     : "";
   const agentPrompt = promptForAgentWithSelectedLayers(
-    [clean, workstreamInstruction].filter(Boolean).join("\n\n"),
+    [addressedPrompt, workstreamInstruction].filter(Boolean).join("\n\n"),
     selectedLayers
   );
   const investigationState = investigationStateForPrompt(selectedLayers);
@@ -3585,7 +3594,7 @@ async function runPrompt(prompt, options = {}) {
   let progressTimer = null;
   const pollLiveSteps = async () => {
     try {
-      const response = await fetch(liveStepsUrl(clean), { cache: "no-store" });
+      const response = await fetch(liveStepsUrl(addressedPrompt), { cache: "no-store" });
       if (!response.ok) return;
       const live = await response.json();
       const steps = live.investigation_steps || [];
@@ -3604,7 +3613,7 @@ async function runPrompt(prompt, options = {}) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         prompt: agentPrompt,
-        routing_prompt: workstreamCreationRequested ? `@משה ${clean}` : clean,
+        routing_prompt: addressedPrompt,
         history: state.history,
         investigation_id: state.investigationId,
         investigation_state: investigationState,

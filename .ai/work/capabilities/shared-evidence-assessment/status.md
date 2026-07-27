@@ -6,11 +6,11 @@ Collaborative Scenario Playback
 
 ## Current phase
 
-Conversational workstream UX correction validation
+Selected-teammate routing deployment validation
 
 ## Overall status
 
-Checkpoint 005 corrections are deployed; real Moshe clarification and completion conversations require product validation
+Checkpoint 006 routing correction is implemented locally; deployment verification is pending
 
 ## Accepted direction captured
 
@@ -45,7 +45,7 @@ Checkpoint 005 corrections are deployed; real Moshe clarification and completion
 
 ## Next expected artifact
 
-Checkpoint 005 deployment result, then final validation issue #43.
+Checkpoint 006 deployment result, then final validation issue #43.
 
 ## Parent and child issues
 
@@ -83,3 +83,4 @@ Checkpoint 005 deployment result, then final validation issue #43.
 - Artifact execution plan: `artifact-001-execution-plan.md`
 - Latest checkpoint: `checkpoint-004.md`
 - UX correction checkpoint: `checkpoint-005.md`
+- Selected-teammate routing checkpoint: `checkpoint-006.md`

@@ -26,7 +26,7 @@ class WorkstreamUiTests(unittest.TestCase):
 
     def test_creation_is_a_moshe_conversation_without_inline_confirmation(self):
         self.assertIn("workstream_creation_requested: workstreamCreationRequested", self.app)
-        self.assertIn('routing_prompt: workstreamCreationRequested ? `@משה ${clean}` : clean', self.app)
+        self.assertIn("routing_prompt: addressedPrompt", self.app)
         self.assertIn("result.workstream_created", self.app)
         self.assertNotIn("pendingWorkstreamDraft", self.app)
         self.assertNotIn("data-workstream-confirm", self.app)

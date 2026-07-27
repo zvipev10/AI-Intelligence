@@ -78,6 +78,7 @@ def deploy(client) -> tuple[str, dict]:
             f"&& curl -k -LfsS https://{HOST}/app.js | grep -q 'workstreamArtifactHtml' "
             f"&& curl -k -LfsS https://{HOST}/app.js | grep -q 'thinkingIndicatorHtml' "
             f"&& curl -k -LfsS https://{HOST}/app.js | grep -q 'workstream_creation_requested' "
+            f"&& curl -k -LfsS https://{HOST}/app.js | grep -q 'addressedPromptForSelectedMember' "
             f"&& curl -k -LfsS https://{HOST}/styles.css | grep -q 'workstream-menu' && echo present"
         ),
         "ui_contract": f"grep -q 'workstreamArtifactHtml' {root_q}/app.js && ! grep -q 'starting_source' {root_q}/app.js && echo present",
