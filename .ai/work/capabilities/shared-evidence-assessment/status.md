@@ -10,7 +10,7 @@ Teammate selection-toggle deployment validation
 
 ## Overall status
 
-Checkpoint 007 selection-toggle correction is implemented locally and awaits deployment
+Checkpoint 007 selection-toggle correction is deployed and awaits product interaction validation
 
 ## Accepted direction captured
 

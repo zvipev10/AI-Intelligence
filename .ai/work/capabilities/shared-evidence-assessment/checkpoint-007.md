@@ -21,3 +21,13 @@ No blocking issues.
 ## Recommendation
 
 Deploy and verify select → deselect → general-chat behavior.
+
+## VM deployment
+
+- Deployed commit `46a7a49`.
+- UI service: active.
+- Moshe gateway service: active.
+- Public assets use cache version `v116`.
+- Existing selected-teammate, workstream, thinking-indicator, MCP, and Moshe-profile contracts remain present.
+- Dataset: `v2.1`, 14,800 rows.
+- Rollback backup: `/opt/serbia-poc-ui-backups/workstream-slice2-20260727T164047Z`.
