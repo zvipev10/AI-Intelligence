@@ -1109,6 +1109,45 @@ def list_workstreams(investigation_id: str) -> list[dict]:
     return sorted(items, key=lambda item: str(item.get("updated_at_utc") or ""), reverse=True)
 
 
+def list_workstreams_with_latest_fallback(investigation_id: str) -> dict:
+    exact = list_workstreams(investigation_id)
+    if exact:
+        return {
+            "workstreams": exact,
+            "canonical_investigation_id": investigation_id,
+            "fallback_used": False,
+        }
+    if not WORKSTREAMS_DIR.exists():
+        return {
+            "workstreams": [],
+            "canonical_investigation_id": investigation_id,
+            "fallback_used": False,
+        }
+    groups: dict[str, list[dict]] = {}
+    for path in WORKSTREAMS_DIR.glob("ws_*.json"):
+        payload = load_workstream(path.stem)
+        canonical_id = str(payload.get("investigation_id") or "") if payload else ""
+        if payload and INVESTIGATION_ID_PATTERN.fullmatch(canonical_id):
+            groups.setdefault(canonical_id, []).append(workstream_metadata(payload))
+    if not groups:
+        return {
+            "workstreams": [],
+            "canonical_investigation_id": investigation_id,
+            "fallback_used": False,
+        }
+    canonical_id, items = max(
+        groups.items(),
+        key=lambda group: max(str(item.get("updated_at_utc") or "") for item in group[1]),
+    )
+    return {
+        "workstreams": sorted(
+            items, key=lambda item: str(item.get("updated_at_utc") or ""), reverse=True
+        ),
+        "canonical_investigation_id": canonical_id,
+        "fallback_used": True,
+    }
+
+
 def update_workstream(workstream_id: str, request: dict) -> dict | None:
     existing = load_workstream(workstream_id)
     if existing is None:
@@ -2775,9 +2814,13 @@ class Handler(SimpleHTTPRequestHandler):
             self.send_json(200, result)
             return
         if path.path == "/api/workstreams":
-            investigation_id = (parse_qs(path.query).get("investigation_id") or [""])[0]
+            query = parse_qs(path.query)
+            investigation_id = (query.get("investigation_id") or [""])[0]
             try:
-                self.send_json(200, {"workstreams": list_workstreams(investigation_id)})
+                if (query.get("fallback") or [""])[0] == "latest":
+                    self.send_json(200, list_workstreams_with_latest_fallback(investigation_id))
+                else:
+                    self.send_json(200, {"workstreams": list_workstreams(investigation_id)})
             except ValueError as exc:
                 self.send_json(400, {"error": str(exc)})
             return

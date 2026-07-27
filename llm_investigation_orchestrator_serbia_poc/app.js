@@ -1852,8 +1852,7 @@ function selectInvestigation(investigation, options = {}) {
   saveInvestigationRegistry();
   resetInvestigation({ keepInvestigation: true });
   renderInvestigationSelector();
-  loadInvestigationMemory({ restoreLayers: true });
-  loadWorkstreams();
+  loadWorkstreams().then(() => loadInvestigationMemory({ restoreLayers: true }));
   if (options.focusInput) investigationInput?.focus();
 }
 
@@ -2254,6 +2253,17 @@ function activeWorkstreams() {
   return state.workstreams.filter(item => item?.status !== "archived");
 }
 
+function adoptCanonicalWorkstreamInvestigation(investigationId) {
+  const canonicalId = String(investigationId || "").trim();
+  if (!canonicalId || canonicalId === state.investigationId) return false;
+  const active = state.investigations.find(item => item.id === state.investigationId);
+  if (active) active.id = canonicalId;
+  state.investigationId = canonicalId;
+  saveInvestigationRegistry();
+  renderInvestigationSelector();
+  return true;
+}
+
 const WORKSTREAM_STATUS_LABELS = {
   active: "פעיל",
   paused: "מושהה",
@@ -2287,10 +2297,11 @@ async function loadWorkstreams() {
   const token = ++state.workstreamLoadToken;
   state.workstreamsLoading = true;
   try {
-    const response = await fetch(`/api/workstreams?investigation_id=${encodeURIComponent(state.investigationId)}`, { cache: "no-store" });
+    const response = await fetch(`/api/workstreams?investigation_id=${encodeURIComponent(state.investigationId)}&fallback=latest`, { cache: "no-store" });
     const payload = await response.json();
     if (!response.ok) throw new Error(payload.error || "טעינת המעקבים נכשלה");
     if (token !== state.workstreamLoadToken) return [];
+    adoptCanonicalWorkstreamInvestigation(payload.canonical_investigation_id);
     state.workstreams = Array.isArray(payload.workstreams) ? payload.workstreams : [];
     renderWorkstreamIndicator();
     return state.workstreams;
@@ -4519,8 +4530,8 @@ renderInvestigationSelector();
 async function boot() {
   initMap();
   await loadLayerCatalog();
-  await loadInvestigationMemory({ restoreLayers: true });
   await loadWorkstreams();
+  await loadInvestigationMemory({ restoreLayers: true });
   let runtimeStatus = null;
   try {
     runtimeStatus = await fetch("/api/status", { cache: "no-store" }).then(response => response.json());

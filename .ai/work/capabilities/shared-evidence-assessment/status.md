@@ -6,11 +6,11 @@ Collaborative Scenario Playback
 
 ## Current phase
 
-Workstream summary deduplication deployment validation
+Desktop workstream indicator deployment
 
 ## Overall status
 
-Checkpoint 008 summary deduplication is deployed and awaits product interaction validation
+Checkpoint 009 desktop indicator recovery is implemented and validated locally; VM deployment is next
 
 ## Accepted direction captured
 
@@ -36,6 +36,12 @@ Checkpoint 008 summary deduplication is deployed and awaits product interaction 
 - Slice 2 merge is blocked on checkpoint approval.
 - Broader manifest, adapter, and trigger decisions remain deferred beyond Phase 1.
 
+## Latest change
+
+- Desktop sessions with an empty local workstream lookup now adopt the server's most recently active workstream investigation.
+- Exact investigation matches remain authoritative.
+- Full test discovery passes: 83 tests.
+
 ## Current risks
 
 - Future evidence may leak through retrieval paths not covered by replay filtering.
@@ -45,7 +51,7 @@ Checkpoint 008 summary deduplication is deployed and awaits product interaction 
 
 ## Next expected artifact
 
-Checkpoint 008 deployment result, then final validation issue #43.
+Checkpoint 009 VM deployment result, then final validation issue #43.
 
 ## Parent and child issues
 
@@ -86,3 +92,4 @@ Checkpoint 008 deployment result, then final validation issue #43.
 - Selected-teammate routing checkpoint: `checkpoint-006.md`
 - Teammate selection-toggle checkpoint: `checkpoint-007.md`
 - Workstream summary deduplication checkpoint: `checkpoint-008.md`
+- Desktop workstream indicator checkpoint: `checkpoint-009.md`

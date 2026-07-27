@@ -84,6 +84,22 @@ class WorkstreamUiTests(unittest.TestCase):
         self.assertIn("loadWorkstreams();", self.app)
         self.assertIn("renderWorkstreamIndicator();", self.app)
 
+    def test_desktop_adopts_server_workstream_investigation_before_memory_load(self):
+        self.assertIn("function adoptCanonicalWorkstreamInvestigation(investigationId)", self.app)
+        self.assertIn("&fallback=latest", self.app)
+        self.assertIn(
+            "adoptCanonicalWorkstreamInvestigation(payload.canonical_investigation_id)",
+            self.app,
+        )
+        self.assertIn(
+            "loadWorkstreams().then(() => loadInvestigationMemory", self.app
+        )
+        boot_start = self.app.index("async function boot()")
+        self.assertLess(
+            self.app.index("await loadWorkstreams();", boot_start),
+            self.app.index("await loadInvestigationMemory", boot_start),
+        )
+
     def test_tracking_and_workstream_messages_have_visible_states(self):
         self.assertIn(".prompt-form.tracking-mode", self.styles)
         self.assertIn(".workstream-message", self.styles)
