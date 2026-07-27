@@ -10,7 +10,7 @@ Workstream summary deduplication deployment validation
 
 ## Overall status
 
-Checkpoint 008 summary deduplication is implemented locally and awaits deployment
+Checkpoint 008 summary deduplication is deployed and awaits product interaction validation
 
 ## Accepted direction captured
 

@@ -20,3 +20,12 @@ No blocking issues.
 ## Recommendation
 
 Deploy and recheck the previously captured workstream summary.
+
+## VM deployment
+
+- Deployed commit `7439e11`.
+- UI service: active.
+- Moshe gateway service: active.
+- Public assets use cache version `v117`.
+- Dataset: `v2.1`, 14,800 rows.
+- Rollback backup: `/opt/serbia-poc-ui-backups/workstream-slice2-20260727T170222Z`.
