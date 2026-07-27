@@ -2387,6 +2387,10 @@ function workstreamArtifactHtml(workstream) {
     </section>`;
 }
 
+function normalizedWorkstreamSummaryText(value) {
+  return String(value || "").replace(/\s+/g, " ").trim().toLocaleLowerCase("he-IL");
+}
+
 function appendWorkstreamUpdate(workstream) {
   conversation.querySelectorAll("[data-workstream-update-id]").forEach(message => {
     if (message.dataset.workstreamUpdateId === workstream.workstream_id) message.remove();
@@ -2394,10 +2398,25 @@ function appendWorkstreamUpdate(workstream) {
   const agent = workstreamAgent(workstream);
   const assignment = (workstream.assignments || []).find(item => item.status === "active")
     || (workstream.assignments || [])[0];
+  const title = String(workstream.title || "מעקב").trim();
+  const objective = String(workstream.objective || "").trim();
+  const responsibility = String(assignment?.responsibility || "").trim();
+  const renderedValues = new Set([normalizedWorkstreamSummaryText(title)]);
+  const distinctDetail = (value, html) => {
+    const normalized = normalizedWorkstreamSummaryText(value);
+    if (!normalized || renderedValues.has(normalized)) return "";
+    renderedValues.add(normalized);
+    return html(value);
+  };
+  const objectiveHtml = distinctDetail(objective, value => `<p>${escapeHtml(value)}</p>`);
+  const responsibilityHtml = distinctDetail(
+    responsibility,
+    value => `<p class="workstream-message-meta">אחריות: ${escapeHtml(value)}</p>`
+  );
   const message = workstreamMessage(`
-    <p class="workstream-message-title">עדכון מעקב — ${escapeHtml(workstream.title || "מעקב")}</p>
-    <p>${escapeHtml(workstream.objective || "")}</p>
-    <p class="workstream-message-meta">אחריות: ${escapeHtml(assignment?.responsibility || "לא הוגדרה")}</p>
+    <p class="workstream-message-title">עדכון מעקב — ${escapeHtml(title)}</p>
+    ${objectiveHtml}
+    ${responsibilityHtml}
     ${workstreamArtifactHtml(workstream)}
     <p>המעקב פעיל. בשלב זה העדכון מוצג לפי בקשתך ולא נוצר אוטומטית.</p>
     <div class="workstream-message-actions">

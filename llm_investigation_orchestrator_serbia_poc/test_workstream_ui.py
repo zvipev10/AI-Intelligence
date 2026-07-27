@@ -54,6 +54,13 @@ class WorkstreamUiTests(unittest.TestCase):
         self.assertIn("data-workstream-update-id", self.app)
         self.assertIn("message.dataset.workstreamUpdateId = workstream.workstream_id", self.app)
 
+    def test_reopened_summary_deduplicates_title_objective_and_responsibility(self):
+        self.assertIn("function normalizedWorkstreamSummaryText(value)", self.app)
+        self.assertIn("const renderedValues = new Set([normalizedWorkstreamSummaryText(title)]);", self.app)
+        self.assertIn("if (!normalized || renderedValues.has(normalized)) return", self.app)
+        self.assertIn("${objectiveHtml}", self.app)
+        self.assertIn("${responsibilityHtml}", self.app)
+
     def test_update_is_deterministic_and_discloses_manual_trigger(self):
         self.assertIn("workstream.objective", self.app)
         self.assertIn("workstream.assignments", self.app)

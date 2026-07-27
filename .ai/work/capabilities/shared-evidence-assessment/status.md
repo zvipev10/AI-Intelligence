@@ -6,11 +6,11 @@ Collaborative Scenario Playback
 
 ## Current phase
 
-Teammate selection-toggle deployment validation
+Workstream summary deduplication deployment validation
 
 ## Overall status
 
-Checkpoint 007 selection-toggle correction is deployed and awaits product interaction validation
+Checkpoint 008 summary deduplication is implemented locally and awaits deployment
 
 ## Accepted direction captured
 
@@ -45,7 +45,7 @@ Checkpoint 007 selection-toggle correction is deployed and awaits product intera
 
 ## Next expected artifact
 
-Checkpoint 007 deployment result, then final validation issue #43.
+Checkpoint 008 deployment result, then final validation issue #43.
 
 ## Parent and child issues
 
@@ -85,3 +85,4 @@ Checkpoint 007 deployment result, then final validation issue #43.
 - UX correction checkpoint: `checkpoint-005.md`
 - Selected-teammate routing checkpoint: `checkpoint-006.md`
 - Teammate selection-toggle checkpoint: `checkpoint-007.md`
+- Workstream summary deduplication checkpoint: `checkpoint-008.md`
