@@ -437,7 +437,18 @@ async function appendAgentMemberOpeningMessage(member) {
 
 function selectConversationMember(memberId) {
   const member = MICHLOL_MEMBERS.find(item => item.id === memberId);
-  if (!member || state.activeConversationMemberId === member.id) return;
+  if (!member) return;
+  if (state.activeConversationMemberId === member.id) {
+    state.memberOpeningRequestToken += 1;
+    if (state.workstreamComposerMode) setWorkstreamComposerMode(false);
+    state.activeConversationMemberId = null;
+    state.activeTeamMentions = teamMentionsForPrompt(promptInput?.value || "");
+    conversation.querySelectorAll(".member-welcome-message").forEach(message => message.remove());
+    renderMichlolTeam();
+    updatePromptPlaceholder();
+    promptInput?.focus();
+    return;
+  }
   if (member.id !== MOSHE_MEMBER_ID && state.workstreamComposerMode) {
     setWorkstreamComposerMode(false);
   }

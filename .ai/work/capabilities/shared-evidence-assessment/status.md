@@ -6,11 +6,11 @@ Collaborative Scenario Playback
 
 ## Current phase
 
-Selected-teammate routing deployment validation
+Teammate selection-toggle deployment validation
 
 ## Overall status
 
-Checkpoint 006 routing correction is deployed and awaits product interaction validation
+Checkpoint 007 selection-toggle correction is implemented locally and awaits deployment
 
 ## Accepted direction captured
 
@@ -45,7 +45,7 @@ Checkpoint 006 routing correction is deployed and awaits product interaction val
 
 ## Next expected artifact
 
-Checkpoint 006 deployment result, then final validation issue #43.
+Checkpoint 007 deployment result, then final validation issue #43.
 
 ## Parent and child issues
 
@@ -84,3 +84,4 @@ Checkpoint 006 deployment result, then final validation issue #43.
 - Latest checkpoint: `checkpoint-004.md`
 - UX correction checkpoint: `checkpoint-005.md`
 - Selected-teammate routing checkpoint: `checkpoint-006.md`
+- Teammate selection-toggle checkpoint: `checkpoint-007.md`

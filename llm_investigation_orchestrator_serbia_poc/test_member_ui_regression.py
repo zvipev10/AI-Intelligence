@@ -37,6 +37,12 @@ class MemberUiRegressionTests(unittest.TestCase):
         self.assertIn("routing_prompt: addressedPrompt", self.app)
         self.assertIn('appendMessage("user", `<p>${highlightedPromptHtml(clean)}</p>`);', self.app)
 
+    def test_pressing_selected_member_again_returns_to_general_chat(self):
+        self.assertIn("if (state.activeConversationMemberId === member.id)", self.app)
+        self.assertIn("state.activeConversationMemberId = null;", self.app)
+        self.assertIn('conversation.querySelectorAll(".member-welcome-message").forEach(message => message.remove());', self.app)
+        self.assertIn("if (state.workstreamComposerMode) setWorkstreamComposerMode(false);", self.app)
+
     def test_explicit_mentions_take_precedence_over_selected_member(self):
         self.assertIn("if (!clean || teamMentionsForPrompt(clean).length) return clean;", self.app)
 

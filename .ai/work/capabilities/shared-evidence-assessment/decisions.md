@@ -3,7 +3,7 @@
 ### 2026-07-27 — Treat the selected teammate as the implicit chat addressee
 
 Decision:
-Selecting a teammate in the upper team bar addresses subsequent chat messages and continuation requests to that teammate without requiring the user to type `@name`. An explicit teammate mention in the typed message takes precedence. The visible user message remains unchanged.
+Selecting a teammate in the upper team bar addresses subsequent chat messages and continuation requests to that teammate without requiring the user to type `@name`. Pressing the selected teammate again clears the selection and returns to general chat. An explicit teammate mention in the typed message takes precedence. The visible user message remains unchanged.
 
 Context:
 Team selection previously changed only the prompt placeholder and response label. Backend routing still saw an unaddressed message and could fall back to the general agent, including after the user had selected Moshe.
