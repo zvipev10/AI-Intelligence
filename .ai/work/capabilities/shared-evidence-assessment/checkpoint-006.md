@@ -27,3 +27,14 @@ None.
 ## Recommendation
 
 Deploy and verify that selecting Moshe, then sending a message without `@משה`, returns `responding_agent=moshe`.
+
+## VM deployment
+
+- Deployed commit `1ca8c5c`.
+- UI service: active.
+- Moshe gateway service: active.
+- Dataset: `v2.1`, 14,800 rows.
+- Public assets use cache version `v115`.
+- Public JavaScript contains `addressedPromptForSelectedMember`.
+- Existing workstream, thinking-indicator, MCP, and Moshe-profile contracts remain present.
+- Rollback backup: `/opt/serbia-poc-ui-backups/workstream-slice2-20260727T163233Z`.

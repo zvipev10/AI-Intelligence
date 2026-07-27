@@ -10,7 +10,7 @@ Selected-teammate routing deployment validation
 
 ## Overall status
 
-Checkpoint 006 routing correction is implemented locally; deployment verification is pending
+Checkpoint 006 routing correction is deployed and awaits product interaction validation
 
 ## Accepted direction captured
 
