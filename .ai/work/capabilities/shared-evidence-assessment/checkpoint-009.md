@@ -34,3 +34,13 @@ None for the current demo boundary.
 
 Deploy to the VM, verify the public page serves asset version `v118`, and confirm a previously unseen desktop investigation ID receives the canonical workstream group.
 
+## VM deployment
+
+- Deployed commit `f329903`.
+- UI service: active.
+- General Hermes gateway service: active.
+- Moshe gateway service: active.
+- Public assets use cache version `v118`.
+- A new desktop smoke investigation resolved to canonical investigation `investigation-1784224653197-e2581839825b48`.
+- The recovery response returned five workstreams, four active.
+- Rollback backup: `/opt/serbia-poc-ui-backups/workstream-desktop-20260727T2041Z`.

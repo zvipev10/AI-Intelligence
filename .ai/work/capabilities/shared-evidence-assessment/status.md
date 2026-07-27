@@ -6,11 +6,11 @@ Collaborative Scenario Playback
 
 ## Current phase
 
-Desktop workstream indicator deployment
+Desktop workstream indicator production validation
 
 ## Overall status
 
-Checkpoint 009 desktop indicator recovery is implemented and validated locally; VM deployment is next
+Checkpoint 009 desktop indicator recovery is deployed and verified on the VM
 
 ## Accepted direction captured
 
@@ -41,6 +41,7 @@ Checkpoint 009 desktop indicator recovery is implemented and validated locally; 
 - Desktop sessions with an empty local workstream lookup now adopt the server's most recently active workstream investigation.
 - Exact investigation matches remain authoritative.
 - Full test discovery passes: 83 tests.
+- Production smoke validation returned five workstreams, four active, for a new desktop investigation ID.
 
 ## Current risks
 
@@ -51,7 +52,7 @@ Checkpoint 009 desktop indicator recovery is implemented and validated locally; 
 
 ## Next expected artifact
 
-Checkpoint 009 VM deployment result, then final validation issue #43.
+Product interaction confirmation on desktop, then final validation issue #43.
 
 ## Parent and child issues
 
