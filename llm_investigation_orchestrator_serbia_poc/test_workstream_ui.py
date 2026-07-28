@@ -74,9 +74,15 @@ class WorkstreamUiTests(unittest.TestCase):
     def test_investigation_playback_control_is_visible_in_upper_bar(self):
         self.assertIn('id="playbackNextButton"', self.index)
         self.assertIn('class="playback-header-button"', self.index)
+        self.assertIn('id="intelligenceModeSelect"', self.index)
+        self.assertIn('value="historical">מידע היסטורי', self.index)
+        self.assertIn('value="real_time">זמן אמת', self.index)
+        self.assertIn('id="intelligencePeriod"', self.index)
         self.assertIn("/api/playback/next", self.app)
+        self.assertIn("/api/playback/mode", self.app)
         self.assertIn("investigation_id: state.investigationId", self.app)
         self.assertIn("advanceInvestigationPlayback", self.app)
+        self.assertIn("changeIntelligenceMode", self.app)
         self.assertIn(".playback-header-button", self.styles)
 
     def test_reopened_workstream_shows_active_artifact_details(self):

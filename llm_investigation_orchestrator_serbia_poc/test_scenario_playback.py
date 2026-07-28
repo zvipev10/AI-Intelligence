@@ -350,6 +350,15 @@ class ScenarioPlaybackApiTests(unittest.TestCase):
         )
         self.assertEqual(200, status)
         self.assertIsNone(initial["run"])
+        self.assertEqual("historical", initial["mode"])
+
+        status, real_time = self.request("POST", "/api/playback/mode", {
+            "investigation_id": "investigation-playback",
+            "mode": "real_time",
+        })
+        self.assertEqual(200, status)
+        self.assertEqual("real_time", real_time["mode"])
+        self.assertEqual("stage-1", real_time["run"]["current_stage"]["id"])
 
         with patch.object(
             server,
@@ -358,6 +367,7 @@ class ScenarioPlaybackApiTests(unittest.TestCase):
         ) as moshe:
             request = {
                 "investigation_id": "investigation-playback",
+                "expected_revision": real_time["run"]["revision"],
                 "idempotency_key": "investigation-first",
             }
             status, first = self.request("POST", "/api/playback/next", request)
@@ -369,8 +379,24 @@ class ScenarioPlaybackApiTests(unittest.TestCase):
             status, replay = self.request("POST", "/api/playback/next", request)
             self.assertEqual(200, status)
             self.assertFalse(replay["moshe_triggered"])
-            self.assertEqual(1, replay["run"]["revision"])
+            self.assertEqual(2, replay["run"]["revision"])
             self.assertEqual(1, moshe.call_count)
+
+        status, historical = self.request("POST", "/api/playback/mode", {
+            "investigation_id": "investigation-playback",
+            "mode": "historical",
+        })
+        self.assertEqual(200, status)
+        self.assertEqual("historical", historical["mode"])
+        policy = scenario_playback.load_playback_visibility(self.runs_dir)
+        self.assertFalse(policy["active"])
+
+        status, resumed = self.request("POST", "/api/playback/mode", {
+            "investigation_id": "investigation-playback",
+            "mode": "real_time",
+        })
+        self.assertEqual(200, status)
+        self.assertEqual(2, resumed["run"]["revision"])
 
     def test_final_stage_requires_explicit_complete(self):
         run = self.start()

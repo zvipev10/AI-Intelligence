@@ -205,10 +205,13 @@ def visibility_policy_path(runs_dir: Path) -> Path:
     return runs_dir / "active_visibility.json"
 
 
-def playback_visibility_policy(payload: dict) -> dict:
-    active = payload.get("status") == "active"
+def playback_visibility_policy(payload: dict, mode: str = "real_time") -> dict:
+    if mode not in {"historical", "real_time"}:
+        raise ValueError("Invalid intelligence mode")
+    active = mode == "real_time" and payload.get("status") == "active"
     return {
         "schema_version": 1,
+        "mode": mode,
         "active": active,
         "run_id": payload.get("run_id") if active else None,
         "scenario_id": payload.get("scenario_id") if active else None,
@@ -221,15 +224,21 @@ def playback_visibility_policy(payload: dict) -> dict:
     }
 
 
-def write_playback_visibility(runs_dir: Path, payload: dict) -> dict:
+def write_playback_visibility(
+    runs_dir: Path, payload: dict, mode: str = "real_time"
+) -> dict:
     """Atomically publish the server-owned retrieval boundary for the active run."""
     runs_dir.mkdir(parents=True, exist_ok=True)
-    policy = playback_visibility_policy(payload)
+    policy = playback_visibility_policy(payload, mode)
     path = visibility_policy_path(runs_dir)
     temporary = path.with_suffix(".json.tmp")
     temporary.write_text(json.dumps(policy, ensure_ascii=False, indent=2), encoding="utf-8")
     temporary.replace(path)
     return policy
+
+
+def write_historical_visibility(runs_dir: Path) -> dict:
+    return write_playback_visibility(runs_dir, {"status": "inactive"}, "historical")
 
 
 def load_playback_visibility(runs_dir: Path) -> dict | None:

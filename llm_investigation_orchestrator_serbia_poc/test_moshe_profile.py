@@ -5,7 +5,13 @@ from unittest.mock import patch
 
 import server
 from agent_routing import AgentRouteRegistry
-from moshe_profile.provision_profile import MOSHE_AUDIT_PATH, MOSHE_PORT, MOSHE_TOOLS, restricted_config
+from moshe_profile.provision_profile import (
+    MOSHE_AUDIT_PATH,
+    MOSHE_PORT,
+    MOSHE_TOOLS,
+    PLAYBACK_VISIBILITY_PATH,
+    restricted_config,
+)
 
 
 ROOT = Path(__file__).resolve().parent
@@ -43,6 +49,10 @@ class MosheProfileTests(unittest.TestCase):
         serbia = config["mcp_servers"]["serbia-events-poc"]
         self.assertEqual(serbia["tools"]["include"], MOSHE_TOOLS)
         self.assertEqual(serbia["env"]["INTELLIGENCE_POC_AUDIT"], MOSHE_AUDIT_PATH)
+        self.assertEqual(
+            serbia["env"]["INTELLIGENCE_POC_PLAYBACK_VISIBILITY"],
+            PLAYBACK_VISIBILITY_PATH,
+        )
         self.assertIn("create_target_candidate", MOSHE_TOOLS)
         self.assertIn("prepare_workstream_indication_proposal", MOSHE_TOOLS)
         self.assertIn("decide_workstream_indication_proposal", MOSHE_TOOLS)

@@ -267,6 +267,8 @@ const workstreamIndicatorStatus = document.getElementById("workstreamIndicatorSt
 const workstreamIndicatorCount = document.getElementById("workstreamIndicatorCount");
 const workstreamMenu = document.getElementById("workstreamMenu");
 const playbackNextButton = document.getElementById("playbackNextButton");
+const intelligenceModeSelect = document.getElementById("intelligenceModeSelect");
+const intelligencePeriod = document.getElementById("intelligencePeriod");
 const workstreamComposerMode = document.getElementById("workstreamComposerMode");
 const workstreamComposerCancel = document.getElementById("workstreamComposerCancel");
 const selectedLayersButton = document.getElementById("selectedLayersButton");
@@ -2386,12 +2388,21 @@ function formatPlaybackTime(value) {
 }
 
 function renderInvestigationPlayback() {
-  if (!playbackNextButton) return;
+  if (!playbackNextButton || !intelligenceModeSelect || !intelligencePeriod) return;
+  const playback = state.investigationPlayback;
+  const mode = playback?.mode || "historical";
+  intelligenceModeSelect.value = mode;
+  const timeframe = mode === "real_time"
+    ? playback?.run?.visible_timeframe
+    : playback?.full_timeframe;
+  intelligencePeriod.textContent = timeframe?.from && timeframe?.to
+    ? `${formatPlaybackTime(timeframe.from)}–${formatPlaybackTime(timeframe.to)} UTC`
+    : "";
   const next = playbackNextStage(state.investigationPlayback);
-  playbackNextButton.hidden = !next?.timeframe;
+  playbackNextButton.hidden = mode !== "real_time" || !next?.timeframe;
   if (!next?.timeframe) return;
-  const timeframe = next.timeframe;
-  const tooltip = `פרק הזמן של השלב הבא: ${formatPlaybackTime(timeframe.from)}–${formatPlaybackTime(timeframe.to)} UTC`;
+  const nextTimeframe = next.timeframe;
+  const tooltip = `פרק הזמן של השלב הבא: ${formatPlaybackTime(nextTimeframe.from)}–${formatPlaybackTime(nextTimeframe.to)} UTC`;
   playbackNextButton.title = tooltip;
   playbackNextButton.setAttribute("aria-label", `השלב הבא. ${tooltip}`);
 }
@@ -2415,7 +2426,7 @@ async function advanceInvestigationPlayback() {
   const playback = state.investigationPlayback || await fetchInvestigationPlayback();
   const run = playback?.run;
   playbackNextButton.disabled = true;
-  playbackNextButton.textContent = "משה מעבד…";
+  playbackNextButton.textContent = "…";
   try {
     const response = await fetch("/api/playback/next", {
       method: "POST",
@@ -2429,7 +2440,9 @@ async function advanceInvestigationPlayback() {
     const result = await response.json();
     if (!response.ok) throw new Error(result.error || "התקדמות התרחיש נכשלה");
     state.investigationPlayback = {
+      ...state.investigationPlayback,
       investigation_id: state.investigationId,
+      mode: "real_time",
       run: result.run,
     };
     renderInvestigationPlayback();
@@ -2440,7 +2453,34 @@ async function advanceInvestigationPlayback() {
     );
   } finally {
     playbackNextButton.disabled = false;
-    playbackNextButton.textContent = "השלב הבא";
+    playbackNextButton.textContent = "←";
+  }
+}
+
+async function changeIntelligenceMode() {
+  if (!intelligenceModeSelect) return;
+  const mode = intelligenceModeSelect.value;
+  intelligenceModeSelect.disabled = true;
+  try {
+    const response = await fetch("/api/playback/mode", {
+      method: "POST",
+      headers: { "Content-Type": "application/json; charset=utf-8" },
+      body: JSON.stringify({
+        investigation_id: state.investigationId,
+        mode,
+      }),
+    });
+    const payload = await response.json();
+    if (!response.ok) throw new Error(payload.error || "שינוי מצב המידע נכשל");
+    state.investigationPlayback = payload;
+    renderInvestigationPlayback();
+  } catch (error) {
+    renderInvestigationPlayback();
+    workstreamMessage(
+      `<p>לא הצלחתי לשנות את מצב המידע.</p><div class="answer-callout">${escapeHtml(error.message)}</div>`
+    );
+  } finally {
+    intelligenceModeSelect.disabled = false;
   }
 }
 
@@ -4673,6 +4713,7 @@ promptOptionsButton.addEventListener("click", event => {
 });
 workstreamIndicator?.addEventListener("click", requestWorkstreamUpdate);
 playbackNextButton?.addEventListener("click", advanceInvestigationPlayback);
+intelligenceModeSelect?.addEventListener("change", changeIntelligenceMode);
 workstreamComposerCancel?.addEventListener("click", () => setWorkstreamComposerMode(false));
 selectedLayersButton.addEventListener("click", openQueryLayersModal);
 selectedLayersClear.addEventListener("click", event => {

@@ -159,6 +159,7 @@ servers[settings["server_name"]] = {{
         "INTELLIGENCE_POC_AUDIT": f"{{settings['remote_root']}}/mcp_audit.jsonl",
         "INTELLIGENCE_POC_TARGET_BANK": f"{{settings['remote_root']}}/data/attack_targets/attack_targets.db",
         "INTELLIGENCE_POC_TARGET_BACKUPS": f"{{settings['remote_root']}}/backups/attack_targets",
+        "INTELLIGENCE_POC_PLAYBACK_VISIBILITY": "/opt/serbia-poc-ui/scenario_runs/v2.1/active_visibility.json",
     }},
     "timeout": 30,
     "connect_timeout": 15,

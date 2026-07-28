@@ -45,6 +45,7 @@ from scenario_playback import (
     start_run as start_scenario_run,
     transition_run as transition_scenario_run,
     run_with_next_stage,
+    write_historical_visibility,
     write_playback_visibility,
 )
 from workstream_artifacts import (
@@ -1270,18 +1271,41 @@ def workstream_playback_status(workstream_id: str) -> dict | None:
 def investigation_playback_status(investigation_id: str) -> dict:
     if not INVESTIGATION_ID_PATTERN.fullmatch(investigation_id or ""):
         raise ValueError("Invalid investigation id")
+    policy = load_playback_visibility(SCENARIO_RUNS_DIR) or {}
+    mode = policy.get("mode") if policy.get("mode") in {"historical", "real_time"} else "historical"
+    event_times = sorted(
+        str(item.get("timestamp_utc") or "")
+        for item in load_ui_events()
+        if item.get("timestamp_utc")
+    )
+    full_timeframe = {
+        "from": event_times[0] if event_times else None,
+        "to": event_times[-1] if event_times else None,
+        "from_inclusive": True,
+        "to_inclusive": True,
+    }
     run = find_investigation_run(SCENARIO_RUNS_DIR, investigation_id)
     if run is not None:
         return {
             "investigation_id": investigation_id,
+            "mode": mode,
+            "full_timeframe": full_timeframe,
             "run": run_with_next_stage(SCENARIO_MANIFESTS_DIR, run),
         }
     manifest = prepared_playback_manifest()
     if manifest is None:
-        return {"investigation_id": investigation_id, "run": None, "next_stage": None}
+        return {
+            "investigation_id": investigation_id,
+            "mode": mode,
+            "full_timeframe": full_timeframe,
+            "run": None,
+            "next_stage": None,
+        }
     first = manifest["stages"][0]
     return {
         "investigation_id": investigation_id,
+        "mode": mode,
+        "full_timeframe": full_timeframe,
         "run": None,
         "next_stage": {
             "sequence": first["sequence"],
@@ -3101,6 +3125,59 @@ class Handler(SimpleHTTPRequestHandler):
 
     def do_POST(self):
         path = urlparse(self.path).path
+        if path == "/api/playback/mode":
+            try:
+                length = int(self.headers.get("Content-Length", "0"))
+                if length > 1_000_000:
+                    self.send_json(413, {"error": "Playback mode payload too large"})
+                    return
+                request = json.loads(self.rfile.read(length).decode("utf-8-sig"))
+                if not isinstance(request, dict):
+                    raise ValueError("Invalid playback mode payload")
+                investigation_id = str(request.get("investigation_id") or "").strip()
+                mode = str(request.get("mode") or "").strip()
+                if not INVESTIGATION_ID_PATTERN.fullmatch(investigation_id):
+                    raise ValueError("Invalid investigation id")
+                if mode not in {"historical", "real_time"}:
+                    raise ValueError("Invalid intelligence mode")
+                if mode == "historical":
+                    write_historical_visibility(SCENARIO_RUNS_DIR)
+                else:
+                    run = find_investigation_run(SCENARIO_RUNS_DIR, investigation_id)
+                    if run is None:
+                        manifest = prepared_playback_manifest()
+                        if manifest is None:
+                            raise LookupError("Prepared scenario not found")
+                        run, _ = start_scenario_run(
+                            SCENARIO_MANIFESTS_DIR,
+                            SCENARIO_RUNS_DIR,
+                            {
+                                "scenario_id": manifest["scenario_id"],
+                                "version": manifest["version"],
+                                "investigation_id": investigation_id,
+                                "idempotency_key": (
+                                    f"mode-real-time-{investigation_id}-"
+                                    f"{int(time.time() * 1000)}"
+                                ),
+                            },
+                            scenario_workstream_exists,
+                        )
+                    current = load_scenario_run(SCENARIO_RUNS_DIR, run["run_id"])
+                    if current is None:
+                        raise LookupError("Scenario run not found")
+                    write_playback_visibility(SCENARIO_RUNS_DIR, current)
+                self.send_json(200, investigation_playback_status(investigation_id))
+            except PlaybackConflictError as exc:
+                self.send_json(409, {
+                    "error": str(exc), "current_revision": exc.current_revision,
+                })
+            except LookupError as exc:
+                self.send_json(409, {"error": str(exc)})
+            except ValueError as exc:
+                self.send_json(400, {"error": str(exc)})
+            except Exception as exc:
+                self.send_json(502, {"error": str(exc)})
+            return
         if path == "/api/playback/next":
             try:
                 length = int(self.headers.get("Content-Length", "0"))
@@ -3113,6 +3190,9 @@ class Handler(SimpleHTTPRequestHandler):
                 investigation_id = str(request.get("investigation_id") or "").strip()
                 if not INVESTIGATION_ID_PATTERN.fullmatch(investigation_id):
                     raise ValueError("Invalid investigation id")
+                policy = load_playback_visibility(SCENARIO_RUNS_DIR) or {}
+                if policy.get("mode") != "real_time" or not policy.get("active"):
+                    raise ValueError("Real-time intelligence mode is not active")
                 existing = find_investigation_run(SCENARIO_RUNS_DIR, investigation_id)
                 claimed_revision = None
                 if existing is None:
