@@ -61,6 +61,10 @@ ENTITIES_PATH = Path(os.environ.get("INTELLIGENCE_POC_ENTITIES", DEFAULT_ENTITIE
 SEMANTIC_INDEX_DIR = Path(os.environ.get("INTELLIGENCE_POC_SEMANTIC_INDEX", BASE_DIR / "data" / "semantic_index" / DATASET_VERSION))
 SEMANTIC_BACKEND = os.environ.get("INTELLIGENCE_POC_SEMANTIC_BACKEND", "hybrid_embedding")
 AUDIT_PATH = Path(os.environ.get("INTELLIGENCE_POC_AUDIT", BASE_DIR / "mcp_audit.jsonl"))
+PLAYBACK_VISIBILITY_PATH = Path(os.environ.get(
+    "INTELLIGENCE_POC_PLAYBACK_VISIBILITY",
+    BASE_DIR / "scenario_runs" / ("" if DATASET_VERSION == "v1" else DATASET_VERSION) / "active_visibility.json",
+))
 CLIENT_SUPPORTS_SAMPLING = False
 NEXT_SERVER_REQUEST_ID = 100000
 
@@ -143,6 +147,120 @@ ENTITY_PRESENTATIONS: dict[str, dict[str, Any]] = {}
 LOCATION_PRESENTATIONS: dict[str, dict[str, Any]] = {}
 ENTITIES: dict[str, dict[str, Any]] = {}
 SEMANTIC_INDEX: SemanticEventIndex | None = None
+
+
+def active_playback_policy() -> dict[str, Any] | None:
+    """Load and strictly validate the current server-owned playback boundary."""
+    if not PLAYBACK_VISIBILITY_PATH.exists():
+        return None
+    try:
+        policy = json.loads(PLAYBACK_VISIBILITY_PATH.read_text(encoding="utf-8-sig"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise ValueError("Playback visibility policy is unreadable") from exc
+    if not isinstance(policy, dict) or policy.get("schema_version") != 1:
+        raise ValueError("Playback visibility policy is invalid")
+    if not policy.get("active"):
+        return None
+    if policy.get("dataset") != DATASET_VERSION:
+        raise ValueError("Active playback dataset does not match the evidence server")
+    timeframe = policy.get("visible_timeframe")
+    if not isinstance(timeframe, dict):
+        raise ValueError("Active playback timeframe is invalid")
+    start = parse_time(timeframe.get("from"))
+    end = parse_time(timeframe.get("to"))
+    if start is None or end is None or start >= end:
+        raise ValueError("Active playback timeframe is invalid")
+    layers = policy.get("layers") or []
+    if not isinstance(layers, list) or any(not isinstance(item, str) for item in layers):
+        raise ValueError("Active playback layers are invalid")
+    return {**policy, "_from": start, "_to": end, "layers": layers}
+
+
+def event_visible(event: dict[str, Any], policy: dict[str, Any] | None = None) -> bool:
+    policy = active_playback_policy() if policy is None else policy
+    if policy is None:
+        return True
+    if not (policy["_from"] <= event["timestamp"] < policy["_to"]):
+        return False
+    layers = set(policy["layers"])
+    return not layers or f"events:{event.get('source_type', '')}" in layers
+
+
+def visible_events() -> list[dict[str, Any]]:
+    policy = active_playback_policy()
+    return list(EVENTS) if policy is None else [event for event in EVENTS if event_visible(event, policy)]
+
+
+def visible_event(event_id: str) -> dict[str, Any] | None:
+    event = EVENTS_BY_ID.get(event_id)
+    return event if event is not None and event_visible(event) else None
+
+
+def visible_event_ids() -> set[str]:
+    return {event["event_id"] for event in visible_events()}
+
+
+def scoped_entity_presentation(entity_id: str) -> dict[str, Any] | None:
+    base = ENTITY_PRESENTATIONS.get(entity_id)
+    if base is None:
+        return None
+    if active_playback_policy() is None:
+        return base
+    events = [event for event in visible_events() if event.get("entity_id") == entity_id]
+    if not events:
+        return None
+    return {
+        **base,
+        "event_count": len(events),
+        "top_locations": [
+            {"location_id": key, "location_name": LOCATIONS.get(key, {}).get("name", key), "count": count}
+            for key, count in Counter(event["location_id"] for event in events).most_common(12)
+        ],
+        "top_sources": [
+            {"source_type": key, "count": count}
+            for key, count in Counter(event["source_type"] for event in events).most_common(10)
+        ],
+        "certainty_breakdown": dict(Counter(event.get("certainty_level") or "unknown" for event in events)),
+        "reliability_breakdown": dict(Counter(
+            event.get("source_reliability_label") or event.get("source_reliability") or "unknown"
+            for event in events
+        )),
+    }
+
+
+def scoped_location_presentation(location_id: str) -> dict[str, Any] | None:
+    base = LOCATION_PRESENTATIONS.get(location_id)
+    if base is None:
+        return None
+    if active_playback_policy() is None:
+        return base
+    events = [event for event in visible_events() if event["location_id"] == location_id]
+    if not events:
+        return None
+    return {
+        **base,
+        "event_count": len(events),
+        "top_entities": [
+            {"entity_id": key, "name": ENTITY_PRESENTATIONS.get(key, {}).get("canonical_name", key), "count": count}
+            for key, count in Counter(
+                event.get("entity_id") for event in events if event.get("entity_id")
+            ).most_common(10)
+        ],
+        "top_sources": [
+            {"source_type": key, "count": count}
+            for key, count in Counter(event["source_type"] for event in events).most_common(10)
+        ],
+        "certainty_breakdown": dict(Counter(event.get("certainty_level") or "unknown" for event in events)),
+        "reliability_breakdown": dict(Counter(
+            event.get("source_reliability_label") or event.get("source_reliability") or "unknown"
+            for event in events
+        )),
+    }
+
+
+def require_target_bank_outside_playback() -> None:
+    if active_playback_policy() is not None:
+        raise ValueError("Stored target candidates are unavailable during scenario playback")
 
 
 def _fold(value: str | None) -> str:
@@ -353,6 +471,18 @@ def write_audit(tool: str, arguments: dict[str, Any], result: Any, is_error: boo
         "result": result,
         "is_error": is_error,
     }
+    try:
+        policy = active_playback_policy()
+        record["playback_visibility"] = (
+            {
+                "run_id": policy.get("run_id"),
+                "revision": policy.get("revision"),
+                "visible_timeframe": policy.get("visible_timeframe"),
+            }
+            if policy is not None else None
+        )
+    except ValueError:
+        record["playback_visibility"] = {"invalid": True}
     if duration_ms is not None:
         record["duration_ms"] = round(duration_ms, 3)
     try:
@@ -397,11 +527,13 @@ def semantic_candidates(query: str, arguments: dict[str, Any], limit: int) -> li
         candidate_limit = max(1, min(int(limit or DEFAULT_LIMIT), MAX_LIMIT))
     except (TypeError, ValueError):
         candidate_limit = DEFAULT_LIMIT
-    return get_semantic_index().search(
+    matches = get_semantic_index().search(
         query,
         filters=semantic_filters_from_arguments(arguments),
         limit=candidate_limit,
     )
+    allowed = visible_event_ids()
+    return [match for match in matches if match.get("event_id") in allowed]
 
 
 def sort_order_desc(arguments: dict[str, Any]) -> bool:
@@ -613,6 +745,9 @@ def entity_matches(query: str) -> list[dict[str, Any]]:
     folded = normalize_text(query)
     matches = []
     for entity_id, entity in ENTITY_PRESENTATIONS.items():
+        entity = scoped_entity_presentation(entity_id)
+        if entity is None:
+            continue
         aliases = entity.get("aliases", [])
         exact = [alias for alias in aliases if normalize_text(alias) == folded]
         partial = [alias for alias in aliases if folded and folded in normalize_text(alias)]
@@ -657,7 +792,7 @@ def haversine_km(first_location_id: str, second_location_id: str) -> float | Non
 def resolve_entity(arguments: dict[str, Any]) -> dict[str, Any]:
     query = str(arguments.get("query") or "").strip()
     matches = entity_matches(query)
-    actor_counts = Counter(event_entity_name(event) for event in EVENTS)
+    actor_counts = Counter(event_entity_name(event) for event in visible_events())
     for match in matches:
         match["event_counts_by_alias"] = {
             alias: actor_counts[alias] for alias in match["aliases"] if actor_counts[alias]
@@ -984,7 +1119,7 @@ def trace_identifier(arguments: dict[str, Any]) -> dict[str, Any]:
     source_types = set(arguments.get("source_types") or [])
     folded = normalize_text(identifier)
     mentions = []
-    for event in EVENTS:
+    for event in visible_events():
         if start and event["timestamp"] < start:
             continue
         if end and event["timestamp"] > end:
@@ -1035,7 +1170,7 @@ def trace_identifier(arguments: dict[str, Any]) -> dict[str, Any]:
 def trace_semantic_clues(arguments: dict[str, Any]) -> dict[str, Any]:
     clues = [str(value).strip() for value in arguments.get("clues") or [] if str(value).strip()]
     seed_ids = arguments.get("seed_event_ids") or []
-    seed_events = [EVENTS_BY_ID[event_id] for event_id in seed_ids if event_id in EVENTS_BY_ID]
+    seed_events = [event for event_id in seed_ids if (event := visible_event(event_id)) is not None]
     for event in seed_events:
         for clue in semantic_clues_from_text(event["event_summary"]):
             if clue not in clues:
@@ -1070,7 +1205,7 @@ def trace_semantic_clues(arguments: dict[str, Any]) -> dict[str, Any]:
     semantic_matches = semantic_candidates(semantic_query, arguments, limit)
     semantic_by_id = {match["event_id"]: match for match in semantic_matches if match.get("event_id")}
     matches_by_id: dict[str, dict[str, Any]] = {}
-    for event in EVENTS:
+    for event in visible_events():
         if start and event["timestamp"] < start:
             continue
         if end and event["timestamp"] > end:
@@ -1109,7 +1244,7 @@ def trace_semantic_clues(arguments: dict[str, Any]) -> dict[str, Any]:
         event_id = match.get("event_id")
         if not event_id or event_id in matches_by_id:
             continue
-        event = EVENTS_BY_ID.get(event_id)
+        event = visible_event(event_id)
         if not event:
             continue
         negated = event_has_negation(event)
@@ -1144,7 +1279,7 @@ def trace_semantic_clues(arguments: dict[str, Any]) -> dict[str, Any]:
         event_id = item["event"]["event_id"]
         if event_id in seed_id_set:
             continue
-        event = EVENTS_BY_ID.get(event_id)
+        event = visible_event(event_id)
         if not event:
             continue
         seed_score, reasons = investigative_seed_score(event, item.get("matched_clues") or [])
@@ -1161,7 +1296,7 @@ def trace_semantic_clues(arguments: dict[str, Any]) -> dict[str, Any]:
     recommended_next_seeds = ranked_seeds[:3]
     new_clues = []
     for seed in recommended_next_seeds:
-        event = EVENTS_BY_ID.get(seed["event_id"])
+        event = visible_event(seed["event_id"])
         if not event:
             continue
         for clue in semantic_clues_from_text(event["event_summary"]):
@@ -1170,7 +1305,7 @@ def trace_semantic_clues(arguments: dict[str, Any]) -> dict[str, Any]:
     return {
         "clues": clues,
         "seed_event_ids": [event["event_id"] for event in seed_events],
-        "missing_seed_event_ids": [event_id for event_id in seed_ids if event_id not in EVENTS_BY_ID],
+        "missing_seed_event_ids": [event_id for event_id in seed_ids if visible_event(event_id) is None],
         "include_negated": include_negated,
         "start_time": arguments.get("start_time"),
         "end_time": arguments.get("end_time"),
@@ -1196,7 +1331,7 @@ def trace_semantic_clues(arguments: dict[str, Any]) -> dict[str, Any]:
 
 def find_related_events(arguments: dict[str, Any]) -> dict[str, Any]:
     seed_ids = arguments.get("seed_event_ids") or []
-    seeds = [EVENTS_BY_ID[event_id] for event_id in seed_ids if event_id in EVENTS_BY_ID]
+    seeds = [event for event_id in seed_ids if (event := visible_event(event_id)) is not None]
     if not seeds:
         return {"seed_event_ids": seed_ids, "missing_seed_event_ids": seed_ids, "related_events": [], "event_ids": []}
     dimensions = set(arguments.get("dimensions") or ["entity", "identifier", "semantic", "time", "location"])
@@ -1236,7 +1371,7 @@ def find_related_events(arguments: dict[str, Any]) -> dict[str, Any]:
         if match.get("event_id") and match.get("event_id") not in seed_ids
     }
     ranked = []
-    for event in EVENTS:
+    for event in visible_events():
         if event["event_id"] in seed_ids or event["timestamp"] < earliest or event["timestamp"] > latest:
             continue
         if source_types and event["source_type"] not in source_types:
@@ -1363,7 +1498,7 @@ def find_related_events(arguments: dict[str, Any]) -> dict[str, Any]:
     ranked_seeds = []
     for item in selected:
         event_id = item["event"]["event_id"]
-        event = EVENTS_BY_ID.get(event_id)
+        event = visible_event(event_id)
         if not event:
             continue
         seed_score, seed_reasons = investigative_seed_score(event)
@@ -1383,7 +1518,7 @@ def find_related_events(arguments: dict[str, Any]) -> dict[str, Any]:
     recommended_next_seeds = ranked_seeds[:3]
     new_clues = []
     for seed in recommended_next_seeds:
-        event = EVENTS_BY_ID.get(seed["event_id"])
+        event = visible_event(seed["event_id"])
         if not event:
             continue
         for clue in semantic_clues_from_text(event["event_summary"]):
@@ -1391,7 +1526,7 @@ def find_related_events(arguments: dict[str, Any]) -> dict[str, Any]:
                 new_clues.append(clue)
     return {
         "seed_event_ids": [seed["event_id"] for seed in seeds],
-        "missing_seed_event_ids": [event_id for event_id in seed_ids if event_id not in EVENTS_BY_ID],
+        "missing_seed_event_ids": [event_id for event_id in seed_ids if visible_event(event_id) is None],
         "dimensions": sorted(dimensions),
         "source_types": sorted(source_types),
         "related_events": selected,
@@ -1446,7 +1581,7 @@ def location_claim_template(event: dict[str, Any]) -> str:
 
 def compare_location_claims(arguments: dict[str, Any]) -> dict[str, Any]:
     seed_ids = arguments.get("seed_event_ids") or []
-    seed_events = [EVENTS_BY_ID[event_id] for event_id in seed_ids if event_id in EVENTS_BY_ID]
+    seed_events = [event for event_id in seed_ids if (event := visible_event(event_id)) is not None]
     keywords = [str(value).strip() for value in arguments.get("keywords") or [] if str(value).strip()]
     start = parse_time(arguments.get("start_time"))
     end = parse_time(arguments.get("end_time"))
@@ -1467,7 +1602,7 @@ def compare_location_claims(arguments: dict[str, Any]) -> dict[str, Any]:
 
     normalized_keywords = [normalize_text(keyword) for keyword in keywords]
     candidates = []
-    for event in EVENTS:
+    for event in visible_events():
         if start and event["timestamp"] < start:
             continue
         if end and event["timestamp"] > end:
@@ -1584,7 +1719,7 @@ def compare_location_claims(arguments: dict[str, Any]) -> dict[str, Any]:
         )
     return {
         "seed_event_ids": [event["event_id"] for event in seed_events],
-        "missing_seed_event_ids": [event_id for event_id in seed_ids if event_id not in EVENTS_BY_ID],
+        "missing_seed_event_ids": [event_id for event_id in seed_ids if visible_event(event_id) is None],
         "keywords": keywords,
         "start_time": start.isoformat().replace("+00:00", "Z") if start else None,
         "end_time": end.isoformat().replace("+00:00", "Z") if end else None,
@@ -1613,7 +1748,7 @@ def compare_location_claims(arguments: dict[str, Any]) -> dict[str, Any]:
 def challenge_hypothesis(arguments: dict[str, Any]) -> dict[str, Any]:
     hypothesis = str(arguments.get("hypothesis") or "").strip()
     evidence_ids = arguments.get("supporting_event_ids") or []
-    evidence = [EVENTS_BY_ID[event_id] for event_id in evidence_ids if event_id in EVENTS_BY_ID]
+    evidence = [event for event_id in evidence_ids if (event := visible_event(event_id)) is not None]
     source_types = sorted({event["source_type"] for event in evidence})
     reliabilities = Counter(event["source_reliability"] for event in evidence)
     identifiers = []
@@ -1629,7 +1764,7 @@ def challenge_hypothesis(arguments: dict[str, Any]) -> dict[str, Any]:
         end = max(event["timestamp"] for event in evidence) + timedelta(hours=12)
         locations = {event["location_id"] for event in evidence}
         alternatives = [
-            event for event in EVENTS
+            event for event in visible_events()
             if start <= event["timestamp"] <= end
             and event["location_id"] in locations
             and event["event_id"] not in evidence_ids
@@ -1674,7 +1809,7 @@ def challenge_hypothesis(arguments: dict[str, Any]) -> dict[str, Any]:
     return {
         "hypothesis": hypothesis,
         "supporting_event_ids": [event["event_id"] for event in evidence],
-        "missing_event_ids": [event_id for event_id in evidence_ids if event_id not in EVENTS_BY_ID],
+        "missing_event_ids": [event_id for event_id in evidence_ids if visible_event(event_id) is None],
         "evidence_profile": {
             "event_count": len(evidence),
             "source_types": source_types,
@@ -1726,7 +1861,7 @@ def filter_event_matches(arguments: dict[str, Any]) -> list[tuple[int, dict[str,
     match_all_keywords = bool(arguments.get("match_all_keywords"))
 
     matches = []
-    for event in EVENTS:
+    for event in visible_events():
         if start and event["timestamp"] < start:
             continue
         if end and event["timestamp"] > end:
@@ -1801,7 +1936,7 @@ def search_events(arguments: dict[str, Any]) -> dict[str, Any]:
 def semantic_search_events(arguments: dict[str, Any]) -> dict[str, Any]:
     query = str(arguments.get("query") or "").strip()
     seed_ids = arguments.get("seed_event_ids") or []
-    seed_events = [EVENTS_BY_ID[event_id] for event_id in seed_ids if event_id in EVENTS_BY_ID]
+    seed_events = [event for event_id in seed_ids if (event := visible_event(event_id)) is not None]
     query_parts = [query]
     query_parts.extend(event["event_summary"] for event in seed_events)
     query_text = "\n".join(part for part in query_parts if part)
@@ -1826,7 +1961,7 @@ def semantic_search_events(arguments: dict[str, Any]) -> dict[str, Any]:
     events = []
     event_ids = []
     for match in matches:
-        event = EVENTS_BY_ID.get(match["event_id"])
+        event = visible_event(match["event_id"])
         if not event:
             continue
         event_ids.append(event["event_id"])
@@ -1838,7 +1973,7 @@ def semantic_search_events(arguments: dict[str, Any]) -> dict[str, Any]:
     return {
         "query": query,
         "seed_event_ids": [event["event_id"] for event in seed_events],
-        "missing_seed_event_ids": [event_id for event_id in seed_ids if event_id not in EVENTS_BY_ID],
+        "missing_seed_event_ids": [event_id for event_id in seed_ids if visible_event(event_id) is None],
         "backend": index.backend,
         "semantic_backend": index.backend,
         "index_manifest": index.manifest,
@@ -1873,25 +2008,34 @@ def get_objects(arguments: dict[str, Any]) -> dict[str, Any]:
     entity_ids = arguments.get("entity_ids") or []
     names_or_aliases = arguments.get("names_or_aliases") or []
 
-    found_events = [EVENTS_BY_ID[event_id] for event_id in event_ids if event_id in EVENTS_BY_ID]
-    found_locations = [LOCATION_PRESENTATIONS[location_id] for location_id in location_ids if location_id in LOCATION_PRESENTATIONS]
-    found_entities = [ENTITY_PRESENTATIONS[entity_id] for entity_id in entity_ids if entity_id in ENTITY_PRESENTATIONS]
+    found_events = [event for event_id in event_ids if (event := visible_event(event_id)) is not None]
+    found_locations = [
+        item for location_id in location_ids
+        if (item := scoped_location_presentation(location_id)) is not None
+    ]
+    found_entities = [
+        item for entity_id in entity_ids
+        if (item := scoped_entity_presentation(entity_id)) is not None
+    ]
 
     if object_type == "all":
         found_locations.extend(
-            LOCATION_PRESENTATIONS[event["location_id"]]
+            scoped_location_presentation(event["location_id"])
             for event in found_events
-            if event["location_id"] in LOCATION_PRESENTATIONS
+            if scoped_location_presentation(event["location_id"]) is not None
         )
         found_entities.extend(
-            ENTITY_PRESENTATIONS[event_entity_id(event)]
+            scoped_entity_presentation(event_entity_id(event))
             for event in found_events
-            if event_entity_id(event) in ENTITY_PRESENTATIONS
+            if scoped_entity_presentation(event_entity_id(event)) is not None
         )
 
     if object_type in {"location", "all"}:
         for name in names_or_aliases:
-            for location_id, location in LOCATION_PRESENTATIONS.items():
+            for location_id in LOCATION_PRESENTATIONS:
+                location = scoped_location_presentation(location_id)
+                if location is None:
+                    continue
                 haystack = " ".join(str(location.get(key) or "") for key in ["location_id", "location_name", "name", "municipality", "locality", "region", "type"])
                 if normalize_text(name) and normalize_text(name) in normalize_text(haystack):
                     found_locations.append(location)
@@ -1907,9 +2051,9 @@ def get_objects(arguments: dict[str, Any]) -> dict[str, Any]:
         "events": [public_event(event) for event in found_events] if object_type in {"event", "all"} else [],
         "location_layers": list(deduped_locations.values()) if object_type in {"location", "all"} else [],
         "entity_layers": list(deduped_entities.values()) if object_type in {"entity", "all"} else [],
-        "missing_event_ids": [event_id for event_id in event_ids if event_id not in EVENTS_BY_ID],
-        "missing_location_ids": [location_id for location_id in location_ids if location_id not in LOCATION_PRESENTATIONS],
-        "missing_entity_ids": [entity_id for entity_id in entity_ids if entity_id not in ENTITY_PRESENTATIONS],
+        "missing_event_ids": [event_id for event_id in event_ids if visible_event(event_id) is None],
+        "missing_location_ids": [location_id for location_id in location_ids if scoped_location_presentation(location_id) is None],
+        "missing_entity_ids": [entity_id for entity_id in entity_ids if scoped_entity_presentation(entity_id) is None],
     }
 
 
@@ -1947,7 +2091,7 @@ def resolve_event_reference(arguments: dict[str, Any]) -> dict[str, Any]:
     direct_ids = EVENT_REFERENCES.get(query, [])
     llm_interpretation = None
     if direct_ids:
-        events = [EVENTS_BY_ID[event_id] for event_id in direct_ids if event_id in EVENTS_BY_ID]
+        events = [event for event_id in direct_ids if (event := visible_event(event_id)) is not None]
     else:
         llm_interpretation = sample_json_task(
             "resolve_event_reference_terms",
@@ -1987,7 +2131,7 @@ def resolve_event_reference(arguments: dict[str, Any]) -> dict[str, Any]:
         semantic_by_id = {match["event_id"]: match for match in semantic_matches if match.get("event_id")}
         query_folded = query.casefold()
         scored_events_by_id: dict[str, dict[str, Any]] = {}
-        for event in EVENTS:
+        for event in visible_events():
             haystack = normalize_text(
                 " ".join([event["event_summary"], event["event_id"], event_entity_name(event), event["location_name"], event["source_type"]])
             )
@@ -2017,7 +2161,7 @@ def resolve_event_reference(arguments: dict[str, Any]) -> dict[str, Any]:
             event_id = semantic_match.get("event_id")
             if not event_id or event_id in scored_events_by_id:
                 continue
-            event = EVENTS_BY_ID.get(event_id)
+            event = visible_event(event_id)
             if not event:
                 continue
             score = min(8, max(2, int(float(semantic_match.get("semantic_score") or 0) * 18)))
@@ -2086,7 +2230,10 @@ def find_actor_history(arguments: dict[str, Any]) -> dict[str, Any]:
     result["requested_actors"] = actors
     result["requested_entity_ids"] = entity_ids
     result["resolved_entity_ids"] = entity_ids
-    result["entity_layers"] = [ENTITY_PRESENTATIONS[entity_id] for entity_id in entity_ids if entity_id in ENTITY_PRESENTATIONS]
+    result["entity_layers"] = [
+        item for entity_id in entity_ids
+        if (item := scoped_entity_presentation(entity_id)) is not None
+    ]
     return result
 
 
@@ -2221,8 +2368,8 @@ def aggregate_events(arguments: dict[str, Any]) -> dict[str, Any]:
 def explain_linkage(arguments: dict[str, Any]) -> dict[str, Any]:
     first_id = arguments.get("first_event_id")
     second_id = arguments.get("second_event_id")
-    first = EVENTS_BY_ID.get(first_id)
-    second = EVENTS_BY_ID.get(second_id)
+    first = visible_event(first_id)
+    second = visible_event(second_id)
     if not first or not second:
         return {
             "first_event_id": first_id,
@@ -2325,7 +2472,7 @@ def explain_linkage(arguments: dict[str, Any]) -> dict[str, Any]:
 
 def build_event_sequence(arguments: dict[str, Any]) -> dict[str, Any]:
     ids = arguments.get("event_ids") or []
-    events = [EVENTS_BY_ID[event_id] for event_id in ids if event_id in EVENTS_BY_ID]
+    events = [event for event_id in ids if (event := visible_event(event_id)) is not None]
     events.sort(key=lambda event: event["timestamp"])
     by_location: dict[str, list[str]] = defaultdict(list)
     for event in events:
@@ -2378,12 +2525,25 @@ def _prior_successful_audit_records() -> list[dict[str, Any]]:
     if not AUDIT_PATH.exists():
         return []
     records = []
+    policy = active_playback_policy()
+    expected_visibility = (
+        {
+            "run_id": policy.get("run_id"),
+            "revision": policy.get("revision"),
+            "visible_timeframe": policy.get("visible_timeframe"),
+        }
+        if policy is not None else None
+    )
     for line in AUDIT_PATH.read_text(encoding="utf-8").splitlines():
         try:
             record = json.loads(line)
         except json.JSONDecodeError:
             continue
-        if isinstance(record, dict) and not record.get("is_error"):
+        if (
+            isinstance(record, dict)
+            and not record.get("is_error")
+            and record.get("playback_visibility") == expected_visibility
+        ):
             records.append(record)
     return records
 
@@ -2432,27 +2592,28 @@ def _materialize_presentation_layers(
             raise ValueError(f"layer {index} requires a user-facing label")
         view = str(selection.get("view") or "").strip()
         if kind == "events":
-            missing = [row_id for row_id in row_ids if row_id not in EVENT_BY_ID]
+            missing = [row_id for row_id in row_ids if visible_event(row_id) is None]
             if missing:
                 raise ValueError(f"unknown event IDs: {', '.join(missing)}")
-            rows = [public_event(EVENT_BY_ID[row_id]) for row_id in row_ids]
+            rows = [public_event(visible_event(row_id)) for row_id in row_ids]
             result_kind = "events"
             capabilities = {"table": True, "map": True, "timeline": True}
         elif kind == "locations":
-            missing = [row_id for row_id in row_ids if row_id not in LOCATION_PRESENTATIONS]
+            missing = [row_id for row_id in row_ids if scoped_location_presentation(row_id) is None]
             if missing:
                 raise ValueError(f"unknown location IDs: {', '.join(missing)}")
-            rows = [LOCATION_PRESENTATIONS[row_id] for row_id in row_ids]
+            rows = [scoped_location_presentation(row_id) for row_id in row_ids]
             result_kind = "location_metadata"
             capabilities = {"table": True, "map": True, "timeline": False}
         elif kind == "entities":
-            missing = [row_id for row_id in row_ids if row_id not in ENTITY_PRESENTATIONS]
+            missing = [row_id for row_id in row_ids if scoped_entity_presentation(row_id) is None]
             if missing:
                 raise ValueError(f"unknown entity IDs: {', '.join(missing)}")
-            rows = [ENTITY_PRESENTATIONS[row_id] for row_id in row_ids]
+            rows = [scoped_entity_presentation(row_id) for row_id in row_ids]
             result_kind = "entity_metadata"
             capabilities = {"table": True, "map": True, "timeline": False}
         elif kind == "attack_targets":
+            require_target_bank_outside_playback()
             TARGET_BANK.initialize()
             rows = [TARGET_BANK.get_candidate(row_id) for row_id in row_ids]
             result_kind = "attack_targets"
@@ -2528,24 +2689,27 @@ def validate_target_references(candidate: dict[str, Any], evidence: list[dict[st
     for item in evidence or []:
         record_id = str(item.get("record_id") or "").strip()
         evidence_location_id = str(item.get("location_id") or "").strip()
-        if record_id not in EVENT_BY_ID:
+        if visible_event(record_id) is None:
             raise ValueError(f"unknown evidence record_id: {record_id}")
         if evidence_location_id not in LOCATIONS:
             raise ValueError(f"unknown evidence location_id: {evidence_location_id}")
 
 
 def search_target_candidates(arguments: dict[str, Any]) -> dict[str, Any]:
+    require_target_bank_outside_playback()
     TARGET_BANK.initialize()
     candidates = TARGET_BANK.search_candidates(arguments)
     return {"candidates": candidates, "returned": len(candidates)}
 
 
 def get_target_candidate(arguments: dict[str, Any]) -> dict[str, Any]:
+    require_target_bank_outside_playback()
     TARGET_BANK.initialize()
     return {"candidate": TARGET_BANK.get_candidate(arguments.get("target_id"))}
 
 
 def create_target_candidate(arguments: dict[str, Any]) -> dict[str, Any]:
+    require_target_bank_outside_playback()
     TARGET_BANK.initialize()
     candidate = {**(arguments.get("candidate") or {}), "created_by": "moshe"}
     supplied_evidence = arguments.get("evidence") or []
@@ -2560,6 +2724,7 @@ def create_target_candidate(arguments: dict[str, Any]) -> dict[str, Any]:
 
 
 def update_target_candidate(arguments: dict[str, Any]) -> dict[str, Any]:
+    require_target_bank_outside_playback()
     TARGET_BANK.initialize()
     target_id = arguments.get("target_id")
     changes = arguments.get("changes") or {}
@@ -2618,6 +2783,7 @@ def reconcile_attached_evidence_groups(
 
 
 def attach_target_evidence(arguments: dict[str, Any]) -> dict[str, Any]:
+    require_target_bank_outside_playback()
     TARGET_BANK.initialize()
     target_id = arguments.get("target_id")
     supplied_evidence = arguments.get("evidence") or []
@@ -2635,10 +2801,10 @@ def _fusion_events(event_ids: list[str]) -> list[dict[str, Any]]:
         raise ValueError("at least one event_id is required")
     if len(set(event_ids)) != len(event_ids):
         raise ValueError("event_id values must be unique")
-    unknown = [event_id for event_id in event_ids if event_id not in EVENT_BY_ID]
+    unknown = [event_id for event_id in event_ids if visible_event(event_id) is None]
     if unknown:
         raise ValueError(f"unknown event_id: {unknown[0]}")
-    return [public_event(EVENT_BY_ID[event_id]) for event_id in event_ids]
+    return [public_event(visible_event(event_id)) for event_id in event_ids]
 
 
 def prepare_target_candidate(arguments: dict[str, Any]) -> dict[str, Any]:
@@ -2649,6 +2815,7 @@ def prepare_target_candidate(arguments: dict[str, Any]) -> dict[str, Any]:
         corpus = [
             public_event(item)
             for item in FUSION_EVENTS_BY_CONTEXT.get((anchor.get("location_id") or "", anchor.get("entity_id") or ""), [])
+            if event_visible(item)
         ]
         discovery = discover_corroborating_evidence(seeds, corpus)
         selected = _fusion_events(discovery["selected_event_ids"])
@@ -2769,6 +2936,7 @@ def decide_workstream_indication_proposal(arguments: dict[str, Any]) -> dict[str
 
 def find_duplicate_target_candidates(arguments: dict[str, Any]) -> dict[str, Any]:
     """Find existing candidates that share the assessed target or selected evidence."""
+    require_target_bank_outside_playback()
     TARGET_BANK.initialize()
     filters = {
         "object_class": arguments.get("object_class"),

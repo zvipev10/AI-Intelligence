@@ -35,10 +35,12 @@ from scenario_playback import (
     get_manifest,
     list_scenarios,
     load_run as load_scenario_run,
+    load_playback_visibility,
     public_run,
     scenario_details,
     start_run as start_scenario_run,
     transition_run as transition_scenario_run,
+    write_playback_visibility,
 )
 from workstream_artifacts import (
     ArtifactConflictError,
@@ -2963,7 +2965,23 @@ class Handler(SimpleHTTPRequestHandler):
                     request,
                     scenario_workstream_exists,
                 )
+                current_policy = load_playback_visibility(SCENARIO_RUNS_DIR)
+                if (
+                    result.get("status") == "active"
+                    and current_policy
+                    and current_policy.get("active")
+                    and current_policy.get("run_id") != result.get("run_id")
+                ):
+                    raise PlaybackConflictError(
+                        "Another scenario run is already active",
+                        int(current_policy.get("revision") or 1),
+                    )
+                write_playback_visibility(SCENARIO_RUNS_DIR, result)
                 self.send_json(201 if created else 200, result)
+            except PlaybackConflictError as exc:
+                self.send_json(409, {
+                    "error": str(exc), "current_revision": exc.current_revision,
+                })
             except LookupError as exc:
                 self.send_json(404, {"error": str(exc)})
             except ValueError as exc:
@@ -2990,6 +3008,9 @@ class Handler(SimpleHTTPRequestHandler):
                 if result is None:
                     self.send_json(404, {"error": "Scenario run not found"})
                 else:
+                    current = load_scenario_run(SCENARIO_RUNS_DIR, run_id)
+                    if current is not None:
+                        write_playback_visibility(SCENARIO_RUNS_DIR, current)
                     self.send_json(200, {**result, "idempotent_replay": replayed})
             except PlaybackConflictError as exc:
                 self.send_json(409, {

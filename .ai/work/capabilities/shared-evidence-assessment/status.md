@@ -6,11 +6,11 @@ Collaborative Scenario Playback
 
 ## Current phase
 
-Playback foundation checkpoint
+Playback retrieval-boundary checkpoint
 
 ## Overall status
 
-Checkpoint 014 timeframe-stage playback foundation is implemented and pending approval
+Checkpoint 015 retrieval visibility enforcement is implemented and pending approval
 
 ## Accepted direction captured
 
@@ -25,19 +25,25 @@ Checkpoint 014 timeframe-stage playback foundation is implemented and pending ap
 
 | Role | Status | Required action |
 |---|---|---|
-| Product | Review required | Approve checkpoint 014 before Slice 2 implementation. |
-| Development/Architecture | Review required | Review manifest, API, revision, and idempotency boundaries. |
+| Product | Review required | Approve checkpoint 015 before Slice 3 implementation. |
+| Development/Architecture | Review required | Review the shared policy and retrieval enforcement boundary. |
 | UX | Not active in this slice | Playback controls remain deferred to Slice 3. |
-| QA/Security | Review required | Review persistence, concurrency, and future-stage response boundaries. |
+| QA/Security | Review required | Review leakage coverage and fail-closed behavior. |
 
 ## Current blockers
 
 - No Phase 1 blocker remains.
-- Slice 2 is blocked on explicit Product confirmation.
+- Slice 3 is blocked on explicit Product confirmation.
 - Broader manifest, adapter, and trigger decisions remain deferred beyond Phase 1.
 
 ## Latest change
 
+- Enforced the active run's cumulative timeframe and optional layer scope across
+  all evidence retrieval and presentation paths.
+- Recomputed entity/location summaries from visible evidence and isolated
+  stored target-bank objects during playback.
+- Added one-active-run protection and fail-closed policy validation.
+- Full Python discovery passes: 94 tests.
 - Added a generic scenario artifact containing only scope and ordered timeframe stages.
 - Added persistent start/reopen, advance, complete, and reset APIs.
 - Future stage windows are absent from scenario discovery and run responses.
@@ -60,14 +66,13 @@ Checkpoint 014 timeframe-stage playback foundation is implemented and pending ap
 
 ## Current risks
 
-- Future evidence may leak through retrieval paths not covered by replay filtering.
 - A first demo deployment may still use global state and interfere with concurrent users.
 - Automatic reevaluation may race with repeated stage changes.
 - Over-generalization may produce an abstract framework without a compelling first experience.
 
 ## Next expected artifact
 
-Product approval of checkpoint 014, followed by a separate confirmation to implement Slice 2.
+Product approval of checkpoint 015, followed by a separate confirmation to implement Slice 3.
 
 ## Parent and child issues
 
@@ -88,6 +93,7 @@ Product approval of checkpoint 014, followed by a separate confirmation to imple
 | #42 | Moshe general-chat integration | Deployed and validated with REC-V2-007215 | No |
 | #43 | Final MVP validation | Completed in checkpoint 013 | No |
 | #80 | Playback persistence/API foundation | Implemented; checkpoint review pending | Yes |
+| #81 | Playback retrieval visibility | Implemented; checkpoint review pending | Yes |
 
 ## Artifact links
 
@@ -116,3 +122,4 @@ Product approval of checkpoint 014, followed by a separate confirmation to imple
 - Final validation with REC-V2-007215: `checkpoint-013.md`
 - Playback execution plan: `playback-execution-plan.md`
 - Timeframe-stage foundation: `checkpoint-014.md`
+- Playback retrieval visibility: `checkpoint-015.md`

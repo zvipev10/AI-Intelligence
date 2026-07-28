@@ -201,6 +201,48 @@ def write_run(directory: Path, payload: dict) -> dict:
     return payload
 
 
+def visibility_policy_path(runs_dir: Path) -> Path:
+    return runs_dir / "active_visibility.json"
+
+
+def playback_visibility_policy(payload: dict) -> dict:
+    active = payload.get("status") == "active"
+    return {
+        "schema_version": 1,
+        "active": active,
+        "run_id": payload.get("run_id") if active else None,
+        "scenario_id": payload.get("scenario_id") if active else None,
+        "scenario_version": payload.get("scenario_version") if active else None,
+        "dataset": (payload.get("scope") or {}).get("dataset") if active else None,
+        "layers": list((payload.get("scope") or {}).get("layers") or []) if active else [],
+        "visible_timeframe": dict(payload.get("visible_timeframe") or {}) if active else None,
+        "revision": payload.get("revision"),
+        "updated_at_utc": utc_now_iso(),
+    }
+
+
+def write_playback_visibility(runs_dir: Path, payload: dict) -> dict:
+    """Atomically publish the server-owned retrieval boundary for the active run."""
+    runs_dir.mkdir(parents=True, exist_ok=True)
+    policy = playback_visibility_policy(payload)
+    path = visibility_policy_path(runs_dir)
+    temporary = path.with_suffix(".json.tmp")
+    temporary.write_text(json.dumps(policy, ensure_ascii=False, indent=2), encoding="utf-8")
+    temporary.replace(path)
+    return policy
+
+
+def load_playback_visibility(runs_dir: Path) -> dict | None:
+    path = visibility_policy_path(runs_dir)
+    if not path.exists():
+        return None
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8-sig"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    return payload if isinstance(payload, dict) else None
+
+
 def load_run(directory: Path, run_id: str) -> dict | None:
     path = run_path(directory, run_id)
     if not path.exists():
@@ -273,6 +315,17 @@ def find_existing_run(
     return max(matches, key=lambda item: str(item.get("updated_at_utc") or ""), default=None)
 
 
+def find_active_run(directory: Path) -> dict | None:
+    if not directory.exists():
+        return None
+    active = []
+    for path in directory.glob("run_*.json"):
+        payload = load_run(directory, path.stem)
+        if payload and payload.get("status") == "active":
+            active.append(payload)
+    return max(active, key=lambda item: str(item.get("updated_at_utc") or ""), default=None)
+
+
 def start_run(
     manifests_dir: Path,
     runs_dir: Path,
@@ -291,6 +344,12 @@ def start_run(
         )
         if existing is not None:
             return public_run(existing), False
+        active = find_active_run(runs_dir)
+        if active is not None:
+            raise PlaybackConflictError(
+                "Another scenario run is already active",
+                int(active.get("revision") or 1),
+            )
         now = utc_now_iso()
         first_stage = manifest["stages"][0]
         run_id = (
@@ -353,6 +412,13 @@ def transition_run(
         payload = load_run(runs_dir, run_id)
         if payload is None:
             return None, False
+        if action == "reset":
+            active = find_active_run(runs_dir)
+            if active is not None and active.get("run_id") != run_id:
+                raise PlaybackConflictError(
+                    "Another scenario run is already active",
+                    int(active.get("revision") or 1),
+                )
         replay = (payload.get("_idempotency") or {}).get(key)
         if isinstance(replay, dict):
             if replay.get("action") != action:

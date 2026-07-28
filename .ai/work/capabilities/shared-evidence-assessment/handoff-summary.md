@@ -2,10 +2,10 @@
 
 ## Current state
 
-The generic timeframe-stage playback foundation is implemented in checkpoint
-014 and is pending Product approval. It is intentionally inactive: retrieval
-filtering, UI controls, agent triggers, and deployment remain in later,
-separately approved slices.
+The generic timeframe-stage foundation and retrieval visibility boundary are
+implemented through checkpoint 015. Playback remains intentionally unavailable
+in the UI: controls, agent triggers, and deployment remain in later, separately
+approved slices.
 
 ## Delivered in Slice 2
 
@@ -23,8 +23,10 @@ separately approved slices.
 
 ## Validation
 
-- 93 automated tests passed.
+- 94 automated tests passed.
 - Python compilation and `git diff --check` passed.
+- Search, semantic, aggregate, related-event, direct-object, presentation, and
+  fusion paths share one fail-closed playback boundary.
 - Concurrent advances produce one successful transition and one revision
   conflict.
 - Duplicate transition keys replay the original response and cannot be reused
@@ -38,5 +40,5 @@ An unconfirmed proposal is lost on refresh. This is the explicitly approved MVP 
 
 ## Next step
 
-Review `checkpoint-014.md`. Do not begin Slice 2 retrieval visibility
-enforcement until the Product owner explicitly confirms the next step.
+Review `checkpoint-015.md`. Do not begin Slice 3 playback controls until the
+Product owner explicitly confirms the next step.

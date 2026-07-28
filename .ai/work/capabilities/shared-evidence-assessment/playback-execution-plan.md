@@ -20,7 +20,7 @@ not begin until the owner explicitly confirms it.
 
 ## Slice 1 — Scenario persistence and API foundation
 
-Status: implemented; pending checkpoint approval.
+Status: implemented and approved.
 
 Scope:
 
@@ -43,7 +43,7 @@ Explicitly excluded:
 
 ## Slice 2 — Retrieval visibility enforcement
 
-Status: not approved for implementation.
+Status: implemented; pending checkpoint approval.
 
 Proposed scope:
 

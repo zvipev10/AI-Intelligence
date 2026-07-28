@@ -243,6 +243,48 @@ class ScenarioPlaybackApiTests(unittest.TestCase):
             item["action"] for item in reset["transition_history"]
         ])
 
+    def test_publishes_visibility_policy_and_allows_only_one_active_run(self):
+        run = self.start()
+        policy_path = scenario_playback.visibility_policy_path(self.runs_dir)
+        policy = json.loads(policy_path.read_text(encoding="utf-8"))
+        self.assertTrue(policy["active"])
+        self.assertEqual(run["run_id"], policy["run_id"])
+        self.assertEqual(run["visible_timeframe"], policy["visible_timeframe"])
+
+        status, second_workstream = self.request("POST", "/api/workstreams", {
+            "investigation_id": "investigation-playback",
+            "title": "Second playback",
+            "objective": "Must not run concurrently.",
+            "participants": [],
+            "assignments": [],
+        })
+        self.assertEqual(201, status)
+        second_payload = self.start_payload("start-second")
+        second_payload["workstream_id"] = second_workstream["workstream_id"]
+        status, error = self.request("POST", "/api/scenario-runs", second_payload)
+        self.assertEqual(409, status)
+        self.assertEqual("Another scenario run is already active", error["error"])
+        self.assertEqual(1, len(list(self.runs_dir.glob("run_*.json"))))
+
+        status, completed = self.request(
+            "POST",
+            f"/api/scenario-runs/{run['run_id']}/complete",
+            {"expected_revision": 1, "idempotency_key": "complete-policy"},
+        )
+        self.assertEqual(200, status)
+        policy = json.loads(policy_path.read_text(encoding="utf-8"))
+        self.assertFalse(policy["active"])
+
+        status, reset = self.request(
+            "POST",
+            f"/api/scenario-runs/{run['run_id']}/reset",
+            {"expected_revision": completed["revision"], "idempotency_key": "reset-policy"},
+        )
+        self.assertEqual(200, status)
+        policy = json.loads(policy_path.read_text(encoding="utf-8"))
+        self.assertTrue(policy["active"])
+        self.assertEqual(reset["revision"], policy["revision"])
+
     def test_final_stage_requires_explicit_complete(self):
         run = self.start()
         _, second = self.request(

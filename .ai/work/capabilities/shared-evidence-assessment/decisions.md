@@ -211,3 +211,36 @@ The 2026-07-24 decision to require one explicit layer is superseded. `starting_s
 
 Follow-ups:
 Validate multi-source indications and canonical provenance in final MVP validation.
+
+### 2026-07-28 — Make playback visibility a server-owned global boundary
+
+Decision:
+Publish the active scenario run's dataset, optional layers, cumulative
+timeframe, and revision to an atomic policy file consumed directly by the
+evidence server. Permit only one active run in the current demo deployment.
+
+Context:
+The agent can call many retrieval tools and cannot be trusted to consistently
+forward a playback argument. Prompt-only filtering would allow future records
+to reappear through semantic search, aggregation, related-event expansion,
+object loading, presentation layers, or fusion.
+
+Rationale:
+A server-owned boundary applies regardless of the agent's chosen tool path.
+One active run matches the current single-demo runtime and prevents ambiguous
+global policy selection.
+
+Alternatives considered:
+- Add timeframe arguments to every agent tool call.
+- Filter only the final response.
+- Add session-scoped policy propagation in this slice.
+
+Impact:
+All relevant evidence paths use the same inclusive-start/exclusive-end window.
+Entity and location summaries are derived from visible evidence. Stored target
+candidates are hidden during playback because they lack stage-aware provenance.
+Inactive playback preserves existing behavior.
+
+Follow-ups:
+Introduce session-scoped policy storage before supporting concurrent playback
+users, and define target provenance before exposing stored targets in playback.
