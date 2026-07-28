@@ -2,7 +2,9 @@
 
 ## Current state
 
-Slice 1 persistence/API is merged. Slice 2 Moshe general-chat integration is implemented on `capability/moshe-indication-chat` and is awaiting the Product, Development/Architecture, UX, and QA/Security checkpoint.
+The deployed Phase 1 Moshe-to-workstream flow passed final validation with
+`REC-V2-007215`. The isolated validation workstream is archived and its
+revision-1 artifact remains durable.
 
 ## Delivered in Slice 2
 
@@ -20,9 +22,11 @@ Slice 1 persistence/API is merged. Slice 2 Moshe general-chat integration is imp
 
 ## Validation
 
-- 56 main Python tests passed.
-- 3 focused MCP tool tests passed.
-- Python compilation and `git diff --check` passed.
+- 85 automated tests passed.
+- A live proposal remained unpersisted until a distinct explicit confirmation.
+- The confirmed artifact survived a UI-service restart and reopen.
+- The target-bank SHA-256 remained unchanged before and after every live step.
+- Both deployed UI and Moshe services were active at completion.
 
 ## Accepted limitation
 
@@ -30,4 +34,6 @@ An unconfirmed proposal is lost on refresh. This is the explicitly approved MVP 
 
 ## Next step
 
-Review `checkpoint-004.md`. If accepted, merge Slice 2 and execute final validation issue #43 in the deployed demo, including the historical stale-dataset flow.
+Review and accept `checkpoint-013.md`. Track long-running Moshe progress and
+timeout handling as a follow-up UX improvement rather than a Phase 1
+persistence blocker.

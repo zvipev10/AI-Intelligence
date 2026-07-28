@@ -6,11 +6,11 @@ Collaborative Scenario Playback
 
 ## Current phase
 
-Team member icon spacing
+Final MVP validation
 
 ## Overall status
 
-Checkpoint 012 team-member icon spacing is deployed and verified on the VM
+Checkpoint 013 final validation passed on the deployed VM with REC-V2-007215
 
 ## Accepted direction captured
 
@@ -25,19 +25,25 @@ Checkpoint 012 team-member icon spacing is deployed and verified on the VM
 
 | Role | Status | Required action |
 |---|---|---|
-| Product | Review required | Review the amended layer-free flow and reopened artifact summary. |
-| Development/Architecture | Review required | Review canonical source resolution and persistence boundary. |
-| UX | Review required | Review the indicator-to-chat artifact summary. |
-| QA/Security | Review required | Review amended checkpoint and final-validation coverage. |
+| Product | Ready | Accept the demonstrated REC-V2-007215 assessment flow. |
+| Development/Architecture | Ready | Accept the server-owned persistence and scoping evidence. |
+| UX | Follow-up | Consider clearer long-running Moshe progress and timeout handling. |
+| QA/Security | Ready | Accept checkpoint 013 and the unchanged target-bank evidence. |
 
 ## Current blockers
 
 - No Phase 1 blocker remains.
-- Slice 2 merge is blocked on checkpoint approval.
+- No final-validation blocker remains for the demonstrated Phase 1 boundary.
 - Broader manifest, adapter, and trigger decisions remain deferred beyond Phase 1.
 
 ## Latest change
 
+- Final deployed validation passed with `REC-V2-007215`.
+- Proposal remained unpersisted until a distinct explicit confirmation.
+- One revision-1 assessment artifact survived restart and reopen.
+- Target-bank SHA-256 remained unchanged throughout.
+- The isolated validation workstream was archived after verification.
+- Full functional coverage passes: 85 tests.
 - The top team roster now has larger gaps and `34px` minimum click targets.
 - Full test discovery passes: 85 tests.
 - The opened workstream menu now matches chat text sizing; the compact header pill is restored to its original size.
@@ -56,7 +62,7 @@ Checkpoint 012 team-member icon spacing is deployed and verified on the VM
 
 ## Next expected artifact
 
-Product visual confirmation, then final validation issue #43.
+Product acceptance or a follow-up issue for long-running Moshe progress UX.
 
 ## Parent and child issues
 
@@ -74,8 +80,8 @@ Product visual confirmation, then final validation issue #43.
 | #38 | Artifact UX review | Approved; closes with PR #40 | No |
 | #39 | Artifact QA/Security review | Approved; closes with PR #40 | No |
 | #41 | Artifact persistence/API | Accepted; closes with PR #45 | No |
-| #42 | Moshe general-chat integration | UX corrections implemented in draft PR #46; deployment validation pending | Yes |
-| #43 | Final MVP validation | Planned; blocked by Slices 1–2 | Yes |
+| #42 | Moshe general-chat integration | Deployed and validated with REC-V2-007215 | No |
+| #43 | Final MVP validation | Completed in checkpoint 013 | No |
 
 ## Artifact links
 
@@ -101,3 +107,4 @@ Product visual confirmation, then final validation issue #43.
 - Workstream indicator typography checkpoint: `checkpoint-010.md`
 - Workstream menu typography correction: `checkpoint-011.md`
 - Team member icon spacing: `checkpoint-012.md`
+- Final validation with REC-V2-007215: `checkpoint-013.md`
