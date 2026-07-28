@@ -171,6 +171,8 @@ h3 { margin: 0; font-size: 14px; }
 .workstream-message-actions { margin-top: 9px; display: flex; flex-wrap: wrap; gap: 6px; }
 .workstream-message-actions button { min-height: 28px; border: 1px solid rgba(88,166,255,.42); border-radius: 6px; background: rgba(88,166,255,.08); color: var(--blue); padding: 4px 9px; font: inherit; font-size: 11px; cursor: pointer; }
 .workstream-message-actions button:hover, .workstream-message-actions button:focus-visible { border-color: var(--blue); background: rgba(88,166,255,.16); color: #fff; outline: none; }
+.workstream-message-actions .playback-next-button { min-height: 34px; padding-inline: 13px; font-weight: 850; }
+.workstream-message-actions button:disabled { opacity: .58; cursor: wait; }
 .workstream-message-actions button.danger-button { border-color: rgba(242,139,130,.42); color: var(--red); }
 .mention-editor { position: relative; width: 100%; min-width: 0; }
 .mention-highlights { position: absolute; z-index: 0; inset: 0; overflow: hidden; pointer-events: none; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--ink); direction: inherit; text-align: inherit; }

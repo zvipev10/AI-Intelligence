@@ -54,22 +54,22 @@ Proposed scope:
 - preserve existing behavior when playback is inactive;
 - add leakage and regression tests.
 
-## Slice 3 — Playback controls and status
+## Slice 3 — Minimal next-stage control and Moshe reevaluation
 
-Status: not approved for implementation.
+Status: implemented; pending checkpoint approval.
 
-Proposed scope:
+Approved simplified scope:
 
-- prepared-scenario selection;
-- unmistakable historical-simulation label;
-- start/reopen, next-stage, complete, and reset controls;
-- current stage and visible timeframe;
-- loading, stale-revision, final-stage, completed, and recovery states;
-- no agent automation yet.
+- one next-stage button in the existing workstream update;
+- tooltip showing the next stage timeframe;
+- automatic start on the first press and one-stage advance thereafter;
+- exactly one Moshe reevaluation per released revision;
+- cumulative evidence access plus the newly released timeframe;
+- no picker, panel, reset control, or completion control.
 
-## Slice 4 — Automatic Moshe reevaluation
+## Slice 4 — Additional Moshe automation
 
-Status: not approved for implementation.
+Status: essential trigger merged into Slice 3; broader automation not approved.
 
 Proposed scope:
 

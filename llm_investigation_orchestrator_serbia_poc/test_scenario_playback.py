@@ -62,6 +62,7 @@ class ScenarioPlaybackApiTests(unittest.TestCase):
             patch.object(server, "SCENARIO_MANIFESTS_DIR", self.manifests_dir),
             patch.object(server, "SCENARIO_RUNS_DIR", self.runs_dir),
             patch.object(server, "WORKSTREAMS_DIR", self.workstreams_dir),
+            patch.object(server, "DATASET_VERSION", "v2.1"),
         ]
         for item in self.patches:
             item.start()
@@ -284,6 +285,64 @@ class ScenarioPlaybackApiTests(unittest.TestCase):
         policy = json.loads(policy_path.read_text(encoding="utf-8"))
         self.assertTrue(policy["active"])
         self.assertEqual(reset["revision"], policy["revision"])
+
+    def test_single_next_endpoint_starts_advances_and_triggers_moshe_once_per_stage(self):
+        workstream_id = self.workstream["workstream_id"]
+        status, initial = self.request(
+            "GET", f"/api/workstreams/{workstream_id}/playback"
+        )
+        self.assertEqual(200, status)
+        self.assertIsNone(initial["run"])
+        self.assertEqual(
+            "2026-09-17T02:00:00Z", initial["next_stage"]["timeframe"]["from"]
+        )
+
+        with patch.object(
+            server,
+            "run_moshe_playback_reevaluation",
+            return_value={"answer": "Updated assessment", "responding_agent": "moshe"},
+        ) as moshe:
+            first_request = {"idempotency_key": "playback-first"}
+            status, first = self.request(
+                "POST",
+                f"/api/workstreams/{workstream_id}/playback/next",
+                first_request,
+            )
+            self.assertEqual(200, status)
+            self.assertTrue(first["moshe_triggered"])
+            self.assertEqual(1, first["run"]["revision"])
+            self.assertEqual(
+                "2026-09-17T06:00:00Z",
+                first["run"]["next_stage"]["timeframe"]["from"],
+            )
+
+            status, replay = self.request(
+                "POST",
+                f"/api/workstreams/{workstream_id}/playback/next",
+                first_request,
+            )
+            self.assertEqual(200, status)
+            self.assertFalse(replay["moshe_triggered"])
+            self.assertEqual(1, replay["run"]["revision"])
+
+            status, second = self.request(
+                "POST",
+                f"/api/workstreams/{workstream_id}/playback/next",
+                {"expected_revision": 1, "idempotency_key": "playback-second"},
+            )
+            self.assertEqual(200, status)
+            self.assertTrue(second["moshe_triggered"])
+            self.assertEqual(2, second["run"]["revision"])
+            self.assertEqual(2, moshe.call_count)
+            self.assertEqual(
+                {
+                    "from": "2026-09-17T06:00:00Z",
+                    "to": "2026-09-17T09:00:00Z",
+                    "from_inclusive": True,
+                    "to_exclusive": True,
+                },
+                second["released_timeframe"],
+            )
 
     def test_final_stage_requires_explicit_complete(self):
         run = self.start()

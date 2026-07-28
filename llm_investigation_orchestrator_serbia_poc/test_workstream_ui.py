@@ -61,10 +61,15 @@ class WorkstreamUiTests(unittest.TestCase):
         self.assertIn("${objectiveHtml}", self.app)
         self.assertIn("${responsibilityHtml}", self.app)
 
-    def test_update_is_deterministic_and_discloses_manual_trigger(self):
+    def test_update_has_one_next_stage_control_and_moshe_trigger(self):
         self.assertIn("workstream.objective", self.app)
         self.assertIn("workstream.assignments", self.app)
-        self.assertIn("העדכון מוצג לפי בקשתך ולא נוצר אוטומטית", self.app)
+        self.assertIn('data-playback-next="${escapeHtml(workstreamId)}"', self.app)
+        self.assertIn("advanceWorkstreamPlayback", self.app)
+        self.assertIn("/playback/next", self.app)
+        self.assertIn("פרק הזמן של השלב הבא", self.app)
+        self.assertIn("title=", self.app)
+        self.assertIn(".playback-next-button", self.styles)
 
     def test_reopened_workstream_shows_active_artifact_details(self):
         self.assertIn("function workstreamArtifactHtml(workstream)", self.app)

@@ -2,10 +2,10 @@
 
 ## Current state
 
-The generic timeframe-stage foundation and retrieval visibility boundary are
-implemented through checkpoint 015. Playback remains intentionally unavailable
-in the UI: controls, agent triggers, and deployment remain in later, separately
-approved slices.
+The timeframe-stage foundation, retrieval boundary, and approved minimal
+interaction are implemented through checkpoint 016. The existing workstream
+message now has one next-stage button with a timeframe tooltip, and each
+successful release triggers Moshe once. Deployment remains separately gated.
 
 ## Delivered in Slice 2
 
@@ -23,7 +23,7 @@ approved slices.
 
 ## Validation
 
-- 94 automated tests passed.
+- 95 automated tests passed.
 - Python compilation and `git diff --check` passed.
 - Search, semantic, aggregate, related-event, direct-object, presentation, and
   fusion paths share one fail-closed playback boundary.
@@ -40,5 +40,5 @@ An unconfirmed proposal is lost on refresh. This is the explicitly approved MVP 
 
 ## Next step
 
-Review `checkpoint-015.md`. Do not begin Slice 3 playback controls until the
-Product owner explicitly confirms the next step.
+Review `checkpoint-016.md`. Do not deploy until the Product owner explicitly
+confirms the next step.

@@ -244,3 +244,33 @@ Inactive playback preserves existing behavior.
 Follow-ups:
 Introduce session-scoped policy storage before supporting concurrent playback
 users, and define target provenance before exposing stored targets in playback.
+
+### 2026-07-28 — Reduce playback UX to one next-stage action
+
+Decision:
+Use one next-stage button in the existing workstream message. Its tooltip shows
+the next configured timeframe. The first press starts the prepared scenario and
+each later press releases one stage, then triggers Moshe once for that revision.
+
+Context:
+The broader playback-control plan introduced a picker, status panel, reset, and
+completion controls that were unnecessary for the intended demonstration.
+
+Rationale:
+The single action keeps attention on the analytical change caused by newly
+available evidence. Server-derived tooltip data preserves generic scenario
+semantics without embedding fixture times in the UI.
+
+Alternatives considered:
+- Full playback panel and scenario picker.
+- Client-side Moshe triggering after an advance.
+- Show the current and future stage list.
+
+Impact:
+The server owns stage transition and Moshe-trigger idempotency. Moshe receives
+both the newly released and cumulative windows. The final stage has no next
+button. Deployment remains separately approved.
+
+Follow-ups:
+Validate the interaction and Moshe response on the VM after explicit deployment
+approval.

@@ -231,6 +231,8 @@ const state = {
   workstreams: [],
   workstreamsLoading: false,
   workstreamLoadToken: 0,
+  workstreamPlayback: {},
+  playbackAdvancing: new Set(),
   pendingMosheWorkstreamProposal: null,
   activeConversationMemberId: null,
   openingLayerIds: new Set(),
@@ -2349,6 +2351,47 @@ async function fetchWorkstream(workstreamId) {
   return payload;
 }
 
+async function fetchWorkstreamPlayback(workstreamId) {
+  const response = await fetch(
+    `/api/workstreams/${encodeURIComponent(workstreamId)}/playback`,
+    { cache: "no-store" }
+  );
+  const payload = await response.json();
+  if (!response.ok) throw new Error(payload.error || "טעינת מצב התרחיש נכשלה");
+  state.workstreamPlayback[workstreamId] = payload;
+  return payload;
+}
+
+function playbackNextStage(playback) {
+  return playback?.run?.next_stage || playback?.next_stage || null;
+}
+
+function formatPlaybackTime(value) {
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return String(value || "");
+  return parsed.toLocaleString("he-IL", {
+    timeZone: "UTC",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function playbackButtonHtml(workstreamId, playback) {
+  const next = playbackNextStage(playback);
+  if (!next?.timeframe) return "";
+  const timeframe = next.timeframe;
+  const tooltip = `פרק הזמן של השלב הבא: ${formatPlaybackTime(timeframe.from)}–${formatPlaybackTime(timeframe.to)} UTC`;
+  const busy = state.playbackAdvancing.has(workstreamId);
+  return `<button type="button" class="playback-next-button"
+    data-playback-next="${escapeHtml(workstreamId)}"
+    title="${escapeHtml(tooltip)}"
+    aria-label="${escapeHtml(`השלב הבא. ${tooltip}`)}"
+    ${busy ? "disabled" : ""}>${busy ? "משה מעבד…" : "השלב הבא"}</button>`;
+}
+
 function workstreamAgent(workstream) {
   return (workstream.participants || []).find(item => item.kind === "agent") || null;
 }
@@ -2402,7 +2445,7 @@ function normalizedWorkstreamSummaryText(value) {
   return String(value || "").replace(/\s+/g, " ").trim().toLocaleLowerCase("he-IL");
 }
 
-function appendWorkstreamUpdate(workstream) {
+function appendWorkstreamUpdate(workstream, playback = null) {
   conversation.querySelectorAll("[data-workstream-update-id]").forEach(message => {
     if (message.dataset.workstreamUpdateId === workstream.workstream_id) message.remove();
   });
@@ -2429,8 +2472,8 @@ function appendWorkstreamUpdate(workstream) {
     ${objectiveHtml}
     ${responsibilityHtml}
     ${workstreamArtifactHtml(workstream)}
-    <p>המעקב פעיל. בשלב זה העדכון מוצג לפי בקשתך ולא נוצר אוטומטית.</p>
     <div class="workstream-message-actions">
+      ${playbackButtonHtml(workstream.workstream_id, playback)}
       <button type="button" class="danger-button" data-workstream-archive="${escapeHtml(workstream.workstream_id)}">העברה לארכיון</button>
     </div>`, {
       label: agent ? `${agent.display_name} · עדכון מעקב` : "עדכון מעקב",
@@ -2450,9 +2493,61 @@ async function requestWorkstreamUpdate() {
 
 async function showWorkstreamUpdate(workstreamId) {
   try {
-    appendWorkstreamUpdate(await fetchWorkstream(workstreamId));
+    const [workstream, playback] = await Promise.all([
+      fetchWorkstream(workstreamId),
+      fetchWorkstreamPlayback(workstreamId),
+    ]);
+    appendWorkstreamUpdate(workstream, playback);
   } catch (error) {
     workstreamMessage(`<p>לא הצלחתי לטעון את עדכון המעקב.</p><div class="answer-callout">${escapeHtml(error.message)}</div>`);
+  }
+}
+
+async function advanceWorkstreamPlayback(workstreamId, button) {
+  if (state.playbackAdvancing.has(workstreamId)) return;
+  const playback = state.workstreamPlayback[workstreamId]
+    || await fetchWorkstreamPlayback(workstreamId);
+  const run = playback?.run;
+  state.playbackAdvancing.add(workstreamId);
+  if (button) {
+    button.disabled = true;
+    button.textContent = "משה מעבד…";
+  }
+  try {
+    const idempotencyKey = `playback:${workstreamId}:${run?.revision || 0}:${Date.now()}`;
+    const response = await fetch(
+      `/api/workstreams/${encodeURIComponent(workstreamId)}/playback/next`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json; charset=utf-8" },
+        body: JSON.stringify({
+          expected_revision: run?.revision,
+          idempotency_key: idempotencyKey,
+        }),
+      }
+    );
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || "המעבר לשלב הבא נכשל");
+    state.workstreamPlayback[workstreamId] = {
+      workstream_id: workstreamId,
+      run: result.run,
+    };
+    const moshe = result.moshe_result;
+    if (moshe?.answer) {
+      applyWorkstreamChatResult(moshe);
+      workstreamMessage(
+        `<div class="answer-body">${answerHtml(cleanAssistantAnswer(moshe.answer))}</div>`,
+        { label: MOSHE_MESSAGE_LABEL, memberId: MOSHE_MEMBER_ID }
+      );
+    }
+    const workstream = await fetchWorkstream(workstreamId);
+    appendWorkstreamUpdate(workstream, state.workstreamPlayback[workstreamId]);
+  } catch (error) {
+    workstreamMessage(
+      `<p>לא הצלחתי להתקדם לשלב הבא.</p><div class="answer-callout">${escapeHtml(error.message)}</div>`
+    );
+  } finally {
+    state.playbackAdvancing.delete(workstreamId);
   }
 }
 
@@ -4107,6 +4202,8 @@ function resetInvestigation(options = {}) {
   state.workstreamLoadToken += 1;
   state.workstreams = [];
   state.workstreamsLoading = false;
+  state.workstreamPlayback = {};
+  state.playbackAdvancing = new Set();
   state.pendingMosheWorkstreamProposal = null;
   state.workstreamComposerMode = false;
   if (!options.keepInvestigation) {
@@ -4188,6 +4285,14 @@ document.addEventListener("click", event => {
     if (workstreamMenu) workstreamMenu.hidden = true;
     workstreamIndicator?.setAttribute("aria-expanded", "false");
     showWorkstreamUpdate(showWorkstream.dataset.workstreamShow);
+    return;
+  }
+  const nextPlaybackStage = event.target.closest("[data-playback-next]");
+  if (nextPlaybackStage) {
+    advanceWorkstreamPlayback(
+      nextPlaybackStage.dataset.playbackNext,
+      nextPlaybackStage
+    );
     return;
   }
   const archiveWorkstream = event.target.closest("[data-workstream-archive]");

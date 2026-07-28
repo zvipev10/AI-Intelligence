@@ -315,6 +315,17 @@ def find_existing_run(
     return max(matches, key=lambda item: str(item.get("updated_at_utc") or ""), default=None)
 
 
+def find_workstream_run(directory: Path, workstream_id: str) -> dict | None:
+    if not WORKSTREAM_ID_PATTERN.fullmatch(workstream_id or "") or not directory.exists():
+        return None
+    matches = []
+    for path in directory.glob("run_*.json"):
+        payload = load_run(directory, path.stem)
+        if payload and payload.get("workstream_id") == workstream_id:
+            matches.append(payload)
+    return max(matches, key=lambda item: str(item.get("updated_at_utc") or ""), default=None)
+
+
 def find_active_run(directory: Path) -> dict | None:
     if not directory.exists():
         return None
@@ -324,6 +335,68 @@ def find_active_run(directory: Path) -> dict | None:
         if payload and payload.get("status") == "active":
             active.append(payload)
     return max(active, key=lambda item: str(item.get("updated_at_utc") or ""), default=None)
+
+
+def run_with_next_stage(manifests_dir: Path, payload: dict) -> dict:
+    result = public_run(payload)
+    manifest = get_manifest(
+        manifests_dir, payload.get("scenario_id") or "", payload.get("scenario_version")
+    )
+    next_index = int(payload.get("current_stage_index") or 0) + 1
+    next_stage = None
+    if (
+        payload.get("status") == "active"
+        and manifest is not None
+        and next_index < len(manifest["stages"])
+    ):
+        stage = manifest["stages"][next_index]
+        next_stage = {
+            "sequence": stage["sequence"],
+            "timeframe": {
+                "from": stage["from"],
+                "to": stage["to"],
+                "from_inclusive": True,
+                "to_exclusive": True,
+            },
+        }
+    result["next_stage"] = next_stage
+    return result
+
+
+def claim_reevaluation(directory: Path, run_id: str, revision: int) -> tuple[dict | None, bool]:
+    """Claim one Moshe reevaluation per released run revision."""
+    with _STATE_LOCK:
+        payload = load_run(directory, run_id)
+        if payload is None:
+            return None, False
+        claims = payload.setdefault("_reevaluations", {})
+        key = str(revision)
+        existing = claims.get(key)
+        if isinstance(existing, dict):
+            return public_run(payload), False
+        claims[key] = {"status": "running", "started_at_utc": utc_now_iso()}
+        write_run(directory, payload)
+        return public_run(payload), True
+
+
+def finish_reevaluation(
+    directory: Path, run_id: str, revision: int, status: str, error: str | None = None
+) -> dict | None:
+    if status not in {"completed", "failed"}:
+        raise ValueError("Invalid reevaluation status")
+    with _STATE_LOCK:
+        payload = load_run(directory, run_id)
+        if payload is None:
+            return None
+        claims = payload.setdefault("_reevaluations", {})
+        claim = claims.setdefault(str(revision), {})
+        claim.update({
+            "status": status,
+            "completed_at_utc": utc_now_iso(),
+            "error": compact_text(error, 500) if error else None,
+        })
+        write_run(directory, payload)
+        return public_run(payload)
 
 
 def start_run(
@@ -384,6 +457,7 @@ def start_run(
             "updated_at_utc": now,
             "completed_at_utc": None,
             "_idempotency": {},
+            "_reevaluations": {},
         }
         write_run(runs_dir, payload)
         return public_run(payload), True

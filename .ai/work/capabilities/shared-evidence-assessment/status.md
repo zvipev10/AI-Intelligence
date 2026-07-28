@@ -6,11 +6,11 @@ Collaborative Scenario Playback
 
 ## Current phase
 
-Playback retrieval-boundary checkpoint
+Minimal playback interaction checkpoint
 
 ## Overall status
 
-Checkpoint 015 retrieval visibility enforcement is implemented and pending approval
+Checkpoint 016 next-stage playback and Moshe reevaluation is implemented and pending approval
 
 ## Accepted direction captured
 
@@ -25,19 +25,23 @@ Checkpoint 015 retrieval visibility enforcement is implemented and pending appro
 
 | Role | Status | Required action |
 |---|---|---|
-| Product | Review required | Approve checkpoint 015 before Slice 3 implementation. |
-| Development/Architecture | Review required | Review the shared policy and retrieval enforcement boundary. |
-| UX | Not active in this slice | Playback controls remain deferred to Slice 3. |
-| QA/Security | Review required | Review leakage coverage and fail-closed behavior. |
+| Product | Review required | Review checkpoint 016 and authorize deployment if accepted. |
+| Development/Architecture | Complete | Minimal interaction and trigger are implemented. |
+| UX | Review required | Confirm the one-button interaction and tooltip. |
+| QA/Security | Complete | Duplicate-trigger and regression coverage pass. |
 
 ## Current blockers
 
 - No Phase 1 blocker remains.
-- Slice 3 is blocked on explicit Product confirmation.
+- Deployment is blocked on explicit Product confirmation.
 - Broader manifest, adapter, and trigger decisions remain deferred beyond Phase 1.
 
 ## Latest change
 
+- Added one next-stage button to the existing workstream update.
+- Added a tooltip with the server-provided next-stage timeframe.
+- Added one durable Moshe reevaluation claim per released revision.
+- Full Python discovery passes: 95 tests.
 - Enforced the active run's cumulative timeframe and optional layer scope across
   all evidence retrieval and presentation paths.
 - Recomputed entity/location summaries from visible evidence and isolated
@@ -72,7 +76,7 @@ Checkpoint 015 retrieval visibility enforcement is implemented and pending appro
 
 ## Next expected artifact
 
-Product approval of checkpoint 015, followed by a separate confirmation to implement Slice 3.
+Product approval of checkpoint 016, followed by explicit deployment authorization.
 
 ## Parent and child issues
 
@@ -94,6 +98,7 @@ Product approval of checkpoint 015, followed by a separate confirmation to imple
 | #43 | Final MVP validation | Completed in checkpoint 013 | No |
 | #80 | Playback persistence/API foundation | Implemented; checkpoint review pending | Yes |
 | #81 | Playback retrieval visibility | Implemented; checkpoint review pending | Yes |
+| #82 | Minimal playback and Moshe trigger | Implemented; checkpoint review pending | Yes |
 
 ## Artifact links
 
@@ -123,3 +128,4 @@ Product approval of checkpoint 015, followed by a separate confirmation to imple
 - Playback execution plan: `playback-execution-plan.md`
 - Timeframe-stage foundation: `checkpoint-014.md`
 - Playback retrieval visibility: `checkpoint-015.md`
+- Minimal next-stage playback: `checkpoint-016.md`

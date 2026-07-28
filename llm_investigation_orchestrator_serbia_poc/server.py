@@ -32,6 +32,9 @@ from agent_result_pipeline import (
 from agent_routing import AgentRouteRegistry, MOSHE_AGENT_ID
 from scenario_playback import (
     PlaybackConflictError,
+    claim_reevaluation,
+    find_workstream_run,
+    finish_reevaluation,
     get_manifest,
     list_scenarios,
     load_run as load_scenario_run,
@@ -40,6 +43,7 @@ from scenario_playback import (
     scenario_details,
     start_run as start_scenario_run,
     transition_run as transition_scenario_run,
+    run_with_next_stage,
     write_playback_visibility,
 )
 from workstream_artifacts import (
@@ -1218,6 +1222,48 @@ def parse_scenario_run_action(path: str) -> tuple[str, str] | None:
     if len(parts) != 2 or parts[1] not in {"advance", "complete", "reset"}:
         return None
     return unquote(parts[0]), parts[1]
+
+
+def prepared_playback_manifest() -> dict | None:
+    scenarios = [
+        item for item in list_scenarios(SCENARIO_MANIFESTS_DIR)
+        if (item.get("scope") or {}).get("dataset") == DATASET_VERSION
+    ]
+    if not scenarios:
+        return None
+    selected = scenarios[0]
+    return get_manifest(
+        SCENARIO_MANIFESTS_DIR, selected["scenario_id"], selected["version"]
+    )
+
+
+def workstream_playback_status(workstream_id: str) -> dict | None:
+    workstream = load_workstream(workstream_id)
+    if workstream is None or workstream.get("status") == "archived":
+        return None
+    run = find_workstream_run(SCENARIO_RUNS_DIR, workstream_id)
+    if run is not None:
+        return {
+            "workstream_id": workstream_id,
+            "run": run_with_next_stage(SCENARIO_MANIFESTS_DIR, run),
+        }
+    manifest = prepared_playback_manifest()
+    if manifest is None:
+        return {"workstream_id": workstream_id, "run": None, "next_stage": None}
+    first = manifest["stages"][0]
+    return {
+        "workstream_id": workstream_id,
+        "run": None,
+        "next_stage": {
+            "sequence": first["sequence"],
+            "timeframe": {
+                "from": first["from"],
+                "to": first["to"],
+                "from_inclusive": True,
+                "to_exclusive": True,
+            },
+        },
+    }
 
 
 def artifact_id(prefix: str) -> str:
@@ -2778,6 +2824,42 @@ class HermesClient:
         raise TimeoutError("Hermes investigation exceeded 480 seconds")
 
 
+def run_moshe_playback_reevaluation(run: dict, released_timeframe: dict) -> dict:
+    """Run one playback-filtered Moshe assessment for a newly released window."""
+    workstream_context = bounded_workstream_context(
+        {
+            "workstream_id": run["workstream_id"],
+            "current_turn_message_id": f"playback-revision-{run['revision']}",
+        },
+        run["investigation_id"],
+    )
+    investigation_state = {
+        "active_workstream": workstream_context,
+        "scenario_playback": {
+            "run_id": run["run_id"],
+            "revision": run["revision"],
+            "newly_released_timeframe": released_timeframe,
+            "visible_timeframe": run["visible_timeframe"],
+        },
+    }
+    prompt = (
+        "התקדם שלב אחד בתרחיש ההיסטורי. קלוט את פרוסת המידע החדשה, "
+        "בדוק כיצד היא משנה את הערכת המעקב, והצג את ההערכה המעודכנת. "
+        "השתמש רק במידע הזמין כעת דרך כלי הראיות. "
+        f"חלון המידע החדש: {released_timeframe.get('from')} עד {released_timeframe.get('to')}. "
+        f"חלון מצטבר זמין: {run['visible_timeframe'].get('from')} עד {run['visible_timeframe'].get('to')}."
+    )
+    config = load_agent_hermes_config(MOSHE_AGENT_ID)
+    return HermesClient(config).investigate(
+        prompt,
+        [],
+        investigation_state=investigation_state,
+        investigation_id=f"{run['run_id']}:revision:{run['revision']}",
+        responding_agent=MOSHE_AGENT_ID,
+        mission_run_id=f"{run['run_id']}:revision:{run['revision']}",
+    )
+
+
 class Handler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=str(ROOT), **kwargs)
@@ -2890,6 +2972,20 @@ class Handler(SimpleHTTPRequestHandler):
                     self.send_json(200, {"workstreams": list_workstreams(investigation_id)})
             except ValueError as exc:
                 self.send_json(400, {"error": str(exc)})
+            return
+        if path.path.startswith("/api/workstreams/") and path.path.endswith("/playback"):
+            workstream_id = unquote(
+                path.path[len("/api/workstreams/"):-len("/playback")].rstrip("/")
+            )
+            try:
+                result = workstream_playback_status(workstream_id)
+            except ValueError as exc:
+                self.send_json(400, {"error": str(exc)})
+                return
+            if result is None:
+                self.send_json(404, {"error": "Workstream not found"})
+            else:
+                self.send_json(200, result)
             return
         artifact_route = parse_artifact_api_path(path.path)
         if artifact_route is not None:
@@ -3099,6 +3195,132 @@ class Handler(SimpleHTTPRequestHandler):
                 self.send_json(404, {"error": "Workstream not found"})
             else:
                 self.send_json(200, archived)
+            return
+        if path.startswith("/api/workstreams/") and path.endswith("/playback/next"):
+            workstream_id = unquote(
+                path[len("/api/workstreams/"):-len("/playback/next")].rstrip("/")
+            )
+            try:
+                length = int(self.headers.get("Content-Length", "0"))
+                if length > 1_000_000:
+                    self.send_json(413, {"error": "Playback payload too large"})
+                    return
+                request = json.loads(self.rfile.read(length).decode("utf-8-sig"))
+                if not isinstance(request, dict):
+                    raise ValueError("Invalid playback payload")
+                workstream = load_workstream(workstream_id)
+                if workstream is None or workstream.get("status") == "archived":
+                    self.send_json(404, {"error": "Workstream not found"})
+                    return
+                existing = find_workstream_run(SCENARIO_RUNS_DIR, workstream_id)
+                claimed_revision = None
+                if existing is None:
+                    manifest = prepared_playback_manifest()
+                    if manifest is None:
+                        raise LookupError("Prepared scenario not found")
+                    run, _ = start_scenario_run(
+                        SCENARIO_MANIFESTS_DIR,
+                        SCENARIO_RUNS_DIR,
+                        {
+                            "scenario_id": manifest["scenario_id"],
+                            "version": manifest["version"],
+                            "workstream_id": workstream_id,
+                            "investigation_id": workstream["investigation_id"],
+                            "idempotency_key": request.get("idempotency_key"),
+                        },
+                        scenario_workstream_exists,
+                    )
+                    released_timeframe = {
+                        "from": run["current_stage"]["from"],
+                        "to": run["current_stage"]["to"],
+                        "from_inclusive": True,
+                        "to_exclusive": True,
+                    }
+                    claimed_revision = int(run["revision"])
+                elif (
+                    existing.get("transition_history")
+                    and existing["transition_history"][0].get("idempotency_key")
+                    == request.get("idempotency_key")
+                ):
+                    manifest = get_manifest(
+                        SCENARIO_MANIFESTS_DIR,
+                        existing["scenario_id"],
+                        existing["scenario_version"],
+                    )
+                    if manifest is None:
+                        raise LookupError("Scenario not found")
+                    first = manifest["stages"][0]
+                    run = existing
+                    released_timeframe = {
+                        "from": first["from"],
+                        "to": first["to"],
+                        "from_inclusive": True,
+                        "to_exclusive": True,
+                    }
+                    claimed_revision = 1
+                else:
+                    run, _ = transition_scenario_run(
+                        SCENARIO_MANIFESTS_DIR,
+                        SCENARIO_RUNS_DIR,
+                        existing["run_id"],
+                        request,
+                        "advance",
+                    )
+                    if run is None:
+                        raise LookupError("Scenario run not found")
+                    released_timeframe = {
+                        "from": run["current_stage"]["from"],
+                        "to": run["current_stage"]["to"],
+                        "from_inclusive": True,
+                        "to_exclusive": True,
+                    }
+                    claimed_revision = int(run["revision"])
+                current = load_scenario_run(SCENARIO_RUNS_DIR, run["run_id"])
+                if current is None:
+                    raise LookupError("Scenario run not found")
+                write_playback_visibility(SCENARIO_RUNS_DIR, current)
+                _, claimed = claim_reevaluation(
+                    SCENARIO_RUNS_DIR, run["run_id"], claimed_revision
+                )
+                moshe_result = None
+                if claimed:
+                    try:
+                        moshe_result = run_moshe_playback_reevaluation(
+                            run, released_timeframe
+                        )
+                        finish_reevaluation(
+                            SCENARIO_RUNS_DIR, run["run_id"], claimed_revision, "completed"
+                        )
+                    except Exception as exc:
+                        finish_reevaluation(
+                            SCENARIO_RUNS_DIR,
+                            run["run_id"],
+                            claimed_revision,
+                            "failed",
+                            str(exc),
+                        )
+                        self.send_json(502, {
+                            "error": str(exc),
+                            "run": run_with_next_stage(SCENARIO_MANIFESTS_DIR, run),
+                            "moshe_triggered": True,
+                        })
+                        return
+                self.send_json(200, {
+                    "run": run_with_next_stage(SCENARIO_MANIFESTS_DIR, run),
+                    "released_timeframe": released_timeframe,
+                    "moshe_triggered": claimed,
+                    "moshe_result": moshe_result,
+                })
+            except PlaybackConflictError as exc:
+                self.send_json(409, {
+                    "error": str(exc), "current_revision": exc.current_revision,
+                })
+            except LookupError as exc:
+                self.send_json(409, {"error": str(exc)})
+            except ValueError as exc:
+                self.send_json(400, {"error": str(exc)})
+            except Exception as exc:
+                self.send_json(502, {"error": str(exc)})
             return
         if path == "/api/saved-question":
             try:
