@@ -38,6 +38,9 @@ button { cursor: pointer; }
 .intelligence-mode-control { display: inline-flex; align-items: center; gap: 7px; min-width: 0; }
 .intelligence-mode-control select { min-height: 30px; border: 1px solid rgba(146,170,205,.42); border-radius: 8px; background: #10141b; color: var(--ink); padding: 3px 9px; font: inherit; font-size: 13px; font-weight: 700; }
 .intelligence-period { color: var(--muted); font-size: 12px; font-weight: 700; direction: ltr; white-space: nowrap; }
+.playback-agent-status { color: var(--blue); font-size: 12px; font-weight: 700; white-space: nowrap; }
+.playback-agent-status.failed { color: #f0883e; }
+.playback-agent-status[hidden] { display: none; }
 .investigation-switcher { min-width: 0; justify-self: center; width: min(560px, 100%); display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 10px; }
 .investigation-switcher label { color: var(--muted); font-size: 11px; font-weight: 800; text-align: right; white-space: nowrap; }
 .investigation-workgroup { min-width: 0; display: grid; grid-template-columns: minmax(190px, 250px) auto minmax(0, 1fr); align-items: center; gap: 8px; }

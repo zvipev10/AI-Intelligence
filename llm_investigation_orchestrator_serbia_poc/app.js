@@ -233,6 +233,7 @@ const state = {
   workstreamLoadToken: 0,
   workstreamPlayback: {},
   investigationPlayback: null,
+  playbackPollToken: 0,
   playbackAdvancing: new Set(),
   pendingMosheWorkstreamProposal: null,
   activeConversationMemberId: null,
@@ -269,6 +270,7 @@ const workstreamMenu = document.getElementById("workstreamMenu");
 const playbackNextButton = document.getElementById("playbackNextButton");
 const intelligenceModeSelect = document.getElementById("intelligenceModeSelect");
 const intelligencePeriod = document.getElementById("intelligencePeriod");
+const playbackAgentStatus = document.getElementById("playbackAgentStatus");
 const workstreamComposerMode = document.getElementById("workstreamComposerMode");
 const workstreamComposerCancel = document.getElementById("workstreamComposerCancel");
 const selectedLayersButton = document.getElementById("selectedLayersButton");
@@ -2399,7 +2401,16 @@ function renderInvestigationPlayback() {
     ? `${formatPlaybackTime(timeframe.from)}–${formatPlaybackTime(timeframe.to)}`
     : "";
   const next = playbackNextStage(state.investigationPlayback);
+  const reevaluation = playback?.run?.reevaluation;
+  const processing = reevaluation?.status === "running";
+  if (playbackAgentStatus) {
+    playbackAgentStatus.hidden = !processing && reevaluation?.status !== "failed";
+    playbackAgentStatus.classList.toggle("failed", reevaluation?.status === "failed");
+    playbackAgentStatus.textContent = processing ? "משה מעבד…" : "העיבוד של משה נכשל";
+    playbackAgentStatus.title = reevaluation?.error || "";
+  }
   playbackNextButton.hidden = mode !== "real_time" || !next?.timeframe;
+  playbackNextButton.disabled = processing;
   if (!next?.timeframe) return;
   const nextTimeframe = next.timeframe;
   const tooltip = `פרק הזמן של השלב הבא: ${formatPlaybackTime(nextTimeframe.from)}–${formatPlaybackTime(nextTimeframe.to)}`;
@@ -2418,7 +2429,45 @@ async function fetchInvestigationPlayback() {
   if (!response.ok) throw new Error(payload.error || "טעינת מצב התרחיש נכשלה");
   state.investigationPlayback = payload;
   renderInvestigationPlayback();
+  if (payload?.run?.reevaluation?.status === "running") {
+    void pollMoshePlaybackReevaluation();
+  }
   return payload;
+}
+
+async function pollMoshePlaybackReevaluation() {
+  const token = ++state.playbackPollToken;
+  const investigationId = String(state.investigationId || "").trim();
+  while (token === state.playbackPollToken && investigationId === String(state.investigationId || "").trim()) {
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    if (token !== state.playbackPollToken) return;
+    try {
+      const response = await fetch(
+        `/api/playback?investigation_id=${encodeURIComponent(investigationId)}`,
+        { cache: "no-store" }
+      );
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "טעינת מצב התרחיש נכשלה");
+      state.investigationPlayback = payload;
+      renderInvestigationPlayback();
+      const status = payload?.run?.reevaluation?.status;
+      if (status !== "running") {
+        if (status === "completed") {
+          workstreamMessage("<p>משה סיים לעבד את פרוסת המידע החדשה.</p>");
+        } else if (status === "failed") {
+          workstreamMessage(`<p>הטווח עודכן, אך העיבוד של משה נכשל.</p><div class="answer-callout">${escapeHtml(payload.run.reevaluation.error || "")}</div>`);
+        }
+        return;
+      }
+    } catch (error) {
+      if (token === state.playbackPollToken && playbackAgentStatus) {
+        playbackAgentStatus.hidden = false;
+        playbackAgentStatus.classList.add("failed");
+        playbackAgentStatus.textContent = "לא ניתן לבדוק את מצב משה";
+      }
+      return;
+    }
+  }
 }
 
 async function initializeHistoricalIntelligenceMode() {
@@ -2464,20 +2513,24 @@ async function advanceInvestigationPlayback() {
       run: result.run,
     };
     renderInvestigationPlayback();
-    workstreamMessage("<p>משה קלט את פרוסת המידע החדשה ובחן מחדש את כל האינדיקציות, היעדים והמעקבים הרלוונטיים.</p>");
+    workstreamMessage("<p>הטווח עודכן. משה מעבד כעת את פרוסת המידע החדשה.</p>");
+    if (result.run?.reevaluation?.status === "running") {
+      void pollMoshePlaybackReevaluation();
+    }
   } catch (error) {
     workstreamMessage(
       `<p>לא הצלחתי להתקדם לשלב הבא.</p><div class="answer-callout">${escapeHtml(error.message)}</div>`
     );
   } finally {
-    playbackNextButton.disabled = false;
     playbackNextButton.innerHTML = '<span class="material-symbols-rounded" aria-hidden="true">skip_next</span>';
+    renderInvestigationPlayback();
   }
 }
 
 async function changeIntelligenceMode() {
   if (!intelligenceModeSelect) return;
   const mode = intelligenceModeSelect.value;
+  if (mode !== "real_time") state.playbackPollToken += 1;
   intelligenceModeSelect.disabled = true;
   try {
     const response = await fetch("/api/playback/mode", {

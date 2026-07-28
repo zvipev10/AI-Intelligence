@@ -372,6 +372,9 @@ def find_active_run(directory: Path) -> dict | None:
 
 def run_with_next_stage(manifests_dir: Path, payload: dict) -> dict:
     result = public_run(payload)
+    reevaluations = payload.get("_reevaluations") or {}
+    reevaluation = reevaluations.get(str(payload.get("revision")))
+    result["reevaluation"] = dict(reevaluation) if isinstance(reevaluation, dict) else None
     manifest = get_manifest(
         manifests_dir, payload.get("scenario_id") or "", payload.get("scenario_version")
     )

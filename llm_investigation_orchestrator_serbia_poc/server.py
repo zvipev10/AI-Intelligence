@@ -11,6 +11,7 @@ import sys
 import time
 import secrets
 import subprocess
+import threading
 from collections import Counter, defaultdict
 from datetime import datetime, timezone
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
@@ -2930,6 +2931,29 @@ def run_moshe_playback_reevaluation(run: dict, released_timeframe: dict) -> dict
     )
 
 
+def complete_moshe_playback_reevaluation(
+    run: dict, released_timeframe: dict, revision: int
+) -> None:
+    try:
+        run_moshe_playback_reevaluation(run, released_timeframe)
+        finish_reevaluation(SCENARIO_RUNS_DIR, run["run_id"], revision, "completed")
+    except Exception as exc:
+        finish_reevaluation(
+            SCENARIO_RUNS_DIR, run["run_id"], revision, "failed", str(exc)
+        )
+
+
+def start_moshe_playback_reevaluation(
+    run: dict, released_timeframe: dict, revision: int
+) -> None:
+    threading.Thread(
+        target=complete_moshe_playback_reevaluation,
+        args=(dict(run), dict(released_timeframe), revision),
+        daemon=True,
+        name=f"moshe-playback-{run['run_id']}-{revision}",
+    ).start()
+
+
 class Handler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=str(ROOT), **kwargs)
@@ -3262,34 +3286,15 @@ class Handler(SimpleHTTPRequestHandler):
                 _, claimed = claim_reevaluation(
                     SCENARIO_RUNS_DIR, run["run_id"], claimed_revision
                 )
-                moshe_result = None
                 if claimed:
-                    try:
-                        moshe_result = run_moshe_playback_reevaluation(
-                            run, released_timeframe
-                        )
-                        finish_reevaluation(
-                            SCENARIO_RUNS_DIR, run["run_id"], claimed_revision, "completed"
-                        )
-                    except Exception as exc:
-                        finish_reevaluation(
-                            SCENARIO_RUNS_DIR,
-                            run["run_id"],
-                            claimed_revision,
-                            "failed",
-                            str(exc),
-                        )
-                        self.send_json(502, {
-                            "error": str(exc),
-                            "run": run_with_next_stage(SCENARIO_MANIFESTS_DIR, run),
-                            "moshe_triggered": True,
-                        })
-                        return
+                    start_moshe_playback_reevaluation(
+                        run, released_timeframe, claimed_revision
+                    )
+                current = load_scenario_run(SCENARIO_RUNS_DIR, run["run_id"]) or run
                 self.send_json(200, {
-                    "run": run_with_next_stage(SCENARIO_MANIFESTS_DIR, run),
+                    "run": run_with_next_stage(SCENARIO_MANIFESTS_DIR, current),
                     "released_timeframe": released_timeframe,
                     "moshe_triggered": claimed,
-                    "moshe_result": moshe_result,
                 })
             except PlaybackConflictError as exc:
                 self.send_json(409, {
@@ -3536,34 +3541,15 @@ class Handler(SimpleHTTPRequestHandler):
                 _, claimed = claim_reevaluation(
                     SCENARIO_RUNS_DIR, run["run_id"], claimed_revision
                 )
-                moshe_result = None
                 if claimed:
-                    try:
-                        moshe_result = run_moshe_playback_reevaluation(
-                            run, released_timeframe
-                        )
-                        finish_reevaluation(
-                            SCENARIO_RUNS_DIR, run["run_id"], claimed_revision, "completed"
-                        )
-                    except Exception as exc:
-                        finish_reevaluation(
-                            SCENARIO_RUNS_DIR,
-                            run["run_id"],
-                            claimed_revision,
-                            "failed",
-                            str(exc),
-                        )
-                        self.send_json(502, {
-                            "error": str(exc),
-                            "run": run_with_next_stage(SCENARIO_MANIFESTS_DIR, run),
-                            "moshe_triggered": True,
-                        })
-                        return
+                    start_moshe_playback_reevaluation(
+                        run, released_timeframe, claimed_revision
+                    )
+                current = load_scenario_run(SCENARIO_RUNS_DIR, run["run_id"]) or run
                 self.send_json(200, {
-                    "run": run_with_next_stage(SCENARIO_MANIFESTS_DIR, run),
+                    "run": run_with_next_stage(SCENARIO_MANIFESTS_DIR, current),
                     "released_timeframe": released_timeframe,
                     "moshe_triggered": claimed,
-                    "moshe_result": moshe_result,
                 })
             except PlaybackConflictError as exc:
                 self.send_json(409, {
