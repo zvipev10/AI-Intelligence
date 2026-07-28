@@ -2396,13 +2396,13 @@ function renderInvestigationPlayback() {
     ? playback?.run?.visible_timeframe
     : playback?.full_timeframe;
   intelligencePeriod.textContent = timeframe?.from && timeframe?.to
-    ? `${formatPlaybackTime(timeframe.from)}–${formatPlaybackTime(timeframe.to)} UTC`
+    ? `${formatPlaybackTime(timeframe.from)}–${formatPlaybackTime(timeframe.to)}`
     : "";
   const next = playbackNextStage(state.investigationPlayback);
   playbackNextButton.hidden = mode !== "real_time" || !next?.timeframe;
   if (!next?.timeframe) return;
   const nextTimeframe = next.timeframe;
-  const tooltip = `פרק הזמן של השלב הבא: ${formatPlaybackTime(nextTimeframe.from)}–${formatPlaybackTime(nextTimeframe.to)} UTC`;
+  const tooltip = `פרק הזמן של השלב הבא: ${formatPlaybackTime(nextTimeframe.from)}–${formatPlaybackTime(nextTimeframe.to)}`;
   playbackNextButton.title = tooltip;
   playbackNextButton.setAttribute("aria-label", `השלב הבא. ${tooltip}`);
 }
@@ -2453,7 +2453,7 @@ async function advanceInvestigationPlayback() {
     );
   } finally {
     playbackNextButton.disabled = false;
-    playbackNextButton.textContent = "←";
+    playbackNextButton.innerHTML = '<span class="material-symbols-rounded" aria-hidden="true">skip_next</span>';
   }
 }
 
@@ -2488,7 +2488,7 @@ function playbackButtonHtml(workstreamId, playback) {
   const next = playbackNextStage(playback);
   if (!next?.timeframe) return "";
   const timeframe = next.timeframe;
-  const tooltip = `פרק הזמן של השלב הבא: ${formatPlaybackTime(timeframe.from)}–${formatPlaybackTime(timeframe.to)} UTC`;
+  const tooltip = `פרק הזמן של השלב הבא: ${formatPlaybackTime(timeframe.from)}–${formatPlaybackTime(timeframe.to)}`;
   const busy = state.playbackAdvancing.has(workstreamId);
   return `<button type="button" class="playback-next-button"
     data-playback-next="${escapeHtml(workstreamId)}"
