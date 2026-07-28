@@ -83,7 +83,16 @@ class WorkstreamUiTests(unittest.TestCase):
         self.assertIn("investigation_id: state.investigationId", self.app)
         self.assertIn("advanceInvestigationPlayback", self.app)
         self.assertIn("changeIntelligenceMode", self.app)
+        self.assertIn("initializeHistoricalIntelligenceMode", self.app)
         self.assertIn(".playback-header-button", self.styles)
+
+    def test_boot_initializes_historical_mode_before_loading_server_state(self):
+        boot_start = self.app.index("async function boot()")
+        initialize = self.app.index(
+            "await initializeHistoricalIntelligenceMode();", boot_start
+        )
+        load_workstreams = self.app.index("await loadWorkstreams();", boot_start)
+        self.assertLess(initialize, load_workstreams)
 
     def test_reopened_workstream_shows_active_artifact_details(self):
         self.assertIn("function workstreamArtifactHtml(workstream)", self.app)

@@ -2421,6 +2421,24 @@ async function fetchInvestigationPlayback() {
   return payload;
 }
 
+async function initializeHistoricalIntelligenceMode() {
+  const investigationId = String(state.investigationId || "").trim();
+  if (!investigationId) return null;
+  const response = await fetch("/api/playback/mode", {
+    method: "POST",
+    headers: { "Content-Type": "application/json; charset=utf-8" },
+    body: JSON.stringify({
+      investigation_id: investigationId,
+      mode: "historical",
+    }),
+  });
+  const payload = await response.json();
+  if (!response.ok) throw new Error(payload.error || "אתחול מצב המידע נכשל");
+  state.investigationPlayback = payload;
+  renderInvestigationPlayback();
+  return payload;
+}
+
 async function advanceInvestigationPlayback() {
   if (!playbackNextButton || playbackNextButton.disabled) return;
   const playback = state.investigationPlayback || await fetchInvestigationPlayback();
@@ -4743,6 +4761,7 @@ renderInvestigationSelector();
 async function boot() {
   initMap();
   await loadLayerCatalog();
+  await initializeHistoricalIntelligenceMode();
   await loadWorkstreams();
   await loadInvestigationMemory({ restoreLayers: true });
   let runtimeStatus = null;
