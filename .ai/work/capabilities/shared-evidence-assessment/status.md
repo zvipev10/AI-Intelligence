@@ -6,11 +6,11 @@ Collaborative Scenario Playback
 
 ## Current phase
 
-Desktop workstream indicator production validation
+Workstream indicator typography deployment
 
 ## Overall status
 
-Checkpoint 009 desktop indicator recovery is deployed and verified on the VM
+Checkpoint 010 workstream indicator typography is validated locally and awaiting VM deployment
 
 ## Accepted direction captured
 
@@ -38,6 +38,8 @@ Checkpoint 009 desktop indicator recovery is deployed and verified on the VM
 
 ## Latest change
 
+- The upper workstream indicator now uses the same `13px` font size as chat messages.
+- Full test discovery passes: 84 tests.
 - Desktop sessions with an empty local workstream lookup now adopt the server's most recently active workstream investigation.
 - Exact investigation matches remain authoritative.
 - Full test discovery passes: 83 tests.
@@ -52,7 +54,7 @@ Checkpoint 009 desktop indicator recovery is deployed and verified on the VM
 
 ## Next expected artifact
 
-Product interaction confirmation on desktop, then final validation issue #43.
+Checkpoint 010 validation and VM deployment, then final validation issue #43.
 
 ## Parent and child issues
 
@@ -94,3 +96,4 @@ Product interaction confirmation on desktop, then final validation issue #43.
 - Teammate selection-toggle checkpoint: `checkpoint-007.md`
 - Workstream summary deduplication checkpoint: `checkpoint-008.md`
 - Desktop workstream indicator checkpoint: `checkpoint-009.md`
+- Workstream indicator typography checkpoint: `checkpoint-010.md`

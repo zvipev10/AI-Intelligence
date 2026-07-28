@@ -106,6 +106,15 @@ class WorkstreamUiTests(unittest.TestCase):
         self.assertIn(".workstream-control[hidden]", self.styles)
         self.assertIn(".workstream-menu[hidden]", self.styles)
 
+    def test_workstream_indicator_uses_chat_font_size(self):
+        self.assertIn(".message {", self.styles)
+        self.assertIn("font-size: 13px", self.styles.split(".message {", 1)[1].split("}", 1)[0])
+        self.assertIn(".workstream-indicator {", self.styles)
+        self.assertIn(
+            "font-size: 13px",
+            self.styles.split(".workstream-indicator {", 1)[1].split("}", 1)[0],
+        )
+
     def test_moshe_proposal_is_staged_in_general_chat_state(self):
         self.assertIn("pendingMosheWorkstreamProposal", self.app)
         self.assertIn("workstreamContextForChat(currentTurnMessageId)", self.app)

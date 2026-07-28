@@ -40,7 +40,7 @@ button { cursor: pointer; }
 .investigation-workgroup { min-width: 0; display: grid; grid-template-columns: minmax(190px, 250px) auto minmax(0, 1fr); align-items: center; gap: 8px; }
 .workstream-control { position: relative; }
 .workstream-control[hidden] { display: none; }
-.workstream-indicator { min-height: 30px; display: inline-flex; align-items: center; gap: 5px; border: 1px solid rgba(88,166,255,.38); border-radius: 999px; background: rgba(88,166,255,.08); color: var(--blue); padding: 0 10px; font-size: 11px; font-weight: 850; white-space: nowrap; cursor: pointer; }
+.workstream-indicator { min-height: 30px; display: inline-flex; align-items: center; gap: 5px; border: 1px solid rgba(88,166,255,.38); border-radius: 999px; background: rgba(88,166,255,.08); color: var(--blue); padding: 0 10px; font-size: 13px; font-weight: 850; white-space: nowrap; cursor: pointer; }
 .workstream-indicator:hover, .workstream-indicator:focus-visible { border-color: var(--blue); background: rgba(88,166,255,.15); color: #fff; outline: none; }
 .workstream-indicator-status { color: var(--muted); font-weight: 700; }
 .workstream-indicator-count { min-width: 17px; height: 17px; display: inline-grid; place-items: center; border-radius: 999px; background: rgba(88,166,255,.2); font-size: 10px; }
