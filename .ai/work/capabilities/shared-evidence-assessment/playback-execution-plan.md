@@ -91,4 +91,3 @@ Proposed scope:
 - verify visibility, restart/reopen, reset, agent updates, artifact history, and
   target-bank immutability;
 - publish release evidence and residual risks.
-

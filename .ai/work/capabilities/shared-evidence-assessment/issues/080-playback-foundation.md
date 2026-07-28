@@ -32,4 +32,3 @@ UI before the next slice closes the retrieval boundary.
 - checkpoint reviewed;
 - code and artifacts published;
 - Product owner approves proceeding to Slice 2.
-

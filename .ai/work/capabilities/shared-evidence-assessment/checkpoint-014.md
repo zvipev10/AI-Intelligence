@@ -115,4 +115,3 @@ None for the single-process foundation. Retrieval leakage tests belong to Slice
 
 Approve Slice 1 and, only after a separate explicit confirmation, proceed to
 Slice 2 retrieval visibility enforcement.
-
