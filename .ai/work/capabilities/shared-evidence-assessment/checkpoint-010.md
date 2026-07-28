@@ -31,3 +31,11 @@ None for this CSS-only change.
 ## Recommendation
 
 Deploy after automated validation.
+
+## VM deployment
+
+- Deployed commit `916904f`.
+- UI service: active.
+- Public page serves `styles.css?v=119`.
+- Public stylesheet confirms `.workstream-indicator` uses `font-size: 13px`.
+- Rollback backup: `/opt/serbia-poc-ui-backups/workstream-font-20260728T0343Z`.

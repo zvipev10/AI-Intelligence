@@ -6,11 +6,11 @@ Collaborative Scenario Playback
 
 ## Current phase
 
-Workstream indicator typography deployment
+Workstream indicator typography production validation
 
 ## Overall status
 
-Checkpoint 010 workstream indicator typography is validated locally and awaiting VM deployment
+Checkpoint 010 workstream indicator typography is deployed and verified on the VM
 
 ## Accepted direction captured
 
@@ -54,7 +54,7 @@ Checkpoint 010 workstream indicator typography is validated locally and awaiting
 
 ## Next expected artifact
 
-Checkpoint 010 validation and VM deployment, then final validation issue #43.
+Product visual confirmation, then final validation issue #43.
 
 ## Parent and child issues
 
