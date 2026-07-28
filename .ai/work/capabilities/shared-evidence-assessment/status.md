@@ -6,11 +6,11 @@ Collaborative Scenario Playback
 
 ## Current phase
 
-Workstream indicator typography production validation
+Workstream menu typography correction
 
 ## Overall status
 
-Checkpoint 010 workstream indicator typography is deployed and verified on the VM
+Checkpoint 011 corrects the typography target to the opened workstream menu and is validated locally
 
 ## Accepted direction captured
 
@@ -38,7 +38,7 @@ Checkpoint 010 workstream indicator typography is deployed and verified on the V
 
 ## Latest change
 
-- The upper workstream indicator now uses the same `13px` font size as chat messages.
+- The opened workstream menu now matches chat text sizing; the compact header pill is restored to its original size.
 - Full test discovery passes: 84 tests.
 - Desktop sessions with an empty local workstream lookup now adopt the server's most recently active workstream investigation.
 - Exact investigation matches remain authoritative.
@@ -54,7 +54,7 @@ Checkpoint 010 workstream indicator typography is deployed and verified on the V
 
 ## Next expected artifact
 
-Product visual confirmation, then final validation issue #43.
+Checkpoint 011 validation and VM deployment, then final validation issue #43.
 
 ## Parent and child issues
 
@@ -97,3 +97,4 @@ Product visual confirmation, then final validation issue #43.
 - Workstream summary deduplication checkpoint: `checkpoint-008.md`
 - Desktop workstream indicator checkpoint: `checkpoint-009.md`
 - Workstream indicator typography checkpoint: `checkpoint-010.md`
+- Workstream menu typography correction: `checkpoint-011.md`
