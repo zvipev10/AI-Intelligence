@@ -10,11 +10,22 @@ class MemberUiRegressionTests(unittest.TestCase):
     def setUpClass(cls):
         cls.app = (ROOT / "app.js").read_text(encoding="utf-8")
         cls.index = (ROOT / "index.html").read_text(encoding="utf-8")
+        cls.styles = (ROOT / "styles.css").read_text(encoding="utf-8")
 
     def test_member_container_and_renderer_are_both_present(self):
         self.assertIn('id="michlolTeam"', self.index)
         self.assertIn("function renderMichlolTeam()", self.app)
         self.assertIn("renderMichlolTeam();", self.app)
+
+    def test_member_icons_have_separated_click_targets(self):
+        self.assertIn(".michlol-team {", self.styles)
+        self.assertIn("gap: 9px", self.styles.split(".michlol-team {", 1)[1].split("}", 1)[0])
+        member_rule = self.styles.split(".michlol-member {", 1)[1].split("}", 1)[0]
+        self.assertIn("min-width: 34px", member_rule)
+        self.assertIn("min-height: 34px", member_rule)
+        more_rule = self.styles.split(".michlol-more summary {", 1)[1].split("}", 1)[0]
+        self.assertIn("width: 34px", more_rule)
+        self.assertIn("height: 34px", more_rule)
 
     def test_member_roster_includes_moshe(self):
         self.assertIn('displayName: "משה"', self.app)

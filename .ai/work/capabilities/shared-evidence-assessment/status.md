@@ -6,11 +6,11 @@ Collaborative Scenario Playback
 
 ## Current phase
 
-Workstream menu typography correction
+Team member icon spacing
 
 ## Overall status
 
-Checkpoint 011 workstream menu typography correction is deployed and verified on the VM
+Checkpoint 012 team-member icon spacing is validated locally and awaits VM deployment
 
 ## Accepted direction captured
 
@@ -38,6 +38,8 @@ Checkpoint 011 workstream menu typography correction is deployed and verified on
 
 ## Latest change
 
+- The top team roster now has larger gaps and `34px` minimum click targets.
+- Full test discovery passes: 85 tests.
 - The opened workstream menu now matches chat text sizing; the compact header pill is restored to its original size.
 - Full test discovery passes: 84 tests.
 - Desktop sessions with an empty local workstream lookup now adopt the server's most recently active workstream investigation.
@@ -54,7 +56,7 @@ Checkpoint 011 workstream menu typography correction is deployed and verified on
 
 ## Next expected artifact
 
-Product visual confirmation, then final validation issue #43.
+Checkpoint 012 validation and VM deployment, then final validation issue #43.
 
 ## Parent and child issues
 
@@ -98,3 +100,4 @@ Product visual confirmation, then final validation issue #43.
 - Desktop workstream indicator checkpoint: `checkpoint-009.md`
 - Workstream indicator typography checkpoint: `checkpoint-010.md`
 - Workstream menu typography correction: `checkpoint-011.md`
+- Team member icon spacing: `checkpoint-012.md`

@@ -61,17 +61,17 @@ button { cursor: pointer; }
 .investigation-option { width: 100%; min-width: 0; min-height: 34px; display: flex; align-items: center; justify-content: space-between; gap: 9px; border: 1px solid transparent; border-radius: 8px; background: transparent; color: var(--ink); padding: 6px 8px; text-align: right; font-size: 13px; cursor: pointer; }
 .investigation-option:hover, .investigation-option:focus-visible, .investigation-option.active { border-color: rgba(88,166,255,.36); background: rgba(88,166,255,.12); outline: none; }
 .investigation-option small { color: var(--muted); font-size: 10px; font-weight: 700; }
-.michlol-team { min-width: 0; display: flex; align-items: center; gap: 5px; flex-wrap: nowrap; color: var(--muted); }
+.michlol-team { min-width: 0; display: flex; align-items: center; gap: 9px; flex-wrap: nowrap; color: var(--muted); }
 .michlol-title { margin-left: 2px; color: var(--muted); font-size: 10px; font-weight: 900; white-space: nowrap; }
-.michlol-member { min-width: 0; max-width: 76px; display: inline-flex; align-items: center; gap: 4px; padding: 2px 5px 2px 6px; border: 1px solid rgba(146,170,205,.25); border-radius: 999px; background: rgba(255,255,255,.035); color: var(--ink); font-size: 11px; font-weight: 800; font-family: inherit; white-space: nowrap; cursor: pointer; transition: background .15s, border-color .15s, color .15s, box-shadow .15s; }
+.michlol-member { min-width: 34px; min-height: 34px; max-width: 76px; display: inline-flex; align-items: center; justify-content: center; gap: 5px; padding: 4px 7px; border: 1px solid rgba(146,170,205,.25); border-radius: 999px; background: rgba(255,255,255,.035); color: var(--ink); font-size: 11px; font-weight: 800; font-family: inherit; white-space: nowrap; cursor: pointer; transition: background .15s, border-color .15s, color .15s, box-shadow .15s; }
 .michlol-member:hover, .michlol-member:focus-visible { border-color: rgba(88,166,255,.46); background: rgba(88,166,255,.12); color: #fff; outline: none; }
 .michlol-member.active { border-color: rgba(138,180,248,.82); background: rgba(88,166,255,.18); color: var(--blue); box-shadow: 0 0 0 1px rgba(88,166,255,.18); }
-.michlol-avatar { position: relative; display: inline-grid; place-items: center; flex: 0 0 auto; width: 22px; height: 22px; overflow: hidden; border-radius: 50%; border: 1px solid rgba(232,234,237,.2); background: #26303b; color: var(--blue); font-size: 10px; font-weight: 900; }
+.michlol-avatar { position: relative; display: inline-grid; place-items: center; flex: 0 0 auto; width: 24px; height: 24px; overflow: hidden; border-radius: 50%; border: 1px solid rgba(232,234,237,.2); background: #26303b; color: var(--blue); font-size: 10px; font-weight: 900; }
 .michlol-avatar img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .michlol-initial { line-height: 1; }
 .michlol-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .michlol-more { position: relative; flex: 0 0 auto; }
-.michlol-more summary { list-style: none; display: inline-grid; place-items: center; width: 28px; height: 24px; border: 1px solid rgba(146,170,205,.25); border-radius: 999px; background: rgba(255,255,255,.035); color: var(--muted); font-size: 15px; font-weight: 900; line-height: 1; cursor: pointer; }
+.michlol-more summary { list-style: none; display: inline-grid; place-items: center; width: 34px; height: 34px; border: 1px solid rgba(146,170,205,.25); border-radius: 999px; background: rgba(255,255,255,.035); color: var(--muted); font-size: 15px; font-weight: 900; line-height: 1; cursor: pointer; }
 .michlol-more summary::-webkit-details-marker { display: none; }
 .michlol-more summary:hover, .michlol-more summary:focus-visible { background: rgba(255,255,255,.08); color: var(--ink); outline: none; }
 .michlol-more-list { position: absolute; z-index: 80; top: calc(100% + 6px); right: 0; display: grid; gap: 5px; min-width: 88px; padding: 6px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); box-shadow: 0 18px 46px rgba(0,0,0,.42); }
@@ -452,6 +452,7 @@ th { position: sticky; top: 0; z-index: 1; background: #202530; }
   .investigation-switcher { width: min(470px, 100%); }
   .investigation-workgroup { grid-template-columns: minmax(170px, 220px) auto minmax(0, 1fr); }
   .michlol-member { max-width: 66px; }
+  .michlol-team { gap: 7px; }
   .workspace { height: calc(100dvh - 68px); grid-template-columns: minmax(220px, var(--chat-width)) 8px minmax(340px, var(--result-width)); padding: 8px; gap: 6px; }
   h2 { font-size: 14px; }
   .message { font-size: 12px; }
@@ -471,7 +472,7 @@ th { position: sticky; top: 0; z-index: 1; background: #202530; }
   .investigation-switcher { grid-template-columns: 1fr; gap: 6px; }
   .investigation-workgroup { grid-template-columns: minmax(0, 1fr) auto; gap: 6px; }
   .michlol-team { grid-column: 1 / -1; }
-  .michlol-team { gap: 4px; }
+  .michlol-team { gap: 8px; }
   .michlol-member { max-width: none; }
   .app-header h1 { font-size: 18px; line-height: 1.25; overflow-wrap: anywhere; }
   .app-header p { display: none; }
