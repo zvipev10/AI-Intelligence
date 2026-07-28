@@ -2513,7 +2513,11 @@ async function advanceInvestigationPlayback() {
       run: result.run,
     };
     renderInvestigationPlayback();
-    workstreamMessage("<p>הטווח עודכן. משה מעבד כעת את פרוסת המידע החדשה.</p>");
+    if (result.moshe_triggered) {
+      workstreamMessage("<p>הטווח עודכן. משה מעבד כעת את פרוסת המידע החדשה מול המעקבים הפעילים.</p>");
+    } else if (result.moshe_skipped_reason === "no_active_workstreams") {
+      workstreamMessage("<p>הטווח עודכן. אין מעקבים פעילים, לכן לא הופעל עיבוד של משה.</p>");
+    }
     if (result.run?.reevaluation?.status === "running") {
       void pollMoshePlaybackReevaluation();
     }

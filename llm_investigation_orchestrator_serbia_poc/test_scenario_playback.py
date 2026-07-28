@@ -398,6 +398,27 @@ class ScenarioPlaybackApiTests(unittest.TestCase):
         self.assertEqual(200, status)
         self.assertEqual(2, resumed["run"]["revision"])
 
+    def test_investigation_next_skips_moshe_without_active_workstreams(self):
+        investigation_id = "investigation-without-workstreams"
+        status, real_time = self.request("POST", "/api/playback/mode", {
+            "investigation_id": investigation_id,
+            "mode": "real_time",
+        })
+        self.assertEqual(200, status)
+
+        with patch.object(server, "run_moshe_playback_reevaluation") as moshe:
+            status, result = self.request("POST", "/api/playback/next", {
+                "investigation_id": investigation_id,
+                "expected_revision": real_time["run"]["revision"],
+                "idempotency_key": "no-workstreams",
+            })
+
+        self.assertEqual(200, status)
+        self.assertFalse(result["moshe_triggered"])
+        self.assertEqual("no_active_workstreams", result["moshe_skipped_reason"])
+        self.assertIsNone(result["run"]["reevaluation"])
+        moshe.assert_not_called()
+
     def test_final_stage_requires_explicit_complete(self):
         run = self.start()
         _, second = self.request(

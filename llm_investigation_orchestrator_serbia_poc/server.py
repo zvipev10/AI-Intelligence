@@ -2892,7 +2892,7 @@ def run_moshe_playback_reevaluation(run: dict, released_timeframe: dict) -> dict
         ))
     else:
         for workstream in list_workstreams(run["investigation_id"]):
-            if workstream.get("status") == "archived":
+            if workstream.get("status") != "active":
                 continue
             workstream_contexts.append(bounded_workstream_context(
                 {
@@ -2928,6 +2928,17 @@ def run_moshe_playback_reevaluation(run: dict, released_timeframe: dict) -> dict
         investigation_id=f"{run['run_id']}:revision:{run['revision']}",
         responding_agent=MOSHE_AGENT_ID,
         mission_run_id=f"{run['run_id']}:revision:{run['revision']}",
+    )
+
+
+def playback_has_active_workstreams(run: dict) -> bool:
+    workstream_id = run.get("workstream_id")
+    if workstream_id:
+        workstream = load_workstream(workstream_id)
+        return bool(workstream and workstream.get("status") == "active")
+    return any(
+        workstream.get("status") == "active"
+        for workstream in list_workstreams(run["investigation_id"])
     )
 
 
@@ -3283,9 +3294,11 @@ class Handler(SimpleHTTPRequestHandler):
                 if current is None:
                     raise LookupError("Scenario run not found")
                 write_playback_visibility(SCENARIO_RUNS_DIR, current)
-                _, claimed = claim_reevaluation(
-                    SCENARIO_RUNS_DIR, run["run_id"], claimed_revision
-                )
+                claimed = False
+                if playback_has_active_workstreams(run):
+                    _, claimed = claim_reevaluation(
+                        SCENARIO_RUNS_DIR, run["run_id"], claimed_revision
+                    )
                 if claimed:
                     start_moshe_playback_reevaluation(
                         run, released_timeframe, claimed_revision
@@ -3295,6 +3308,7 @@ class Handler(SimpleHTTPRequestHandler):
                     "run": run_with_next_stage(SCENARIO_MANIFESTS_DIR, current),
                     "released_timeframe": released_timeframe,
                     "moshe_triggered": claimed,
+                    "moshe_skipped_reason": None if claimed else "no_active_workstreams",
                 })
             except PlaybackConflictError as exc:
                 self.send_json(409, {
@@ -3538,9 +3552,11 @@ class Handler(SimpleHTTPRequestHandler):
                 if current is None:
                     raise LookupError("Scenario run not found")
                 write_playback_visibility(SCENARIO_RUNS_DIR, current)
-                _, claimed = claim_reevaluation(
-                    SCENARIO_RUNS_DIR, run["run_id"], claimed_revision
-                )
+                claimed = False
+                if playback_has_active_workstreams(run):
+                    _, claimed = claim_reevaluation(
+                        SCENARIO_RUNS_DIR, run["run_id"], claimed_revision
+                    )
                 if claimed:
                     start_moshe_playback_reevaluation(
                         run, released_timeframe, claimed_revision
@@ -3550,6 +3566,7 @@ class Handler(SimpleHTTPRequestHandler):
                     "run": run_with_next_stage(SCENARIO_MANIFESTS_DIR, current),
                     "released_timeframe": released_timeframe,
                     "moshe_triggered": claimed,
+                    "moshe_skipped_reason": None if claimed else "no_active_workstreams",
                 })
             except PlaybackConflictError as exc:
                 self.send_json(409, {
