@@ -33,3 +33,12 @@ None for this CSS-only correction.
 ## Recommendation
 
 Deploy after automated validation.
+
+## VM deployment
+
+- Deployed commit `4c65169`.
+- UI service: active.
+- Public page serves `styles.css?v=120`.
+- Public stylesheet confirms workstream menu titles use `13px`.
+- Public stylesheet confirms the compact header indicator is restored to `11px`.
+- Rollback backup: `/opt/serbia-poc-ui-backups/workstream-menu-font-20260728T0347Z`.

@@ -10,7 +10,7 @@ Workstream menu typography correction
 
 ## Overall status
 
-Checkpoint 011 corrects the typography target to the opened workstream menu and is validated locally
+Checkpoint 011 workstream menu typography correction is deployed and verified on the VM
 
 ## Accepted direction captured
 
@@ -54,7 +54,7 @@ Checkpoint 011 corrects the typography target to the opened workstream menu and 
 
 ## Next expected artifact
 
-Checkpoint 011 validation and VM deployment, then final validation issue #43.
+Product visual confirmation, then final validation issue #43.
 
 ## Parent and child issues
 
