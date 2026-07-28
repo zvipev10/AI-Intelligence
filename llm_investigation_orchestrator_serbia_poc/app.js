@@ -232,6 +232,7 @@ const state = {
   workstreamsLoading: false,
   workstreamLoadToken: 0,
   workstreamPlayback: {},
+  investigationPlayback: null,
   playbackAdvancing: new Set(),
   pendingMosheWorkstreamProposal: null,
   activeConversationMemberId: null,
@@ -265,6 +266,7 @@ const workstreamIndicator = document.getElementById("workstreamIndicator");
 const workstreamIndicatorStatus = document.getElementById("workstreamIndicatorStatus");
 const workstreamIndicatorCount = document.getElementById("workstreamIndicatorCount");
 const workstreamMenu = document.getElementById("workstreamMenu");
+const playbackNextButton = document.getElementById("playbackNextButton");
 const workstreamComposerMode = document.getElementById("workstreamComposerMode");
 const workstreamComposerCancel = document.getElementById("workstreamComposerCancel");
 const selectedLayersButton = document.getElementById("selectedLayersButton");
@@ -2306,6 +2308,10 @@ async function loadWorkstreams() {
     adoptCanonicalWorkstreamInvestigation(payload.canonical_investigation_id);
     state.workstreams = Array.isArray(payload.workstreams) ? payload.workstreams : [];
     renderWorkstreamIndicator();
+    void fetchInvestigationPlayback().catch(() => {
+      state.investigationPlayback = null;
+      renderInvestigationPlayback();
+    });
     return state.workstreams;
   } catch (error) {
     if (token === state.workstreamLoadToken) {
@@ -2377,6 +2383,65 @@ function formatPlaybackTime(value) {
     hour: "2-digit",
     minute: "2-digit",
   });
+}
+
+function renderInvestigationPlayback() {
+  if (!playbackNextButton) return;
+  const next = playbackNextStage(state.investigationPlayback);
+  playbackNextButton.hidden = !next?.timeframe;
+  if (!next?.timeframe) return;
+  const timeframe = next.timeframe;
+  const tooltip = `פרק הזמן של השלב הבא: ${formatPlaybackTime(timeframe.from)}–${formatPlaybackTime(timeframe.to)} UTC`;
+  playbackNextButton.title = tooltip;
+  playbackNextButton.setAttribute("aria-label", `השלב הבא. ${tooltip}`);
+}
+
+async function fetchInvestigationPlayback() {
+  const investigationId = String(state.investigationId || "").trim();
+  if (!investigationId) return null;
+  const response = await fetch(
+    `/api/playback?investigation_id=${encodeURIComponent(investigationId)}`,
+    { cache: "no-store" }
+  );
+  const payload = await response.json();
+  if (!response.ok) throw new Error(payload.error || "טעינת מצב התרחיש נכשלה");
+  state.investigationPlayback = payload;
+  renderInvestigationPlayback();
+  return payload;
+}
+
+async function advanceInvestigationPlayback() {
+  if (!playbackNextButton || playbackNextButton.disabled) return;
+  const playback = state.investigationPlayback || await fetchInvestigationPlayback();
+  const run = playback?.run;
+  playbackNextButton.disabled = true;
+  playbackNextButton.textContent = "משה מעבד…";
+  try {
+    const response = await fetch("/api/playback/next", {
+      method: "POST",
+      headers: { "Content-Type": "application/json; charset=utf-8" },
+      body: JSON.stringify({
+        investigation_id: state.investigationId,
+        expected_revision: run?.revision,
+        idempotency_key: `playback:${state.investigationId}:${run?.revision || 0}:${Date.now()}`,
+      }),
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || "התקדמות התרחיש נכשלה");
+    state.investigationPlayback = {
+      investigation_id: state.investigationId,
+      run: result.run,
+    };
+    renderInvestigationPlayback();
+    workstreamMessage("<p>משה קלט את פרוסת המידע החדשה ובחן מחדש את כל האינדיקציות, היעדים והמעקבים הרלוונטיים.</p>");
+  } catch (error) {
+    workstreamMessage(
+      `<p>לא הצלחתי להתקדם לשלב הבא.</p><div class="answer-callout">${escapeHtml(error.message)}</div>`
+    );
+  } finally {
+    playbackNextButton.disabled = false;
+    playbackNextButton.textContent = "השלב הבא";
+  }
 }
 
 function playbackButtonHtml(workstreamId, playback) {
@@ -4203,6 +4268,7 @@ function resetInvestigation(options = {}) {
   state.workstreams = [];
   state.workstreamsLoading = false;
   state.workstreamPlayback = {};
+  state.investigationPlayback = null;
   state.playbackAdvancing = new Set();
   state.pendingMosheWorkstreamProposal = null;
   state.workstreamComposerMode = false;
@@ -4606,6 +4672,7 @@ promptOptionsButton.addEventListener("click", event => {
   setPromptOptionsOpen(!state.promptOptionsOpen);
 });
 workstreamIndicator?.addEventListener("click", requestWorkstreamUpdate);
+playbackNextButton?.addEventListener("click", advanceInvestigationPlayback);
 workstreamComposerCancel?.addEventListener("click", () => setWorkstreamComposerMode(false));
 selectedLayersButton.addEventListener("click", openQueryLayersModal);
 selectedLayersClear.addEventListener("click", event => {

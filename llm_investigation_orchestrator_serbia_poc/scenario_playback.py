@@ -269,7 +269,7 @@ def visible_timeframe(manifest: dict, stage_index: int) -> dict:
     }
 
 
-def validate_start_request(request: Any) -> tuple[str, int | None, str, str, str]:
+def validate_start_request(request: Any) -> tuple[str, int | None, str | None, str, str]:
     if not isinstance(request, dict):
         raise ValueError("Invalid scenario run payload")
     scenario_id = compact_text(request.get("scenario_id"), 120)
@@ -280,8 +280,8 @@ def validate_start_request(request: Any) -> tuple[str, int | None, str, str, str
         not isinstance(version, int) or isinstance(version, bool) or version < 1
     ):
         raise ValueError("Invalid scenario version")
-    workstream_id = compact_text(request.get("workstream_id"), 160)
-    if not WORKSTREAM_ID_PATTERN.fullmatch(workstream_id):
+    workstream_id = compact_text(request.get("workstream_id"), 160) or None
+    if workstream_id is not None and not WORKSTREAM_ID_PATTERN.fullmatch(workstream_id):
         raise ValueError("Invalid workstream id")
     investigation_id = compact_text(request.get("investigation_id"), 160)
     if not INVESTIGATION_ID_PATTERN.fullmatch(investigation_id):
@@ -298,7 +298,11 @@ def normalize_idempotency_key(value: Any) -> str:
 
 
 def find_existing_run(
-    directory: Path, scenario_id: str, version: int, workstream_id: str
+    directory: Path,
+    scenario_id: str,
+    version: int,
+    workstream_id: str | None,
+    investigation_id: str,
 ) -> dict | None:
     if not directory.exists():
         return None
@@ -309,7 +313,12 @@ def find_existing_run(
             payload
             and payload.get("scenario_id") == scenario_id
             and payload.get("scenario_version") == version
-            and payload.get("workstream_id") == workstream_id
+            and (
+                payload.get("workstream_id") == workstream_id
+                if workstream_id
+                else not payload.get("workstream_id")
+                and payload.get("investigation_id") == investigation_id
+            )
         ):
             matches.append(payload)
     return max(matches, key=lambda item: str(item.get("updated_at_utc") or ""), default=None)
@@ -322,6 +331,21 @@ def find_workstream_run(directory: Path, workstream_id: str) -> dict | None:
     for path in directory.glob("run_*.json"):
         payload = load_run(directory, path.stem)
         if payload and payload.get("workstream_id") == workstream_id:
+            matches.append(payload)
+    return max(matches, key=lambda item: str(item.get("updated_at_utc") or ""), default=None)
+
+
+def find_investigation_run(directory: Path, investigation_id: str) -> dict | None:
+    if not INVESTIGATION_ID_PATTERN.fullmatch(investigation_id or "") or not directory.exists():
+        return None
+    matches = []
+    for path in directory.glob("run_*.json"):
+        payload = load_run(directory, path.stem)
+        if (
+            payload
+            and payload.get("investigation_id") == investigation_id
+            and not payload.get("workstream_id")
+        ):
             matches.append(payload)
     return max(matches, key=lambda item: str(item.get("updated_at_utc") or ""), default=None)
 
@@ -409,11 +433,11 @@ def start_run(
     manifest = get_manifest(manifests_dir, scenario_id, version)
     if manifest is None:
         raise LookupError("Scenario not found")
-    if not workstream_validator(workstream_id, investigation_id):
+    if workstream_id and not workstream_validator(workstream_id, investigation_id):
         raise LookupError("Workstream not found for investigation")
     with _STATE_LOCK:
         existing = find_existing_run(
-            runs_dir, scenario_id, manifest["version"], workstream_id
+            runs_dir, scenario_id, manifest["version"], workstream_id, investigation_id
         )
         if existing is not None:
             return public_run(existing), False

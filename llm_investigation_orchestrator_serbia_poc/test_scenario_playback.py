@@ -344,6 +344,34 @@ class ScenarioPlaybackApiTests(unittest.TestCase):
                 second["released_timeframe"],
             )
 
+    def test_investigation_next_endpoint_releases_once_without_workstream_selection(self):
+        status, initial = self.request(
+            "GET", "/api/playback?investigation_id=investigation-playback"
+        )
+        self.assertEqual(200, status)
+        self.assertIsNone(initial["run"])
+
+        with patch.object(
+            server,
+            "run_moshe_playback_reevaluation",
+            return_value={"answer": "All relevant assessments updated"},
+        ) as moshe:
+            request = {
+                "investigation_id": "investigation-playback",
+                "idempotency_key": "investigation-first",
+            }
+            status, first = self.request("POST", "/api/playback/next", request)
+            self.assertEqual(200, status)
+            self.assertTrue(first["moshe_triggered"])
+            self.assertIsNone(first["run"]["workstream_id"])
+            self.assertEqual("investigation-playback", first["run"]["investigation_id"])
+
+            status, replay = self.request("POST", "/api/playback/next", request)
+            self.assertEqual(200, status)
+            self.assertFalse(replay["moshe_triggered"])
+            self.assertEqual(1, replay["run"]["revision"])
+            self.assertEqual(1, moshe.call_count)
+
     def test_final_stage_requires_explicit_complete(self):
         run = self.start()
         _, second = self.request(
