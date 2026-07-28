@@ -6,11 +6,11 @@ Collaborative Scenario Playback
 
 ## Current phase
 
-Final MVP validation
+Playback foundation checkpoint
 
 ## Overall status
 
-Checkpoint 013 final validation passed on the deployed VM with REC-V2-007215
+Checkpoint 014 timeframe-stage playback foundation is implemented and pending approval
 
 ## Accepted direction captured
 
@@ -25,19 +25,24 @@ Checkpoint 013 final validation passed on the deployed VM with REC-V2-007215
 
 | Role | Status | Required action |
 |---|---|---|
-| Product | Ready | Accept the demonstrated REC-V2-007215 assessment flow. |
-| Development/Architecture | Ready | Accept the server-owned persistence and scoping evidence. |
-| UX | Follow-up | Consider clearer long-running Moshe progress and timeout handling. |
-| QA/Security | Ready | Accept checkpoint 013 and the unchanged target-bank evidence. |
+| Product | Review required | Approve checkpoint 014 before Slice 2 implementation. |
+| Development/Architecture | Review required | Review manifest, API, revision, and idempotency boundaries. |
+| UX | Not active in this slice | Playback controls remain deferred to Slice 3. |
+| QA/Security | Review required | Review persistence, concurrency, and future-stage response boundaries. |
 
 ## Current blockers
 
 - No Phase 1 blocker remains.
-- No final-validation blocker remains for the demonstrated Phase 1 boundary.
+- Slice 2 is blocked on explicit Product confirmation.
 - Broader manifest, adapter, and trigger decisions remain deferred beyond Phase 1.
 
 ## Latest change
 
+- Added a generic scenario artifact containing only scope and ordered timeframe stages.
+- Added persistent start/reopen, advance, complete, and reset APIs.
+- Future stage windows are absent from scenario discovery and run responses.
+- Embedded record IDs and other unsupported manifest fields are rejected.
+- Full Python discovery passes: 93 tests.
 - Final deployed validation passed with `REC-V2-007215`.
 - Proposal remained unpersisted until a distinct explicit confirmation.
 - One revision-1 assessment artifact survived restart and reopen.
@@ -62,7 +67,7 @@ Checkpoint 013 final validation passed on the deployed VM with REC-V2-007215
 
 ## Next expected artifact
 
-Product acceptance or a follow-up issue for long-running Moshe progress UX.
+Product approval of checkpoint 014, followed by a separate confirmation to implement Slice 2.
 
 ## Parent and child issues
 
@@ -82,6 +87,7 @@ Product acceptance or a follow-up issue for long-running Moshe progress UX.
 | #41 | Artifact persistence/API | Accepted; closes with PR #45 | No |
 | #42 | Moshe general-chat integration | Deployed and validated with REC-V2-007215 | No |
 | #43 | Final MVP validation | Completed in checkpoint 013 | No |
+| #80 | Playback persistence/API foundation | Implemented; checkpoint review pending | Yes |
 
 ## Artifact links
 
@@ -108,3 +114,5 @@ Product acceptance or a follow-up issue for long-running Moshe progress UX.
 - Workstream menu typography correction: `checkpoint-011.md`
 - Team member icon spacing: `checkpoint-012.md`
 - Final validation with REC-V2-007215: `checkpoint-013.md`
+- Playback execution plan: `playback-execution-plan.md`
+- Timeframe-stage foundation: `checkpoint-014.md`

@@ -34,6 +34,20 @@ Current local working tree expectation:
 
 ## Latest Update: REC-V2-007215 Final Validation
 
+### Playback foundation follow-up — 2026-07-28
+
+Checkpoint 014 adds an inactive generic playback foundation:
+
+- strict scenario manifests contain only scope and ordered timeframe stages;
+- persistent runs support start/reopen, read, advance, complete, and reset;
+- revisions and action-bound idempotency protect transitions;
+- future stage windows are not exposed in API responses;
+- all 93 automated tests pass.
+
+Retrieval filtering, UI controls, automatic Moshe reevaluation, and deployment
+remain unimplemented. The Product owner requested confirmation before every
+implementation slice, so checkpoint 014 must be approved before Slice 2 begins.
+
 Date: 2026-07-28
 
 The deployed Moshe-to-workstream Phase 1 flow passed final validation using

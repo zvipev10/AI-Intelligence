@@ -2,9 +2,10 @@
 
 ## Current state
 
-The deployed Phase 1 Moshe-to-workstream flow passed final validation with
-`REC-V2-007215`. The isolated validation workstream is archived and its
-revision-1 artifact remains durable.
+The generic timeframe-stage playback foundation is implemented in checkpoint
+014 and is pending Product approval. It is intentionally inactive: retrieval
+filtering, UI controls, agent triggers, and deployment remain in later,
+separately approved slices.
 
 ## Delivered in Slice 2
 
@@ -22,11 +23,14 @@ revision-1 artifact remains durable.
 
 ## Validation
 
-- 85 automated tests passed.
-- A live proposal remained unpersisted until a distinct explicit confirmation.
-- The confirmed artifact survived a UI-service restart and reopen.
-- The target-bank SHA-256 remained unchanged before and after every live step.
-- Both deployed UI and Moshe services were active at completion.
+- 93 automated tests passed.
+- Python compilation and `git diff --check` passed.
+- Concurrent advances produce one successful transition and one revision
+  conflict.
+- Duplicate transition keys replay the original response and cannot be reused
+  for another action.
+- Existing workstream, artifact, routing, target catalog, and UI tests remain
+  green.
 
 ## Accepted limitation
 
@@ -34,6 +38,5 @@ An unconfirmed proposal is lost on refresh. This is the explicitly approved MVP 
 
 ## Next step
 
-Review and accept `checkpoint-013.md`. Track long-running Moshe progress and
-timeout handling as a follow-up UX improvement rather than a Phase 1
-persistence blocker.
+Review `checkpoint-014.md`. Do not begin Slice 2 retrieval visibility
+enforcement until the Product owner explicitly confirms the next step.

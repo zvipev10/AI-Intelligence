@@ -1,0 +1,30 @@
+{
+  "scenario_id": "brnjak-engineering-assessment",
+  "version": 1,
+  "title": "Historical engineering-activity assessment",
+  "playback_label": "Historical simulation",
+  "scope": {
+    "dataset": "v2.1",
+    "layers": []
+  },
+  "stages": [
+    {
+      "id": "initial-public-report",
+      "label": "Initial public indication",
+      "from": "2026-09-17T02:00:00Z",
+      "to": "2026-09-17T06:00:00Z"
+    },
+    {
+      "id": "uav-observation",
+      "label": "UAV observation",
+      "from": "2026-09-17T06:00:00Z",
+      "to": "2026-09-17T09:00:00Z"
+    },
+    {
+      "id": "later-public-report",
+      "label": "Later public indication",
+      "from": "2026-09-17T09:00:00Z",
+      "to": "2026-09-17T10:00:00Z"
+    }
+  ]
+}

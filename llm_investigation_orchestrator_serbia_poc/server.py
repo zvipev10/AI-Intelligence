@@ -30,6 +30,16 @@ from agent_result_pipeline import (
     requested_result_layers_from_audit,
 )
 from agent_routing import AgentRouteRegistry, MOSHE_AGENT_ID
+from scenario_playback import (
+    PlaybackConflictError,
+    get_manifest,
+    list_scenarios,
+    load_run as load_scenario_run,
+    public_run,
+    scenario_details,
+    start_run as start_scenario_run,
+    transition_run as transition_scenario_run,
+)
 from workstream_artifacts import (
     ArtifactConflictError,
     create_artifact,
@@ -90,6 +100,8 @@ RECORDED_RUNS_DIR = ROOT / "recorded_runs" / STATE_SUFFIX
 SAVED_QUESTIONS_DIR = ROOT / "saved_questions" / STATE_SUFFIX
 INVESTIGATIONS_DIR = ROOT / "investigations" / STATE_SUFFIX
 WORKSTREAMS_DIR = ROOT / "workstreams" / STATE_SUFFIX
+SCENARIO_MANIFESTS_DIR = ROOT / "scenario_manifests"
+SCENARIO_RUNS_DIR = ROOT / "scenario_runs" / STATE_SUFFIX
 TERMINAL_STATUSES = {"completed", "failed", "cancelled"}
 EVENT_ID_PATTERN = re.compile(r"\b(?:REC-(?:V2-)?\d{6}|LOC-(?:V2-)?\d{3})\b")
 SAVED_QUESTION_ID_PATTERN = re.compile(r"^[A-Za-z0-9_.-]+$")
@@ -1184,6 +1196,26 @@ def archive_workstream(workstream_id: str) -> dict | None:
         "updated_at_utc": now,
         "archived_at_utc": now,
     })
+
+
+def scenario_workstream_exists(workstream_id: str, investigation_id: str) -> bool:
+    workstream = load_workstream(workstream_id)
+    return bool(
+        workstream
+        and workstream.get("investigation_id") == investigation_id
+        and workstream.get("status") != "archived"
+    )
+
+
+def parse_scenario_run_action(path: str) -> tuple[str, str] | None:
+    prefix = "/api/scenario-runs/"
+    if not path.startswith(prefix):
+        return None
+    remainder = path[len(prefix):].strip("/")
+    parts = remainder.split("/")
+    if len(parts) != 2 or parts[1] not in {"advance", "complete", "reset"}:
+        return None
+    return unquote(parts[0]), parts[1]
 
 
 def artifact_id(prefix: str) -> str:
@@ -2813,6 +2845,39 @@ class Handler(SimpleHTTPRequestHandler):
                 return
             self.send_json(200, result)
             return
+        if path.path == "/api/scenarios":
+            try:
+                self.send_json(200, {"scenarios": list_scenarios(SCENARIO_MANIFESTS_DIR)})
+            except ValueError as exc:
+                self.send_json(500, {"error": str(exc)})
+            return
+        if path.path.startswith("/api/scenarios/"):
+            scenario_id = unquote(path.path[len("/api/scenarios/"):])
+            query = parse_qs(path.query)
+            version_text = (query.get("version") or [""])[0]
+            try:
+                version = int(version_text) if version_text else None
+                manifest = get_manifest(SCENARIO_MANIFESTS_DIR, scenario_id, version)
+            except (TypeError, ValueError) as exc:
+                self.send_json(400, {"error": str(exc)})
+                return
+            if manifest is None:
+                self.send_json(404, {"error": "Scenario not found"})
+            else:
+                self.send_json(200, scenario_details(manifest))
+            return
+        if path.path.startswith("/api/scenario-runs/"):
+            run_id = unquote(path.path[len("/api/scenario-runs/"):])
+            try:
+                result = load_scenario_run(SCENARIO_RUNS_DIR, run_id)
+            except ValueError as exc:
+                self.send_json(400, {"error": str(exc)})
+                return
+            if result is None:
+                self.send_json(404, {"error": "Scenario run not found"})
+            else:
+                self.send_json(200, public_run(result))
+            return
         if path.path == "/api/workstreams":
             query = parse_qs(path.query)
             investigation_id = (query.get("investigation_id") or [""])[0]
@@ -2885,6 +2950,58 @@ class Handler(SimpleHTTPRequestHandler):
 
     def do_POST(self):
         path = urlparse(self.path).path
+        if path == "/api/scenario-runs":
+            try:
+                length = int(self.headers.get("Content-Length", "0"))
+                if length > 1_000_000:
+                    self.send_json(413, {"error": "Scenario run payload too large"})
+                    return
+                request = json.loads(self.rfile.read(length).decode("utf-8-sig"))
+                result, created = start_scenario_run(
+                    SCENARIO_MANIFESTS_DIR,
+                    SCENARIO_RUNS_DIR,
+                    request,
+                    scenario_workstream_exists,
+                )
+                self.send_json(201 if created else 200, result)
+            except LookupError as exc:
+                self.send_json(404, {"error": str(exc)})
+            except ValueError as exc:
+                self.send_json(400, {"error": str(exc)})
+            except Exception as exc:
+                self.send_json(502, {"error": str(exc)})
+            return
+        scenario_action = parse_scenario_run_action(path)
+        if scenario_action is not None:
+            run_id, action = scenario_action
+            try:
+                length = int(self.headers.get("Content-Length", "0"))
+                if length > 1_000_000:
+                    self.send_json(413, {"error": "Scenario transition payload too large"})
+                    return
+                request = json.loads(self.rfile.read(length).decode("utf-8-sig"))
+                result, replayed = transition_scenario_run(
+                    SCENARIO_MANIFESTS_DIR,
+                    SCENARIO_RUNS_DIR,
+                    run_id,
+                    request,
+                    action,
+                )
+                if result is None:
+                    self.send_json(404, {"error": "Scenario run not found"})
+                else:
+                    self.send_json(200, {**result, "idempotent_replay": replayed})
+            except PlaybackConflictError as exc:
+                self.send_json(409, {
+                    "error": str(exc), "current_revision": exc.current_revision,
+                })
+            except LookupError as exc:
+                self.send_json(409, {"error": str(exc)})
+            except ValueError as exc:
+                self.send_json(400, {"error": str(exc)})
+            except Exception as exc:
+                self.send_json(502, {"error": str(exc)})
+            return
         if path == "/api/workstreams":
             try:
                 length = int(self.headers.get("Content-Length", "0"))
