@@ -34,3 +34,12 @@ None for this CSS-only update.
 ## Recommendation
 
 Deploy after automated validation.
+
+## VM deployment
+
+- Deployed commit `985740d`.
+- UI service: active.
+- Public page serves `styles.css?v=121`.
+- Public stylesheet confirms `9px` roster gaps and `34px` minimum member targets.
+- Public stylesheet confirms the “more members” control is `34px × 34px`.
+- Rollback backup: `/opt/serbia-poc-ui-backups/team-spacing-20260728T0349Z`.

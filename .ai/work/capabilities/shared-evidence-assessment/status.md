@@ -10,7 +10,7 @@ Team member icon spacing
 
 ## Overall status
 
-Checkpoint 012 team-member icon spacing is validated locally and awaits VM deployment
+Checkpoint 012 team-member icon spacing is deployed and verified on the VM
 
 ## Accepted direction captured
 
@@ -56,7 +56,7 @@ Checkpoint 012 team-member icon spacing is validated locally and awaits VM deplo
 
 ## Next expected artifact
 
-Checkpoint 012 validation and VM deployment, then final validation issue #43.
+Product visual confirmation, then final validation issue #43.
 
 ## Parent and child issues
 
