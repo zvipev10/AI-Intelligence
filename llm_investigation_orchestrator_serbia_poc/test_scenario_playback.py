@@ -419,6 +419,32 @@ class ScenarioPlaybackApiTests(unittest.TestCase):
         self.assertIsNone(result["run"]["reevaluation"])
         moshe.assert_not_called()
 
+    def test_real_time_mode_with_reset_restarts_existing_playback(self):
+        investigation_id = "investigation-refresh-reset"
+        status, initial = self.request("POST", "/api/playback/mode", {
+            "investigation_id": investigation_id,
+            "mode": "real_time",
+        })
+        self.assertEqual(200, status)
+        status, advanced = self.request("POST", "/api/playback/next", {
+            "investigation_id": investigation_id,
+            "expected_revision": initial["run"]["revision"],
+            "idempotency_key": "refresh-reset-advance",
+        })
+        self.assertEqual(200, status)
+        self.assertEqual(1, advanced["run"]["current_stage_index"])
+
+        status, restarted = self.request("POST", "/api/playback/mode", {
+            "investigation_id": investigation_id,
+            "mode": "real_time",
+            "reset": True,
+        })
+
+        self.assertEqual(200, status)
+        self.assertEqual("real_time", restarted["mode"])
+        self.assertEqual(0, restarted["run"]["current_stage_index"])
+        self.assertIsNotNone(restarted["run"]["next_stage"])
+
     def test_final_stage_requires_explicit_complete(self):
         run = self.start()
         _, second = self.request(

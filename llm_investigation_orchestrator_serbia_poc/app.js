@@ -2470,7 +2470,7 @@ async function pollMoshePlaybackReevaluation() {
   }
 }
 
-async function initializeHistoricalIntelligenceMode() {
+async function initializeRealTimePlayback() {
   const investigationId = String(state.investigationId || "").trim();
   if (!investigationId) return null;
   const response = await fetch("/api/playback/mode", {
@@ -2478,7 +2478,8 @@ async function initializeHistoricalIntelligenceMode() {
     headers: { "Content-Type": "application/json; charset=utf-8" },
     body: JSON.stringify({
       investigation_id: investigationId,
-      mode: "historical",
+      mode: "real_time",
+      reset: true,
     }),
   });
   const payload = await response.json();
@@ -4818,7 +4819,7 @@ renderInvestigationSelector();
 async function boot() {
   initMap();
   await loadLayerCatalog();
-  await initializeHistoricalIntelligenceMode();
+  await initializeRealTimePlayback();
   await loadWorkstreams();
   await loadInvestigationMemory({ restoreLayers: true });
   let runtimeStatus = null;

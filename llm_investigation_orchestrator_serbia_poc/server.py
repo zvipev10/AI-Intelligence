@@ -3171,10 +3171,13 @@ class Handler(SimpleHTTPRequestHandler):
                     raise ValueError("Invalid playback mode payload")
                 investigation_id = str(request.get("investigation_id") or "").strip()
                 mode = str(request.get("mode") or "").strip()
+                reset = request.get("reset", False)
                 if not INVESTIGATION_ID_PATTERN.fullmatch(investigation_id):
                     raise ValueError("Invalid investigation id")
                 if mode not in {"historical", "real_time"}:
                     raise ValueError("Invalid intelligence mode")
+                if not isinstance(reset, bool):
+                    raise ValueError("Invalid playback reset flag")
                 if mode == "historical":
                     write_historical_visibility(SCENARIO_RUNS_DIR)
                 else:
@@ -3197,6 +3200,22 @@ class Handler(SimpleHTTPRequestHandler):
                             },
                             scenario_workstream_exists,
                         )
+                    elif reset:
+                        run, _ = transition_scenario_run(
+                            SCENARIO_MANIFESTS_DIR,
+                            SCENARIO_RUNS_DIR,
+                            run["run_id"],
+                            {
+                                "expected_revision": int(run["revision"]),
+                                "idempotency_key": (
+                                    f"app-refresh-reset-{investigation_id}-"
+                                    f"{int(time.time() * 1000)}"
+                                ),
+                            },
+                            "reset",
+                        )
+                        if run is None:
+                            raise LookupError("Scenario run not found")
                     current = load_scenario_run(SCENARIO_RUNS_DIR, run["run_id"])
                     if current is None:
                         raise LookupError("Scenario run not found")
