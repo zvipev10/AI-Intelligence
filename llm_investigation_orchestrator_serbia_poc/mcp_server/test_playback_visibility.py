@@ -122,10 +122,10 @@ class PlaybackVisibilityTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "does not match"):
             server.search_events({})
 
-    def test_stored_target_bank_is_hidden_during_playback(self):
+    def test_stored_target_bank_remains_available_during_playback(self):
         self.write_policy(self.events[0]["timestamp"], self.events[1]["timestamp"])
-        with self.assertRaisesRegex(ValueError, "unavailable"):
-            server.search_target_candidates({})
+        result = server.search_target_candidates({})
+        self.assertIn("candidates", result)
 
 
 if __name__ == "__main__":

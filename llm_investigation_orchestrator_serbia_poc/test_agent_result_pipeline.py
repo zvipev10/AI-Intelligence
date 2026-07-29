@@ -45,6 +45,22 @@ class AgentResultPipelineTests(unittest.TestCase):
         self.assertEqual(result["session_id"], "session-3")
         self.assertNotIn("mission_run_id", result)
 
+    def test_normalizes_target_actions_for_playback_persistence(self):
+        result = normalize_workstream_collaboration([
+            {
+                "tool": "create_target_candidate",
+                "result": {"candidate": {"target_id": "TGT-V2-000001"}},
+            },
+            {
+                "tool": "attach_target_evidence",
+                "result": {"candidate": {"target_id": "TGT-V2-000001"}},
+            },
+        ])
+        self.assertEqual(
+            ["create_target_candidate", "attach_target_evidence"],
+            [item["action"] for item in result["target_actions"]],
+        )
+
     def test_result_supports_other_agent_and_optional_mission(self):
         result = build_agent_result(
             {"run_id": "run-8", "answer": "candidate"},

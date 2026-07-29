@@ -192,6 +192,7 @@ def create_artifact(
     resolve_target: Callable[[str], dict | None],
     now: str,
     id_factory: Callable[[str], str],
+    require_human_actor: bool = True,
 ) -> dict:
     if workstream.get("status") == "archived":
         raise ValueError("Archived workstream cannot be updated")
@@ -201,7 +202,7 @@ def create_artifact(
     for existing in workstream.get("artifacts") or []:
         if existing.get("artifact_type") == artifact_type and existing.get("status") not in {"closed", "rejected"}:
             raise ValueError("An active artifact of this type already exists")
-    actor = _actor(request.get("actor"), workstream, require_human=True)
+    actor = _actor(request.get("actor"), workstream, require_human=require_human_actor)
     confirmation = _confirmation(request.get("confirmation_turn"))
     content = _initial_content(
         request.get("content"), workstream=workstream, resolve_event=resolve_event,
@@ -241,6 +242,7 @@ def revise_artifact(
     resolve_event: Callable[[str, str], dict | None],
     now: str,
     id_factory: Callable[[str], str],
+    require_human_actor: bool = True,
 ) -> dict:
     if workstream.get("status") == "archived":
         raise ValueError("Archived workstream cannot be updated")
@@ -257,7 +259,7 @@ def revise_artifact(
     action = _text(request.get("action"), "action", 80, required=True)
     if action not in REVISION_ACTIONS:
         raise ValueError("Unsupported artifact action")
-    actor = _actor(request.get("actor"), workstream, require_human=True)
+    actor = _actor(request.get("actor"), workstream, require_human=require_human_actor)
     confirmation = _confirmation(request.get("confirmation_turn"))
     payload = request.get("payload") if isinstance(request.get("payload"), dict) else {}
     content = artifact["content"]

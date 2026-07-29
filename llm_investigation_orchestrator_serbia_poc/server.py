@@ -12,6 +12,7 @@ import time
 import secrets
 import subprocess
 import threading
+from concurrent.futures import ThreadPoolExecutor
 from collections import Counter, defaultdict
 from datetime import datetime, timezone
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
@@ -2661,6 +2662,10 @@ class HermesClient:
             " כפתור הצג תוצאות מבוסס רק על layers; אזור מזהי ראיות מבוסס רק על evidence_layers."
         )
         if responding_agent == MOSHE_AGENT_ID:
+            playback_authorized = bool(
+                isinstance(investigation_state, dict)
+                and isinstance(investigation_state.get("scenario_playback"), dict)
+            )
             instructions += (
                 "\n\nאתה משה, קצין המטרות. המשתמש פנה אליך במפורש באמצעות @משה. "
                 "אתה אחראי לשאלות הבהרה, איתור ראיות, סיווג, מיזוג, בדיקת עצמאות מקורות, "
@@ -2668,10 +2673,19 @@ class HermesClient:
                 "כאשר המשתמש מספק מזהה REC, השתמש ב-search_target_candidates עם record_id כדי למצוא כל מטרה קיימת שמכילה את הרשומה. "
                 "ממצא בביטחון נמוך מדווח למשתמש ואינו נשמר. אל תמציא source_group ואל תעקוף את כלי המיזוג. "
                 "בבקשה הנוגעת למעקב, פרש שפה טבעית ללא ביטויי פקודה שמורים. REC הוא אינדיקציה; TGT הוא נושא אפשרי בלבד ולעולם אינו ראיה. "
-                "פתור את המזהים והשתמש ב-prepare_workstream_indication_proposal כדי להציג הצעה לפני שמירה. "
-                "אל תאשר הצעה בעצמך: רק בתור משתמש מאוחר ונפרד השתמש ב-decide_workstream_indication_proposal. "
-                "אם התגובה עמומה בקש הבהרה; ready_for_assessment הוא מסירה להערכה ולא הערכה או יצירת מטרה. "
-                "בזרימת המעקב אל תפעיל כלי יצירה או עדכון של בנק המטרות. "
+            )
+            instructions += (
+                (
+                    "במצב playback המעקב כבר אושר: עדכן אותו מתוך פרוסת המידע החדשה, "
+                    "השתמש בבנק המטרות לבדיקת כפילויות, וצור או עדכן מועמד מטרה כאשר "
+                    "prepare_target_candidate מאשר persistence_eligible=true. אין לבקש אישור נוסף. "
+                    if playback_authorized else
+                    "פתור את המזהים והשתמש ב-prepare_workstream_indication_proposal כדי להציג הצעה לפני שמירה. "
+                    "אל תאשר הצעה בעצמך: רק בתור משתמש מאוחר ונפרד השתמש ב-decide_workstream_indication_proposal. "
+                    "אם התגובה עמומה בקש הבהרה; ready_for_assessment הוא מסירה להערכה ולא הערכה או יצירת מטרה. "
+                    "מחוץ למצב playback אל תפעיל כלי יצירה או עדכון של בנק המטרות במסגרת מעקב. "
+                )
+                +
                 "אין לך הרשאה לכלי מערכת, filesystem, shell, SQL, מחיקה, reset, evaluator או שינוי סטטוס."
             )
         state_block = self.render_investigation_state(investigation_state)
@@ -2890,34 +2904,199 @@ def run_moshe_playback_reevaluation(run: dict, released_timeframe: dict) -> dict
                 },
                 run["investigation_id"],
             ))
-    investigation_state = {
-        "active_workstreams": workstream_contexts,
-        "scenario_playback": {
+    scenario_playback = {
             "run_id": run["run_id"],
             "revision": run["revision"],
             "newly_released_timeframe": released_timeframe,
             "visible_timeframe": run["visible_timeframe"],
-        },
     }
-    if len(workstream_contexts) == 1:
-        investigation_state["active_workstream"] = workstream_contexts[0]
-    prompt = (
-        "התקדם שלב אחד בתרחיש ההיסטורי. קלוט את פרוסת המידע החדשה, "
-        "בדוק כיצד היא משנה כל אינדיקציה, יעד או מעקב פעיל ורלוונטי בחקירה, "
-        "והצג את ההערכות המעודכנות. "
-        "השתמש רק במידע הזמין כעת דרך כלי הראיות. "
-        f"חלון המידע החדש: {released_timeframe.get('from')} עד {released_timeframe.get('to')}. "
-        f"חלון מצטבר זמין: {run['visible_timeframe'].get('from')} עד {run['visible_timeframe'].get('to')}."
-    )
     config = load_agent_hermes_config(MOSHE_AGENT_ID)
-    return HermesClient(config).investigate(
-        prompt,
-        [],
-        investigation_state=investigation_state,
-        investigation_id=f"{run['run_id']}:revision:{run['revision']}",
-        responding_agent=MOSHE_AGENT_ID,
-        mission_run_id=f"{run['run_id']}:revision:{run['revision']}",
+
+    def assess(context: dict) -> dict:
+        prompt = (
+            "התקדם שלב אחד בתרחיש זמן אמת ועדכן את המעקב הפעיל הבא: "
+            f"{context.get('title') or context['workstream_id']}. "
+            "קלוט את פרוסת המידע החדשה, בדוק כיצד היא משנה את האינדיקציות ואת הערכת המטרה, "
+            "ובצע את פעולות המעקב הנדרשות. אם הראיות עומדות במדיניות הכשירות, בדוק כפילויות "
+            "וצור או עדכן מועמד מטרה באמצעות כלי בנק המטרות; אין צורך באישור אנליסט נוסף במהלך playback. "
+            "השתמש רק במידע הזמין כעת דרך כלי הראיות. "
+            f"חלון המידע החדש: {released_timeframe.get('from')} עד {released_timeframe.get('to')}. "
+            f"חלון מצטבר זמין: {run['visible_timeframe'].get('from')} עד {run['visible_timeframe'].get('to')}."
+        )
+        result = HermesClient(config).investigate(
+            prompt,
+            [],
+            investigation_state={
+                "active_workstreams": [context],
+                "active_workstream": context,
+                "scenario_playback": scenario_playback,
+            },
+            investigation_id=(
+                f"{run['run_id']}:revision:{run['revision']}:{context['workstream_id']}"
+            ),
+            responding_agent=MOSHE_AGENT_ID,
+            mission_run_id=(
+                f"{run['run_id']}:revision:{run['revision']}:{context['workstream_id']}"
+            ),
+        )
+        result["workstream_id"] = context["workstream_id"]
+        return result
+
+    with ThreadPoolExecutor(max_workers=min(4, len(workstream_contexts))) as executor:
+        results = list(executor.map(assess, workstream_contexts))
+    return {
+        "answer": "\n\n".join(
+            str(result.get("answer") or "").strip() for result in results
+            if str(result.get("answer") or "").strip()
+        ),
+        "responding_agent": MOSHE_AGENT_ID,
+        "event_ids": list(dict.fromkeys(
+            str(event_id)
+            for result in results
+            for event_id in result.get("event_ids") or []
+            if isinstance(event_id, str)
+        )),
+        "workstream_results": results,
+    }
+
+
+def persist_playback_workstream_assessment(
+    workstream_id: str, result: dict, run: dict, released_timeframe: dict
+) -> dict | None:
+    """Revision the active workstream from an authorized playback assessment."""
+    workstream = load_workstream(workstream_id)
+    if not workstream or workstream.get("status") != "active":
+        return None
+    agent = next(
+        (item for item in workstream.get("participants") or [] if item.get("kind") == "agent"),
+        None,
     )
+    if not agent:
+        raise ValueError("Playback workstream has no agent participant")
+    answer = compact_text(result.get("answer"), 3000)
+    event_ids = list(dict.fromkeys(
+        str(value) for value in result.get("event_ids") or []
+        if isinstance(value, str) and resolve_workstream_event("", value) is not None
+    ))[:100]
+    if not answer or not event_ids:
+        raise ValueError("Playback assessment has no persistable evidence")
+    now = utc_now_iso()
+    actor = {"participant_id": agent["participant_id"], "kind": "agent"}
+    confirmation = {
+        "message_id": f"playback:{run['run_id']}:{run['revision']}",
+        "text": "Automated real-time playback assessment",
+    }
+    active_artifact = next(
+        (
+            item for item in workstream.get("artifacts") or []
+            if item.get("artifact_type") == "target_assessment_lead"
+            and item.get("status") == "active"
+        ),
+        None,
+    )
+    target_actions = result.get("target_actions") or []
+    target_candidate = next(
+        (
+            item.get("candidate") for item in reversed(target_actions)
+            if isinstance(item, dict) and isinstance(item.get("candidate"), dict)
+        ),
+        None,
+    )
+    target_id = str((target_candidate or {}).get("target_id") or "").strip()
+    if active_artifact is None:
+        artifact = create_artifact(
+            workstream,
+            {
+                "artifact_type": "target_assessment_lead",
+                "actor": actor,
+                "confirmation_turn": confirmation,
+                "content": {
+                    "subject_reference": None,
+                    "lead_statement": answer,
+                    "indications": [
+                        {
+                            "source_reference": {"kind": "event_record", "record_id": event_id},
+                            "role": "supports",
+                            "relevance": "נכלל בהערכת משה בפרוסת זמן אמת",
+                            "annotation": answer,
+                        }
+                        for event_id in event_ids
+                    ],
+                    "supporting_signals": [
+                        f"{released_timeframe.get('from')}–{released_timeframe.get('to')}"
+                    ],
+                    "contradictions": [],
+                    "assessment_questions": [],
+                    "gaps": [],
+                    "assigned_to": agent["participant_id"],
+                    "annotation": f"Playback revision {run['revision']}",
+                },
+            },
+            resolve_event=resolve_workstream_event,
+            resolve_target=resolve_workstream_target,
+            now=now,
+            id_factory=artifact_id,
+            require_human_actor=False,
+        )
+    else:
+        artifact = active_artifact
+        existing_ids = {
+            item.get("source_reference", {}).get("record_id")
+            for item in artifact.get("content", {}).get("indications") or []
+            if item.get("state") != "removed"
+        }
+        for event_id in event_ids:
+            if event_id in existing_ids:
+                continue
+            artifact = revise_artifact(
+                workstream,
+                artifact["artifact_id"],
+                {
+                    "expected_revision": artifact["revision"],
+                    "action": "add_indication",
+                    "payload": {"indication": {
+                        "source_reference": {"kind": "event_record", "record_id": event_id},
+                        "role": "supports",
+                        "relevance": "נוסף בהערכת משה בפרוסת זמן אמת",
+                        "annotation": answer,
+                    }},
+                    "actor": actor,
+                    "confirmation_turn": confirmation,
+                },
+                resolve_event=resolve_workstream_event,
+                now=now,
+                id_factory=artifact_id,
+                require_human_actor=False,
+            )
+        artifact = revise_artifact(
+            workstream,
+            artifact["artifact_id"],
+            {
+                "expected_revision": artifact["revision"],
+                "action": "update_lead_statement",
+                "payload": {"lead_statement": answer},
+                "actor": actor,
+                "confirmation_turn": confirmation,
+            },
+            resolve_event=resolve_workstream_event,
+            now=now,
+            id_factory=artifact_id,
+            require_human_actor=False,
+        )
+    workstream.setdefault("activity", []).append({
+        "activity_id": f"playback-{run['revision']}",
+        "type": "playback_assessment",
+        "actor_id": agent["participant_id"],
+        "scenario_run_id": run["run_id"],
+        "scenario_revision": run["revision"],
+        "released_timeframe": released_timeframe,
+        "artifact_id": artifact["artifact_id"],
+        "artifact_revision": artifact["revision"],
+        "target_id": target_id or None,
+        "created_at_utc": now,
+    })
+    write_workstream(workstream)
+    return artifact
 
 
 def playback_has_active_workstreams(run: dict) -> bool:
@@ -2936,6 +3115,20 @@ def complete_moshe_playback_reevaluation(
 ) -> None:
     try:
         result = run_moshe_playback_reevaluation(run, released_timeframe)
+        workstream_updates = []
+        for workstream_result in result.get("workstream_results") or []:
+            artifact = persist_playback_workstream_assessment(
+                workstream_result["workstream_id"],
+                workstream_result,
+                run,
+                released_timeframe,
+            )
+            if artifact:
+                workstream_updates.append({
+                    "workstream_id": workstream_result["workstream_id"],
+                    "artifact_id": artifact["artifact_id"],
+                    "revision": artifact["revision"],
+                })
         assessment = {
             "answer": compact_text(result.get("answer"), 20_000),
             "responding_agent": result.get("responding_agent") or MOSHE_AGENT_ID,
@@ -2943,6 +3136,7 @@ def complete_moshe_playback_reevaluation(
                 str(value) for value in result.get("event_ids") or []
                 if isinstance(value, str)
             ][:500],
+            "workstream_updates": workstream_updates,
         }
         finish_reevaluation(
             SCENARIO_RUNS_DIR,

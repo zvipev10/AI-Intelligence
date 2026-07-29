@@ -274,6 +274,7 @@ def normalize_attack_targets(
 def normalize_workstream_collaboration(audit_records: Any) -> dict[str, Any]:
     """Return only bounded, successful workstream handoff payloads from the audit."""
     normalized: dict[str, Any] = {}
+    target_actions: list[dict[str, Any]] = []
     for record in audit_records or []:
         if not isinstance(record, dict) or record.get("is_error"):
             continue
@@ -286,6 +287,15 @@ def normalize_workstream_collaboration(audit_records: Any) -> dict[str, Any]:
             normalized["workstream_proposal"] = result["workstream_proposal"]
         elif record.get("tool") == WORKSTREAM_DECISION_TOOL and isinstance(result.get("workstream_action"), dict):
             normalized["workstream_action"] = result["workstream_action"]
+        elif record.get("tool") in {
+            "create_target_candidate", "update_target_candidate", "attach_target_evidence"
+        } and isinstance(result.get("candidate"), dict):
+            target_actions.append({
+                "action": record.get("tool"),
+                "candidate": result["candidate"],
+            })
+    if target_actions:
+        normalized["target_actions"] = target_actions[-20:]
     return normalized
 
 

@@ -258,11 +258,6 @@ def scoped_location_presentation(location_id: str) -> dict[str, Any] | None:
     }
 
 
-def require_target_bank_outside_playback() -> None:
-    if active_playback_policy() is not None:
-        raise ValueError("Stored target candidates are unavailable during scenario playback")
-
-
 def _fold(value: str | None) -> str:
     return re.sub(r"\s+", " ", str(value or "").strip()).casefold()
 
@@ -2613,7 +2608,6 @@ def _materialize_presentation_layers(
             result_kind = "entity_metadata"
             capabilities = {"table": True, "map": True, "timeline": False}
         elif kind == "attack_targets":
-            require_target_bank_outside_playback()
             TARGET_BANK.initialize()
             rows = [TARGET_BANK.get_candidate(row_id) for row_id in row_ids]
             result_kind = "attack_targets"
@@ -2696,20 +2690,17 @@ def validate_target_references(candidate: dict[str, Any], evidence: list[dict[st
 
 
 def search_target_candidates(arguments: dict[str, Any]) -> dict[str, Any]:
-    require_target_bank_outside_playback()
     TARGET_BANK.initialize()
     candidates = TARGET_BANK.search_candidates(arguments)
     return {"candidates": candidates, "returned": len(candidates)}
 
 
 def get_target_candidate(arguments: dict[str, Any]) -> dict[str, Any]:
-    require_target_bank_outside_playback()
     TARGET_BANK.initialize()
     return {"candidate": TARGET_BANK.get_candidate(arguments.get("target_id"))}
 
 
 def create_target_candidate(arguments: dict[str, Any]) -> dict[str, Any]:
-    require_target_bank_outside_playback()
     TARGET_BANK.initialize()
     candidate = {**(arguments.get("candidate") or {}), "created_by": "moshe"}
     supplied_evidence = arguments.get("evidence") or []
@@ -2724,7 +2715,6 @@ def create_target_candidate(arguments: dict[str, Any]) -> dict[str, Any]:
 
 
 def update_target_candidate(arguments: dict[str, Any]) -> dict[str, Any]:
-    require_target_bank_outside_playback()
     TARGET_BANK.initialize()
     target_id = arguments.get("target_id")
     changes = arguments.get("changes") or {}
@@ -2783,7 +2773,6 @@ def reconcile_attached_evidence_groups(
 
 
 def attach_target_evidence(arguments: dict[str, Any]) -> dict[str, Any]:
-    require_target_bank_outside_playback()
     TARGET_BANK.initialize()
     target_id = arguments.get("target_id")
     supplied_evidence = arguments.get("evidence") or []
@@ -2936,7 +2925,6 @@ def decide_workstream_indication_proposal(arguments: dict[str, Any]) -> dict[str
 
 def find_duplicate_target_candidates(arguments: dict[str, Any]) -> dict[str, Any]:
     """Find existing candidates that share the assessed target or selected evidence."""
-    require_target_bank_outside_playback()
     TARGET_BANK.initialize()
     filters = {
         "object_class": arguments.get("object_class"),

@@ -2225,6 +2225,7 @@ function scrollConversationToLatest() {
 }
 
 function activeWorkstreams() {
+  if (state.investigationPlayback?.mode !== "real_time") return [];
   return state.workstreams.filter(item => item?.status !== "archived");
 }
 
@@ -2412,6 +2413,9 @@ async function pollMoshePlaybackReevaluation() {
       if (status !== "running") {
         if (status === "completed") {
           const answer = String(payload.run.reevaluation?.assessment?.answer || "").trim();
+          if (payload.run.reevaluation?.assessment?.workstream_updates?.length) {
+            await loadWorkstreams();
+          }
           if (answer) {
             workstreamMessage(
               `<div class="answer-body">${answerHtml(cleanAssistantAnswer(answer))}</div>`,

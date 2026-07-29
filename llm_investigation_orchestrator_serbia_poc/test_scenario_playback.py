@@ -378,6 +378,45 @@ class ScenarioPlaybackApiTests(unittest.TestCase):
         self.assertIsNone(result["run"]["reevaluation"])
         moshe.assert_not_called()
 
+    def test_playback_assessment_revisions_the_active_workstream(self):
+        first_event = server.load_ui_events()[0]
+        event_id = first_event.get("record_id") or first_event["event_id"]
+        workstream = server.create_workstream({
+            "investigation_id": "investigation-artifact",
+            "title": "Playback artifact",
+            "objective": "Persist Moshe's playback assessment.",
+            "participants": [
+                {
+                    "participant_id": "analyst",
+                    "kind": "human",
+                    "display_name": "Analyst",
+                    "role": "owner",
+                },
+                {
+                    "participant_id": "moshe-targets-officer",
+                    "kind": "agent",
+                    "display_name": "Moshe",
+                    "role": "targets",
+                },
+            ],
+            "assignments": [{
+                "assignment_id": "assignment",
+                "owner_id": "moshe-targets-officer",
+                "responsibility": "Assess playback evidence.",
+                "status": "active",
+            }],
+        })
+        artifact = server.persist_playback_workstream_assessment(
+            workstream["workstream_id"],
+            {"answer": "Updated assessment", "event_ids": [event_id]},
+            {"run_id": "run-playback", "revision": 2},
+            {"from": "2026-09-17T06:00:00Z", "to": "2026-09-17T09:00:00Z"},
+        )
+        self.assertIsNotNone(artifact)
+        saved = server.load_workstream(workstream["workstream_id"])
+        self.assertEqual("Updated assessment", saved["artifacts"][0]["content"]["lead_statement"])
+        self.assertEqual("playback_assessment", saved["activity"][-1]["type"])
+
     def test_real_time_mode_with_reset_restarts_existing_playback(self):
         investigation_id = "investigation-refresh-reset"
         status, initial = self.request("POST", "/api/playback/mode", {
