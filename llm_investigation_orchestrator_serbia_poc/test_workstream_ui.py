@@ -90,15 +90,15 @@ class WorkstreamUiTests(unittest.TestCase):
         self.assertIn("investigation_id: state.investigationId", self.app)
         self.assertIn("advanceInvestigationPlayback", self.app)
         self.assertIn("changeIntelligenceMode", self.app)
-        self.assertIn("initializeRealTimePlayback", self.app)
-        self.assertIn('mode: "real_time"', self.app)
+        self.assertIn("initializeHistoricalPlayback", self.app)
+        self.assertIn('mode: "historical"', self.app)
         self.assertIn("reset: true", self.app)
         self.assertIn(".playback-header-button", self.styles)
 
-    def test_boot_resets_real_time_playback_before_loading_server_state(self):
+    def test_boot_resets_playback_while_staying_in_historical_mode(self):
         boot_start = self.app.index("async function boot()")
         initialize = self.app.index(
-            "await initializeRealTimePlayback();", boot_start
+            "await initializeHistoricalPlayback();", boot_start
         )
         load_workstreams = self.app.index("await loadWorkstreams();", boot_start)
         self.assertLess(initialize, load_workstreams)

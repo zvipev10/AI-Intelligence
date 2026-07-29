@@ -3198,6 +3198,24 @@ class Handler(SimpleHTTPRequestHandler):
                 if not isinstance(reset, bool):
                     raise ValueError("Invalid playback reset flag")
                 if mode == "historical":
+                    if reset:
+                        run = find_investigation_run(
+                            SCENARIO_RUNS_DIR, investigation_id
+                        )
+                        if run is not None:
+                            transition_scenario_run(
+                                SCENARIO_MANIFESTS_DIR,
+                                SCENARIO_RUNS_DIR,
+                                run["run_id"],
+                                {
+                                    "expected_revision": int(run["revision"]),
+                                    "idempotency_key": (
+                                        f"app-refresh-reset-{investigation_id}-"
+                                        f"{int(time.time() * 1000)}"
+                                    ),
+                                },
+                                "reset",
+                            )
                     write_historical_visibility(SCENARIO_RUNS_DIR)
                 else:
                     run = find_investigation_run(SCENARIO_RUNS_DIR, investigation_id)

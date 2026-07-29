@@ -445,6 +445,15 @@ class ScenarioPlaybackApiTests(unittest.TestCase):
         self.assertEqual(0, restarted["run"]["current_stage_index"])
         self.assertIsNotNone(restarted["run"]["next_stage"])
 
+        status, historical = self.request("POST", "/api/playback/mode", {
+            "investigation_id": investigation_id,
+            "mode": "historical",
+            "reset": True,
+        })
+        self.assertEqual(200, status)
+        self.assertEqual("historical", historical["mode"])
+        self.assertEqual(0, historical["run"]["current_stage_index"])
+
     def test_final_stage_requires_explicit_complete(self):
         run = self.start()
         _, second = self.request(
