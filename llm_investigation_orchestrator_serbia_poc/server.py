@@ -1089,6 +1089,25 @@ def apply_workstream_creation(investigation_id: str, creation: Any) -> dict | No
     })
 
 
+def workstream_created_answer(workstream: dict) -> str:
+    assignment = next(
+        (
+            item for item in workstream.get("assignments") or []
+            if item.get("status") == "active"
+        ),
+        None,
+    )
+    responsibility = str((assignment or {}).get("responsibility") or "").strip()
+    lines = [
+        "המעקב נפתח ונשמר בהצלחה.",
+        f"כותרת: {workstream.get('title') or 'מעקב'}",
+        f"מטרה: {workstream.get('objective') or ''}",
+    ]
+    if responsibility:
+        lines.append(f"אחריות משה: {responsibility}")
+    return "\n".join(lines)
+
+
 def load_workstream(workstream_id: str) -> dict | None:
     path = workstream_path(workstream_id)
     if not path.exists():
@@ -3696,6 +3715,7 @@ class Handler(SimpleHTTPRequestHandler):
                     )
                     if created:
                         result["workstream_created"] = created
+                        result["answer"] = workstream_created_answer(created)
                 except ValueError as exc:
                     result["workstream_conflict"] = {"error": str(exc)}
             try:

@@ -32,6 +32,13 @@ class WorkstreamUiTests(unittest.TestCase):
         self.assertNotIn("data-workstream-confirm", self.app)
         self.assertNotIn("data-workstream-cancel", self.app)
 
+    def test_internal_workstream_tools_are_not_rendered_as_investigation_steps(self):
+        self.assertIn("internalWorkstreamTools", self.app)
+        self.assertIn(
+            "(steps || []).filter(step => !internalWorkstreamTools.has(step.tool))",
+            self.app,
+        )
+
     def test_indicator_status_and_selection_are_in_upper_bar(self):
         self.assertIn('id="workstreamControl"', self.index)
         self.assertIn('id="workstreamIndicator"', self.index)

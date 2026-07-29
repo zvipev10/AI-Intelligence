@@ -3545,7 +3545,12 @@ function inferRecommendedView(prompt, answer) {
 function renderActivitySteps(steps, sourceBase = null) {
   ensureAssistantResearchMessage();
   state.activeActivityList.innerHTML = "";
-  (steps || []).forEach((step, index) => {
+  const internalWorkstreamTools = new Set([
+    "prepare_workstream_creation",
+    "prepare_workstream_indication_proposal",
+    "decide_workstream_indication_proposal"
+  ]);
+  (steps || []).filter(step => !internalWorkstreamTools.has(step.tool)).forEach((step, index) => {
     const explanation = step.model_explanation || {};
     const number = index + 1;
     addActivity(step.tool, step.action, step.result, {

@@ -142,6 +142,12 @@ class WorkstreamApiTests(unittest.TestCase):
         self.assertEqual("moshe-targets-officer", created["assignments"][0]["owner_id"])
         self.assertEqual("משה", created["participants"][1]["display_name"])
 
+        answer = server.workstream_created_answer(created)
+        self.assertIn("המעקב נפתח ונשמר בהצלחה.", answer)
+        self.assertIn("UAV indications", answer)
+        self.assertIn("Corroborate reports and expose gaps.", answer)
+        self.assertNotIn("prepare_workstream_creation", answer)
+
     def test_rejects_invalid_input_and_cross_participant_assignment(self):
         invalid = self.create_payload()
         invalid["investigation_id"] = "../escape"
