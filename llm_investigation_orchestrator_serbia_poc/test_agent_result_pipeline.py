@@ -11,10 +11,20 @@ from agent_result_pipeline import (
     normalize_workstream_collaboration,
     requested_result_layers_from_audit,
 )
-from server import HermesClient
+from server import HermesClient, bounded_prompt_cache_key
 
 
 class AgentResultPipelineTests(unittest.TestCase):
+    def test_prompt_cache_key_is_stable_and_never_exceeds_provider_limit(self):
+        value = (
+            "run_20260728_131607_21557873:revision:24:"
+            "ws_20260729_174710_24691bf9"
+        )
+        first = bounded_prompt_cache_key(value)
+        self.assertEqual(first, bounded_prompt_cache_key(value))
+        self.assertLessEqual(len(first), 64)
+        self.assertNotEqual(first, bounded_prompt_cache_key(value + "-other"))
+
     def test_normalizes_successful_workstream_handoffs(self):
         records = [
             {"tool": "prepare_workstream_creation", "result": {

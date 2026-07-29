@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import http.client
 import csv
+import hashlib
 import json
 import mimetypes
 import os
@@ -56,6 +57,15 @@ from workstream_artifacts import (
     list_artifacts,
     revise_artifact,
 )
+
+
+def bounded_prompt_cache_key(value: Any) -> str:
+    """Return a stable provider-safe session/cache key of at most 64 characters."""
+    normalized = re.sub(r"[^A-Za-z0-9_.:-]+", "-", str(value or "")).strip("-")
+    if len(normalized) <= 64:
+        return normalized
+    digest = hashlib.sha256(normalized.encode("utf-8")).hexdigest()[:12]
+    return f"{normalized[:51]}-{digest}"
 
 try:
     import paramiko
@@ -2690,7 +2700,7 @@ class HermesClient:
             )
         state_block = self.render_investigation_state(investigation_state)
         full_instructions = f"{instructions}\n\n{state_block}" if state_block else instructions
-        safe_investigation_id = re.sub(r"[^A-Za-z0-9_.:-]+", "-", str(investigation_id or "")).strip("-")
+        safe_investigation_id = bounded_prompt_cache_key(investigation_id)
         session_id = safe_investigation_id or f"intelligence-orchestrator-{int(time.time() * 1000)}"
         session_started = time.perf_counter()
         with HermesSession(self.config) as session:
