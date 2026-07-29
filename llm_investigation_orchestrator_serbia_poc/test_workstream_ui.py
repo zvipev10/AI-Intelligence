@@ -164,7 +164,7 @@ class WorkstreamUiTests(unittest.TestCase):
     def test_thinking_indicator_is_preserved(self):
         self.assertIn("function thinkingIndicatorHtml()", self.app)
         self.assertIn('aria-label="חושב"', self.app)
-        self.assertIn("thinkingIndicatorHtml()}</p>", self.app)
+        self.assertIn("thinkingIndicatorHtml()", self.app)
         self.assertIn(".thinking-indicator", self.styles)
         self.assertIn("@keyframes thinking-dot", self.styles)
 

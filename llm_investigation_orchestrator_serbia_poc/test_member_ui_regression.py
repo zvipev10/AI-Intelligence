@@ -57,10 +57,14 @@ class MemberUiRegressionTests(unittest.TestCase):
     def test_explicit_mentions_take_precedence_over_selected_member(self):
         self.assertIn("if (!clean || teamMentionsForPrompt(clean).length) return clean;", self.app)
 
-    def test_moshe_member_opening_comes_from_agent(self):
-        self.assertIn("async function appendAgentMemberOpeningMessage(member)", self.app)
-        self.assertIn('routing_prompt: "@משה"', self.app)
-        self.assertIn("if (member.id === MOSHE_MEMBER_ID) appendAgentMemberOpeningMessage(member);", self.app)
+    def test_moshe_member_opening_is_immediate_and_hardcoded(self):
+        self.assertIn("const MOSHE_WELCOME =", self.app)
+        self.assertIn(
+            "member.id === MOSHE_MEMBER_ID ? MOSHE_WELCOME : MICHLOL_MEMBER_WELCOME",
+            self.app,
+        )
+        self.assertIn("appendMemberWelcomeMessage(member);", self.app)
+        self.assertNotIn("appendAgentMemberOpeningMessage", self.app)
 
     def test_moshe_answers_use_targets_officer_title(self):
         self.assertIn('const MOSHE_MESSAGE_LABEL = "משה - קצין מטרות";', self.app)
@@ -155,7 +159,7 @@ class MemberUiRegressionTests(unittest.TestCase):
         self.assertNotIn("Hermes מנתח את הבקשה ומפעיל כלי חקירה", self.app)
         self.assertNotIn("Hermes ממשיך את החקירה", self.app)
         self.assertNotIn("משה מתחבר לשיחה", self.app)
-        self.assertIn('class="member-opening-status">${thinkingIndicatorHtml()}</p>', self.app)
+        self.assertNotIn("member-opening-status", self.app)
         self.assertNotIn("state.activeActivityEmpty.hidden = true;", self.app)
         self.assertLess(
             self.app.index('<ol class="activity-list"></ol>'),

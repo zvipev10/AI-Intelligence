@@ -189,6 +189,7 @@ const MICHLOL_MEMBERS = [
 const MICHLOL_MEMBER_WELCOME = "אני מחובר עכשיו לשיחה הזו. שלח לי את המשימה או השאלה הבאה, ובשלב הבא נחבר כאן סוכן ייעודי לחבר המכלול.";
 const MOSHE_MEMBER_ID = "moshe-targets-officer";
 const MOSHE_MESSAGE_LABEL = "משה - קצין מטרות";
+const MOSHE_WELCOME = "אני משה, קצין המטרות. אפשר לשאול אותי על אינדיקציות ומטרות, או לפתוח מעקב חדש.";
 
 const state = {
   events: [],
@@ -244,8 +245,7 @@ const state = {
   rawOverlayHeight: 28,
   queryEdited: false,
   originalQuery: null,
-  activeTeamMentions: [],
-  memberOpeningRequestToken: 0
+  activeTeamMentions: []
 };
 
 const conversation = document.getElementById("conversation");
@@ -408,46 +408,16 @@ function resultMessageLabel(result = {}) {
 
 function appendMemberWelcomeMessage(member) {
   conversation.querySelectorAll(".member-welcome-message").forEach(message => message.remove());
+  const welcome = member.id === MOSHE_MEMBER_ID ? MOSHE_WELCOME : MICHLOL_MEMBER_WELCOME;
   return appendMessage("assistant", `
     <p><strong>${escapeHtml(member.displayName)}</strong></p>
-    <p>${escapeHtml(MICHLOL_MEMBER_WELCOME)}</p>`, { label: memberMessageLabel(member), className: "member-welcome-message", memberId: member.id });
-}
-
-async function appendAgentMemberOpeningMessage(member) {
-  const token = ++state.memberOpeningRequestToken;
-  conversation.querySelectorAll(".member-welcome-message").forEach(message => message.remove());
-  const article = appendMessage("assistant", `<p class="member-opening-status">${thinkingIndicatorHtml()}</p>`, {
-    label: memberMessageLabel(member), className: "member-welcome-message member-agent-opening", memberId: member.id
-  });
-  try {
-    const response = await fetch("/api/investigate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        prompt: "@משה הצג הודעת פתיחה קצרה מטעמך כקצין המטרות, והסבר במשפט אחד כיצד אפשר להפעיל אותך בשיחה.",
-        routing_prompt: "@משה",
-        history: state.history,
-        investigation_id: state.investigationId
-      })
-    });
-    const result = await response.json();
-    if (!response.ok) throw new Error(result.error || "Moshe opening message failed");
-    if (token !== state.memberOpeningRequestToken || state.activeConversationMemberId !== member.id) return;
-    article.querySelector(".message-label").textContent = memberMessageLabel(member);
-    article.innerHTML = `<div class="message-label">${escapeHtml(memberMessageLabel(member))}</div><div class="answer-body">${answerHtml(cleanAssistantAnswer(result.answer))}</div>`;
-    state.history.push({ role: "assistant", content: cleanAssistantAnswer(result.answer) });
-  } catch (error) {
-    if (token !== state.memberOpeningRequestToken || state.activeConversationMemberId !== member.id) return;
-    article.innerHTML = `<div class="message-label">${escapeHtml(memberMessageLabel(member))}</div><p>לא הצלחתי לטעון כרגע הודעה ממשה.</p>`;
-  }
-  conversation.scrollTop = conversation.scrollHeight;
+    <p>${escapeHtml(welcome)}</p>`, { label: memberMessageLabel(member), className: "member-welcome-message", memberId: member.id });
 }
 
 function selectConversationMember(memberId) {
   const member = MICHLOL_MEMBERS.find(item => item.id === memberId);
   if (!member) return;
   if (state.activeConversationMemberId === member.id) {
-    state.memberOpeningRequestToken += 1;
     if (state.workstreamComposerMode) setWorkstreamComposerMode(false);
     state.activeConversationMemberId = null;
     state.activeTeamMentions = teamMentionsForPrompt(promptInput?.value || "");
@@ -463,8 +433,7 @@ function selectConversationMember(memberId) {
   state.activeConversationMemberId = member.id;
   renderMichlolTeam();
   updatePromptPlaceholder();
-  if (member.id === MOSHE_MEMBER_ID) appendAgentMemberOpeningMessage(member);
-  else appendMemberWelcomeMessage(member);
+  appendMemberWelcomeMessage(member);
   conversation.scrollTop = conversation.scrollHeight;
 }
 
