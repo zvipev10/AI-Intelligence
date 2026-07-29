@@ -35,7 +35,6 @@ from scenario_playback import (
     PlaybackConflictError,
     claim_reevaluation,
     find_investigation_run,
-    find_workstream_run,
     finish_reevaluation,
     get_manifest,
     list_scenarios,
@@ -1257,35 +1256,6 @@ def prepared_playback_manifest() -> dict | None:
     return get_manifest(
         SCENARIO_MANIFESTS_DIR, selected["scenario_id"], selected["version"]
     )
-
-
-def workstream_playback_status(workstream_id: str) -> dict | None:
-    workstream = load_workstream(workstream_id)
-    if workstream is None or workstream.get("status") == "archived":
-        return None
-    run = find_workstream_run(SCENARIO_RUNS_DIR, workstream_id)
-    if run is not None:
-        return {
-            "workstream_id": workstream_id,
-            "run": run_with_next_stage(SCENARIO_MANIFESTS_DIR, run),
-        }
-    manifest = prepared_playback_manifest()
-    if manifest is None:
-        return {"workstream_id": workstream_id, "run": None, "next_stage": None}
-    first = manifest["stages"][0]
-    return {
-        "workstream_id": workstream_id,
-        "run": None,
-        "next_stage": {
-            "sequence": first["sequence"],
-            "timeframe": {
-                "from": first["from"],
-                "to": first["to"],
-                "from_inclusive": True,
-                "to_exclusive": True,
-            },
-        },
-    }
 
 
 def investigation_playback_status(investigation_id: str) -> dict:
@@ -2965,8 +2935,22 @@ def complete_moshe_playback_reevaluation(
     run: dict, released_timeframe: dict, revision: int
 ) -> None:
     try:
-        run_moshe_playback_reevaluation(run, released_timeframe)
-        finish_reevaluation(SCENARIO_RUNS_DIR, run["run_id"], revision, "completed")
+        result = run_moshe_playback_reevaluation(run, released_timeframe)
+        assessment = {
+            "answer": compact_text(result.get("answer"), 20_000),
+            "responding_agent": result.get("responding_agent") or MOSHE_AGENT_ID,
+            "event_ids": [
+                str(value) for value in result.get("event_ids") or []
+                if isinstance(value, str)
+            ][:500],
+        }
+        finish_reevaluation(
+            SCENARIO_RUNS_DIR,
+            run["run_id"],
+            revision,
+            "completed",
+            assessment=assessment,
+        )
     except Exception as exc:
         finish_reevaluation(
             SCENARIO_RUNS_DIR, run["run_id"], revision, "failed", str(exc)
@@ -3103,20 +3087,6 @@ class Handler(SimpleHTTPRequestHandler):
                     self.send_json(200, {"workstreams": list_workstreams(investigation_id)})
             except ValueError as exc:
                 self.send_json(400, {"error": str(exc)})
-            return
-        if path.path.startswith("/api/workstreams/") and path.path.endswith("/playback"):
-            workstream_id = unquote(
-                path.path[len("/api/workstreams/"):-len("/playback")].rstrip("/")
-            )
-            try:
-                result = workstream_playback_status(workstream_id)
-            except ValueError as exc:
-                self.send_json(400, {"error": str(exc)})
-                return
-            if result is None:
-                self.send_json(404, {"error": "Workstream not found"})
-            else:
-                self.send_json(200, result)
             return
         artifact_route = parse_artifact_api_path(path.path)
         if artifact_route is not None:
@@ -3524,116 +3494,6 @@ class Handler(SimpleHTTPRequestHandler):
                 self.send_json(404, {"error": "Workstream not found"})
             else:
                 self.send_json(200, archived)
-            return
-        if path.startswith("/api/workstreams/") and path.endswith("/playback/next"):
-            workstream_id = unquote(
-                path[len("/api/workstreams/"):-len("/playback/next")].rstrip("/")
-            )
-            try:
-                length = int(self.headers.get("Content-Length", "0"))
-                if length > 1_000_000:
-                    self.send_json(413, {"error": "Playback payload too large"})
-                    return
-                request = json.loads(self.rfile.read(length).decode("utf-8-sig"))
-                if not isinstance(request, dict):
-                    raise ValueError("Invalid playback payload")
-                workstream = load_workstream(workstream_id)
-                if workstream is None or workstream.get("status") == "archived":
-                    self.send_json(404, {"error": "Workstream not found"})
-                    return
-                existing = find_workstream_run(SCENARIO_RUNS_DIR, workstream_id)
-                claimed_revision = None
-                if existing is None:
-                    manifest = prepared_playback_manifest()
-                    if manifest is None:
-                        raise LookupError("Prepared scenario not found")
-                    run, _ = start_scenario_run(
-                        SCENARIO_MANIFESTS_DIR,
-                        SCENARIO_RUNS_DIR,
-                        {
-                            "scenario_id": manifest["scenario_id"],
-                            "version": manifest["version"],
-                            "workstream_id": workstream_id,
-                            "investigation_id": workstream["investigation_id"],
-                            "idempotency_key": request.get("idempotency_key"),
-                        },
-                        scenario_workstream_exists,
-                    )
-                    released_timeframe = {
-                        "from": run["current_stage"]["from"],
-                        "to": run["current_stage"]["to"],
-                        "from_inclusive": True,
-                        "to_exclusive": True,
-                    }
-                    claimed_revision = int(run["revision"])
-                elif (
-                    existing.get("transition_history")
-                    and existing["transition_history"][0].get("idempotency_key")
-                    == request.get("idempotency_key")
-                ):
-                    manifest = get_manifest(
-                        SCENARIO_MANIFESTS_DIR,
-                        existing["scenario_id"],
-                        existing["scenario_version"],
-                    )
-                    if manifest is None:
-                        raise LookupError("Scenario not found")
-                    first = manifest["stages"][0]
-                    run = existing
-                    released_timeframe = {
-                        "from": first["from"],
-                        "to": first["to"],
-                        "from_inclusive": True,
-                        "to_exclusive": True,
-                    }
-                    claimed_revision = 1
-                else:
-                    run, _ = transition_scenario_run(
-                        SCENARIO_MANIFESTS_DIR,
-                        SCENARIO_RUNS_DIR,
-                        existing["run_id"],
-                        request,
-                        "advance",
-                    )
-                    if run is None:
-                        raise LookupError("Scenario run not found")
-                    released_timeframe = {
-                        "from": run["current_stage"]["from"],
-                        "to": run["current_stage"]["to"],
-                        "from_inclusive": True,
-                        "to_exclusive": True,
-                    }
-                    claimed_revision = int(run["revision"])
-                current = load_scenario_run(SCENARIO_RUNS_DIR, run["run_id"])
-                if current is None:
-                    raise LookupError("Scenario run not found")
-                write_playback_visibility(SCENARIO_RUNS_DIR, current)
-                claimed = False
-                if playback_has_active_workstreams(run):
-                    _, claimed = claim_reevaluation(
-                        SCENARIO_RUNS_DIR, run["run_id"], claimed_revision
-                    )
-                if claimed:
-                    start_moshe_playback_reevaluation(
-                        run, released_timeframe, claimed_revision
-                    )
-                current = load_scenario_run(SCENARIO_RUNS_DIR, run["run_id"]) or run
-                self.send_json(200, {
-                    "run": run_with_next_stage(SCENARIO_MANIFESTS_DIR, current),
-                    "released_timeframe": released_timeframe,
-                    "moshe_triggered": claimed,
-                    "moshe_skipped_reason": None if claimed else "no_active_workstreams",
-                })
-            except PlaybackConflictError as exc:
-                self.send_json(409, {
-                    "error": str(exc), "current_revision": exc.current_revision,
-                })
-            except LookupError as exc:
-                self.send_json(409, {"error": str(exc)})
-            except ValueError as exc:
-                self.send_json(400, {"error": str(exc)})
-            except Exception as exc:
-                self.send_json(502, {"error": str(exc)})
             return
         if path == "/api/saved-question":
             try:

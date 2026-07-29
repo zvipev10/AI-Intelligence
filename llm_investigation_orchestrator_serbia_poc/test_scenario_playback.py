@@ -1,6 +1,7 @@
 import json
 import tempfile
 import threading
+import time
 import unittest
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -286,64 +287,6 @@ class ScenarioPlaybackApiTests(unittest.TestCase):
         self.assertTrue(policy["active"])
         self.assertEqual(reset["revision"], policy["revision"])
 
-    def test_single_next_endpoint_starts_advances_and_triggers_moshe_once_per_stage(self):
-        workstream_id = self.workstream["workstream_id"]
-        status, initial = self.request(
-            "GET", f"/api/workstreams/{workstream_id}/playback"
-        )
-        self.assertEqual(200, status)
-        self.assertIsNone(initial["run"])
-        self.assertEqual(
-            "2026-09-17T02:00:00Z", initial["next_stage"]["timeframe"]["from"]
-        )
-
-        with patch.object(
-            server,
-            "run_moshe_playback_reevaluation",
-            return_value={"answer": "Updated assessment", "responding_agent": "moshe"},
-        ) as moshe:
-            first_request = {"idempotency_key": "playback-first"}
-            status, first = self.request(
-                "POST",
-                f"/api/workstreams/{workstream_id}/playback/next",
-                first_request,
-            )
-            self.assertEqual(200, status)
-            self.assertTrue(first["moshe_triggered"])
-            self.assertEqual(1, first["run"]["revision"])
-            self.assertEqual(
-                "2026-09-17T06:00:00Z",
-                first["run"]["next_stage"]["timeframe"]["from"],
-            )
-
-            status, replay = self.request(
-                "POST",
-                f"/api/workstreams/{workstream_id}/playback/next",
-                first_request,
-            )
-            self.assertEqual(200, status)
-            self.assertFalse(replay["moshe_triggered"])
-            self.assertEqual(1, replay["run"]["revision"])
-
-            status, second = self.request(
-                "POST",
-                f"/api/workstreams/{workstream_id}/playback/next",
-                {"expected_revision": 1, "idempotency_key": "playback-second"},
-            )
-            self.assertEqual(200, status)
-            self.assertTrue(second["moshe_triggered"])
-            self.assertEqual(2, second["run"]["revision"])
-            self.assertEqual(2, moshe.call_count)
-            self.assertEqual(
-                {
-                    "from": "2026-09-17T06:00:00Z",
-                    "to": "2026-09-17T09:00:00Z",
-                    "from_inclusive": True,
-                    "to_exclusive": True,
-                },
-                second["released_timeframe"],
-            )
-
     def test_investigation_next_endpoint_releases_once_without_workstream_selection(self):
         status, initial = self.request(
             "GET", "/api/playback?investigation_id=investigation-playback"
@@ -381,6 +324,22 @@ class ScenarioPlaybackApiTests(unittest.TestCase):
             self.assertFalse(replay["moshe_triggered"])
             self.assertEqual(2, replay["run"]["revision"])
             self.assertEqual(1, moshe.call_count)
+
+            completed = None
+            for _ in range(50):
+                status, current = self.request(
+                    "GET", "/api/playback?investigation_id=investigation-playback"
+                )
+                self.assertEqual(200, status)
+                if current["run"]["reevaluation"]["status"] == "completed":
+                    completed = current
+                    break
+                time.sleep(0.01)
+            self.assertIsNotNone(completed)
+            self.assertEqual(
+                "All relevant assessments updated",
+                completed["run"]["reevaluation"]["assessment"]["answer"],
+            )
 
         status, historical = self.request("POST", "/api/playback/mode", {
             "investigation_id": "investigation-playback",

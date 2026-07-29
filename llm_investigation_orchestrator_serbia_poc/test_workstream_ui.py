@@ -68,15 +68,14 @@ class WorkstreamUiTests(unittest.TestCase):
         self.assertIn("${objectiveHtml}", self.app)
         self.assertIn("${responsibilityHtml}", self.app)
 
-    def test_update_has_one_next_stage_control_and_moshe_trigger(self):
+    def test_workstream_update_has_no_workstream_specific_playback_control(self):
         self.assertIn("workstream.objective", self.app)
         self.assertIn("workstream.assignments", self.app)
-        self.assertIn('data-playback-next="${escapeHtml(workstreamId)}"', self.app)
-        self.assertIn("advanceWorkstreamPlayback", self.app)
-        self.assertIn("/playback/next", self.app)
-        self.assertIn("פרק הזמן של השלב הבא", self.app)
-        self.assertIn("title=", self.app)
-        self.assertIn(".playback-next-button", self.styles)
+        self.assertNotIn("data-playback-next", self.app)
+        self.assertNotIn("advanceWorkstreamPlayback", self.app)
+        self.assertNotIn("/api/workstreams/${encodeURIComponent(workstreamId)}/playback", self.app)
+        self.assertNotIn(".playback-next-button", self.styles)
+        self.assertIn("data-workstream-archive", self.app)
 
     def test_investigation_playback_control_is_visible_in_upper_bar(self):
         self.assertIn('id="playbackNextButton"', self.index)
@@ -93,6 +92,8 @@ class WorkstreamUiTests(unittest.TestCase):
         self.assertIn("initializeHistoricalPlayback", self.app)
         self.assertIn('mode: "historical"', self.app)
         self.assertIn("reset: true", self.app)
+        self.assertIn('state.investigationPlayback?.mode !== "real_time"', self.app)
+        self.assertIn("reevaluation?.assessment?.answer", self.app)
         self.assertIn(".playback-header-button", self.styles)
 
     def test_boot_resets_playback_while_staying_in_historical_mode(self):

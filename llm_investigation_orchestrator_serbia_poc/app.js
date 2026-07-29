@@ -232,10 +232,8 @@ const state = {
   workstreams: [],
   workstreamsLoading: false,
   workstreamLoadToken: 0,
-  workstreamPlayback: {},
   investigationPlayback: null,
   playbackPollToken: 0,
-  playbackAdvancing: new Set(),
   pendingMosheWorkstreamProposal: null,
   activeConversationMemberId: null,
   openingLayerIds: new Set(),
@@ -2251,7 +2249,8 @@ const WORKSTREAM_STATUS_LABELS = {
 function renderWorkstreamIndicator() {
   if (!workstreamControl || !workstreamIndicator || !workstreamIndicatorCount || !workstreamMenu) return;
   const workstreams = activeWorkstreams();
-  workstreamControl.hidden = workstreams.length === 0;
+  workstreamControl.hidden = workstreams.length === 0
+    || state.investigationPlayback?.mode !== "real_time";
   workstreamIndicatorCount.hidden = workstreams.length <= 1;
   workstreamIndicatorCount.textContent = workstreams.length > 1 ? String(workstreams.length) : "";
   if (workstreamIndicatorStatus) {
@@ -2330,17 +2329,6 @@ async function fetchWorkstream(workstreamId) {
   return payload;
 }
 
-async function fetchWorkstreamPlayback(workstreamId) {
-  const response = await fetch(
-    `/api/workstreams/${encodeURIComponent(workstreamId)}/playback`,
-    { cache: "no-store" }
-  );
-  const payload = await response.json();
-  if (!response.ok) throw new Error(payload.error || "טעינת מצב התרחיש נכשלה");
-  state.workstreamPlayback[workstreamId] = payload;
-  return payload;
-}
-
 function playbackNextStage(playback) {
   return playback?.run?.next_stage || playback?.next_stage || null;
 }
@@ -2363,6 +2351,7 @@ function renderInvestigationPlayback() {
   const playback = state.investigationPlayback;
   const mode = playback?.mode || "historical";
   intelligenceModeSelect.value = mode;
+  renderWorkstreamIndicator();
   const timeframe = mode === "real_time"
     ? playback?.run?.visible_timeframe
     : playback?.full_timeframe;
@@ -2422,7 +2411,15 @@ async function pollMoshePlaybackReevaluation() {
       const status = payload?.run?.reevaluation?.status;
       if (status !== "running") {
         if (status === "completed") {
-          workstreamMessage("<p>משה סיים לעבד את פרוסת המידע החדשה.</p>");
+          const answer = String(payload.run.reevaluation?.assessment?.answer || "").trim();
+          if (answer) {
+            workstreamMessage(
+              `<div class="answer-body">${answerHtml(cleanAssistantAnswer(answer))}</div>`,
+              { label: MOSHE_MESSAGE_LABEL, memberId: MOSHE_MEMBER_ID }
+            );
+          } else {
+            workstreamMessage("<p>משה סיים לעבד את פרוסת המידע החדשה.</p>");
+          }
         } else if (status === "failed") {
           workstreamMessage(`<p>הטווח עודכן, אך העיבוד של משה נכשל.</p><div class="answer-callout">${escapeHtml(payload.run.reevaluation.error || "")}</div>`);
         }
@@ -2529,19 +2526,6 @@ async function changeIntelligenceMode() {
   }
 }
 
-function playbackButtonHtml(workstreamId, playback) {
-  const next = playbackNextStage(playback);
-  if (!next?.timeframe) return "";
-  const timeframe = next.timeframe;
-  const tooltip = `פרק הזמן של השלב הבא: ${formatPlaybackTime(timeframe.from)}–${formatPlaybackTime(timeframe.to)}`;
-  const busy = state.playbackAdvancing.has(workstreamId);
-  return `<button type="button" class="playback-next-button"
-    data-playback-next="${escapeHtml(workstreamId)}"
-    title="${escapeHtml(tooltip)}"
-    aria-label="${escapeHtml(`השלב הבא. ${tooltip}`)}"
-    ${busy ? "disabled" : ""}>${busy ? "משה מעבד…" : "השלב הבא"}</button>`;
-}
-
 function workstreamAgent(workstream) {
   return (workstream.participants || []).find(item => item.kind === "agent") || null;
 }
@@ -2595,7 +2579,7 @@ function normalizedWorkstreamSummaryText(value) {
   return String(value || "").replace(/\s+/g, " ").trim().toLocaleLowerCase("he-IL");
 }
 
-function appendWorkstreamUpdate(workstream, playback = null) {
+function appendWorkstreamUpdate(workstream) {
   conversation.querySelectorAll("[data-workstream-update-id]").forEach(message => {
     if (message.dataset.workstreamUpdateId === workstream.workstream_id) message.remove();
   });
@@ -2623,7 +2607,6 @@ function appendWorkstreamUpdate(workstream, playback = null) {
     ${responsibilityHtml}
     ${workstreamArtifactHtml(workstream)}
     <div class="workstream-message-actions">
-      ${playbackButtonHtml(workstream.workstream_id, playback)}
       <button type="button" class="danger-button" data-workstream-archive="${escapeHtml(workstream.workstream_id)}">העברה לארכיון</button>
     </div>`, {
       label: agent ? `${agent.display_name} · עדכון מעקב` : "עדכון מעקב",
@@ -2643,61 +2626,10 @@ async function requestWorkstreamUpdate() {
 
 async function showWorkstreamUpdate(workstreamId) {
   try {
-    const [workstream, playback] = await Promise.all([
-      fetchWorkstream(workstreamId),
-      fetchWorkstreamPlayback(workstreamId),
-    ]);
-    appendWorkstreamUpdate(workstream, playback);
+    const workstream = await fetchWorkstream(workstreamId);
+    appendWorkstreamUpdate(workstream);
   } catch (error) {
     workstreamMessage(`<p>לא הצלחתי לטעון את עדכון המעקב.</p><div class="answer-callout">${escapeHtml(error.message)}</div>`);
-  }
-}
-
-async function advanceWorkstreamPlayback(workstreamId, button) {
-  if (state.playbackAdvancing.has(workstreamId)) return;
-  const playback = state.workstreamPlayback[workstreamId]
-    || await fetchWorkstreamPlayback(workstreamId);
-  const run = playback?.run;
-  state.playbackAdvancing.add(workstreamId);
-  if (button) {
-    button.disabled = true;
-    button.textContent = "משה מעבד…";
-  }
-  try {
-    const idempotencyKey = `playback:${workstreamId}:${run?.revision || 0}:${Date.now()}`;
-    const response = await fetch(
-      `/api/workstreams/${encodeURIComponent(workstreamId)}/playback/next`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json; charset=utf-8" },
-        body: JSON.stringify({
-          expected_revision: run?.revision,
-          idempotency_key: idempotencyKey,
-        }),
-      }
-    );
-    const result = await response.json();
-    if (!response.ok) throw new Error(result.error || "המעבר לשלב הבא נכשל");
-    state.workstreamPlayback[workstreamId] = {
-      workstream_id: workstreamId,
-      run: result.run,
-    };
-    const moshe = result.moshe_result;
-    if (moshe?.answer) {
-      applyWorkstreamChatResult(moshe);
-      workstreamMessage(
-        `<div class="answer-body">${answerHtml(cleanAssistantAnswer(moshe.answer))}</div>`,
-        { label: MOSHE_MESSAGE_LABEL, memberId: MOSHE_MEMBER_ID }
-      );
-    }
-    const workstream = await fetchWorkstream(workstreamId);
-    appendWorkstreamUpdate(workstream, state.workstreamPlayback[workstreamId]);
-  } catch (error) {
-    workstreamMessage(
-      `<p>לא הצלחתי להתקדם לשלב הבא.</p><div class="answer-callout">${escapeHtml(error.message)}</div>`
-    );
-  } finally {
-    state.playbackAdvancing.delete(workstreamId);
   }
 }
 
@@ -4357,9 +4289,7 @@ function resetInvestigation(options = {}) {
   state.workstreamLoadToken += 1;
   state.workstreams = [];
   state.workstreamsLoading = false;
-  state.workstreamPlayback = {};
   state.investigationPlayback = null;
-  state.playbackAdvancing = new Set();
   state.pendingMosheWorkstreamProposal = null;
   state.workstreamComposerMode = false;
   if (!options.keepInvestigation) {
@@ -4441,14 +4371,6 @@ document.addEventListener("click", event => {
     if (workstreamMenu) workstreamMenu.hidden = true;
     workstreamIndicator?.setAttribute("aria-expanded", "false");
     showWorkstreamUpdate(showWorkstream.dataset.workstreamShow);
-    return;
-  }
-  const nextPlaybackStage = event.target.closest("[data-playback-next]");
-  if (nextPlaybackStage) {
-    advanceWorkstreamPlayback(
-      nextPlaybackStage.dataset.playbackNext,
-      nextPlaybackStage
-    );
     return;
   }
   const archiveWorkstream = event.target.closest("[data-workstream-archive]");

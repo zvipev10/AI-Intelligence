@@ -333,17 +333,6 @@ def find_existing_run(
     return max(matches, key=lambda item: str(item.get("updated_at_utc") or ""), default=None)
 
 
-def find_workstream_run(directory: Path, workstream_id: str) -> dict | None:
-    if not WORKSTREAM_ID_PATTERN.fullmatch(workstream_id or "") or not directory.exists():
-        return None
-    matches = []
-    for path in directory.glob("run_*.json"):
-        payload = load_run(directory, path.stem)
-        if payload and payload.get("workstream_id") == workstream_id:
-            matches.append(payload)
-    return max(matches, key=lambda item: str(item.get("updated_at_utc") or ""), default=None)
-
-
 def find_investigation_run(directory: Path, investigation_id: str) -> dict | None:
     if not INVESTIGATION_ID_PATTERN.fullmatch(investigation_id or "") or not directory.exists():
         return None
@@ -416,7 +405,12 @@ def claim_reevaluation(directory: Path, run_id: str, revision: int) -> tuple[dic
 
 
 def finish_reevaluation(
-    directory: Path, run_id: str, revision: int, status: str, error: str | None = None
+    directory: Path,
+    run_id: str,
+    revision: int,
+    status: str,
+    error: str | None = None,
+    assessment: dict | None = None,
 ) -> dict | None:
     if status not in {"completed", "failed"}:
         raise ValueError("Invalid reevaluation status")
@@ -430,6 +424,7 @@ def finish_reevaluation(
             "status": status,
             "completed_at_utc": utc_now_iso(),
             "error": compact_text(error, 500) if error else None,
+            "assessment": assessment if status == "completed" else None,
         })
         write_run(directory, payload)
         return public_run(payload)
