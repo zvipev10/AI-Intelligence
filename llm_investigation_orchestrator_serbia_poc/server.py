@@ -13,7 +13,6 @@ import time
 import secrets
 import subprocess
 import threading
-from concurrent.futures import ThreadPoolExecutor
 from collections import Counter, defaultdict
 from datetime import datetime, timezone
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
@@ -2952,8 +2951,7 @@ def run_moshe_playback_reevaluation(run: dict, released_timeframe: dict) -> dict
         result["workstream_id"] = context["workstream_id"]
         return result
 
-    with ThreadPoolExecutor(max_workers=min(4, len(workstream_contexts))) as executor:
-        results = list(executor.map(assess, workstream_contexts))
+    results = [assess(context) for context in workstream_contexts]
     return {
         "answer": "\n\n".join(
             str(result.get("answer") or "").strip() for result in results

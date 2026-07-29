@@ -12,6 +12,10 @@ from moshe_profile.provision_profile import (
     PLAYBACK_VISIBILITY_PATH,
     restricted_config,
 )
+from moshe_profile.configure_parallel_tool_calls import (
+    NEW_ASSIGNMENT,
+    configure,
+)
 
 
 ROOT = Path(__file__).resolve().parent
@@ -84,8 +88,25 @@ class MosheProfileTests(unittest.TestCase):
         self.assertIn("bin/hermes gateway run", unit)
         self.assertIn('Environment="HERMES_HOME=/home/ubuntu/.hermes/profiles/moshe"', unit)
         self.assertIn('Environment="API_SERVER_PORT=8643"', unit)
+        self.assertIn('Environment="HERMES_PARALLEL_TOOL_CALLS=false"', unit)
         self.assertIn("MemoryHigh=400M", unit)
         self.assertIn("MemoryMax=600M", unit)
+
+    def test_codex_transport_patch_honors_profile_parallelism_flag(self):
+        from tempfile import TemporaryDirectory
+
+        with TemporaryDirectory() as directory:
+            path = Path(directory) / "codex.py"
+            path.write_text(
+                "from typing import Any, Dict, List, Optional\n"
+                'kwargs["parallel_tool_calls"] = True\n',
+                encoding="utf-8",
+            )
+            self.assertTrue(configure(path))
+            self.assertFalse(configure(path))
+            source = path.read_text(encoding="utf-8")
+        self.assertIn("import os", source)
+        self.assertIn(NEW_ASSIGNMENT, source)
 
     def test_frontend_routes_with_selected_or_explicit_current_addressee(self):
         frontend = (ROOT / "app.js").read_text(encoding="utf-8")

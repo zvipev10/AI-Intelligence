@@ -16,6 +16,7 @@ Environment="PATH=/home/ubuntu/.hermes/hermes-agent/venv/bin:/home/ubuntu/.herme
 Environment="VIRTUAL_ENV=/home/ubuntu/.hermes/hermes-agent/venv"
 Environment="HERMES_HOME=/home/ubuntu/.hermes/profiles/moshe"
 Environment="API_SERVER_PORT=8643"
+Environment="HERMES_PARALLEL_TOOL_CALLS=false"
 Restart=always
 RestartSec=5
 KillMode=mixed
