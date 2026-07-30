@@ -6,7 +6,7 @@
   <title>סביבת מודיעין</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="./vendor/maplibre-gl.css">
-  <link rel="stylesheet" href="./styles.css?v=124">
+  <link rel="stylesheet" href="./styles.css?v=125">
 </head>
 <body>
   <a class="help-button" href="./help.html" target="_blank" rel="noopener" aria-label="פתח עזרה">?</a>
@@ -49,7 +49,7 @@
   </header>
 
   <main class="workspace">
-    <aside class="conversation-panel">
+    <aside id="conversationPanel" class="conversation-panel">
       <div id="conversation" class="conversation" aria-live="polite">
         <article class="message assistant-message">
           <div class="message-label">סוכן חקירה</div>
@@ -85,7 +85,11 @@
       </form>
     </aside>
 
-    <div class="panel-resizer" data-resizer="left" role="separator" aria-label="שינוי רוחב שיחה ותצוגה"></div>
+    <div class="panel-resizer" data-resizer="left" role="separator" aria-label="שינוי רוחב שיחה ותצוגה">
+      <button id="chatPanelToggle" class="chat-panel-toggle" type="button" title="מזער שיחה" aria-label="מזער שיחה" aria-controls="conversationPanel" aria-expanded="true">
+        <span class="material-symbols-rounded" aria-hidden="true">chevron_right</span>
+      </button>
+    </div>
 
     <section class="result-panel">
       <nav class="view-tabs" aria-label="תצוגות תוצאה">
@@ -226,6 +230,6 @@
   </div>
 
   <script src="./vendor/maplibre-gl.js"></script>
-  <script src="./app.js?v=130"></script>
+  <script src="./app.js?v=131"></script>
 </body>
 </html>

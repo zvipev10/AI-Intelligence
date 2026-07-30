@@ -37,6 +37,18 @@ class MemberUiRegressionTests(unittest.TestCase):
         self.assertIn("position: relative", layer_selector_rule)
         self.assertNotIn("position: absolute", layer_selector_rule)
 
+    def test_chat_panel_can_collapse_and_restore_from_the_divider(self):
+        self.assertIn('id="chatPanelToggle"', self.index)
+        self.assertIn('aria-controls="conversationPanel"', self.index)
+        self.assertIn("function setChatPanelCollapsed(collapsed)", self.app)
+        self.assertIn('workspace.classList.toggle("chat-panel-collapsed"', self.app)
+        self.assertIn('"chevron_left" : "chevron_right"', self.app)
+        self.assertIn('event.target.closest(".chat-panel-toggle")', self.app)
+        self.assertIn(".workspace.chat-panel-collapsed {", self.styles)
+        self.assertIn("grid-template-columns: 0 28px", self.styles)
+        mobile = self.styles.split("@media (max-width: 760px)", 1)[1]
+        self.assertIn(".panel-resizer { display: none; }", mobile)
+
     def test_member_roster_includes_moshe(self):
         self.assertIn('displayName: "משה"', self.app)
         self.assertIn('id: "moshe-targets-officer"', self.app)

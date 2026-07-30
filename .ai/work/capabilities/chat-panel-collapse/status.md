@@ -4,26 +4,26 @@
 Minimize and restore the chat panel
 
 ## Current phase
-Capability initiation / review gate
+Final review and handoff
 
 ## Overall status
-Pending review
+Complete
 
 ## Who needs to act now
 
 | Role | Status | Required action | Due before |
 |---|---|---|---|
-| Product | Ready | Confirm the brief reflects the requested behavior | Implementation planning |
-| Development | Pending | Review the proposed grid-track approach | Implementation planning |
-| UX | Pending | Confirm control placement and states | Implementation planning |
-| QA | Pending | Confirm acceptance and regression coverage | Implementation planning |
+| Product | Approved | Inspect deployed interaction | Complete |
+| Development | Complete | Implementation complete | Complete |
+| UX | Complete | Visual QA passed | Complete |
+| QA | Complete | Regression and browser checks passed | Complete |
 | Architecture/Security | Not required | No new data, service, or permission boundary | — |
 
 ## Latest change since previous review
 Initial capability definition created from the supplied divider screenshot.
 
 ## Current blockers
-Repository workflow requires approval of the UX/development behavior before product code changes.
+None.
 
 ## Current risks
 - Restore control visibility while the chat track is collapsed.
@@ -31,7 +31,7 @@ Repository workflow requires approval of the UX/development behavior before prod
 - Map sizing after the layout transition.
 
 ## Next expected artifact
-Approved role reviews followed by `execution-plan.md`.
+None; handoff complete.
 
 ## Parent issue
 `issues/parent-capability.md`
@@ -47,12 +47,12 @@ Approved role reviews followed by `execution-plan.md`.
 ## Artifact links
 - Capability brief: `capability-brief.md`
 - Decisions: Not required yet
-- Developer review: Pending
-- UX review: Pending
-- QA review: Pending
-- Execution plan: Pending
-- Latest checkpoint: Pending
-- Handoff: Pending
+- Developer review: `developer-review.md`
+- UX review: `ux-review.md`
+- QA review: `qa-review.md`
+- Execution plan: `execution-plan.md`
+- Latest checkpoint: `checkpoint-001.md`
+- Handoff: `handoff-summary.md`
 
 ## Gate checklist
 - [x] Current owner is explicit.

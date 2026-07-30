@@ -241,6 +241,7 @@ const state = {
   activeLayerId: null,
   rawOverlayMinimized: false,
   rawOverlayHeight: 28,
+  chatPanelCollapsed: false,
   queryEdited: false,
   originalQuery: null,
   activeTeamMentions: []
@@ -289,6 +290,7 @@ const layerSelectorSearch = document.getElementById("layerSelectorSearch");
 const layerSelectorList = document.getElementById("layerSelectorList");
 const layerSelectorStatus = document.getElementById("layerSelectorStatus");
 const workspace = document.querySelector(".workspace");
+const chatPanelToggle = document.getElementById("chatPanelToggle");
 const queryLayerName = document.getElementById("queryLayerName");
 const queryToolName = document.getElementById("queryToolName");
 const queryModal = document.getElementById("queryModal");
@@ -4001,9 +4003,29 @@ function setPanelWidths(chatWidth, resultWidth) {
   if (state.map) setTimeout(() => state.map.resize(), 0);
 }
 
+function setChatPanelCollapsed(collapsed) {
+  state.chatPanelCollapsed = Boolean(collapsed);
+  workspace.classList.toggle("chat-panel-collapsed", state.chatPanelCollapsed);
+  if (chatPanelToggle) {
+    const label = state.chatPanelCollapsed ? "הצג שיחה" : "מזער שיחה";
+    chatPanelToggle.title = label;
+    chatPanelToggle.setAttribute("aria-label", label);
+    chatPanelToggle.setAttribute("aria-expanded", state.chatPanelCollapsed ? "false" : "true");
+    const icon = chatPanelToggle.querySelector(".material-symbols-rounded");
+    if (icon) icon.textContent = state.chatPanelCollapsed ? "chevron_left" : "chevron_right";
+  }
+  if (state.map) {
+    setTimeout(() => {
+      state.map.resize();
+      renderMap();
+    }, 220);
+  }
+}
+
 function initPanelResizers() {
   document.querySelectorAll(".panel-resizer").forEach(handle => {
     handle.addEventListener("pointerdown", event => {
+      if (event.target.closest(".chat-panel-toggle") || state.chatPanelCollapsed) return;
       event.preventDefault();
       handle.setPointerCapture(event.pointerId);
       handle.classList.add("dragging");
@@ -4042,6 +4064,11 @@ function initPanelResizers() {
       window.addEventListener("pointermove", onMove);
       window.addEventListener("pointerup", onUp);
     });
+  });
+  chatPanelToggle?.addEventListener("click", event => {
+    event.preventDefault();
+    event.stopPropagation();
+    setChatPanelCollapsed(!state.chatPanelCollapsed);
   });
 }
 
