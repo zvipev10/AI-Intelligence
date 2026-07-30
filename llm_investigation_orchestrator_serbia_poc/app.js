@@ -407,9 +407,11 @@ function resultMessageLabel(result = {}) {
 function appendMemberWelcomeMessage(member) {
   conversation.querySelectorAll(".member-welcome-message").forEach(message => message.remove());
   const welcome = member.id === MOSHE_MEMBER_ID ? MOSHE_WELCOME : MICHLOL_MEMBER_WELCOME;
-  return appendMessage("assistant", `
-    <p><strong>${escapeHtml(member.displayName)}</strong></p>
-    <p>${escapeHtml(welcome)}</p>`, { label: memberMessageLabel(member), className: "member-welcome-message", memberId: member.id });
+  return appendMessage("assistant", `<p>${escapeHtml(welcome)}</p>`, {
+    label: memberMessageLabel(member),
+    className: "member-welcome-message",
+    memberId: member.id
+  });
 }
 
 function selectConversationMember(memberId) {
@@ -2583,6 +2585,58 @@ function normalizedWorkstreamSummaryText(value) {
   return String(value || "").replace(/\s+/g, " ").trim().toLocaleLowerCase("he-IL");
 }
 
+function workstreamResultSourceId(workstreamId) {
+  return sanitizeLayerKey(`workstream:${workstreamId}`);
+}
+
+function workstreamHasPresentation(workstream) {
+  const artifacts = Array.isArray(workstream.artifacts) ? workstream.artifacts : [];
+  return artifacts.some(artifact =>
+    artifact.artifact_type === "target_assessment_lead"
+    && !["closed", "rejected"].includes(artifact.status)
+    && (artifact.content?.indications || []).some(item => item.state !== "removed")
+  );
+}
+
+async function toggleWorkstreamResultVisibility(workstreamId, btn) {
+  const sourceId = workstreamResultSourceId(workstreamId);
+  const sourceLayers = state.layers.filter(layer => layer.sourceId === sourceId);
+  if (sourceLayers.some(layer => layer.visible)) {
+    sourceLayers.forEach(layer => { layer.visible = false; });
+    updateSourceVisibilityBtn(btn);
+    renderAllViews();
+    return;
+  }
+  if (btn) btn.disabled = true;
+  try {
+    const response = await fetch(
+      `/api/workstreams/${encodeURIComponent(workstreamId)}/presentation`,
+      { cache: "no-store" }
+    );
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || "טעינת תוצאות המעקב נכשלה");
+    state.layers = state.layers.filter(layer => layer.sourceId !== sourceId);
+    const layers = buildTypedResultLayers(result);
+    if (!layers.length) throw new Error("אין למעקב תוצאות שניתן להציג");
+    addResultLayers({
+      sourceId,
+      sourceLabel: result.title || "תוצאות מעקב",
+      preferredView: "map",
+      layers
+    });
+    state.rawOverlayMinimized = false;
+    activateView("map", { reason: "תוצאות המעקב" });
+    renderAllViews();
+  } catch (error) {
+    workstreamMessage(
+      `<p>לא הצלחתי להציג את תוצאות המעקב.</p><div class="answer-callout">${escapeHtml(error.message)}</div>`
+    );
+  } finally {
+    if (btn) btn.disabled = false;
+    updateSourceVisibilityBtn(btn);
+  }
+}
+
 function appendWorkstreamUpdate(workstream) {
   conversation.querySelectorAll("[data-workstream-update-id]").forEach(message => {
     if (message.dataset.workstreamUpdateId === workstream.workstream_id) message.remove();
@@ -2611,12 +2665,15 @@ function appendWorkstreamUpdate(workstream) {
     ${responsibilityHtml}
     ${workstreamArtifactHtml(workstream)}
     <div class="workstream-message-actions">
+      ${workstreamHasPresentation(workstream) ? `<button type="button" class="final-answer-show-btn layers-hidden" data-workstream-results="${escapeHtml(workstream.workstream_id)}" data-source-id="${escapeHtml(workstreamResultSourceId(workstream.workstream_id))}" title="הצג תוצאות" aria-label="הצג תוצאות" aria-pressed="false"><span class="final-answer-show-label">הצג תוצאות</span></button>` : ""}
       <button type="button" class="danger-button" data-workstream-archive="${escapeHtml(workstream.workstream_id)}">העברה לארכיון</button>
     </div>`, {
       label: agent ? `${agent.display_name} · עדכון מעקב` : "עדכון מעקב",
       memberId: agent?.participant_id,
     });
   message.dataset.workstreamUpdateId = workstream.workstream_id;
+  const resultsButton = message.querySelector("[data-workstream-results]");
+  if (resultsButton) updateSourceVisibilityBtn(resultsButton);
 }
 
 async function requestWorkstreamUpdate() {
@@ -4380,6 +4437,14 @@ document.addEventListener("click", event => {
   const archiveWorkstream = event.target.closest("[data-workstream-archive]");
   if (archiveWorkstream) {
     requestWorkstreamArchive(archiveWorkstream.dataset.workstreamArchive);
+    return;
+  }
+  const workstreamResults = event.target.closest("[data-workstream-results]");
+  if (workstreamResults) {
+    void toggleWorkstreamResultVisibility(
+      workstreamResults.dataset.workstreamResults,
+      workstreamResults
+    );
     return;
   }
   const confirmArchive = event.target.closest("[data-workstream-archive-confirm]");

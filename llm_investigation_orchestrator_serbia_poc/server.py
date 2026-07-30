@@ -1348,6 +1348,84 @@ def resolve_workstream_target(target_id: str) -> dict | None:
     return next((row for row in rows if row.get("target_id") == target_id), None)
 
 
+def workstream_presentation(workstream_id: str) -> dict | None:
+    """Build standard map/table layers from the latest active workstream state."""
+    workstream = load_workstream(workstream_id)
+    if workstream is None or workstream.get("status") != "active":
+        return None
+    policy = load_playback_visibility(SCENARIO_RUNS_DIR) or {}
+    if policy.get("mode") != "real_time" or not policy.get("active"):
+        raise ValueError("Workstream presentation is available only in real-time mode")
+    artifacts = [
+        item for item in workstream.get("artifacts") or []
+        if item.get("artifact_type") == "target_assessment_lead"
+        and item.get("status") not in {"closed", "rejected"}
+    ]
+    artifact = max(
+        artifacts,
+        key=lambda item: (int(item.get("revision") or 0), str(item.get("updated_at_utc") or "")),
+        default=None,
+    )
+    if artifact is None:
+        return {
+            "workstream_id": workstream_id,
+            "title": workstream.get("title"),
+            "artifact_revision": None,
+            "requested_result_layers": [],
+        }
+    record_ids = list(dict.fromkeys(
+        str(item.get("source_reference", {}).get("record_id") or "").strip()
+        for item in artifact.get("content", {}).get("indications") or []
+        if item.get("state") != "removed"
+        and str(item.get("source_reference", {}).get("record_id") or "").strip()
+    ))
+    events_by_id = {
+        str(row.get("record_id") or row.get("event_id") or ""): row
+        for row in load_ui_events()
+    }
+    event_rows = [events_by_id[record_id] for record_id in record_ids if record_id in events_by_id]
+    layers = []
+    if event_rows:
+        layers.append({
+            "id": f"workstream:{workstream_id}:indications",
+            "label": "אינדיקציות גולמיות",
+            "kind": "events",
+            "rows": event_rows,
+            "capabilities": {"table": True, "map": True, "timeline": True},
+            "recommended_view": "map",
+        })
+    target_ids = []
+    subject = artifact.get("content", {}).get("subject_reference") or {}
+    if subject.get("kind") == "target" and subject.get("target_id"):
+        target_ids.append(str(subject["target_id"]))
+    target_ids.extend(
+        str(item.get("target_id") or "")
+        for item in workstream.get("activity") or []
+        if item.get("target_id")
+    )
+    target_ids = list(dict.fromkeys(value for value in target_ids if value))
+    target_result = get_ui_layer_rows(ATTACK_TARGET_CATALOG_LAYER_ID) if target_ids else None
+    target_rows = (
+        [row for row in target_result[1] if row.get("target_id") in set(target_ids)]
+        if target_result is not None else []
+    )
+    if target_rows:
+        layers.append({
+            "id": f"workstream:{workstream_id}:target",
+            "label": "מטרה",
+            "kind": "attack_targets",
+            "rows": target_rows,
+            "capabilities": {"table": True, "map": True, "timeline": False},
+            "recommended_view": "map",
+        })
+    return {
+        "workstream_id": workstream_id,
+        "title": workstream.get("title"),
+        "artifact_revision": artifact.get("revision"),
+        "requested_result_layers": layers,
+    }
+
+
 def bounded_workstream_context(value: Any, investigation_id: str) -> dict | None:
     """Load server-owned context; never trust browser-supplied artifact or participant data."""
     if not isinstance(value, dict):
@@ -3312,6 +3390,20 @@ class Handler(SimpleHTTPRequestHandler):
                 self.send_json(404, {"error": "Artifact not found"})
             else:
                 self.send_json(200, artifact)
+            return
+        if path.path.startswith("/api/workstreams/") and path.path.endswith("/presentation"):
+            workstream_id = unquote(
+                path.path[len("/api/workstreams/"):-len("/presentation")].rstrip("/")
+            )
+            try:
+                result = workstream_presentation(workstream_id)
+            except ValueError as exc:
+                self.send_json(400, {"error": str(exc)})
+                return
+            if result is None:
+                self.send_json(404, {"error": "Workstream not found"})
+            else:
+                self.send_json(200, result)
             return
         if path.path.startswith("/api/workstreams/"):
             workstream_id = unquote(path.path[len("/api/workstreams/"):])

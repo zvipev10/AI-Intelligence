@@ -417,6 +417,59 @@ class ScenarioPlaybackApiTests(unittest.TestCase):
         self.assertEqual("Updated assessment", saved["artifacts"][0]["content"]["lead_statement"])
         self.assertEqual("playback_assessment", saved["activity"][-1]["type"])
 
+    def test_workstream_presentation_has_indication_and_filtered_target_tabs(self):
+        first_event = server.load_ui_events()[0]
+        event_id = first_event.get("record_id") or first_event["event_id"]
+        status, _ = self.request("POST", "/api/playback/mode", {
+            "investigation_id": "investigation-playback",
+            "mode": "real_time",
+        })
+        self.assertEqual(200, status)
+        workstream = server.load_workstream(self.workstream["workstream_id"])
+        workstream["participants"].append({
+            "participant_id": "moshe-targets-officer",
+            "kind": "agent",
+            "display_name": "Moshe",
+            "role": "targets",
+        })
+        workstream["assignments"].append({
+            "assignment_id": "assignment",
+            "owner_id": "moshe-targets-officer",
+            "responsibility": "Assess playback evidence.",
+            "status": "active",
+        })
+        server.write_workstream(workstream)
+        server.persist_playback_workstream_assessment(
+            self.workstream["workstream_id"],
+            {"answer": "Assessment", "event_ids": [event_id]},
+            {"run_id": "run-presentation", "revision": 1},
+            {"from": "2026-09-17T02:00:00Z", "to": "2026-09-17T06:00:00Z"},
+        )
+        saved = server.load_workstream(self.workstream["workstream_id"])
+        saved["activity"].append({"type": "target_created", "target_id": "TGT-1"})
+        server.write_workstream(saved)
+        target_rows = [
+            {"target_id": "TGT-1", "name": "Tracked target"},
+            {"target_id": "TGT-2", "name": "Unrelated target"},
+        ]
+        with patch.object(
+            server,
+            "get_ui_layer_rows",
+            return_value=({"id": server.ATTACK_TARGET_CATALOG_LAYER_ID}, target_rows),
+        ):
+            status, result = self.request(
+                "GET",
+                f"/api/workstreams/{self.workstream['workstream_id']}/presentation",
+            )
+
+        self.assertEqual(200, status)
+        layers = result["requested_result_layers"]
+        self.assertEqual(["אינדיקציות גולמיות", "מטרה"], [layer["label"] for layer in layers])
+        self.assertEqual([event_id], [
+            layers[0]["rows"][0].get("record_id") or layers[0]["rows"][0].get("event_id")
+        ])
+        self.assertEqual(["TGT-1"], [row["target_id"] for row in layers[1]["rows"]])
+
     def test_real_time_mode_with_reset_restarts_existing_playback(self):
         investigation_id = "investigation-refresh-reset"
         status, initial = self.request("POST", "/api/playback/mode", {

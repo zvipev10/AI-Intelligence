@@ -64,6 +64,11 @@ class MemberUiRegressionTests(unittest.TestCase):
             self.app,
         )
         self.assertIn("appendMemberWelcomeMessage(member);", self.app)
+        welcome_body = self.app.split("function appendMemberWelcomeMessage(member)", 1)[1].split(
+            "function selectConversationMember", 1
+        )[0]
+        self.assertIn("`<p>${escapeHtml(welcome)}</p>`", welcome_body)
+        self.assertNotIn("member.displayName", welcome_body)
         self.assertNotIn("appendAgentMemberOpeningMessage", self.app)
 
     def test_member_welcome_uses_general_assistant_background(self):

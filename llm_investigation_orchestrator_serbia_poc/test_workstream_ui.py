@@ -77,6 +77,14 @@ class WorkstreamUiTests(unittest.TestCase):
         self.assertNotIn(".playback-next-button", self.styles)
         self.assertIn("data-workstream-archive", self.app)
 
+    def test_workstream_update_can_show_filtered_results(self):
+        self.assertIn("data-workstream-results", self.app)
+        self.assertIn("toggleWorkstreamResultVisibility", self.app)
+        self.assertIn("/presentation", self.app)
+        self.assertIn("workstreamResultSourceId", self.app)
+        self.assertIn("final-answer-show-btn layers-hidden", self.app)
+        self.assertIn('<span class="final-answer-show-label">הצג תוצאות</span>', self.app)
+
     def test_investigation_playback_control_is_visible_in_upper_bar(self):
         self.assertIn('id="playbackNextButton"', self.index)
         self.assertIn('class="playback-header-button"', self.index)
