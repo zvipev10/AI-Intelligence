@@ -102,6 +102,9 @@ class WorkstreamUiTests(unittest.TestCase):
         self.assertIn("reset: true", self.app)
         self.assertIn('state.investigationPlayback?.mode !== "real_time"', self.app)
         self.assertIn("reevaluation?.assessment?.answer", self.app)
+        self.assertIn("appendMoshePlaybackAssessment", self.app)
+        self.assertIn("buildTypedResultLayers(result)", self.app)
+        self.assertIn("toggleFinalAnswerVisibility(result, \"\", button)", self.app)
         self.assertIn(".playback-header-button", self.styles)
 
     def test_boot_resets_playback_while_staying_in_historical_mode(self):

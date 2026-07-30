@@ -470,6 +470,44 @@ class ScenarioPlaybackApiTests(unittest.TestCase):
         ])
         self.assertEqual(["TGT-1"], [row["target_id"] for row in layers[1]["rows"]])
 
+    def test_playback_presentation_snapshots_the_shared_workstream_layers(self):
+        presentations = {
+            "WS-1": {
+                "title": "First",
+                "requested_result_layers": [{
+                    "id": "WS-1:raw",
+                    "label": "אינדיקציות גולמיות",
+                    "kind": "events",
+                    "rows": [{"record_id": "REC-1"}],
+                }],
+            },
+            "WS-2": {
+                "title": "Second",
+                "requested_result_layers": [{
+                    "id": "WS-2:target",
+                    "label": "מטרה",
+                    "kind": "attack_targets",
+                    "rows": [{"target_id": "TGT-2"}],
+                }],
+            },
+        }
+        with patch.object(
+            server,
+            "workstream_presentation",
+            side_effect=lambda workstream_id: presentations[workstream_id],
+        ):
+            layers = server.playback_workstream_presentation([
+                {"workstream_id": "WS-1"},
+                {"workstream_id": "WS-2"},
+            ])
+
+        self.assertEqual(
+            ["First · אינדיקציות גולמיות", "Second · מטרה"],
+            [layer["label"] for layer in layers],
+        )
+        self.assertEqual("REC-1", layers[0]["rows"][0]["record_id"])
+        self.assertEqual("TGT-2", layers[1]["rows"][0]["target_id"])
+
     def test_real_time_mode_with_reset_restarts_existing_playback(self):
         investigation_id = "investigation-refresh-reset"
         status, initial = self.request("POST", "/api/playback/mode", {

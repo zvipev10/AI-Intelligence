@@ -1426,6 +1426,29 @@ def workstream_presentation(workstream_id: str) -> dict | None:
     }
 
 
+def playback_workstream_presentation(workstream_updates: list[dict]) -> list[dict]:
+    """Snapshot the updated workstreams through the shared presentation contract."""
+    updates = [
+        item for item in workstream_updates
+        if isinstance(item, dict) and item.get("workstream_id")
+    ]
+    layers = []
+    for update in updates:
+        try:
+            presentation = workstream_presentation(str(update["workstream_id"]))
+        except Exception:
+            presentation = None
+        if not presentation:
+            continue
+        title = compact_text(presentation.get("title"), 160)
+        for layer in presentation.get("requested_result_layers") or []:
+            snapshot = dict(layer)
+            if len(updates) > 1 and title:
+                snapshot["label"] = f"{title} · {layer.get('label') or 'תוצאות'}"
+            layers.append(snapshot)
+    return layers
+
+
 def bounded_workstream_context(value: Any, investigation_id: str) -> dict | None:
     """Load server-owned context; never trust browser-supplied artifact or participant data."""
     if not isinstance(value, dict):
@@ -3216,6 +3239,7 @@ def complete_moshe_playback_reevaluation(
                     "revision": artifact["revision"],
                 })
         assessment = {
+            "run_id": f"{run['run_id']}:revision:{revision}",
             "answer": compact_text(result.get("answer"), 20_000),
             "responding_agent": result.get("responding_agent") or MOSHE_AGENT_ID,
             "event_ids": [
@@ -3223,6 +3247,7 @@ def complete_moshe_playback_reevaluation(
                 if isinstance(value, str)
             ][:500],
             "workstream_updates": workstream_updates,
+            "requested_result_layers": playback_workstream_presentation(workstream_updates),
         }
         finish_reevaluation(
             SCENARIO_RUNS_DIR,

@@ -2419,10 +2419,7 @@ async function pollMoshePlaybackReevaluation() {
             await loadWorkstreams();
           }
           if (answer) {
-            workstreamMessage(
-              `<div class="answer-body">${answerHtml(cleanAssistantAnswer(answer))}</div>`,
-              { label: MOSHE_MESSAGE_LABEL, memberId: MOSHE_MEMBER_ID }
-            );
+            appendMoshePlaybackAssessment(payload.run.reevaluation.assessment);
           } else {
             workstreamMessage("<p>משה סיים לעבד את פרוסת המידע החדשה.</p>");
           }
@@ -2440,6 +2437,33 @@ async function pollMoshePlaybackReevaluation() {
       return;
     }
   }
+}
+
+function appendMoshePlaybackAssessment(assessment = {}) {
+  const result = {
+    ...assessment,
+    run_id: assessment.run_id || `playback:${Date.now()}`
+  };
+  const hasRequestedResults = buildTypedResultLayers(result).length > 0;
+  const article = workstreamMessage(
+    `<div class="answer-body">
+      ${answerHtml(cleanAssistantAnswer(String(assessment.answer || "")))}
+      ${hasRequestedResults ? `<div class="final-answer-actions">
+        <button type="button" class="final-answer-show-btn layers-hidden" data-source-id="${escapeHtml(finalSourceId(result))}" title="הצג תוצאות" aria-label="הצג תוצאות" aria-pressed="false">
+          <span class="final-answer-show-label">הצג תוצאות</span>
+        </button>
+      </div>` : ""}
+    </div>`,
+    { label: MOSHE_MESSAGE_LABEL, memberId: MOSHE_MEMBER_ID }
+  );
+  const button = article.querySelector(".final-answer-show-btn");
+  if (button) {
+    button.addEventListener("click", () => {
+      toggleFinalAnswerVisibility(result, "", button);
+    });
+    updateSourceVisibilityBtn(button);
+  }
+  return article;
 }
 
 async function initializeHistoricalPlayback() {
