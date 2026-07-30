@@ -27,6 +27,16 @@ class MemberUiRegressionTests(unittest.TestCase):
         self.assertIn("width: 34px", more_rule)
         self.assertIn("height: 34px", more_rule)
 
+    def test_result_header_places_tabs_left_and_layer_search_right(self):
+        tabs = self.index.split('<nav class="view-tabs"', 1)[1].split("</nav>", 1)[0]
+        self.assertLess(tabs.index('class="view-tab-list"'), tabs.index('class="layer-selector"'))
+        view_tabs_rule = self.styles.split(".view-tabs {", 1)[1].split("}", 1)[0]
+        self.assertIn("justify-content: space-between", view_tabs_rule)
+        self.assertIn("direction: ltr", view_tabs_rule)
+        layer_selector_rule = self.styles.split(".layer-selector {", 1)[1].split("}", 1)[0]
+        self.assertIn("position: relative", layer_selector_rule)
+        self.assertNotIn("position: absolute", layer_selector_rule)
+
     def test_member_roster_includes_moshe(self):
         self.assertIn('displayName: "משה"', self.app)
         self.assertIn('id: "moshe-targets-officer"', self.app)
