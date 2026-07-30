@@ -151,6 +151,14 @@ class MemberUiRegressionTests(unittest.TestCase):
         self.assertNotIn("function targetEvidenceHtml", self.app)
         self.assertNotIn("הסבר מיזוג:", self.app)
 
+    def test_event_results_table_shows_record_id_column(self):
+        self.assertIn("<th>מזהה רשומה</th><th>זמן</th>", self.app)
+        self.assertIn(
+            '${escapeHtml(event.record_id || event.event_id || "-")}',
+            self.app,
+        )
+        self.assertIn('<td colspan="7" class="empty-cell">', self.app)
+
     def test_moshe_tools_use_readable_shared_activity_labels(self):
         self.assertIn('prepare_target_candidate: "הכנת מועמד מטרה"', self.app)
         self.assertIn('create_target_candidate: "יצירת מועמד מטרה"', self.app)

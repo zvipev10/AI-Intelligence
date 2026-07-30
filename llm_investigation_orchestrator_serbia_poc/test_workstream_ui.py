@@ -120,10 +120,14 @@ class WorkstreamUiTests(unittest.TestCase):
         self.assertIn("artifact.revision", self.app)
         self.assertIn("WORKSTREAM_ARTIFACT_STATUS_LABELS", self.app)
 
-    def test_archive_requires_chat_confirmation(self):
-        self.assertIn("requestWorkstreamArchive", self.app)
-        self.assertIn("data-workstream-archive-confirm", self.app)
-        self.assertIn("data-workstream-archive-cancel", self.app)
+    def test_archive_runs_immediately_without_chat_confirmation(self):
+        self.assertIn(
+            "void archiveWorkstreamFromChat(archiveWorkstream.dataset.workstreamArchive);",
+            self.app,
+        )
+        self.assertNotIn("requestWorkstreamArchive", self.app)
+        self.assertNotIn("data-workstream-archive-confirm", self.app)
+        self.assertNotIn("data-workstream-archive-cancel", self.app)
 
     def test_workstreams_reload_with_investigation(self):
         self.assertIn("async function loadWorkstreams()", self.app)

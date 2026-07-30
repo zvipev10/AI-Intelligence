@@ -2707,21 +2707,6 @@ async function archiveWorkstreamFromChat(workstreamId) {
   }
 }
 
-async function requestWorkstreamArchive(workstreamId) {
-  try {
-    const workstream = await fetchWorkstream(workstreamId);
-    workstreamMessage(`
-      <p>להעביר את המעקב <strong>${escapeHtml(workstream.title || "מעקב")}</strong> לארכיון?</p>
-      <p class="workstream-message-meta">המעקב יוסר מהמחוון הפעיל.</p>
-      <div class="workstream-message-actions">
-        <button type="button" class="danger-button" data-workstream-archive-confirm="${escapeHtml(workstreamId)}">כן, להעביר לארכיון</button>
-        <button type="button" data-workstream-archive-cancel>ביטול</button>
-      </div>`);
-  } catch (error) {
-    workstreamMessage(`<p>לא הצלחתי להכין את פעולת הארכוב.</p><div class="answer-callout">${escapeHtml(error.message)}</div>`);
-  }
-}
-
 function startAssistantResearchMessage(message = "") {
   const article = document.createElement("article");
   article.className = "message assistant-message";
@@ -4321,16 +4306,17 @@ function renderEvidence() {
       </tr>`).join("") : '<tr><td colspan="5" class="empty-cell">השכבה מוסתרת או ריקה.</td></tr>';
     return;
   }
-  head.innerHTML = "<tr><th>זמן</th><th>אמינות</th><th>ודאות</th><th>גורם</th><th>מיקום</th><th>תקציר</th></tr>";
+  head.innerHTML = "<tr><th>מזהה רשומה</th><th>זמן</th><th>אמינות</th><th>ודאות</th><th>גורם</th><th>מיקום</th><th>תקציר</th></tr>";
   body.innerHTML = activeItems.length ? activeItems.map(event => `
     <tr>
+      <td dir="ltr">${escapeHtml(event.record_id || event.event_id || "-")}</td>
       <td dir="ltr">${escapeHtml(event.timestamp_utc)}</td>
       <td>${escapeHtml(event.source_reliability_label || event.source_reliability || "-")}</td>
       <td>${escapeHtml(event.certainty_level || "-")}</td>
       <td>${escapeHtml(event.entity_name || event.entity_id || "-")}</td>
       <td>${escapeHtml(event.location_name || "-")}</td>
       <td>${escapeHtml(event.event_summary || "-")}</td>
-    </tr>`).join("") : '<tr><td colspan="6" class="empty-cell">השכבה מוסתרת או ריקה.</td></tr>';
+    </tr>`).join("") : '<tr><td colspan="7" class="empty-cell">השכבה מוסתרת או ריקה.</td></tr>';
 }
 
 function resetInvestigation(options = {}) {
@@ -4436,7 +4422,7 @@ document.addEventListener("click", event => {
   }
   const archiveWorkstream = event.target.closest("[data-workstream-archive]");
   if (archiveWorkstream) {
-    requestWorkstreamArchive(archiveWorkstream.dataset.workstreamArchive);
+    void archiveWorkstreamFromChat(archiveWorkstream.dataset.workstreamArchive);
     return;
   }
   const workstreamResults = event.target.closest("[data-workstream-results]");
@@ -4445,15 +4431,6 @@ document.addEventListener("click", event => {
       workstreamResults.dataset.workstreamResults,
       workstreamResults
     );
-    return;
-  }
-  const confirmArchive = event.target.closest("[data-workstream-archive-confirm]");
-  if (confirmArchive) {
-    archiveWorkstreamFromChat(confirmArchive.dataset.workstreamArchiveConfirm);
-    return;
-  }
-  if (event.target.closest("[data-workstream-archive-cancel]")) {
-    workstreamMessage("<p>העברת המעקב לארכיון בוטלה.</p>");
     return;
   }
   const viewButton = event.target.closest("[data-view]");
