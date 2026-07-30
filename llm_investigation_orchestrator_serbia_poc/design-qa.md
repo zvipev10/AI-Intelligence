@@ -4,6 +4,7 @@
 - Source visual truth: `C:\Users\user\AppData\Local\Temp\codex-clipboard-77903825-d73e-4be7-88e1-2805bcd1076d.png`
 - Expanded implementation: `chat-expanded.png`
 - Collapsed implementation: `chat-collapsed.png`
+- Polished implementation: `chat-polish.png`
 - Focused comparison: `chat-divider-comparison.png`
 - Viewport: 2000 × 1200 CSS pixels, device scale factor 1
 - Source pixels: 43 × 925; the source is a narrow location reference rather than a complete component design
@@ -37,6 +38,8 @@ No actionable P0, P1, or P2 findings.
 
 ## Comparison history
 Initial implementation passed the visual comparison without requiring a P0/P1/P2 correction.
+
+Polish pass: the enclosing result-panel frame was removed and the divider control was reduced to 20px. Computed layout confirms the button ends exactly at the chat boundary with no overlap; result border and radius are both 0px.
 
 ## Final result
 final result: passed

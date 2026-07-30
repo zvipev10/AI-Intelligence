@@ -36,6 +36,10 @@ class MemberUiRegressionTests(unittest.TestCase):
         layer_selector_rule = self.styles.split(".layer-selector {", 1)[1].split("}", 1)[0]
         self.assertIn("position: relative", layer_selector_rule)
         self.assertNotIn("position: absolute", layer_selector_rule)
+        self.assertIn(
+            ".result-panel { border: 0; border-radius: 0; background: transparent; }",
+            self.styles,
+        )
 
     def test_chat_panel_can_collapse_and_restore_from_the_divider(self):
         self.assertIn('id="chatPanelToggle"', self.index)
@@ -46,6 +50,9 @@ class MemberUiRegressionTests(unittest.TestCase):
         self.assertIn('event.target.closest(".chat-panel-toggle")', self.app)
         self.assertIn(".workspace.chat-panel-collapsed {", self.styles)
         self.assertIn("grid-template-columns: 0 28px", self.styles)
+        toggle_rule = self.styles.split(".chat-panel-toggle {", 1)[1].split("}", 1)[0]
+        self.assertIn("width: 20px", toggle_rule)
+        self.assertIn("height: 20px", toggle_rule)
         mobile = self.styles.split("@media (max-width: 760px)", 1)[1]
         self.assertIn(".panel-resizer { display: none; }", mobile)
 

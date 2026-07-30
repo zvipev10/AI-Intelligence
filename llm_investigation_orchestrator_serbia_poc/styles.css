@@ -97,16 +97,17 @@ button { cursor: pointer; }
 .workspace { height: calc(100dvh - 68px); min-height: 0; padding: 12px; display: grid; grid-template-columns: minmax(260px, var(--chat-width)) 8px minmax(420px, var(--result-width)); gap: 6px; direction: rtl; overflow: hidden; transition: grid-template-columns .2s ease; }
 .workspace.chat-panel-collapsed { grid-template-columns: 0 28px minmax(420px, 1fr); }
 .conversation-panel, .result-panel { min-width: 0; min-height: 0; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.result-panel { border: 0; border-radius: 0; background: transparent; }
 .conversation-panel { transition: opacity .14s ease, border-color .14s ease; }
 .workspace.chat-panel-collapsed .conversation-panel { visibility: hidden; opacity: 0; border-color: transparent; pointer-events: none; }
 .panel-resizer { min-width: 8px; cursor: col-resize; border-radius: 999px; background: transparent; position: relative; }
-.panel-resizer::after { content: ""; position: absolute; top: 42px; bottom: 10px; left: 50%; width: 2px; border-radius: 999px; background: var(--line); transform: translateX(-50%); }
+.panel-resizer::after { content: ""; position: absolute; top: 38px; bottom: 10px; left: 50%; width: 2px; border-radius: 999px; background: var(--line); transform: translateX(-50%); }
 .panel-resizer:hover::after, .panel-resizer.dragging::after { background: var(--blue); }
 .workspace.chat-panel-collapsed .panel-resizer { cursor: default; }
-.chat-panel-toggle { position: absolute; z-index: 4; top: 8px; left: 50%; width: 28px; height: 28px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 50%; background: var(--panel-2); color: var(--muted); padding: 0; box-shadow: 0 5px 14px rgba(0,0,0,.3); transform: translateX(-50%); cursor: pointer; }
+.chat-panel-toggle { position: absolute; z-index: 4; top: 10px; left: 50%; width: 20px; height: 20px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 50%; background: var(--panel-2); color: var(--muted); padding: 0; box-shadow: 0 4px 10px rgba(0,0,0,.28); transform: translateX(-50%); cursor: pointer; }
 .chat-panel-toggle:hover { border-color: var(--blue); background: #202a37; color: var(--ink); }
 .chat-panel-toggle:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
-.chat-panel-toggle .material-symbols-rounded { font-size: 20px; direction: ltr; }
+.chat-panel-toggle .material-symbols-rounded { font-size: 16px; direction: ltr; }
 .conversation-panel { display: grid; grid-template-rows: 1fr auto auto; }
 .panel-heading { padding: 14px 16px; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; border-bottom: 1px solid var(--line); }
 .eyebrow { display: block; margin-bottom: 4px; color: var(--muted); font-size: 11px; font-weight: 700; }

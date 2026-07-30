@@ -20,7 +20,7 @@ Complete
 | Architecture/Security | Not required | No new data, service, or permission boundary | — |
 
 ## Latest change since previous review
-Initial capability definition created from the supplied divider screenshot.
+Result-header frame removed and divider button reduced to eliminate overlap.
 
 ## Current blockers
 None.
@@ -51,7 +51,7 @@ None; handoff complete.
 - UX review: `ux-review.md`
 - QA review: `qa-review.md`
 - Execution plan: `execution-plan.md`
-- Latest checkpoint: `checkpoint-001.md`
+- Latest checkpoint: `checkpoint-002.md`
 - Handoff: `handoff-summary.md`
 
 ## Gate checklist
