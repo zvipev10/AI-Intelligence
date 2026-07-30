@@ -112,7 +112,7 @@ h3 { margin: 0; font-size: 14px; }
 .assistant-message { align-self: flex-start; background: var(--soft); border: 1px solid var(--line); }
 .user-message { align-self: flex-end; background: var(--blue-soft); border: 1px solid #2e4d72; }
 .message-label { margin-bottom: 5px; color: var(--muted); font-size: 10px; font-weight: 700; }
-.member-welcome-message { border-color: rgba(88,166,255,.34); background: rgba(88,166,255,.09); }
+.member-welcome-message { border-color: rgba(88,166,255,.34); }
 .member-welcome-message .message-label { color: var(--blue); }
 .answer-callout { margin-top: 9px; padding: 9px; border-right: 3px solid var(--red); background: rgba(255,255,255,.06); }
 .evidence-ids-toggle { margin-top: 8px; padding: 8px 9px; border: 1px solid var(--line); border-radius: 6px; background: rgba(255,255,255,.05); }

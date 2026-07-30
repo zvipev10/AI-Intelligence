@@ -66,6 +66,11 @@ class MemberUiRegressionTests(unittest.TestCase):
         self.assertIn("appendMemberWelcomeMessage(member);", self.app)
         self.assertNotIn("appendAgentMemberOpeningMessage", self.app)
 
+    def test_member_welcome_uses_general_assistant_background(self):
+        rule = self.styles.split(".member-welcome-message {", 1)[1].split("}", 1)[0]
+        self.assertNotIn("background:", rule)
+        self.assertIn(".assistant-message {", self.styles)
+
     def test_moshe_answers_use_targets_officer_title(self):
         self.assertIn('const MOSHE_MESSAGE_LABEL = "משה - קצין מטרות";', self.app)
         self.assertIn('result.responding_agent === "moshe" ? MOSHE_MESSAGE_LABEL', self.app)
