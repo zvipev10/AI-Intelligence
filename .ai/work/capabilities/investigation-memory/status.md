@@ -4,10 +4,10 @@
 Investigation Memory (`investigation-memory`)
 
 ## Current Phase
-Checkpoint 006 deployed; final user validation.
+Checkpoint 007 investigation reset deployment.
 
 ## Overall Status
-The investigation-isolation fix is deployed and validated. Startup no longer adopts a stale investigation ID from workstream fallback and no longer resets historical playback.
+The investigation-isolation fix is deployed. Checkpoint 007 resets all legacy browser investigation registries and clears persisted investigation-memory records while leaving workstreams untouched.
 
 ## Who Needs To Act Now
 
@@ -46,4 +46,4 @@ Not created yet. Local issue body can be added if this capability continues beyo
 | TBD | Development/Product/QA | Provide saved memory to agent prompt context. | Complete in `checkpoint-005.md`; awaiting review | No |
 
 ## Latest Change Since Previous Review
-Checkpoint 006 makes the browser-selected investigation authoritative: workstream loading uses an exact investigation ID and application boot performs no playback reset.
+Checkpoint 007 moves the browser registry to `v2`, actively removes the legacy `v1` registry, and prepares a recoverable production investigation-memory reset.

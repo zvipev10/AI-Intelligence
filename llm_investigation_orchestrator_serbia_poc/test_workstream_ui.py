@@ -158,6 +158,20 @@ class WorkstreamUiTests(unittest.TestCase):
         self.assertIn("state.investigationSearchQuery = investigationInput.value;", self.app)
         self.assertNotIn("matchingInvestigations(investigationInput.value)", self.app)
 
+    def test_old_investigation_registry_is_removed(self):
+        self.assertIn(
+            'const INVESTIGATIONS_STORAGE_KEY = "serbia-poc-investigations-v2";',
+            self.app,
+        )
+        self.assertIn(
+            'const LEGACY_INVESTIGATIONS_STORAGE_KEYS = ["serbia-poc-investigations-v1"];',
+            self.app,
+        )
+        self.assertIn(
+            "LEGACY_INVESTIGATIONS_STORAGE_KEYS.forEach(key => localStorage.removeItem(key));",
+            self.app,
+        )
+
     def test_tracking_and_workstream_messages_have_visible_states(self):
         self.assertIn(".prompt-form.tracking-mode", self.styles)
         self.assertIn(".workstream-message", self.styles)

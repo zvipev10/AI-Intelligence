@@ -170,7 +170,8 @@ function liveStepsUrl(currentPrompt) {
     : "/api/live-steps?agent=general";
 }
 
-const INVESTIGATIONS_STORAGE_KEY = "serbia-poc-investigations-v1";
+const INVESTIGATIONS_STORAGE_KEY = "serbia-poc-investigations-v2";
+const LEGACY_INVESTIGATIONS_STORAGE_KEYS = ["serbia-poc-investigations-v1"];
 const DEFAULT_INVESTIGATION_NAME = "חקירה חדשה";
 const TEAM_MENTION_AGENT_INSTRUCTION = [
   "הנחיית ממשק קבועה:",
@@ -1766,6 +1767,7 @@ function ensureInvestigationRecord(name) {
 function loadInvestigationRegistry() {
   let registry = null;
   try {
+    LEGACY_INVESTIGATIONS_STORAGE_KEYS.forEach(key => localStorage.removeItem(key));
     registry = JSON.parse(localStorage.getItem(INVESTIGATIONS_STORAGE_KEY) || "null");
   } catch (error) {
     registry = null;
