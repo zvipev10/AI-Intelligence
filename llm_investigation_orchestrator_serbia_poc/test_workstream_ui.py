@@ -97,9 +97,7 @@ class WorkstreamUiTests(unittest.TestCase):
         self.assertIn("investigation_id: state.investigationId", self.app)
         self.assertIn("advanceInvestigationPlayback", self.app)
         self.assertIn("changeIntelligenceMode", self.app)
-        self.assertIn("initializeHistoricalPlayback", self.app)
-        self.assertIn('mode: "historical"', self.app)
-        self.assertIn("reset: true", self.app)
+        self.assertNotIn("initializeHistoricalPlayback", self.app)
         self.assertIn('state.investigationPlayback?.mode !== "real_time"', self.app)
         self.assertIn("reevaluation?.assessment?.answer", self.app)
         self.assertIn("appendMoshePlaybackAssessment", self.app)
@@ -107,15 +105,12 @@ class WorkstreamUiTests(unittest.TestCase):
         self.assertIn("toggleFinalAnswerVisibility(result, \"\", button)", self.app)
         self.assertIn(".playback-header-button", self.styles)
 
-    def test_boot_resets_playback_while_staying_in_historical_mode(self):
+    def test_boot_does_not_reset_playback_or_change_investigation_identity(self):
         boot_start = self.app.index("async function boot()")
-        initialize = self.app.index(
-            "await initializeHistoricalPlayback();", boot_start
-        )
-        load_workstreams = self.app.index(
-            "await loadWorkstreams({ allowLatestFallback: true });", boot_start
-        )
-        self.assertLess(initialize, load_workstreams)
+        boot = self.app[boot_start:]
+        self.assertNotIn("initializeHistoricalPlayback", boot)
+        self.assertIn("await loadWorkstreams();", boot)
+        self.assertNotIn("allowLatestFallback", boot)
 
     def test_reopened_workstream_shows_active_artifact_details(self):
         self.assertIn("function workstreamArtifactHtml(workstream)", self.app)
@@ -135,24 +130,17 @@ class WorkstreamUiTests(unittest.TestCase):
         self.assertNotIn("data-workstream-archive-cancel", self.app)
 
     def test_workstreams_reload_with_investigation(self):
-        self.assertIn("async function loadWorkstreams(options = {})", self.app)
+        self.assertIn("async function loadWorkstreams()", self.app)
         self.assertIn("loadWorkstreams();", self.app)
         self.assertIn("renderWorkstreamIndicator();", self.app)
 
-    def test_bootstrap_can_adopt_server_workstream_investigation_before_memory_load(self):
-        self.assertIn("function adoptCanonicalWorkstreamInvestigation(investigationId)", self.app)
-        self.assertIn('const fallback = options.allowLatestFallback ? "&fallback=latest" : "";', self.app)
+    def test_workstreams_cannot_replace_selected_investigation(self):
+        self.assertNotIn("adoptCanonicalWorkstreamInvestigation", self.app)
+        self.assertNotIn("fallback=latest", self.app)
+        self.assertNotIn("allowLatestFallback", self.app)
         self.assertIn(
-            "if (options.allowLatestFallback) adoptCanonicalWorkstreamInvestigation(payload.canonical_investigation_id)",
+            "fetch(`/api/workstreams?investigation_id=${encodeURIComponent(investigationId)}`",
             self.app,
-        )
-        self.assertIn(
-            "await loadWorkstreams({ allowLatestFallback: true });", self.app
-        )
-        boot_start = self.app.index("async function boot()")
-        self.assertLess(
-            self.app.index("await loadWorkstreams({ allowLatestFallback: true });", boot_start),
-            self.app.index("await loadInvestigationMemory", boot_start),
         )
 
     def test_explicit_investigation_selection_loads_only_selected_context(self):

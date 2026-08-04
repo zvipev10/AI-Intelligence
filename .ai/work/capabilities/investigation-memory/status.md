@@ -4,16 +4,16 @@
 Investigation Memory (`investigation-memory`)
 
 ## Current Phase
-Slices 4-5 developer/product/UX review.
+Checkpoint 006 deployment validation.
 
 ## Overall Status
-Slices 4-5 are implemented and ready for developer/product/UX review. Selecting an investigation now loads saved memory, reopens saved catalog-backed layers with filters, and provides saved memory to the agent as investigation context.
+The investigation-isolation fix is implemented and locally validated. Startup no longer adopts a stale investigation ID from workstream fallback and no longer resets historical playback. Deployment validation is next.
 
 ## Who Needs To Act Now
 
 | Role | Status | Required Action | Due Before |
 |---|---|---|---|
-| Development | Review needed | Review memory loading, layer restore, and agent-context injection. | Before merge |
+| Development | In progress | Deploy and verify investigation isolation. | Before final handoff |
 | Product | Review needed | Confirm restore/context behavior and catalog-only visual restore limitation. | Before merge |
 | UX | Review needed | Confirm restored layers/filters appear as expected when switching investigations. | Before merge |
 | QA | Review needed | Validate save, switch investigation, restore layers/filters, and agent context continuity. | Before merge |
@@ -46,4 +46,4 @@ Not created yet. Local issue body can be added if this capability continues beyo
 | TBD | Development/Product/QA | Provide saved memory to agent prompt context. | Complete in `checkpoint-005.md`; awaiting review | No |
 
 ## Latest Change Since Previous Review
-Slices 4-5 load saved investigation memory when an investigation is selected, reopen saved catalog-backed layers with saved filters, and include saved chat/layer memory in `investigation_state` for Hermes.
+Checkpoint 006 makes the browser-selected investigation authoritative: workstream loading uses an exact investigation ID and application boot performs no playback reset.

@@ -2242,17 +2242,6 @@ function activeWorkstreams() {
   return state.workstreams.filter(item => item?.status !== "archived");
 }
 
-function adoptCanonicalWorkstreamInvestigation(investigationId) {
-  const canonicalId = String(investigationId || "").trim();
-  if (!canonicalId || canonicalId === state.investigationId) return false;
-  const active = state.investigations.find(item => item.id === state.investigationId);
-  if (active) active.id = canonicalId;
-  state.investigationId = canonicalId;
-  saveInvestigationRegistry();
-  renderInvestigationSelector();
-  return true;
-}
-
 const WORKSTREAM_STATUS_LABELS = {
   active: "פעיל",
   paused: "מושהה",
@@ -2282,18 +2271,16 @@ function renderWorkstreamIndicator() {
     </button>`).join("");
 }
 
-async function loadWorkstreams(options = {}) {
+async function loadWorkstreams() {
   if (!state.investigationId) return [];
   const investigationId = state.investigationId;
   const token = ++state.workstreamLoadToken;
   state.workstreamsLoading = true;
   try {
-    const fallback = options.allowLatestFallback ? "&fallback=latest" : "";
-    const response = await fetch(`/api/workstreams?investigation_id=${encodeURIComponent(investigationId)}${fallback}`, { cache: "no-store" });
+    const response = await fetch(`/api/workstreams?investigation_id=${encodeURIComponent(investigationId)}`, { cache: "no-store" });
     const payload = await response.json();
     if (!response.ok) throw new Error(payload.error || "טעינת המעקבים נכשלה");
     if (token !== state.workstreamLoadToken || investigationId !== state.investigationId) return [];
-    if (options.allowLatestFallback) adoptCanonicalWorkstreamInvestigation(payload.canonical_investigation_id);
     state.workstreams = Array.isArray(payload.workstreams) ? payload.workstreams : [];
     renderWorkstreamIndicator();
     void fetchInvestigationPlayback().catch(() => {
@@ -2477,25 +2464,6 @@ function appendMoshePlaybackAssessment(assessment = {}) {
     updateSourceVisibilityBtn(button);
   }
   return article;
-}
-
-async function initializeHistoricalPlayback() {
-  const investigationId = String(state.investigationId || "").trim();
-  if (!investigationId) return null;
-  const response = await fetch("/api/playback/mode", {
-    method: "POST",
-    headers: { "Content-Type": "application/json; charset=utf-8" },
-    body: JSON.stringify({
-      investigation_id: investigationId,
-      mode: "historical",
-      reset: true,
-    }),
-  });
-  const payload = await response.json();
-  if (!response.ok) throw new Error(payload.error || "אתחול מצב המידע נכשל");
-  state.investigationPlayback = payload;
-  renderInvestigationPlayback();
-  return payload;
 }
 
 async function advanceInvestigationPlayback() {
@@ -4830,8 +4798,7 @@ renderInvestigationSelector();
 async function boot() {
   initMap();
   await loadLayerCatalog();
-  await initializeHistoricalPlayback();
-  await loadWorkstreams({ allowLatestFallback: true });
+  await loadWorkstreams();
   await loadInvestigationMemory({ restoreLayers: true });
   let runtimeStatus = null;
   try {
