@@ -2,10 +2,11 @@
 
 ## Current state
 
-The timeframe-stage foundation, retrieval boundary, and approved minimal
-interaction are implemented through checkpoint 016. The existing workstream
-message now has one next-stage button with a timeframe tooltip, and each
-successful release triggers Moshe once. Deployment remains separately gated.
+Implementation is current through checkpoint 017. Investigation selection now
+shows the full registered list, marks one selected investigation active, and
+loads exact investigation-scoped state without adopting unrelated latest
+workstreams. The timeframe-stage interaction from checkpoint 016 remains
+implemented. Deployment remains separately gated.
 
 ## Delivered in Slice 2
 
@@ -23,6 +24,8 @@ successful release triggers Moshe once. Deployment remains separately gated.
 
 ## Validation
 
+- Checkpoint 017 focused JavaScript/API/playback suite: 45 tests passed.
+- JavaScript syntax and `git diff --check` passed for checkpoint 017.
 - 95 automated tests passed.
 - Python compilation and `git diff --check` passed.
 - Search, semantic, aggregate, related-event, direct-object, presentation, and
@@ -40,5 +43,6 @@ An unconfirmed proposal is lost on refresh. This is the explicitly approved MVP 
 
 ## Next step
 
-Review `checkpoint-016.md`. Do not deploy until the Product owner explicitly
-confirms the next step.
+Review `checkpoint-017.md` in a browser and complete the outstanding review of
+`checkpoint-016.md`. Do not deploy until the Product owner explicitly confirms
+the next step.

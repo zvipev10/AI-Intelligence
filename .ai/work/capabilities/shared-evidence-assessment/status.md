@@ -6,11 +6,11 @@ Collaborative Scenario Playback
 
 ## Current phase
 
-Minimal playback interaction checkpoint
+Investigation selection correction checkpoint
 
 ## Overall status
 
-Checkpoint 016 next-stage playback and Moshe reevaluation is implemented and pending approval
+Checkpoint 017 exact investigation selection is implemented and pending Product/UX browser acceptance; checkpoint 016 playback acceptance also remains pending
 
 ## Accepted direction captured
 
@@ -38,6 +38,10 @@ Checkpoint 016 next-stage playback and Moshe reevaluation is implemented and pen
 
 ## Latest change
 
+- Separated investigation search from the active investigation name.
+- Explicit investigation selection now loads exact scoped state and cannot adopt the latest unrelated investigation.
+- Bootstrap-only fallback and stale-response protection preserve legacy continuity without overriding user selection.
+- Focused JavaScript/API/playback validation passes: 45 tests.
 - Added one next-stage button to the existing workstream update.
 - Added a tooltip with the server-provided next-stage timeframe.
 - Added one durable Moshe reevaluation claim per released revision.
@@ -76,7 +80,7 @@ Checkpoint 016 next-stage playback and Moshe reevaluation is implemented and pen
 
 ## Next expected artifact
 
-Product approval of checkpoint 016, followed by explicit deployment authorization.
+Product/UX browser acceptance of checkpoint 017, plus the outstanding Product approval of checkpoint 016, followed by explicit deployment authorization.
 
 ## Parent and child issues
 
@@ -129,3 +133,5 @@ Product approval of checkpoint 016, followed by explicit deployment authorizatio
 - Timeframe-stage foundation: `checkpoint-014.md`
 - Playback retrieval visibility: `checkpoint-015.md`
 - Minimal next-stage playback: `checkpoint-016.md`
+- Investigation selection correction: `checkpoint-017.md`
+- Investigation selection plan: `investigation-selection-execution-plan.md`

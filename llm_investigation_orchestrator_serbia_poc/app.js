@@ -212,6 +212,7 @@ const state = {
   investigationMemoryError: "",
   investigationMemoryLoadToken: 0,
   investigationSelectorOpen: false,
+  investigationSearchQuery: "",
   recordedQuestions: [],
   savedQuestions: [],
   busy: false,
@@ -1807,7 +1808,7 @@ function renderInvestigationSelector() {
   if (document.activeElement !== investigationInput) {
     investigationInput.value = state.investigationName || DEFAULT_INVESTIGATION_NAME;
   }
-  const matches = matchingInvestigations(investigationInput.value);
+  const matches = matchingInvestigations(state.investigationSearchQuery);
   investigationInput.setAttribute("aria-expanded", state.investigationSelectorOpen && matches.length ? "true" : "false");
   investigationList.hidden = !state.investigationSelectorOpen || !matches.length;
   investigationList.innerHTML = matches.map(item => `
@@ -1823,6 +1824,7 @@ function selectInvestigation(investigation, options = {}) {
   state.investigationId = investigation.id;
   state.investigationName = investigation.name;
   state.investigationSelectorOpen = false;
+  state.investigationSearchQuery = "";
   state.investigationMemoryLoadToken += 1;
   state.investigationMemory = null;
   state.investigationMemoryError = "";
@@ -1831,8 +1833,14 @@ function selectInvestigation(investigation, options = {}) {
   saveInvestigationRegistry();
   resetInvestigation({ keepInvestigation: true });
   renderInvestigationSelector();
-  loadWorkstreams().then(() => loadInvestigationMemory({ restoreLayers: true }));
+  void loadSelectedInvestigation(investigation.id);
   if (options.focusInput) investigationInput?.focus();
+}
+
+async function loadSelectedInvestigation(investigationId) {
+  await loadWorkstreams();
+  if (state.investigationId !== investigationId) return;
+  await loadInvestigationMemory({ restoreLayers: true });
 }
 
 function addOrSelectInvestigation() {
@@ -1847,6 +1855,7 @@ function addOrSelectInvestigation() {
 
 function setInvestigationSelectorOpen(open) {
   state.investigationSelectorOpen = !!open;
+  if (!state.investigationSelectorOpen) state.investigationSearchQuery = "";
   renderInvestigationSelector();
 }
 
@@ -2273,16 +2282,18 @@ function renderWorkstreamIndicator() {
     </button>`).join("");
 }
 
-async function loadWorkstreams() {
+async function loadWorkstreams(options = {}) {
   if (!state.investigationId) return [];
+  const investigationId = state.investigationId;
   const token = ++state.workstreamLoadToken;
   state.workstreamsLoading = true;
   try {
-    const response = await fetch(`/api/workstreams?investigation_id=${encodeURIComponent(state.investigationId)}&fallback=latest`, { cache: "no-store" });
+    const fallback = options.allowLatestFallback ? "&fallback=latest" : "";
+    const response = await fetch(`/api/workstreams?investigation_id=${encodeURIComponent(investigationId)}${fallback}`, { cache: "no-store" });
     const payload = await response.json();
     if (!response.ok) throw new Error(payload.error || "טעינת המעקבים נכשלה");
-    if (token !== state.workstreamLoadToken) return [];
-    adoptCanonicalWorkstreamInvestigation(payload.canonical_investigation_id);
+    if (token !== state.workstreamLoadToken || investigationId !== state.investigationId) return [];
+    if (options.allowLatestFallback) adoptCanonicalWorkstreamInvestigation(payload.canonical_investigation_id);
     state.workstreams = Array.isArray(payload.workstreams) ? payload.workstreams : [];
     renderWorkstreamIndicator();
     void fetchInvestigationPlayback().catch(() => {
@@ -4738,8 +4749,15 @@ promptInput.addEventListener("keydown", event => {
   }
 });
 
-investigationInput?.addEventListener("focus", () => setInvestigationSelectorOpen(true));
-investigationInput?.addEventListener("input", () => setInvestigationSelectorOpen(true));
+investigationInput?.addEventListener("focus", () => {
+  state.investigationSearchQuery = "";
+  setInvestigationSelectorOpen(true);
+  investigationInput.select();
+});
+investigationInput?.addEventListener("input", () => {
+  state.investigationSearchQuery = investigationInput.value;
+  setInvestigationSelectorOpen(true);
+});
 investigationInput?.addEventListener("keydown", event => {
   if (event.key === "Enter") {
     event.preventDefault();
@@ -4813,7 +4831,7 @@ async function boot() {
   initMap();
   await loadLayerCatalog();
   await initializeHistoricalPlayback();
-  await loadWorkstreams();
+  await loadWorkstreams({ allowLatestFallback: true });
   await loadInvestigationMemory({ restoreLayers: true });
   let runtimeStatus = null;
   try {

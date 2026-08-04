@@ -112,7 +112,9 @@ class WorkstreamUiTests(unittest.TestCase):
         initialize = self.app.index(
             "await initializeHistoricalPlayback();", boot_start
         )
-        load_workstreams = self.app.index("await loadWorkstreams();", boot_start)
+        load_workstreams = self.app.index(
+            "await loadWorkstreams({ allowLatestFallback: true });", boot_start
+        )
         self.assertLess(initialize, load_workstreams)
 
     def test_reopened_workstream_shows_active_artifact_details(self):
@@ -133,25 +135,40 @@ class WorkstreamUiTests(unittest.TestCase):
         self.assertNotIn("data-workstream-archive-cancel", self.app)
 
     def test_workstreams_reload_with_investigation(self):
-        self.assertIn("async function loadWorkstreams()", self.app)
+        self.assertIn("async function loadWorkstreams(options = {})", self.app)
         self.assertIn("loadWorkstreams();", self.app)
         self.assertIn("renderWorkstreamIndicator();", self.app)
 
-    def test_desktop_adopts_server_workstream_investigation_before_memory_load(self):
+    def test_bootstrap_can_adopt_server_workstream_investigation_before_memory_load(self):
         self.assertIn("function adoptCanonicalWorkstreamInvestigation(investigationId)", self.app)
-        self.assertIn("&fallback=latest", self.app)
+        self.assertIn('const fallback = options.allowLatestFallback ? "&fallback=latest" : "";', self.app)
         self.assertIn(
-            "adoptCanonicalWorkstreamInvestigation(payload.canonical_investigation_id)",
+            "if (options.allowLatestFallback) adoptCanonicalWorkstreamInvestigation(payload.canonical_investigation_id)",
             self.app,
         )
         self.assertIn(
-            "loadWorkstreams().then(() => loadInvestigationMemory", self.app
+            "await loadWorkstreams({ allowLatestFallback: true });", self.app
         )
         boot_start = self.app.index("async function boot()")
         self.assertLess(
-            self.app.index("await loadWorkstreams();", boot_start),
+            self.app.index("await loadWorkstreams({ allowLatestFallback: true });", boot_start),
             self.app.index("await loadInvestigationMemory", boot_start),
         )
+
+    def test_explicit_investigation_selection_loads_only_selected_context(self):
+        self.assertIn("void loadSelectedInvestigation(investigation.id);", self.app)
+        self.assertIn("async function loadSelectedInvestigation(investigationId)", self.app)
+        self.assertIn("if (state.investigationId !== investigationId) return;", self.app)
+        self.assertIn(
+            "token !== state.workstreamLoadToken || investigationId !== state.investigationId",
+            self.app,
+        )
+
+    def test_investigation_list_is_independent_from_active_name(self):
+        self.assertIn('investigationSearchQuery: ""', self.app)
+        self.assertIn("matchingInvestigations(state.investigationSearchQuery)", self.app)
+        self.assertIn("state.investigationSearchQuery = investigationInput.value;", self.app)
+        self.assertNotIn("matchingInvestigations(investigationInput.value)", self.app)
 
     def test_tracking_and_workstream_messages_have_visible_states(self):
         self.assertIn(".prompt-form.tracking-mode", self.styles)
