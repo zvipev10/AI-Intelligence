@@ -9,8 +9,16 @@ from urllib.request import Request, urlopen
 
 import server
 
+REAL_RESOLVE_WORKSTREAM_EVENT = server.resolve_workstream_event
+
 
 class WorkstreamArtifactApiTests(unittest.TestCase):
+    def test_real_event_resolver_accepts_rec_id_without_layer(self):
+        event = REAL_RESOLVE_WORKSTREAM_EVENT("", "REC-V2-000001")
+        self.assertEqual("REC-V2-000001", event["record_id"])
+        self.assertTrue(event["summary"])
+        self.assertTrue(event["_canonical_layer_id"].startswith("events:"))
+
     def setUp(self):
         self.temp_dir = tempfile.TemporaryDirectory()
         self.workstreams_patch = patch.object(server, "WORKSTREAMS_DIR", Path(self.temp_dir.name))
@@ -53,7 +61,10 @@ class WorkstreamArtifactApiTests(unittest.TestCase):
                 "collection_family": "public_source",
             },
         }
-        return events.get(record_id) if layer_id == "events:UAV" else None
+        event = events.get(record_id)
+        if not event:
+            return None
+        return {**event, "_canonical_layer_id": f"events:{event['source_type']}"}
 
     @staticmethod
     def resolve_target(target_id):
@@ -81,11 +92,6 @@ class WorkstreamArtifactApiTests(unittest.TestCase):
             "investigation_id": "investigation-42",
             "title": "Indication tracking",
             "objective": "Review indications before assessment.",
-            "starting_source": {
-                "kind": "catalog_layer",
-                "reference_id": "events:UAV",
-                "label": "UAV events",
-            },
             "participants": [
                 {"participant_id": "analyst-1", "kind": "human", "display_name": "Analyst"},
                 {"participant_id": "moshe", "kind": "agent", "display_name": "Moshe"},
@@ -130,6 +136,52 @@ class WorkstreamArtifactApiTests(unittest.TestCase):
         )
         self.assertEqual(status, 201)
         return artifact
+
+    def test_chat_bridge_applies_only_a_distinct_confirmed_turn(self):
+        context = server.bounded_workstream_context({
+            "workstream_id": self.workstream["workstream_id"],
+            "current_turn_message_id": "turn-2",
+            "pending_proposal": {
+                "proposal_type": "target_assessment_lead",
+                "action": "create",
+                "proposed_turn_message_id": "turn-1",
+                "lead_statement": "The records may justify reassessment.",
+                "indications": [{
+                    "record_id": "REC-V2-000001",
+                    "role": "supports",
+                    "relevance": "Possible change in activity.",
+                }],
+            },
+        }, "investigation-42")
+        self.assertEqual([], server.list_artifacts(server.load_workstream(self.workstream["workstream_id"])))
+        artifact, conflict = server.apply_workstream_action(context, {
+            "decision": "confirm",
+            "proposal": context["pending_proposal"],
+            "current_turn_message_id": "turn-2",
+            "confirmation_text": "Yes, save it.",
+        })
+        self.assertIsNone(conflict)
+        self.assertEqual(1, artifact["revision"])
+        self.assertEqual(
+            ["REC-V2-000001"],
+            [item["source_reference"]["record_id"] for item in artifact["content"]["indications"]],
+        )
+
+    def test_chat_bridge_rejects_same_turn_confirmation(self):
+        context = {
+            "workstream_id": self.workstream["workstream_id"],
+            "current_turn_message_id": "turn-1",
+        }
+        with self.assertRaisesRegex(ValueError, "distinct later"):
+            server.apply_workstream_action(context, {
+                "decision": "confirm",
+                "proposal": {
+                    "proposal_type": "target_assessment_lead",
+                    "action": "create",
+                    "proposed_turn_message_id": "turn-1",
+                },
+                "current_turn_message_id": "turn-1",
+            })
 
     def test_create_list_load_and_persist_validated_artifact(self):
         artifact = self.create_artifact()
@@ -246,14 +298,21 @@ class WorkstreamArtifactApiTests(unittest.TestCase):
         self.assertEqual(status, 200)
         self.assertEqual(ready["status"], "ready_for_assessment")
 
-    def test_rejects_invalid_references_duplicates_and_second_active_artifact(self):
+    def test_canonicalizes_sources_and_rejects_invalid_references_and_second_artifact(self):
         workstream_id = self.workstream["workstream_id"]
         path = f"/api/workstreams/{workstream_id}/artifacts"
         payload = self.artifact_payload()
         payload["content"]["indications"][0]["source_reference"]["layer_id"] = "events:Public"
-        status, error = self.request("POST", path, payload)
-        self.assertEqual(status, 400)
-        self.assertEqual(error["error"], "Indication is outside the attached event layer")
+        status, artifact = self.request("POST", path, payload)
+        self.assertEqual(status, 201)
+        self.assertEqual(
+            "events:UAV",
+            artifact["content"]["indications"][0]["source_reference"]["layer_id"],
+        )
+        artifact["status"] = "rejected"
+        stored = server.load_workstream(workstream_id)
+        stored["artifacts"][0]["status"] = "rejected"
+        server.write_workstream(stored)
 
         payload = self.artifact_payload()
         payload["content"]["indications"][0]["source_reference"]["record_id"] = "REC-V2-999999"

@@ -118,6 +118,15 @@ class TargetBankTests(unittest.TestCase):
         self.assertEqual(self.bank.search_candidates({"location_id": "LOC-001"})[0]["raw_data_references"], ["REC-001", "REC-002"])
         self.assertEqual(self.bank.search_candidates({"location_id": "LOC-001"})[0]["source_types"], ["public-report"])
 
+    def test_search_by_raw_record_returns_full_candidate_summary(self):
+        self.bank.create_candidate(candidate(), [evidence("REC-001", "a"), evidence("REC-002", "b")])
+        matches = self.bank.search_candidates({"record_id": "REC-002"})
+        self.assertEqual(len(matches), 1)
+        self.assertEqual(matches[0]["target_id"], "TGT-TEST-001")
+        self.assertEqual(matches[0]["evidence_count"], 2)
+        self.assertEqual(matches[0]["raw_data_references"], ["REC-001", "REC-002"])
+        self.assertEqual(self.bank.search_candidates({"record_id": "REC-MISSING"}), [])
+
     def test_backup_retains_latest_five_and_reset_requires_confirmation(self):
         self.bank.create_candidate(candidate(), [evidence("REC-001", "a"), evidence("REC-002", "b")])
         backups = [self.bank.backup() for _ in range(7)]

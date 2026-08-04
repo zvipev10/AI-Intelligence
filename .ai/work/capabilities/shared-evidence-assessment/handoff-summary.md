@@ -1,69 +1,44 @@
 # Handoff Summary
 
-## Current outcome
-
-The capability is now framed generally as **Collaborative Scenario Playback**.
-
-The brief and four AI-authored role reviews define:
-
-- entry from supported objects, investigations, questions, or prepared scenarios;
-- a persistent shared workstream as the system of record;
-- versioned scenario manifests with typed stages and transitions;
-- generic agent assignments and automatic bounded reevaluation;
-- scenario-declared human decisions;
-- domain adapters that isolate object-specific behavior;
-- strict future-record visibility enforcement across UI and agent retrieval;
-- fixture-independence, concurrency, history, recovery, RTL, and accessibility gates.
-
-`TGT-D4DC7A7EBE02` is retained only as a possible reference fixture. It must not appear in reusable schemas, APIs, component contracts, or generic acceptance tests.
-
-## Current gate
-
-The human Product owner approved the revised Phase 1 boundary and instructed implementation to begin. Broader capability reviews remain pending.
-
-## Decisions still required
-
-Phase 1 decisions are recorded in `decisions.md` and `execution-plan.md`. Individual Investigation Memory item selection is explicitly deferred. Slice 1 persistence/API implementation is approved by Development/Architecture and QA in `checkpoint-001.md`.
-
-Broader decisions still required:
-
-1. Approve manual versus condition-driven stage advance.
-2. Approve manifest, adapter, visibility, and stale-run contracts.
-3. Accept demo-global state as a deployment limitation or require per-user state.
-4. Choose the later workstream-context assembly and memory-promotion experience.
-
-## Next step
-
-Merge PR #31 and define the Slice 2 chat-based creation flow. The current Product direction is to add `מעקב` to the existing plus menu, gather details conversationally, and require an explicitly attached layer. Product/UX still need to settle confirmation, minimum information, reopen, and error behavior before implementation.
-
-## Publishing
-
-Planning PR #24 is merged. Slice 1 is on `capability/workstream-phase1` under issue #30 and is ready for a separate implementation PR.
-# Handoff Summary
-
 ## Current state
 
-Phase 1 is merged to `main`: PR #31 provides persistence/API support and PR #33 provides the approved chat-based creation and interaction flow.
+The timeframe-stage foundation, retrieval boundary, and approved minimal
+interaction are implemented through checkpoint 016. The existing workstream
+message now has one next-stage button with a timeframe tooltip, and each
+successful release triggers Moshe once. Deployment remains separately gated.
 
-## What is new
+## Delivered in Slice 2
 
-The existing chat now supports creation of a durable workstream through `+` → `מעקב`, one explicit layer attachment, an objective message, and an agent-style confirmation. Active workstreams expose only a minimal header indicator; pressing it returns status and actions into chat.
+- non-persisting proposal and decision MCP tools;
+- natural-language Moshe instructions and evaluation cases;
+- bounded active-workstream context;
+- structured proposal/action result-envelope fields;
+- browser-memory proposal staging;
+- distinct-later-turn confirmation;
+- app-server-owned, independently validated artifact creation and revision;
+- ordinary-chat success/conflict feedback with no new UX surface.
+- workstream creation without mandatory layer selection;
+- per-indication canonical source resolution and provenance;
+- full active-artifact summary when the workstream indicator returns the workstream to chat.
 
-## What remains unchanged
+## Validation
 
-Investigation Memory, Hermes query behavior, and layer ingestion remain separate. The slice adds no automatic agent execution, scenario playback, artifact model, or LLM-generated status.
+- 95 automated tests passed.
+- Python compilation and `git diff --check` passed.
+- Search, semantic, aggregate, related-event, direct-object, presentation, and
+  fusion paths share one fail-closed playback boundary.
+- Concurrent advances produce one successful transition and one revision
+  conflict.
+- Duplicate transition keys replay the original response and cannot be reused
+  for another action.
+- Existing workstream, artifact, routing, target catalog, and UI tests remain
+  green.
 
-## Review outcome
+## Accepted limitation
 
-The human Product owner approved the checkpoint and instructed implementation to proceed on 2026-07-24. No blocking review comments or CI checks are present on PR #33.
-
-## Evidence
-
-- Checkpoint: `checkpoint-002.md`
-- Decision: `decisions.md`
-- Execution plan: `execution-plan.md`
-- Focused UI assertions: `llm_investigation_orchestrator_serbia_poc/test_workstream_ui.py`
+An unconfirmed proposal is lost on refresh. This is the explicitly approved MVP behavior; confirmed artifacts remain durable and revisioned.
 
 ## Next step
 
-Slice 1 (#41) is implemented and accepted with all 48 Python tests passing. Merge PR #45, then begin Slice 2 (#42): bounded Moshe proposal/decision tools, general-chat handoff, staged proposal state, later-turn confirmation, and independent app-server persistence validation.
+Review `checkpoint-016.md`. Do not deploy until the Product owner explicitly
+confirms the next step.

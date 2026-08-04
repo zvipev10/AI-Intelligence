@@ -1,5 +1,66 @@
 # Capability Decisions
 
+### 2026-07-27 — Treat the selected teammate as the implicit chat addressee
+
+Decision:
+Selecting a teammate in the upper team bar addresses subsequent chat messages and continuation requests to that teammate without requiring the user to type `@name`. Pressing the selected teammate again clears the selection and returns to general chat. An explicit teammate mention in the typed message takes precedence. The visible user message remains unchanged.
+
+Context:
+Team selection previously changed only the prompt placeholder and response label. Backend routing still saw an unaddressed message and could fall back to the general agent, including after the user had selected Moshe.
+
+Rationale:
+The selected conversation participant is persistent interaction context and should carry the same routing meaning as repeatedly typing their mention.
+
+Alternatives considered:
+- Require an explicit mention on every message.
+- Insert a visible mention into the composer.
+- Keep selection as visual decoration only.
+
+Impact:
+Moshe selection routes to his dedicated profile. Other currently displayed teammates remain on the shared backend until they receive dedicated profiles, but their selected identity and role are transmitted as the conversation addressee.
+
+Follow-ups:
+Add dedicated routing profiles as other teammate agents become functional.
+
+### 2026-07-26 — Make workstream creation a Moshe-owned conversation
+
+Decision:
+Expose `מעקב` only while Moshe is the selected conversation member. Keep the user in a dedicated Moshe chat mode while required information is incomplete. Once Moshe has a clear title, objective, and functional responsibility, the app persists the workstream from his structured handoff in that same turn without a separate preview or approval action.
+
+Context:
+The implemented Phase 1 flow still behaved as a deterministic local UI wizard, allowed assignment to any selected member, and required approve/cancel buttons. This contradicted the accepted chat-first direction.
+
+Rationale:
+Moshe contributes interpretation and clarification rather than merely labeling a client-generated record. Server-owned validation and persistence preserve the authority boundary without adding a redundant approval step.
+
+Alternatives considered:
+- Keep the local preview and confirmation controls.
+- Allow every visible team member to own workstreams despite having no implemented agent contract.
+- Create incomplete workstreams and request missing information afterward.
+
+Impact:
+The 2026-07-24 preview-and-confirm creation decision is superseded. Artifact promotion and archiving retain their existing protected-decision semantics.
+
+Follow-ups:
+Validate the real Moshe profile against complete and incomplete creation prompts in the demo environment.
+
+### 2026-07-26 — Consolidate workstream status and selection in the upper bar
+
+Decision:
+The upper workstream control displays compact status and count and contains the selector when multiple workstreams exist. Selecting a workstream returns its detailed update and actions to chat. Reopening the same workstream replaces its earlier open-summary message instead of adding a duplicate.
+
+Context:
+The first implementation asked the user to choose among workstreams inside chat and could append repeated copies of the same open summary.
+
+Rationale:
+Status and navigation belong to persistent workspace chrome; content, explanation, and actions belong to the conversation.
+
+Impact:
+The indicator remains compact but is now a small upper-bar menu rather than a button that emits a selection prompt into chat.
+
+Follow-ups:
+Review status labels and long-title truncation during demo acceptance.
+
 ### 2026-07-26 — Let Moshe interpret artifact intent in general chat
 
 Decision:
@@ -128,3 +189,88 @@ The implementation branch must start from `main` after PR #24 merges.
 
 Follow-ups:
 Create the Phase 1 implementation branch and PR after merge.
+
+### 2026-07-26 — Resolve indication sources canonically instead of attaching a workstream layer
+
+Decision:
+Workstream creation no longer requires or attaches an event layer. Each confirmed `REC-...` indication is resolved by the app server against the canonical event dataset, and the server records its canonical source-layer reference.
+
+Context:
+The earlier Phase 1 flow required one layer as an evidence boundary. Once the MVP shifted to explicit record identifiers interpreted by Moshe, choosing a layer became redundant friction and prevented realistic multi-source leads.
+
+Rationale:
+The explicit record identifier plus server-side canonical resolution preserves existence checks and provenance without making the analyst locate or preselect a layer. It also permits one lead to contain indications from different source types.
+
+Alternatives considered:
+- Keep the mandatory workstream layer.
+- Make layer attachment optional but restrict records when present.
+- Store record IDs without canonical source provenance.
+
+Impact:
+The 2026-07-24 decision to require one explicit layer is superseded. `starting_source` and its source-layer action are removed from the MVP contract. Reopening a workstream in chat shows the active artifact.
+
+Follow-ups:
+Validate multi-source indications and canonical provenance in final MVP validation.
+
+### 2026-07-28 — Make playback visibility a server-owned global boundary
+
+Decision:
+Publish the active scenario run's dataset, optional layers, cumulative
+timeframe, and revision to an atomic policy file consumed directly by the
+evidence server. Permit only one active run in the current demo deployment.
+
+Context:
+The agent can call many retrieval tools and cannot be trusted to consistently
+forward a playback argument. Prompt-only filtering would allow future records
+to reappear through semantic search, aggregation, related-event expansion,
+object loading, presentation layers, or fusion.
+
+Rationale:
+A server-owned boundary applies regardless of the agent's chosen tool path.
+One active run matches the current single-demo runtime and prevents ambiguous
+global policy selection.
+
+Alternatives considered:
+- Add timeframe arguments to every agent tool call.
+- Filter only the final response.
+- Add session-scoped policy propagation in this slice.
+
+Impact:
+All relevant evidence paths use the same inclusive-start/exclusive-end window.
+Entity and location summaries are derived from visible evidence. Stored target
+candidates are hidden during playback because they lack stage-aware provenance.
+Inactive playback preserves existing behavior.
+
+Follow-ups:
+Introduce session-scoped policy storage before supporting concurrent playback
+users, and define target provenance before exposing stored targets in playback.
+
+### 2026-07-28 — Reduce playback UX to one next-stage action
+
+Decision:
+Use one next-stage button in the existing workstream message. Its tooltip shows
+the next configured timeframe. The first press starts the prepared scenario and
+each later press releases one stage, then triggers Moshe once for that revision.
+
+Context:
+The broader playback-control plan introduced a picker, status panel, reset, and
+completion controls that were unnecessary for the intended demonstration.
+
+Rationale:
+The single action keeps attention on the analytical change caused by newly
+available evidence. Server-derived tooltip data preserves generic scenario
+semantics without embedding fixture times in the UI.
+
+Alternatives considered:
+- Full playback panel and scenario picker.
+- Client-side Moshe triggering after an advance.
+- Show the current and future stage list.
+
+Impact:
+The server owns stage transition and Moshe-trigger idempotency. Moshe receives
+both the newly released and cumulative windows. The final stage has no next
+button. Deployment remains separately approved.
+
+Follow-ups:
+Validate the interaction and Moshe response on the VM after explicit deployment
+approval.

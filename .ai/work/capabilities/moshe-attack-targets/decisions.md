@@ -101,3 +101,20 @@ Preparation returns ranked public evidence, reasons, scores, alternatives, and a
 
 Follow-ups:
 Deploy only after checkpoint 008 review, then run a read-only Moshe preparation smoke test.
+
+## 2026-07-24 - Explicit structured evidence-reference layers
+
+Decision:
+Extend the shared `present_requested_results` tool with a separate `evidence_layers` channel. Present `מזהי ראיות` as independently controlled map/timeline layers selected explicitly by General or Moshe, while keeping requested results under `הצג תוצאות`.
+
+Context:
+Building the evidence section from identifiers in answer prose or from every tool result produced large, noisy, and frequently irrelevant output.
+
+Rationale:
+One final selection boundary can validate both user-requested data and materially relevant evidence without mixing them. Keeping two result arrays preserves the distinction throughout backend normalization and frontend state.
+
+Impact:
+New answers use structured evidence links, show up to 14 identifiers per layer without truncating underlying data, and never present evidence automatically. Old saved answers retain a read-only legacy block. The implementation is shared by General and Moshe and does not change SQLite.
+
+Follow-ups:
+Product visually accepts checkpoint 014. Table-only evidence references remain deferred.

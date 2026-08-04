@@ -47,11 +47,6 @@ class WorkstreamApiTests(unittest.TestCase):
             "investigation_id": "investigation-42",
             "title": "Regional assessment",
             "objective": "Maintain one durable shared unit of analytical work.",
-            "starting_source": {
-                "kind": "investigation",
-                "reference_id": "investigation-42",
-                "label": "Regional investigation",
-            },
             "participants": [
                 {
                     "participant_id": "analyst-1",
@@ -137,6 +132,22 @@ class WorkstreamApiTests(unittest.TestCase):
         self.assertEqual(status, 400)
         self.assertEqual(error["error"], "Archived workstream cannot be updated")
 
+    def test_moshe_creation_handoff_persists_owned_workstream(self):
+        created = server.apply_workstream_creation("investigation-42", {
+            "title": "UAV indications",
+            "objective": "Track indications of a command position.",
+            "responsibility": "Corroborate reports and expose gaps.",
+        })
+        self.assertEqual("investigation-42", created["investigation_id"])
+        self.assertEqual("moshe-targets-officer", created["assignments"][0]["owner_id"])
+        self.assertEqual("משה", created["participants"][1]["display_name"])
+
+        answer = server.workstream_created_answer(created)
+        self.assertIn("המעקב נפתח ונשמר בהצלחה.", answer)
+        self.assertIn("UAV indications", answer)
+        self.assertIn("Corroborate reports and expose gaps.", answer)
+        self.assertNotIn("prepare_workstream_creation", answer)
+
     def test_rejects_invalid_input_and_cross_participant_assignment(self):
         invalid = self.create_payload()
         invalid["investigation_id"] = "../escape"
@@ -153,11 +164,15 @@ class WorkstreamApiTests(unittest.TestCase):
         status, error = self.request("GET", "/api/workstreams/../escape")
         self.assertIn(status, {400, 404})
 
+    def test_workstream_contract_has_no_starting_source(self):
+        status, created = self.request("POST", "/api/workstreams", self.create_payload())
+        self.assertEqual(status, 201)
+        self.assertNotIn("starting_source", created)
+
     def test_listing_is_scoped_to_investigation(self):
         first = self.create_payload()
         second = self.create_payload()
         second["investigation_id"] = "investigation-99"
-        second["starting_source"]["reference_id"] = "investigation-99"
         self.assertEqual(self.request("POST", "/api/workstreams", first)[0], 201)
         self.assertEqual(self.request("POST", "/api/workstreams", second)[0], 201)
 
@@ -167,6 +182,41 @@ class WorkstreamApiTests(unittest.TestCase):
         self.assertEqual(status, 200)
         self.assertEqual(len(listing["workstreams"]), 1)
         self.assertEqual(listing["workstreams"][0]["investigation_id"], "investigation-42")
+
+    def test_latest_fallback_returns_canonical_workstream_investigation(self):
+        payload = self.create_payload()
+        payload["investigation_id"] = "investigation-mobile"
+        status, created = self.request("POST", "/api/workstreams", payload)
+        self.assertEqual(status, 201)
+
+        status, listing = self.request(
+            "GET", "/api/workstreams?investigation_id=investigation-desktop&fallback=latest"
+        )
+        self.assertEqual(status, 200)
+        self.assertTrue(listing["fallback_used"])
+        self.assertEqual(listing["canonical_investigation_id"], "investigation-mobile")
+        self.assertEqual(
+            [item["workstream_id"] for item in listing["workstreams"]],
+            [created["workstream_id"]],
+        )
+
+    def test_latest_fallback_never_overrides_an_exact_match(self):
+        first = self.create_payload()
+        second = self.create_payload()
+        second["investigation_id"] = "investigation-99"
+        self.assertEqual(self.request("POST", "/api/workstreams", first)[0], 201)
+        self.assertEqual(self.request("POST", "/api/workstreams", second)[0], 201)
+
+        status, listing = self.request(
+            "GET", "/api/workstreams?investigation_id=investigation-42&fallback=latest"
+        )
+        self.assertEqual(status, 200)
+        self.assertFalse(listing["fallback_used"])
+        self.assertEqual(listing["canonical_investigation_id"], "investigation-42")
+        self.assertEqual(len(listing["workstreams"]), 1)
+        self.assertEqual(
+            listing["workstreams"][0]["investigation_id"], "investigation-42"
+        )
 
 
 if __name__ == "__main__":

@@ -6,25 +6,25 @@ Moshe Attack Targets MVP
 
 ## Current phase
 
-Slice 7 production verification and handoff are complete. Final Product/QA capability acceptance remains.
+Checkpoint 015 collapsed evidence navigation is deployed and production-verified.
 
 ## Overall status
 
-Pending review
+In progress
 
 ## Who needs to act now
 
 | Role | Status | Required action | Due before |
 |---|---|---|---|
 | Product | Final acceptance pending | Accept checkpoint 009 and residual risks | Complete capability |
-| Development | Slice 7 complete | No implementation action pending | Complete |
-| UX | Approved | Routing experience, attribution, candidate presentation, evidence, and states accepted | Complete |
+| Development | Complete | No implementation action pending | Product check |
+| UX | Implementation ready | Review deployed structured evidence-layer interaction | Product/UX check |
 | QA | Release evidence ready | Accept checkpoint 009 | Complete capability |
 | Architecture/Security | Slice 2 approved | Review evaluator isolation and deterministic source boundary | Slice 4 |
 
 ## Latest change since previous review
 
-Checkpoint 009 records passing production routing, mission continuity/closure, read-only preparation, UI contracts, permissions, isolated restore, service health, evaluator isolation, and unchanged SQLite state. Resource pressure remains a documented risk.
+Checkpoint 015 collapses the evidence section and each layer by default, and opens the selected map/timeline together with its results table.
 
 ## Current blockers
 
@@ -39,7 +39,7 @@ Checkpoint 009 records passing production routing, mission continuity/closure, r
 
 ## Next expected artifact
 
-Product/QA acceptance of `checkpoint-009-slice-7-release.md`.
+Product visual review of `checkpoint-015-collapsed-evidence-navigation.md`.
 
 ## Parent issue
 
@@ -75,7 +75,8 @@ Pending remote creation; local draft at `issues/parent-capability.md`.
 - Architecture/security review: `architecture-security-review.md`
 - Execution plan: `execution-plan.md`
 - Slice 6 recovery plan: `slice-006-quality-recovery-plan.md`
-- Latest checkpoint: `checkpoint-009-slice-7-release.md`
+- Slice 8 evidence-reference plan: `slice-008-evidence-reference-layers-plan.md`
+- Latest checkpoint: `checkpoint-015-collapsed-evidence-navigation.md`
 - Handoff: `handoff-summary.md`
 
 ## Gate checklist

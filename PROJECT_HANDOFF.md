@@ -1,6 +1,6 @@
 # AI Intelligence Project Handoff
 
-Last updated: 2026-07-21
+Last updated: 2026-07-28
 
 This is the primary handoff for continuing the AI Intelligence project in another assistant/chat. It reflects the integrated Serbia POC on `main`, including investigation memory, the `מכלול` team interaction foundation, V2.1 fusion evidence, specialized Moshe routing and mission continuity, the persisted attack-target catalog, and the existing additive result-layer investigation experience.
 
@@ -16,7 +16,7 @@ Repository:
 
 Current branch:
 
-- Active branch: `main`
+- Active working branch for the latest validation record: `codex/workstream-desktop-visibility`
 - PR #22 merged `codex/moshe-attack-targets` into `main` on 2026-07-21.
 - Merge commit at this handoff: `43ecd2e`.
 - Always fetch before continuing and verify the current head with `git log -1 --oneline`.
@@ -32,7 +32,41 @@ Current local working tree expectation:
 - Do not continue from stale local files if `git fetch origin` shows the active remote branch ahead.
 - Identify and preserve unrelated dirty files before staging, switching branches, or deploying.
 
-## Latest Update: Moshe Agent And Integrated Main
+## Latest Update: REC-V2-007215 Final Validation
+
+### Playback foundation follow-up — 2026-07-28
+
+Checkpoint 014 adds an inactive generic playback foundation:
+
+- strict scenario manifests contain only scope and ordered timeframe stages;
+- persistent runs support start/reopen, read, advance, complete, and reset;
+- revisions and action-bound idempotency protect transitions;
+- future stage windows are not exposed in API responses;
+- all 93 automated tests pass.
+
+Retrieval filtering, UI controls, automatic Moshe reevaluation, and deployment
+remain unimplemented. The Product owner requested confirmation before every
+implementation slice, so checkpoint 014 must be approved before Slice 2 begins.
+
+Date: 2026-07-28
+
+The deployed Moshe-to-workstream Phase 1 flow passed final validation using
+`REC-V2-007215`.
+
+- An isolated workstream was created for the historical record.
+- Moshe produced a non-persisting proposal with three `REC` indications,
+  uncertainty, contradictions, gaps, and human assessment questions.
+- A distinct explicit confirmation created exactly one revision-1
+  `target_assessment_lead` artifact.
+- The artifact survived a UI-service restart and reopen.
+- The target-bank SHA-256 remained unchanged throughout.
+- The validation workstream was archived after verification and reopens with
+  its artifact intact.
+- All 85 automated tests pass.
+- The release recommendation and operational latency note are recorded in
+  `.ai/work/capabilities/shared-evidence-assessment/checkpoint-013.md`.
+
+## Previous Update: Moshe Agent And Integrated Main
 
 Date: 2026-07-21
 

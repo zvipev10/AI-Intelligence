@@ -6,13 +6,24 @@
   <title>סביבת מודיעין</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="./vendor/maplibre-gl.css">
-  <link rel="stylesheet" href="./styles.css?v=88">
+  <link rel="stylesheet" href="./styles.css?v=126">
 </head>
 <body>
   <a class="help-button" href="./help.html" target="_blank" rel="noopener" aria-label="פתח עזרה">?</a>
   <header class="app-header">
     <div class="header-copy">
       <h1>סביבת מודיעין</h1>
+      <div class="intelligence-mode-control">
+        <select id="intelligenceModeSelect" aria-label="מצב מידע">
+          <option value="historical">מידע היסטורי</option>
+          <option value="real_time">זמן אמת</option>
+        </select>
+        <span id="intelligencePeriod" class="intelligence-period"></span>
+        <span id="playbackAgentStatus" class="playback-agent-status" hidden aria-live="polite"></span>
+        <button id="playbackNextButton" class="playback-header-button" type="button" hidden aria-label="השלב הבא">
+          <span class="material-symbols-rounded" aria-hidden="true">skip_next</span>
+        </button>
+      </div>
     </div>
     <section class="investigation-switcher" aria-label="ניהול חקירות">
       <label for="investigationInput">חקירה פעילה</label>
@@ -22,9 +33,12 @@
           <button id="investigationAddButton" type="button" title="צור חקירה חדשה" aria-label="צור חקירה חדשה">+</button>
           <div id="investigationList" class="investigation-list" role="listbox" hidden></div>
         </div>
-        <button id="workstreamIndicator" class="workstream-indicator" type="button" aria-label="הצג עדכון מעקב" hidden>
-          <span>מעקב</span><span id="workstreamIndicatorCount" class="workstream-indicator-count" hidden></span>
-        </button>
+        <div id="workstreamControl" class="workstream-control" hidden>
+          <button id="workstreamIndicator" class="workstream-indicator" type="button" aria-label="בחר מעקב" aria-expanded="false" aria-controls="workstreamMenu">
+            <span>מעקב</span><span id="workstreamIndicatorStatus" class="workstream-indicator-status"></span><span id="workstreamIndicatorCount" class="workstream-indicator-count" hidden></span>
+          </button>
+          <div id="workstreamMenu" class="workstream-menu" role="menu" aria-label="בחירת מעקב" hidden></div>
+        </div>
         <div id="michlolTeam" class="michlol-team" role="list" aria-label="מכלול"></div>
       </div>
     </section>
@@ -35,7 +49,7 @@
   </header>
 
   <main class="workspace">
-    <aside class="conversation-panel">
+    <aside id="conversationPanel" class="conversation-panel">
       <div id="conversation" class="conversation" aria-live="polite">
         <article class="message assistant-message">
           <div class="message-label">סוכן חקירה</div>
@@ -71,15 +85,18 @@
       </form>
     </aside>
 
-    <div class="panel-resizer" data-resizer="left" role="separator" aria-label="שינוי רוחב שיחה ותצוגה"></div>
+    <div class="panel-resizer" data-resizer="left" role="separator" aria-label="שינוי רוחב שיחה ותצוגה">
+      <button id="chatPanelToggle" class="chat-panel-toggle" type="button" title="מזער שיחה" aria-label="מזער שיחה" aria-controls="conversationPanel" aria-expanded="true">
+        <span class="material-symbols-rounded" aria-hidden="true">chevron_right</span>
+      </button>
+    </div>
 
     <section class="result-panel">
       <nav class="view-tabs" aria-label="תצוגות תוצאה">
-        <button class="view-tab active" data-view="map" type="button">מפה</button>
-        <button class="view-tab" data-view="timeline" type="button">ציר זמן</button>
-      </nav>
-      <div id="viewRecommendation" class="view-recommendation" aria-live="polite" hidden></div>
-      <div class="view-stack">
+        <div class="view-tab-list">
+          <button class="view-tab active" data-view="map" type="button">מפה</button>
+          <button class="view-tab" data-view="timeline" type="button">ציר זמן</button>
+        </div>
         <div class="layer-selector" aria-label="חיפוש שכבה להוספה">
           <div class="layer-selector-search" role="combobox" aria-haspopup="listbox" aria-expanded="false" aria-owns="layerSelectorList">
             <input id="layerSelectorSearch" type="search" autocomplete="off" spellcheck="false" placeholder="חפש שכבה להוספה" aria-label="חיפוש שכבה להוספה" aria-controls="layerSelectorList">
@@ -87,6 +104,9 @@
             <div id="layerSelectorList" class="layer-selector-list" role="listbox" aria-label="תוצאות חיפוש שכבות" hidden></div>
           </div>
         </div>
+      </nav>
+      <div id="viewRecommendation" class="view-recommendation" aria-live="polite" hidden></div>
+      <div class="view-stack">
         <section id="mapView" class="view-pane active">
           <div id="map" class="map-canvas"></div>
         </section>
@@ -103,7 +123,7 @@
           <div class="raw-events-content">
             <div class="raw-events-table table-wrap">
               <table>
-                <thead id="evidenceHead"><tr><th>זמן</th><th>אמינות</th><th>ודאות</th><th>גורם</th><th>מיקום</th><th>תקציר</th></tr></thead>
+                <thead id="evidenceHead"><tr><th>מזהה רשומה</th><th>זמן</th><th>אמינות</th><th>ודאות</th><th>גורם</th><th>מיקום</th><th>תקציר</th></tr></thead>
                 <tbody id="evidenceRows"></tbody>
               </table>
             </div>
@@ -210,6 +230,6 @@
   </div>
 
   <script src="./vendor/maplibre-gl.js"></script>
-  <script src="./app.js?v=109"></script>
+  <script src="./app.js?v=131"></script>
 </body>
 </html>

@@ -76,6 +76,9 @@ ON targets(object_class, entity_id, location_id, updated_at DESC);
 
 CREATE INDEX IF NOT EXISTS idx_target_evidence_source_group
 ON target_evidence(target_id, source_group);
+
+CREATE INDEX IF NOT EXISTS idx_target_evidence_record
+ON target_evidence(record_id, target_id);
 """
 
 
@@ -249,6 +252,13 @@ class TargetBank:
             if value:
                 clauses.append(f"t.{field} = ?")
                 parameters.append(value)
+        record_id = _optional_text(filters.get("record_id"))
+        if record_id:
+            clauses.append(
+                "EXISTS (SELECT 1 FROM target_evidence matched_e "
+                "WHERE matched_e.target_id = t.target_id AND matched_e.record_id = ?)"
+            )
+            parameters.append(record_id)
         limit = int(filters.get("limit", 100))
         if limit < 1 or limit > 500:
             raise ValueError("limit must be between 1 and 500")

@@ -66,7 +66,6 @@ Proposed document fields:
 - `title`
 - `objective`
 - `status`
-- `starting_source`
 - `participants`
 - `assignments`
 - `artifacts`

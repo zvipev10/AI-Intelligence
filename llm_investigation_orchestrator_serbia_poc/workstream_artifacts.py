@@ -101,14 +101,17 @@ def _indication(
     reference = value.get("source_reference")
     if not isinstance(reference, dict) or reference.get("kind") != "event_record":
         raise ValueError("Invalid indication source_reference")
-    layer_id = _text(reference.get("layer_id"), "layer_id", 240, required=True)
+    requested_layer_id = _text(reference.get("layer_id"), "layer_id", 240)
     record_id = _text(reference.get("record_id"), "record_id", 160, required=True)
-    starting_source = workstream.get("starting_source") or {}
-    if starting_source.get("kind") != "catalog_layer" or starting_source.get("reference_id") != layer_id:
-        raise ValueError("Indication is outside the attached event layer")
-    event = resolve_event(layer_id, record_id)
+    event = resolve_event(requested_layer_id, record_id)
     if event is None:
         raise ValueError(f"Unknown event reference: {record_id}")
+    layer_id = _text(
+        event.get("_canonical_layer_id") or requested_layer_id,
+        "canonical layer_id",
+        240,
+        required=True,
+    )
     role = _text(value.get("role") or "context", "indication role", 30)
     if role not in INDICATION_ROLES:
         raise ValueError("Invalid indication role")
@@ -189,6 +192,7 @@ def create_artifact(
     resolve_target: Callable[[str], dict | None],
     now: str,
     id_factory: Callable[[str], str],
+    require_human_actor: bool = True,
 ) -> dict:
     if workstream.get("status") == "archived":
         raise ValueError("Archived workstream cannot be updated")
@@ -198,7 +202,7 @@ def create_artifact(
     for existing in workstream.get("artifacts") or []:
         if existing.get("artifact_type") == artifact_type and existing.get("status") not in {"closed", "rejected"}:
             raise ValueError("An active artifact of this type already exists")
-    actor = _actor(request.get("actor"), workstream, require_human=True)
+    actor = _actor(request.get("actor"), workstream, require_human=require_human_actor)
     confirmation = _confirmation(request.get("confirmation_turn"))
     content = _initial_content(
         request.get("content"), workstream=workstream, resolve_event=resolve_event,
@@ -238,6 +242,7 @@ def revise_artifact(
     resolve_event: Callable[[str, str], dict | None],
     now: str,
     id_factory: Callable[[str], str],
+    require_human_actor: bool = True,
 ) -> dict:
     if workstream.get("status") == "archived":
         raise ValueError("Archived workstream cannot be updated")
@@ -254,7 +259,7 @@ def revise_artifact(
     action = _text(request.get("action"), "action", 80, required=True)
     if action not in REVISION_ACTIONS:
         raise ValueError("Unsupported artifact action")
-    actor = _actor(request.get("actor"), workstream, require_human=True)
+    actor = _actor(request.get("actor"), workstream, require_human=require_human_actor)
     confirmation = _confirmation(request.get("confirmation_turn"))
     payload = request.get("payload") if isinstance(request.get("payload"), dict) else {}
     content = artifact["content"]

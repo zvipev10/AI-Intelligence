@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import http.client
 import csv
+import hashlib
 import json
 import mimetypes
 import os
@@ -11,6 +12,7 @@ import sys
 import time
 import secrets
 import subprocess
+import threading
 from collections import Counter, defaultdict
 from datetime import datetime, timezone
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
@@ -20,13 +22,33 @@ from urllib.parse import parse_qs, unquote, urlparse
 
 from agent_result_pipeline import (
     build_agent_result,
+    evidence_reference_layers_from_audit,
     normalize_aggregate_groups,
     normalize_entity_layers,
     normalize_location_layers,
     normalize_map_locations,
     normalize_attack_targets,
+    normalize_workstream_collaboration,
+    requested_result_layers_from_audit,
 )
 from agent_routing import AgentRouteRegistry, MOSHE_AGENT_ID
+from scenario_playback import (
+    PlaybackConflictError,
+    claim_reevaluation,
+    find_investigation_run,
+    finish_reevaluation,
+    get_manifest,
+    list_scenarios,
+    load_run as load_scenario_run,
+    load_playback_visibility,
+    public_run,
+    scenario_details,
+    start_run as start_scenario_run,
+    transition_run as transition_scenario_run,
+    run_with_next_stage,
+    write_historical_visibility,
+    write_playback_visibility,
+)
 from workstream_artifacts import (
     ArtifactConflictError,
     create_artifact,
@@ -34,6 +56,15 @@ from workstream_artifacts import (
     list_artifacts,
     revise_artifact,
 )
+
+
+def bounded_prompt_cache_key(value: Any) -> str:
+    """Return a stable provider-safe session/cache key of at most 64 characters."""
+    normalized = re.sub(r"[^A-Za-z0-9_.:-]+", "-", str(value or "")).strip("-")
+    if len(normalized) <= 64:
+        return normalized
+    digest = hashlib.sha256(normalized.encode("utf-8")).hexdigest()[:12]
+    return f"{normalized[:51]}-{digest}"
 
 try:
     import paramiko
@@ -87,6 +118,8 @@ RECORDED_RUNS_DIR = ROOT / "recorded_runs" / STATE_SUFFIX
 SAVED_QUESTIONS_DIR = ROOT / "saved_questions" / STATE_SUFFIX
 INVESTIGATIONS_DIR = ROOT / "investigations" / STATE_SUFFIX
 WORKSTREAMS_DIR = ROOT / "workstreams" / STATE_SUFFIX
+SCENARIO_MANIFESTS_DIR = ROOT / "scenario_manifests"
+SCENARIO_RUNS_DIR = ROOT / "scenario_runs" / STATE_SUFFIX
 TERMINAL_STATUSES = {"completed", "failed", "cancelled"}
 EVENT_ID_PATTERN = re.compile(r"\b(?:REC-(?:V2-)?\d{6}|LOC-(?:V2-)?\d{3})\b")
 SAVED_QUESTION_ID_PATTERN = re.compile(r"^[A-Za-z0-9_.-]+$")
@@ -921,19 +954,6 @@ def normalize_workstream_text(value: Any, field: str, limit: int, required: bool
     return text
 
 
-def normalize_starting_source(value: Any) -> dict | None:
-    if value in (None, ""):
-        return None
-    if not isinstance(value, dict):
-        raise ValueError("Invalid starting_source")
-    kind = normalize_workstream_text(value.get("kind"), "starting_source kind", 80, required=True)
-    reference_id = normalize_workstream_text(
-        value.get("reference_id"), "starting_source reference_id", 240, required=True
-    )
-    label = normalize_workstream_text(value.get("label"), "starting_source label", 240)
-    return {"kind": kind, "reference_id": reference_id, "label": label}
-
-
 def normalize_participants(value: Any) -> list[dict]:
     if value is None:
         return []
@@ -1012,9 +1032,6 @@ def normalize_workstream_request(request: dict, existing: dict | None = None) ->
         "title": title,
         "objective": objective,
         "status": status,
-        "starting_source": normalize_starting_source(
-            request.get("starting_source", existing.get("starting_source"))
-        ),
         "participants": participants,
         "assignments": assignments,
     }
@@ -1044,6 +1061,60 @@ def create_workstream(request: dict) -> dict:
         "updated_at_utc": now,
         "archived_at_utc": None,
     })
+
+
+def apply_workstream_creation(investigation_id: str, creation: Any) -> dict | None:
+    """Persist a Moshe creation handoff after the dedicated chat mode authorized this turn."""
+    if not isinstance(creation, dict):
+        return None
+    title = normalize_workstream_text(creation.get("title"), "title", 240, required=True)
+    objective = normalize_workstream_text(creation.get("objective"), "objective", 4000, required=True)
+    responsibility = normalize_workstream_text(
+        creation.get("responsibility"), "responsibility", 2000, required=True
+    )
+    return create_workstream({
+        "investigation_id": investigation_id,
+        "title": title,
+        "objective": objective,
+        "participants": [
+            {
+                "participant_id": "current-analyst",
+                "kind": "human",
+                "display_name": "אנליסט",
+                "role": "owner",
+            },
+            {
+                "participant_id": "moshe-targets-officer",
+                "kind": "agent",
+                "display_name": "משה",
+                "role": "קצין מטרות",
+            },
+        ],
+        "assignments": [{
+            "assignment_id": "initial-responsibility",
+            "owner_id": "moshe-targets-officer",
+            "responsibility": responsibility,
+        }],
+    })
+
+
+def workstream_created_answer(workstream: dict) -> str:
+    assignment = next(
+        (
+            item for item in workstream.get("assignments") or []
+            if item.get("status") == "active"
+        ),
+        None,
+    )
+    responsibility = str((assignment or {}).get("responsibility") or "").strip()
+    lines = [
+        "המעקב נפתח ונשמר בהצלחה.",
+        f"כותרת: {workstream.get('title') or 'מעקב'}",
+        f"מטרה: {workstream.get('objective') or ''}",
+    ]
+    if responsibility:
+        lines.append(f"אחריות משה: {responsibility}")
+    return "\n".join(lines)
 
 
 def load_workstream(workstream_id: str) -> dict | None:
@@ -1087,6 +1158,45 @@ def list_workstreams(investigation_id: str) -> list[dict]:
     return sorted(items, key=lambda item: str(item.get("updated_at_utc") or ""), reverse=True)
 
 
+def list_workstreams_with_latest_fallback(investigation_id: str) -> dict:
+    exact = list_workstreams(investigation_id)
+    if exact:
+        return {
+            "workstreams": exact,
+            "canonical_investigation_id": investigation_id,
+            "fallback_used": False,
+        }
+    if not WORKSTREAMS_DIR.exists():
+        return {
+            "workstreams": [],
+            "canonical_investigation_id": investigation_id,
+            "fallback_used": False,
+        }
+    groups: dict[str, list[dict]] = {}
+    for path in WORKSTREAMS_DIR.glob("ws_*.json"):
+        payload = load_workstream(path.stem)
+        canonical_id = str(payload.get("investigation_id") or "") if payload else ""
+        if payload and INVESTIGATION_ID_PATTERN.fullmatch(canonical_id):
+            groups.setdefault(canonical_id, []).append(workstream_metadata(payload))
+    if not groups:
+        return {
+            "workstreams": [],
+            "canonical_investigation_id": investigation_id,
+            "fallback_used": False,
+        }
+    canonical_id, items = max(
+        groups.items(),
+        key=lambda group: max(str(item.get("updated_at_utc") or "") for item in group[1]),
+    )
+    return {
+        "workstreams": sorted(
+            items, key=lambda item: str(item.get("updated_at_utc") or ""), reverse=True
+        ),
+        "canonical_investigation_id": canonical_id,
+        "fallback_used": True,
+    }
+
+
 def update_workstream(workstream_id: str, request: dict) -> dict | None:
     existing = load_workstream(workstream_id)
     if existing is None:
@@ -1125,18 +1235,109 @@ def archive_workstream(workstream_id: str) -> dict | None:
     })
 
 
+def scenario_workstream_exists(workstream_id: str, investigation_id: str) -> bool:
+    workstream = load_workstream(workstream_id)
+    return bool(
+        workstream
+        and workstream.get("investigation_id") == investigation_id
+        and workstream.get("status") != "archived"
+    )
+
+
+def parse_scenario_run_action(path: str) -> tuple[str, str] | None:
+    prefix = "/api/scenario-runs/"
+    if not path.startswith(prefix):
+        return None
+    remainder = path[len(prefix):].strip("/")
+    parts = remainder.split("/")
+    if len(parts) != 2 or parts[1] not in {"advance", "complete", "reset"}:
+        return None
+    return unquote(parts[0]), parts[1]
+
+
+def prepared_playback_manifest() -> dict | None:
+    scenarios = [
+        item for item in list_scenarios(SCENARIO_MANIFESTS_DIR)
+        if (item.get("scope") or {}).get("dataset") == DATASET_VERSION
+    ]
+    if not scenarios:
+        return None
+    selected = scenarios[0]
+    return get_manifest(
+        SCENARIO_MANIFESTS_DIR, selected["scenario_id"], selected["version"]
+    )
+
+
+def investigation_playback_status(investigation_id: str) -> dict:
+    if not INVESTIGATION_ID_PATTERN.fullmatch(investigation_id or ""):
+        raise ValueError("Invalid investigation id")
+    policy = load_playback_visibility(SCENARIO_RUNS_DIR) or {}
+    mode = policy.get("mode") if policy.get("mode") in {"historical", "real_time"} else "historical"
+    event_times = sorted(
+        str(item.get("timestamp_utc") or "")
+        for item in load_ui_events()
+        if item.get("timestamp_utc")
+    )
+    full_timeframe = {
+        "from": event_times[0] if event_times else None,
+        "to": event_times[-1] if event_times else None,
+        "from_inclusive": True,
+        "to_inclusive": True,
+    }
+    run = find_investigation_run(SCENARIO_RUNS_DIR, investigation_id)
+    if run is not None:
+        return {
+            "investigation_id": investigation_id,
+            "mode": mode,
+            "full_timeframe": full_timeframe,
+            "run": run_with_next_stage(SCENARIO_MANIFESTS_DIR, run),
+        }
+    manifest = prepared_playback_manifest()
+    if manifest is None:
+        return {
+            "investigation_id": investigation_id,
+            "mode": mode,
+            "full_timeframe": full_timeframe,
+            "run": None,
+            "next_stage": None,
+        }
+    first = manifest["stages"][0]
+    return {
+        "investigation_id": investigation_id,
+        "mode": mode,
+        "full_timeframe": full_timeframe,
+        "run": None,
+        "next_stage": {
+            "sequence": first["sequence"],
+            "timeframe": {
+                "from": first["from"],
+                "to": first["to"],
+                "from_inclusive": True,
+                "to_exclusive": True,
+            },
+        },
+    }
+
+
 def artifact_id(prefix: str) -> str:
     return f"{prefix}_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}_{secrets.token_hex(4)}"
 
 
 def resolve_workstream_event(layer_id: str, record_id: str) -> dict | None:
-    result = get_ui_layer_rows(layer_id)
-    if result is None:
+    event = next(
+        (
+            row for row in load_ui_events()
+            if (row.get("record_id") or row.get("event_id")) == record_id
+        ),
+        None,
+    )
+    if event is None:
         return None
-    layer, rows = result
-    if layer.get("kind") != "events":
-        return None
-    return next((row for row in rows if row.get("record_id") == record_id), None)
+    canonical = dict(event)
+    canonical["record_id"] = event.get("record_id") or event.get("event_id")
+    canonical["summary"] = event.get("summary") or event.get("event_summary") or ""
+    canonical["_canonical_layer_id"] = f"events:{event.get('source_type') or 'מקור לא ידוע'}"
+    return canonical
 
 
 def resolve_workstream_target(target_id: str) -> dict | None:
@@ -1145,6 +1346,222 @@ def resolve_workstream_target(target_id: str) -> dict | None:
         return None
     _, rows = result
     return next((row for row in rows if row.get("target_id") == target_id), None)
+
+
+def workstream_presentation(workstream_id: str) -> dict | None:
+    """Build standard map/table layers from the latest active workstream state."""
+    workstream = load_workstream(workstream_id)
+    if workstream is None or workstream.get("status") != "active":
+        return None
+    policy = load_playback_visibility(SCENARIO_RUNS_DIR) or {}
+    if policy.get("mode") != "real_time" or not policy.get("active"):
+        raise ValueError("Workstream presentation is available only in real-time mode")
+    artifacts = [
+        item for item in workstream.get("artifacts") or []
+        if item.get("artifact_type") == "target_assessment_lead"
+        and item.get("status") not in {"closed", "rejected"}
+    ]
+    artifact = max(
+        artifacts,
+        key=lambda item: (int(item.get("revision") or 0), str(item.get("updated_at_utc") or "")),
+        default=None,
+    )
+    if artifact is None:
+        return {
+            "workstream_id": workstream_id,
+            "title": workstream.get("title"),
+            "artifact_revision": None,
+            "requested_result_layers": [],
+        }
+    record_ids = list(dict.fromkeys(
+        str(item.get("source_reference", {}).get("record_id") or "").strip()
+        for item in artifact.get("content", {}).get("indications") or []
+        if item.get("state") != "removed"
+        and str(item.get("source_reference", {}).get("record_id") or "").strip()
+    ))
+    events_by_id = {
+        str(row.get("record_id") or row.get("event_id") or ""): row
+        for row in load_ui_events()
+    }
+    event_rows = [events_by_id[record_id] for record_id in record_ids if record_id in events_by_id]
+    layers = []
+    if event_rows:
+        layers.append({
+            "id": f"workstream:{workstream_id}:indications",
+            "label": "אינדיקציות גולמיות",
+            "kind": "events",
+            "rows": event_rows,
+            "capabilities": {"table": True, "map": True, "timeline": True},
+            "recommended_view": "map",
+        })
+    target_ids = []
+    subject = artifact.get("content", {}).get("subject_reference") or {}
+    if subject.get("kind") == "target" and subject.get("target_id"):
+        target_ids.append(str(subject["target_id"]))
+    target_ids.extend(
+        str(item.get("target_id") or "")
+        for item in workstream.get("activity") or []
+        if item.get("target_id")
+    )
+    target_ids = list(dict.fromkeys(value for value in target_ids if value))
+    target_result = get_ui_layer_rows(ATTACK_TARGET_CATALOG_LAYER_ID) if target_ids else None
+    target_rows = (
+        [row for row in target_result[1] if row.get("target_id") in set(target_ids)]
+        if target_result is not None else []
+    )
+    if target_rows:
+        layers.append({
+            "id": f"workstream:{workstream_id}:target",
+            "label": "מטרה",
+            "kind": "attack_targets",
+            "rows": target_rows,
+            "capabilities": {"table": True, "map": True, "timeline": False},
+            "recommended_view": "map",
+        })
+    return {
+        "workstream_id": workstream_id,
+        "title": workstream.get("title"),
+        "artifact_revision": artifact.get("revision"),
+        "requested_result_layers": layers,
+    }
+
+
+def playback_workstream_presentation(workstream_updates: list[dict]) -> list[dict]:
+    """Snapshot the updated workstreams through the shared presentation contract."""
+    updates = [
+        item for item in workstream_updates
+        if isinstance(item, dict) and item.get("workstream_id")
+    ]
+    layers = []
+    for update in updates:
+        try:
+            presentation = workstream_presentation(str(update["workstream_id"]))
+        except Exception:
+            presentation = None
+        if not presentation:
+            continue
+        title = compact_text(presentation.get("title"), 160)
+        for layer in presentation.get("requested_result_layers") or []:
+            snapshot = dict(layer)
+            if len(updates) > 1 and title:
+                snapshot["label"] = f"{title} · {layer.get('label') or 'תוצאות'}"
+            layers.append(snapshot)
+    return layers
+
+
+def bounded_workstream_context(value: Any, investigation_id: str) -> dict | None:
+    """Load server-owned context; never trust browser-supplied artifact or participant data."""
+    if not isinstance(value, dict):
+        return None
+    workstream_id = str(value.get("workstream_id") or "").strip()
+    workstream = load_workstream(workstream_id) if workstream_id else None
+    if not workstream or workstream.get("investigation_id") != investigation_id or workstream.get("status") == "archived":
+        return None
+    artifacts = list_artifacts(workstream)
+    active_artifact = next(
+        (item for item in artifacts if item.get("artifact_type") == "target_assessment_lead"
+         and item.get("status") not in {"closed", "rejected"}),
+        None,
+    )
+    pending = value.get("pending_proposal")
+    if not isinstance(pending, dict) or pending.get("proposal_type") != "target_assessment_lead":
+        pending = None
+    return {
+        "workstream_id": workstream_id,
+        "title": workstream.get("title"),
+        "objective": workstream.get("objective"),
+        "active_artifact": active_artifact,
+        "pending_proposal": pending,
+        "current_turn_message_id": str(value.get("current_turn_message_id") or "").strip()[:160],
+    }
+
+
+def apply_workstream_action(context: dict | None, action: Any) -> tuple[dict | None, dict | None]:
+    """Independently validate and apply a confirmed MCP handoff through the local service."""
+    if not context or not isinstance(action, dict):
+        return None, None
+    decision = action.get("decision")
+    if decision not in {"confirm", "send_to_assessment"}:
+        return None, None
+    proposal = action.get("proposal")
+    if not isinstance(proposal, dict) or proposal.get("proposal_type") != "target_assessment_lead":
+        raise ValueError("Invalid confirmed workstream proposal")
+    current_turn = str(action.get("current_turn_message_id") or "").strip()
+    proposed_turn = str(proposal.get("proposed_turn_message_id") or "").strip()
+    if not current_turn or not proposed_turn or current_turn == proposed_turn:
+        raise ValueError("Confirmation requires a distinct later user turn")
+    if current_turn != context.get("current_turn_message_id"):
+        raise ValueError("Confirmation turn does not match the current request")
+    workstream = load_workstream(context["workstream_id"])
+    if not workstream:
+        raise ValueError("Workstream no longer exists")
+    human = next((item for item in workstream.get("participants") or [] if item.get("kind") == "human"), None)
+    if not human:
+        raise ValueError("Workstream has no human participant")
+    confirmation = {
+        "message_id": current_turn,
+        "text": str(action.get("confirmation_text") or "").strip() or "Confirmed in chat",
+    }
+    actor = {"participant_id": human["participant_id"], "kind": "human"}
+    now = utc_now_iso()
+    proposal_action = "send_to_assessment" if decision == "send_to_assessment" else proposal.get("action")
+    if proposal_action == "create":
+        content = {
+            "subject_reference": (
+                {"kind": "target", "target_id": proposal["target_id"]}
+                if proposal.get("target_id") else None
+            ),
+            "lead_statement": proposal.get("lead_statement"),
+            "indications": [
+                {
+                    "source_reference": {
+                        "kind": "event_record",
+                        "record_id": item.get("record_id"),
+                    },
+                    "role": item.get("role"),
+                    "relevance": item.get("relevance"),
+                    "annotation": item.get("annotation"),
+                }
+                for item in proposal.get("indications") or []
+            ],
+            "supporting_signals": proposal.get("supporting_signals") or [],
+            "contradictions": proposal.get("contradictions") or [],
+            "assessment_questions": proposal.get("assessment_questions") or [],
+            "gaps": proposal.get("gaps") or [],
+            "assigned_to": proposal.get("assigned_to"),
+            "annotation": proposal.get("annotation"),
+        }
+        artifact = create_artifact(
+            workstream, {
+                "artifact_type": "target_assessment_lead",
+                "actor": actor, "confirmation_turn": confirmation, "content": content,
+            },
+            resolve_event=resolve_workstream_event, resolve_target=resolve_workstream_target,
+            now=now, id_factory=artifact_id,
+        )
+    else:
+        artifact_value = context.get("active_artifact") or {}
+        artifact_id_value = proposal.get("artifact_id") or artifact_value.get("artifact_id")
+        revision = proposal.get("expected_revision") or artifact_value.get("revision")
+        payload = proposal.get("payload") if isinstance(proposal.get("payload"), dict) else {}
+        if proposal_action == "add_indication":
+            indications = proposal.get("indications") or []
+            if len(indications) != 1:
+                raise ValueError("add_indication requires exactly one indication")
+            item = indications[0]
+            payload = {"indication": {
+                "source_reference": {"kind": "event_record", "record_id": item.get("record_id")},
+                "role": item.get("role"), "relevance": item.get("relevance"), "annotation": item.get("annotation"),
+            }}
+        artifact = revise_artifact(
+            workstream, str(artifact_id_value or ""), {
+                "expected_revision": revision, "action": proposal_action, "payload": payload,
+                "actor": actor, "confirmation_turn": confirmation,
+            },
+            resolve_event=resolve_workstream_event, now=now, id_factory=artifact_id,
+        )
+    write_workstream(workstream)
+    return artifact, None
 
 
 def parse_artifact_api_path(path: str) -> tuple[str, str | None, bool] | None:
@@ -1450,6 +1867,34 @@ class HermesClient:
         def public_args(args):
             return {key: value for key, value in args.items() if key != "step_bridge"}
 
+        def extract_identifiers(value, depth=0):
+            if depth > 6:
+                return []
+            identifiers = []
+            if isinstance(value, dict):
+                for key, item in value.items():
+                    if key.endswith("_id") and isinstance(item, (str, int)) and item:
+                        identifiers.append(item)
+                    elif key.endswith("_ids") and isinstance(item, list):
+                        identifiers.extend(entry for entry in item if isinstance(entry, (str, int)) and entry)
+                    else:
+                        identifiers.extend(extract_identifiers(item, depth + 1))
+            elif isinstance(value, list):
+                for item in value:
+                    identifiers.extend(extract_identifiers(item, depth + 1))
+            return list(dict.fromkeys(str(identifier) for identifier in identifiers if identifier))
+
+        def identifiers_text(*values):
+            identifiers = []
+            for value in values:
+                identifiers.extend(extract_identifiers(value))
+            identifiers = list(dict.fromkeys(identifiers))
+            return f' מזהים: {format_ids(identifiers)}.' if identifiers else ""
+
+        def target_candidate(result):
+            candidate = result.get("candidate")
+            return candidate if isinstance(candidate, dict) else {}
+
         def arg_clue(tool, args):
             if tool == "classify_question_intent":
                 return f'השאלה "{args.get("question", "")}"'
@@ -1474,6 +1919,16 @@ class HermesClient:
             if tool == "get_objects":
                 ids = (args.get("event_ids") or []) + (args.get("location_ids") or []) + (args.get("entity_ids") or [])
                 return f'מזהי האובייקטים {format_ids(ids)}'
+            if tool == "prepare_target_candidate":
+                return f'רשומות העוגן {format_ids(args.get("event_ids") or [])}'
+            if tool in {"get_target_candidate", "update_target_candidate", "attach_target_evidence"}:
+                return f'מועמד המטרה {args.get("target_id") or "לא צוין"}'
+            if tool == "find_duplicate_target_candidates":
+                return f'מועמד במיקום {args.get("location_id") or "לא צוין"} ובסוג {args.get("object_class") or "לא צוין"}'
+            if tool == "search_target_candidates":
+                return "מאגר מועמדי המטרות"
+            if tool == "create_target_candidate":
+                return f'המועמד {((args.get("candidate") or {}).get("target_id")) or "החדש"}'
             if tool == "find_related_events":
                 return f'אירועי העוגן {format_ids(args.get("seed_event_ids") or [])}'
             if tool == "explain_linkage":
@@ -1573,6 +2028,21 @@ class HermesClient:
             elif tool == "challenge_hypothesis":
                 decision = f'לפני חיזוק ההשערה, הסוכן בודק את {clue} מול חלופות ופערים.'
                 expected = "לגלות הסברים תמימים, סתירות או חסרים שמחלישים את הרצף."
+            elif tool == "prepare_target_candidate":
+                decision = f'משה בודק את {clue}, מאתר חיזוקים ומעריך אם ניתן ליצור מועמד מטרה.'
+                expected = "לקבל החלטת כשירות, ביטחון, כמות ורשומות תומכות בלי לשמור עדיין."
+            elif tool == "find_duplicate_target_candidates":
+                decision = f'לפני יצירה, משה בודק אם {clue} כבר קיים במאגר.'
+                expected = "למנוע יצירת מטרה כפולה ולהחזיר מזהי מועמדים דומים אם קיימים."
+            elif tool in {"search_target_candidates", "get_target_candidate"}:
+                decision = f'משה קורא את {clue} כדי להציג או להמשיך לעבוד על מטרה קיימת.'
+                expected = "לקבל תקציר מטרה ומזהים רלוונטיים מתוך המאגר."
+            elif tool in {"create_target_candidate", "update_target_candidate", "attach_target_evidence"}:
+                decision = f'משה מעדכן את {clue} לאחר בדיקות הכשירות והכפילויות.'
+                expected = "לקבל אישור קצר, מצב מעודכן ומזהים רלוונטיים."
+            elif tool == "present_requested_results":
+                decision = "הסוכן בוחר רק את הנתונים שעונים ישירות לבקשת המשתמש עבור כפתור הצג תוצאות."
+                expected = "לקבל בנפרד שכבות תוצאה מבוקשות ושכבות ראיות תומכות מאומתות."
             else:
                 decision = f'הסוכן משתמש ב-{clue} כדי לצמצם אי-ודאות ולהחליט על המשך החקירה.'
                 expected = "לקבל פלט שיאשר, ישלול או ימקד את כיוון החקירה."
@@ -1778,6 +2248,72 @@ class HermesClient:
                 alternatives = result.get("alternative_event_ids") or []
                 gaps = result.get("gaps") or []
                 outcome = f'נמצאו {len(alternatives)} אירועי חלופה ו-{len(gaps)} פערים; חלופות: {format_ids(alternatives)}.'
+            elif tool == "prepare_target_candidate":
+                requested = args.get("event_ids") or []
+                action = f'בדיקת {len(requested)} רשומות עוגן והשלמת חיזוקים למועמד מטרה: {format_ids(requested)}.'
+                evidence = result.get("evidence") or []
+                eligible = bool(result.get("persistence_eligible"))
+                blocks = result.get("persistence_block_reasons") or []
+                outcome = (
+                    f'נבדקו {len(evidence)} רשומות ב-{result.get("independent_source_group_count", 0)} קבוצות מקור; '
+                    f'ביטחון {result.get("confidence") or "לא נקבע"}; '
+                    f'המועמד {"כשיר לשמירה" if eligible else "אינו כשיר לשמירה"}.'
+                )
+                if blocks:
+                    outcome += f' סיבות: {"; ".join(str(item) for item in blocks[:3])}.'
+                outcome += identifiers_text(result)
+            elif tool == "find_duplicate_target_candidates":
+                action = (
+                    f'בדיקת מועמדים כפולים עבור סוג {args.get("object_class") or "לא צוין"}, '
+                    f'מיקום {args.get("location_id") or "לא צוין"} וישות {args.get("entity_id") or "לא צוינה"}.'
+                )
+                matches = result.get("matches") or []
+                outcome = f'{"נמצאו" if matches else "לא נמצאו"} {len(matches)} מועמדים דומים.' + identifiers_text(result)
+            elif tool == "search_target_candidates":
+                filters = {key: value for key, value in public_args(args).items() if value not in (None, "", [], False)}
+                action = f'חיפוש מועמדי מטרות לפי {", ".join(filters) if filters else "ללא מסננים"}.'
+                candidates = result.get("candidates") or []
+                outcome = f'הוחזרו {result.get("returned", len(candidates))} מועמדי מטרות.' + identifiers_text(result)
+            elif tool == "get_target_candidate":
+                action = f'שליפת מועמד המטרה {args.get("target_id") or "לא צוין"}.'
+                candidate = target_candidate(result)
+                outcome = (
+                    f'הוחזרה המטרה {candidate.get("title") or candidate.get("target_id") or "ללא כותרת"}; '
+                    f'ביטחון {candidate.get("confidence") or "לא נקבע"}; '
+                    f'{candidate.get("evidence_count", len(candidate.get("evidence") or []))} רשומות.'
+                    + identifiers_text(result)
+                )
+            elif tool == "create_target_candidate":
+                candidate_input = args.get("candidate") or {}
+                action = f'יצירת מועמד המטרה {candidate_input.get("target_id") or "חדש"} לאחר בדיקות הכשירות.'
+                candidate = target_candidate(result)
+                outcome = (
+                    f'נוצרה המטרה {candidate.get("title") or candidate.get("target_id") or "ללא כותרת"}; '
+                    f'ביטחון {candidate.get("confidence") or "לא נקבע"}; '
+                    f'{candidate.get("evidence_count", len(candidate.get("evidence") or []))} רשומות.'
+                    + identifiers_text(result)
+                )
+            elif tool == "update_target_candidate":
+                changed_fields = list((args.get("changes") or {}).keys())
+                action = f'עדכון המטרה {args.get("target_id") or "לא צוינה"}; שדות: {", ".join(changed_fields) if changed_fields else "אין"}.'
+                candidate = target_candidate(result)
+                outcome = f'המטרה {candidate.get("title") or candidate.get("target_id") or "לא צוינה"} עודכנה.' + identifiers_text(result)
+            elif tool == "attach_target_evidence":
+                supplied = args.get("evidence") or []
+                action = f'צירוף {len(supplied)} רשומות למטרה {args.get("target_id") or "לא צוינה"}.'
+                candidate = target_candidate(result)
+                if record.get("is_error") or result.get("error"):
+                    outcome = f'הצירוף נכשל: {result.get("error") or "שגיאה לא מפורטת"}.' + identifiers_text(args, result)
+                else:
+                    outcome = f'הרשומות צורפו; למטרה משויכות כעת {candidate.get("evidence_count", len(candidate.get("evidence") or []))} רשומות.' + identifiers_text(result)
+            elif tool == "present_requested_results":
+                layers = result.get("requested_result_layers") or []
+                evidence_layers = result.get("evidence_reference_layers") or []
+                action = (
+                    f'בחירת {len(args.get("layers") or [])} שכבות שעונות ישירות לבקשת המשתמש '
+                    f'ו-{len(args.get("evidence_layers") or [])} שכבות ראיות תומכות.'
+                )
+                outcome = f'אומתו {len(layers)} שכבות תוצאה ו-{len(evidence_layers)} שכבות ראיות.'
             else:
                 action = f'קלט: {json.dumps(public_args(args), ensure_ascii=False)}.'
                 outcome = f'פלט: {json.dumps(result, ensure_ascii=False)}.'
@@ -1876,6 +2412,15 @@ class HermesClient:
         leads = inv_state.get("open_leads") or []
         if leads:
             lines.append(f"כיווני המשך פתוחים: {'; '.join(leads)}")
+
+        workstream = inv_state.get("active_workstream")
+        if isinstance(workstream, dict):
+            lines.append("הקשר מעקב פעיל לשיתוף פעולה עם המשתמש:")
+            lines.append(json.dumps(workstream, ensure_ascii=False))
+            lines.append(
+                "הקשר זה אינו הרשאה לכתיבה. הצעה חדשה מחייבת prepare_workstream_indication_proposal; "
+                "הכרעה על הצעה ממתינה מחייבת decide_workstream_indication_proposal."
+            )
 
         selected_layers = inv_state.get("selected_layers") or []
         if selected_layers:
@@ -2206,32 +2751,56 @@ class HermesClient:
             " סכם מה נבדק, מה נמצא, מהו הגשר הראייתי או הפער המרכזי, ומה נשאר לא ודאי."
             " אם יש רצף או דפוס, תאר אותו במשפט אחד או שניים בלבד."
             " אל תפרט את כל הצעדים הטכניים, הכלים והפרמטרים; יומן הפעילות בממשק מציג אותם בנפרד.\n"
-            "בכל מצב, סיים בשורה שמתחילה 'מזהי ראיות:' ובה רק מזהי האירועים שאתה בוחר כראיות התומכות בתשובה."
-            " הממשק משתמש בשורה זו כדי לדעת אילו רשומות להציג; לכן אל תשמיט מזהה מרכזי שעליו הסתמכת, ואל תכלול מזהים שלא שימשו כתמיכה לתשובה."
-            " אם המשתמש ביקש שליפה ממצה של רשומות וכלי search_events או get_objects החזיר event_ids, חובה לכלול בשורת 'מזהי ראיות:' את מזהי REC שהוחזרו או שנבחרו להצגה."
-            " אל תחליף רשימת מזהי REC בניסוח כמו '81 רשומות' או 'כיסוי מלא', כי הממשק אינו יכול להציג מזהים שלא נכתבו בתשובה."
-            " אפשר לציין בגוף התשובה את מספר הרשומות והכיסוי, אבל שורת 'מזהי ראיות:' חייבת להכיל מזהי REC כאשר קיימים כאלה בפלט הכלים."
-            " אם זו תוצאה אגרגטיבית ללא מזהי אירועים, כתוב 'מזהי ראיות: תוצאה אגרגטיבית ללא מזהי אירועים'.\n"
+            "אל תכתוב שורת טקסט חופשי שמתחילה 'מזהי ראיות:'. הממשק בונה את אזור מזהי הראיות רק מהשדה evidence_layers"
+            " בקריאה הסופית ל-present_requested_results. מזהים קנוניים יכולים להישאר בגוף התשובה כאשר הם נחוצים להבנת טענה מסוימת.\n"
             "אם באחד מצעדי החקירה התקבלה תוצאה מקוצצת או מדגם מדורג, אל תנסח היעדר ראיה כמסקנה מוחלטת."
             " כתוב במפורש שהבדיקה אינה ממצה ושנדרש צמצום נוסף או הרחבת limit כדי לשלול המשך שרשרת בביטחון גבוה.\n"
-            "לאחר שורת הראיות, הוסף שורה אחרונה בפורמט המדויק 'תצוגה מומלצת: VIEW | REASON'.\n"
+            "הוסף שורה אחרונה בפורמט המדויק 'תצוגה מומלצת: VIEW | REASON'.\n"
             "VIEW חייב להתבסס קודם על recommended_view_hint מ-classify_question_intent, אלא אם תוצאות הכלים מצדיקות שינוי ברור."
             " הערכים האפשריים: map כאשר הממצא הגאוגרפי או מסלול התנועה הוא העיקר;"
             " timeline כאשר סדר האירועים והעיתוי הם העיקר; evidence כאשר בדיקת המקורות והרשומות הגולמיות היא העיקר.\n"
             "REASON הוא הסבר קצר בעברית, עד שמונה מילים, לבחירת התצוגה.\n"
             "אין להשתמש בכלי מערכת, קבצים, רשת או shell, ואין לבקש אישור לכלים."
+            " מאגר המטרות תומך באיתור ישיר לפי מזהה רשומה גולמית באמצעות search_target_candidates עם record_id."
+            " הכלי זמין למשה בלבד; הסוכן הכללי אינו טוען שביצע חיפוש כזה ואינו מנתב למשה ללא אזכור מפורש של @משה."
+            " לפני התשובה הסופית, כאשר קיימים נתונים מבוקשים להצגה או ראיות מהותיות לניווט, חובה לקרוא פעם אחת ל-present_requested_results."
+            " בשדה layers בחר רק את הרשומות שעונות ישירות למה שהמשתמש ביקש; שכבה אחת כברירת מחדל וכמה רק אם התבקשו כמה סוגי תוצאה."
+            " בשדה evidence_layers בחר מספר קטן של שכבות בעלות שמות משמעותיים, ורק רשומות קנוניות שתומכות מהותית במסקנה הסופית."
+            " קבץ ראיות לפי הסיבה שהן חשובות ולא לפי הכלי שהחזיר אותן, ובחר עבורן map או timeline."
+            " לעולם אל תכלול תוצאות ביניים, בדיקות כפילות, מועמדים שנדחו או פלט כלי שאינו רלוונטי ישירות לתוצאה או למסקנה."
+            " אם אין אובייקט נתונים להצגה ואין ראיות מהותיות לניווט, אל תקרא לכלי."
+            " כפתור הצג תוצאות מבוסס רק על layers; אזור מזהי ראיות מבוסס רק על evidence_layers."
         )
         if responding_agent == MOSHE_AGENT_ID:
+            playback_authorized = bool(
+                isinstance(investigation_state, dict)
+                and isinstance(investigation_state.get("scenario_playback"), dict)
+            )
             instructions += (
                 "\n\nאתה משה, קצין המטרות. המשתמש פנה אליך במפורש באמצעות @משה. "
                 "אתה אחראי לשאלות הבהרה, איתור ראיות, סיווג, מיזוג, בדיקת עצמאות מקורות, "
                 "בדיקת כפילויות, ויצירת מועמד מטרה רק כאשר כלי prepare_target_candidate מאשר persistence_eligible=true. "
+                "כאשר המשתמש מספק מזהה REC, השתמש ב-search_target_candidates עם record_id כדי למצוא כל מטרה קיימת שמכילה את הרשומה. "
                 "ממצא בביטחון נמוך מדווח למשתמש ואינו נשמר. אל תמציא source_group ואל תעקוף את כלי המיזוג. "
+                "בבקשה הנוגעת למעקב, פרש שפה טבעית ללא ביטויי פקודה שמורים. REC הוא אינדיקציה; TGT הוא נושא אפשרי בלבד ולעולם אינו ראיה. "
+            )
+            instructions += (
+                (
+                    "במצב playback המעקב כבר אושר: עדכן אותו מתוך פרוסת המידע החדשה, "
+                    "השתמש בבנק המטרות לבדיקת כפילויות, וצור או עדכן מועמד מטרה כאשר "
+                    "prepare_target_candidate מאשר persistence_eligible=true. אין לבקש אישור נוסף. "
+                    if playback_authorized else
+                    "פתור את המזהים והשתמש ב-prepare_workstream_indication_proposal כדי להציג הצעה לפני שמירה. "
+                    "אל תאשר הצעה בעצמך: רק בתור משתמש מאוחר ונפרד השתמש ב-decide_workstream_indication_proposal. "
+                    "אם התגובה עמומה בקש הבהרה; ready_for_assessment הוא מסירה להערכה ולא הערכה או יצירת מטרה. "
+                    "מחוץ למצב playback אל תפעיל כלי יצירה או עדכון של בנק המטרות במסגרת מעקב. "
+                )
+                +
                 "אין לך הרשאה לכלי מערכת, filesystem, shell, SQL, מחיקה, reset, evaluator או שינוי סטטוס."
             )
         state_block = self.render_investigation_state(investigation_state)
         full_instructions = f"{instructions}\n\n{state_block}" if state_block else instructions
-        safe_investigation_id = re.sub(r"[^A-Za-z0-9_.:-]+", "-", str(investigation_id or "")).strip("-")
+        safe_investigation_id = bounded_prompt_cache_key(investigation_id)
         session_id = safe_investigation_id or f"intelligence-orchestrator-{int(time.time() * 1000)}"
         session_started = time.perf_counter()
         with HermesSession(self.config) as session:
@@ -2392,18 +2961,17 @@ class HermesClient:
                     "slowest_tool": performance["tools"].get("slowest_tool"),
                 }
                 performance_log_path = write_performance_log(run_id, performance, prompt)
-                target_rows = normalize_attack_targets(
+                requested_layers = requested_result_layers_from_audit(
                     audit_records,
                     locations=LOCATIONS,
                     entities=load_ui_entity_db(),
                 )
-                result_layers = ([{
-                    "id": "attack-targets:candidates",
-                    "label": "מועמדי מטרות",
-                    "kind": "attack_targets",
-                    "rows": target_rows,
-                    "capabilities": {"table": True, "map": True, "timeline": False},
-                }] if target_rows else [])
+                evidence_reference_layers = evidence_reference_layers_from_audit(
+                    audit_records,
+                    locations=LOCATIONS,
+                    entities=load_ui_entity_db(),
+                )
+                collaboration = normalize_workstream_collaboration(audit_records)
                 return build_agent_result({
                     "run_id": run_id,
                     "answer": clean_output,
@@ -2415,9 +2983,294 @@ class HermesClient:
                     "events": events,
                     "usage": status.get("usage", {}),
                     "performance_log": performance_log_path.name,
-                }, responding_agent=responding_agent, session_id=session_id, mission_run_id=mission_run_id, layers=result_layers)
+                    **collaboration,
+                }, responding_agent=responding_agent, session_id=session_id, mission_run_id=mission_run_id,
+                    requested_result_layers=requested_layers,
+                    evidence_reference_layers=evidence_reference_layers)
             time.sleep(1)
         raise TimeoutError("Hermes investigation exceeded 480 seconds")
+
+
+def run_moshe_playback_reevaluation(run: dict, released_timeframe: dict) -> dict:
+    """Run one playback-filtered Moshe assessment for a newly released window."""
+    workstream_id = run.get("workstream_id")
+    workstream_contexts = []
+    if workstream_id:
+        workstream_contexts.append(bounded_workstream_context(
+            {
+                "workstream_id": workstream_id,
+                "current_turn_message_id": f"playback-revision-{run['revision']}",
+            },
+            run["investigation_id"],
+        ))
+    else:
+        for workstream in list_workstreams(run["investigation_id"]):
+            if workstream.get("status") != "active":
+                continue
+            workstream_contexts.append(bounded_workstream_context(
+                {
+                    "workstream_id": workstream["workstream_id"],
+                    "current_turn_message_id": f"playback-revision-{run['revision']}",
+                },
+                run["investigation_id"],
+            ))
+    scenario_playback = {
+            "run_id": run["run_id"],
+            "revision": run["revision"],
+            "newly_released_timeframe": released_timeframe,
+            "visible_timeframe": run["visible_timeframe"],
+    }
+    config = load_agent_hermes_config(MOSHE_AGENT_ID)
+
+    def assess(context: dict) -> dict:
+        prompt = (
+            "התקדם שלב אחד בתרחיש זמן אמת ועדכן את המעקב הפעיל הבא: "
+            f"{context.get('title') or context['workstream_id']}. "
+            "קלוט את פרוסת המידע החדשה, בדוק כיצד היא משנה את האינדיקציות ואת הערכת המטרה, "
+            "ובצע את פעולות המעקב הנדרשות. אם הראיות עומדות במדיניות הכשירות, בדוק כפילויות "
+            "וצור או עדכן מועמד מטרה באמצעות כלי בנק המטרות; אין צורך באישור אנליסט נוסף במהלך playback. "
+            "השתמש רק במידע הזמין כעת דרך כלי הראיות. "
+            f"חלון המידע החדש: {released_timeframe.get('from')} עד {released_timeframe.get('to')}. "
+            f"חלון מצטבר זמין: {run['visible_timeframe'].get('from')} עד {run['visible_timeframe'].get('to')}."
+        )
+        result = HermesClient(config).investigate(
+            prompt,
+            [],
+            investigation_state={
+                "active_workstreams": [context],
+                "active_workstream": context,
+                "scenario_playback": scenario_playback,
+            },
+            investigation_id=(
+                f"{run['run_id']}:revision:{run['revision']}:{context['workstream_id']}"
+            ),
+            responding_agent=MOSHE_AGENT_ID,
+            mission_run_id=(
+                f"{run['run_id']}:revision:{run['revision']}:{context['workstream_id']}"
+            ),
+        )
+        result["workstream_id"] = context["workstream_id"]
+        return result
+
+    results = [assess(context) for context in workstream_contexts]
+    return {
+        "answer": "\n\n".join(
+            str(result.get("answer") or "").strip() for result in results
+            if str(result.get("answer") or "").strip()
+        ),
+        "responding_agent": MOSHE_AGENT_ID,
+        "event_ids": list(dict.fromkeys(
+            str(event_id)
+            for result in results
+            for event_id in result.get("event_ids") or []
+            if isinstance(event_id, str)
+        )),
+        "workstream_results": results,
+    }
+
+
+def persist_playback_workstream_assessment(
+    workstream_id: str, result: dict, run: dict, released_timeframe: dict
+) -> dict | None:
+    """Revision the active workstream from an authorized playback assessment."""
+    workstream = load_workstream(workstream_id)
+    if not workstream or workstream.get("status") != "active":
+        return None
+    agent = next(
+        (item for item in workstream.get("participants") or [] if item.get("kind") == "agent"),
+        None,
+    )
+    if not agent:
+        raise ValueError("Playback workstream has no agent participant")
+    answer = compact_text(result.get("answer"), 3000)
+    event_ids = list(dict.fromkeys(
+        str(value) for value in result.get("event_ids") or []
+        if isinstance(value, str) and resolve_workstream_event("", value) is not None
+    ))[:100]
+    if not answer or not event_ids:
+        raise ValueError("Playback assessment has no persistable evidence")
+    now = utc_now_iso()
+    actor = {"participant_id": agent["participant_id"], "kind": "agent"}
+    confirmation = {
+        "message_id": f"playback:{run['run_id']}:{run['revision']}",
+        "text": "Automated real-time playback assessment",
+    }
+    active_artifact = next(
+        (
+            item for item in workstream.get("artifacts") or []
+            if item.get("artifact_type") == "target_assessment_lead"
+            and item.get("status") == "active"
+        ),
+        None,
+    )
+    target_actions = result.get("target_actions") or []
+    target_candidate = next(
+        (
+            item.get("candidate") for item in reversed(target_actions)
+            if isinstance(item, dict) and isinstance(item.get("candidate"), dict)
+        ),
+        None,
+    )
+    target_id = str((target_candidate or {}).get("target_id") or "").strip()
+    if active_artifact is None:
+        artifact = create_artifact(
+            workstream,
+            {
+                "artifact_type": "target_assessment_lead",
+                "actor": actor,
+                "confirmation_turn": confirmation,
+                "content": {
+                    "subject_reference": None,
+                    "lead_statement": answer,
+                    "indications": [
+                        {
+                            "source_reference": {"kind": "event_record", "record_id": event_id},
+                            "role": "supports",
+                            "relevance": "נכלל בהערכת משה בפרוסת זמן אמת",
+                            "annotation": answer,
+                        }
+                        for event_id in event_ids
+                    ],
+                    "supporting_signals": [
+                        f"{released_timeframe.get('from')}–{released_timeframe.get('to')}"
+                    ],
+                    "contradictions": [],
+                    "assessment_questions": [],
+                    "gaps": [],
+                    "assigned_to": agent["participant_id"],
+                    "annotation": f"Playback revision {run['revision']}",
+                },
+            },
+            resolve_event=resolve_workstream_event,
+            resolve_target=resolve_workstream_target,
+            now=now,
+            id_factory=artifact_id,
+            require_human_actor=False,
+        )
+    else:
+        artifact = active_artifact
+        existing_ids = {
+            item.get("source_reference", {}).get("record_id")
+            for item in artifact.get("content", {}).get("indications") or []
+            if item.get("state") != "removed"
+        }
+        for event_id in event_ids:
+            if event_id in existing_ids:
+                continue
+            artifact = revise_artifact(
+                workstream,
+                artifact["artifact_id"],
+                {
+                    "expected_revision": artifact["revision"],
+                    "action": "add_indication",
+                    "payload": {"indication": {
+                        "source_reference": {"kind": "event_record", "record_id": event_id},
+                        "role": "supports",
+                        "relevance": "נוסף בהערכת משה בפרוסת זמן אמת",
+                        "annotation": answer,
+                    }},
+                    "actor": actor,
+                    "confirmation_turn": confirmation,
+                },
+                resolve_event=resolve_workstream_event,
+                now=now,
+                id_factory=artifact_id,
+                require_human_actor=False,
+            )
+        artifact = revise_artifact(
+            workstream,
+            artifact["artifact_id"],
+            {
+                "expected_revision": artifact["revision"],
+                "action": "update_lead_statement",
+                "payload": {"lead_statement": answer},
+                "actor": actor,
+                "confirmation_turn": confirmation,
+            },
+            resolve_event=resolve_workstream_event,
+            now=now,
+            id_factory=artifact_id,
+            require_human_actor=False,
+        )
+    workstream.setdefault("activity", []).append({
+        "activity_id": f"playback-{run['revision']}",
+        "type": "playback_assessment",
+        "actor_id": agent["participant_id"],
+        "scenario_run_id": run["run_id"],
+        "scenario_revision": run["revision"],
+        "released_timeframe": released_timeframe,
+        "artifact_id": artifact["artifact_id"],
+        "artifact_revision": artifact["revision"],
+        "target_id": target_id or None,
+        "created_at_utc": now,
+    })
+    write_workstream(workstream)
+    return artifact
+
+
+def playback_has_active_workstreams(run: dict) -> bool:
+    workstream_id = run.get("workstream_id")
+    if workstream_id:
+        workstream = load_workstream(workstream_id)
+        return bool(workstream and workstream.get("status") == "active")
+    return any(
+        workstream.get("status") == "active"
+        for workstream in list_workstreams(run["investigation_id"])
+    )
+
+
+def complete_moshe_playback_reevaluation(
+    run: dict, released_timeframe: dict, revision: int
+) -> None:
+    try:
+        result = run_moshe_playback_reevaluation(run, released_timeframe)
+        workstream_updates = []
+        for workstream_result in result.get("workstream_results") or []:
+            artifact = persist_playback_workstream_assessment(
+                workstream_result["workstream_id"],
+                workstream_result,
+                run,
+                released_timeframe,
+            )
+            if artifact:
+                workstream_updates.append({
+                    "workstream_id": workstream_result["workstream_id"],
+                    "artifact_id": artifact["artifact_id"],
+                    "revision": artifact["revision"],
+                })
+        assessment = {
+            "run_id": f"{run['run_id']}:revision:{revision}",
+            "answer": compact_text(result.get("answer"), 20_000),
+            "responding_agent": result.get("responding_agent") or MOSHE_AGENT_ID,
+            "event_ids": [
+                str(value) for value in result.get("event_ids") or []
+                if isinstance(value, str)
+            ][:500],
+            "workstream_updates": workstream_updates,
+            "requested_result_layers": playback_workstream_presentation(workstream_updates),
+        }
+        finish_reevaluation(
+            SCENARIO_RUNS_DIR,
+            run["run_id"],
+            revision,
+            "completed",
+            assessment=assessment,
+        )
+    except Exception as exc:
+        finish_reevaluation(
+            SCENARIO_RUNS_DIR, run["run_id"], revision, "failed", str(exc)
+        )
+
+
+def start_moshe_playback_reevaluation(
+    run: dict, released_timeframe: dict, revision: int
+) -> None:
+    threading.Thread(
+        target=complete_moshe_playback_reevaluation,
+        args=(dict(run), dict(released_timeframe), revision),
+        daemon=True,
+        name=f"moshe-playback-{run['run_id']}-{revision}",
+    ).start()
 
 
 class Handler(SimpleHTTPRequestHandler):
@@ -2489,10 +3342,54 @@ class Handler(SimpleHTTPRequestHandler):
                 return
             self.send_json(200, result)
             return
-        if path.path == "/api/workstreams":
+        if path.path == "/api/scenarios":
+            try:
+                self.send_json(200, {"scenarios": list_scenarios(SCENARIO_MANIFESTS_DIR)})
+            except ValueError as exc:
+                self.send_json(500, {"error": str(exc)})
+            return
+        if path.path.startswith("/api/scenarios/"):
+            scenario_id = unquote(path.path[len("/api/scenarios/"):])
+            query = parse_qs(path.query)
+            version_text = (query.get("version") or [""])[0]
+            try:
+                version = int(version_text) if version_text else None
+                manifest = get_manifest(SCENARIO_MANIFESTS_DIR, scenario_id, version)
+            except (TypeError, ValueError) as exc:
+                self.send_json(400, {"error": str(exc)})
+                return
+            if manifest is None:
+                self.send_json(404, {"error": "Scenario not found"})
+            else:
+                self.send_json(200, scenario_details(manifest))
+            return
+        if path.path.startswith("/api/scenario-runs/"):
+            run_id = unquote(path.path[len("/api/scenario-runs/"):])
+            try:
+                result = load_scenario_run(SCENARIO_RUNS_DIR, run_id)
+            except ValueError as exc:
+                self.send_json(400, {"error": str(exc)})
+                return
+            if result is None:
+                self.send_json(404, {"error": "Scenario run not found"})
+            else:
+                self.send_json(200, public_run(result))
+            return
+        if path.path == "/api/playback":
             investigation_id = (parse_qs(path.query).get("investigation_id") or [""])[0]
             try:
-                self.send_json(200, {"workstreams": list_workstreams(investigation_id)})
+                self.send_json(200, investigation_playback_status(investigation_id))
+            except ValueError as exc:
+                self.send_json(400, {"error": str(exc)})
+            return
+        if path.path == "/api/workstreams":
+            query = parse_qs(path.query)
+            investigation_id = (query.get("investigation_id") or [""])[0]
+            try:
+                if (query.get("fallback") or [""])[0] == "latest":
+                    self.send_json(200, list_workstreams_with_latest_fallback(investigation_id))
+                else:
+                    self.send_json(200, {"workstreams": list_workstreams(investigation_id)})
             except ValueError as exc:
                 self.send_json(400, {"error": str(exc)})
             return
@@ -2518,6 +3415,20 @@ class Handler(SimpleHTTPRequestHandler):
                 self.send_json(404, {"error": "Artifact not found"})
             else:
                 self.send_json(200, artifact)
+            return
+        if path.path.startswith("/api/workstreams/") and path.path.endswith("/presentation"):
+            workstream_id = unquote(
+                path.path[len("/api/workstreams/"):-len("/presentation")].rstrip("/")
+            )
+            try:
+                result = workstream_presentation(workstream_id)
+            except ValueError as exc:
+                self.send_json(400, {"error": str(exc)})
+                return
+            if result is None:
+                self.send_json(404, {"error": "Workstream not found"})
+            else:
+                self.send_json(200, result)
             return
         if path.path.startswith("/api/workstreams/"):
             workstream_id = unquote(path.path[len("/api/workstreams/"):])
@@ -2557,6 +3468,275 @@ class Handler(SimpleHTTPRequestHandler):
 
     def do_POST(self):
         path = urlparse(self.path).path
+        if path == "/api/playback/mode":
+            try:
+                length = int(self.headers.get("Content-Length", "0"))
+                if length > 1_000_000:
+                    self.send_json(413, {"error": "Playback mode payload too large"})
+                    return
+                request = json.loads(self.rfile.read(length).decode("utf-8-sig"))
+                if not isinstance(request, dict):
+                    raise ValueError("Invalid playback mode payload")
+                investigation_id = str(request.get("investigation_id") or "").strip()
+                mode = str(request.get("mode") or "").strip()
+                reset = request.get("reset", False)
+                if not INVESTIGATION_ID_PATTERN.fullmatch(investigation_id):
+                    raise ValueError("Invalid investigation id")
+                if mode not in {"historical", "real_time"}:
+                    raise ValueError("Invalid intelligence mode")
+                if not isinstance(reset, bool):
+                    raise ValueError("Invalid playback reset flag")
+                if mode == "historical":
+                    if reset:
+                        run = find_investigation_run(
+                            SCENARIO_RUNS_DIR, investigation_id
+                        )
+                        if run is not None:
+                            transition_scenario_run(
+                                SCENARIO_MANIFESTS_DIR,
+                                SCENARIO_RUNS_DIR,
+                                run["run_id"],
+                                {
+                                    "expected_revision": int(run["revision"]),
+                                    "idempotency_key": (
+                                        f"app-refresh-reset-{investigation_id}-"
+                                        f"{int(time.time() * 1000)}"
+                                    ),
+                                },
+                                "reset",
+                            )
+                    write_historical_visibility(SCENARIO_RUNS_DIR)
+                else:
+                    run = find_investigation_run(SCENARIO_RUNS_DIR, investigation_id)
+                    if run is None:
+                        manifest = prepared_playback_manifest()
+                        if manifest is None:
+                            raise LookupError("Prepared scenario not found")
+                        run, _ = start_scenario_run(
+                            SCENARIO_MANIFESTS_DIR,
+                            SCENARIO_RUNS_DIR,
+                            {
+                                "scenario_id": manifest["scenario_id"],
+                                "version": manifest["version"],
+                                "investigation_id": investigation_id,
+                                "idempotency_key": (
+                                    f"mode-real-time-{investigation_id}-"
+                                    f"{int(time.time() * 1000)}"
+                                ),
+                            },
+                            scenario_workstream_exists,
+                        )
+                    elif reset:
+                        run, _ = transition_scenario_run(
+                            SCENARIO_MANIFESTS_DIR,
+                            SCENARIO_RUNS_DIR,
+                            run["run_id"],
+                            {
+                                "expected_revision": int(run["revision"]),
+                                "idempotency_key": (
+                                    f"app-refresh-reset-{investigation_id}-"
+                                    f"{int(time.time() * 1000)}"
+                                ),
+                            },
+                            "reset",
+                        )
+                        if run is None:
+                            raise LookupError("Scenario run not found")
+                    current = load_scenario_run(SCENARIO_RUNS_DIR, run["run_id"])
+                    if current is None:
+                        raise LookupError("Scenario run not found")
+                    write_playback_visibility(SCENARIO_RUNS_DIR, current)
+                self.send_json(200, investigation_playback_status(investigation_id))
+            except PlaybackConflictError as exc:
+                self.send_json(409, {
+                    "error": str(exc), "current_revision": exc.current_revision,
+                })
+            except LookupError as exc:
+                self.send_json(409, {"error": str(exc)})
+            except ValueError as exc:
+                self.send_json(400, {"error": str(exc)})
+            except Exception as exc:
+                self.send_json(502, {"error": str(exc)})
+            return
+        if path == "/api/playback/next":
+            try:
+                length = int(self.headers.get("Content-Length", "0"))
+                if length > 1_000_000:
+                    self.send_json(413, {"error": "Playback payload too large"})
+                    return
+                request = json.loads(self.rfile.read(length).decode("utf-8-sig"))
+                if not isinstance(request, dict):
+                    raise ValueError("Invalid playback payload")
+                investigation_id = str(request.get("investigation_id") or "").strip()
+                if not INVESTIGATION_ID_PATTERN.fullmatch(investigation_id):
+                    raise ValueError("Invalid investigation id")
+                policy = load_playback_visibility(SCENARIO_RUNS_DIR) or {}
+                if policy.get("mode") != "real_time" or not policy.get("active"):
+                    raise ValueError("Real-time intelligence mode is not active")
+                existing = find_investigation_run(SCENARIO_RUNS_DIR, investigation_id)
+                claimed_revision = None
+                if existing is None:
+                    manifest = prepared_playback_manifest()
+                    if manifest is None:
+                        raise LookupError("Prepared scenario not found")
+                    run, _ = start_scenario_run(
+                        SCENARIO_MANIFESTS_DIR,
+                        SCENARIO_RUNS_DIR,
+                        {
+                            "scenario_id": manifest["scenario_id"],
+                            "version": manifest["version"],
+                            "investigation_id": investigation_id,
+                            "idempotency_key": request.get("idempotency_key"),
+                        },
+                        scenario_workstream_exists,
+                    )
+                    released_timeframe = {
+                        "from": run["current_stage"]["from"],
+                        "to": run["current_stage"]["to"],
+                        "from_inclusive": True,
+                        "to_exclusive": True,
+                    }
+                    claimed_revision = int(run["revision"])
+                elif (
+                    existing.get("transition_history")
+                    and existing["transition_history"][0].get("idempotency_key")
+                    == request.get("idempotency_key")
+                ):
+                    manifest = get_manifest(
+                        SCENARIO_MANIFESTS_DIR,
+                        existing["scenario_id"],
+                        existing["scenario_version"],
+                    )
+                    if manifest is None:
+                        raise LookupError("Scenario not found")
+                    first = manifest["stages"][0]
+                    run = existing
+                    released_timeframe = {
+                        "from": first["from"],
+                        "to": first["to"],
+                        "from_inclusive": True,
+                        "to_exclusive": True,
+                    }
+                    claimed_revision = 1
+                else:
+                    run, _ = transition_scenario_run(
+                        SCENARIO_MANIFESTS_DIR,
+                        SCENARIO_RUNS_DIR,
+                        existing["run_id"],
+                        request,
+                        "advance",
+                    )
+                    if run is None:
+                        raise LookupError("Scenario run not found")
+                    released_timeframe = {
+                        "from": run["current_stage"]["from"],
+                        "to": run["current_stage"]["to"],
+                        "from_inclusive": True,
+                        "to_exclusive": True,
+                    }
+                    claimed_revision = int(run["revision"])
+                current = load_scenario_run(SCENARIO_RUNS_DIR, run["run_id"])
+                if current is None:
+                    raise LookupError("Scenario run not found")
+                write_playback_visibility(SCENARIO_RUNS_DIR, current)
+                claimed = False
+                if playback_has_active_workstreams(run):
+                    _, claimed = claim_reevaluation(
+                        SCENARIO_RUNS_DIR, run["run_id"], claimed_revision
+                    )
+                if claimed:
+                    start_moshe_playback_reevaluation(
+                        run, released_timeframe, claimed_revision
+                    )
+                current = load_scenario_run(SCENARIO_RUNS_DIR, run["run_id"]) or run
+                self.send_json(200, {
+                    "run": run_with_next_stage(SCENARIO_MANIFESTS_DIR, current),
+                    "released_timeframe": released_timeframe,
+                    "moshe_triggered": claimed,
+                    "moshe_skipped_reason": None if claimed else "no_active_workstreams",
+                })
+            except PlaybackConflictError as exc:
+                self.send_json(409, {
+                    "error": str(exc), "current_revision": exc.current_revision,
+                })
+            except LookupError as exc:
+                self.send_json(409, {"error": str(exc)})
+            except ValueError as exc:
+                self.send_json(400, {"error": str(exc)})
+            except Exception as exc:
+                self.send_json(502, {"error": str(exc)})
+            return
+        if path == "/api/scenario-runs":
+            try:
+                length = int(self.headers.get("Content-Length", "0"))
+                if length > 1_000_000:
+                    self.send_json(413, {"error": "Scenario run payload too large"})
+                    return
+                request = json.loads(self.rfile.read(length).decode("utf-8-sig"))
+                result, created = start_scenario_run(
+                    SCENARIO_MANIFESTS_DIR,
+                    SCENARIO_RUNS_DIR,
+                    request,
+                    scenario_workstream_exists,
+                )
+                current_policy = load_playback_visibility(SCENARIO_RUNS_DIR)
+                if (
+                    result.get("status") == "active"
+                    and current_policy
+                    and current_policy.get("active")
+                    and current_policy.get("run_id") != result.get("run_id")
+                ):
+                    raise PlaybackConflictError(
+                        "Another scenario run is already active",
+                        int(current_policy.get("revision") or 1),
+                    )
+                write_playback_visibility(SCENARIO_RUNS_DIR, result)
+                self.send_json(201 if created else 200, result)
+            except PlaybackConflictError as exc:
+                self.send_json(409, {
+                    "error": str(exc), "current_revision": exc.current_revision,
+                })
+            except LookupError as exc:
+                self.send_json(404, {"error": str(exc)})
+            except ValueError as exc:
+                self.send_json(400, {"error": str(exc)})
+            except Exception as exc:
+                self.send_json(502, {"error": str(exc)})
+            return
+        scenario_action = parse_scenario_run_action(path)
+        if scenario_action is not None:
+            run_id, action = scenario_action
+            try:
+                length = int(self.headers.get("Content-Length", "0"))
+                if length > 1_000_000:
+                    self.send_json(413, {"error": "Scenario transition payload too large"})
+                    return
+                request = json.loads(self.rfile.read(length).decode("utf-8-sig"))
+                result, replayed = transition_scenario_run(
+                    SCENARIO_MANIFESTS_DIR,
+                    SCENARIO_RUNS_DIR,
+                    run_id,
+                    request,
+                    action,
+                )
+                if result is None:
+                    self.send_json(404, {"error": "Scenario run not found"})
+                else:
+                    current = load_scenario_run(SCENARIO_RUNS_DIR, run_id)
+                    if current is not None:
+                        write_playback_visibility(SCENARIO_RUNS_DIR, current)
+                    self.send_json(200, {**result, "idempotent_replay": replayed})
+            except PlaybackConflictError as exc:
+                self.send_json(409, {
+                    "error": str(exc), "current_revision": exc.current_revision,
+                })
+            except LookupError as exc:
+                self.send_json(409, {"error": str(exc)})
+            except ValueError as exc:
+                self.send_json(400, {"error": str(exc)})
+            except Exception as exc:
+                self.send_json(502, {"error": str(exc)})
+            return
         if path == "/api/workstreams":
             try:
                 length = int(self.headers.get("Content-Length", "0"))
@@ -2703,17 +3883,52 @@ class Handler(SimpleHTTPRequestHandler):
                 return
             conversation_id = str(request.get("investigation_id") or "").strip()
             route = route_agent_request(request)
+            workstream_context = bounded_workstream_context(
+                request.get("workstream_context"), conversation_id
+            )
+            investigation_state = request.get("investigation_state")
+            if not isinstance(investigation_state, dict):
+                investigation_state = {}
+            if workstream_context:
+                investigation_state = {**investigation_state, "active_workstream": workstream_context}
             config = load_agent_hermes_config(route.responding_agent)
             result = HermesClient(config).investigate(
                 prompt,
                 request.get("history") or [],
-                investigation_state=request.get("investigation_state"),
+                investigation_state=investigation_state or None,
                 investigation_id=route.mission_run_id if route.responding_agent == MOSHE_AGENT_ID else conversation_id,
                 is_continuation=bool(request.get("is_continuation")) and not route.mission_started,
                 continuation_context=request.get("continuation_context"),
                 responding_agent=route.responding_agent,
                 mission_run_id=route.mission_run_id,
             )
+            if (
+                request.get("workstream_creation_requested") is True
+                and route.responding_agent == MOSHE_AGENT_ID
+            ):
+                try:
+                    created = apply_workstream_creation(
+                        conversation_id, result.get("workstream_creation")
+                    )
+                    if created:
+                        result["workstream_created"] = created
+                        result["answer"] = workstream_created_answer(created)
+                except ValueError as exc:
+                    result["workstream_conflict"] = {"error": str(exc)}
+            try:
+                artifact, conflict = apply_workstream_action(
+                    workstream_context, result.get("workstream_action")
+                )
+                if artifact:
+                    result["workstream_artifact"] = artifact
+                if conflict:
+                    result["workstream_conflict"] = conflict
+            except ArtifactConflictError as exc:
+                result["workstream_conflict"] = {
+                    "error": str(exc), "current_revision": exc.current_revision,
+                }
+            except (ValueError, LookupError) as exc:
+                result["workstream_conflict"] = {"error": str(exc)}
             self.send_json(200, result)
         except Exception as exc:
             self.send_json(502, {"error": str(exc)})

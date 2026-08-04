@@ -189,6 +189,7 @@ const MICHLOL_MEMBERS = [
 const MICHLOL_MEMBER_WELCOME = "אני מחובר עכשיו לשיחה הזו. שלח לי את המשימה או השאלה הבאה, ובשלב הבא נחבר כאן סוכן ייעודי לחבר המכלול.";
 const MOSHE_MEMBER_ID = "moshe-targets-officer";
 const MOSHE_MESSAGE_LABEL = "משה - קצין מטרות";
+const MOSHE_WELCOME = "אני משה, קצין המטרות. אפשר לשאול אותי על אינדיקציות ומטרות, או לפתוח מעקב חדש.";
 
 const state = {
   events: [],
@@ -228,20 +229,22 @@ const state = {
   promptOptionsOpen: false,
   promptSelectedLayerIds: new Set(),
   workstreamComposerMode: false,
-  pendingWorkstreamDraft: null,
   workstreams: [],
   workstreamsLoading: false,
   workstreamLoadToken: 0,
+  investigationPlayback: null,
+  playbackPollToken: 0,
+  pendingMosheWorkstreamProposal: null,
   activeConversationMemberId: null,
   openingLayerIds: new Set(),
   layers: [],
   activeLayerId: null,
   rawOverlayMinimized: false,
   rawOverlayHeight: 28,
+  chatPanelCollapsed: false,
   queryEdited: false,
   originalQuery: null,
-  activeTeamMentions: [],
-  memberOpeningRequestToken: 0
+  activeTeamMentions: []
 };
 
 const conversation = document.getElementById("conversation");
@@ -258,8 +261,15 @@ const investigationList = document.getElementById("investigationList");
 const michlolTeam = document.getElementById("michlolTeam");
 const promptOptionsButton = document.getElementById("promptOptionsButton");
 const promptOptionsMenu = document.getElementById("promptOptionsMenu");
+const workstreamControl = document.getElementById("workstreamControl");
 const workstreamIndicator = document.getElementById("workstreamIndicator");
+const workstreamIndicatorStatus = document.getElementById("workstreamIndicatorStatus");
 const workstreamIndicatorCount = document.getElementById("workstreamIndicatorCount");
+const workstreamMenu = document.getElementById("workstreamMenu");
+const playbackNextButton = document.getElementById("playbackNextButton");
+const intelligenceModeSelect = document.getElementById("intelligenceModeSelect");
+const intelligencePeriod = document.getElementById("intelligencePeriod");
+const playbackAgentStatus = document.getElementById("playbackAgentStatus");
 const workstreamComposerMode = document.getElementById("workstreamComposerMode");
 const workstreamComposerCancel = document.getElementById("workstreamComposerCancel");
 const selectedLayersButton = document.getElementById("selectedLayersButton");
@@ -280,6 +290,7 @@ const layerSelectorSearch = document.getElementById("layerSelectorSearch");
 const layerSelectorList = document.getElementById("layerSelectorList");
 const layerSelectorStatus = document.getElementById("layerSelectorStatus");
 const workspace = document.querySelector(".workspace");
+const chatPanelToggle = document.getElementById("chatPanelToggle");
 const queryLayerName = document.getElementById("queryLayerName");
 const queryToolName = document.getElementById("queryToolName");
 const queryModal = document.getElementById("queryModal");
@@ -358,6 +369,12 @@ function renderMichlolTeam() {
           ${hidden.map(michlolMemberHtml).join("")}
         </div>
       </details>` : ""}`;
+  renderPromptOptions();
+}
+
+function renderPromptOptions() {
+  const option = promptOptionsMenu?.querySelector('[data-prompt-option="workstream"]');
+  if (option) option.hidden = state.activeConversationMemberId !== MOSHE_MEMBER_ID;
 }
 
 function activeConversationMember() {
@@ -391,49 +408,34 @@ function resultMessageLabel(result = {}) {
 
 function appendMemberWelcomeMessage(member) {
   conversation.querySelectorAll(".member-welcome-message").forEach(message => message.remove());
-  return appendMessage("assistant", `
-    <p><strong>${escapeHtml(member.displayName)}</strong></p>
-    <p>${escapeHtml(MICHLOL_MEMBER_WELCOME)}</p>`, { label: memberMessageLabel(member), className: "member-welcome-message", memberId: member.id });
-}
-
-async function appendAgentMemberOpeningMessage(member) {
-  const token = ++state.memberOpeningRequestToken;
-  conversation.querySelectorAll(".member-welcome-message").forEach(message => message.remove());
-  const article = appendMessage("assistant", '<p class="member-opening-status">משה מתחבר לשיחה...</p>', {
-    label: memberMessageLabel(member), className: "member-welcome-message member-agent-opening", memberId: member.id
+  const welcome = member.id === MOSHE_MEMBER_ID ? MOSHE_WELCOME : MICHLOL_MEMBER_WELCOME;
+  return appendMessage("assistant", `<p>${escapeHtml(welcome)}</p>`, {
+    label: memberMessageLabel(member),
+    className: "member-welcome-message",
+    memberId: member.id
   });
-  try {
-    const response = await fetch("/api/investigate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        prompt: "@משה הצג הודעת פתיחה קצרה מטעמך כקצין המטרות, והסבר במשפט אחד כיצד אפשר להפעיל אותך בשיחה.",
-        routing_prompt: "@משה",
-        history: state.history,
-        investigation_id: state.investigationId
-      })
-    });
-    const result = await response.json();
-    if (!response.ok) throw new Error(result.error || "Moshe opening message failed");
-    if (token !== state.memberOpeningRequestToken || state.activeConversationMemberId !== member.id) return;
-    article.querySelector(".message-label").textContent = memberMessageLabel(member);
-    article.innerHTML = `<div class="message-label">${escapeHtml(memberMessageLabel(member))}</div><div class="answer-body">${answerHtml(cleanAssistantAnswer(result.answer))}</div>`;
-    state.history.push({ role: "assistant", content: cleanAssistantAnswer(result.answer) });
-  } catch (error) {
-    if (token !== state.memberOpeningRequestToken || state.activeConversationMemberId !== member.id) return;
-    article.innerHTML = `<div class="message-label">${escapeHtml(memberMessageLabel(member))}</div><p>לא הצלחתי לטעון כרגע הודעה ממשה.</p>`;
-  }
-  conversation.scrollTop = conversation.scrollHeight;
 }
 
 function selectConversationMember(memberId) {
   const member = MICHLOL_MEMBERS.find(item => item.id === memberId);
-  if (!member || state.activeConversationMemberId === member.id) return;
+  if (!member) return;
+  if (state.activeConversationMemberId === member.id) {
+    if (state.workstreamComposerMode) setWorkstreamComposerMode(false);
+    state.activeConversationMemberId = null;
+    state.activeTeamMentions = teamMentionsForPrompt(promptInput?.value || "");
+    conversation.querySelectorAll(".member-welcome-message").forEach(message => message.remove());
+    renderMichlolTeam();
+    updatePromptPlaceholder();
+    promptInput?.focus();
+    return;
+  }
+  if (member.id !== MOSHE_MEMBER_ID && state.workstreamComposerMode) {
+    setWorkstreamComposerMode(false);
+  }
   state.activeConversationMemberId = member.id;
   renderMichlolTeam();
   updatePromptPlaceholder();
-  if (member.id === MOSHE_MEMBER_ID) appendAgentMemberOpeningMessage(member);
-  else appendMemberWelcomeMessage(member);
+  appendMemberWelcomeMessage(member);
   conversation.scrollTop = conversation.scrollHeight;
 }
 
@@ -725,24 +727,37 @@ function teamMentionsForPrompt(prompt) {
   return mentions;
 }
 
+function addressedPromptForSelectedMember(prompt) {
+  const clean = String(prompt || "").trim();
+  if (!clean || teamMentionsForPrompt(clean).length) return clean;
+  const member = activeConversationMember();
+  return member ? `@${member.displayName} ${clean}` : clean;
+}
+
 function parseCsv(text) {
   const rows = [];
   let row = [];
   let cell = "";
   let quoted = false;
+  let atFieldStart = true;
   for (let i = 0; i < text.length; i += 1) {
     const char = text[i];
     const next = text[i + 1];
     if (char === '"' && quoted && next === '"') { cell += '"'; i += 1; }
-    else if (char === '"') quoted = !quoted;
-    else if (char === ',' && !quoted) { row.push(cell); cell = ""; }
+    else if (char === '"' && quoted) quoted = false;
+    else if (char === '"' && atFieldStart) { quoted = true; atFieldStart = false; }
+    else if (char === ',' && !quoted) { row.push(cell); cell = ""; atFieldStart = true; }
     else if ((char === '\n' || char === '\r') && !quoted) {
       if (char === '\r' && next === '\n') i += 1;
       row.push(cell);
       if (row.some(value => value !== "")) rows.push(row);
       row = [];
       cell = "";
-    } else cell += char;
+      atFieldStart = true;
+    } else {
+      cell += char;
+      atFieldStart = false;
+    }
   }
   if (cell || row.length) { row.push(cell); rows.push(row); }
   const headers = rows.shift().map(header => header.replace(/^\uFEFF/, ""));
@@ -1003,7 +1018,7 @@ function buildCatalogLayer(layer, rows = []) {
 }
 
 function buildTypedResultLayers(result = {}) {
-  return (result.layers || [])
+  return (result.requested_result_layers || [])
     .filter(layer => layer && Array.isArray(layer.rows) && layer.rows.length)
     .map(layer => ({
       dataId: layer.id || layerId(layer.kind, "result"),
@@ -1013,8 +1028,111 @@ function buildTypedResultLayers(result = {}) {
       items: layer.kind === "events"
         ? layer.rows.map(item => ({ ...item, date: new Date(item.timestamp_utc) }))
         : layer.rows,
-      capabilities: layer.capabilities || { table: true, map: false, timeline: false }
+      capabilities: layer.capabilities || { table: true, map: false, timeline: false },
+      preferredView: layer.recommended_view
     }));
+}
+
+function buildEvidenceReferenceLayers(result = {}) {
+  return (result.evidence_reference_layers || [])
+    .filter(layer => layer && Array.isArray(layer.rows) && layer.rows.length)
+    .map(layer => ({
+      dataId: layer.id || layerId(layer.kind, "evidence"),
+      label: layer.label || "ראיות תומכות",
+      kind: layer.kind,
+      visible: true,
+      items: layer.kind === "events"
+        ? layer.rows.map(item => ({ ...item, date: new Date(item.timestamp_utc) }))
+        : layer.rows,
+      capabilities: layer.capabilities || { table: true, map: false, timeline: false },
+      preferredView: layer.recommended_view
+    }));
+}
+
+function evidenceLayerIdentifiers(layer) {
+  const keysByKind = {
+    events: ["event_id", "record_id"],
+    locations: ["location_id", "key"],
+    location_metadata: ["location_id"],
+    entity_metadata: ["entity_id"],
+    attack_targets: ["target_id"],
+    time_aggregation: ["key", "sortKey", "label"],
+    group_aggregation: ["key", "label"]
+  };
+  const keys = keysByKind[layer.kind] || ["event_id", "location_id", "entity_id", "target_id", "key"];
+  return [...new Set((layer.items || []).map(item => {
+    const key = keys.find(candidate => item?.[candidate] != null && String(item[candidate]).trim());
+    return key ? String(item[key]).trim() : "";
+  }).filter(Boolean))];
+}
+
+function evidenceLayerSourceId(result, layer) {
+  return sanitizeLayerKey(`evidence:${finalSourceId(result)}:${layer.dataId}`);
+}
+
+function updateEvidenceReferenceButton(btn) {
+  const sourceLayers = state.layers.filter(layer => layer.sourceId === btn.dataset.sourceId);
+  const visible = sourceLayers.some(layer => layer.visible);
+  btn.classList.toggle("is-visible", visible);
+  btn.setAttribute("aria-pressed", visible ? "true" : "false");
+  btn.title = visible ? "הסתר שכבת ראיות" : "הצג שכבת ראיות";
+}
+
+function updateEvidenceReferenceButtons() {
+  document.querySelectorAll(".evidence-reference-link").forEach(updateEvidenceReferenceButton);
+}
+
+function toggleEvidenceReferenceLayer(result, layer, btn) {
+  const sourceId = evidenceLayerSourceId(result, layer);
+  const existing = state.layers.filter(item => item.sourceId === sourceId);
+  if (existing.some(item => item.visible)) {
+    existing.forEach(item => { item.visible = false; });
+    updateEvidenceReferenceButton(btn);
+    renderAllViews();
+    return;
+  }
+  addResultLayers({
+    sourceId,
+    sourceLabel: `ראיות: ${layer.label}`,
+    preferredView: layer.preferredView,
+    layers: [layer]
+  });
+  state.rawOverlayMinimized = false;
+  activateView(layer.preferredView, { reason: `שכבת ראיות: ${layer.label}` });
+  renderAllViews();
+  updateEvidenceReferenceButtons();
+}
+
+function buildEvidenceReferencesSection(result) {
+  const layers = buildEvidenceReferenceLayers(result);
+  if (!layers.length) return null;
+  const section = document.createElement("details");
+  section.className = "evidence-references";
+  section.innerHTML = `
+    <summary class="evidence-references-summary">מזהי ראיות · ${layers.length.toLocaleString("he-IL")} שכבות</summary>
+    <ul class="evidence-reference-list"></ul>`;
+  const list = section.querySelector(".evidence-reference-list");
+  layers.forEach(layer => {
+    const identifiers = evidenceLayerIdentifiers(layer);
+    const shown = identifiers.slice(0, 14);
+    const overflow = Math.max(0, identifiers.length - shown.length);
+    const item = document.createElement("li");
+    item.className = "evidence-reference-item";
+    item.innerHTML = `
+      <details class="evidence-reference-details">
+        <summary class="evidence-reference-link" aria-pressed="false">
+          <span class="evidence-reference-label">${escapeHtml(layer.label)}</span>
+          <span class="evidence-reference-view">${layer.preferredView === "timeline" ? "ציר זמן" : "מפה"} · ${(layer.items || []).length.toLocaleString("he-IL")}</span>
+        </summary>
+        ${shown.length ? `<div class="evidence-reference-identifiers" dir="ltr">${shown.map(escapeHtml).join(", ")}${overflow ? ` <span dir="rtl">ועוד ${overflow.toLocaleString("he-IL")}</span>` : ""}</div>` : ""}
+      </details>`;
+    const btn = item.querySelector(".evidence-reference-link");
+    btn.dataset.sourceId = evidenceLayerSourceId(result, layer);
+    btn.title = "הצג שכבת ראיות";
+    btn.addEventListener("click", () => toggleEvidenceReferenceLayer(result, layer, btn));
+    list.appendChild(item);
+  });
+  return section;
 }
 
 function sanitizeLayerKey(value) {
@@ -1080,7 +1198,7 @@ function addResultLayers({ sourceId, sourceLabel, preferredView = "map", layers 
       dataId,
       sourceId: cleanSourceId,
       sourceLabel,
-      preferredView,
+      preferredView: layer.preferredView || preferredView,
       color: nextLayerColor(),
       visible: true
     };
@@ -1570,6 +1688,42 @@ function investigationStateForPrompt(selectedLayers) {
   return invState;
 }
 
+function workstreamContextForChat(messageId) {
+  const workstreams = activeWorkstreams();
+  if (workstreams.length !== 1) return null;
+  return {
+    workstream_id: workstreams[0].workstream_id,
+    pending_proposal: state.pendingMosheWorkstreamProposal,
+    current_turn_message_id: messageId
+  };
+}
+
+function applyWorkstreamChatResult(result) {
+  if (result.workstream_created) {
+    state.workstreams = [
+      result.workstream_created,
+      ...state.workstreams.filter(item => item.workstream_id !== result.workstream_created.workstream_id)
+    ];
+    setWorkstreamComposerMode(false);
+    renderWorkstreamIndicator();
+  }
+  if (result.workstream_proposal) {
+    state.pendingMosheWorkstreamProposal = result.workstream_proposal;
+  }
+  const decision = result.workstream_action?.decision;
+  if (decision === "reject") state.pendingMosheWorkstreamProposal = null;
+  if (decision === "correct" && result.workstream_action?.proposal) {
+    state.pendingMosheWorkstreamProposal = result.workstream_action.proposal;
+  }
+  if (result.workstream_artifact) {
+    state.pendingMosheWorkstreamProposal = null;
+    result.answer = `${result.answer}\n\nהשינוי נשמר במעקב (גרסה ${result.workstream_artifact.revision}).`;
+    void loadWorkstreams();
+  } else if (result.workstream_conflict?.error) {
+    result.answer = `${result.answer}\n\nלא שמרתי את השינוי: ${result.workstream_conflict.error}`;
+  }
+}
+
 function normalizeInvestigationName(name) {
   return String(name || "").replace(/\s+/g, " ").trim();
 }
@@ -1677,8 +1831,7 @@ function selectInvestigation(investigation, options = {}) {
   saveInvestigationRegistry();
   resetInvestigation({ keepInvestigation: true });
   renderInvestigationSelector();
-  loadInvestigationMemory({ restoreLayers: true });
-  loadWorkstreams();
+  loadWorkstreams().then(() => loadInvestigationMemory({ restoreLayers: true }));
   if (options.focusInput) investigationInput?.focus();
 }
 
@@ -2064,23 +2217,60 @@ function appendMessage(role, html, options = {}) {
   return article;
 }
 
+function thinkingIndicatorHtml() {
+  return `
+    <span class="thinking-indicator" role="status" aria-label="חושב">
+      <span>חושב</span><span class="thinking-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+    </span>`;
+}
+
 function scrollConversationToLatest() {
   conversation.scrollTop = conversation.scrollHeight;
 }
 
 function activeWorkstreams() {
+  if (state.investigationPlayback?.mode !== "real_time") return [];
   return state.workstreams.filter(item => item?.status !== "archived");
 }
 
+function adoptCanonicalWorkstreamInvestigation(investigationId) {
+  const canonicalId = String(investigationId || "").trim();
+  if (!canonicalId || canonicalId === state.investigationId) return false;
+  const active = state.investigations.find(item => item.id === state.investigationId);
+  if (active) active.id = canonicalId;
+  state.investigationId = canonicalId;
+  saveInvestigationRegistry();
+  renderInvestigationSelector();
+  return true;
+}
+
+const WORKSTREAM_STATUS_LABELS = {
+  active: "פעיל",
+  paused: "מושהה",
+  completed: "הושלם",
+  archived: "בארכיון"
+};
+
 function renderWorkstreamIndicator() {
-  if (!workstreamIndicator || !workstreamIndicatorCount) return;
+  if (!workstreamControl || !workstreamIndicator || !workstreamIndicatorCount || !workstreamMenu) return;
   const workstreams = activeWorkstreams();
-  workstreamIndicator.hidden = workstreams.length === 0;
+  workstreamControl.hidden = workstreams.length === 0
+    || state.investigationPlayback?.mode !== "real_time";
   workstreamIndicatorCount.hidden = workstreams.length <= 1;
   workstreamIndicatorCount.textContent = workstreams.length > 1 ? String(workstreams.length) : "";
+  if (workstreamIndicatorStatus) {
+    workstreamIndicatorStatus.textContent = workstreams.length === 1
+      ? `· ${WORKSTREAM_STATUS_LABELS[workstreams[0].status] || workstreams[0].status || "פעיל"}`
+      : `· ${workstreams.length.toLocaleString("he-IL")} פעילים`;
+  }
   workstreamIndicator.title = workstreams.length > 1
-    ? `${workstreams.length} מעקבים פעילים — לחץ לעדכון`
-    : "לחץ לעדכון המעקב";
+    ? `${workstreams.length} מעקבים פעילים — לחץ לבחירה`
+    : "לחץ להצגת מצב המעקב";
+  workstreamMenu.innerHTML = workstreams.map(item => `
+    <button type="button" role="menuitem" data-workstream-show="${escapeHtml(item.workstream_id)}">
+      <span>${escapeHtml(item.title || "מעקב")}</span>
+      <span class="workstream-menu-status">${escapeHtml(WORKSTREAM_STATUS_LABELS[item.status] || item.status || "פעיל")}</span>
+    </button>`).join("");
 }
 
 async function loadWorkstreams() {
@@ -2088,12 +2278,17 @@ async function loadWorkstreams() {
   const token = ++state.workstreamLoadToken;
   state.workstreamsLoading = true;
   try {
-    const response = await fetch(`/api/workstreams?investigation_id=${encodeURIComponent(state.investigationId)}`, { cache: "no-store" });
+    const response = await fetch(`/api/workstreams?investigation_id=${encodeURIComponent(state.investigationId)}&fallback=latest`, { cache: "no-store" });
     const payload = await response.json();
     if (!response.ok) throw new Error(payload.error || "טעינת המעקבים נכשלה");
     if (token !== state.workstreamLoadToken) return [];
+    adoptCanonicalWorkstreamInvestigation(payload.canonical_investigation_id);
     state.workstreams = Array.isArray(payload.workstreams) ? payload.workstreams : [];
     renderWorkstreamIndicator();
+    void fetchInvestigationPlayback().catch(() => {
+      state.investigationPlayback = null;
+      renderInvestigationPlayback();
+    });
     return state.workstreams;
   } catch (error) {
     if (token === state.workstreamLoadToken) {
@@ -2108,7 +2303,6 @@ async function loadWorkstreams() {
 
 function setWorkstreamComposerMode(enabled) {
   state.workstreamComposerMode = Boolean(enabled);
-  if (!state.workstreamComposerMode) state.pendingWorkstreamDraft = null;
   promptForm.classList.toggle("tracking-mode", state.workstreamComposerMode);
   if (workstreamComposerMode) workstreamComposerMode.hidden = !state.workstreamComposerMode;
   updatePromptPlaceholder();
@@ -2118,36 +2312,9 @@ function setWorkstreamComposerMode(enabled) {
 }
 
 function startWorkstreamComposerMode() {
+  if (state.activeConversationMemberId !== MOSHE_MEMBER_ID) return;
   setWorkstreamComposerMode(true);
   promptInput.focus();
-  if (state.promptSelectedLayerIds.size > 1) {
-    state.promptSelectedLayerIds = new Set();
-    renderSelectedLayersButton();
-  }
-  if (state.promptSelectedLayerIds.size !== 1) openQueryLayersModal();
-}
-
-function compactWorkstreamTitle(objective) {
-  const compact = String(objective || "").replace(/\s+/g, " ").trim();
-  if (compact.length <= 58) return compact;
-  return `${compact.slice(0, 55).trim()}...`;
-}
-
-function assignedWorkstreamMember() {
-  return activeConversationMember() || {
-    id: "general-investigation-agent",
-    displayName: "סוכן חקירה",
-    roleLabel: "אחראי מעקב",
-  };
-}
-
-function workstreamLayerReference(layer) {
-  const catalogId = layer?.catalogLayerId || "";
-  return {
-    kind: catalogId ? "catalog_layer" : "layer",
-    reference_id: catalogId || layer?.id || "",
-    label: layer?.label || "שכבה",
-  };
 }
 
 function workstreamMessage(html, options = {}) {
@@ -2160,88 +2327,6 @@ function workstreamMessage(html, options = {}) {
   return article;
 }
 
-function proposeWorkstreamFromChat(objective) {
-  if (state.pendingWorkstreamDraft) {
-    workstreamMessage("<p>כבר מוצעת יצירת מעקב. יש לאשר או לבטל אותה לפני הצעה נוספת.</p>");
-    return false;
-  }
-  const layers = state.layers.filter(layer => state.promptSelectedLayerIds.has(layer.id) && layer.capabilities?.table);
-  if (layers.length !== 1) {
-    workstreamMessage(`
-      <p class="workstream-message-title">נדרשת שכבה אחת</p>
-      <p>כדי ליצור מעקב יש לצרף שכבה אחת במפורש.</p>
-      <div class="workstream-message-actions"><button type="button" data-workstream-choose-layer>בחירת שכבה</button></div>`);
-    return false;
-  }
-  const member = assignedWorkstreamMember();
-  const layer = layers[0];
-  const draft = {
-    investigation_id: state.investigationId,
-    title: compactWorkstreamTitle(objective),
-    objective,
-    starting_source: workstreamLayerReference(layer),
-    participants: [
-      { participant_id: "current-analyst", kind: "human", display_name: "אנליסט", role: "owner" },
-      { participant_id: member.id, kind: "agent", display_name: member.displayName, role: member.roleLabel },
-    ],
-    assignments: [{
-      assignment_id: "initial-responsibility",
-      owner_id: member.id,
-      responsibility: objective,
-    }],
-  };
-  state.pendingWorkstreamDraft = draft;
-  appendMessage("user", `<p>${highlightedPromptHtml(objective)}</p>`);
-  const summary = `הצעת מעקב: ${draft.title}; מטרה: ${draft.objective}; שכבה: ${draft.starting_source.label}; אחראי: ${member.displayName}`;
-  state.history.push({ role: "user", content: objective }, { role: "assistant", content: summary });
-  workstreamMessage(`
-    <p class="workstream-message-title">יצירת מעקב — ${escapeHtml(draft.title)}</p>
-    <p>${escapeHtml(draft.objective)}</p>
-    <p class="workstream-message-meta">שכבה: ${escapeHtml(draft.starting_source.label)} · אחראי: ${escapeHtml(member.displayName)}</p>
-    <div class="workstream-message-actions">
-      <button type="button" data-workstream-confirm>יצירת המעקב</button>
-      <button type="button" data-workstream-cancel>ביטול</button>
-    </div>`, { label: `${member.displayName} · עדכון מעקב`, memberId: member.id });
-  return true;
-}
-
-async function confirmPendingWorkstream(button) {
-  const draft = state.pendingWorkstreamDraft;
-  if (!draft || state.busy) return;
-  const actions = button.closest(".workstream-message-actions");
-  actions?.querySelectorAll("button").forEach(item => { item.disabled = true; });
-  try {
-    const response = await fetch("/api/workstreams", {
-      method: "POST",
-      headers: { "Content-Type": "application/json; charset=utf-8" },
-      body: JSON.stringify(draft),
-    });
-    const created = await response.json();
-    if (!response.ok) throw new Error(created.error || "יצירת המעקב נכשלה");
-    state.workstreams = [created, ...state.workstreams.filter(item => item.workstream_id !== created.workstream_id)];
-    state.pendingWorkstreamDraft = null;
-    setWorkstreamComposerMode(false);
-    clearPromptLayerSelection();
-    renderWorkstreamIndicator();
-    const article = button.closest(".workstream-message");
-    if (article) article.innerHTML = `
-      <div class="message-label">${escapeHtml(`${draft.participants[1].display_name} · עדכון מעקב`)}</div>
-      <p class="workstream-message-title">המעקב נוצר — ${escapeHtml(created.title)}</p>
-      <p>${escapeHtml(created.objective)}</p>
-      <p class="workstream-message-meta">שכבה: ${escapeHtml(created.starting_source?.label || "")} · סטטוס: פעיל</p>`;
-  } catch (error) {
-    actions?.querySelectorAll("button").forEach(item => { item.disabled = false; });
-    workstreamMessage(`<p>לא הצלחתי ליצור את המעקב.</p><div class="answer-callout">${escapeHtml(error.message)}</div>`);
-  }
-  scrollConversationToLatest();
-}
-
-function cancelPendingWorkstream() {
-  state.pendingWorkstreamDraft = null;
-  setWorkstreamComposerMode(false);
-  workstreamMessage("<p>יצירת המעקב בוטלה. לא נשמר מעקב חדש.</p>");
-}
-
 async function fetchWorkstream(workstreamId) {
   const response = await fetch(`/api/workstreams/${encodeURIComponent(workstreamId)}`, { cache: "no-store" });
   const payload = await response.json();
@@ -2249,67 +2334,389 @@ async function fetchWorkstream(workstreamId) {
   return payload;
 }
 
+function playbackNextStage(playback) {
+  return playback?.run?.next_stage || playback?.next_stage || null;
+}
+
+function formatPlaybackTime(value) {
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return String(value || "");
+  return parsed.toLocaleString("he-IL", {
+    timeZone: "UTC",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function renderInvestigationPlayback() {
+  if (!playbackNextButton || !intelligenceModeSelect || !intelligencePeriod) return;
+  const playback = state.investigationPlayback;
+  const mode = playback?.mode || "historical";
+  intelligenceModeSelect.value = mode;
+  renderWorkstreamIndicator();
+  const timeframe = mode === "real_time"
+    ? playback?.run?.visible_timeframe
+    : playback?.full_timeframe;
+  intelligencePeriod.textContent = timeframe?.from && timeframe?.to
+    ? `${formatPlaybackTime(timeframe.from)}–${formatPlaybackTime(timeframe.to)}`
+    : "";
+  const next = playbackNextStage(state.investigationPlayback);
+  const reevaluation = playback?.run?.reevaluation;
+  const processing = reevaluation?.status === "running";
+  if (playbackAgentStatus) {
+    playbackAgentStatus.hidden = !processing && reevaluation?.status !== "failed";
+    playbackAgentStatus.classList.toggle("failed", reevaluation?.status === "failed");
+    playbackAgentStatus.textContent = processing ? "משה מעבד…" : "העיבוד של משה נכשל";
+    playbackAgentStatus.title = reevaluation?.error || "";
+  }
+  playbackNextButton.hidden = mode !== "real_time" || !next?.timeframe;
+  playbackNextButton.disabled = processing;
+  if (!next?.timeframe) return;
+  const nextTimeframe = next.timeframe;
+  const tooltip = `פרק הזמן של השלב הבא: ${formatPlaybackTime(nextTimeframe.from)}–${formatPlaybackTime(nextTimeframe.to)}`;
+  playbackNextButton.title = tooltip;
+  playbackNextButton.setAttribute("aria-label", `השלב הבא. ${tooltip}`);
+}
+
+async function fetchInvestigationPlayback() {
+  const investigationId = String(state.investigationId || "").trim();
+  if (!investigationId) return null;
+  const response = await fetch(
+    `/api/playback?investigation_id=${encodeURIComponent(investigationId)}`,
+    { cache: "no-store" }
+  );
+  const payload = await response.json();
+  if (!response.ok) throw new Error(payload.error || "טעינת מצב התרחיש נכשלה");
+  state.investigationPlayback = payload;
+  renderInvestigationPlayback();
+  if (payload?.run?.reevaluation?.status === "running") {
+    void pollMoshePlaybackReevaluation();
+  }
+  return payload;
+}
+
+async function pollMoshePlaybackReevaluation() {
+  const token = ++state.playbackPollToken;
+  const investigationId = String(state.investigationId || "").trim();
+  while (token === state.playbackPollToken && investigationId === String(state.investigationId || "").trim()) {
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    if (token !== state.playbackPollToken) return;
+    try {
+      const response = await fetch(
+        `/api/playback?investigation_id=${encodeURIComponent(investigationId)}`,
+        { cache: "no-store" }
+      );
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "טעינת מצב התרחיש נכשלה");
+      state.investigationPlayback = payload;
+      renderInvestigationPlayback();
+      const status = payload?.run?.reevaluation?.status;
+      if (status !== "running") {
+        if (status === "completed") {
+          const answer = String(payload.run.reevaluation?.assessment?.answer || "").trim();
+          if (payload.run.reevaluation?.assessment?.workstream_updates?.length) {
+            await loadWorkstreams();
+          }
+          if (answer) {
+            appendMoshePlaybackAssessment(payload.run.reevaluation.assessment);
+          } else {
+            workstreamMessage("<p>משה סיים לעבד את פרוסת המידע החדשה.</p>");
+          }
+        } else if (status === "failed") {
+          workstreamMessage(`<p>הטווח עודכן, אך העיבוד של משה נכשל.</p><div class="answer-callout">${escapeHtml(payload.run.reevaluation.error || "")}</div>`);
+        }
+        return;
+      }
+    } catch (error) {
+      if (token === state.playbackPollToken && playbackAgentStatus) {
+        playbackAgentStatus.hidden = false;
+        playbackAgentStatus.classList.add("failed");
+        playbackAgentStatus.textContent = "לא ניתן לבדוק את מצב משה";
+      }
+      return;
+    }
+  }
+}
+
+function appendMoshePlaybackAssessment(assessment = {}) {
+  const result = {
+    ...assessment,
+    run_id: assessment.run_id || `playback:${Date.now()}`
+  };
+  const hasRequestedResults = buildTypedResultLayers(result).length > 0;
+  const article = workstreamMessage(
+    `<div class="answer-body">
+      ${answerHtml(cleanAssistantAnswer(String(assessment.answer || "")))}
+      ${hasRequestedResults ? `<div class="final-answer-actions">
+        <button type="button" class="final-answer-show-btn layers-hidden" data-source-id="${escapeHtml(finalSourceId(result))}" title="הצג תוצאות" aria-label="הצג תוצאות" aria-pressed="false">
+          <span class="final-answer-show-label">הצג תוצאות</span>
+        </button>
+      </div>` : ""}
+    </div>`,
+    { label: MOSHE_MESSAGE_LABEL, memberId: MOSHE_MEMBER_ID }
+  );
+  const button = article.querySelector(".final-answer-show-btn");
+  if (button) {
+    button.addEventListener("click", () => {
+      toggleFinalAnswerVisibility(result, "", button);
+    });
+    updateSourceVisibilityBtn(button);
+  }
+  return article;
+}
+
+async function initializeHistoricalPlayback() {
+  const investigationId = String(state.investigationId || "").trim();
+  if (!investigationId) return null;
+  const response = await fetch("/api/playback/mode", {
+    method: "POST",
+    headers: { "Content-Type": "application/json; charset=utf-8" },
+    body: JSON.stringify({
+      investigation_id: investigationId,
+      mode: "historical",
+      reset: true,
+    }),
+  });
+  const payload = await response.json();
+  if (!response.ok) throw new Error(payload.error || "אתחול מצב המידע נכשל");
+  state.investigationPlayback = payload;
+  renderInvestigationPlayback();
+  return payload;
+}
+
+async function advanceInvestigationPlayback() {
+  if (!playbackNextButton || playbackNextButton.disabled) return;
+  const playback = state.investigationPlayback || await fetchInvestigationPlayback();
+  const run = playback?.run;
+  playbackNextButton.disabled = true;
+  playbackNextButton.textContent = "…";
+  try {
+    const response = await fetch("/api/playback/next", {
+      method: "POST",
+      headers: { "Content-Type": "application/json; charset=utf-8" },
+      body: JSON.stringify({
+        investigation_id: state.investigationId,
+        expected_revision: run?.revision,
+        idempotency_key: `playback:${state.investigationId}:${run?.revision || 0}:${Date.now()}`,
+      }),
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || "התקדמות התרחיש נכשלה");
+    state.investigationPlayback = {
+      ...state.investigationPlayback,
+      investigation_id: state.investigationId,
+      mode: "real_time",
+      run: result.run,
+    };
+    renderInvestigationPlayback();
+    if (result.moshe_triggered) {
+      workstreamMessage("<p>הטווח עודכן. משה מעבד כעת את פרוסת המידע החדשה מול המעקבים הפעילים.</p>");
+    } else if (result.moshe_skipped_reason === "no_active_workstreams") {
+      workstreamMessage("<p>הטווח עודכן. אין מעקבים פעילים, לכן לא הופעל עיבוד של משה.</p>");
+    }
+    if (result.run?.reevaluation?.status === "running") {
+      void pollMoshePlaybackReevaluation();
+    }
+  } catch (error) {
+    workstreamMessage(
+      `<p>לא הצלחתי להתקדם לשלב הבא.</p><div class="answer-callout">${escapeHtml(error.message)}</div>`
+    );
+  } finally {
+    playbackNextButton.innerHTML = '<span class="material-symbols-rounded" aria-hidden="true">skip_next</span>';
+    renderInvestigationPlayback();
+  }
+}
+
+async function changeIntelligenceMode() {
+  if (!intelligenceModeSelect) return;
+  const mode = intelligenceModeSelect.value;
+  if (mode !== "real_time") state.playbackPollToken += 1;
+  intelligenceModeSelect.disabled = true;
+  try {
+    const response = await fetch("/api/playback/mode", {
+      method: "POST",
+      headers: { "Content-Type": "application/json; charset=utf-8" },
+      body: JSON.stringify({
+        investigation_id: state.investigationId,
+        mode,
+      }),
+    });
+    const payload = await response.json();
+    if (!response.ok) throw new Error(payload.error || "שינוי מצב המידע נכשל");
+    state.investigationPlayback = payload;
+    renderInvestigationPlayback();
+  } catch (error) {
+    renderInvestigationPlayback();
+    workstreamMessage(
+      `<p>לא הצלחתי לשנות את מצב המידע.</p><div class="answer-callout">${escapeHtml(error.message)}</div>`
+    );
+  } finally {
+    intelligenceModeSelect.disabled = false;
+  }
+}
+
 function workstreamAgent(workstream) {
   return (workstream.participants || []).find(item => item.kind === "agent") || null;
 }
 
+const WORKSTREAM_ARTIFACT_STATUS_LABELS = {
+  active: "פעיל",
+  ready_for_assessment: "מוכן להערכה",
+  rejected: "נדחה",
+  closed: "סגור"
+};
+
+const INDICATION_ROLE_LABELS = {
+  supports: "תומכת",
+  contradicts: "סותרת",
+  context: "הקשר"
+};
+
+function workstreamArtifactHtml(workstream) {
+  const artifacts = Array.isArray(workstream.artifacts) ? workstream.artifacts : [];
+  const artifact = artifacts.find(item => item.artifact_type === "target_assessment_lead"
+    && !["closed", "rejected"].includes(item.status))
+    || artifacts.find(item => item.artifact_type === "target_assessment_lead");
+  if (!artifact) return '<p class="workstream-message-meta">עדיין אין הובלה להערכה במעקב.</p>';
+  const content = artifact.content || {};
+  const activeIndications = (content.indications || []).filter(item => item.state !== "removed");
+  const indications = activeIndications.length
+    ? `<ul>${activeIndications.map(item => {
+        const reference = item.source_reference || {};
+        const detail = item.annotation || item.relevance || item.observed_claim || "";
+        return `<li><strong>${escapeHtml(reference.record_id || "")}</strong> · ${escapeHtml(INDICATION_ROLE_LABELS[item.role] || item.role || "הקשר")}${detail ? ` — ${escapeHtml(detail)}` : ""}</li>`;
+      }).join("")}</ul>`
+    : "<p>אין אינדיקציות פעילות.</p>";
+  const gaps = (content.gaps || []).length
+    ? `<p><strong>פערים:</strong> ${escapeHtml(content.gaps.join(" · "))}</p>`
+    : "<p><strong>פערים:</strong> לא נרשמו</p>";
+  const questions = (content.assessment_questions || []).length
+    ? `<p><strong>שאלות להערכה:</strong> ${escapeHtml(content.assessment_questions.join(" · "))}</p>`
+    : "";
+  return `
+    <section class="workstream-artifact-summary">
+      <p><strong>הובלה להערכה:</strong> ${escapeHtml(content.lead_statement || "ללא ניסוח")}</p>
+      <p class="workstream-message-meta">סטטוס: ${escapeHtml(WORKSTREAM_ARTIFACT_STATUS_LABELS[artifact.status] || artifact.status || "לא ידוע")} · גרסה: ${Number(artifact.revision || 0).toLocaleString("he-IL")}</p>
+      <p><strong>אינדיקציות:</strong></p>
+      ${indications}
+      ${gaps}
+      ${questions}
+    </section>`;
+}
+
+function normalizedWorkstreamSummaryText(value) {
+  return String(value || "").replace(/\s+/g, " ").trim().toLocaleLowerCase("he-IL");
+}
+
+function workstreamResultSourceId(workstreamId) {
+  return sanitizeLayerKey(`workstream:${workstreamId}`);
+}
+
+function workstreamHasPresentation(workstream) {
+  const artifacts = Array.isArray(workstream.artifacts) ? workstream.artifacts : [];
+  return artifacts.some(artifact =>
+    artifact.artifact_type === "target_assessment_lead"
+    && !["closed", "rejected"].includes(artifact.status)
+    && (artifact.content?.indications || []).some(item => item.state !== "removed")
+  );
+}
+
+async function toggleWorkstreamResultVisibility(workstreamId, btn) {
+  const sourceId = workstreamResultSourceId(workstreamId);
+  const sourceLayers = state.layers.filter(layer => layer.sourceId === sourceId);
+  if (sourceLayers.some(layer => layer.visible)) {
+    sourceLayers.forEach(layer => { layer.visible = false; });
+    updateSourceVisibilityBtn(btn);
+    renderAllViews();
+    return;
+  }
+  if (btn) btn.disabled = true;
+  try {
+    const response = await fetch(
+      `/api/workstreams/${encodeURIComponent(workstreamId)}/presentation`,
+      { cache: "no-store" }
+    );
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || "טעינת תוצאות המעקב נכשלה");
+    state.layers = state.layers.filter(layer => layer.sourceId !== sourceId);
+    const layers = buildTypedResultLayers(result);
+    if (!layers.length) throw new Error("אין למעקב תוצאות שניתן להציג");
+    addResultLayers({
+      sourceId,
+      sourceLabel: result.title || "תוצאות מעקב",
+      preferredView: "map",
+      layers
+    });
+    state.rawOverlayMinimized = false;
+    activateView("map", { reason: "תוצאות המעקב" });
+    renderAllViews();
+  } catch (error) {
+    workstreamMessage(
+      `<p>לא הצלחתי להציג את תוצאות המעקב.</p><div class="answer-callout">${escapeHtml(error.message)}</div>`
+    );
+  } finally {
+    if (btn) btn.disabled = false;
+    updateSourceVisibilityBtn(btn);
+  }
+}
+
 function appendWorkstreamUpdate(workstream) {
+  conversation.querySelectorAll("[data-workstream-update-id]").forEach(message => {
+    if (message.dataset.workstreamUpdateId === workstream.workstream_id) message.remove();
+  });
   const agent = workstreamAgent(workstream);
   const assignment = (workstream.assignments || []).find(item => item.status === "active")
     || (workstream.assignments || [])[0];
-  workstreamMessage(`
-    <p class="workstream-message-title">עדכון מעקב — ${escapeHtml(workstream.title || "מעקב")}</p>
-    <p>${escapeHtml(workstream.objective || "")}</p>
-    <p class="workstream-message-meta">שכבה: ${escapeHtml(workstream.starting_source?.label || "לא הוגדרה")} · אחריות: ${escapeHtml(assignment?.responsibility || "לא הוגדרה")}</p>
-    <p>המעקב פעיל. בשלב זה העדכון מוצג לפי בקשתך ולא נוצר אוטומטית.</p>
+  const title = String(workstream.title || "מעקב").trim();
+  const objective = String(workstream.objective || "").trim();
+  const responsibility = String(assignment?.responsibility || "").trim();
+  const renderedValues = new Set([normalizedWorkstreamSummaryText(title)]);
+  const distinctDetail = (value, html) => {
+    const normalized = normalizedWorkstreamSummaryText(value);
+    if (!normalized || renderedValues.has(normalized)) return "";
+    renderedValues.add(normalized);
+    return html(value);
+  };
+  const objectiveHtml = distinctDetail(objective, value => `<p>${escapeHtml(value)}</p>`);
+  const responsibilityHtml = distinctDetail(
+    responsibility,
+    value => `<p class="workstream-message-meta">אחריות: ${escapeHtml(value)}</p>`
+  );
+  const message = workstreamMessage(`
+    <p class="workstream-message-title">עדכון מעקב — ${escapeHtml(title)}</p>
+    ${objectiveHtml}
+    ${responsibilityHtml}
+    ${workstreamArtifactHtml(workstream)}
     <div class="workstream-message-actions">
-      <button type="button" data-workstream-open-layer="${escapeHtml(workstream.workstream_id)}">פתיחת השכבה</button>
+      ${workstreamHasPresentation(workstream) ? `<button type="button" class="final-answer-show-btn layers-hidden" data-workstream-results="${escapeHtml(workstream.workstream_id)}" data-source-id="${escapeHtml(workstreamResultSourceId(workstream.workstream_id))}" title="הצג תוצאות" aria-label="הצג תוצאות" aria-pressed="false"><span class="final-answer-show-label">הצג תוצאות</span></button>` : ""}
       <button type="button" class="danger-button" data-workstream-archive="${escapeHtml(workstream.workstream_id)}">העברה לארכיון</button>
     </div>`, {
       label: agent ? `${agent.display_name} · עדכון מעקב` : "עדכון מעקב",
       memberId: agent?.participant_id,
     });
+  message.dataset.workstreamUpdateId = workstream.workstream_id;
+  const resultsButton = message.querySelector("[data-workstream-results]");
+  if (resultsButton) updateSourceVisibilityBtn(resultsButton);
 }
 
 async function requestWorkstreamUpdate() {
   if (state.workstreamsLoading) return;
   const workstreams = activeWorkstreams();
-  if (!workstreams.length) {
-    workstreamMessage("<p>אין מעקבים פעילים בחקירה הזו.</p>");
-    return;
-  }
-  if (workstreams.length > 1) {
-    workstreamMessage(`
-      <p>יש ${workstreams.length.toLocaleString("he-IL")} מעקבים פעילים. על איזה מהם להציג עדכון?</p>
-      <div class="workstream-message-actions">
-        ${workstreams.map(item => `<button type="button" data-workstream-show="${escapeHtml(item.workstream_id)}">${escapeHtml(item.title || "מעקב")}</button>`).join("")}
-      </div>`);
-    return;
-  }
-  await showWorkstreamUpdate(workstreams[0].workstream_id);
+  if (!workstreams.length || !workstreamMenu) return;
+  const open = workstreamMenu.hidden;
+  workstreamMenu.hidden = !open;
+  workstreamIndicator?.setAttribute("aria-expanded", open ? "true" : "false");
 }
 
 async function showWorkstreamUpdate(workstreamId) {
   try {
-    appendWorkstreamUpdate(await fetchWorkstream(workstreamId));
+    const workstream = await fetchWorkstream(workstreamId);
+    appendWorkstreamUpdate(workstream);
   } catch (error) {
     workstreamMessage(`<p>לא הצלחתי לטעון את עדכון המעקב.</p><div class="answer-callout">${escapeHtml(error.message)}</div>`);
-  }
-}
-
-async function openWorkstreamLayer(workstreamId) {
-  try {
-    const workstream = await fetchWorkstream(workstreamId);
-    const source = workstream.starting_source || {};
-    let layer = state.layers.find(item => item.id === source.reference_id || item.catalogLayerId === source.reference_id);
-    if (!layer && source.kind === "catalog_layer") layer = await openCatalogLayer(source.reference_id);
-    if (!layer) throw new Error("השכבה אינה זמינה כרגע.");
-    layer.visible = true;
-    state.activeLayerId = layer.id;
-    state.rawOverlayMinimized = false;
-    renderAllViews();
-  } catch (error) {
-    workstreamMessage(`<p>לא הצלחתי לפתוח את שכבת המעקב.</p><div class="answer-callout">${escapeHtml(error.message)}</div>`);
   }
 }
 
@@ -2326,30 +2733,15 @@ async function archiveWorkstreamFromChat(workstreamId) {
   }
 }
 
-async function requestWorkstreamArchive(workstreamId) {
-  try {
-    const workstream = await fetchWorkstream(workstreamId);
-    workstreamMessage(`
-      <p>להעביר את המעקב <strong>${escapeHtml(workstream.title || "מעקב")}</strong> לארכיון?</p>
-      <p class="workstream-message-meta">המעקב יוסר מהמחוון הפעיל.</p>
-      <div class="workstream-message-actions">
-        <button type="button" class="danger-button" data-workstream-archive-confirm="${escapeHtml(workstreamId)}">כן, להעביר לארכיון</button>
-        <button type="button" data-workstream-archive-cancel>ביטול</button>
-      </div>`);
-  } catch (error) {
-    workstreamMessage(`<p>לא הצלחתי להכין את פעולת הארכוב.</p><div class="answer-callout">${escapeHtml(error.message)}</div>`);
-  }
-}
-
-function startAssistantResearchMessage(message = "Hermes מנתח את הבקשה ומפעיל כלי חקירה...") {
+function startAssistantResearchMessage(message = "") {
   const article = document.createElement("article");
   article.className = "message assistant-message";
   article.innerHTML = `
     <div class="message-label">${escapeHtml(assistantMessageLabel())}</div>
     <section class="research-process research-process-live">
       <h3>תהליך המחקר</h3>
-      <div class="activity-empty">${escapeHtml(message)}</div>
       <ol class="activity-list"></ol>
+      <div class="activity-empty">${message ? escapeHtml(message) : thinkingIndicatorHtml()}</div>
     </section>`;
   conversation.appendChild(article);
   state.activeAssistantMessage = article;
@@ -2399,30 +2791,40 @@ function finalizeAssistantMessage(answer, options = {}) {
     const actions = document.createElement("div");
     actions.className = "final-answer-actions";
     const finalId = finalSourceId(options.result);
+    const hasRequestedResults = buildTypedResultLayers(options.result).length > 0;
     actions.innerHTML = `
-      <button type="button" class="final-answer-show-btn layers-hidden" data-source-id="${escapeHtml(finalId)}" title="הצג תוצאות" aria-label="הצג תוצאות" aria-pressed="false">
+      ${hasRequestedResults ? `<button type="button" class="final-answer-show-btn layers-hidden" data-source-id="${escapeHtml(finalId)}" title="הצג תוצאות" aria-label="הצג תוצאות" aria-pressed="false">
         <span class="final-answer-show-label">הצג תוצאות</span>
-      </button>
-      <button type="button" class="final-answer-save-btn" ${options.result.saved_question_id ? "disabled" : ""}>${options.result.saved_question_id ? "נשמר" : "שמור"}</button>
+      </button>` : ""}
+      <button type="button" class="final-answer-save-btn" ${options.result.saved_question_id ? "disabled" : ""}>${options.result.saved_question_id ? "נשמר" : "שמור הקלטה"}</button>
       <button type="button" class="final-answer-memory-btn" ${options.result.investigation_memory_summary_id ? "disabled" : ""}>${options.result.investigation_memory_summary_id ? "נשמר בזיכרון" : "שמור לזיכרון"}</button>
     `;
     const finalShowBtn = actions.querySelector(".final-answer-show-btn");
-    finalShowBtn.addEventListener("click", () => {
-      toggleFinalAnswerVisibility(options.result, options.prompt || "", finalShowBtn);
-    });
+    if (finalShowBtn) {
+      finalShowBtn.addEventListener("click", () => {
+        toggleFinalAnswerVisibility(options.result, options.prompt || "", finalShowBtn);
+      });
+    }
     actions.querySelector(".final-answer-save-btn").addEventListener("click", event => {
       saveResultQuestion(options.result, options.prompt || "", event.currentTarget);
     });
     actions.querySelector(".final-answer-memory-btn").addEventListener("click", event => {
       saveResultToInvestigationMemory(options.result, options.prompt || "", event.currentTarget);
     });
-    const evidenceToggle = answerBody.querySelector(".evidence-ids-toggle");
+    let evidenceToggle = answerBody.querySelector(".evidence-ids-toggle");
+    const evidenceReferences = buildEvidenceReferencesSection(options.result);
+    if (evidenceReferences && evidenceToggle) {
+      evidenceToggle.remove();
+      evidenceToggle = null;
+    }
     if (evidenceToggle) {
       answerBody.insertBefore(actions, evidenceToggle);
     } else {
       answerBody.appendChild(actions);
     }
-    updateSourceVisibilityBtn(finalShowBtn);
+    if (evidenceReferences) answerBody.appendChild(evidenceReferences);
+    if (finalShowBtn) updateSourceVisibilityBtn(finalShowBtn);
+    updateEvidenceReferenceButtons();
   }
   state.activeAssistantMessage = null;
   state.activeActivityList = null;
@@ -2463,7 +2865,14 @@ const TOOL_LABELS = {
   trace_semantic_clues: "מעקב אחר רמזים סמנטיים",
   plan_next_investigation_step: "בקרת תהליך החקירה",
   find_related_events: "הרחבת מעגל הראיות",
-  challenge_hypothesis: "בדיקת ההשערה מול חלופות"
+  challenge_hypothesis: "בדיקת ההשערה מול חלופות",
+  prepare_target_candidate: "הכנת מועמד מטרה",
+  find_duplicate_target_candidates: "בדיקת כפילות מטרה",
+  search_target_candidates: "חיפוש מועמדי מטרות",
+  get_target_candidate: "שליפת מועמד מטרה",
+  create_target_candidate: "יצירת מועמד מטרה",
+  update_target_candidate: "עדכון מועמד מטרה",
+  attach_target_evidence: "צירוף ראיות למטרה"
 };
 
 function humanToolLabel(tool) {
@@ -2726,12 +3135,13 @@ async function submitStepInject() {
   const priorResult = state.lastResult;
   const baseStepCount = priorSteps.length;
   const classificationContext = originalClassificationContext(priorSteps.length ? priorSteps : allPriorSteps);
-  state.activeTeamMentions = teamMentionsForPrompt(instruction);
-  const continuationPrompt = buildContinuationPrompt(instruction, selectedLayers, classificationContext);
+  const addressedInstruction = addressedPromptForSelectedMember(instruction);
+  state.activeTeamMentions = teamMentionsForPrompt(addressedInstruction);
+  const continuationPrompt = buildContinuationPrompt(addressedInstruction, selectedLayers, classificationContext);
   const agentContinuationPrompt = promptForAgent(continuationPrompt);
 
   // Start a new labeled continuation bubble
-  startAssistantResearchMessage("Hermes ממשיך את החקירה...");
+  startAssistantResearchMessage();
   // Mark the article so CSS can show the ↩ continuation kicker
   if (state.activeAssistantMessage) {
     state.activeAssistantMessage.dataset.continuation = "true";
@@ -2747,7 +3157,7 @@ async function submitStepInject() {
 
   const pollContinuationSteps = async () => {
     try {
-      const response = await fetch(liveStepsUrl(instruction), { cache: "no-store" });
+      const response = await fetch(liveStepsUrl(addressedInstruction), { cache: "no-store" });
       if (!response.ok) return;
       const live = await response.json();
       const steps = live.investigation_steps || [];
@@ -2778,7 +3188,7 @@ async function submitStepInject() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         prompt: agentContinuationPrompt,
-        routing_prompt: instruction,
+        routing_prompt: addressedInstruction,
         history: state.history,
         investigation_id: state.investigationId,
         investigation_state: investigationStateForPrompt(selectedLayerContextForAgent()),
@@ -2945,6 +3355,7 @@ function updateStepVisibilityButtons() {
 function updateResultVisibilityButtons() {
   updateStepVisibilityButtons();
   document.querySelectorAll(".final-answer-show-btn").forEach(updateSourceVisibilityBtn);
+  updateEvidenceReferenceButtons();
 }
 
 function resolvedStepSourceId(step) {
@@ -2977,7 +3388,6 @@ function toggleStepVisibility(step, btn) {
 
 function addActivity(tool, detail, result, options = {}) {
   ensureAssistantResearchMessage();
-  state.activeActivityEmpty.hidden = true;
   const item = document.createElement("li");
   item.className = "activity-item";
   const stepNumber = options.stepNumber || state.activeActivityList.children.length + 1;
@@ -3066,7 +3476,7 @@ function answerHtml(text) {
     const trimmed = block.trim();
     const evidenceMatch = trimmed.match(/^מזהי\s+(?:ראיות|אירועים)\s*:\s*(.+)$/s);
     if (evidenceMatch) {
-      return `<details class="evidence-ids-toggle"><summary>מזהי אירועים</summary><p>${evidenceMatch[1].replace(/\n/g, "<br>")}</p></details>`;
+      return `<details class="evidence-ids-toggle"><summary>מזהי ראיות</summary><p>${evidenceMatch[1].replace(/\n/g, "<br>")}</p></details>`;
     }
     const formatted = trimmed
       .replace(/^###?\s+(.+)$/gm, "<strong>$1</strong>")
@@ -3108,7 +3518,12 @@ function inferRecommendedView(prompt, answer) {
 function renderActivitySteps(steps, sourceBase = null) {
   ensureAssistantResearchMessage();
   state.activeActivityList.innerHTML = "";
-  (steps || []).forEach((step, index) => {
+  const internalWorkstreamTools = new Set([
+    "prepare_workstream_creation",
+    "prepare_workstream_indication_proposal",
+    "decide_workstream_indication_proposal"
+  ]);
+  (steps || []).filter(step => !internalWorkstreamTools.has(step.tool)).forEach((step, index) => {
     const explanation = step.model_explanation || {};
     const number = index + 1;
     addActivity(step.tool, step.action, step.result, {
@@ -3194,8 +3609,8 @@ async function saveResultQuestion(result, prompt, button) {
     setTimeout(() => {
       if (!result.saved_question_id) {
         button.disabled = false;
-        button.textContent = "שמור";
-        button.title = "שמור את תוצאת החקירה";
+        button.textContent = "שמור הקלטה";
+        button.title = "שמור את הקלטת החקירה";
       }
     }, 2500);
   } finally {
@@ -3288,36 +3703,21 @@ function applyAgentResult(result, prompt, options = {}) {
 
   if (options.restoreOnly) {
     state.queryContext = buildFinalQueryContext(result, prompt);
-    const idsFromAnswer = (result.answer || "").match(EVENT_ID_PATTERN) || [];
-    const evidence = new Set([...(result.event_ids || []), ...idsFromAnswer]);
-    state.current = state.events.filter(event => evidence.has(event.event_id));
-    state.aggregateLocations = collectAggregateLocations(result);
-    state.aggregateTimeline = collectAggregateTimeline(result);
-    state.aggregateGroups = collectGenericAggregateGroups(result);
-    state.locationMetadata = collectLocationMetadata(result);
-    state.entityMetadata = collectEntityMetadata(result);
+    const typedLayers = buildTypedResultLayers(result);
+    const requestedView = typedLayers[0]?.preferredView || result.recommended_view || "map";
     const addedLayers = addResultLayers({
       sourceId: finalSourceId(result),
-      sourceLabel: "תשובת הסוכן",
-      preferredView: result.recommended_view || inferRecommendedView(prompt, result.answer).view,
-      layers: [...buildResultLayers({
-      events: state.current,
-      locations: state.aggregateLocations,
-      timeline: state.aggregateTimeline,
-      groups: state.aggregateGroups,
-      locationMetadata: state.locationMetadata,
-      entityMetadata: state.entityMetadata
-      }), ...buildTypedResultLayers(result)]
+      sourceLabel: result.responding_agent === "moshe" ? "תשובת משה" : "תשובת הסוכן",
+      preferredView: requestedView,
+      layers: typedLayers
     });
-    // Just restore visualization state, don't touch the chat DOM
     showResult(
-      "ממצאי חקירת הסוכן",
+      "ממצאי הסוכן",
       addedLayers.length
-        ? `נוספו או הוצגו ${addedLayers.length.toLocaleString("he-IL")} שכבות מתוך תשובת הסוכן.`
-        : "הסוכן השיב, אך לא נמצאו בתשובה נתונים שניתן לקשר לתצוגה."
+        ? `נוספו או הוצגו ${addedLayers.length.toLocaleString("he-IL")} שכבות שנבחרו כתשובה.`
+        : "לא נבחרו נתונים להצגה."
     );
-    const inferred = inferRecommendedView(prompt, result.answer);
-    activateView(result.recommended_view || inferred.view, { automatic: true, reason: result.view_reason || inferred.reason });
+    activateView(requestedView, { reason: result.view_reason || "נתונים שנבחרו כתשובה לבקשת המשתמש" });
     renderQueryInspector();
     return;
   }
@@ -3342,22 +3742,10 @@ function applyAgentResult(result, prompt, options = {}) {
     addActivity("Hermes", `שאלת החקירה שנשלחה: ${prompt}`, `התקבלה תשובה בריצה ${result.run_id}, ללא יומן כלי מפורט.`);
   }
 
-  const typedLayers = buildTypedResultLayers(result);
-  if (typedLayers.length) {
-    const addedLayers = addResultLayers({
-      sourceId: finalSourceId(result),
-      sourceLabel: result.responding_agent === "moshe" ? "תשובת משה" : "תשובת הסוכן",
-      preferredView: result.recommended_view || "map",
-      layers: typedLayers
-    });
-    showResult("ממצאי הסוכן", `נוספו או רועננו ${addedLayers.length.toLocaleString("he-IL")} שכבות מתוך התשובה.`);
-    activateView(result.recommended_view || "map", { automatic: true, reason: result.view_reason || "נתונים מובנים בתשובת הסוכן" });
-    if (typedLayers.some(layer => layer.kind === "attack_targets")) {
-      void refreshOpenAttackTargetCatalogLayer();
-    }
-  }
-
   finalizeAssistantMessage(result.answer, { result, prompt });
+  if (buildTypedResultLayers(result).some(layer => layer.kind === "attack_targets")) {
+    void refreshOpenAttackTargetCatalogLayer();
+  }
   updateResultVisibilityButtons();
   renderQueryInspector();
   setSuggestions(["אילו הסברים תמימים יכולים להתאים לאותן ראיות?", "מה חסר כדי להעלות את רמת הביטחון?", "הצג את רצף האירועים לפי סדר הזמן"]);
@@ -3472,13 +3860,23 @@ async function loadRecordedQuestions() {
   }
 }
 
-async function runPrompt(prompt) {
+async function runPrompt(prompt, options = {}) {
   const clean = prompt.trim();
   if (!clean || state.busy) return;
+  const workstreamCreationRequested = options.workstreamCreation === true;
+  const addressedPrompt = addressedPromptForSelectedMember(clean);
   const selectedLayers = selectedLayerContextForAgent();
-  state.activeTeamMentions = teamMentionsForPrompt(clean);
-  const agentPrompt = promptForAgentWithSelectedLayers(clean, selectedLayers);
+  state.activeTeamMentions = teamMentionsForPrompt(addressedPrompt);
+  const workstreamInstruction = workstreamCreationRequested
+    ? "המשתמש נמצא בזרימת יצירת מעקב. נהל שיחה טבעית: אם חסר מידע חיוני שאל שאלה קצרה; כאשר המטרה והאחריות ברורות, השתמש בכלי יצירת המעקב."
+    : "";
+  const agentPrompt = promptForAgentWithSelectedLayers(
+    [addressedPrompt, workstreamInstruction].filter(Boolean).join("\n\n"),
+    selectedLayers
+  );
   const investigationState = investigationStateForPrompt(selectedLayers);
+  const currentTurnMessageId = globalThis.crypto?.randomUUID?.()
+    || `turn_${Date.now()}_${Math.random().toString(16).slice(2)}`;
   const clientStarted = performance.now();
   let firstLiveStepAt = null;
   appendMessage("user", `<p>${highlightedPromptHtml(clean)}</p>`);
@@ -3491,7 +3889,7 @@ async function runPrompt(prompt) {
   let progressTimer = null;
   const pollLiveSteps = async () => {
     try {
-      const response = await fetch(liveStepsUrl(clean), { cache: "no-store" });
+      const response = await fetch(liveStepsUrl(addressedPrompt), { cache: "no-store" });
       if (!response.ok) return;
       const live = await response.json();
       const steps = live.investigation_steps || [];
@@ -3510,10 +3908,12 @@ async function runPrompt(prompt) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         prompt: agentPrompt,
-        routing_prompt: clean,
+        routing_prompt: addressedPrompt,
         history: state.history,
         investigation_id: state.investigationId,
-        investigation_state: investigationState
+        investigation_state: investigationState,
+        workstream_context: workstreamContextForChat(currentTurnMessageId),
+        workstream_creation_requested: workstreamCreationRequested
       })
     });
     progressTimer = setInterval(pollLiveSteps, 1800);
@@ -3522,6 +3922,7 @@ async function runPrompt(prompt) {
     const responseReceivedAt = performance.now();
     const result = await response.json();
     if (!response.ok) throw new Error(result.error || "Hermes request failed");
+    applyWorkstreamChatResult(result);
     result.answer = cleanAssistantAnswer(result.answer);
     state.history.push({ role: "user", content: clean }, { role: "assistant", content: result.answer });
     const renderStarted = performance.now();
@@ -3602,9 +4003,29 @@ function setPanelWidths(chatWidth, resultWidth) {
   if (state.map) setTimeout(() => state.map.resize(), 0);
 }
 
+function setChatPanelCollapsed(collapsed) {
+  state.chatPanelCollapsed = Boolean(collapsed);
+  workspace.classList.toggle("chat-panel-collapsed", state.chatPanelCollapsed);
+  if (chatPanelToggle) {
+    const label = state.chatPanelCollapsed ? "הצג שיחה" : "מזער שיחה";
+    chatPanelToggle.title = label;
+    chatPanelToggle.setAttribute("aria-label", label);
+    chatPanelToggle.setAttribute("aria-expanded", state.chatPanelCollapsed ? "false" : "true");
+    const icon = chatPanelToggle.querySelector(".material-symbols-rounded");
+    if (icon) icon.textContent = state.chatPanelCollapsed ? "chevron_left" : "chevron_right";
+  }
+  if (state.map) {
+    setTimeout(() => {
+      state.map.resize();
+      renderMap();
+    }, 220);
+  }
+}
+
 function initPanelResizers() {
   document.querySelectorAll(".panel-resizer").forEach(handle => {
     handle.addEventListener("pointerdown", event => {
+      if (event.target.closest(".chat-panel-toggle") || state.chatPanelCollapsed) return;
       event.preventDefault();
       handle.setPointerCapture(event.pointerId);
       handle.classList.add("dragging");
@@ -3643,6 +4064,11 @@ function initPanelResizers() {
       window.addEventListener("pointermove", onMove);
       window.addEventListener("pointerup", onUp);
     });
+  });
+  chatPanelToggle?.addEventListener("click", event => {
+    event.preventDefault();
+    event.stopPropagation();
+    setChatPanelCollapsed(!state.chatPanelCollapsed);
   });
 }
 
@@ -3931,16 +4357,17 @@ function renderEvidence() {
       </tr>`).join("") : '<tr><td colspan="5" class="empty-cell">השכבה מוסתרת או ריקה.</td></tr>';
     return;
   }
-  head.innerHTML = "<tr><th>זמן</th><th>אמינות</th><th>ודאות</th><th>גורם</th><th>מיקום</th><th>תקציר</th></tr>";
+  head.innerHTML = "<tr><th>מזהה רשומה</th><th>זמן</th><th>אמינות</th><th>ודאות</th><th>גורם</th><th>מיקום</th><th>תקציר</th></tr>";
   body.innerHTML = activeItems.length ? activeItems.map(event => `
     <tr>
+      <td dir="ltr">${escapeHtml(event.record_id || event.event_id || "-")}</td>
       <td dir="ltr">${escapeHtml(event.timestamp_utc)}</td>
       <td>${escapeHtml(event.source_reliability_label || event.source_reliability || "-")}</td>
       <td>${escapeHtml(event.certainty_level || "-")}</td>
       <td>${escapeHtml(event.entity_name || event.entity_id || "-")}</td>
       <td>${escapeHtml(event.location_name || "-")}</td>
       <td>${escapeHtml(event.event_summary || "-")}</td>
-    </tr>`).join("") : '<tr><td colspan="6" class="empty-cell">השכבה מוסתרת או ריקה.</td></tr>';
+    </tr>`).join("") : '<tr><td colspan="7" class="empty-cell">השכבה מוסתרת או ריקה.</td></tr>';
 }
 
 function resetInvestigation(options = {}) {
@@ -3960,7 +4387,8 @@ function resetInvestigation(options = {}) {
   state.workstreamLoadToken += 1;
   state.workstreams = [];
   state.workstreamsLoading = false;
-  state.pendingWorkstreamDraft = null;
+  state.investigationPlayback = null;
+  state.pendingMosheWorkstreamProposal = null;
   state.workstreamComposerMode = false;
   if (!options.keepInvestigation) {
     const investigation = ensureInvestigationRecord(DEFAULT_INVESTIGATION_NAME);
@@ -4036,42 +4464,24 @@ document.addEventListener("click", event => {
     if (promptOption.dataset.promptOption === "workstream") startWorkstreamComposerMode();
     return;
   }
-  const chooseWorkstreamLayer = event.target.closest("[data-workstream-choose-layer]");
-  if (chooseWorkstreamLayer) {
-    openQueryLayersModal();
-    return;
-  }
-  const confirmWorkstream = event.target.closest("[data-workstream-confirm]");
-  if (confirmWorkstream) {
-    confirmPendingWorkstream(confirmWorkstream);
-    return;
-  }
-  if (event.target.closest("[data-workstream-cancel]")) {
-    cancelPendingWorkstream();
-    return;
-  }
   const showWorkstream = event.target.closest("[data-workstream-show]");
   if (showWorkstream) {
+    if (workstreamMenu) workstreamMenu.hidden = true;
+    workstreamIndicator?.setAttribute("aria-expanded", "false");
     showWorkstreamUpdate(showWorkstream.dataset.workstreamShow);
-    return;
-  }
-  const openWorkstreamSource = event.target.closest("[data-workstream-open-layer]");
-  if (openWorkstreamSource) {
-    openWorkstreamLayer(openWorkstreamSource.dataset.workstreamOpenLayer);
     return;
   }
   const archiveWorkstream = event.target.closest("[data-workstream-archive]");
   if (archiveWorkstream) {
-    requestWorkstreamArchive(archiveWorkstream.dataset.workstreamArchive);
+    void archiveWorkstreamFromChat(archiveWorkstream.dataset.workstreamArchive);
     return;
   }
-  const confirmArchive = event.target.closest("[data-workstream-archive-confirm]");
-  if (confirmArchive) {
-    archiveWorkstreamFromChat(confirmArchive.dataset.workstreamArchiveConfirm);
-    return;
-  }
-  if (event.target.closest("[data-workstream-archive-cancel]")) {
-    workstreamMessage("<p>העברת המעקב לארכיון בוטלה.</p>");
+  const workstreamResults = event.target.closest("[data-workstream-results]");
+  if (workstreamResults) {
+    void toggleWorkstreamResultVisibility(
+      workstreamResults.dataset.workstreamResults,
+      workstreamResults
+    );
     return;
   }
   const viewButton = event.target.closest("[data-view]");
@@ -4308,10 +4718,10 @@ promptForm.addEventListener("submit", event => {
   const prompt = promptInput.value;
   if (state.workstreamComposerMode) {
     if (!prompt.trim()) return;
-    if (!proposeWorkstreamFromChat(prompt.trim())) return;
     promptInput.value = "";
     syncMentionHighlight(promptInput);
     closeTeamMentionMenu();
+    runPrompt(prompt, { workstreamCreation: true });
     return;
   }
   promptInput.value = "";
@@ -4355,6 +4765,10 @@ document.addEventListener("pointerdown", event => {
   if (!event.target.closest("#teamMentionMenu") && event.target !== teamMentionState.textarea) {
     closeTeamMentionMenu();
   }
+  if (workstreamMenu && !event.target.closest("#workstreamControl")) {
+    workstreamMenu.hidden = true;
+    workstreamIndicator?.setAttribute("aria-expanded", "false");
+  }
 });
 window.addEventListener("resize", () => {
   if (teamMentionState.textarea) positionTeamMentionMenu(teamMentionState.textarea);
@@ -4367,6 +4781,8 @@ promptOptionsButton.addEventListener("click", event => {
   setPromptOptionsOpen(!state.promptOptionsOpen);
 });
 workstreamIndicator?.addEventListener("click", requestWorkstreamUpdate);
+playbackNextButton?.addEventListener("click", advanceInvestigationPlayback);
+intelligenceModeSelect?.addEventListener("change", changeIntelligenceMode);
 workstreamComposerCancel?.addEventListener("click", () => setWorkstreamComposerMode(false));
 selectedLayersButton.addEventListener("click", openQueryLayersModal);
 selectedLayersClear.addEventListener("click", event => {
@@ -4396,8 +4812,9 @@ renderInvestigationSelector();
 async function boot() {
   initMap();
   await loadLayerCatalog();
-  await loadInvestigationMemory({ restoreLayers: true });
+  await initializeHistoricalPlayback();
   await loadWorkstreams();
+  await loadInvestigationMemory({ restoreLayers: true });
   let runtimeStatus = null;
   try {
     runtimeStatus = await fetch("/api/status", { cache: "no-store" }).then(response => response.json());
