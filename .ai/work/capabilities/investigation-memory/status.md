@@ -4,16 +4,16 @@
 Investigation Memory (`investigation-memory`)
 
 ## Current Phase
-Checkpoint 006 deployment validation.
+Checkpoint 006 deployed; final user validation.
 
 ## Overall Status
-The investigation-isolation fix is implemented and locally validated. Startup no longer adopts a stale investigation ID from workstream fallback and no longer resets historical playback. Deployment validation is next.
+The investigation-isolation fix is deployed and validated. Startup no longer adopts a stale investigation ID from workstream fallback and no longer resets historical playback.
 
 ## Who Needs To Act Now
 
 | Role | Status | Required Action | Due Before |
 |---|---|---|---|
-| Development | In progress | Deploy and verify investigation isolation. | Before final handoff |
+| Development | Complete | Investigation isolation deployed and publicly verified. | Done |
 | Product | Review needed | Confirm restore/context behavior and catalog-only visual restore limitation. | Before merge |
 | UX | Review needed | Confirm restored layers/filters appear as expected when switching investigations. | Before merge |
 | QA | Review needed | Validate save, switch investigation, restore layers/filters, and agent context continuity. | Before merge |

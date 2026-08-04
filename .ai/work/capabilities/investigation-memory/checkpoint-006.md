@@ -7,7 +7,7 @@ Checkpoint 006 - Investigation isolation
 Investigation Memory (`investigation-memory`)
 
 ## Checkpoint Status
-Implementation complete; deployment validation pending.
+Complete and deployed.
 
 ## Goal
 Keep the browser-selected investigation authoritative and prevent stale server-side state from changing or resetting its environment during startup.
@@ -34,9 +34,19 @@ Keep the browser-selected investigation authoritative and prevent stale server-s
 ## Checks
 - `node --check app.js`
 - `python -m unittest discover -p 'test*.py'`: 113 tests passed.
+- All three VM services reported `active` after deployment.
+- Public HTTPS served `app.js?v=132`.
+- Public `app.js` SHA-256: `27e7414a30f80bde1cef92f8b88b199fd53190c286c836346c2e5680d948bc95`.
+- Public JavaScript contains no latest-workstream fallback, canonical-ID adoption, or automatic historical-playback initializer.
 
 ## Risk
 The investigation registry remains browser-local metadata. This checkpoint isolates selection correctly but does not introduce a multi-user, server-owned investigation registry.
 
+## Deployment
+- VM path: `/opt/serbia-poc-ui`
+- Rollback copies:
+  - `/opt/serbia-poc-ui/app.js.backup-20260804-2115-investigation-isolation`
+  - `/opt/serbia-poc-ui/index.html.backup-20260804-2115-investigation-isolation`
+
 ## Next Step
-Publish, deploy to the VM, and verify the public application serves `app.js?v=132` without fallback/reset behavior.
+User acceptance: switch among investigations and confirm each retains its own selected identity and environment.
