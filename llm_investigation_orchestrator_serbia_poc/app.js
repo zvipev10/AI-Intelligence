@@ -2219,12 +2219,31 @@ function initMap() {
   state.map.on("load", () => { state.mapReady = true; renderMap(); });
 }
 
+const CONVERSATION_BOTTOM_THRESHOLD_PX = 96;
+
+function conversationIsNearBottom() {
+  return conversation.scrollHeight - conversation.scrollTop - conversation.clientHeight <= CONVERSATION_BOTTOM_THRESHOLD_PX;
+}
+
+function scrollConversationToLatest() {
+  conversation.scrollTop = conversation.scrollHeight;
+  requestAnimationFrame(() => {
+    conversation.scrollTop = conversation.scrollHeight;
+  });
+}
+
+function followConversationAfterUpdate(shouldFollow) {
+  if (shouldFollow) scrollConversationToLatest();
+}
+
 function appendMessage(role, html, options = {}) {
+  const shouldFollow = role === "user" || conversationIsNearBottom();
   const article = document.createElement("article");
   article.className = `message ${role === "user" ? "user-message" : "assistant-message"}${options.className ? ` ${options.className}` : ""}`;
   if (options.memberId) article.dataset.conversationMemberId = options.memberId;
   article.innerHTML = `<div class="message-label">${escapeHtml(options.label || (role === "user" ? "אנליסט" : assistantMessageLabel()))}</div>${html}`;
   conversation.appendChild(article);
+  followConversationAfterUpdate(shouldFollow);
   return article;
 }
 
@@ -2233,10 +2252,6 @@ function thinkingIndicatorHtml() {
     <span class="thinking-indicator" role="status" aria-label="חושב">
       <span>חושב</span><span class="thinking-dots" aria-hidden="true"><i></i><i></i><i></i></span>
     </span>`;
-}
-
-function scrollConversationToLatest() {
-  conversation.scrollTop = conversation.scrollHeight;
 }
 
 function activeWorkstreams() {
@@ -2715,6 +2730,7 @@ async function archiveWorkstreamFromChat(workstreamId) {
 }
 
 function startAssistantResearchMessage(message = "") {
+  const shouldFollow = conversationIsNearBottom();
   const article = document.createElement("article");
   article.className = "message assistant-message";
   article.innerHTML = `
@@ -2728,6 +2744,7 @@ function startAssistantResearchMessage(message = "") {
   state.activeAssistantMessage = article;
   state.activeActivityEmpty = article.querySelector(".activity-empty");
   state.activeActivityList = article.querySelector(".activity-list");
+  followConversationAfterUpdate(shouldFollow);
   return article;
 }
 
@@ -2738,13 +2755,16 @@ function ensureAssistantResearchMessage(message) {
 }
 
 function setActiveResearchMessage(message) {
+  const shouldFollow = conversationIsNearBottom();
   ensureAssistantResearchMessage(message);
   state.activeActivityList.innerHTML = "";
   state.activeActivityEmpty.hidden = false;
   state.activeActivityEmpty.textContent = message;
+  followConversationAfterUpdate(shouldFollow);
 }
 
 function finalizeAssistantMessage(answer, options = {}) {
+  const shouldFollow = conversationIsNearBottom();
   ensureAssistantResearchMessage();
   const article = state.activeAssistantMessage;
   const label = article.querySelector(".message-label");
@@ -2810,6 +2830,7 @@ function finalizeAssistantMessage(answer, options = {}) {
   state.activeAssistantMessage = null;
   state.activeActivityList = null;
   state.activeActivityEmpty = null;
+  followConversationAfterUpdate(shouldFollow);
 }
 
 function showFinalAnswerResult(result, prompt) {
@@ -3368,6 +3389,7 @@ function toggleStepVisibility(step, btn) {
 }
 
 function addActivity(tool, detail, result, options = {}) {
+  const shouldFollow = options.manageConversationScroll !== false && conversationIsNearBottom();
   ensureAssistantResearchMessage();
   const item = document.createElement("li");
   item.className = "activity-item";
@@ -3437,6 +3459,7 @@ function addActivity(tool, detail, result, options = {}) {
     continueBtn.addEventListener("click", () => openStepInjectModal(label, stepNumber));
   }
   state.activeActivityList.appendChild(item);
+  followConversationAfterUpdate(shouldFollow);
 }
 
 function setSuggestions(items) {
@@ -3497,6 +3520,7 @@ function inferRecommendedView(prompt, answer) {
 }
 
 function renderActivitySteps(steps, sourceBase = null) {
+  const shouldFollow = conversationIsNearBottom();
   ensureAssistantResearchMessage();
   state.activeActivityList.innerHTML = "";
   const internalWorkstreamTools = new Set([
@@ -3513,11 +3537,13 @@ function renderActivitySteps(steps, sourceBase = null) {
       rationale: explanation.decision || step.rationale || step.decision,
       technical: step.technical,
       isError: step.technical?.is_error,
+      manageConversationScroll: false,
       stepData: step,
       sourceId: stepSourceId(sourceBase || state.lastResult || state.investigationId, number),
       sourceLabel: `צעד ${number}: ${humanToolLabel(step.tool)}`
     });
   });
+  followConversationAfterUpdate(shouldFollow);
 }
 
 function sleep(ms) {
