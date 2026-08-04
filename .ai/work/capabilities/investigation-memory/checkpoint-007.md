@@ -38,5 +38,11 @@ Remove all old investigations without changing workstream records.
   - `/opt/serbia-poc-ui/app.js.backup-20260804-2120-investigation-reset`
   - `/opt/serbia-poc-ui/index.html.backup-20260804-2120-investigation-reset`
 
+## Broken Scenario Cleanup
+- The orphaned active run `run_20260728_131607_21557873` was removed from live scenario state.
+- It was preserved at `/opt/serbia-poc-ui/backups/broken-scenario-runs-20260804-2130/`.
+- Verification found zero remaining active scenario runs.
+- Workstream count remained 13 and all three services remained active.
+
 ## Rollback
 Restore the deployed UI files and investigation-memory directory from timestamped VM backups.
