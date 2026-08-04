@@ -4,10 +4,10 @@
 Investigation Memory (`investigation-memory`)
 
 ## Current Phase
-Checkpoint 007 investigation reset deployment.
+Checkpoint 007 deployed; user acceptance.
 
 ## Overall Status
-The investigation-isolation fix is deployed. Checkpoint 007 resets all legacy browser investigation registries and clears persisted investigation-memory records while leaving workstreams untouched.
+The investigation-isolation fix and legacy investigation reset are deployed. Production has zero persisted investigations, and browsers remove the legacy registry when they load `v133`. Workstreams remain untouched.
 
 ## Who Needs To Act Now
 
