@@ -2,7 +2,7 @@
 
 ## Checkpoint status
 
-Implemented and pending Product/UX browser acceptance.
+Implemented, published, and deployed; pending Product/UX hands-on acceptance.
 
 ## Handoff
 
@@ -12,7 +12,8 @@ Required action: verify that opening the investigation selector shows the full
 list, exactly one row is marked active, and selecting another investigation
 loads only that investigation's workspace.
 
-Do not proceed to deployment until this interaction is accepted.
+Deployment was explicitly authorized by the user on 2026-08-04 and completed
+from commit `c473a9787baa22a583cbf1e69243a9e33c949204`.
 
 ## Slice goal
 
@@ -50,12 +51,21 @@ underlying context switch.
 
 - `node --check app.js`: passed.
 - `python -m unittest test_workstream_ui test_workstreams test_scenario_playback`: 45 passed.
+- Full Python discovery: 113 passed.
+- Python compilation: passed.
 - `git diff --check`: passed.
+- Public `app.js?v=131` SHA-256 matched the committed/deployed file:
+  `6d43ca9e230db931eef11be14caaf1e870498997e4cb249932d70fbe024bdfe1`.
+- Public `/api/status`: Hermes configured, V2.1, 14,800 rows.
+- `serbia-poc-ui.service`, `hermes-gateway.service`, and
+  `hermes-moshe-gateway.service`: active after deployment.
+- `/api/live-steps`: returned valid JSON.
 
 ## Not completed yet
 
-- Manual browser interaction validation.
-- Deployment or production smoke validation.
+- Product/UX hands-on interaction validation.
+- Automated in-app browser validation could not bypass the VM's self-signed
+  certificate; public endpoint and asset checks passed through `curl`.
 
 ## Risks
 
@@ -64,4 +74,6 @@ underlying context switch.
 
 ## Continue / pause recommendation
 
-Pause for Product/UX browser acceptance, then publish/deploy only with explicit authorization.
+Pause for Product/UX hands-on acceptance before merging PR #47. Deployment is
+complete and recoverable from
+`/opt/serbia-poc-ui/deploy-backups/app.js.before-c473a97`.

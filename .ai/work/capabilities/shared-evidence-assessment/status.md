@@ -10,7 +10,7 @@ Investigation selection correction checkpoint
 
 ## Overall status
 
-Checkpoint 017 exact investigation selection is implemented and pending Product/UX browser acceptance; checkpoint 016 playback acceptance also remains pending
+Checkpoint 017 exact investigation selection is deployed and pending Product/UX hands-on acceptance; checkpoint 016 playback acceptance also remains pending
 
 ## Accepted direction captured
 
@@ -42,6 +42,7 @@ Checkpoint 017 exact investigation selection is implemented and pending Product/
 - Explicit investigation selection now loads exact scoped state and cannot adopt the latest unrelated investigation.
 - Bootstrap-only fallback and stale-response protection preserve legacy continuity without overriding user selection.
 - Focused JavaScript/API/playback validation passes: 45 tests.
+- Full discovery passes: 113 tests; public deployment serves the exact committed `app.js?v=131` and all three services are active.
 - Added one next-stage button to the existing workstream update.
 - Added a tooltip with the server-provided next-stage timeframe.
 - Added one durable Moshe reevaluation claim per released revision.
@@ -80,7 +81,7 @@ Checkpoint 017 exact investigation selection is implemented and pending Product/
 
 ## Next expected artifact
 
-Product/UX browser acceptance of checkpoint 017, plus the outstanding Product approval of checkpoint 016, followed by explicit deployment authorization.
+Product/UX hands-on acceptance of deployed checkpoint 017, plus the outstanding Product approval of checkpoint 016. Draft PR #47 remains open.
 
 ## Parent and child issues
 

@@ -6,7 +6,8 @@ Implementation is current through checkpoint 017. Investigation selection now
 shows the full registered list, marks one selected investigation active, and
 loads exact investigation-scoped state without adopting unrelated latest
 workstreams. The timeframe-stage interaction from checkpoint 016 remains
-implemented. Deployment remains separately gated.
+implemented. Checkpoint 017 is deployed from commit `c473a97`; PR #47 remains
+draft pending hands-on acceptance.
 
 ## Delivered in Slice 2
 
@@ -25,7 +26,10 @@ implemented. Deployment remains separately gated.
 ## Validation
 
 - Checkpoint 017 focused JavaScript/API/playback suite: 45 tests passed.
+- Checkpoint 017 full discovery: 113 tests passed.
 - JavaScript syntax and `git diff --check` passed for checkpoint 017.
+- Public `app.js?v=131` matches the committed SHA-256; Hermes is configured on
+  V2.1 with 14,800 rows and all three services are active.
 - 95 automated tests passed.
 - Python compilation and `git diff --check` passed.
 - Search, semantic, aggregate, related-event, direct-object, presentation, and
@@ -43,6 +47,6 @@ An unconfirmed proposal is lost on refresh. This is the explicitly approved MVP 
 
 ## Next step
 
-Review `checkpoint-017.md` in a browser and complete the outstanding review of
-`checkpoint-016.md`. Do not deploy until the Product owner explicitly confirms
-the next step.
+Perform hands-on acceptance of `checkpoint-017.md`, review PR #47, and complete
+the outstanding review of `checkpoint-016.md`. The deployment is live and has
+a recoverable pre-deploy `app.js` backup on the VM.
