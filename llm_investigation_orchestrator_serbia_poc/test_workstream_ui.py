@@ -39,19 +39,31 @@ class WorkstreamUiTests(unittest.TestCase):
             self.app,
         )
 
-    def test_indicator_status_and_selection_are_in_upper_bar(self):
-        self.assertIn('id="workstreamControl"', self.index)
-        self.assertIn('id="workstreamIndicator"', self.index)
-        self.assertIn('id="workstreamIndicatorStatus"', self.index)
-        self.assertIn('id="workstreamMenu"', self.index)
-        self.assertIn("function requestWorkstreamUpdate()", self.app)
+    def test_workstreams_have_a_dedicated_workspace_rail(self):
+        self.assertIn('id="workstreamRail"', self.index)
+        self.assertIn('id="workstreamRailList"', self.index)
+        self.assertIn('id="workstreamRailToggle"', self.index)
+        self.assertNotIn('id="workstreamIndicator"', self.index)
+        self.assertNotIn('id="workstreamMenu"', self.index)
         self.assertIn("appendWorkstreamUpdate", self.app)
-        self.assertNotIn("workstream-drawer", self.index)
+        self.assertIn("workstream-rail-visible", self.app)
 
-    def test_multiple_workstreams_are_selected_in_upper_bar(self):
+    def test_multiple_workstreams_are_visible_at_a_glance(self):
         self.assertIn("data-workstream-show", self.app)
-        self.assertIn("workstreamMenu.innerHTML", self.app)
+        self.assertIn("workstreamRailList.innerHTML", self.app)
+        self.assertIn("workstream-rail-card", self.app)
         self.assertNotIn("על איזה מהם להציג עדכון?", self.app)
+
+    def test_workstream_rail_tracks_unseen_changes(self):
+        self.assertIn("serbia-poc-workstream-seen-v1", self.app)
+        self.assertIn("function workstreamHasNewItems(workstream)", self.app)
+        self.assertIn("function markWorkstreamSeen(workstream)", self.app)
+        self.assertIn("updated_at_utc", self.app)
+        self.assertIn("workstream-new-badge", self.app)
+
+    def test_workstream_rail_is_only_visible_in_real_time(self):
+        self.assertIn('state.investigationPlayback?.mode === "real_time"', self.app)
+        self.assertIn("workstreamRail.hidden = !visible", self.app)
 
     def test_tracking_option_is_only_visible_for_moshe(self):
         self.assertIn("option.hidden = state.activeConversationMemberId !== MOSHE_MEMBER_ID", self.app)
@@ -175,19 +187,13 @@ class WorkstreamUiTests(unittest.TestCase):
     def test_tracking_and_workstream_messages_have_visible_states(self):
         self.assertIn(".prompt-form.tracking-mode", self.styles)
         self.assertIn(".workstream-message", self.styles)
-        self.assertIn(".workstream-control[hidden]", self.styles)
-        self.assertIn(".workstream-menu[hidden]", self.styles)
+        self.assertIn(".workstream-rail[hidden]", self.styles)
+        self.assertIn(".workstream-rail-card.has-new", self.styles)
 
-    def test_workstream_menu_uses_chat_font_size(self):
-        self.assertIn(".message {", self.styles)
-        self.assertIn("font-size: 13px", self.styles.split(".message {", 1)[1].split("}", 1)[0])
-        self.assertIn(".workstream-menu button {", self.styles)
-        self.assertIn(
-            "font-size: 13px",
-            self.styles.split(".workstream-menu button {", 1)[1].split("}", 1)[0],
-        )
-        self.assertIn("font-size: 11px", self.styles.split(".workstream-indicator {", 1)[1].split("}", 1)[0])
-        self.assertIn(".workstream-menu button { font-size: 12px; }", self.styles)
+    def test_workstream_rail_is_responsive_and_collapsible(self):
+        self.assertIn(".workspace.workstream-rail-visible", self.styles)
+        self.assertIn(".workstream-rail.collapsed", self.styles)
+        self.assertIn(".workstream-rail { order: -1; width: 100%;", self.styles)
 
     def test_moshe_proposal_is_staged_in_general_chat_state(self):
         self.assertIn("pendingMosheWorkstreamProposal", self.app)

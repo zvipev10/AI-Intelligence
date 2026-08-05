@@ -6,7 +6,7 @@
   <title>סביבת מודיעין</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="./vendor/maplibre-gl.css">
-  <link rel="stylesheet" href="./styles.css?v=128">
+  <link rel="stylesheet" href="./styles.css?v=129">
 </head>
 <body>
   <a class="help-button" href="./help.html" target="_blank" rel="noopener" aria-label="פתח עזרה">?</a>
@@ -32,12 +32,6 @@
           <input id="investigationInput" type="text" autocomplete="off" spellcheck="false" aria-label="בחר או צור חקירה" aria-expanded="false" aria-controls="investigationList" role="combobox">
           <button id="investigationAddButton" type="button" title="צור חקירה חדשה" aria-label="צור חקירה חדשה">+</button>
           <div id="investigationList" class="investigation-list" role="listbox" hidden></div>
-        </div>
-        <div id="workstreamControl" class="workstream-control" hidden>
-          <button id="workstreamIndicator" class="workstream-indicator" type="button" aria-label="בחר מעקב" aria-expanded="false" aria-controls="workstreamMenu">
-            <span>מעקב</span><span id="workstreamIndicatorStatus" class="workstream-indicator-status"></span><span id="workstreamIndicatorCount" class="workstream-indicator-count" hidden></span>
-          </button>
-          <div id="workstreamMenu" class="workstream-menu" role="menu" aria-label="בחירת מעקב" hidden></div>
         </div>
         <div id="michlolTeam" class="michlol-team" role="list" aria-label="מכלול"></div>
       </div>
@@ -90,6 +84,20 @@
         <span class="material-symbols-rounded" aria-hidden="true">chevron_right</span>
       </button>
     </div>
+
+    <aside id="workstreamRail" class="workstream-rail" aria-label="מעקבים פעילים" hidden>
+      <div class="workstream-rail-header">
+        <div class="workstream-rail-heading">
+          <span class="material-symbols-rounded" aria-hidden="true">monitoring</span>
+          <strong>מעקבים</strong>
+          <span id="workstreamRailCount" class="workstream-rail-count"></span>
+        </div>
+        <button id="workstreamRailToggle" class="workstream-rail-toggle" type="button" title="מזער מעקבים" aria-label="מזער מעקבים" aria-expanded="true">
+          <span class="material-symbols-rounded" aria-hidden="true">chevron_right</span>
+        </button>
+      </div>
+      <div id="workstreamRailList" class="workstream-rail-list" role="list"></div>
+    </aside>
 
     <section class="result-panel">
       <nav class="view-tabs" aria-label="תצוגות תוצאה">
@@ -230,6 +238,6 @@
   </div>
 
   <script src="./vendor/maplibre-gl.js"></script>
-  <script src="./app.js?v=136"></script>
+  <script src="./app.js?v=137"></script>
 </body>
 </html>

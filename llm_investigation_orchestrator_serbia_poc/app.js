@@ -189,6 +189,7 @@ const MICHLOL_MEMBERS = [
 
 const MICHLOL_MEMBER_WELCOME = "אני מחובר עכשיו לשיחה הזו. שלח לי את המשימה או השאלה הבאה, ובשלב הבא נחבר כאן סוכן ייעודי לחבר המכלול.";
 const MOSHE_MEMBER_ID = "moshe-targets-officer";
+const WORKSTREAM_SEEN_STORAGE_KEY = "serbia-poc-workstream-seen-v1";
 const MOSHE_MESSAGE_LABEL = "משה - קצין מטרות";
 const MOSHE_WELCOME = "אני משה, קצין המטרות. אפשר לשאול אותי על אינדיקציות ומטרות, או לפתוח מעקב חדש.";
 
@@ -234,6 +235,8 @@ const state = {
   workstreams: [],
   workstreamsLoading: false,
   workstreamLoadToken: 0,
+  workstreamSeen: {},
+  workstreamRailCollapsed: false,
   investigationPlayback: null,
   playbackPollToken: 0,
   pendingMosheWorkstreamProposal: null,
@@ -264,11 +267,10 @@ const investigationList = document.getElementById("investigationList");
 const michlolTeam = document.getElementById("michlolTeam");
 const promptOptionsButton = document.getElementById("promptOptionsButton");
 const promptOptionsMenu = document.getElementById("promptOptionsMenu");
-const workstreamControl = document.getElementById("workstreamControl");
-const workstreamIndicator = document.getElementById("workstreamIndicator");
-const workstreamIndicatorStatus = document.getElementById("workstreamIndicatorStatus");
-const workstreamIndicatorCount = document.getElementById("workstreamIndicatorCount");
-const workstreamMenu = document.getElementById("workstreamMenu");
+const workstreamRail = document.getElementById("workstreamRail");
+const workstreamRailList = document.getElementById("workstreamRailList");
+const workstreamRailCount = document.getElementById("workstreamRailCount");
+const workstreamRailToggle = document.getElementById("workstreamRailToggle");
 const playbackNextButton = document.getElementById("playbackNextButton");
 const intelligenceModeSelect = document.getElementById("intelligenceModeSelect");
 const intelligencePeriod = document.getElementById("intelligencePeriod");
@@ -2267,26 +2269,84 @@ const WORKSTREAM_STATUS_LABELS = {
   archived: "בארכיון"
 };
 
-function renderWorkstreamIndicator() {
-  if (!workstreamControl || !workstreamIndicator || !workstreamIndicatorCount || !workstreamMenu) return;
-  const workstreams = activeWorkstreams();
-  workstreamControl.hidden = workstreams.length === 0
-    || state.investigationPlayback?.mode !== "real_time";
-  workstreamIndicatorCount.hidden = workstreams.length <= 1;
-  workstreamIndicatorCount.textContent = workstreams.length > 1 ? String(workstreams.length) : "";
-  if (workstreamIndicatorStatus) {
-    workstreamIndicatorStatus.textContent = workstreams.length === 1
-      ? `· ${WORKSTREAM_STATUS_LABELS[workstreams[0].status] || workstreams[0].status || "פעיל"}`
-      : `· ${workstreams.length.toLocaleString("he-IL")} פעילים`;
+function loadWorkstreamSeenState() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(WORKSTREAM_SEEN_STORAGE_KEY) || "{}");
+    state.workstreamSeen = parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    state.workstreamSeen = {};
   }
-  workstreamIndicator.title = workstreams.length > 1
-    ? `${workstreams.length} מעקבים פעילים — לחץ לבחירה`
-    : "לחץ להצגת מצב המעקב";
-  workstreamMenu.innerHTML = workstreams.map(item => `
-    <button type="button" role="menuitem" data-workstream-show="${escapeHtml(item.workstream_id)}">
-      <span>${escapeHtml(item.title || "מעקב")}</span>
-      <span class="workstream-menu-status">${escapeHtml(WORKSTREAM_STATUS_LABELS[item.status] || item.status || "פעיל")}</span>
-    </button>`).join("");
+}
+
+function saveWorkstreamSeenState() {
+  localStorage.setItem(WORKSTREAM_SEEN_STORAGE_KEY, JSON.stringify(state.workstreamSeen));
+}
+
+function workstreamSeenKey(workstreamId) {
+  return `${state.investigationId || "investigation"}:${workstreamId}`;
+}
+
+function workstreamHasNewItems(workstream) {
+  const updated = Date.parse(workstream?.updated_at_utc || workstream?.created_at_utc || "");
+  const seen = Date.parse(state.workstreamSeen[workstreamSeenKey(workstream?.workstream_id)] || "");
+  return Number.isFinite(updated) && (!Number.isFinite(seen) || updated > seen);
+}
+
+function markWorkstreamSeen(workstream) {
+  if (!workstream?.workstream_id) return;
+  state.workstreamSeen[workstreamSeenKey(workstream.workstream_id)] =
+    workstream.updated_at_utc || new Date().toISOString();
+  saveWorkstreamSeenState();
+}
+
+function workstreamUpdatedLabel(workstream) {
+  const value = workstream?.updated_at_utc || workstream?.created_at_utc;
+  const date = value ? new Date(value) : null;
+  if (!date || Number.isNaN(date.getTime())) return "";
+  return new Intl.DateTimeFormat("he-IL", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit"
+  }).format(date);
+}
+
+function setWorkstreamRailCollapsed(collapsed) {
+  state.workstreamRailCollapsed = Boolean(collapsed);
+  workstreamRail?.classList.toggle("collapsed", state.workstreamRailCollapsed);
+  document.querySelector(".workspace")?.classList.toggle("workstream-rail-collapsed", state.workstreamRailCollapsed);
+  if (workstreamRailToggle) {
+    workstreamRailToggle.setAttribute("aria-expanded", state.workstreamRailCollapsed ? "false" : "true");
+    workstreamRailToggle.setAttribute("aria-label", state.workstreamRailCollapsed ? "הרחב מעקבים" : "מזער מעקבים");
+    workstreamRailToggle.title = state.workstreamRailCollapsed ? "הרחב מעקבים" : "מזער מעקבים";
+    const icon = workstreamRailToggle.querySelector(".material-symbols-rounded");
+    if (icon) icon.textContent = state.workstreamRailCollapsed ? "chevron_left" : "chevron_right";
+  }
+  if (state.map) setTimeout(() => state.map.resize(), 220);
+}
+
+function renderWorkstreamIndicator() {
+  if (!workstreamRail || !workstreamRailList || !workstreamRailCount) return;
+  const workstreams = activeWorkstreams();
+  const visible = workstreams.length > 0 && state.investigationPlayback?.mode === "real_time";
+  workstreamRail.hidden = !visible;
+  document.querySelector(".workspace")?.classList.toggle("workstream-rail-visible", visible);
+  workstreamRailCount.textContent = workstreams.length.toLocaleString("he-IL");
+  workstreamRailList.innerHTML = workstreams.map(item => {
+    const hasNew = workstreamHasNewItems(item);
+    const status = WORKSTREAM_STATUS_LABELS[item.status] || item.status || "פעיל";
+    const updated = workstreamUpdatedLabel(item);
+    return `
+      <button type="button" class="workstream-rail-card ${hasNew ? "has-new" : ""}" role="listitem" data-workstream-show="${escapeHtml(item.workstream_id)}" title="${escapeHtml(item.title || "מעקב")}">
+        <span class="workstream-card-state" aria-hidden="true"></span>
+        <span class="workstream-card-body">
+          <strong>${escapeHtml(item.title || "מעקב")}</strong>
+          <span class="workstream-card-meta"><span>${escapeHtml(status)}</span>${updated ? `<time>${escapeHtml(updated)}</time>` : ""}</span>
+        </span>
+        ${hasNew ? '<span class="workstream-new-badge" aria-label="פריטים חדשים">חדש</span>' : ""}
+      </button>`;
+  }).join("");
+  setWorkstreamRailCollapsed(state.workstreamRailCollapsed);
 }
 
 async function loadWorkstreams() {
@@ -2699,18 +2759,11 @@ function appendWorkstreamUpdate(workstream) {
   if (resultsButton) updateSourceVisibilityBtn(resultsButton);
 }
 
-async function requestWorkstreamUpdate() {
-  if (state.workstreamsLoading) return;
-  const workstreams = activeWorkstreams();
-  if (!workstreams.length || !workstreamMenu) return;
-  const open = workstreamMenu.hidden;
-  workstreamMenu.hidden = !open;
-  workstreamIndicator?.setAttribute("aria-expanded", open ? "true" : "false");
-}
-
 async function showWorkstreamUpdate(workstreamId) {
   try {
     const workstream = await fetchWorkstream(workstreamId);
+    markWorkstreamSeen(workstream);
+    renderWorkstreamIndicator();
     appendWorkstreamUpdate(workstream);
   } catch (error) {
     workstreamMessage(`<p>לא הצלחתי לטעון את עדכון המעקב.</p><div class="answer-callout">${escapeHtml(error.message)}</div>`);
@@ -4626,9 +4679,8 @@ document.addEventListener("click", event => {
   }
   const showWorkstream = event.target.closest("[data-workstream-show]");
   if (showWorkstream) {
-    if (workstreamMenu) workstreamMenu.hidden = true;
-    workstreamIndicator?.setAttribute("aria-expanded", "false");
-    showWorkstreamUpdate(showWorkstream.dataset.workstreamShow);
+    const workstreamId = showWorkstream.dataset.workstreamShow;
+    showWorkstreamUpdate(workstreamId);
     return;
   }
   const archiveWorkstream = event.target.closest("[data-workstream-archive]");
@@ -4932,10 +4984,6 @@ document.addEventListener("pointerdown", event => {
   if (!event.target.closest("#teamMentionMenu") && event.target !== teamMentionState.textarea) {
     closeTeamMentionMenu();
   }
-  if (workstreamMenu && !event.target.closest("#workstreamControl")) {
-    workstreamMenu.hidden = true;
-    workstreamIndicator?.setAttribute("aria-expanded", "false");
-  }
 });
 window.addEventListener("resize", () => {
   if (teamMentionState.textarea) positionTeamMentionMenu(teamMentionState.textarea);
@@ -4947,7 +4995,7 @@ promptOptionsButton.addEventListener("click", event => {
   event.stopPropagation();
   setPromptOptionsOpen(!state.promptOptionsOpen);
 });
-workstreamIndicator?.addEventListener("click", requestWorkstreamUpdate);
+workstreamRailToggle?.addEventListener("click", () => setWorkstreamRailCollapsed(!state.workstreamRailCollapsed));
 playbackNextButton?.addEventListener("click", advanceInvestigationPlayback);
 intelligenceModeSelect?.addEventListener("change", changeIntelligenceMode);
 workstreamComposerCancel?.addEventListener("click", () => setWorkstreamComposerMode(false));
@@ -4974,6 +5022,7 @@ attachTeamMentionAutocomplete(promptInput);
 attachTeamMentionAutocomplete(stepInjectPrompt);
 initPanelResizers();
 loadInvestigationRegistry();
+loadWorkstreamSeenState();
 renderInvestigationSelector();
 
 async function boot() {
