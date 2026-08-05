@@ -188,6 +188,15 @@ class MemberUiRegressionTests(unittest.TestCase):
         )
         self.assertIn('<td colspan="7" class="empty-cell">', self.app)
 
+    def test_every_result_column_supports_filtering_and_sorting(self):
+        self.assertIn("function enhanceResultsTable(layer)", self.app)
+        self.assertIn('data-result-sort="${column}"', self.app)
+        self.assertIn('data-result-filter="${column}"', self.app)
+        self.assertIn("function applyResultTableControls(layerId)", self.app)
+        self.assertIn("resultTableControls: new Map()", self.app)
+        self.assertIn(".result-column-sort", self.styles)
+        self.assertIn(".result-column-filter", self.styles)
+
     def test_moshe_tools_use_readable_shared_activity_labels(self):
         self.assertIn('prepare_target_candidate: "הכנת מועמד מטרה"', self.app)
         self.assertIn('create_target_candidate: "יצירת מועמד מטרה"', self.app)

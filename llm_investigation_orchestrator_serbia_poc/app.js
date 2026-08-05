@@ -243,6 +243,7 @@ const state = {
   activeLayerId: null,
   rawOverlayMinimized: false,
   rawOverlayHeight: 28,
+  resultTableControls: new Map(),
   chatPanelCollapsed: false,
   queryEdited: false,
   originalQuery: null,
@@ -4219,6 +4220,91 @@ function renderTimeline() {
   timeline.innerHTML = aggregationHtml + eventHtml;
 }
 
+function resultTableControl(layerId) {
+  const key = String(layerId || "default");
+  if (!state.resultTableControls.has(key)) {
+    state.resultTableControls.set(key, { filters: {}, sortColumn: null, sortDirection: "asc" });
+  }
+  return state.resultTableControls.get(key);
+}
+
+function normalizedTableCellText(value) {
+  return String(value || "").replace(/\s+/g, " ").trim();
+}
+
+function resultTableSortValue(value) {
+  const text = normalizedTableCellText(value);
+  const numeric = Number(text.replace(/[,%\s]/g, ""));
+  if (text && Number.isFinite(numeric)) return { type: "number", value: numeric };
+  const timestamp = /^\d{4}-\d{2}-\d{2}(?:T|\s)/.test(text) ? Date.parse(text) : NaN;
+  if (Number.isFinite(timestamp)) return { type: "number", value: timestamp };
+  return { type: "text", value: text };
+}
+
+function applyResultTableControls(layerId) {
+  const head = document.getElementById("evidenceHead");
+  const body = document.getElementById("evidenceRows");
+  if (!head || !body) return;
+  const control = resultTableControl(layerId);
+  const rows = [...body.querySelectorAll("tr:not(.result-table-no-match)")]
+    .filter(row => !row.querySelector(".empty-cell"));
+  rows.forEach((row, originalIndex) => {
+    if (!row.dataset.resultTableOriginalIndex) row.dataset.resultTableOriginalIndex = String(originalIndex);
+    const visible = Object.entries(control.filters).every(([column, filter]) => {
+      if (!filter) return true;
+      const cell = row.cells[Number(column)];
+      return normalizedTableCellText(cell?.textContent).toLocaleLowerCase("he")
+        .includes(normalizedTableCellText(filter).toLocaleLowerCase("he"));
+    });
+    row.hidden = !visible;
+  });
+
+  if (Number.isInteger(control.sortColumn)) {
+    const direction = control.sortDirection === "desc" ? -1 : 1;
+    rows.sort((a, b) => {
+      const left = resultTableSortValue(a.cells[control.sortColumn]?.textContent);
+      const right = resultTableSortValue(b.cells[control.sortColumn]?.textContent);
+      if (left.type === "number" && right.type === "number") return (left.value - right.value) * direction;
+      return String(left.value).localeCompare(String(right.value), "he", {
+        numeric: true,
+        sensitivity: "base"
+      }) * direction;
+    });
+    rows.forEach(row => body.appendChild(row));
+  }
+
+  body.querySelector(".result-table-no-match")?.remove();
+  if (rows.length && !rows.some(row => !row.hidden)) {
+    const noMatch = document.createElement("tr");
+    noMatch.className = "result-table-no-match";
+    noMatch.innerHTML = `<td colspan="${head.querySelectorAll("th").length}" class="empty-cell">לא נמצאו תוצאות התואמות למסננים.</td>`;
+    body.appendChild(noMatch);
+  }
+}
+
+function enhanceResultsTable(layer) {
+  const head = document.getElementById("evidenceHead");
+  if (!head || !layer) return;
+  const control = resultTableControl(layer.id);
+  [...head.querySelectorAll("th")].forEach((cell, column) => {
+    const label = normalizedTableCellText(cell.textContent);
+    const activeSort = control.sortColumn === column;
+    const directionLabel = activeSort
+      ? (control.sortDirection === "asc" ? "ממוין בסדר עולה" : "ממוין בסדר יורד")
+      : "לא ממוין";
+    cell.setAttribute("aria-sort", activeSort ? (control.sortDirection === "asc" ? "ascending" : "descending") : "none");
+    cell.innerHTML = `
+      <div class="result-column-header">
+        <button type="button" class="result-column-sort" data-result-sort="${column}" data-result-layer="${escapeHtml(String(layer.id))}" title="מיון לפי ${escapeHtml(label)}. ${directionLabel}">
+          <span>${escapeHtml(label)}</span>
+          <span class="material-symbols-rounded" aria-hidden="true">${activeSort ? (control.sortDirection === "asc" ? "arrow_upward" : "arrow_downward") : "unfold_more"}</span>
+        </button>
+        <input type="search" class="result-column-filter" data-result-filter="${column}" data-result-layer="${escapeHtml(String(layer.id))}" value="${escapeHtml(String(control.filters[column] || ""))}" placeholder="סינון" aria-label="סינון ${escapeHtml(label)}">
+      </div>`;
+  });
+  applyResultTableControls(layer.id);
+}
+
 function renderEvidence() {
   const overlay = document.getElementById("rawEventsOverlay");
   const viewStack = overlay?.closest(".view-stack");
@@ -4298,6 +4384,7 @@ function renderEvidence() {
         <td>${(item.source_types || []).length ? (item.source_types || []).map(sourceType => `<span class="target-source-type">${escapeHtml(String(sourceType))}</span>`).join("<br>") : "-"}</td>
         <td><strong>${Number(item.evidence_count || (item.raw_data_references || []).length || 0).toLocaleString("he-IL")}</strong></td>
       </tr>`).join("") : '<tr><td colspan="9" class="empty-cell">לא נמצאו מועמדי מטרות להצגה.</td></tr>';
+    enhanceResultsTable(activeLayer);
     return;
   }
   if (activeLayer.kind === "location_metadata") {
@@ -4311,6 +4398,7 @@ function renderEvidence() {
         <td>${escapeHtml(item.precision || "-")}</td>
         <td dir="ltr">${escapeHtml(item.location_id || "-")}</td>
       </tr>`).join("") : '<tr><td colspan="6" class="empty-cell">השכבה מוסתרת או ריקה.</td></tr>';
+    enhanceResultsTable(activeLayer);
     return;
   }
   if (activeLayer.kind === "entity_metadata") {
@@ -4328,6 +4416,7 @@ function renderEvidence() {
         <td dir="ltr">${escapeHtml(item.entity_id || "-")}</td>
       </tr>`;
     }).join("") : '<tr><td colspan="6" class="empty-cell">השכבה מוסתרת או ריקה.</td></tr>';
+    enhanceResultsTable(activeLayer);
     return;
   }
   if (activeLayer.kind === "locations") {
@@ -4339,6 +4428,7 @@ function renderEvidence() {
         <td dir="ltr">${escapeHtml(item.location_id || item.key || "-")}</td>
         <td>${escapeHtml(activeLayer.label)}</td>
       </tr>`).join("") : '<tr><td colspan="4" class="empty-cell">השכבה מוסתרת או ריקה.</td></tr>';
+    enhanceResultsTable(activeLayer);
     return;
   }
   if (activeLayer.kind === "time_aggregation") {
@@ -4350,6 +4440,7 @@ function renderEvidence() {
         <td>${escapeHtml(item.group_by === "hour" ? "שעה" : "תאריך")}</td>
         <td>${escapeHtml(item.summary || "-")}</td>
       </tr>`).join("") : '<tr><td colspan="4" class="empty-cell">השכבה מוסתרת או ריקה.</td></tr>';
+    enhanceResultsTable(activeLayer);
     return;
   }
   if (activeLayer.kind === "group_aggregation") {
@@ -4362,6 +4453,7 @@ function renderEvidence() {
         <td dir="ltr">${escapeHtml(item.first_event_id || item.first_event_time || "-")}</td>
         <td dir="ltr">${escapeHtml(item.last_event_id || item.last_event_time || "-")}</td>
       </tr>`).join("") : '<tr><td colspan="5" class="empty-cell">השכבה מוסתרת או ריקה.</td></tr>';
+    enhanceResultsTable(activeLayer);
     return;
   }
   head.innerHTML = "<tr><th>מזהה רשומה</th><th>זמן</th><th>אמינות</th><th>ודאות</th><th>גורם</th><th>מיקום</th><th>תקציר</th></tr>";
@@ -4375,6 +4467,7 @@ function renderEvidence() {
       <td>${escapeHtml(event.location_name || "-")}</td>
       <td>${escapeHtml(event.event_summary || "-")}</td>
     </tr>`).join("") : '<tr><td colspan="7" class="empty-cell">השכבה מוסתרת או ריקה.</td></tr>';
+  enhanceResultsTable(activeLayer);
 }
 
 function resetInvestigation(options = {}) {
@@ -4390,6 +4483,7 @@ function resetInvestigation(options = {}) {
   state.activeLayerId = null;
   state.rawOverlayMinimized = false;
   state.rawOverlayHeight = 28;
+  state.resultTableControls.clear();
   state.history = [];
   state.workstreamLoadToken += 1;
   state.workstreams = [];
@@ -4440,7 +4534,30 @@ function escapeHtml(value) {
   return value.replace(/[&<>'"]/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[char]);
 }
 
+document.addEventListener("input", event => {
+  const filter = event.target.closest(".result-column-filter[data-result-filter]");
+  if (!filter) return;
+  const control = resultTableControl(filter.dataset.resultLayer);
+  control.filters[Number(filter.dataset.resultFilter)] = filter.value;
+  applyResultTableControls(filter.dataset.resultLayer);
+});
+
 document.addEventListener("click", event => {
+  const resultSort = event.target.closest(".result-column-sort[data-result-sort]");
+  if (resultSort) {
+    const layerId = resultSort.dataset.resultLayer;
+    const column = Number(resultSort.dataset.resultSort);
+    const control = resultTableControl(layerId);
+    if (control.sortColumn === column) {
+      control.sortDirection = control.sortDirection === "asc" ? "desc" : "asc";
+    } else {
+      control.sortColumn = column;
+      control.sortDirection = "asc";
+    }
+    const layer = state.layers.find(item => String(item.id) === String(layerId));
+    if (layer) renderEvidence();
+    return;
+  }
   const michlolMember = event.target.closest(".michlol-member[data-member-id]");
   if (michlolMember) {
     selectConversationMember(michlolMember.dataset.memberId);
