@@ -97,9 +97,7 @@ class WorkstreamUiTests(unittest.TestCase):
         self.assertIn("investigation_id: state.investigationId", self.app)
         self.assertIn("advanceInvestigationPlayback", self.app)
         self.assertIn("changeIntelligenceMode", self.app)
-        self.assertIn("initializeHistoricalPlayback", self.app)
-        self.assertIn('mode: "historical"', self.app)
-        self.assertIn("reset: true", self.app)
+        self.assertNotIn("initializeHistoricalPlayback", self.app)
         self.assertIn('state.investigationPlayback?.mode !== "real_time"', self.app)
         self.assertIn("reevaluation?.assessment?.answer", self.app)
         self.assertIn("appendMoshePlaybackAssessment", self.app)
@@ -107,13 +105,12 @@ class WorkstreamUiTests(unittest.TestCase):
         self.assertIn("toggleFinalAnswerVisibility(result, \"\", button)", self.app)
         self.assertIn(".playback-header-button", self.styles)
 
-    def test_boot_resets_playback_while_staying_in_historical_mode(self):
+    def test_boot_does_not_reset_playback_or_change_investigation_identity(self):
         boot_start = self.app.index("async function boot()")
-        initialize = self.app.index(
-            "await initializeHistoricalPlayback();", boot_start
-        )
-        load_workstreams = self.app.index("await loadWorkstreams();", boot_start)
-        self.assertLess(initialize, load_workstreams)
+        boot = self.app[boot_start:]
+        self.assertNotIn("initializeHistoricalPlayback", boot)
+        self.assertIn("await loadWorkstreams();", boot)
+        self.assertNotIn("allowLatestFallback", boot)
 
     def test_reopened_workstream_shows_active_artifact_details(self):
         self.assertIn("function workstreamArtifactHtml(workstream)", self.app)
@@ -137,20 +134,42 @@ class WorkstreamUiTests(unittest.TestCase):
         self.assertIn("loadWorkstreams();", self.app)
         self.assertIn("renderWorkstreamIndicator();", self.app)
 
-    def test_desktop_adopts_server_workstream_investigation_before_memory_load(self):
-        self.assertIn("function adoptCanonicalWorkstreamInvestigation(investigationId)", self.app)
-        self.assertIn("&fallback=latest", self.app)
+    def test_workstreams_cannot_replace_selected_investigation(self):
+        self.assertNotIn("adoptCanonicalWorkstreamInvestigation", self.app)
+        self.assertNotIn("fallback=latest", self.app)
+        self.assertNotIn("allowLatestFallback", self.app)
         self.assertIn(
-            "adoptCanonicalWorkstreamInvestigation(payload.canonical_investigation_id)",
+            "fetch(`/api/workstreams?investigation_id=${encodeURIComponent(investigationId)}`",
+            self.app,
+        )
+
+    def test_explicit_investigation_selection_loads_only_selected_context(self):
+        self.assertIn("void loadSelectedInvestigation(investigation.id);", self.app)
+        self.assertIn("async function loadSelectedInvestigation(investigationId)", self.app)
+        self.assertIn("if (state.investigationId !== investigationId) return;", self.app)
+        self.assertIn(
+            "token !== state.workstreamLoadToken || investigationId !== state.investigationId",
+            self.app,
+        )
+
+    def test_investigation_list_is_independent_from_active_name(self):
+        self.assertIn('investigationSearchQuery: ""', self.app)
+        self.assertIn("matchingInvestigations(state.investigationSearchQuery)", self.app)
+        self.assertIn("state.investigationSearchQuery = investigationInput.value;", self.app)
+        self.assertNotIn("matchingInvestigations(investigationInput.value)", self.app)
+
+    def test_old_investigation_registry_is_removed(self):
+        self.assertIn(
+            'const INVESTIGATIONS_STORAGE_KEY = "serbia-poc-investigations-v2";',
             self.app,
         )
         self.assertIn(
-            "loadWorkstreams().then(() => loadInvestigationMemory", self.app
+            'const LEGACY_INVESTIGATIONS_STORAGE_KEYS = ["serbia-poc-investigations-v1"];',
+            self.app,
         )
-        boot_start = self.app.index("async function boot()")
-        self.assertLess(
-            self.app.index("await loadWorkstreams();", boot_start),
-            self.app.index("await loadInvestigationMemory", boot_start),
+        self.assertIn(
+            "LEGACY_INVESTIGATIONS_STORAGE_KEYS.forEach(key => localStorage.removeItem(key));",
+            self.app,
         )
 
     def test_tracking_and_workstream_messages_have_visible_states(self):

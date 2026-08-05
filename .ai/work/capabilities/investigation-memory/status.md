@@ -4,16 +4,16 @@
 Investigation Memory (`investigation-memory`)
 
 ## Current Phase
-Slices 4-5 developer/product/UX review.
+Checkpoint 007 deployed; user acceptance.
 
 ## Overall Status
-Slices 4-5 are implemented and ready for developer/product/UX review. Selecting an investigation now loads saved memory, reopens saved catalog-backed layers with filters, and provides saved memory to the agent as investigation context.
+The investigation-isolation fix and legacy investigation reset are deployed. Production has zero persisted investigations, and browsers remove the legacy registry when they load `v133`. Workstreams remain untouched.
 
 ## Who Needs To Act Now
 
 | Role | Status | Required Action | Due Before |
 |---|---|---|---|
-| Development | Review needed | Review memory loading, layer restore, and agent-context injection. | Before merge |
+| Development | Complete | Investigation isolation deployed and publicly verified. | Done |
 | Product | Review needed | Confirm restore/context behavior and catalog-only visual restore limitation. | Before merge |
 | UX | Review needed | Confirm restored layers/filters appear as expected when switching investigations. | Before merge |
 | QA | Review needed | Validate save, switch investigation, restore layers/filters, and agent context continuity. | Before merge |
@@ -46,4 +46,4 @@ Not created yet. Local issue body can be added if this capability continues beyo
 | TBD | Development/Product/QA | Provide saved memory to agent prompt context. | Complete in `checkpoint-005.md`; awaiting review | No |
 
 ## Latest Change Since Previous Review
-Slices 4-5 load saved investigation memory when an investigation is selected, reopen saved catalog-backed layers with saved filters, and include saved chat/layer memory in `investigation_state` for Hermes.
+Checkpoint 007 moves the browser registry to `v2`, actively removes the legacy `v1` registry, and prepares a recoverable production investigation-memory reset.

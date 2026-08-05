@@ -1,5 +1,27 @@
 # Capability Decisions
 
+### 2026-08-04 — Treat active investigation as exact user selection
+
+Decision:
+The active investigation is the single investigation selected by the user. Opening the selector shows all registered investigations, with only the selected row marked active. Explicit selection loads only data scoped to that investigation.
+
+Context:
+The selector reused the active investigation name as its filter, which hid other investigations, while workstream loading could use a latest-investigation fallback and silently replace an explicit selection.
+
+Rationale:
+Visible selection and underlying workspace identity must remain aligned. An empty investigation is valid and must not inherit another investigation's state.
+
+Alternatives considered:
+- Keep filtering by the active investigation name.
+- Keep latest-investigation fallback after every selection.
+- Add a server-owned investigation registry in this bug-fix slice.
+
+Impact:
+Explicit selection is exact and race-safe. The latest fallback remains bootstrap-only for legacy continuity. Investigation registry persistence remains browser-local.
+
+Follow-ups:
+Perform manual browser acceptance and reconsider server-owned investigation persistence if cross-device continuity becomes a requirement.
+
 ### 2026-07-27 — Treat the selected teammate as the implicit chat addressee
 
 Decision:

@@ -170,7 +170,8 @@ function liveStepsUrl(currentPrompt) {
     : "/api/live-steps?agent=general";
 }
 
-const INVESTIGATIONS_STORAGE_KEY = "serbia-poc-investigations-v1";
+const INVESTIGATIONS_STORAGE_KEY = "serbia-poc-investigations-v2";
+const LEGACY_INVESTIGATIONS_STORAGE_KEYS = ["serbia-poc-investigations-v1"];
 const DEFAULT_INVESTIGATION_NAME = "חקירה חדשה";
 const TEAM_MENTION_AGENT_INSTRUCTION = [
   "הנחיית ממשק קבועה:",
@@ -212,6 +213,7 @@ const state = {
   investigationMemoryError: "",
   investigationMemoryLoadToken: 0,
   investigationSelectorOpen: false,
+  investigationSearchQuery: "",
   recordedQuestions: [],
   savedQuestions: [],
   busy: false,
@@ -1765,6 +1767,7 @@ function ensureInvestigationRecord(name) {
 function loadInvestigationRegistry() {
   let registry = null;
   try {
+    LEGACY_INVESTIGATIONS_STORAGE_KEYS.forEach(key => localStorage.removeItem(key));
     registry = JSON.parse(localStorage.getItem(INVESTIGATIONS_STORAGE_KEY) || "null");
   } catch (error) {
     registry = null;
@@ -1807,7 +1810,7 @@ function renderInvestigationSelector() {
   if (document.activeElement !== investigationInput) {
     investigationInput.value = state.investigationName || DEFAULT_INVESTIGATION_NAME;
   }
-  const matches = matchingInvestigations(investigationInput.value);
+  const matches = matchingInvestigations(state.investigationSearchQuery);
   investigationInput.setAttribute("aria-expanded", state.investigationSelectorOpen && matches.length ? "true" : "false");
   investigationList.hidden = !state.investigationSelectorOpen || !matches.length;
   investigationList.innerHTML = matches.map(item => `
@@ -1823,6 +1826,7 @@ function selectInvestigation(investigation, options = {}) {
   state.investigationId = investigation.id;
   state.investigationName = investigation.name;
   state.investigationSelectorOpen = false;
+  state.investigationSearchQuery = "";
   state.investigationMemoryLoadToken += 1;
   state.investigationMemory = null;
   state.investigationMemoryError = "";
@@ -1831,8 +1835,14 @@ function selectInvestigation(investigation, options = {}) {
   saveInvestigationRegistry();
   resetInvestigation({ keepInvestigation: true });
   renderInvestigationSelector();
-  loadWorkstreams().then(() => loadInvestigationMemory({ restoreLayers: true }));
+  void loadSelectedInvestigation(investigation.id);
   if (options.focusInput) investigationInput?.focus();
+}
+
+async function loadSelectedInvestigation(investigationId) {
+  await loadWorkstreams();
+  if (state.investigationId !== investigationId) return;
+  await loadInvestigationMemory({ restoreLayers: true });
 }
 
 function addOrSelectInvestigation() {
@@ -1847,6 +1857,7 @@ function addOrSelectInvestigation() {
 
 function setInvestigationSelectorOpen(open) {
   state.investigationSelectorOpen = !!open;
+  if (!state.investigationSelectorOpen) state.investigationSearchQuery = "";
   renderInvestigationSelector();
 }
 
@@ -2208,12 +2219,31 @@ function initMap() {
   state.map.on("load", () => { state.mapReady = true; renderMap(); });
 }
 
+const CONVERSATION_BOTTOM_THRESHOLD_PX = 96;
+
+function conversationIsNearBottom() {
+  return conversation.scrollHeight - conversation.scrollTop - conversation.clientHeight <= CONVERSATION_BOTTOM_THRESHOLD_PX;
+}
+
+function scrollConversationToLatest() {
+  conversation.scrollTop = conversation.scrollHeight;
+  requestAnimationFrame(() => {
+    conversation.scrollTop = conversation.scrollHeight;
+  });
+}
+
+function followConversationAfterUpdate(shouldFollow) {
+  if (shouldFollow) scrollConversationToLatest();
+}
+
 function appendMessage(role, html, options = {}) {
+  const shouldFollow = role === "user" || conversationIsNearBottom();
   const article = document.createElement("article");
   article.className = `message ${role === "user" ? "user-message" : "assistant-message"}${options.className ? ` ${options.className}` : ""}`;
   if (options.memberId) article.dataset.conversationMemberId = options.memberId;
   article.innerHTML = `<div class="message-label">${escapeHtml(options.label || (role === "user" ? "אנליסט" : assistantMessageLabel()))}</div>${html}`;
   conversation.appendChild(article);
+  followConversationAfterUpdate(shouldFollow);
   return article;
 }
 
@@ -2224,24 +2254,9 @@ function thinkingIndicatorHtml() {
     </span>`;
 }
 
-function scrollConversationToLatest() {
-  conversation.scrollTop = conversation.scrollHeight;
-}
-
 function activeWorkstreams() {
   if (state.investigationPlayback?.mode !== "real_time") return [];
   return state.workstreams.filter(item => item?.status !== "archived");
-}
-
-function adoptCanonicalWorkstreamInvestigation(investigationId) {
-  const canonicalId = String(investigationId || "").trim();
-  if (!canonicalId || canonicalId === state.investigationId) return false;
-  const active = state.investigations.find(item => item.id === state.investigationId);
-  if (active) active.id = canonicalId;
-  state.investigationId = canonicalId;
-  saveInvestigationRegistry();
-  renderInvestigationSelector();
-  return true;
 }
 
 const WORKSTREAM_STATUS_LABELS = {
@@ -2275,14 +2290,14 @@ function renderWorkstreamIndicator() {
 
 async function loadWorkstreams() {
   if (!state.investigationId) return [];
+  const investigationId = state.investigationId;
   const token = ++state.workstreamLoadToken;
   state.workstreamsLoading = true;
   try {
-    const response = await fetch(`/api/workstreams?investigation_id=${encodeURIComponent(state.investigationId)}&fallback=latest`, { cache: "no-store" });
+    const response = await fetch(`/api/workstreams?investigation_id=${encodeURIComponent(investigationId)}`, { cache: "no-store" });
     const payload = await response.json();
     if (!response.ok) throw new Error(payload.error || "טעינת המעקבים נכשלה");
-    if (token !== state.workstreamLoadToken) return [];
-    adoptCanonicalWorkstreamInvestigation(payload.canonical_investigation_id);
+    if (token !== state.workstreamLoadToken || investigationId !== state.investigationId) return [];
     state.workstreams = Array.isArray(payload.workstreams) ? payload.workstreams : [];
     renderWorkstreamIndicator();
     void fetchInvestigationPlayback().catch(() => {
@@ -2466,25 +2481,6 @@ function appendMoshePlaybackAssessment(assessment = {}) {
     updateSourceVisibilityBtn(button);
   }
   return article;
-}
-
-async function initializeHistoricalPlayback() {
-  const investigationId = String(state.investigationId || "").trim();
-  if (!investigationId) return null;
-  const response = await fetch("/api/playback/mode", {
-    method: "POST",
-    headers: { "Content-Type": "application/json; charset=utf-8" },
-    body: JSON.stringify({
-      investigation_id: investigationId,
-      mode: "historical",
-      reset: true,
-    }),
-  });
-  const payload = await response.json();
-  if (!response.ok) throw new Error(payload.error || "אתחול מצב המידע נכשל");
-  state.investigationPlayback = payload;
-  renderInvestigationPlayback();
-  return payload;
 }
 
 async function advanceInvestigationPlayback() {
@@ -2734,6 +2730,7 @@ async function archiveWorkstreamFromChat(workstreamId) {
 }
 
 function startAssistantResearchMessage(message = "") {
+  const shouldFollow = conversationIsNearBottom();
   const article = document.createElement("article");
   article.className = "message assistant-message";
   article.innerHTML = `
@@ -2747,6 +2744,7 @@ function startAssistantResearchMessage(message = "") {
   state.activeAssistantMessage = article;
   state.activeActivityEmpty = article.querySelector(".activity-empty");
   state.activeActivityList = article.querySelector(".activity-list");
+  followConversationAfterUpdate(shouldFollow);
   return article;
 }
 
@@ -2757,13 +2755,16 @@ function ensureAssistantResearchMessage(message) {
 }
 
 function setActiveResearchMessage(message) {
+  const shouldFollow = conversationIsNearBottom();
   ensureAssistantResearchMessage(message);
   state.activeActivityList.innerHTML = "";
   state.activeActivityEmpty.hidden = false;
   state.activeActivityEmpty.textContent = message;
+  followConversationAfterUpdate(shouldFollow);
 }
 
 function finalizeAssistantMessage(answer, options = {}) {
+  const shouldFollow = conversationIsNearBottom();
   ensureAssistantResearchMessage();
   const article = state.activeAssistantMessage;
   const label = article.querySelector(".message-label");
@@ -2829,6 +2830,7 @@ function finalizeAssistantMessage(answer, options = {}) {
   state.activeAssistantMessage = null;
   state.activeActivityList = null;
   state.activeActivityEmpty = null;
+  followConversationAfterUpdate(shouldFollow);
 }
 
 function showFinalAnswerResult(result, prompt) {
@@ -3387,6 +3389,7 @@ function toggleStepVisibility(step, btn) {
 }
 
 function addActivity(tool, detail, result, options = {}) {
+  const shouldFollow = options.manageConversationScroll !== false && conversationIsNearBottom();
   ensureAssistantResearchMessage();
   const item = document.createElement("li");
   item.className = "activity-item";
@@ -3456,6 +3459,7 @@ function addActivity(tool, detail, result, options = {}) {
     continueBtn.addEventListener("click", () => openStepInjectModal(label, stepNumber));
   }
   state.activeActivityList.appendChild(item);
+  followConversationAfterUpdate(shouldFollow);
 }
 
 function setSuggestions(items) {
@@ -3516,6 +3520,7 @@ function inferRecommendedView(prompt, answer) {
 }
 
 function renderActivitySteps(steps, sourceBase = null) {
+  const shouldFollow = conversationIsNearBottom();
   ensureAssistantResearchMessage();
   state.activeActivityList.innerHTML = "";
   const internalWorkstreamTools = new Set([
@@ -3532,11 +3537,13 @@ function renderActivitySteps(steps, sourceBase = null) {
       rationale: explanation.decision || step.rationale || step.decision,
       technical: step.technical,
       isError: step.technical?.is_error,
+      manageConversationScroll: false,
       stepData: step,
       sourceId: stepSourceId(sourceBase || state.lastResult || state.investigationId, number),
       sourceLabel: `צעד ${number}: ${humanToolLabel(step.tool)}`
     });
   });
+  followConversationAfterUpdate(shouldFollow);
 }
 
 function sleep(ms) {
@@ -4738,8 +4745,15 @@ promptInput.addEventListener("keydown", event => {
   }
 });
 
-investigationInput?.addEventListener("focus", () => setInvestigationSelectorOpen(true));
-investigationInput?.addEventListener("input", () => setInvestigationSelectorOpen(true));
+investigationInput?.addEventListener("focus", () => {
+  state.investigationSearchQuery = "";
+  setInvestigationSelectorOpen(true);
+  investigationInput.select();
+});
+investigationInput?.addEventListener("input", () => {
+  state.investigationSearchQuery = investigationInput.value;
+  setInvestigationSelectorOpen(true);
+});
 investigationInput?.addEventListener("keydown", event => {
   if (event.key === "Enter") {
     event.preventDefault();
@@ -4812,7 +4826,6 @@ renderInvestigationSelector();
 async function boot() {
   initMap();
   await loadLayerCatalog();
-  await initializeHistoricalPlayback();
   await loadWorkstreams();
   await loadInvestigationMemory({ restoreLayers: true });
   let runtimeStatus = null;
