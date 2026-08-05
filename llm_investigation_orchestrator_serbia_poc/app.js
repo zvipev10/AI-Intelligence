@@ -4223,7 +4223,12 @@ function renderTimeline() {
 function resultTableControl(layerId) {
   const key = String(layerId || "default");
   if (!state.resultTableControls.has(key)) {
-    state.resultTableControls.set(key, { filters: {}, sortColumn: null, sortDirection: "asc" });
+    state.resultTableControls.set(key, {
+      filters: {},
+      sortColumn: null,
+      sortDirection: "asc",
+      openFilterColumn: null
+    });
   }
   return state.resultTableControls.get(key);
 }
@@ -4289,6 +4294,8 @@ function enhanceResultsTable(layer) {
   [...head.querySelectorAll("th")].forEach((cell, column) => {
     const label = normalizedTableCellText(cell.textContent);
     const activeSort = control.sortColumn === column;
+    const filterValue = String(control.filters[column] || "");
+    const filterOpen = control.openFilterColumn === column;
     const directionLabel = activeSort
       ? (control.sortDirection === "asc" ? "ממוין בסדר עולה" : "ממוין בסדר יורד")
       : "לא ממוין";
@@ -4299,10 +4306,20 @@ function enhanceResultsTable(layer) {
           <span>${escapeHtml(label)}</span>
           <span class="material-symbols-rounded" aria-hidden="true">${activeSort ? (control.sortDirection === "asc" ? "arrow_upward" : "arrow_downward") : "unfold_more"}</span>
         </button>
-        <input type="search" class="result-column-filter" data-result-filter="${column}" data-result-layer="${escapeHtml(String(layer.id))}" value="${escapeHtml(String(control.filters[column] || ""))}" placeholder="סינון" aria-label="סינון ${escapeHtml(label)}">
-      </div>`;
+        <button type="button" class="result-column-filter-toggle ${filterValue ? "active" : ""}" data-result-filter-toggle="${column}" data-result-layer="${escapeHtml(String(layer.id))}" title="סינון לפי ${escapeHtml(label)}" aria-label="סינון לפי ${escapeHtml(label)}" aria-expanded="${filterOpen ? "true" : "false"}">
+          <span class="material-symbols-rounded" aria-hidden="true">filter_alt</span>
+        </button>
+      </div>
+      ${filterOpen ? `
+        <div class="result-column-filter-popover">
+          <input type="search" class="result-column-filter" data-result-filter="${column}" data-result-layer="${escapeHtml(String(layer.id))}" value="${escapeHtml(filterValue)}" placeholder="סינון ${escapeHtml(label)}" aria-label="סינון ${escapeHtml(label)}">
+          ${filterValue ? `<button type="button" class="result-column-filter-clear" data-result-filter-clear="${column}" data-result-layer="${escapeHtml(String(layer.id))}" title="נקה סינון" aria-label="נקה סינון"><span class="material-symbols-rounded" aria-hidden="true">close</span></button>` : ""}
+        </div>` : ""}`;
   });
   applyResultTableControls(layer.id);
+  if (Number.isInteger(control.openFilterColumn)) {
+    head.querySelector(`.result-column-filter[data-result-filter="${control.openFilterColumn}"]`)?.focus();
+  }
 }
 
 function renderEvidence() {
@@ -4543,6 +4560,25 @@ document.addEventListener("input", event => {
 });
 
 document.addEventListener("click", event => {
+  const columnFilterToggle = event.target.closest(".result-column-filter-toggle[data-result-filter-toggle]");
+  if (columnFilterToggle) {
+    const layerId = columnFilterToggle.dataset.resultLayer;
+    const column = Number(columnFilterToggle.dataset.resultFilterToggle);
+    const control = resultTableControl(layerId);
+    control.openFilterColumn = control.openFilterColumn === column ? null : column;
+    renderEvidence();
+    return;
+  }
+  const filterClear = event.target.closest(".result-column-filter-clear[data-result-filter-clear]");
+  if (filterClear) {
+    const layerId = filterClear.dataset.resultLayer;
+    const column = Number(filterClear.dataset.resultFilterClear);
+    const control = resultTableControl(layerId);
+    control.filters[column] = "";
+    control.openFilterColumn = null;
+    renderEvidence();
+    return;
+  }
   const resultSort = event.target.closest(".result-column-sort[data-result-sort]");
   if (resultSort) {
     const layerId = resultSort.dataset.resultLayer;

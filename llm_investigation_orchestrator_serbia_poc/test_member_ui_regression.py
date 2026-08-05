@@ -196,6 +196,8 @@ class MemberUiRegressionTests(unittest.TestCase):
         self.assertIn("resultTableControls: new Map()", self.app)
         self.assertIn(".result-column-sort", self.styles)
         self.assertIn(".result-column-filter", self.styles)
+        self.assertIn(".result-column-filter-toggle", self.styles)
+        self.assertIn('data-result-filter-toggle="${column}"', self.app)
 
     def test_moshe_tools_use_readable_shared_activity_labels(self):
         self.assertIn('prepare_target_candidate: "הכנת מועמד מטרה"', self.app)
