@@ -1,0 +1,130 @@
+[
+  {
+    "entity_id": "ENT-KFOR",
+    "canonical_name": "KFOR",
+    "aliases": [
+      "KFOR"
+    ],
+    "entity_type": "גורם מדווח"
+  },
+  {
+    "entity_id": "ENT-EULEX",
+    "canonical_name": "EULEX",
+    "aliases": [
+      "EULEX"
+    ],
+    "entity_type": "גורם מדווח"
+  },
+  {
+    "entity_id": "ENT-KSF",
+    "canonical_name": "KSF",
+    "aliases": [
+      "KSF"
+    ],
+    "entity_type": "גורם מדווח"
+  },
+  {
+    "entity_id": "ENT-KOSOVO-POLICE",
+    "canonical_name": "משטרת קוסובו",
+    "aliases": [
+      "משטרת קוסובו"
+    ],
+    "entity_type": "גורם מדווח"
+  },
+  {
+    "entity_id": "ENT-KOSOVO-SPECIAL-POLICE",
+    "canonical_name": "יחידה מיוחדת של משטרת קוסובו",
+    "aliases": [
+      "יחידה מיוחדת של משטרת קוסובו"
+    ],
+    "entity_type": "גורם מדווח"
+  },
+  {
+    "entity_id": "ENT-KOSOVO-MOI",
+    "canonical_name": "משרד הפנים של קוסובו",
+    "aliases": [
+      "משרד הפנים של קוסובו"
+    ],
+    "entity_type": "גורם מדווח"
+  },
+  {
+    "entity_id": "ENT-KOSOVO-GOV",
+    "canonical_name": "ממשלת קוסובו",
+    "aliases": [
+      "ממשלת קוסובו"
+    ],
+    "entity_type": "גורם מדווח"
+  },
+  {
+    "entity_id": "ENT-SERBIA-GOV",
+    "canonical_name": "ממשלת סרביה",
+    "aliases": [
+      "ממשלת סרביה"
+    ],
+    "entity_type": "גורם מדווח"
+  },
+  {
+    "entity_id": "ENT-SERBIAN-ARMY",
+    "canonical_name": "צבא סרביה",
+    "aliases": [
+      "צבא סרביה"
+    ],
+    "entity_type": "גורם מדווח"
+  },
+  {
+    "entity_id": "ENT-SERBIAN-PROTESTERS",
+    "canonical_name": "מפגינים סרבים מקומיים",
+    "aliases": [
+      "מפגינים סרבים מקומיים"
+    ],
+    "entity_type": "גורם מדווח"
+  },
+  {
+    "entity_id": "ENT-LOCAL-SERBIAN-LEADERS",
+    "canonical_name": "מנהיגים מקומיים סרבים",
+    "aliases": [
+      "מנהיגים מקומיים סרבים"
+    ],
+    "entity_type": "גורם מדווח"
+  },
+  {
+    "entity_id": "ENT-LOCAL-RESIDENTS",
+    "canonical_name": "תושבים מקומיים",
+    "aliases": [
+      "תושבים מקומיים"
+    ],
+    "entity_type": "גורם מדווח"
+  },
+  {
+    "entity_id": "ENT-LOCAL-ARMED-GROUP",
+    "canonical_name": "קבוצה חמושה מקומית",
+    "aliases": [
+      "קבוצה חמושה מקומית"
+    ],
+    "entity_type": "גורם מדווח"
+  },
+  {
+    "entity_id": "ENT-UNIDENTIFIED-ACTORS",
+    "canonical_name": "גורמים לא מזוהים",
+    "aliases": [
+      "גורמים לא מזוהים"
+    ],
+    "entity_type": "גורם מדווח"
+  },
+  {
+    "entity_id": "ENT-LOCAL-JOURNALISTS",
+    "canonical_name": "עיתונאים מקומיים",
+    "aliases": [
+      "עיתונאים מקומיים"
+    ],
+    "entity_type": "גורם מדווח"
+  },
+  {
+    "entity_id": "ENT-AMBULANCES",
+    "canonical_name": "אמבולנסים",
+    "aliases": [
+      "אמבולנסים"
+    ],
+    "entity_type": "גורם מדווח"
+  }
+]

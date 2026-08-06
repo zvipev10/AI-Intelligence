@@ -1,0 +1,178 @@
+{
+  "session_id": "compact-demo-general-20260620T151848Z",
+  "results": [
+    {
+      "id": "q1_hotspots",
+      "prompt": "איפה נמצאים מוקדי החיכוך העיקריים בצפון קוסובו, ומה המוקדים המדויקים בתוך כל אזור?",
+      "status": 200,
+      "elapsed_ms": 54094.946,
+      "run_id": "run_59a6526f156a470da0926eccbde7bf9c",
+      "performance_log": "20260620T151942Z-run_59a6526f156a470da0926eccbde7bf9c.json",
+      "recommended_view": "map",
+      "view_reason": "המוקדים מרחביים בעיקרם",
+      "ids": [
+        "LOC-053",
+        "LOC-066",
+        "LOC-082",
+        "LOC-083",
+        "LOC-090",
+        "LOC-093",
+        "LOC-097",
+        "LOC-102",
+        "LOC-141",
+        "LOC-144"
+      ],
+      "tool_sequence": [
+        "classify_question_intent",
+        "resolve_location",
+        "aggregate_events"
+      ],
+      "step_count": 3,
+      "answer": "במדגם האגרגטיבי של 500 אירועים, מוקדי החיכוך הבולטים ביותר מתרכזים בזבצ׳אן ובזובין פוטוק, עם מוקד משני בצפון מיטרוביצה. בזבצ׳אן בולטים: LOC-102 כפר סמוך 82, LOC-053 נקודת בידוק כללית 33, LOC-141 תחנת דלק 121, LOC-093 צומת מקומי 73, LOC-090 ציר גישה 70; בזובין פוטוק בולטים: LOC-082 תחנת דלק 62, LOC-144 נקודת בידוק כללית 124, LOC-083 תחנת דלק 63, LOC-097 מרכז בריאות 77; בצפון מיטרוביצה בולט LOC-066 ציר גישה 46.\nמזהי ראיות: תוצאה אגרגטיבית ללא מזהי אירועים",
+      "error": null
+    },
+    {
+      "id": "q2_movement",
+      "prompt": "האם ניתן לזהות דפוס של תנועת כוחות או הגברת נוכחות בזמן ובמרחב?",
+      "status": 200,
+      "elapsed_ms": 41966.204,
+      "run_id": "run_27f55ab8d6a34baa91b223a8e1664821",
+      "performance_log": "20260620T155207Z-run_27f55ab8d6a34baa91b223a8e1664821.json",
+      "recommended_view": "evidence",
+      "view_reason": "בדיקת רשומות ומקורות",
+      "ids": [
+        "LOC-053",
+        "LOC-066",
+        "LOC-083",
+        "LOC-090",
+        "LOC-093",
+        "LOC-141",
+        "LOC-144"
+      ],
+      "tool_sequence": [
+        "classify_question_intent",
+        "aggregate_events",
+        "aggregate_events",
+        "aggregate_events"
+      ],
+      "step_count": 4,
+      "answer": "כן. ב-500 האירועים שנבדקו יש ריכוז ברור ב-14–16 בספטמבר (169, 198, 84), עם ירידה חדה לפני כן ועלייה מתונה אחרי כן, מה שמרמז על גל פעילות ולא על נוכחות קבועה ואחידה. במרחב, הריכוז נשען בעיקר על צירי גישה, נקודות בידוק ותחנות דלק: LOC-083/082, LOC-053/102, LOC-141, LOC-066, LOC-093, LOC-090 ו-LOC-144; זה נראה כמו תנועה/פריסה לאורך מסדרונות גישה ולא פיזור רחב. מבחינת שעות, השיאים הם 04:00–06:00 וגם 08:00–12:00, כך שיש נטייה לחלונות פעילות מרוכזים, אך לא דפוס לילי בלעדי. זה עדיין מדגם של 500 אירועים, לכן אפשר לזהות דפוס חזק, אבל לא לשלול תת-דפוסים נוספים בלי הרחבה נוספת.\n\nמזהי ראיות: תוצאה אגרגטיבית ללא מזהי אירועים",
+      "error": null
+    },
+    {
+      "id": "q3_stabilizer",
+      "prompt": "מה הגורם הבינלאומי המרכזי עושה בפועל: מייצב את השטח, מציב חיץ, או מגביל את חופש הפעולה?",
+      "status": 200,
+      "elapsed_ms": 187727.047,
+      "run_id": "run_36c648cb99d64c09962e3fdae7ecddb8",
+      "performance_log": "20260620T155514Z-run_36c648cb99d64c09962e3fdae7ecddb8.json",
+      "recommended_view": "evidence",
+      "view_reason": "צריך לראות את הרשומות",
+      "ids": [
+        "REC-012810",
+        "REC-017527",
+        "REC-029956",
+        "REC-038312",
+        "REC-044036",
+        "REC-060497",
+        "REC-085058",
+        "REC-091744"
+      ],
+      "tool_sequence": [
+        "classify_question_intent",
+        "resolve_entity",
+        "find_actor_history",
+        "find_actor_history",
+        "aggregate_events",
+        "aggregate_events",
+        "aggregate_events",
+        "get_events",
+        "trace_semantic_clues",
+        "search_events",
+        "get_events",
+        "explain_linkage",
+        "explain_linkage",
+        "plan_next_investigation_step",
+        "trace_semantic_clues",
+        "search_events",
+        "plan_next_investigation_step",
+        "explain_linkage",
+        "explain_linkage",
+        "explain_linkage",
+        "explain_linkage",
+        "challenge_hypothesis",
+        "plan_next_investigation_step",
+        "explain_linkage",
+        "explain_linkage",
+        "explain_linkage",
+        "plan_next_investigation_step",
+        "build_event_sequence"
+      ],
+      "step_count": 28,
+      "answer": "הראיות מצביעות בעיקר על תפקיד של חיץ ובקרת תנועה, יותר מאשר על “ייצוב” כללי בלבד. שוב ושוב מופיעות תנועות רכבים ביטחוניים עם חסימות קצרות ליד צירי גישה ונקודות בידוק (REC-044036, REC-060497, REC-012810, REC-029956), ואחריהן דפוס של הגברת סיורים והכוונה להתרחק ממוקדי חיכוך (REC-017527, REC-091744). בשלב הבא מופיעות גם קריאות להימנע מהתקהלויות גדולות, מה שמחזק רכיב של הרתעה/ניהול סדר ציבורי (REC-038312, REC-085058). לכן, בפועל KFOR נראה כגורם שמציב חיץ ומגביל חופש פעולה מקומי סביב מוקדי חיכוך, עם רכיב מייצב משני; עם זאת, חלק מהרשומות לא מאומתות לגמרי ולכן זו מסקנה חזקה אך לא מוחלטת.\n\nמזהי ראיות: REC-044036, REC-060497, REC-012810, REC-029956, REC-017527, REC-091744, REC-038312, REC-085058",
+      "error": null
+    },
+    {
+      "id": "q4_violence_noise",
+      "prompt": "האם הדיווחים על ירי ופיצוצים נראים כמו אירועים אמיתיים או כמו רעש מידע?",
+      "status": 200,
+      "elapsed_ms": 40662.249,
+      "run_id": "run_80c0df7c24fb4f10a3c8f078146b73fa",
+      "performance_log": "20260620T155555Z-run_80c0df7c24fb4f10a3c8f078146b73fa.json",
+      "recommended_view": "evidence",
+      "view_reason": "צריך לראות את המקורות הגולמיים",
+      "ids": [
+        "REC-009647",
+        "REC-029151",
+        "REC-030007",
+        "REC-035952",
+        "REC-049749",
+        "REC-051051",
+        "REC-053693",
+        "REC-055467",
+        "REC-064898",
+        "REC-070948"
+      ],
+      "tool_sequence": [
+        "classify_question_intent",
+        "search_events"
+      ],
+      "step_count": 2,
+      "answer": "על סמך המדגם, זה נראה יותר כמו רעש מידע מעורב מאשר סדרה נקייה של אירועים מאומתים: רוב הרשומות מסומנות disputed/false/unverified, ורבות מהן מודות שאין תיעוד חזותי או שיש גרסה נגדית. יחד עם זאת, יש כמה עיגונים שנראים אמינים יותר ומצביעים על אירועים שמיעתיים אמיתיים לפחות בחלק מהמקומות, למשל REC-009647, REC-055467 ו-REC-029151; לכן המסקנה היא “מעורב”, עם משקל גבוה יותר לרעש סביב הדיווחים מאשר לוודאות מלאה. מיזי ראיות: REC-030007, REC-009647, REC-055467, REC-029151, REC-051051, REC-053693, REC-070948, REC-064898, REC-049749, REC-035952",
+      "error": null
+    },
+    {
+      "id": "q5_assessment",
+      "prompt": "על בסיס כל מה שמצאת, האם מדובר באכיפה נקודתית או בדפוס הסלמה רחב יותר בצפון קוסובו?",
+      "status": 200,
+      "elapsed_ms": 38230.129,
+      "run_id": "run_d77dc67ee59e4a46afb263b80fd53938",
+      "performance_log": "20260620T155633Z-run_d77dc67ee59e4a46afb263b80fd53938.json",
+      "recommended_view": "evidence",
+      "view_reason": "נדרשת בדיקת הראיות עצמן",
+      "ids": [
+        "REC-009647",
+        "REC-012810",
+        "REC-017527",
+        "REC-029956",
+        "REC-038312",
+        "REC-044036",
+        "REC-055467",
+        "REC-060497",
+        "REC-085058",
+        "REC-091744"
+      ],
+      "tool_sequence": [
+        "classify_question_intent",
+        "plan_next_investigation_step",
+        "explain_linkage",
+        "explain_linkage",
+        "explain_linkage",
+        "challenge_hypothesis"
+      ],
+      "step_count": 6,
+      "answer": "ההערכה המצטברת נוטה לדפוס הסלמה רחב יותר ולא לאכיפה נקודתית: אותם שחקנים, חסימות, סיורים וקריאות להתרחק ממוקדי חיכוך חוזרים בכמה מוקדים ובכמה ימים, ויש גשר ראייתי סמוך בין REC-012810, REC-017527, REC-029956 ו-REC-038312. במקביל, חלק גדול מדיווחי הירי והפיצוצים נשאר לא מאומת או סותר, כך שהמרכיב האלים עצמו פחות יציב מהמרכיב של תנועה, בידוק והרתעה. לכן התמונה הכוללת היא של ניהול חיכוך מתמשך ומתרחב סביב צירי גישה ונקודות בידוק, ולא של אכיפה מקומית בודדת. החוליה החלשה היא שאין מזהה תפעולי משותף שניתן לעקוב אחריו, ולכן זו מסקנה חזקה אך לא מוחלטת.\n\nמזהי ראיות: REC-012810, REC-017527, REC-029956, REC-038312, REC-044036, REC-060497, REC-091744, REC-085058, REC-009647, REC-055467",
+      "error": null
+    }
+  ]
+}

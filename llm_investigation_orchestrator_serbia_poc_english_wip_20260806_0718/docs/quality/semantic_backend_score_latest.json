@@ -1,0 +1,682 @@
+{
+  "gold_reference": "docs/quality/semantic_tool_gold_v1.json",
+  "results": [
+    {
+      "backend": "lexical_tfidf",
+      "index_manifest": {
+        "version": "semantic-event-index-v2",
+        "backend": "lexical_tfidf",
+        "dense_dimensions": null,
+        "dense_engine": null,
+        "record_count": 10000,
+        "events_mtime_ns": 1782840491639797000,
+        "events_size": 2823759,
+        "locations_mtime_ns": 1781934550361239600,
+        "locations_size": 50760,
+        "entities_mtime_ns": 1782840491559053100,
+        "entities_size": 3292
+      },
+      "probe_scores": [
+        {
+          "id": "tp_01_semantic_zvecan_shooting_paraphrase",
+          "backend": "lexical_tfidf",
+          "returned": 223,
+          "must_find": {
+            "gold_count": 16,
+            "found_count": 16,
+            "recall": 1.0,
+            "top10": 7,
+            "top20": 12,
+            "top50": 16,
+            "missing_ids": [],
+            "ranks": {
+              "REC-059845": 4,
+              "REC-070948": 5,
+              "REC-003268": 6,
+              "REC-083436": 7,
+              "REC-059607": 8,
+              "REC-087831": 9,
+              "REC-008111": 10,
+              "REC-009647": 11,
+              "REC-055971": 12,
+              "REC-082564": 13,
+              "REC-073992": 14,
+              "REC-083678": 20,
+              "REC-063664": 21,
+              "REC-043164": 22,
+              "REC-016054": 23,
+              "REC-047457": 25
+            }
+          },
+          "high_value": {
+            "gold_count": 7,
+            "found_count": 7,
+            "recall": 1.0,
+            "top10": 2,
+            "top20": 3,
+            "top50": 7,
+            "missing_ids": [],
+            "ranks": {
+              "REC-087831": 9,
+              "REC-008111": 10,
+              "REC-083678": 20,
+              "REC-063664": 21,
+              "REC-043164": 22,
+              "REC-016054": 23,
+              "REC-047457": 25
+            }
+          },
+          "bad_priority_hits_top10": [
+            "REC-039674",
+            "REC-034783",
+            "REC-090709"
+          ],
+          "top10": [
+            "REC-039674",
+            "REC-034783",
+            "REC-090709",
+            "REC-059845",
+            "REC-070948",
+            "REC-003268",
+            "REC-083436",
+            "REC-059607",
+            "REC-087831",
+            "REC-008111"
+          ]
+        },
+        {
+          "id": "tp_02_semantic_kfor_role",
+          "backend": "lexical_tfidf",
+          "returned": 256,
+          "must_find": {
+            "gold_count": 18,
+            "found_count": 18,
+            "recall": 1.0,
+            "top10": 8,
+            "top20": 15,
+            "top50": 18,
+            "missing_ids": [],
+            "ranks": {
+              "REC-094919": 1,
+              "REC-093706": 2,
+              "REC-022483": 3,
+              "REC-077103": 5,
+              "REC-055293": 6,
+              "REC-066668": 7,
+              "REC-052798": 8,
+              "REC-053879": 10,
+              "REC-055571": 11,
+              "REC-035159": 12,
+              "REC-065930": 13,
+              "REC-017527": 16,
+              "REC-080322": 17,
+              "REC-026393": 18,
+              "REC-071848": 19,
+              "REC-083284": 25,
+              "REC-051329": 39,
+              "REC-029717": 43
+            }
+          },
+          "high_value": {
+            "gold_count": 9,
+            "found_count": 9,
+            "recall": 1.0,
+            "top10": 5,
+            "top20": 6,
+            "top50": 9,
+            "missing_ids": [],
+            "ranks": {
+              "REC-094919": 1,
+              "REC-093706": 2,
+              "REC-022483": 3,
+              "REC-066668": 7,
+              "REC-052798": 8,
+              "REC-071848": 19,
+              "REC-083284": 25,
+              "REC-051329": 39,
+              "REC-029717": 43
+            }
+          },
+          "bad_priority_hits_top10": [],
+          "top10": [
+            "REC-094919",
+            "REC-093706",
+            "REC-022483",
+            "REC-081536",
+            "REC-077103",
+            "REC-055293",
+            "REC-066668",
+            "REC-052798",
+            "REC-063985",
+            "REC-053879"
+          ]
+        },
+        {
+          "id": "tp_03_semantic_geographic_deception",
+          "backend": "lexical_tfidf",
+          "returned": 1469,
+          "must_find": {
+            "gold_count": 24,
+            "found_count": 24,
+            "recall": 1.0,
+            "top10": 9,
+            "top20": 19,
+            "top50": 24,
+            "missing_ids": [],
+            "ranks": {
+              "REC-032521": 1,
+              "REC-040875": 3,
+              "REC-088270": 4,
+              "REC-082069": 5,
+              "REC-076464": 6,
+              "REC-066658": 7,
+              "REC-060835": 8,
+              "REC-070493": 9,
+              "REC-076698": 10,
+              "REC-003420": 11,
+              "REC-039159": 12,
+              "REC-002459": 13,
+              "REC-083584": 14,
+              "REC-084736": 15,
+              "REC-096036": 16,
+              "REC-081344": 17,
+              "REC-057683": 18,
+              "REC-042634": 19,
+              "REC-071592": 20,
+              "REC-033314": 21,
+              "REC-012264": 22,
+              "REC-086028": 23,
+              "REC-007722": 24,
+              "REC-069352": 25
+            }
+          },
+          "high_value": {
+            "gold_count": 9,
+            "found_count": 9,
+            "recall": 1.0,
+            "top10": 7,
+            "top20": 8,
+            "top50": 9,
+            "missing_ids": [],
+            "ranks": {
+              "REC-032521": 1,
+              "REC-040875": 3,
+              "REC-088270": 4,
+              "REC-082069": 5,
+              "REC-076464": 6,
+              "REC-066658": 7,
+              "REC-070493": 9,
+              "REC-002459": 13,
+              "REC-069352": 25
+            }
+          },
+          "bad_priority_hits_top10": [],
+          "top10": [
+            "REC-032521",
+            "REC-072891",
+            "REC-040875",
+            "REC-088270",
+            "REC-082069",
+            "REC-076464",
+            "REC-066658",
+            "REC-060835",
+            "REC-070493",
+            "REC-076698"
+          ]
+        }
+      ]
+    },
+    {
+      "backend": "dense_hash_embedding",
+      "index_manifest": {
+        "version": "semantic-event-index-v2",
+        "backend": "dense_hash_embedding",
+        "dense_dimensions": 768,
+        "dense_engine": "numpy",
+        "record_count": 10000,
+        "events_mtime_ns": 1782840491639797000,
+        "events_size": 2823759,
+        "locations_mtime_ns": 1781934550361239600,
+        "locations_size": 50760,
+        "entities_mtime_ns": 1782840491559053100,
+        "entities_size": 3292
+      },
+      "probe_scores": [
+        {
+          "id": "tp_01_semantic_zvecan_shooting_paraphrase",
+          "backend": "dense_hash_embedding",
+          "returned": 179,
+          "must_find": {
+            "gold_count": 16,
+            "found_count": 15,
+            "recall": 0.938,
+            "top10": 6,
+            "top20": 13,
+            "top50": 15,
+            "missing_ids": [
+              "REC-047457"
+            ],
+            "ranks": {
+              "REC-059845": 14,
+              "REC-070948": 9,
+              "REC-003268": 5,
+              "REC-083436": 7,
+              "REC-059607": 4,
+              "REC-087831": 8,
+              "REC-008111": 1,
+              "REC-009647": 15,
+              "REC-055971": 11,
+              "REC-082564": 13,
+              "REC-073992": 12,
+              "REC-083678": 20,
+              "REC-063664": 21,
+              "REC-043164": 18,
+              "REC-016054": 30
+            }
+          },
+          "high_value": {
+            "gold_count": 7,
+            "found_count": 6,
+            "recall": 0.857,
+            "top10": 2,
+            "top20": 4,
+            "top50": 6,
+            "missing_ids": [
+              "REC-047457"
+            ],
+            "ranks": {
+              "REC-087831": 8,
+              "REC-008111": 1,
+              "REC-083678": 20,
+              "REC-063664": 21,
+              "REC-043164": 18,
+              "REC-016054": 30
+            }
+          },
+          "bad_priority_hits_top10": [
+            "REC-039674",
+            "REC-090709"
+          ],
+          "top10": [
+            "REC-008111",
+            "REC-095187",
+            "REC-090709",
+            "REC-059607",
+            "REC-003268",
+            "REC-061474",
+            "REC-083436",
+            "REC-087831",
+            "REC-070948",
+            "REC-039674"
+          ]
+        },
+        {
+          "id": "tp_02_semantic_kfor_role",
+          "backend": "dense_hash_embedding",
+          "returned": 372,
+          "must_find": {
+            "gold_count": 18,
+            "found_count": 17,
+            "recall": 0.944,
+            "top10": 5,
+            "top20": 11,
+            "top50": 12,
+            "missing_ids": [
+              "REC-051329"
+            ],
+            "ranks": {
+              "REC-094919": 2,
+              "REC-093706": 3,
+              "REC-022483": 1,
+              "REC-077103": 20,
+              "REC-055293": 106,
+              "REC-066668": 9,
+              "REC-052798": 7,
+              "REC-053879": 139,
+              "REC-055571": 40,
+              "REC-035159": 68,
+              "REC-065930": 110,
+              "REC-017527": 13,
+              "REC-080322": 11,
+              "REC-026393": 14,
+              "REC-071848": 17,
+              "REC-083284": 79,
+              "REC-029717": 12
+            }
+          },
+          "high_value": {
+            "gold_count": 9,
+            "found_count": 8,
+            "recall": 0.889,
+            "top10": 5,
+            "top20": 7,
+            "top50": 7,
+            "missing_ids": [
+              "REC-051329"
+            ],
+            "ranks": {
+              "REC-094919": 2,
+              "REC-093706": 3,
+              "REC-022483": 1,
+              "REC-066668": 9,
+              "REC-052798": 7,
+              "REC-071848": 17,
+              "REC-083284": 79,
+              "REC-029717": 12
+            }
+          },
+          "bad_priority_hits_top10": [],
+          "top10": [
+            "REC-022483",
+            "REC-094919",
+            "REC-093706",
+            "REC-043662",
+            "REC-072032",
+            "REC-091744",
+            "REC-052798",
+            "REC-013429",
+            "REC-066668",
+            "REC-018599"
+          ]
+        },
+        {
+          "id": "tp_03_semantic_geographic_deception",
+          "backend": "dense_hash_embedding",
+          "returned": 1780,
+          "must_find": {
+            "gold_count": 24,
+            "found_count": 24,
+            "recall": 1.0,
+            "top10": 4,
+            "top20": 6,
+            "top50": 9,
+            "missing_ids": [],
+            "ranks": {
+              "REC-032521": 69,
+              "REC-040875": 166,
+              "REC-088270": 208,
+              "REC-082069": 3,
+              "REC-076464": 93,
+              "REC-066658": 79,
+              "REC-060835": 413,
+              "REC-070493": 80,
+              "REC-076698": 11,
+              "REC-003420": 55,
+              "REC-039159": 357,
+              "REC-002459": 48,
+              "REC-083584": 144,
+              "REC-084736": 5,
+              "REC-096036": 40,
+              "REC-081344": 6,
+              "REC-057683": 119,
+              "REC-042634": 488,
+              "REC-071592": 602,
+              "REC-033314": 24,
+              "REC-012264": 65,
+              "REC-086028": 2,
+              "REC-007722": 13,
+              "REC-069352": 293
+            }
+          },
+          "high_value": {
+            "gold_count": 9,
+            "found_count": 9,
+            "recall": 1.0,
+            "top10": 1,
+            "top20": 1,
+            "top50": 2,
+            "missing_ids": [],
+            "ranks": {
+              "REC-032521": 69,
+              "REC-040875": 166,
+              "REC-088270": 208,
+              "REC-082069": 3,
+              "REC-076464": 93,
+              "REC-066658": 79,
+              "REC-070493": 80,
+              "REC-002459": 48,
+              "REC-069352": 293
+            }
+          },
+          "bad_priority_hits_top10": [],
+          "top10": [
+            "REC-068392",
+            "REC-086028",
+            "REC-082069",
+            "REC-093223",
+            "REC-084736",
+            "REC-081344",
+            "REC-071765",
+            "REC-011005",
+            "REC-067964",
+            "REC-091075"
+          ]
+        }
+      ]
+    },
+    {
+      "backend": "hybrid_embedding",
+      "index_manifest": {
+        "version": "semantic-event-index-v2",
+        "backend": "hybrid_embedding",
+        "dense_dimensions": 768,
+        "dense_engine": "numpy",
+        "record_count": 10000,
+        "events_mtime_ns": 1782840491639797000,
+        "events_size": 2823759,
+        "locations_mtime_ns": 1781934550361239600,
+        "locations_size": 50760,
+        "entities_mtime_ns": 1782840491559053100,
+        "entities_size": 3292
+      },
+      "probe_scores": [
+        {
+          "id": "tp_01_semantic_zvecan_shooting_paraphrase",
+          "backend": "hybrid_embedding",
+          "returned": 223,
+          "must_find": {
+            "gold_count": 16,
+            "found_count": 16,
+            "recall": 1.0,
+            "top10": 8,
+            "top20": 15,
+            "top50": 16,
+            "missing_ids": [],
+            "ranks": {
+              "REC-059845": 8,
+              "REC-070948": 6,
+              "REC-003268": 3,
+              "REC-083436": 7,
+              "REC-059607": 5,
+              "REC-087831": 9,
+              "REC-008111": 4,
+              "REC-009647": 10,
+              "REC-055971": 11,
+              "REC-082564": 12,
+              "REC-073992": 13,
+              "REC-083678": 16,
+              "REC-063664": 17,
+              "REC-043164": 18,
+              "REC-016054": 19,
+              "REC-047457": 27
+            }
+          },
+          "high_value": {
+            "gold_count": 7,
+            "found_count": 7,
+            "recall": 1.0,
+            "top10": 2,
+            "top20": 6,
+            "top50": 7,
+            "missing_ids": [],
+            "ranks": {
+              "REC-087831": 9,
+              "REC-008111": 4,
+              "REC-083678": 16,
+              "REC-063664": 17,
+              "REC-043164": 18,
+              "REC-016054": 19,
+              "REC-047457": 27
+            }
+          },
+          "bad_priority_hits_top10": [
+            "REC-039674",
+            "REC-090709"
+          ],
+          "top10": [
+            "REC-039674",
+            "REC-090709",
+            "REC-003268",
+            "REC-008111",
+            "REC-059607",
+            "REC-070948",
+            "REC-083436",
+            "REC-059845",
+            "REC-087831",
+            "REC-009647"
+          ]
+        },
+        {
+          "id": "tp_02_semantic_kfor_role",
+          "backend": "hybrid_embedding",
+          "returned": 256,
+          "must_find": {
+            "gold_count": 18,
+            "found_count": 18,
+            "recall": 1.0,
+            "top10": 8,
+            "top20": 12,
+            "top50": 18,
+            "missing_ids": [],
+            "ranks": {
+              "REC-094919": 1,
+              "REC-093706": 3,
+              "REC-022483": 2,
+              "REC-077103": 19,
+              "REC-055293": 20,
+              "REC-066668": 5,
+              "REC-052798": 4,
+              "REC-053879": 24,
+              "REC-055571": 22,
+              "REC-035159": 23,
+              "REC-065930": 28,
+              "REC-017527": 8,
+              "REC-080322": 6,
+              "REC-026393": 9,
+              "REC-071848": 11,
+              "REC-083284": 32,
+              "REC-051329": 46,
+              "REC-029717": 17
+            }
+          },
+          "high_value": {
+            "gold_count": 9,
+            "found_count": 9,
+            "recall": 1.0,
+            "top10": 5,
+            "top20": 7,
+            "top50": 9,
+            "missing_ids": [],
+            "ranks": {
+              "REC-094919": 1,
+              "REC-093706": 3,
+              "REC-022483": 2,
+              "REC-066668": 5,
+              "REC-052798": 4,
+              "REC-071848": 11,
+              "REC-083284": 32,
+              "REC-051329": 46,
+              "REC-029717": 17
+            }
+          },
+          "bad_priority_hits_top10": [],
+          "top10": [
+            "REC-094919",
+            "REC-022483",
+            "REC-093706",
+            "REC-052798",
+            "REC-066668",
+            "REC-080322",
+            "REC-043662",
+            "REC-017527",
+            "REC-026393",
+            "REC-072032"
+          ]
+        },
+        {
+          "id": "tp_03_semantic_geographic_deception",
+          "backend": "hybrid_embedding",
+          "returned": 1469,
+          "must_find": {
+            "gold_count": 24,
+            "found_count": 24,
+            "recall": 1.0,
+            "top10": 9,
+            "top20": 19,
+            "top50": 24,
+            "missing_ids": [],
+            "ranks": {
+              "REC-032521": 1,
+              "REC-040875": 4,
+              "REC-088270": 7,
+              "REC-082069": 3,
+              "REC-076464": 6,
+              "REC-066658": 8,
+              "REC-060835": 12,
+              "REC-070493": 10,
+              "REC-076698": 5,
+              "REC-003420": 9,
+              "REC-039159": 13,
+              "REC-002459": 11,
+              "REC-083584": 17,
+              "REC-084736": 14,
+              "REC-096036": 16,
+              "REC-081344": 15,
+              "REC-057683": 20,
+              "REC-042634": 24,
+              "REC-071592": 27,
+              "REC-033314": 21,
+              "REC-012264": 23,
+              "REC-086028": 18,
+              "REC-007722": 19,
+              "REC-069352": 28
+            }
+          },
+          "high_value": {
+            "gold_count": 9,
+            "found_count": 9,
+            "recall": 1.0,
+            "top10": 7,
+            "top20": 8,
+            "top50": 9,
+            "missing_ids": [],
+            "ranks": {
+              "REC-032521": 1,
+              "REC-040875": 4,
+              "REC-088270": 7,
+              "REC-082069": 3,
+              "REC-076464": 6,
+              "REC-066658": 8,
+              "REC-070493": 10,
+              "REC-002459": 11,
+              "REC-069352": 28
+            }
+          },
+          "bad_priority_hits_top10": [],
+          "top10": [
+            "REC-032521",
+            "REC-072891",
+            "REC-082069",
+            "REC-040875",
+            "REC-076698",
+            "REC-076464",
+            "REC-088270",
+            "REC-066658",
+            "REC-003420",
+            "REC-070493"
+          ]
+        }
+      ]
+    }
+  ]
+}

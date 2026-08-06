@@ -1,0 +1,26 @@
+[
+  {
+    "id": "q4_violence_noise",
+    "saved": "llm_investigation_orchestrator_serbia_poc\\recorded_runs_q4_q5_limit2000_verify_20260622\\q4_violence_noise.json",
+    "elapsed_ms": 186215,
+    "run_id": "run_090d570e9fd74d3f821ad21f56cf125e",
+    "view": "timeline",
+    "steps": 24,
+    "tool_events": 48,
+    "event_ids": 7,
+    "answer_len": 671,
+    "performance_log": "20260622T041921Z-run_090d570e9fd74d3f821ad21f56cf125e.json"
+  },
+  {
+    "id": "q5_assessment",
+    "saved": "llm_investigation_orchestrator_serbia_poc\\recorded_runs_q4_q5_limit2000_verify_20260622\\q5_assessment.json",
+    "elapsed_ms": 93977,
+    "run_id": "run_484c559e8737409d9f8b188c29be3d3c",
+    "view": "evidence",
+    "steps": 6,
+    "tool_events": 12,
+    "event_ids": 21,
+    "answer_len": 871,
+    "performance_log": "20260622T042055Z-run_484c559e8737409d9f8b188c29be3d3c.json"
+  }
+]

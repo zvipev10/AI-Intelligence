@@ -1,0 +1,29 @@
+﻿field,value,original_count,original_pct,subset_count,subset_pct,pct_delta
+source_category,דיווח אזרחי,12042,12.042,1204,12.04,-0.002
+source_category,דיסאינפורמציה/מידע מטעה,15142,15.142,1514,15.14,-0.002
+source_category,חדשות/תקשורת,4957,4.957,496,4.96,0.003
+source_category,כלכלי/חברתי,1968,1.968,197,1.97,0.002
+source_category,מדיני/דיפלומטי,2043,2.043,204,2.04,-0.003
+source_category,צבאי־ביטחוני גולמי,21754,21.754,2176,21.76,0.006
+source_category,רעש לא קשור,1034,1.034,103,1.03,-0.004
+source_category,רפואי/חירום,2982,2.982,298,2.98,-0.002
+source_category,רשתות חברתיות,32060,32.06,3206,32.06,0.0
+source_category,תחבורה/לוגיסטיקה אזרחית,6018,6.018,602,6.02,0.002
+reliability_label,confirmed,8180,8.18,797,7.97,-0.21
+reliability_label,disputed,17969,17.969,1821,18.21,0.241
+reliability_label,false,11937,11.937,1199,11.99,0.053
+reliability_label,likely,16769,16.769,1694,16.94,0.171
+reliability_label,propaganda/disinformation,10146,10.146,976,9.76,-0.386
+reliability_label,unverified,34999,34.999,3513,35.13,0.131
+relevance_label,0,5066,5.066,505,5.05,-0.016
+relevance_label,1,11681,11.681,1184,11.84,0.159
+relevance_label,2,26154,26.154,2520,25.2,-0.954
+relevance_label,3,34316,34.316,3432,34.32,0.004
+relevance_label,4,18680,18.68,1939,19.39,0.71
+relevance_label,5,4103,4.103,420,4.2,0.097
+is_military_related,false,43212,43.212,4350,43.5,0.288
+is_military_related,true,56788,56.788,5650,56.5,-0.288
+is_civilian_related,false,43896,43.896,4390,43.9,0.004
+is_civilian_related,true,56104,56.104,5610,56.1,-0.004
+is_disinformation,false,84858,84.858,8486,84.86,0.002
+is_disinformation,true,15142,15.142,1514,15.14,-0.002

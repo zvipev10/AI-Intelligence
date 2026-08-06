@@ -1,0 +1,378 @@
+[
+  {
+    "id": "tp_01_semantic_zvecan_shooting_paraphrase",
+    "tool": "semantic_search_events",
+    "status": "pass",
+    "elapsed_ms": 396.041,
+    "summary": {
+      "backend": "lexical_tfidf",
+      "returned": 223,
+      "total": null,
+      "sample_ids": [
+        "REC-039674",
+        "REC-034783",
+        "REC-090709",
+        "REC-059845",
+        "REC-070948",
+        "REC-003268",
+        "REC-083436",
+        "REC-059607",
+        "REC-087831",
+        "REC-008111"
+      ]
+    },
+    "note": ""
+  },
+  {
+    "id": "tp_02_semantic_kfor_role",
+    "tool": "semantic_search_events",
+    "status": "pass",
+    "elapsed_ms": 78.684,
+    "summary": {
+      "backend": "lexical_tfidf",
+      "returned": 256,
+      "total": null,
+      "sample_ids": [
+        "REC-094919",
+        "REC-093706",
+        "REC-022483",
+        "REC-081536",
+        "REC-077103",
+        "REC-055293",
+        "REC-066668",
+        "REC-052798",
+        "REC-063985",
+        "REC-053879"
+      ]
+    },
+    "note": ""
+  },
+  {
+    "id": "tp_03_semantic_geographic_deception",
+    "tool": "semantic_search_events",
+    "status": "pass",
+    "elapsed_ms": 784.559,
+    "summary": {
+      "backend": "lexical_tfidf",
+      "returned": 1469,
+      "total": null,
+      "sample_ids": [
+        "REC-032521",
+        "REC-072891",
+        "REC-040875",
+        "REC-088270",
+        "REC-082069",
+        "REC-076464",
+        "REC-066658",
+        "REC-060835",
+        "REC-070493",
+        "REC-076698"
+      ]
+    },
+    "note": ""
+  },
+  {
+    "id": "tp_04_compare_location_claims",
+    "tool": "compare_location_claims",
+    "status": "pass",
+    "elapsed_ms": 1516.507,
+    "summary": {
+      "candidate_event_count": 2150,
+      "conflict_group_count": 168,
+      "returned": 168,
+      "top_claims": [
+        {
+          "conflict_score": 230.5,
+          "event_count": 323,
+          "location_count": 134,
+          "claim_template": "הסרטון שמופץ עכשיו לא נראה מהיום. שימו לב לפני שמשתפים."
+        },
+        {
+          "conflict_score": 176.5,
+          "event_count": 151,
+          "location_count": 98,
+          "claim_template": "תמונה של שיירה מוצגת ככוח סרבי, אך משתמשים אחרים טוענים שמדובר ב־kfor או במשטרה."
+        },
+        {
+          "conflict_score": 164.5,
+          "event_count": 149,
+          "location_count": 90,
+          "claim_template": "סרטון שמופץ ברשת מוצג כאילו צולם באזור <מיקום>, אך יש טענות שהוא ישן ואינו קשור לאירועים הנוכחיים."
+        },
+        {
+          "conflict_score": 158.5,
+          "event_count": 131,
+          "location_count": 86,
+          "claim_template": "דיווח דרמטי טוען שכוחות גדולים חצו את הגבול הלילה. נכון לעכשיו אין לכך אימות, ומקורות אחרים מכחישים."
+        },
+        {
+          "conflict_score": 98.5,
+          "event_count": 51,
+          "location_count": 46,
+          "claim_template": "אנשים מתאספים שוב ליד <מיקום>. חלק אומרים שהכביש ייסגר בשעה הקרובה. מקור אחר טוען שהדיווח מוגזם או מתייחס לאירוע קודם."
+        }
+      ]
+    },
+    "note": ""
+  },
+  {
+    "id": "tp_05_aggregate_municipality_hotspots",
+    "tool": "aggregate_events",
+    "status": "pass",
+    "elapsed_ms": 290.605,
+    "summary": {
+      "group_by": "municipality",
+      "total_events": 10000,
+      "group_count": 10,
+      "top_groups": [
+        {
+          "key": "צפון מיטרוביצה",
+          "label": "צפון מיטרוביצה",
+          "count": 2947,
+          "municipality": "צפון מיטרוביצה",
+          "latitude": 42.892272727272726,
+          "longitude": 20.865318181818182
+        },
+        {
+          "key": "זבצ׳אן",
+          "label": "זבצ׳אן",
+          "count": 2518,
+          "municipality": "זבצ׳אן",
+          "latitude": 42.906486486486486,
+          "longitude": 20.84
+        },
+        {
+          "key": "לפוסאביץ׳",
+          "label": "לפוסאביץ׳",
+          "count": 2420,
+          "municipality": "לפוסאביץ׳",
+          "latitude": 43.103342857142856,
+          "longitude": 20.803171428571428
+        },
+        {
+          "key": "זובין פוטוק",
+          "label": "זובין פוטוק",
+          "count": 1898,
+          "municipality": "זובין פוטוק",
+          "latitude": 42.91358620689655,
+          "longitude": 20.689206896551724
+        },
+        {
+          "key": "פרישטינה",
+          "label": "פרישטינה",
+          "count": 93,
+          "municipality": "פרישטינה",
+          "latitude": 42.663,
+          "longitude": 21.157
+        }
+      ]
+    },
+    "note": ""
+  },
+  {
+    "id": "tp_06_aggregate_location_first_last",
+    "tool": "aggregate_events",
+    "status": "pass",
+    "elapsed_ms": 229.665,
+    "summary": {
+      "group_by": "location",
+      "total_events": 10000,
+      "group_count": 20,
+      "top_groups": [
+        {
+          "key": "LOC-128",
+          "label": "כיכר מרכזית 108",
+          "count": 70,
+          "location_id": "LOC-128",
+          "location_name": "כיכר מרכזית 108",
+          "latitude": 43.099,
+          "longitude": 20.809,
+          "first_event_id": "REC-025790",
+          "first_event_time": "2026-09-12T04:19:00Z",
+          "first_location_id": "LOC-128",
+          "first_location_name": "כיכר מרכזית 108",
+          "last_event_id": "REC-063565",
+          "last_event_time": "2026-09-19T19:18:00Z",
+          "last_location_id": "LOC-128",
+          "last_location_name": "כיכר מרכזית 108"
+        },
+        {
+          "key": "LOC-103",
+          "label": "צומת מקומי 83",
+          "count": 66,
+          "location_id": "LOC-103",
+          "location_name": "צומת מקומי 83",
+          "latitude": 42.899,
+          "longitude": 20.848,
+          "first_event_id": "REC-014015",
+          "first_event_time": "2026-09-12T05:52:00Z",
+          "first_location_id": "LOC-103",
+          "first_location_name": "צומת מקומי 83",
+          "last_event_id": "REC-061713",
+          "last_event_time": "2026-09-19T06:53:00Z",
+          "last_location_id": "LOC-103",
+          "last_location_name": "צומת מקומי 83"
+        },
+        {
+          "key": "LOC-022",
+          "label": "תחנת דלק 2",
+          "count": 78,
+          "location_id": "LOC-022",
+          "location_name": "תחנת דלק 2",
+          "latitude": 42.9,
+          "longitude": 20.84,
+          "first_event_id": "REC-072474",
+          "first_event_time": "2026-09-12T06:34:00Z",
+          "first_location_id": "LOC-022",
+          "first_location_name": "תחנת דלק 2",
+          "last_event_id": "REC-010447",
+          "last_event_time": "2026-09-19T22:52:00Z",
+          "last_location_id": "LOC-022",
+          "last_location_name": "תחנת דלק 2"
+        },
+        {
+          "key": "LOC-036",
+          "label": "כיכר מרכזית 16",
+          "count": 85,
+          "location_id": "LOC-036",
+          "location_name": "כיכר מרכזית 16",
+          "latitude": 43.095,
+          "longitude": 20.815,
+          "first_event_id": "REC-091115",
+          "first_event_time": "2026-09-12T07:42:00Z",
+          "first_location_id": "LOC-036",
+          "first_location_name": "כיכר מרכזית 16",
+          "last_event_id": "REC-033314",
+          "last_event_time": "2026-09-20T07:34:00Z",
+          "last_location_id": "LOC-036",
+          "last_location_name": "כיכר מרכזית 16"
+        },
+        {
+          "key": "LOC-141",
+          "label": "תחנת דלק 121",
+          "count": 83,
+          "location_id": "LOC-141",
+          "location_name": "תחנת דלק 121",
+          "latitude": 42.9,
+          "longitude": 20.858,
+          "first_event_id": "REC-093887",
+          "first_event_time": "2026-09-12T08:46:00Z",
+          "first_location_id": "LOC-141",
+          "first_location_name": "תחנת דלק 121",
+          "last_event_id": "REC-078550",
+          "last_event_time": "2026-09-20T04:20:00Z",
+          "last_location_id": "LOC-141",
+          "last_location_name": "תחנת דלק 121"
+        }
+      ]
+    },
+    "note": ""
+  },
+  {
+    "id": "tp_07_search_force_movement_keywords",
+    "tool": "search_events",
+    "status": "warning",
+    "elapsed_ms": 1204.168,
+    "summary": {
+      "total": 2401,
+      "returned": 2000,
+      "truncated": true,
+      "sample_ids": [
+        "REC-073418",
+        "REC-032682",
+        "REC-044036",
+        "REC-080635",
+        "REC-076093",
+        "REC-026224",
+        "REC-033109",
+        "REC-064219",
+        "REC-029564",
+        "REC-077640"
+      ]
+    },
+    "note": "Search found more than 2000 records; output is truncated and requires narrowing/aggregation."
+  },
+  {
+    "id": "tp_08_resolve_core_locations",
+    "tool": "resolve_location",
+    "status": "gap",
+    "elapsed_ms": 1.044,
+    "summary": {
+      "location_ids": [],
+      "match_count": null
+    },
+    "note": "Known functional gap: broad combined location phrase does not resolve to municipality/location IDs."
+  },
+  {
+    "id": "tp_09a_resolve_kfor",
+    "tool": "resolve_entity",
+    "status": "pass",
+    "elapsed_ms": 55.146,
+    "summary": {
+      "match_count": 1,
+      "entity_ids": [
+        "ENT-KFOR"
+      ]
+    },
+    "note": ""
+  },
+  {
+    "id": "tp_09b_resolve_kosovo_police",
+    "tool": "resolve_entity",
+    "status": "pass",
+    "elapsed_ms": 4.375,
+    "summary": {
+      "match_count": 2,
+      "entity_ids": [
+        "ENT-KOSOVO-POLICE",
+        "ENT-KOSOVO-SPECIAL-POLICE"
+      ]
+    },
+    "note": ""
+  },
+  {
+    "id": "tp_10_classify_semantic_investigation",
+    "tool": "classify_question_intent",
+    "status": "pass",
+    "elapsed_ms": 0.245,
+    "summary": {
+      "intent": "investigation",
+      "recommended_mode": "investigation",
+      "recommended_view_hint": "timeline",
+      "tool_budget": 30,
+      "classification_source": "deterministic_fallback"
+    },
+    "note": ""
+  },
+  {
+    "id": "tp_11_classify_structured_aggregation",
+    "tool": "classify_question_intent",
+    "status": "pass",
+    "elapsed_ms": 1.389,
+    "summary": {
+      "intent": "timeline_retrieval",
+      "recommended_mode": "retrieval",
+      "recommended_view_hint": "timeline",
+      "tool_budget": 4,
+      "classification_source": "deterministic_fallback"
+    },
+    "note": ""
+  },
+  {
+    "id": "tp_12_plan_next_frontier",
+    "tool": "plan_next_investigation_step",
+    "status": "invalid_probe",
+    "elapsed_ms": 0.262,
+    "summary": {
+      "decision": "continue",
+      "next_step_constraint": "expand_pending_recommended_seeds",
+      "required_event_ids": [
+        "REC-PLACEHOLDER-001",
+        "REC-PLACEHOLDER-002",
+        "REC-PLACEHOLDER-003"
+      ],
+      "required_clues": []
+    },
+    "note": "Probe uses placeholder IDs; runner works but this probe should be replaced with real seed IDs."
+  }
+]

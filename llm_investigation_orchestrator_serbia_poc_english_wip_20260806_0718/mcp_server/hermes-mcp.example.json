@@ -1,0 +1,16 @@
+{
+  "mcp_servers": {
+    "serbia-events-poc": {
+      "command": "/opt/serbia-poc/venv/bin/python",
+      "args": ["/opt/serbia-poc/mcp_server/server.py"],
+      "env": {
+        "INTELLIGENCE_POC_DATASET_VERSION": "v2",
+        "INTELLIGENCE_POC_DATA": "/opt/serbia-poc/data/serbian_intelligence_v2/serbia_kosovo_events_projection_v2.csv",
+        "INTELLIGENCE_POC_LOCATIONS": "/opt/serbia-poc/data/serbian_intelligence_v2/serbia_kosovo_locations_v2.json",
+        "INTELLIGENCE_POC_ENTITIES": "/opt/serbia-poc/data/serbian_intelligence_v2/serbia_kosovo_entities_v2.json",
+        "INTELLIGENCE_POC_SEMANTIC_BACKEND": "hybrid_embedding",
+        "INTELLIGENCE_POC_AUDIT": "/opt/serbia-poc/mcp_audit.jsonl"
+      }
+    }
+  }
+}

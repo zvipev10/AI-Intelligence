@@ -1,0 +1,1450 @@
+{
+  "ranked_candidates": 6837,
+  "metrics": {
+    "20": {
+      "precision": 0.1,
+      "hits": 2
+    },
+    "50": {
+      "precision": 0.12,
+      "hits": 6
+    },
+    "100": {
+      "precision": 0.13,
+      "hits": 13
+    },
+    "250": {
+      "precision": 0.1,
+      "hits": 25
+    },
+    "500": {
+      "precision": 0.086,
+      "hits": 43
+    }
+  },
+  "top": [
+    {
+      "event_id": "REC-094192",
+      "score": 10.699755177253474,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "exaggeration_or_prior",
+        "repeated_claim=44/36",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "מיקום שגוי",
+      "summary": "הסרטון שמופץ עכשיו לא נראה מהיום. שימו לב לפני שמשתפים. מקור אחר טוען שהדיווח מוגזם או מתייחס לאירוע קודם."
+    },
+    {
+      "event_id": "REC-025396",
+      "score": 10.699755177253474,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "exaggeration_or_prior",
+        "repeated_claim=44/36",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "",
+      "summary": "הסרטון שמופץ עכשיו לא נראה מהיום. שימו לב לפני שמשתפים. מקור אחר טוען שהדיווח מוגזם או מתייחס לאירוע קודם."
+    },
+    {
+      "event_id": "REC-072704",
+      "score": 10.699755177253474,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "exaggeration_or_prior",
+        "repeated_claim=44/36",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "",
+      "summary": "הסרטון שמופץ עכשיו לא נראה מהיום. שימו לב לפני שמשתפים. מקור אחר טוען שהדיווח מוגזם או מתייחס לאירוע קודם."
+    },
+    {
+      "event_id": "REC-001172",
+      "score": 10.699755177253474,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "exaggeration_or_prior",
+        "repeated_claim=44/36",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "הכחשה שקרית",
+      "summary": "הסרטון שמופץ עכשיו לא נראה מהיום. שימו לב לפני שמשתפים. מקור אחר טוען שהדיווח מוגזם או מתייחס לאירוע קודם."
+    },
+    {
+      "event_id": "REC-022910",
+      "score": 10.699755177253474,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "exaggeration_or_prior",
+        "repeated_claim=44/36",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "",
+      "summary": "הסרטון שמופץ עכשיו לא נראה מהיום. שימו לב לפני שמשתפים. מקור אחר טוען שהדיווח מוגזם או מתייחס לאירוע קודם."
+    },
+    {
+      "event_id": "REC-008847",
+      "score": 10.699755177253474,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "exaggeration_or_prior",
+        "repeated_claim=44/36",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "",
+      "summary": "הסרטון שמופץ עכשיו לא נראה מהיום. שימו לב לפני שמשתפים. מקור אחר טוען שהדיווח מוגזם או מתייחס לאירוע קודם."
+    },
+    {
+      "event_id": "REC-013519",
+      "score": 10.699755177253474,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "exaggeration_or_prior",
+        "repeated_claim=44/36",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "",
+      "summary": "הסרטון שמופץ עכשיו לא נראה מהיום. שימו לב לפני שמשתפים. מקור אחר טוען שהדיווח מוגזם או מתייחס לאירוע קודם."
+    },
+    {
+      "event_id": "REC-040249",
+      "score": 10.699755177253474,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "exaggeration_or_prior",
+        "repeated_claim=44/36",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "",
+      "summary": "הסרטון שמופץ עכשיו לא נראה מהיום. שימו לב לפני שמשתפים. מקור אחר טוען שהדיווח מוגזם או מתייחס לאירוע קודם."
+    },
+    {
+      "event_id": "REC-031192",
+      "score": 10.699755177253474,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "exaggeration_or_prior",
+        "repeated_claim=44/36",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "סרטון ישן",
+      "summary": "הסרטון שמופץ עכשיו לא נראה מהיום. שימו לב לפני שמשתפים. מקור אחר טוען שהדיווח מוגזם או מתייחס לאירוע קודם."
+    },
+    {
+      "event_id": "REC-063866",
+      "score": 10.699755177253474,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "exaggeration_or_prior",
+        "repeated_claim=44/36",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "",
+      "summary": "הסרטון שמופץ עכשיו לא נראה מהיום. שימו לב לפני שמשתפים. מקור אחר טוען שהדיווח מוגזם או מתייחס לאירוע קודם."
+    },
+    {
+      "event_id": "REC-047067",
+      "score": 10.699755177253474,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "exaggeration_or_prior",
+        "repeated_claim=44/36",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "",
+      "summary": "הסרטון שמופץ עכשיו לא נראה מהיום. שימו לב לפני שמשתפים. מקור אחר טוען שהדיווח מוגזם או מתייחס לאירוע קודם."
+    },
+    {
+      "event_id": "REC-092265",
+      "score": 10.699755177253474,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "exaggeration_or_prior",
+        "repeated_claim=44/36",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "",
+      "summary": "הסרטון שמופץ עכשיו לא נראה מהיום. שימו לב לפני שמשתפים. מקור אחר טוען שהדיווח מוגזם או מתייחס לאירוע קודם."
+    },
+    {
+      "event_id": "REC-065871",
+      "score": 10.699755177253474,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "exaggeration_or_prior",
+        "repeated_claim=44/36",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "",
+      "summary": "הסרטון שמופץ עכשיו לא נראה מהיום. שימו לב לפני שמשתפים. מקור אחר טוען שהדיווח מוגזם או מתייחס לאירוע קודם."
+    },
+    {
+      "event_id": "REC-046855",
+      "score": 10.699755177253474,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "exaggeration_or_prior",
+        "repeated_claim=44/36",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "",
+      "summary": "הסרטון שמופץ עכשיו לא נראה מהיום. שימו לב לפני שמשתפים. מקור אחר טוען שהדיווח מוגזם או מתייחס לאירוע קודם."
+    },
+    {
+      "event_id": "REC-085687",
+      "score": 10.699755177253474,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "exaggeration_or_prior",
+        "repeated_claim=44/36",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "",
+      "summary": "הסרטון שמופץ עכשיו לא נראה מהיום. שימו לב לפני שמשתפים. מקור אחר טוען שהדיווח מוגזם או מתייחס לאירוע קודם."
+    },
+    {
+      "event_id": "REC-061946",
+      "score": 10.699755177253474,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "exaggeration_or_prior",
+        "repeated_claim=44/36",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "",
+      "summary": "הסרטון שמופץ עכשיו לא נראה מהיום. שימו לב לפני שמשתפים. מקור אחר טוען שהדיווח מוגזם או מתייחס לאירוע קודם."
+    },
+    {
+      "event_id": "REC-067690",
+      "score": 10.699755177253474,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "exaggeration_or_prior",
+        "repeated_claim=44/36",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "",
+      "summary": "הסרטון שמופץ עכשיו לא נראה מהיום. שימו לב לפני שמשתפים. מקור אחר טוען שהדיווח מוגזם או מתייחס לאירוע קודם."
+    },
+    {
+      "event_id": "REC-015637",
+      "score": 10.699755177253474,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "exaggeration_or_prior",
+        "repeated_claim=44/36",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "פרשנות מוטה",
+      "summary": "הסרטון שמופץ עכשיו לא נראה מהיום. שימו לב לפני שמשתפים. מקור אחר טוען שהדיווח מוגזם או מתייחס לאירוע קודם."
+    },
+    {
+      "event_id": "REC-045649",
+      "score": 10.699755177253474,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "exaggeration_or_prior",
+        "repeated_claim=44/36",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "מיקום שגוי",
+      "summary": "הסרטון שמופץ עכשיו לא נראה מהיום. שימו לב לפני שמשתפים. מקור אחר טוען שהדיווח מוגזם או מתייחס לאירוע קודם."
+    },
+    {
+      "event_id": "REC-042519",
+      "score": 10.699755177253474,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "exaggeration_or_prior",
+        "repeated_claim=44/36",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "",
+      "summary": "הסרטון שמופץ עכשיו לא נראה מהיום. שימו לב לפני שמשתפים. מקור אחר טוען שהדיווח מוגזם או מתייחס לאירוע קודם."
+    },
+    {
+      "event_id": "REC-003635",
+      "score": 10.699755177253474,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "exaggeration_or_prior",
+        "repeated_claim=44/36",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "",
+      "summary": "הסרטון שמופץ עכשיו לא נראה מהיום. שימו לב לפני שמשתפים. מקור אחר טוען שהדיווח מוגזם או מתייחס לאירוע קודם."
+    },
+    {
+      "event_id": "REC-022561",
+      "score": 10.699755177253474,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "exaggeration_or_prior",
+        "repeated_claim=44/36",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "",
+      "summary": "הסרטון שמופץ עכשיו לא נראה מהיום. שימו לב לפני שמשתפים. מקור אחר טוען שהדיווח מוגזם או מתייחס לאירוע קודם."
+    },
+    {
+      "event_id": "REC-059982",
+      "score": 10.699755177253474,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "exaggeration_or_prior",
+        "repeated_claim=44/36",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "",
+      "summary": "הסרטון שמופץ עכשיו לא נראה מהיום. שימו לב לפני שמשתפים. מקור אחר טוען שהדיווח מוגזם או מתייחס לאירוע קודם."
+    },
+    {
+      "event_id": "REC-072047",
+      "score": 10.699755177253474,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "exaggeration_or_prior",
+        "repeated_claim=44/36",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "",
+      "summary": "הסרטון שמופץ עכשיו לא נראה מהיום. שימו לב לפני שמשתפים. מקור אחר טוען שהדיווח מוגזם או מתייחס לאירוע קודם."
+    },
+    {
+      "event_id": "REC-060860",
+      "score": 10.699755177253474,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "exaggeration_or_prior",
+        "repeated_claim=44/36",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "",
+      "summary": "הסרטון שמופץ עכשיו לא נראה מהיום. שימו לב לפני שמשתפים. מקור אחר טוען שהדיווח מוגזם או מתייחס לאירוע קודם."
+    },
+    {
+      "event_id": "REC-085943",
+      "score": 10.699755177253474,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "exaggeration_or_prior",
+        "repeated_claim=44/36",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "זמן שגוי",
+      "summary": "הסרטון שמופץ עכשיו לא נראה מהיום. שימו לב לפני שמשתפים. מקור אחר טוען שהדיווח מוגזם או מתייחס לאירוע קודם."
+    },
+    {
+      "event_id": "REC-042063",
+      "score": 10.699755177253474,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "exaggeration_or_prior",
+        "repeated_claim=44/36",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "רעש שנראה צבאי",
+      "summary": "הסרטון שמופץ עכשיו לא נראה מהיום. שימו לב לפני שמשתפים. מקור אחר טוען שהדיווח מוגזם או מתייחס לאירוע קודם."
+    },
+    {
+      "event_id": "REC-076754",
+      "score": 10.699755177253474,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "exaggeration_or_prior",
+        "repeated_claim=44/36",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "",
+      "summary": "הסרטון שמופץ עכשיו לא נראה מהיום. שימו לב לפני שמשתפים. מקור אחר טוען שהדיווח מוגזם או מתייחס לאירוע קודם."
+    },
+    {
+      "event_id": "REC-013176",
+      "score": 10.699755177253474,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "exaggeration_or_prior",
+        "repeated_claim=44/36",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "",
+      "summary": "הסרטון שמופץ עכשיו לא נראה מהיום. שימו לב לפני שמשתפים. מקור אחר טוען שהדיווח מוגזם או מתייחס לאירוע קודם."
+    },
+    {
+      "event_id": "REC-036126",
+      "score": 10.699755177253474,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "exaggeration_or_prior",
+        "repeated_claim=44/36",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "הגזמת מספרים",
+      "summary": "הסרטון שמופץ עכשיו לא נראה מהיום. שימו לב לפני שמשתפים. מקור אחר טוען שהדיווח מוגזם או מתייחס לאירוע קודם."
+    },
+    {
+      "event_id": "REC-069847",
+      "score": 10.699755177253474,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "exaggeration_or_prior",
+        "repeated_claim=44/36",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "",
+      "summary": "הסרטון שמופץ עכשיו לא נראה מהיום. שימו לב לפני שמשתפים. מקור אחר טוען שהדיווח מוגזם או מתייחס לאירוע קודם."
+    },
+    {
+      "event_id": "REC-026435",
+      "score": 10.699755177253474,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "exaggeration_or_prior",
+        "repeated_claim=44/36",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "",
+      "summary": "הסרטון שמופץ עכשיו לא נראה מהיום. שימו לב לפני שמשתפים. מקור אחר טוען שהדיווח מוגזם או מתייחס לאירוע קודם."
+    },
+    {
+      "event_id": "REC-088813",
+      "score": 10.699755177253474,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "exaggeration_or_prior",
+        "repeated_claim=44/36",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "מיקום שגוי",
+      "summary": "הסרטון שמופץ עכשיו לא נראה מהיום. שימו לב לפני שמשתפים. מקור אחר טוען שהדיווח מוגזם או מתייחס לאירוע קודם."
+    },
+    {
+      "event_id": "REC-039357",
+      "score": 10.699755177253474,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "exaggeration_or_prior",
+        "repeated_claim=44/36",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "סרטון ישן",
+      "summary": "הסרטון שמופץ עכשיו לא נראה מהיום. שימו לב לפני שמשתפים. מקור אחר טוען שהדיווח מוגזם או מתייחס לאירוע קודם."
+    },
+    {
+      "event_id": "REC-072486",
+      "score": 10.698970004336019,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "exaggeration_or_prior",
+        "geo_words",
+        "repeated_claim=25/20",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "זמן שגוי",
+      "summary": "סרטון שמופץ ברשת מוצג כאילו צולם באזור תחנת דלק 62, אך יש טענות שהוא ישן ואינו קשור לאירועים הנוכחיים. מקור אחר טוען שהדיווח מוגזם או מתייחס לאירוע קודם."
+    },
+    {
+      "event_id": "REC-071592",
+      "score": 10.698970004336019,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "exaggeration_or_prior",
+        "geo_words",
+        "repeated_claim=25/20",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "מיקום שגוי",
+      "summary": "סרטון שמופץ ברשת מוצג כאילו צולם באזור כפר סמוך 25, אך יש טענות שהוא ישן ואינו קשור לאירועים הנוכחיים. מקור אחר טוען שהדיווח מוגזם או מתייחס לאירוע קודם."
+    },
+    {
+      "event_id": "REC-086028",
+      "score": 10.698970004336019,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "exaggeration_or_prior",
+        "geo_words",
+        "repeated_claim=25/20",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "פרשנות מוטה",
+      "summary": "סרטון שמופץ ברשת מוצג כאילו צולם באזור כפר סמוך 103, אך יש טענות שהוא ישן ואינו קשור לאירועים הנוכחיים. מקור אחר טוען שהדיווח מוגזם או מתייחס לאירוע קודם."
+    },
+    {
+      "event_id": "REC-098787",
+      "score": 10.698970004336019,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "exaggeration_or_prior",
+        "geo_words",
+        "repeated_claim=25/20",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "הכחשה שקרית",
+      "summary": "סרטון שמופץ ברשת מוצג כאילו צולם באזור כיכר מרכזית 108, אך יש טענות שהוא ישן ואינו קשור לאירועים הנוכחיים. מקור אחר טוען שהדיווח מוגזם או מתייחס לאירוע קודם."
+    },
+    {
+      "event_id": "REC-051372",
+      "score": 10.698970004336019,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "exaggeration_or_prior",
+        "geo_words",
+        "repeated_claim=25/20",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "מיקום שגוי",
+      "summary": "סרטון שמופץ ברשת מוצג כאילו צולם באזור בית ספר 128, אך יש טענות שהוא ישן ואינו קשור לאירועים הנוכחיים. מקור אחר טוען שהדיווח מוגזם או מתייחס לאירוע קודם."
+    },
+    {
+      "event_id": "REC-081344",
+      "score": 10.698970004336019,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "exaggeration_or_prior",
+        "geo_words",
+        "repeated_claim=25/20",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "הגזמת מספרים",
+      "summary": "סרטון שמופץ ברשת מוצג כאילו צולם באזור כפר סמוך 1, אך יש טענות שהוא ישן ואינו קשור לאירועים הנוכחיים. מקור אחר טוען שהדיווח מוגזם או מתייחס לאירוע קודם."
+    },
+    {
+      "event_id": "REC-093223",
+      "score": 10.698970004336019,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "exaggeration_or_prior",
+        "geo_words",
+        "repeated_claim=25/20",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "הכחשה שקרית",
+      "summary": "סרטון שמופץ ברשת מוצג כאילו צולם באזור אזור מיוער 94, אך יש טענות שהוא ישן ואינו קשור לאירועים הנוכחיים. מקור אחר טוען שהדיווח מוגזם או מתייחס לאירוע קודם."
+    },
+    {
+      "event_id": "REC-083584",
+      "score": 10.698970004336019,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "exaggeration_or_prior",
+        "geo_words",
+        "repeated_claim=25/20",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "פרשנות מוטה",
+      "summary": "סרטון שמופץ ברשת מוצג כאילו צולם באזור תחנת דלק 5, אך יש טענות שהוא ישן ואינו קשור לאירועים הנוכחיים. מקור אחר טוען שהדיווח מוגזם או מתייחס לאירוע קודם."
+    },
+    {
+      "event_id": "REC-010149",
+      "score": 10.698970004336019,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "exaggeration_or_prior",
+        "geo_words",
+        "repeated_claim=25/20",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "שמועת פאניקה",
+      "summary": "סרטון שמופץ ברשת מוצג כאילו צולם באזור אזור תעשייה קטן 116, אך יש טענות שהוא ישן ואינו קשור לאירועים הנוכחיים. מקור אחר טוען שהדיווח מוגזם או מתייחס לאירוע קודם."
+    },
+    {
+      "event_id": "REC-053202",
+      "score": 10.698970004336019,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "exaggeration_or_prior",
+        "geo_words",
+        "repeated_claim=25/20",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "תוכן מפוברק",
+      "summary": "סרטון שמופץ ברשת מוצג כאילו צולם באזור מרכז בריאות 21, אך יש טענות שהוא ישן ואינו קשור לאירועים הנוכחיים. מקור אחר טוען שהדיווח מוגזם או מתייחס לאירוע קודם."
+    },
+    {
+      "event_id": "REC-076241",
+      "score": 10.698970004336019,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "exaggeration_or_prior",
+        "geo_words",
+        "repeated_claim=25/20",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "תוכן מפוברק",
+      "summary": "סרטון שמופץ ברשת מוצג כאילו צולם באזור ציר גישה 46, אך יש טענות שהוא ישן ואינו קשור לאירועים הנוכחיים. מקור אחר טוען שהדיווח מוגזם או מתייחס לאירוע קודם."
+    },
+    {
+      "event_id": "REC-076165",
+      "score": 10.698970004336019,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "exaggeration_or_prior",
+        "geo_words",
+        "repeated_claim=25/20",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "פרשנות מוטה",
+      "summary": "סרטון שמופץ ברשת מוצג כאילו צולם באזור נקודת בידוק כללית 96, אך יש טענות שהוא ישן ואינו קשור לאירועים הנוכחיים. מקור אחר טוען שהדיווח מוגזם או מתייחס לאירוע קודם."
+    },
+    {
+      "event_id": "REC-042634",
+      "score": 10.698970004336019,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "exaggeration_or_prior",
+        "geo_words",
+        "repeated_claim=25/20",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "מיקום שגוי",
+      "summary": "סרטון שמופץ ברשת מוצג כאילו צולם באזור מרכז בריאות 51, אך יש טענות שהוא ישן ואינו קשור לאירועים הנוכחיים. מקור אחר טוען שהדיווח מוגזם או מתייחס לאירוע קודם."
+    },
+    {
+      "event_id": "REC-059862",
+      "score": 10.698970004336019,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "exaggeration_or_prior",
+        "geo_words",
+        "repeated_claim=25/20",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "רעש שנראה צבאי",
+      "summary": "סרטון שמופץ ברשת מוצג כאילו צולם באזור כפר סמוך 103, אך יש טענות שהוא ישן ואינו קשור לאירועים הנוכחיים. מקור אחר טוען שהדיווח מוגזם או מתייחס לאירוע קודם."
+    },
+    {
+      "event_id": "REC-057683",
+      "score": 10.698970004336019,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "exaggeration_or_prior",
+        "geo_words",
+        "repeated_claim=25/20",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "פרשנות מוטה",
+      "summary": "סרטון שמופץ ברשת מוצג כאילו צולם באזור כיכר מרכזית 31, אך יש טענות שהוא ישן ואינו קשור לאירועים הנוכחיים. מקור אחר טוען שהדיווח מוגזם או מתייחס לאירוע קודם."
+    },
+    {
+      "event_id": "REC-007722",
+      "score": 10.698970004336019,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "exaggeration_or_prior",
+        "geo_words",
+        "repeated_claim=25/20",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "שמועת פאניקה",
+      "summary": "סרטון שמופץ ברשת מוצג כאילו צולם באזור כפר סמוך 71, אך יש טענות שהוא ישן ואינו קשור לאירועים הנוכחיים. מקור אחר טוען שהדיווח מוגזם או מתייחס לאירוע קודם."
+    },
+    {
+      "event_id": "REC-084736",
+      "score": 10.698970004336019,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "exaggeration_or_prior",
+        "geo_words",
+        "repeated_claim=25/20",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "מיקום שגוי",
+      "summary": "סרטון שמופץ ברשת מוצג כאילו צולם באזור כפר סמוך 8, אך יש טענות שהוא ישן ואינו קשור לאירועים הנוכחיים. מקור אחר טוען שהדיווח מוגזם או מתייחס לאירוע קודם."
+    },
+    {
+      "event_id": "REC-096036",
+      "score": 10.698970004336019,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "exaggeration_or_prior",
+        "geo_words",
+        "repeated_claim=25/20",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "שמועת פאניקה",
+      "summary": "סרטון שמופץ ברשת מוצג כאילו צולם באזור כפר סמוך 8, אך יש טענות שהוא ישן ואינו קשור לאירועים הנוכחיים. מקור אחר טוען שהדיווח מוגזם או מתייחס לאירוע קודם."
+    },
+    {
+      "event_id": "REC-069352",
+      "score": 10.698970004336019,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "exaggeration_or_prior",
+        "geo_words",
+        "repeated_claim=25/20",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "זיהוי שגוי של כוח",
+      "summary": "סרטון שמופץ ברשת מוצג כאילו צולם באזור אזור מבנה העירייה, אך יש טענות שהוא ישן ואינו קשור לאירועים הנוכחיים. מקור אחר טוען שהדיווח מוגזם או מתייחס לאירוע קודם."
+    },
+    {
+      "event_id": "REC-052838",
+      "score": 10.698970004336019,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "exaggeration_or_prior",
+        "geo_words",
+        "repeated_claim=25/20",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "הכחשה שקרית",
+      "summary": "סרטון שמופץ ברשת מוצג כאילו צולם באזור ציר גישה 46, אך יש טענות שהוא ישן ואינו קשור לאירועים הנוכחיים. מקור אחר טוען שהדיווח מוגזם או מתייחס לאירוע קודם."
+    },
+    {
+      "event_id": "REC-016424",
+      "score": 10.698970004336019,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "exaggeration_or_prior",
+        "geo_words",
+        "repeated_claim=25/20",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "רעש שנראה צבאי",
+      "summary": "סרטון שמופץ ברשת מוצג כאילו צולם באזור אזור מיוער 54, אך יש טענות שהוא ישן ואינו קשור לאירועים הנוכחיים. מקור אחר טוען שהדיווח מוגזם או מתייחס לאירוע קודם."
+    },
+    {
+      "event_id": "REC-012264",
+      "score": 10.698970004336019,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "exaggeration_or_prior",
+        "geo_words",
+        "repeated_claim=25/20",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "פרשנות מוטה",
+      "summary": "סרטון שמופץ ברשת מוצג כאילו צולם באזור ציר גישה 46, אך יש טענות שהוא ישן ואינו קשור לאירועים הנוכחיים. מקור אחר טוען שהדיווח מוגזם או מתייחס לאירוע קודם."
+    },
+    {
+      "event_id": "REC-033314",
+      "score": 10.698970004336019,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "exaggeration_or_prior",
+        "geo_words",
+        "repeated_claim=25/20",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "זמן שגוי",
+      "summary": "סרטון שמופץ ברשת מוצג כאילו צולם באזור כיכר מרכזית 16, אך יש טענות שהוא ישן ואינו קשור לאירועים הנוכחיים. מקור אחר טוען שהדיווח מוגזם או מתייחס לאירוע קודם."
+    },
+    {
+      "event_id": "REC-027773",
+      "score": 10.5,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "geo_words",
+        "repeated_claim=149/90",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "זמן שגוי",
+      "summary": "סרטון שמופץ ברשת מוצג כאילו צולם באזור כיכר מרכזית 45, אך יש טענות שהוא ישן ואינו קשור לאירועים הנוכחיים."
+    },
+    {
+      "event_id": "REC-036394",
+      "score": 10.5,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "geo_words",
+        "repeated_claim=149/90",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "זיהוי שגוי של כוח",
+      "summary": "סרטון שמופץ ברשת מוצג כאילו צולם באזור תחנת דלק 62, אך יש טענות שהוא ישן ואינו קשור לאירועים הנוכחיים."
+    },
+    {
+      "event_id": "REC-095133",
+      "score": 10.5,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "geo_words",
+        "repeated_claim=149/90",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "זמן שגוי",
+      "summary": "סרטון שמופץ ברשת מוצג כאילו צולם באזור תחנת דלק 62, אך יש טענות שהוא ישן ואינו קשור לאירועים הנוכחיים."
+    },
+    {
+      "event_id": "REC-000884",
+      "score": 10.5,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "geo_words",
+        "repeated_claim=149/90",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "הכחשה שקרית",
+      "summary": "סרטון שמופץ ברשת מוצג כאילו צולם באזור כיכר מרכזית 45, אך יש טענות שהוא ישן ואינו קשור לאירועים הנוכחיים."
+    },
+    {
+      "event_id": "REC-060477",
+      "score": 10.5,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "geo_words",
+        "repeated_claim=149/90",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "רעש שנראה צבאי",
+      "summary": "סרטון שמופץ ברשת מוצג כאילו צולם באזור נקודת בידוק כללית 24, אך יש טענות שהוא ישן ואינו קשור לאירועים הנוכחיים."
+    },
+    {
+      "event_id": "REC-018534",
+      "score": 10.5,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "geo_words",
+        "repeated_claim=149/90",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "שמועת פאניקה",
+      "summary": "סרטון שמופץ ברשת מוצג כאילו צולם באזור נקודת בידוק כללית 68, אך יש טענות שהוא ישן ואינו קשור לאירועים הנוכחיים."
+    },
+    {
+      "event_id": "REC-065311",
+      "score": 10.5,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "geo_words",
+        "repeated_claim=149/90",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "מיקום שגוי",
+      "summary": "סרטון שמופץ ברשת מוצג כאילו צולם באזור תחנת דלק 88, אך יש טענות שהוא ישן ואינו קשור לאירועים הנוכחיים."
+    },
+    {
+      "event_id": "REC-081573",
+      "score": 10.5,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "geo_words",
+        "repeated_claim=149/90",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "סרטון ישן",
+      "summary": "סרטון שמופץ ברשת מוצג כאילו צולם באזור נקודת בידוק כללית 37, אך יש טענות שהוא ישן ואינו קשור לאירועים הנוכחיים."
+    },
+    {
+      "event_id": "REC-070113",
+      "score": 10.5,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "geo_words",
+        "repeated_claim=149/90",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "שמועת פאניקה",
+      "summary": "סרטון שמופץ ברשת מוצג כאילו צולם באזור אזור תעשייה קטן 118, אך יש טענות שהוא ישן ואינו קשור לאירועים הנוכחיים."
+    },
+    {
+      "event_id": "REC-051243",
+      "score": 10.5,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "geo_words",
+        "repeated_claim=149/90",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "זמן שגוי",
+      "summary": "סרטון שמופץ ברשת מוצג כאילו צולם באזור כיכר מרכזית 85, אך יש טענות שהוא ישן ואינו קשור לאירועים הנוכחיים."
+    },
+    {
+      "event_id": "REC-018800",
+      "score": 10.5,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "geo_words",
+        "repeated_claim=149/90",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "הגזמת מספרים",
+      "summary": "סרטון שמופץ ברשת מוצג כאילו צולם באזור כפר סמוך 90, אך יש טענות שהוא ישן ואינו קשור לאירועים הנוכחיים."
+    },
+    {
+      "event_id": "REC-070409",
+      "score": 10.5,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "geo_words",
+        "repeated_claim=149/90",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "מיקום שגוי",
+      "summary": "סרטון שמופץ ברשת מוצג כאילו צולם באזור אזור כפרי מערבי, אך יש טענות שהוא ישן ואינו קשור לאירועים הנוכחיים."
+    },
+    {
+      "event_id": "REC-090014",
+      "score": 10.5,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "geo_words",
+        "repeated_claim=149/90",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "פרשנות מוטה",
+      "summary": "סרטון שמופץ ברשת מוצג כאילו צולם באזור כפר סמוך 58, אך יש טענות שהוא ישן ואינו קשור לאירועים הנוכחיים."
+    },
+    {
+      "event_id": "REC-083689",
+      "score": 10.5,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "geo_words",
+        "repeated_claim=149/90",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "סרטון ישן",
+      "summary": "סרטון שמופץ ברשת מוצג כאילו צולם באזור כיכר מרכזית 85, אך יש טענות שהוא ישן ואינו קשור לאירועים הנוכחיים."
+    },
+    {
+      "event_id": "REC-055271",
+      "score": 10.5,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "geo_words",
+        "repeated_claim=149/90",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "תוכן מפוברק",
+      "summary": "סרטון שמופץ ברשת מוצג כאילו צולם באזור נקודת בידוק כללית 3, אך יש טענות שהוא ישן ואינו קשור לאירועים הנוכחיים."
+    },
+    {
+      "event_id": "REC-021746",
+      "score": 10.5,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "geo_words",
+        "repeated_claim=149/90",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "תוכן מפוברק",
+      "summary": "סרטון שמופץ ברשת מוצג כאילו צולם באזור בית ספר 32, אך יש טענות שהוא ישן ואינו קשור לאירועים הנוכחיים."
+    },
+    {
+      "event_id": "REC-081825",
+      "score": 10.5,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "geo_words",
+        "repeated_claim=149/90",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "הכחשה שקרית",
+      "summary": "סרטון שמופץ ברשת מוצג כאילו צולם באזור צומת מקומי 114, אך יש טענות שהוא ישן ואינו קשור לאירועים הנוכחיים."
+    },
+    {
+      "event_id": "REC-039507",
+      "score": 10.5,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "geo_words",
+        "repeated_claim=149/90",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "פרשנות מוטה",
+      "summary": "סרטון שמופץ ברשת מוצג כאילו צולם באזור תחנת דלק 27, אך יש טענות שהוא ישן ואינו קשור לאירועים הנוכחיים."
+    },
+    {
+      "event_id": "REC-077801",
+      "score": 10.5,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "geo_words",
+        "repeated_claim=149/90",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "מיקום שגוי",
+      "summary": "סרטון שמופץ ברשת מוצג כאילו צולם באזור אזור גשר איבר, אך יש טענות שהוא ישן ואינו קשור לאירועים הנוכחיים."
+    },
+    {
+      "event_id": "REC-041890",
+      "score": 10.5,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "geo_words",
+        "repeated_claim=149/90",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "הכחשה שקרית",
+      "summary": "סרטון שמופץ ברשת מוצג כאילו צולם באזור ציר גישה 38, אך יש טענות שהוא ישן ואינו קשור לאירועים הנוכחיים."
+    },
+    {
+      "event_id": "REC-039086",
+      "score": 10.5,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "geo_words",
+        "repeated_claim=149/90",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "שמועת פאניקה",
+      "summary": "סרטון שמופץ ברשת מוצג כאילו צולם באזור כיכר מרכזית 15, אך יש טענות שהוא ישן ואינו קשור לאירועים הנוכחיים."
+    },
+    {
+      "event_id": "REC-005236",
+      "score": 10.5,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "geo_words",
+        "repeated_claim=149/90",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "זמן שגוי",
+      "summary": "סרטון שמופץ ברשת מוצג כאילו צולם באזור נקודת בידוק כללית 61, אך יש טענות שהוא ישן ואינו קשור לאירועים הנוכחיים."
+    },
+    {
+      "event_id": "REC-051980",
+      "score": 10.5,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "geo_words",
+        "repeated_claim=149/90",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "שמועת פאניקה",
+      "summary": "סרטון שמופץ ברשת מוצג כאילו צולם באזור בית ספר 64, אך יש טענות שהוא ישן ואינו קשור לאירועים הנוכחיים."
+    },
+    {
+      "event_id": "REC-067917",
+      "score": 10.5,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "geo_words",
+        "repeated_claim=149/90",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "סרטון ישן",
+      "summary": "סרטון שמופץ ברשת מוצג כאילו צולם באזור צומת כניסה לעיירה, אך יש טענות שהוא ישן ואינו קשור לאירועים הנוכחיים."
+    },
+    {
+      "event_id": "REC-012592",
+      "score": 10.5,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "geo_words",
+        "repeated_claim=149/90",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "הכחשה שקרית",
+      "summary": "סרטון שמופץ ברשת מוצג כאילו צולם באזור ציר גישה 11, אך יש טענות שהוא ישן ואינו קשור לאירועים הנוכחיים."
+    },
+    {
+      "event_id": "REC-010589",
+      "score": 10.5,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "geo_words",
+        "repeated_claim=149/90",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "תוכן מפוברק",
+      "summary": "סרטון שמופץ ברשת מוצג כאילו צולם באזור צומת מקומי 20, אך יש טענות שהוא ישן ואינו קשור לאירועים הנוכחיים."
+    },
+    {
+      "event_id": "REC-027478",
+      "score": 10.5,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "geo_words",
+        "repeated_claim=149/90",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "תוכן מפוברק",
+      "summary": "סרטון שמופץ ברשת מוצג כאילו צולם באזור כפר סמוך 65, אך יש טענות שהוא ישן ואינו קשור לאירועים הנוכחיים."
+    },
+    {
+      "event_id": "REC-053281",
+      "score": 10.5,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "geo_words",
+        "repeated_claim=149/90",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "שמועת פאניקה",
+      "summary": "סרטון שמופץ ברשת מוצג כאילו צולם באזור ציר גישה 34, אך יש טענות שהוא ישן ואינו קשור לאירועים הנוכחיים."
+    },
+    {
+      "event_id": "REC-067695",
+      "score": 10.5,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "geo_words",
+        "repeated_claim=149/90",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "הגזמת מספרים",
+      "summary": "סרטון שמופץ ברשת מוצג כאילו צולם באזור בית ספר 32, אך יש טענות שהוא ישן ואינו קשור לאירועים הנוכחיים."
+    },
+    {
+      "event_id": "REC-098582",
+      "score": 10.5,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "geo_words",
+        "repeated_claim=149/90",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "זיהוי שגוי של כוח",
+      "summary": "סרטון שמופץ ברשת מוצג כאילו צולם באזור ציר גישה 18, אך יש טענות שהוא ישן ואינו קשור לאירועים הנוכחיים."
+    },
+    {
+      "event_id": "REC-084884",
+      "score": 10.5,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "geo_words",
+        "repeated_claim=149/90",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "מיקום שגוי",
+      "summary": "סרטון שמופץ ברשת מוצג כאילו צולם באזור צומת מקומי 126, אך יש טענות שהוא ישן ואינו קשור לאירועים הנוכחיים."
+    },
+    {
+      "event_id": "REC-092473",
+      "score": 10.5,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "geo_words",
+        "repeated_claim=149/90",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "פרשנות מוטה",
+      "summary": "סרטון שמופץ ברשת מוצג כאילו צולם באזור מרכז בריאות 117, אך יש טענות שהוא ישן ואינו קשור לאירועים הנוכחיים."
+    },
+    {
+      "event_id": "REC-018005",
+      "score": 10.5,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "geo_words",
+        "repeated_claim=149/90",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "סרטון ישן",
+      "summary": "סרטון שמופץ ברשת מוצג כאילו צולם באזור ציר גישה 48, אך יש טענות שהוא ישן ואינו קשור לאירועים הנוכחיים."
+    },
+    {
+      "event_id": "REC-089259",
+      "score": 10.5,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "geo_words",
+        "repeated_claim=149/90",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "סרטון ישן",
+      "summary": "סרטון שמופץ ברשת מוצג כאילו צולם באזור ציר גישה 48, אך יש טענות שהוא ישן ואינו קשור לאירועים הנוכחיים."
+    },
+    {
+      "event_id": "REC-028482",
+      "score": 10.5,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "geo_words",
+        "repeated_claim=149/90",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "פרשנות מוטה",
+      "summary": "סרטון שמופץ ברשת מוצג כאילו צולם באזור אזור תעשייה קטן 118, אך יש טענות שהוא ישן ואינו קשור לאירועים הנוכחיים."
+    },
+    {
+      "event_id": "REC-048337",
+      "score": 10.5,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "geo_words",
+        "repeated_claim=149/90",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "רעש שנראה צבאי",
+      "summary": "סרטון שמופץ ברשת מוצג כאילו צולם באזור בית חולים אזורי, אך יש טענות שהוא ישן ואינו קשור לאירועים הנוכחיים."
+    },
+    {
+      "event_id": "REC-034288",
+      "score": 10.5,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "geo_words",
+        "repeated_claim=149/90",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "תוכן מפוברק",
+      "summary": "סרטון שמופץ ברשת מוצג כאילו צולם באזור אזור מיוער 50, אך יש טענות שהוא ישן ואינו קשור לאירועים הנוכחיים."
+    },
+    {
+      "event_id": "REC-086356",
+      "score": 10.5,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "geo_words",
+        "repeated_claim=149/90",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "פרשנות מוטה",
+      "summary": "סרטון שמופץ ברשת מוצג כאילו צולם באזור נקודת בידוק כללית 68, אך יש טענות שהוא ישן ואינו קשור לאירועים הנוכחיים."
+    },
+    {
+      "event_id": "REC-089989",
+      "score": 10.5,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "geo_words",
+        "repeated_claim=149/90",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "רעש שנראה צבאי",
+      "summary": "סרטון שמופץ ברשת מוצג כאילו צולם באזור בית ספר 59, אך יש טענות שהוא ישן ואינו קשור לאירועים הנוכחיים."
+    },
+    {
+      "event_id": "REC-034576",
+      "score": 10.5,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "geo_words",
+        "repeated_claim=149/90",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "מיקום שגוי",
+      "summary": "סרטון שמופץ ברשת מוצג כאילו צולם באזור כפר סמוך 66, אך יש טענות שהוא ישן ואינו קשור לאירועים הנוכחיים."
+    },
+    {
+      "event_id": "REC-093167",
+      "score": 10.5,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "geo_words",
+        "repeated_claim=149/90",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "זיהוי שגוי של כוח",
+      "summary": "סרטון שמופץ ברשת מוצג כאילו צולם באזור בית ספר 120, אך יש טענות שהוא ישן ואינו קשור לאירועים הנוכחיים."
+    },
+    {
+      "event_id": "REC-083916",
+      "score": 10.5,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "geo_words",
+        "repeated_claim=149/90",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "מיקום שגוי",
+      "summary": "סרטון שמופץ ברשת מוצג כאילו צולם באזור תחנת דלק 63, אך יש טענות שהוא ישן ואינו קשור לאירועים הנוכחיים."
+    },
+    {
+      "event_id": "REC-080124",
+      "score": 10.5,
+      "certainty_level": "נמוכה",
+      "reasons": [
+        "certainty=נמוכה",
+        "old_video",
+        "geo_words",
+        "repeated_claim=149/90",
+        "multi_municipality=4"
+      ],
+      "eval_misleading_type": "רעש שנראה צבאי",
+      "summary": "סרטון שמופץ ברשת מוצג כאילו צולם באזור מרכז בריאות 87, אך יש טענות שהוא ישן ואינו קשור לאירועים הנוכחיים."
+    }
+  ]
+}

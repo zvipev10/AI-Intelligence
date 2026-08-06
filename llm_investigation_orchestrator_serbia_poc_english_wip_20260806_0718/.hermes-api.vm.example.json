@@ -1,0 +1,6 @@
+{
+  "transport": "direct",
+  "remote_host": "127.0.0.1",
+  "remote_port": 8642,
+  "api_key": "YOUR_HERMES_API_KEY"
+}

@@ -1,0 +1,62 @@
+[
+  {
+    "id": "real_hotspots_20260621",
+    "saved": "llm_investigation_orchestrator_serbia_poc\\recorded_runs_limit2000_20260621\\real_hotspots_20260621.json",
+    "elapsed_ms": 69155,
+    "run_id": "run_2123325676df46cf8cdf8708693c2e83",
+    "view": "map",
+    "steps": 4,
+    "tool_events": 8,
+    "event_ids": 12,
+    "answer_len": 557,
+    "performance_log": "20260621T195015Z-run_2123325676df46cf8cdf8708693c2e83.json"
+  },
+  {
+    "id": "q2_movement",
+    "saved": "llm_investigation_orchestrator_serbia_poc\\recorded_runs_limit2000_20260621\\q2_movement.json",
+    "elapsed_ms": 42357,
+    "run_id": "run_256dd49d7e9c46df892f4c3b9bc08dd6",
+    "view": "timeline",
+    "steps": 4,
+    "tool_events": 8,
+    "event_ids": 5,
+    "answer_len": 629,
+    "performance_log": "20260621T195057Z-run_256dd49d7e9c46df892f4c3b9bc08dd6.json"
+  },
+  {
+    "id": "q3_stabilizer",
+    "saved": "llm_investigation_orchestrator_serbia_poc\\recorded_runs_limit2000_20260621\\q3_stabilizer.json",
+    "elapsed_ms": 127272,
+    "run_id": "run_1a528ef2cc434ac5a5c7176070a278be",
+    "view": "evidence",
+    "steps": 12,
+    "tool_events": 24,
+    "event_ids": 7,
+    "answer_len": 607,
+    "performance_log": "20260621T195305Z-run_1a528ef2cc434ac5a5c7176070a278be.json"
+  },
+  {
+    "id": "q4_violence_noise",
+    "saved": "llm_investigation_orchestrator_serbia_poc\\recorded_runs_limit2000_20260621\\q4_violence_noise.json",
+    "elapsed_ms": 140720,
+    "run_id": "run_34ef507eee9f4311a5f9536db571565a",
+    "view": "timeline",
+    "steps": 16,
+    "tool_events": 32,
+    "event_ids": 13,
+    "answer_len": 849,
+    "performance_log": "20260621T195525Z-run_34ef507eee9f4311a5f9536db571565a.json"
+  },
+  {
+    "id": "q5_assessment",
+    "saved": "llm_investigation_orchestrator_serbia_poc\\recorded_runs_limit2000_20260621\\q5_assessment.json",
+    "elapsed_ms": 119807,
+    "run_id": "run_c33a6b446d444e33a8e48002617076e1",
+    "view": "evidence",
+    "steps": 8,
+    "tool_events": 16,
+    "event_ids": 26,
+    "answer_len": 956,
+    "performance_log": "20260621T195725Z-run_c33a6b446d444e33a8e48002617076e1.json"
+  }
+]

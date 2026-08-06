@@ -1,0 +1,321 @@
+# Serbia/Kosovo Investigation Orchestrator POC
+
+This is a separate POC derived from the current investigation orchestrator. It keeps the same UI, gateway, MCP tool contract, event schema, and investigation logic, but replaces the scenario configuration and default data with a Serbia/North Kosovo corpus.
+
+The purpose of this copy is to validate that the orchestration pattern is scenario-portable: the agent should investigate claims, locations, actors, media reports, disinformation signals, contradictions, and escalation patterns without depending on cargo-specific entities or routes.
+
+## Local Run
+
+```powershell
+$env:PYTHONIOENCODING='utf-8'
+python server.py 8769
+```
+
+Then open `http://127.0.0.1:8769/`.
+
+The local UI serves static assets and forwards investigation runs through the same Hermes gateway pattern used by the original POC. A separate Hermes deployment/configuration is still required before this POC can run end-to-end against a remote agent.
+
+## Hermes API Configuration
+
+The UI gateway always reads its runtime Hermes connection settings from:
+
+```text
+.hermes-api.json
+```
+
+The real `.hermes-api.json` file is intentionally not committed because it contains the Hermes API key and, for local development, the VM SSH key path. Use the committed examples as templates:
+
+```text
+.hermes-api.local.example.json
+.hermes-api.vm.example.json
+```
+
+For local development on the Codex/Windows machine, copy `.hermes-api.local.example.json` to `.hermes-api.json` and fill in the VM address, SSH key path, and API key. In this mode the same `server.py` uses SSH/Paramiko to reach the Hermes API listening on the VM loopback address.
+
+For deployment on the Hermes VM, copy `.hermes-api.vm.example.json` to `/opt/serbia-poc-ui/.hermes-api.json` and fill in the API key. In this mode the same `server.py` uses `"transport": "direct"` and talks to Hermes locally at `127.0.0.1:8642`, without SSH.
+
+The public bind address is also runtime configuration, not a separate code fork. Locally the server defaults to `127.0.0.1`. On the VM, the systemd service should set:
+
+```text
+POC_UI_HOST=0.0.0.0
+```
+
+So the intended split is:
+
+```text
+same server.py
+different .hermes-api.json
+different POC_UI_HOST value
+```
+
+## Data Projection
+
+The source dataset is retained under `data/north_kosovo_attachment_inspect/`, with source channels normalized for the analyst-facing runtime.
+
+The runtime MCP reads:
+
+```text
+data/serbia_kosovo_events_projection.csv
+data/serbia_kosovo_locations.json
+data/serbia_kosovo_entities.json
+```
+
+The projection maps the Serbia/Kosovo source fields into the existing canonical event schema:
+
+```text
+event_id,timestamp_utc,source_type,source_reliability,source_reliability_label,certainty_level,entity_id,location_id,event_summary
+```
+
+The runtime file is intentionally clean. It exposes only the canonical fields above. `event_summary` contains only the original raw text, and `source_reliability` is neutralized to avoid leaking truth labels.
+
+Locations and entities are normalized in the same way:
+
+- Event records contain `location_id`; location names, coordinates, and metadata come from `serbia_kosovo_locations.json`.
+- Event records contain `entity_id`; entity names, aliases, and metadata come from `serbia_kosovo_entities.json`.
+- The old `entity_or_actor` field was removed from the runtime events projection.
+- The entities DB contains 16 entities, one for each actor/entity value in the projected corpus.
+
+Source normalization:
+
+- `source_category` is removed from the raw CSV/JSONL and evaluator-label CSV.
+- The former source types `דיווח אזרחי` and `דיווח חירום` are remapped to approved visible channels such as `חדשות מקומיות`, `טלגרם`, `טיקטוק`, `שמועה מקומית`, `X`, `קבוצת וואטסאפ`, `הודעת דובר`, and `בלוג פוליטי`.
+- Generic `information_type` values `דיווח אזרחי` and `רעש לא קשור` are remapped by content cues into operational categories such as `כלכלי/חברתי`, `תחבורה/לוגיסטיקה אזרחית`, `רפואי/חירום`, `פינוי/חילוץ`, `רשתות חברתיות`, `דיווח פיצוץ`, and `מדיני/דיפלומטי`.
+- The normalizer is `data/normalize_sources.py`; it also writes `data/source_normalization_report.json`.
+
+Evaluation-only labels are stored separately in:
+
+```text
+data/serbia_kosovo_evaluator_labels.csv
+```
+
+That file contains scenario IDs, clusters, ground-truth status, misleading-type labels, rumor/disinformation flags, and original reliability labels. It is not used by the MCP server or UI.
+
+## MCP Tools
+
+The MCP server remains read-only and exposes seventeen tools:
+
+```text
+classify_question_intent
+plan_next_investigation_step
+search_events
+semantic_search_events
+get_objects
+resolve_location
+resolve_event_reference
+find_actor_history
+aggregate_events
+explain_linkage
+build_event_sequence
+resolve_entity
+trace_identifier
+trace_semantic_clues
+find_related_events
+compare_location_claims
+challenge_hypothesis
+```
+
+Scenario-specific configuration was replaced with Serbia/Kosovo locations, actors, identifier patterns, and semantic clues. Hidden scenario labels are deliberately kept out of the agent-visible runtime.
+
+`semantic_search_events` is the shared semantic retrieval entry point. The deployment default is now `hybrid_embedding`: the tool first uses lexical TF-IDF to preserve stable candidate recall, then reranks the candidates with local dense/concept embedding signals and lightweight penalties for generic matches. The backend remains configurable through `INTELLIGENCE_POC_SEMANTIC_BACKEND`; `lexical_tfidf` is still available as a baseline and fallback, and the API is intentionally shaped so a future multilingual embedding model or vector database can replace the local encoder without changing the orchestrator contract.
+
+The same hybrid backend is also used as a candidate-generation signal inside higher-level tools:
+
+- `resolve_event_reference` uses hybrid semantic retrieval to map vague analyst references to candidate anchor events after extracting visible search/location/entity terms.
+- `trace_semantic_clues` uses hybrid semantic retrieval over input clues, LLM-expanded clues, and seed summaries, then applies clue-specific scoring, negation handling, next-seed selection, and next-clue extraction.
+- `find_related_events` uses hybrid semantic similarity only as a supporting `"semantic"` dimension. Structured bridges such as shared entity, identifier, time, and location remain dominant.
+
+`get_objects` is the general object retrieval tool for the three runtime layers:
+
+- `object_type="event"` retrieves event objects by `event_ids`.
+- `object_type="location"` retrieves location-layer objects by `location_ids`.
+- `object_type="entity"` retrieves entity-layer objects by `entity_ids`.
+- `object_type="all"` can retrieve event objects and the related location/entity layers together.
+
+Entity-aware tools should prefer `entity_ids` over natural-language actor names. Some schemas still accept `actors` as compatibility input, but the normalized runtime model is `entity_id` based.
+
+## Verification
+
+Run a local MCP smoke test:
+
+```powershell
+$env:PYTHONIOENCODING='utf-8'
+python mcp_server/smoke_client.py
+```
+
+Run the tool benchmark:
+
+```powershell
+$env:PYTHONIOENCODING='utf-8'
+python mcp_server/benchmark_tools.py --rounds 3
+```
+
+The benchmark covers the full tool surface against Serbia/Kosovo questions: intent classification, location/event resolution, broad search, semantic search, filtered search, actor history, aggregations, linkage explanation, sequence building, entity resolution, identifier tracing, semantic tracing, related-event expansion, location-claim comparison, and hypothesis challenge.
+
+Run the semantic tool integration comparison:
+
+```powershell
+$env:PYTHONIOENCODING='utf-8'
+python docs/quality/score_semantic_tool_integration.py --current-label working_tree
+```
+
+The current semantic integration reference is:
+
+```text
+docs/quality/semantic_tool_integration_gold_v2.json
+```
+
+The latest saved comparison is:
+
+```text
+docs/quality/semantic_tool_integration_runs/semantic_tool_integration_comparison_20260706T120341Z.md
+```
+
+It compares the pre-integration baseline against the current hybrid semantic implementation for `resolve_event_reference`, `trace_semantic_clues`, and `find_related_events`.
+
+## Saved Questions
+
+Saved Questions are the user-facing replacement for demo-only recorded replay. After a successful live investigation, press `שמור` beside the final answer `הצג תוצאות` button to persist the full `/api/investigate` result.
+
+Runtime files live in:
+
+```text
+saved_questions/
+```
+
+The UI reads and writes them through:
+
+```text
+GET    /api/saved-questions
+GET    /api/saved-question?id=<saved-id>
+POST   /api/saved-question
+DELETE /api/saved-question?id=<saved-id>
+```
+
+Each saved file stores `id`, `schema_version`, `title`, `question`, `saved_at_utc`, `source_run_id`, and the full `result` object. Loading a saved question does not call Hermes; it restores the final answer, investigation steps, tool outputs, event/location/entity layers, map, timeline, table, and usage/performance metadata from the saved artifact.
+
+Runtime saved question JSON files are ignored by git. Keep only `saved_questions/.gitkeep` and docs in source control unless a deliberate sample fixture is needed.
+
+## Recorded Demo Runs
+
+Recorded runs live in:
+
+```text
+recorded_runs/
+```
+
+The UI reads them through:
+
+```text
+GET /api/recorded-questions
+GET /api/recorded-run?id=<recording-id>
+```
+
+Each file should contain `id`, `question`, `title`, `recorded_at_utc`, `elapsed_ms`, `source`, and the full live Hermes `result`. Do not hand-write shortened demo answers; record real `/api/investigate` responses so the replay includes the real final answer, investigation steps, tool outputs, IDs, layers, and usage metadata.
+
+Create a recording locally:
+
+```powershell
+$env:PYTHONPATH=(Resolve-Path ..\.tools\python).Path
+$env:PYTHONIOENCODING='utf-8'
+& "C:\Users\e054922\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe" server.py 8769
+```
+
+In another PowerShell window:
+
+```powershell
+$question = "האם ניתן לזהות דפוס של תנועת כוחות או הגברת נוכחות בזמן ובמרחב?"
+$body = @{
+  prompt = $question
+  history = @()
+  investigation_id = "recording-q2-$(Get-Date -Format yyyyMMddHHmmss)"
+} | ConvertTo-Json -Depth 20
+$started = Get-Date
+$result = Invoke-RestMethod -Method Post -Uri "http://127.0.0.1:8769/api/investigate" -ContentType "application/json; charset=utf-8" -Body $body
+$elapsed = [int]((Get-Date) - $started).TotalMilliseconds
+$recording = [ordered]@{
+  id = "q2_movement"
+  question = $question
+  title = "תנועת כוחות והגברת נוכחות"
+  recorded_at_utc = (Get-Date).ToUniversalTime().ToString("o")
+  elapsed_ms = $elapsed
+  source = "live_hermes_run_main_rerun_$(Get-Date -Format yyyyMMdd)"
+  result = $result
+}
+$recording | ConvertTo-Json -Depth 100 | Set-Content -Encoding utf8 "recorded_runs\q2_movement.json"
+```
+
+Verify locally:
+
+```powershell
+Invoke-RestMethod "http://127.0.0.1:8769/api/recorded-questions"
+Invoke-RestMethod "http://127.0.0.1:8769/api/recorded-run?id=q2_movement"
+```
+
+Deploy recordings by deploying the UI package with the full `recorded_runs/` directory to `/opt/serbia-poc-ui/recorded_runs`, then restart `serbia-poc-ui.service`. Recording-only changes do not require a Hermes or MCP restart.
+
+Verify on the VM:
+
+```bash
+curl -k -fsS https://151.145.93.180/api/recorded-questions
+curl -k -fsS "https://151.145.93.180/api/recorded-run?id=q2_movement" | head -c 500
+```
+
+## UI Result Layers
+
+The app presents tool and final-answer outputs as additive visual layers, not as one global replacement dataset.
+
+Layer identity:
+
+- `sourceId` identifies the source chat object: final assistant answer or a specific investigation step.
+- `dataId` identifies the actual data layer inside that source: events, locations, time aggregation, or generic aggregation.
+- The concrete UI layer key combines `sourceId + dataId`.
+
+Layer behavior:
+
+- Pressing `הצג` adds/focuses all layers related to that source.
+- Pressing the same `הצג` again does not duplicate existing layers.
+- Closing a layer with `x` removes it from the current workspace.
+- Pressing `הצג` again after closing recreates the missing layer.
+- Each open layer gets an automatically assigned color; the color is released when the layer is closed.
+- Layer visibility is controlled with the eye toggle.
+
+Visualization behavior:
+
+- Map-capable layers are rendered as colored point markers.
+- Clicking a map point opens a popup with location name, item count, and contributing layer labels.
+- Timeline-capable layers use the layer color on timeline dots.
+- Table tabs represent layers and show the layer color, count, visibility toggle, and close control.
+
+## UI Deployment
+
+The VM serves the public UI at:
+
+```text
+https://151.145.93.180/
+```
+
+The active deployed UI directory is:
+
+```text
+/opt/serbia-poc-ui
+```
+
+Deployment rules:
+
+- Use the same `server.py` for local and VM deployments.
+- Local `.hermes-api.json` normally uses SSH transport through the VM.
+- VM `.hermes-api.json` uses `"transport": "direct"` against `127.0.0.1:8642`.
+- Preserve the existing VM API key from `/opt/serbia-poc-ui/.hermes-api.json`.
+- Include `server.py`, `index.html`, `app.js`, `styles.css`, `help.html`, `README.md`, `vendor/`, `data/`, `recorded_runs/`, and `saved_questions/`.
+- Restart `serbia-poc-ui.service`.
+- Verify the public HTTPS endpoint, not only files on disk.
+
+Useful VM checks:
+
+```bash
+sudo systemctl is-active serbia-poc-ui.service
+sudo systemctl is-active hermes-gateway.service
+curl -k -fsS https://151.145.93.180/ | grep -E 'styles.css\?v=|app.js\?v='
+curl -fsS http://127.0.0.1:8769/api/status
+curl -fsS http://127.0.0.1:8769/api/live-steps
+```
