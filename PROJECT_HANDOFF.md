@@ -1,12 +1,12 @@
 # AI Intelligence Project Handoff
 
-Last updated: 2026-07-28
+Last updated: 2026-08-06
 
 This is the primary handoff for continuing the AI Intelligence project in another assistant/chat. It reflects the integrated Serbia POC on `main`, including investigation memory, the `מכלול` team interaction foundation, V2.1 fusion evidence, specialized Moshe routing and mission continuity, the persisted attack-target catalog, and the existing additive result-layer investigation experience.
 
 ## One-Line Summary
 
-The active project is the Serbia/North Kosovo intelligence-analysis POC: a Hebrew analyst UI backed by General and Moshe Hermes runtimes plus MCP tools over the 14,800-record V2.1 synthetic intelligence dataset. The UI combines investigation memory and team-directed prompts with additive event, location, entity, aggregation, and attack-target layers rendered according to their map/timeline/table capabilities.
+The active project is the Serbia/North Kosovo intelligence-analysis POC: a Hebrew analyst UI backed by General and Moshe Hermes runtimes plus MCP tools over the 14,800-record V2.1 synthetic intelligence dataset. The UI combines investigation memory, scenario playback, and team-directed prompts with additive event, location, entity, aggregation, and attack-target layers rendered according to their map/timeline/table capabilities.
 
 ## Repository And Current State
 
@@ -16,9 +16,9 @@ Repository:
 
 Current branch:
 
-- Active working branch for the latest validation record: `codex/workstream-desktop-visibility`
+- The working repository used for deployment recovery on 2026-08-06 is on `main`.
 - PR #22 merged `codex/moshe-attack-targets` into `main` on 2026-07-21.
-- Merge commit at this handoff: `43ecd2e`.
+- The older branch references in this handoff are historical only; do not assume they reflect the current checked-out branch.
 - Always fetch before continuing and verify the current head with `git log -1 --oneline`.
 
 Important local workspace rule:
@@ -31,6 +31,119 @@ Current local working tree expectation:
 - `main` should be aligned with `origin/main`; do not assume the current working branch or tree is clean.
 - Do not continue from stale local files if `git fetch origin` shows the active remote branch ahead.
 - Identify and preserve unrelated dirty files before staging, switching branches, or deploying.
+- As of 2026-08-06, the local workspace may still contain an unrelated dirty file: `moshe_profile/provision_profile.py`.
+- An isolated English WIP sibling workspace exists outside the restored repo; do not stage or deploy it accidentally from the main repo.
+
+## Latest Update: English Localization Hardening In Isolated WIP
+
+Date: 2026-08-06
+
+The isolated English WIP advanced from partial shell localization toward proper backend-served English behavior.
+
+What was clarified and implemented in the isolated English WIP:
+
+- a client-side translation patch for English leftovers was explicitly rejected;
+- the correct direction is backend/data localization, not UI-only substitution;
+- the English workstream now targets server-side localization of English responses, including:
+  - `source_type`
+  - `source_types`
+  - recorded-answer and investigation-step text fields such as `answer`, `result`, `action`, `decision`, `bridge_summary`, and related step metadata;
+- the temporary frontend translation workaround in `app.js` was removed again after the backend path was introduced;
+- the English WIP server now localizes JSON payloads for `lang=en` before returning them to the client;
+- the English playback/recorded-run path was redirected to localize from the canonical recorded runs on the backend rather than relying on `recorded_runs_en` as an authoritative source.
+
+Current status of that work:
+
+- the backend-localization direction is the intended architecture for English mode;
+- the isolated WIP still needs final validation with live English responses after deployment;
+- the VM deployment of this latest English WIP was attempted but blocked in the current session because the VM SSH private key or real local `.hermes-api.json` was not present in the workspace.
+
+Operational blocker encountered on 2026-08-06:
+
+- the deploy script and VM target were confirmed:
+  - host: `151.145.93.180`
+  - root: `/opt/serbia-poc-ui`
+  - service: `serbia-poc-ui.service`
+- however, only example Hermes config files were available locally;
+- no deployable SSH key was available in the project, the broader `AI Intelligence` workspace, or `C:\Users\user\.ssh`;
+- therefore this exact English WIP state was not deployed from this session.
+
+Recommended next continuation step:
+
+- restore access to the real VM SSH key path or the real local `.hermes-api.json`;
+- deploy the isolated English WIP;
+- validate the following in English mode against the deployed VM:
+  - source types in all visible surfaces;
+  - “What came back” investigation-step content;
+  - recorded runs;
+  - workstream result tables;
+  - language switching regression against Hebrew mode.
+
+## Previous Update: Hebrew Restore Deployed, English Work Isolated
+
+Date: 2026-08-06
+
+The public VM was restored to the last stable Hebrew build after a partial English localization branch was found to be incomplete for deployment.
+
+- The public UI was redeployed from the committed Hebrew state on `main`.
+- The live public asset versions after the restore are:
+  - `styles.css?v=129`
+  - `app.js?v=137`
+- Public `/api/status` was revalidated after the restore and returned healthy V2.1 dataset metadata.
+- English work was explicitly not committed and not deployed.
+- Ongoing English localization now continues only in an isolated sibling workspace:
+  - `llm_investigation_orchestrator_serbia_poc_english_wip_20260806_0718`
+
+Current English recommendation:
+
+- continue UI/runtime localization first;
+- do not begin scenario DB translation yet;
+- only evaluate DB translation if English-mode users must read raw record text in English, or retrieval/export quality requires it.
+
+What the isolated English WIP already covers:
+
+- locale-toggle architecture with Hebrew as the default;
+- additional runtime localization in `app.js` for shell/workstream/research/map/timeline labels;
+- `help.html` locale-aware behavior through `?lang=he|en`;
+- continued reduction of static Hebrew dependence in the shell.
+
+What still remains before an English deployment should be considered:
+
+- more static-shell cleanup in `index.html`;
+- final backend/agent locale-hardening across all reply paths;
+- end-to-end English validation for switching, refresh, playback, workstreams, and agent messages.
+
+### Deployment packaging correction — 2026-08-06
+
+An important deployment gap was discovered and corrected during the Hebrew restore.
+
+The VM package must include not only the visible web assets, but also the runtime modules and scenario runtime content required by `server.py`.
+
+At minimum include:
+
+- `server.py`
+- `agent_routing.py`
+- `agent_result_pipeline.py`
+- `scenario_playback.py`
+- `workstream_artifacts.py`
+- `index.html`
+- `app.js`
+- `styles.css`
+- `help.html`
+- `README.md`
+- `assets/`
+- `vendor/`
+- `data/`
+- `recorded_runs/`
+- `saved_questions/`
+- `scenario_manifests/`
+- `scenario_runs/`
+
+Operational notes:
+
+- Preserve the existing VM `/opt/serbia-poc-ui/.hermes-api.json`; do not overwrite it with local placeholders.
+- A partial package that omitted `scenario_playback.py` caused the UI service to fail with `ModuleNotFoundError: No module named 'scenario_playback'`.
+- A partial package that omitted `agent_routing.py` would also silently miss current Moshe-routing behavior such as bilingual `@משה` / `@Moshe` mention handling.
 
 ## Latest Update: REC-V2-007215 Final Validation
 
