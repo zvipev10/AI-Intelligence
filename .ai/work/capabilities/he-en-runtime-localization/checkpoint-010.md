@@ -39,12 +39,46 @@ Implement the approved playback simplification:
 - `python -m unittest test_workstreams.py test_workstream_artifacts.py test_scenario_playback.py test_workstream_ui.py test_moshe_profile.py -q`
 - `cd mcp_server && python -m unittest test_playback_visibility.py test_workstream_indication_tools.py -q`
 
+## Production deployment
+
+Deployed to VM `151.145.93.180` on 2026-08-08.
+
+Changed runtime files installed under `/opt/serbia-poc-ui`:
+
+- `server.py`
+- `app.js`
+- `index.html`
+- `scenario_manifests/brnjak-engineering-assessment-v1.json`
+
+Rollback backup:
+
+- `/opt/serbia-poc-ui-backups/staged-playback-20260808T203509Z`
+
+Production deployment checks:
+
+- `serbia-poc-ui.service` is active.
+- `GET http://127.0.0.1:8769/api/status` returned build `serbia-poc-v2.1` with 14,800 rows.
+- Deployed `index.html` contains `Staged playback`.
+- Deployed `server.py` contains `visible_ui_events`.
+- Deployed `app.js` contains `initializeStagedPlayback`.
+- Deployed scenario manifest starts at `2026-09-12T04:25:50.096250Z`.
+
+Production smoke:
+
+- Temporarily wrote a baseline active `active_visibility.json`, queried English TikTok layer rows, and restored the previous inactive historical policy afterward.
+- English TikTok rows returned under the baseline policy: 1,073.
+- First returned timestamp: `2026-09-12T04:42:16.063015Z`.
+- Last returned timestamp: `2026-09-17T05:55:41.342520Z`.
+- No sampled row fell outside `2026-09-12T04:25:50.096250Z` to `2026-09-17T06:00:00Z`.
+- `GET /api/playback?investigation_id=smoke-read-only&locale=en` reported `mode: real_time` and the first staged timeframe from dataset start through `2026-09-17T06:00:00Z`.
+- After smoke, `/opt/serbia-poc-ui/scenario_runs/v2.1/active_visibility.json` was restored to the previous inactive historical policy and the UI service remained active.
+
 ## Product behavior after this checkpoint
 
 The user sees one staged playback control. The first loaded state behaves like the previous historical/default state for the initial scenario window because all records from dataset beginning through the first slice boundary are visible. Pressing Next advances the cumulative visible window. Moshe is not asked to reevaluate at baseline creation; he reevaluates only after new data is released and only if active workstreams exist.
 
 ## Risks and follow-ups
 
-- The active playback visibility policy remains global for the current deployed UI/MCP process. Production smoke must restore the previous `active_visibility.json` after test calls.
+- The active playback visibility policy remains global for the current deployed UI/MCP process. Production smoke restored the previous `active_visibility.json` after test calls.
 - Explicit scenario-run IDs are still directly addressable by ID, although investigation-level playback lookup is locale-filtered.
 - Manual UX acceptance is still needed for final wording and layout of the simplified staged control.

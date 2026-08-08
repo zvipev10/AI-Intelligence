@@ -1,7 +1,7 @@
 # Handoff Summary
 
 ## Current state
-The locale-keyed MCP runtime, English semantic cache, target-bank isolation, and Section 4 workstream isolation are deployed and verified. Unified staged playback is implemented locally and ready for VM deployment.
+The locale-keyed MCP runtime, English semantic cache, target-bank isolation, Section 4 workstream isolation, and unified staged playback are deployed and verified.
 
 ## Published baseline
 Commit `eb9168c` on `origin/codex/he-en-localization` contains the brief, developer review, QA review, execution plan, and status dashboard.
@@ -10,10 +10,13 @@ Commit `eb9168c` on `origin/codex/he-en-localization` contains the brief, develo
 The screenshot was caused by partially translated `.en` assets, not by the English UI toggle. The old generator accepted mixed Hebrew/English output. The regenerated active v2.1 runtime contains 14,800 rows with zero Hebrew matches; the TikTok subset contains 1,101 clean rows.
 
 ## Next action
-Deploy checkpoint 010 to the VM, run production smoke with active-visibility restoration, then run final bilingual acceptance review or proceed to the next localization slice.
+Run final bilingual acceptance review or proceed to the next localization slice.
 
 ## Checkpoint 010 local result
 Playback now has one staged flow. The first visible window starts at the beginning of the v2.1 dataset and ends at the first scenario slice boundary, so initial state behaves like the previous historical/default view for the initial scenario window. Moshe reevaluation is skipped when the baseline is created and can run only after a later slice arrives and active workstreams exist. UI/data layer rows are filtered by the active `visible_timeframe`, open catalog layers reload after timeframe changes, and the UI no longer presents separate historical vs real-time modes while keeping timeframe display and the Next button.
+
+## Checkpoint 010 production result
+Deployed to `151.145.93.180`; backup retained at `/opt/serbia-poc-ui-backups/staged-playback-20260808T203509Z`. Production smoke temporarily activated the baseline visible timeframe, verified English TikTok layer rows were all within `2026-09-12T04:25:50.096250Z` to `2026-09-17T06:00:00Z`, verified playback status reports `mode: real_time` with the dataset-start first window, restored the previous inactive `active_visibility.json`, and confirmed the UI service remained active.
 
 ## Section 4 local result
 Workstreams now persist under `workstreams/v2_1/he/` and `workstreams/v2_1/en/`. Legacy/shared workstream files are Hebrew-owned fallback data only. List, get, create, update, archive, artifacts, presentation, chat actions, and playback reevaluation pass locale through the server/UI path. English user-visible workstream and artifact fields reject Hebrew before persistence.
