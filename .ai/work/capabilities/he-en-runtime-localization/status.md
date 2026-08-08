@@ -4,7 +4,7 @@
 Hebrew and English runtime localization
 
 ## Current phase
-Controlled execution — Slice 1
+Checkpoint review — Slice 1 data remediation complete
 
 ## Overall status
 In progress
@@ -13,29 +13,29 @@ In progress
 
 | Role | Status | Required action | Due before |
 |---|---|---|---|
-| Development | Active | Implement and verify localized data/MCP boundary | Checkpoint 001 |
-| QA | Active | Review locale isolation and fallback tests | Checkpoint 001 acceptance |
+| Development | Paused at gate | Await review, then implement the MCP locale boundary | Checkpoint 002 acceptance |
+| QA | Active | Review clean-English projections and runtime smoke evidence | Checkpoint 002 acceptance |
 | UX | Pending | Review consolidated bilingual UI | Slice 3 acceptance |
 | Product | Pending | Review behavior at checkpoints | Final acceptance |
 
 ## Latest change since previous review
-Checkpoint 001 recorded the latest-main/WIP audit and identified extensive Hebrew leakage in every English projection family.
+Checkpoint 002 regenerated the v2/v2.1 English projections and verified zero Hebrew matches in all six runtime assets and 14,800 runtime-loaded rows.
 
 ## Current blockers
 None for Slice 1. Production deployment credentials are not required yet.
 
 ## Current risks
-English WIP divergence, module-global MCP state, semantic cache isolation, and untranslated generated content.
+Legacy v1/recorded-run localization, module-global MCP state, semantic cache isolation, and production deployment remain pending.
 
 ## Next expected artifact
-`checkpoint-002.md` after projection remediation and locale validation.
+QA/product acceptance of `checkpoint-002.md`, followed by the MCP locale-boundary slice.
 
 ## Artifact links
 - Capability brief: `capability-brief.md`
 - Developer review: `developer-review.md`
 - QA review: `qa-review.md`
 - Execution plan: `execution-plan.md`
-- Latest checkpoint: `checkpoint-001.md`
+- Latest checkpoint: `checkpoint-002.md`
 - Handoff: `handoff-summary.md`
 
 ## Gate checklist

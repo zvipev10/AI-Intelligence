@@ -41,9 +41,9 @@
   },
   {
     "entity_id": "ENT-KOSOVO-MOI",
-    "canonical_name": "משרד הפנים של קוסובו",
+    "canonical_name": "Kosovo Interior Ministry",
     "aliases": [
-      "משרד הפנים של קוסובו"
+      "Kosovo Interior Ministry"
     ],
     "entity_type": "Reporting actor"
   },
@@ -57,9 +57,9 @@
   },
   {
     "entity_id": "ENT-SERBIA-GOV",
-    "canonical_name": "ממשלת סרביה",
+    "canonical_name": "Government of Serbia",
     "aliases": [
-      "ממשלת סרביה"
+      "Government of Serbia"
     ],
     "entity_type": "Reporting actor"
   },
@@ -81,9 +81,9 @@
   },
   {
     "entity_id": "ENT-LOCAL-SERBIAN-LEADERS",
-    "canonical_name": "מנהיגים מקומיים סרבים",
+    "canonical_name": "Local Serbian leaders",
     "aliases": [
-      "מנהיגים מקומיים סרבים"
+      "Local Serbian leaders"
     ],
     "entity_type": "Reporting actor"
   },
@@ -97,137 +97,137 @@
   },
   {
     "entity_id": "ENT-LOCAL-ARMED-GROUP",
-    "canonical_name": "קבוצה חמושה מקומית",
+    "canonical_name": "Local armed group",
     "aliases": [
-      "קבוצה חמושה מקומית"
+      "Local armed group"
     ],
     "entity_type": "Reporting actor"
   },
   {
     "entity_id": "ENT-UNIDENTIFIED-ACTORS",
-    "canonical_name": "גורמים לא מזוהים",
+    "canonical_name": "Unidentified actors",
     "aliases": [
-      "גורמים לא מזוהים"
+      "Unidentified actors"
     ],
     "entity_type": "Reporting actor"
   },
   {
     "entity_id": "ENT-LOCAL-JOURNALISTS",
-    "canonical_name": "עיתונאים מקומיים",
+    "canonical_name": "Local journalists",
     "aliases": [
-      "עיתונאים מקומיים"
+      "Local journalists"
     ],
     "entity_type": "Reporting actor"
   },
   {
     "entity_id": "ENT-AMBULANCES",
-    "canonical_name": "אמבולנסים",
+    "canonical_name": "Ambulances",
     "aliases": [
-      "אמבולנסים"
+      "Ambulances"
     ],
     "entity_type": "Reporting actor"
   },
   {
     "entity_id": "ENT-SAF-2BRIGADE",
-    "canonical_name": "החטיבה השנייה של צבא סרביה",
+    "canonical_name": "Serbian Army 2nd Brigade",
     "aliases": [
       "2nd Army Brigade",
-      "החטיבה השנייה"
+      "2nd Brigade"
     ],
-    "entity_type": "Serbian force - מקור פומבי"
+    "entity_type": "Serbian force - public source"
   },
   {
     "entity_id": "ENT-SAF-21-INF",
-    "canonical_name": "גדוד החי\"ר ה-21",
+    "canonical_name": "21st Infantry Battalion",
     "aliases": [
       "21st Infantry Battalion"
     ],
-    "entity_type": "Serbian force - מקור פומבי"
+    "entity_type": "Serbian force - public source"
   },
   {
     "entity_id": "ENT-SAF-22-INF",
-    "canonical_name": "גדוד החי\"ר ה-22",
+    "canonical_name": "22nd Infantry Battalion",
     "aliases": [
       "22nd Infantry Battalion"
     ],
-    "entity_type": "Serbian force - מקור פומבי"
+    "entity_type": "Serbian force - public source"
   },
   {
     "entity_id": "ENT-SAF-27-MECH",
-    "canonical_name": "הגדוד הממוכן ה-27",
+    "canonical_name": "27th Mechanized Battalion",
     "aliases": [
       "27th Mechanized Battalion"
     ],
-    "entity_type": "Serbian force - מקור פומבי"
+    "entity_type": "Serbian force - public source"
   },
   {
     "entity_id": "ENT-SAF-28-MECH",
-    "canonical_name": "הגדוד הממוכן ה-28",
+    "canonical_name": "28th Mechanized Battalion",
     "aliases": [
       "28th Mechanized Battalion"
     ],
-    "entity_type": "Serbian force - מקור פומבי"
+    "entity_type": "Serbian force - public source"
   },
   {
     "entity_id": "ENT-SAF-210-ENG",
-    "canonical_name": "גדוד ההנדסה ה-210",
+    "canonical_name": "210th Engineering Battalion",
     "aliases": [
       "210th Engineer Battalion"
     ],
-    "entity_type": "Serbian force - מקור פומבי"
+    "entity_type": "Serbian force - public source"
   },
   {
     "entity_id": "ENT-SAF-3BRIGADE",
-    "canonical_name": "החטיבה השלישית של צבא סרביה",
+    "canonical_name": "Serbian Army 3rd Brigade",
     "aliases": [
       "3rd Army Brigade",
-      "החטיבה השלישית"
+      "3rd Brigade"
     ],
-    "entity_type": "Serbian force - מקור פומבי"
+    "entity_type": "Serbian force - public source"
   },
   {
     "entity_id": "ENT-KFOR-RCE",
-    "canonical_name": "KFOR פיקוד אזורי מזרח",
+    "canonical_name": "KFOR Regional Command East",
     "aliases": [
       "KFOR RC-East",
       "Regional Command East"
     ],
-    "entity_type": "כוח נאטו"
+    "entity_type": "NATO force"
   },
   {
     "entity_id": "ENT-KFOR-KTRBN",
-    "canonical_name": "גדוד העתודה הטקטית של KFOR",
+    "canonical_name": "KFOR Tactical Reserve Battalion",
     "aliases": [
       "KTRBN",
       "KFOR Tactical Reserve Battalion"
     ],
-    "entity_type": "כוח נאטו"
+    "entity_type": "NATO force"
   },
   {
     "entity_id": "ENT-KFOR-MSU",
-    "canonical_name": "היחידה הרב-לאומית המיוחדת של KFOR",
+    "canonical_name": "KFOR Multinational Specialized Unit",
     "aliases": [
       "KFOR MSU",
       "Multinational Specialized Unit"
     ],
-    "entity_type": "כוח נאטו"
+    "entity_type": "NATO force"
   },
   {
     "entity_id": "ENT-KFOR-AVIATION",
-    "canonical_name": "כוח התעופה של KFOR",
+    "canonical_name": "KFOR aviation force",
     "aliases": [
       "KFOR Aviation",
       "Aviation Support Task Force"
     ],
-    "entity_type": "כוח נאטו"
+    "entity_type": "NATO force"
   },
   {
     "entity_id": "ENT-NATO-RESERVE",
-    "canonical_name": "כוח עתודה אזורי של נאטו",
+    "canonical_name": "NATO regional reserve force",
     "aliases": [
       "NATO reserve",
-      "כוח תגבור נאטו"
+      "NATO reinforcement force"
     ],
-    "entity_type": "כוח נאטו"
+    "entity_type": "NATO force"
   }
 ]
