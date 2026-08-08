@@ -391,7 +391,6 @@ const workstreamRailCount = document.getElementById("workstreamRailCount");
 const workstreamRailToggle = document.getElementById("workstreamRailToggle");
 const playbackNextButton = document.getElementById("playbackNextButton");
 const languageToggle = document.getElementById("languageToggle");
-const intelligenceModeSelect = document.getElementById("intelligenceModeSelect");
 const intelligencePeriod = document.getElementById("intelligencePeriod");
 const playbackAgentStatus = document.getElementById("playbackAgentStatus");
 const workstreamComposerMode = document.getElementById("workstreamComposerMode");
@@ -611,10 +610,6 @@ function applyLocaleUi() {
   if (helpButton) helpButton.href = `./help.html?lang=${currentLocale()}`;
   const headerTitle = document.querySelector(".header-copy h1");
   if (headerTitle) headerTitle.textContent = activeLocaleText("סביבת מודיעין", "Intelligence Workspace");
-  const intelligenceModeHistorical = intelligenceModeSelect?.querySelector('option[value="historical"]');
-  if (intelligenceModeHistorical) intelligenceModeHistorical.textContent = activeLocaleText("מידע היסטורי", "Historical data");
-  const intelligenceModeRealtime = intelligenceModeSelect?.querySelector('option[value="real_time"]');
-  if (intelligenceModeRealtime) intelligenceModeRealtime.textContent = activeLocaleText("זמן אמת", "Real-time");
   const investigationLabel = document.querySelector('.investigation-switcher label[for="investigationInput"]');
   if (investigationLabel) investigationLabel.textContent = activeLocaleText("חקירה פעילה", "Active investigation");
   if (investigationInput) {
@@ -2661,9 +2656,8 @@ async function reloadOpenCatalogLayers() {
 }
 
 function renderInvestigationPlayback() {
-  if (!playbackNextButton || !intelligenceModeSelect || !intelligencePeriod) return;
+  if (!playbackNextButton || !intelligencePeriod) return;
   const playback = state.investigationPlayback;
-  intelligenceModeSelect.textContent = activeLocaleText("ניגון מדורג", "Staged playback");
   renderWorkstreamIndicator();
   const timeframe = playback?.run?.visible_timeframe || playback?.full_timeframe;
   intelligencePeriod.textContent = timeframe?.from && timeframe?.to
@@ -2844,7 +2838,6 @@ async function advanceInvestigationPlayback() {
 }
 
 async function changeIntelligenceMode() {
-  if (!intelligenceModeSelect) return;
   try {
     await initializeStagedPlayback();
   } catch (error) {
@@ -5253,7 +5246,6 @@ promptOptionsButton.addEventListener("click", event => {
 });
 workstreamRailToggle?.addEventListener("click", () => setWorkstreamRailCollapsed(!state.workstreamRailCollapsed));
 playbackNextButton?.addEventListener("click", advanceInvestigationPlayback);
-intelligenceModeSelect?.addEventListener("change", changeIntelligenceMode);
 languageToggle?.addEventListener("change", () => {
   state.locale = languageToggle.checked ? "en" : "he";
   try {
