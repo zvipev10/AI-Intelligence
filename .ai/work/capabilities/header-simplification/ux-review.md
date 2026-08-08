@@ -10,7 +10,7 @@ Draft - pending human approval
 
 ## Context reviewed
 
-User request and current header markup/styles.
+User request and latest-main bilingual header markup/styles. Product confirmed that the data indicator represents dataset status.
 
 ## User flow
 
@@ -33,7 +33,7 @@ Loading uses a neutral indicator and “Checking…”/equivalent accessible sta
 ## Copy / terminology
 
 - Visible language labels: `E`, `ע`.
-- Detail labels: `Hermes` and either `Database` or `Dataset`, pending semantic confirmation.
+- Detail labels: `Hermes` and `Dataset`, localized for the active UI language.
 
 ## Accessibility notes
 
@@ -48,14 +48,13 @@ Mixed RTL/LTR alignment, long errors, responsive stacking, touch screens, and si
 
 ## Product questions
 
-- Is the current dataset count intended to communicate database connectivity?
 - Should tapping a status pin the detail popover open?
 
 ## Developer questions
 
 - Is there an existing tooltip/popover primitive to reuse?
-- Where does the language state currently live?
+- Reuse `#languageToggle` and its existing locale state in the bilingual WIP app.
 
 ## Review recommendation
 
-Approve the compact direction, conditional on focus/tap parity and confirmation of the DB/dataset label. Human UX/product approval is required before planning or coding.
+Approve the compact direction, conditional on focus/tap parity. Dataset terminology and the language source are confirmed. Human UX approval is required before planning or coding.

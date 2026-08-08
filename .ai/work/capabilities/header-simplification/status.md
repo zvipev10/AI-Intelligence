@@ -16,7 +16,7 @@ Pending human review
 
 | Role | Status | Required action | Due before |
 |---|---|---|---|
-| Product | Pending | Confirm DB/dataset semantics and language-control source | Execution planning |
+| Product | Confirmed | Dataset semantics and language-control source confirmed | — |
 | Development | Draft prepared | Validate source mapping and implementation approach | Execution planning |
 | UX | Draft prepared | Approve compact control and detail interaction | Execution planning |
 | QA | Pending | Review state and accessibility coverage | Coding |
@@ -24,12 +24,11 @@ Pending human review
 
 ## Latest change since previous review
 
-Initial capability, UX, and developer drafts created from the user request and current header source.
+Based on latest `main`; dataset semantics are confirmed and the language switch is located in the bilingual WIP app.
 
 ## Current blockers
 
-- No language switch exists in the checked-out UI source.
-- “DB connection” may refer to the current dataset-availability status, which is not explicitly a database connection.
+- Human approval/delegation of the UX and developer reviews is required before execution planning.
 
 ## Current risks
 

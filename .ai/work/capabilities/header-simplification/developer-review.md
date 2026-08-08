@@ -14,7 +14,7 @@ AI-prepared draft based on repository inspection; not human-approved.
 
 ## Context reviewed
 
-`llm_investigation_orchestrator_serbia_poc/index.html`, `styles.css`, and status logic in `app.js`.
+Latest `main`, including the bilingual WIP app's `index.html`, `styles.css`, and `app.js`.
 
 ## Product requirements understood
 
@@ -22,14 +22,14 @@ Reduce header density, compact the language selector to `E`/`ע`, and convert ve
 
 ## Feasibility
 
-The existing status DOM and runtime updates are straightforward to restyle and enrich accessibly. Language-switch feasibility cannot be finalized because no switch/state was found locally.
+The existing status DOM and runtime updates are straightforward to restyle and enrich accessibly. The switch exists as `#languageToggle`, with full labels adjacent to its track.
 
 ## Likely affected files/services
 
-- `llm_investigation_orchestrator_serbia_poc/index.html`
-- `llm_investigation_orchestrator_serbia_poc/styles.css`
-- `llm_investigation_orchestrator_serbia_poc/app.js`
-- No backend change unless true DB connectivity is not present in `/api/status`.
+- `llm_investigation_orchestrator_serbia_poc_english_wip_20260806_0718/index.html`
+- `llm_investigation_orchestrator_serbia_poc_english_wip_20260806_0718/styles.css`
+- `llm_investigation_orchestrator_serbia_poc_english_wip_20260806_0718/app.js`
+- No backend/API change.
 
 ## Existing patterns to follow
 
@@ -57,7 +57,7 @@ Use compact button-like status indicators with a small anchored detail surface a
 
 ## Data/API considerations
 
-No data/API changes for visual compaction. A separate DB status requires confirmation that `/api/status` supplies it.
+No data/API changes. The first compact indicator continues to represent dataset load status and count/version detail.
 
 ## Test strategy
 
@@ -65,8 +65,8 @@ DOM/state tests if available, plus manual checks for loading/success/error/local
 
 ## Proposed execution slices
 
-1. Confirm service semantics and locate language state.
-2. Implement compact controls and accessible detail behavior.
+1. Implement in-track `E`/`ע` labels and compact status markup/styles.
+2. Preserve dynamic dataset/Hermes detail updates and add accessible hover/focus/tap behavior.
 3. Validate all state transitions and responsive/accessibility behavior.
 
 ## Required review gates before coding
@@ -75,5 +75,4 @@ Human approval of UX interaction and service terminology, followed by an executi
 
 ## Blocking questions before execution planning
 
-- Which source/branch contains the current English/Hebrew switch?
-- Does “DB connection” mean the current loaded dataset state or a distinct backend database health signal?
+- None on source location or dataset semantics; both are confirmed.

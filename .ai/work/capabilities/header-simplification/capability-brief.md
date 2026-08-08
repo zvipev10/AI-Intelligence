@@ -66,8 +66,8 @@ Analysts using the investigation workspace in Hebrew or English.
 
 ## Technical constraints
 
-- Current local source has Hermes/MCP and dataset status rows in `index.html`, `styles.css`, and `app.js`.
-- No language switch was found in the checked-out UI source; its current implementation or intended location must be confirmed.
+- Latest `main` has Hermes/MCP and dataset status rows in the primary Serbia POC.
+- The language switch is in `llm_investigation_orchestrator_serbia_poc_english_wip_20260806_0718`; it currently prints `עברית` and `English` outside the track.
 - No backend/API changes are expected.
 
 ## UX notes
@@ -80,20 +80,17 @@ Verify all status transitions, keyboard navigation, RTL layout, responsive layou
 
 ## Risks
 
-- Over-compression could hide whether the status refers to the loaded dataset or a live database connection.
+- Over-compression could hide that the status refers to the loaded dataset.
 - A hover-only implementation would be inaccessible.
-- The requested language switch may exist only in another branch or deployed build.
+- The bilingual WIP is a parallel app copy, so implementation and validation must target it explicitly.
 
 ## Open questions
 
-1. Should the first status represent the loaded dataset (current behavior) or an actual database connection?
-2. Where is the existing English/Hebrew switch that should be simplified?
-3. Should status detail open on click/tap as well as hover/focus?
+1. Should status detail open on click/tap as well as hover/focus?
 
 ## Missing inputs
 
-- Confirmation of the language-switch source or target branch/build.
-- Confirmation of “DB connection” semantics.
+- Human approval of the prepared UX and developer review gate.
 
 ## Required reviewers
 
@@ -117,8 +114,7 @@ Verify all status transitions, keyboard navigation, RTL layout, responsive layou
 ## Handoff to developer
 
 Questions for developer:
-- Locate or identify the intended language-switch implementation.
-- Confirm whether `/api/status` exposes database connectivity separately from dataset availability.
+- Confirm the accessible detail interaction and exact dataset/Hermes state mapping.
 
 Expected developer output:
 - feasibility notes
