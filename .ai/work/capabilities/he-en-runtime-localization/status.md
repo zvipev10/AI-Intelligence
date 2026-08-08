@@ -4,7 +4,7 @@
 Hebrew and English runtime localization
 
 ## Current phase
-QA review — full English data-source audit
+Architecture review — locale-isolated target banks
 
 ## Overall status
 In progress
@@ -13,13 +13,14 @@ In progress
 
 | Role | Status | Required action | Due before |
 |---|---|---|---|
-| Development | Action required | Implement MCP, target-bank, entity-default, and workstream localization | Checkpoint 004 remediation |
-| QA | Review complete | Rerun full production source/API scan after remediation | Next checkpoint |
+| Development | Pending approval | Implement the two-database target-bank split after checkpoint 005 approval | Checkpoint 005 gate |
+| QA | Pending | Validate isolation, migration, English-write rejection, and rollback | Implementation checkpoint |
+| Architecture/Product | Action required | Approve the physical DB split and migration behavior | Before coding/migration |
 | UX | Pending | Review consolidated bilingual UI | Slice 3 acceptance |
 | Product | Pending | Review behavior at checkpoints | Final acceptance |
 
 ## Latest change since previous review
-Checkpoint 004 confirmed clean event/location projections but found active Hebrew leakage in MCP sources, the 21-row target bank, all 28 entity metadata rows, and two persisted workstreams.
+Checkpoint 005 defines two physical target-bank instances. Existing 21 Hebrew targets move to the Hebrew DB; the English DB starts empty and rejects Hebrew presentation/evidence text.
 
 ## Current blockers
 None for Slice 1. Production deployment credentials are not required yet.
@@ -28,14 +29,14 @@ None for Slice 1. Production deployment credentials are not required yet.
 Active MCP data localization, target-bank presentation, entity metadata defaults, workstream metadata, legacy v1, and mutable-state locale isolation remain pending.
 
 ## Next expected artifact
-Development remediation based on `checkpoint-004.md`, followed by a repeated production API/source audit.
+Human approval of `checkpoint-005.md`, followed by controlled implementation and a separately reviewed production migration.
 
 ## Artifact links
 - Capability brief: `capability-brief.md`
 - Developer review: `developer-review.md`
 - QA review: `qa-review.md`
 - Execution plan: `execution-plan.md`
-- Latest checkpoint: `checkpoint-004.md`
+- Latest checkpoint: `checkpoint-005.md`
 - Handoff: `handoff-summary.md`
 
 ## Gate checklist

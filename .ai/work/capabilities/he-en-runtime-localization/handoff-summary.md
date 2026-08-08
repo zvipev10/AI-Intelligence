@@ -10,7 +10,10 @@ Commit `eb9168c` on `origin/codex/he-en-localization` contains the brief, develo
 The screenshot was caused by partially translated `.en` assets, not by the English UI toggle. The old generator accepted mixed Hebrew/English output. The regenerated active v2.1 runtime contains 14,800 rows with zero Hebrew matches; the TikTok subset contains 1,101 clean rows.
 
 ## Next action
-Implement checkpoint 004 remediation: MCP locale-specific data/results, target-bank English presentation fields, localized entity defaults, and localized workstream metadata. Then rerun all-layer production scanning and mobile QA.
+Approve checkpoint 005, then implement the locale-keyed target-bank registry and English-write guard locally. After tests and review, migrate the current shared DB to Hebrew and initialize the English DB empty.
+
+## Target-bank decision awaiting approval
+Use two physical SQLite instances. Preserve the existing 21 targets in the Hebrew instance; do not translate or copy them into English. Start the English bank empty and reject Hebrew characters in every persisted English presentation/evidence field. Route MCP tools, UI catalog reads, and administrative backup/reset/restore operations by normalized locale.
 
 ## Publishing status
 Code/data commit `763253c` is pushed and deployed. The deployment checkpoint is pending its artifact commit and push. Draft PR creation remains unavailable because GitHub CLI is not installed.

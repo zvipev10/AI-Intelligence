@@ -28,11 +28,17 @@ Port only localization-specific WIP changes onto current canonical code. Keep He
 ## Data/API changes
 Add optional `locale: "he" | "en"` to MCP tools and locale to investigation/UI requests. No existing required fields change.
 
+Target persistence uses two physical SQLite instances selected by normalized locale. The existing shared DB becomes the Hebrew instance; the English instance starts empty. Target tools, UI catalog reads, backups, resets, and restores must route to only the selected locale. English persisted presentation/evidence text is rejected if it contains Hebrew characters.
+
 ## Execution slices
 
 ### Slice 1 — Localized data and MCP runtime
 Import verified `.en` assets, add locale normalization and per-locale runtime state, expose locale in tool schemas, and add isolation/fallback tests.
 Risk: medium. Reviewer: development/QA. Stop after slice: yes.
+
+### Slice 1B — Locale-isolated target banks
+Replace the shared target-bank singleton with Hebrew and English SQLite instances, enforce English-only persisted text, migrate the existing 21 records to Hebrew, initialize English empty, route UI/MCP/admin operations by locale, and validate backup/rollback behavior.
+Risk: high (persistent data, API/tool routing, production migration). Reviewer: development/QA/architecture. Stop after slice: yes.
 
 ### Slice 2 — Agent prompt and routing
 Port localized prompts and propagate session locale through investigation and MCP calls.
@@ -48,4 +54,3 @@ Risk: medium. Reviewer: QA/product. Stop after slice: yes.
 
 ## Rollback/fallback notes
 Each slice is independently committed. Hebrew remains the default; locale-aware behavior can be disabled by omitting locale while preserving the previous contract.
-
