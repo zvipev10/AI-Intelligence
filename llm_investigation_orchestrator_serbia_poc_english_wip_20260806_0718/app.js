@@ -3192,6 +3192,40 @@ function buildFinalQueryContext(result, prompt) {
   };
 }
 
+function resolveFinalResultView(result = {}, layers = []) {
+  const requestedView = layers.find(layer => ["map", "timeline"].includes(layer.preferredView))?.preferredView
+    || result.recommended_view;
+  if (["map", "timeline"].includes(requestedView)) return requestedView;
+  if (layers.some(layer => layer.capabilities?.map)) return "map";
+  if (layers.some(layer => layer.capabilities?.timeline)) return "timeline";
+  return "map";
+}
+
+function presentFinalAgentResult(result, prompt, options = {}) {
+  const typedLayers = buildTypedResultLayers(result);
+  const requestedView = resolveFinalResultView(result, typedLayers);
+  state.queryContext = buildFinalQueryContext(result, prompt);
+  const addedLayers = addResultLayers({
+    sourceId: finalSourceId(result),
+    sourceLabel: result.responding_agent === "moshe" ? activeLocaleText("תשובת משה", "Moshe response") : activeLocaleText("תשובת הסוכן", "Agent response"),
+    preferredView: requestedView,
+    layers: typedLayers
+  });
+  if (options.showSummary) {
+    showResult(
+      activeLocaleText("ממצאי הסוכן", "Agent findings"),
+      localizedRestoreOnlySummary(addedLayers.length)
+    );
+  }
+  activateView(requestedView, {
+    automatic: true,
+    reason: result.view_reason || activeLocaleText("הנתונים נבחרו כתשובה לבקשת המשתמש", "Data selected as the answer to the user's request")
+  });
+  renderAllViews();
+  renderQueryInspector();
+  return addedLayers;
+}
+
 function buildStepQueryContext(step, label) {
   return {
     mode: "step",
@@ -3995,21 +4029,7 @@ function applyAgentResult(result, prompt, options = {}) {
   }
 
   if (options.restoreOnly) {
-    state.queryContext = buildFinalQueryContext(result, prompt);
-    const typedLayers = buildTypedResultLayers(result);
-    const requestedView = typedLayers[0]?.preferredView || result.recommended_view || "map";
-    const addedLayers = addResultLayers({
-      sourceId: finalSourceId(result),
-      sourceLabel: result.responding_agent === "moshe" ? activeLocaleText("תשובת משה", "Moshe response") : activeLocaleText("תשובת הסוכן", "Agent response"),
-      preferredView: requestedView,
-      layers: typedLayers
-    });
-    showResult(
-      activeLocaleText("ממצאי הסוכן", "Agent findings"),
-      localizedRestoreOnlySummary(addedLayers.length)
-    );
-    activateView(requestedView, { reason: result.view_reason || activeLocaleText("הנתונים נבחרו כתשובה לבקשת המשתמש", "Data selected as the answer to the user's request") });
-    renderQueryInspector();
+    presentFinalAgentResult(result, prompt, { showSummary: true });
     return;
   }
   if (!options.keepRenderedSteps) renderActivitySteps(result.investigation_steps || [], result);
@@ -4034,6 +4054,7 @@ function applyAgentResult(result, prompt, options = {}) {
   }
 
   finalizeAssistantMessage(result.answer, { result, prompt });
+  presentFinalAgentResult(result, prompt);
   if (buildTypedResultLayers(result).some(layer => layer.kind === "attack_targets")) {
     void refreshOpenAttackTargetCatalogLayer();
   }
