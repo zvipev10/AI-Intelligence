@@ -1,7 +1,7 @@
-# Checkpoint 008 — MCP locale runtime implementation and degraded deployment
+# Checkpoint 008 — MCP locale runtime deployed and verified
 
 ## Status
-Implementation complete locally. Non-semantic production deployment completed, but final production acceptance is blocked because the first English hybrid semantic-index build exhausted the VM's resources and the host stopped completing SSH handshakes.
+Complete and approved for this execution slice. The VM was rebooted after the first on-host index build exhausted resources; the prebuilt cache and final server revision were then deployed and production verification passed.
 
 ## Runtime dependency inventory
 
@@ -45,12 +45,18 @@ The first English v2.1 hybrid semantic cache build ran for more than ten minutes
 The validated local English v2.1 cache is ready at the ignored build path:
 `data/semantic_index/v2.1/en/semantic_event_index_hybrid_embedding.pkl`.
 
-## Required recovery
-1. Through the Oracle console, reboot the VM or terminate the orphaned `python3 -` semantic builder.
-2. Confirm both gateway services and the UI service are active.
-3. Upload the prebuilt English v2.1 cache to `/opt/serbia-poc/data/semantic_index/v2.1/en/` with ownership `ubuntu:ubuntu`.
-4. Deploy the final fail-closed server revision from this checkpoint and restart both gateways.
-5. Run the production English semantic query and verify manifest locale `en`, separate cache path, zero Hebrew, and `he → en → he` isolation.
+## Recovery and final production verification
+- The user rebooted the VM; no orphaned builder remained afterward.
+- Uploaded the prebuilt cache to `/opt/serbia-poc/data/semantic_index/v2.1/en/semantic_event_index_hybrid_embedding.pkl` with `ubuntu:ubuntu` ownership.
+- Deployed the final fail-closed server revision and restarted both gateways.
+- Final deployment backup: `/opt/serbia-poc/backups/mcp-locale-runtime-final-20260808T193411Z`.
+- English cache loaded successfully without rebuild; first semantic request completed in 16.147 seconds.
+- Semantic manifest locale is `en`, cache exists in the English namespace, and no runtime load errors were reported.
+- English health, exact search, location, entity, aggregation, intent, and semantic payloads all contained zero Hebrew characters.
+- Alternating English/Hebrew/English calls returned to default locale `he` with no context contamination.
+- All three services are active. No semantic builder remains.
+- Both target databases remain empty with SQLite integrity `ok`.
+- Post-verification memory: 508 MiB available; swap: 1.5 GiB free.
 
 ## QA recommendation
-Request changes / pause acceptance until VM recovery and semantic verification complete. The parent capability and Section 1 slice remain open.
+Approve Section 1 MCP locale runtime. Continue to Section 4 workstream isolation; the parent bilingual capability remains open.

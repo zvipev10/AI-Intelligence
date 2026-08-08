@@ -4,32 +4,32 @@
 Hebrew and English runtime localization
 
 ## Current phase
-Controlled execution — MCP runtime deployed, recovery required
+Controlled execution — workstream localization next
 
 ## Overall status
-In progress; MCP code deployed but production semantic acceptance blocked
+In progress; MCP locale runtime and target-bank isolation deployed
 
 ## Who needs to act now
 
 | Role | Status | Required action | Due before |
 |---|---|---|---|
-| Development | Blocked on VM recovery | Upload prebuilt semantic cache, deploy final revision, rerun production QA | Checkpoint 008 recovery |
+| Development | Ready | Implement Section 4 locale-isolated workstreams | Next execution checkpoint |
 | QA | Complete for target-bank slice | Target isolation, empty initialization, English-write rejection, and rollback verified | Final acceptance |
 | Architecture/Product | Approved by execution request | Locale-keyed runtime implemented | Complete for Section 1 design |
 | UX | Pending | Review consolidated bilingual UI | Slice 3 acceptance |
 | Product | Pending | Review behavior at checkpoints | Final acceptance |
 
 ## Latest change since previous review
-Checkpoint 008 implements the locale-keyed MCP runtime and deploys its code/assets. The first production English hybrid-index build exhausted VM resources; SSH recovery and final semantic verification remain.
+Checkpoint 008 is complete: the final server and prebuilt English semantic cache are deployed, English payload scans pass, and semantic locale isolation is verified in production.
 
 ## Current blockers
-The VM accepts TCP port 22 but does not complete SSH banners after semantic-index resource exhaustion. Oracle console reboot/process termination is required.
+None for Section 1.
 
 ## Current risks
-The final production server revision and prebuilt English cache are not uploaded. Workstream localization, legacy v1, and remaining mutable-state isolation remain pending.
+Workstream localization, legacy v1, and remaining mutable-state isolation remain pending. Semantic caches should continue to be built off-host for this low-memory VM.
 
 ## Next expected artifact
-VM recovery followed by checkpoint-008 production semantic verification.
+Section 4 workstream-isolation implementation checkpoint.
 
 ## Artifact links
 - Capability brief: `capability-brief.md`
