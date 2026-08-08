@@ -4,23 +4,23 @@
 Hebrew and English runtime localization
 
 ## Current phase
-Controlled execution — unified staged playback deployed
+Controlled execution — deployment consistency fix deployed
 
 ## Overall status
-In progress; MCP locale runtime, target-bank isolation, locale-isolated workstreams, and unified staged playback deployed
+In progress; MCP locale runtime, target-bank isolation, locale-isolated workstreams, unified staged playback, and header locale/status deployment consistency fix deployed
 
 ## Who needs to act now
 
 | Role | Status | Required action | Due before |
 |---|---|---|---|
-| Development | Complete for checkpoint 010 | Hand off deployed staged playback | Final acceptance |
-| QA | Ready | Review checkpoint 010 local and production smoke evidence | Final acceptance |
+| Development | Complete for checkpoint 011 | Hand off deployed locale/status fix | Final acceptance |
+| QA | Ready | Review checkpoint 011 production smoke evidence | Final acceptance |
 | Architecture/Product | Approved by execution request | Locale-keyed runtime implemented | Complete for Section 1 design |
 | UX | Pending | Review consolidated bilingual UI | Slice 3 acceptance |
 | Product | Pending | Review behavior at checkpoints | Final acceptance |
 
 ## Latest change since previous review
-Checkpoint 010 is deployed: playback now uses one staged flow, baseline visibility starts at dataset beginning through the first slice boundary, Moshe reevaluation is skipped on baseline creation, UI/data layer rows are filtered by active `visible_timeframe`, and the historical/real-time selector distinction was removed from the UI. Production smoke verified English TikTok rows respect the baseline timeframe and restored the previous inactive global visibility policy.
+Checkpoint 011 is deployed: the VM now has matching merged `main` frontend assets for the header language toggle and system status indicators. The regression was deployment drift: newer indicator markup was deployed without the matching status-rendering JS/styles. Production checks verified `renderSystemStatuses`, `datasetStatusIndicator`, `status-indicator` styles, compact `E`/`ע` language slider markup, and active UI service.
 
 ## Current blockers
 None for checkpoint 010.
@@ -36,7 +36,7 @@ Final bilingual acceptance review / next localization slice.
 - Developer review: `developer-review.md`
 - QA review: `qa-review.md`
 - Execution plan: `execution-plan.md`
-- Latest checkpoint: `checkpoint-010.md`
+- Latest checkpoint: `checkpoint-011.md`
 - Handoff: `handoff-summary.md`
 
 ## Gate checklist
