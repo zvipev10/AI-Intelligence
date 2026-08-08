@@ -4,39 +4,39 @@
 Hebrew and English runtime localization
 
 ## Current phase
-Planning review — complete English MCP runtime and workstreams
+Controlled execution — MCP runtime deployed, recovery required
 
 ## Overall status
-In progress; locale-isolated target-bank slice deployed
+In progress; MCP code deployed but production semantic acceptance blocked
 
 ## Who needs to act now
 
 | Role | Status | Required action | Due before |
 |---|---|---|---|
-| Development | Pending approval | Implement Section 1 MCP runtime, then Section 4 workstream isolation | Checkpoint 007 gate |
+| Development | Blocked on VM recovery | Upload prebuilt semantic cache, deploy final revision, rerun production QA | Checkpoint 008 recovery |
 | QA | Complete for target-bank slice | Target isolation, empty initialization, English-write rejection, and rollback verified | Final acceptance |
-| Architecture/Product | Action required | Approve checkpoint 007 runtime and workstream architecture | Before coding |
+| Architecture/Product | Approved by execution request | Locale-keyed runtime implemented | Complete for Section 1 design |
 | UX | Pending | Review consolidated bilingual UI | Slice 3 acceptance |
 | Product | Pending | Review behavior at checkpoints | Final acceptance |
 
 ## Latest change since previous review
-Checkpoint 007 plans a complete locale-keyed MCP runtime and physically isolated workstream stores. English workstreams start empty; legacy untagged workstreams remain Hebrew-owned.
+Checkpoint 008 implements the locale-keyed MCP runtime and deploys its code/assets. The first production English hybrid-index build exhausted VM resources; SSH recovery and final semantic verification remain.
 
 ## Current blockers
-None for the target-bank slice.
+The VM accepts TCP port 22 but does not complete SSH banners after semantic-index resource exhaustion. Oracle console reboot/process termination is required.
 
 ## Current risks
-Active MCP data localization, target-bank presentation, entity metadata defaults, workstream metadata, legacy v1, and mutable-state locale isolation remain pending.
+The final production server revision and prebuilt English cache are not uploaded. Workstream localization, legacy v1, and remaining mutable-state isolation remain pending.
 
 ## Next expected artifact
-Human approval of `checkpoint-007.md`, followed by Section 1 implementation.
+VM recovery followed by checkpoint-008 production semantic verification.
 
 ## Artifact links
 - Capability brief: `capability-brief.md`
 - Developer review: `developer-review.md`
 - QA review: `qa-review.md`
 - Execution plan: `execution-plan.md`
-- Latest checkpoint: `checkpoint-007.md`
+- Latest checkpoint: `checkpoint-008.md`
 - Handoff: `handoff-summary.md`
 
 ## Gate checklist

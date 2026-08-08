@@ -17,13 +17,14 @@ class FakeSemanticIndex:
 
 class SemanticResultLimitTests(unittest.TestCase):
     def test_semantic_search_caps_oversized_candidate_requests(self):
-        original = server.SEMANTIC_INDEX
+        runtime = server.current_runtime()
+        original = runtime.semantic_index
         fake = FakeSemanticIndex()
-        server.SEMANTIC_INDEX = fake
+        runtime.semantic_index = fake
         try:
             result = server.semantic_search_events({"query": "כלי טיס", "limit": 2000})
         finally:
-            server.SEMANTIC_INDEX = original
+            runtime.semantic_index = original
 
         self.assertEqual(result["requested_limit"], 2000)
         self.assertEqual(result["effective_limit"], server.MAX_SEMANTIC_LIMIT)

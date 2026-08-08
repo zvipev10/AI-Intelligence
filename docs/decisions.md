@@ -99,3 +99,25 @@ Hebrew remains the default for omitted locale values, while explicit English ope
 
 Follow-ups:
 Apply the same explicit locale-ownership review to remaining mutable stores and finish full bilingual runtime acceptance.
+
+### 2026-08-08 — Select one complete MCP runtime per locale
+
+Decision:
+Represent each supported locale and dataset version as a complete, manifest-validated MCP runtime containing its event, location, entity, fusion, presentation, and semantic state. Select that runtime once at the tool-call boundary. English asset failures must fail closed and must not fall back to Hebrew.
+
+Context:
+The English UI used clean projections while MCP tools remained bound to Hebrew module globals and a shared semantic cache.
+
+Rationale:
+Selecting a complete runtime prevents mixed-locale results and cache contamination while preserving existing tool implementations through locale-dispatching containers. Manifest checks make source paths, checksums, and cache identity auditable.
+
+Alternatives considered:
+- Translate individual MCP results after retrieval.
+- Run entirely separate MCP processes per locale.
+- Continue adding parallel English globals.
+
+Impact:
+Hebrew remains the compatibility default. English calls use only validated English sources, generated payload text is checked for Hebrew, and semantic cache identity includes locale, dataset version, and source checksums. Production semantic caches should be prebuilt off-host for the current low-memory VM.
+
+Follow-ups:
+Recover the VM, upload the prebuilt English v2.1 cache, complete production semantic acceptance, and apply locale ownership to workstream persistence.
