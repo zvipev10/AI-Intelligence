@@ -27,6 +27,30 @@ All checks passed locally on 2026-08-08.
 - Artifact creation and revision enforce English text validation.
 - UI request paths include locale, preventing silent cross-language reads.
 
+## Production deployment
+Deployed to VM `151.145.93.180` on 2026-08-08.
+
+Changed runtime files installed under `/opt/serbia-poc-ui`:
+- `server.py`
+- `app.js`
+- `workstream_artifacts.py`
+- `scenario_playback.py`
+
+Backup retained at:
+- `/opt/serbia-poc-ui-backups/workstream-locale-20260808T200045Z`
+
+Service result:
+- `serbia-poc-ui.service`: active
+- `GET /api/status?locale=en`: returned v2.1 English dataset with 14,800 rows.
+
+## Production smoke validation
+- Created an English workstream and verified its physical file at `workstreams/v2_1/en/`.
+- Confirmed Hebrew `GET` could not fetch the English workstream ID.
+- Confirmed an English workstream payload containing Hebrew was rejected with HTTP 400 before persistence.
+- Created a Hebrew workstream and verified its physical file at `workstreams/v2_1/he/`.
+- Confirmed English `GET` could not fetch the Hebrew workstream ID.
+- Removed the exact temporary smoke files after validation.
+- Confirmed both English and Hebrew workstream lists for the smoke investigation were empty after cleanup.
+
 ## Remaining notes
 - Explicit scenario-run IDs remain addressable by ID for transition routes; locale is persisted on the run and investigation-level playback lookup is locale-filtered.
-- Production deployment and smoke validation are the next step.
