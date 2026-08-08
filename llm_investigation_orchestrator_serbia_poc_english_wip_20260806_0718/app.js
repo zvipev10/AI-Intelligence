@@ -3146,7 +3146,9 @@ const TOOL_LABELS = {
 
 function humanToolLabel(tool) {
   const clean = String(tool || "").replace(/^\d+\.\s*/, "");
-  return TOOL_LABELS[clean] || "Investigation action";
+  if (TOOL_LABELS[clean]) return TOOL_LABELS[clean];
+  const readable = clean.replace(/[_-]+/g, " ").trim();
+  return readable ? readable.charAt(0).toUpperCase() + readable.slice(1) : "Investigation action";
 }
 
 function formatTechnical(technical, fallbackTool) {
@@ -3681,38 +3683,41 @@ function addActivity(tool, detail, result, options = {}) {
   const label = humanToolLabel(cleanTool);
   const queryDetails = stepQueryDetails(stepData, label);
   item.innerHTML = `
-    <div class="activity-card-header">
-      <span class="activity-step-number">${stepNumber}</span>
-      <div class="activity-card-title">
-        <strong>${escapeHtml(label)}</strong>
+    <details class="activity-disclosure">
+      <summary class="activity-card-summary" aria-label="${escapeHtml(activeLocaleText(`פתח פרטי שלב ${stepNumber}: ${label}`, `Expand step ${stepNumber}: ${label}`))}">
+        <span class="activity-step-number">${stepNumber}</span>
+        <strong class="activity-step-title">${escapeHtml(label)}</strong>
+        <span class="material-symbols-rounded activity-expand-icon" aria-hidden="true">expand_more</span>
+      </summary>
+      <div class="activity-expanded">
+        <div class="activity-card-meta">
         <span class="activity-tool">${escapeHtml(cleanTool)}</span>
+          <span class="activity-status ${options.isError ? "error" : "success"}">${options.isError ? activeLocaleText("נכשל", "Failed") : activeLocaleText("הושלם", "Completed")}</span>
+        </div>
+        <div class="activity-flow">
+          <section class="activity-section rationale-section">
+            <div class="activity-section-label">${activeLocaleText("ניתוח הסוכן והחלטת הצעד הבא", "Agent analysis and next-step decision")}</div>
+            <p class="activity-rationale">${escapeHtml(bridgeSummary)}</p>
+          </section>
+          <section class="activity-section">
+            <div class="activity-section-label">${activeLocaleText("מה נבדק", "What was checked")}</div>
+            <p class="activity-detail">${escapeHtml(detail)}</p>
+          </section>
+          <section class="activity-section result-section">
+            <div class="activity-section-label">${activeLocaleText("מה חזר", "What came back")}</div>
+            <p class="activity-result">${escapeHtml(result)}</p>
+          </section>
+        </div>
+        ${hasStepData ? `
+          <div class="activity-step-actions">
+            <button type="button" class="step-visibility-btn layers-hidden" data-source-id="${escapeHtml(sourceId)}" title="${escapeHtml(activeLocaleText("הצג תוצאות", "Show results"))}" aria-label="${escapeHtml(activeLocaleText("הצג תוצאות", "Show results"))}" aria-pressed="false">
+              <span class="step-visibility-label">${escapeHtml(activeLocaleText("הצג תוצאות", "Show results"))}</span>
+            </button>
+            <button type="button" class="step-query-btn" title="${escapeHtml(activeLocaleText("הצג שאילתה", "Show query"))}">${activeLocaleText("הצג שאילתה", "Show query")}</button>
+            <button type="button" class="step-continue-btn" title="${escapeHtml(activeLocaleText("המשך מהשלב הזה", "Continue from this step"))}">${activeLocaleText("המשך מכאן", "Continue from here")}</button>
+          </div>` : ""}
       </div>
-      <div class="activity-card-actions">
-        <span class="activity-status ${options.isError ? "error" : "success"}">${options.isError ? activeLocaleText("נכשל", "Failed") : activeLocaleText("הושלם", "Completed")}</span>
-      </div>
-    </div>
-    <div class="activity-flow">
-      <section class="activity-section rationale-section">
-        <div class="activity-section-label">${activeLocaleText("ניתוח הסוכן והחלטת הצעד הבא", "Agent analysis and next-step decision")}</div>
-        <p class="activity-rationale">${escapeHtml(bridgeSummary)}</p>
-      </section>
-      <section class="activity-section">
-        <div class="activity-section-label">${activeLocaleText("מה נבדק", "What was checked")}</div>
-        <p class="activity-detail">${escapeHtml(detail)}</p>
-      </section>
-      <section class="activity-section result-section">
-        <div class="activity-section-label">${activeLocaleText("מה חזר", "What came back")}</div>
-        <p class="activity-result">${escapeHtml(result)}</p>
-      </section>
-    </div>
-    ${hasStepData ? `
-      <div class="activity-step-actions">
-        <button type="button" class="step-visibility-btn layers-hidden" data-source-id="${escapeHtml(sourceId)}" title="${escapeHtml(activeLocaleText("הצג תוצאות", "Show results"))}" aria-label="${escapeHtml(activeLocaleText("הצג תוצאות", "Show results"))}" aria-pressed="false">
-          <span class="step-visibility-label">${escapeHtml(activeLocaleText("הצג תוצאות", "Show results"))}</span>
-        </button>
-        <button type="button" class="step-query-btn" title="${escapeHtml(activeLocaleText("הצג שאילתה", "Show query"))}">${activeLocaleText("הצג שאילתה", "Show query")}</button>
-        <button type="button" class="step-continue-btn" title="${escapeHtml(activeLocaleText("המשך מהשלב הזה", "Continue from this step"))}">${activeLocaleText("המשך מכאן", "Continue from here")}</button>
-      </div>` : ""}`;
+    </details>`;
   if (hasStepData) {
     const visibilityBtn = item.querySelector(".step-visibility-btn");
     visibilityBtn.addEventListener("click", event => {
