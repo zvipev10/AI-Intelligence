@@ -408,7 +408,10 @@ const queryLayersClose = document.getElementById("queryLayersClose");
 const queryLayersList = document.getElementById("queryLayersList");
 const queryLayersSubmit = document.getElementById("queryLayersSubmit");
 const queryLayersError = document.getElementById("queryLayersError");
+const datasetStatus = document.getElementById("datasetStatus");
+const datasetStatusIndicator = document.getElementById("datasetStatusIndicator");
 const agentStatus = document.getElementById("agentStatus");
+const agentStatusIndicator = document.getElementById("agentStatusIndicator");
 const viewRecommendation = document.getElementById("viewRecommendation");
 const layerSelectorSearch = document.getElementById("layerSelectorSearch");
 const layerSelectorList = document.getElementById("layerSelectorList");
@@ -418,6 +421,30 @@ const chatPanelToggle = document.getElementById("chatPanelToggle");
 const queryLayerName = document.getElementById("queryLayerName");
 const queryToolName = document.getElementById("queryToolName");
 const queryModal = document.getElementById("queryModal");
+
+const systemStatuses = {
+  dataset: { element: datasetStatus, indicator: datasetStatusIndicator, labelHe: "מאגר הנתונים", labelEn: "Dataset", he: "טוען נתונים", en: "Loading data", state: "loading" },
+  agent: { element: agentStatus, indicator: agentStatusIndicator, labelHe: "Hermes", labelEn: "Hermes", he: "בודק חיבור לסוכן", en: "Checking agent connection", state: "loading" }
+};
+
+function renderSystemStatuses() {
+  Object.values(systemStatuses).forEach(status => {
+    const english = currentLocale() === "en";
+    const detail = english ? status.en : status.he;
+    if (status.element) status.element.textContent = detail;
+    if (status.indicator) {
+      status.indicator.dataset.state = status.state;
+      status.indicator.setAttribute("aria-label", `${english ? status.labelEn : status.labelHe}: ${detail}`);
+    }
+  });
+}
+
+function updateSystemStatus(kind, he, en, statusState) {
+  const status = systemStatuses[kind];
+  if (!status) return;
+  Object.assign(status, { he, en, state: statusState });
+  renderSystemStatuses();
+}
 const queryModalTitle = document.getElementById("queryModalTitle");
 const queryModalBody = document.getElementById("queryModalBody");
 const queryModalClose = document.getElementById("queryModalClose");
@@ -577,6 +604,7 @@ function applyLocaleUi() {
     // Ignore URL rewrite issues and continue applying locale in-memory.
   }
   applyLocaleAttributes();
+  renderSystemStatuses();
   document.title = activeLocaleText("סביבת מודיעין", "Intelligence Workspace");
   const helpButton = document.querySelector(".help-button");
   helpButton?.setAttribute("aria-label", activeLocaleText("פתח עזרה", "Open help"));
@@ -4203,8 +4231,7 @@ async function runPrompt(prompt, options = {}) {
   } catch (error) {
     addActivity("connection_error", activeLocaleText("לא ניתן היה להשלים את ריצת Hermes.", "Unable to complete the Hermes run."), error.message);
     finalizeAssistantMessage(`<p>${activeLocaleText("לא הצלחתי להשלים את ריצת הסוכן האמיתית.", "I couldn't complete the real agent run.")}</p><div class="answer-callout">${escapeHtml(error.message)}</div>`, { html: true });
-    agentStatus.textContent = activeLocaleText("Hermes אינו זמין", "Hermes unavailable");
-    agentStatus.className = "agent-error";
+    updateSystemStatus("agent", "Hermes אינו זמין", "Hermes unavailable", "error");
   } finally {
     if (progressTimer) clearInterval(progressTimer);
     state.busy = false;
@@ -5263,22 +5290,20 @@ async function boot() {
     if (!response.ok) throw new Error("dataset unavailable");
     state.events = parseCsv(await response.text()).map(enrich);
     const versionLabel = runtimeStatus.dataset_version ? ` · ${runtimeStatus.dataset_version.toUpperCase()}` : "";
-    document.getElementById("datasetStatus").textContent = activeLocaleText(
+    updateSystemStatus("dataset",
       `${state.events.length.toLocaleString("he-IL")} אירועים זמינים במאגר${versionLabel}`,
-      `${state.events.length.toLocaleString("en-US")} events available in the dataset${versionLabel}`
+      `${state.events.length.toLocaleString("en-US")} events available in the dataset${versionLabel}`,
+      "ready"
     );
-    document.querySelector(".status-dot").classList.add("ready");
   } catch (error) {
-    document.getElementById("datasetStatus").textContent = activeLocaleText("טעינת הנתונים נכשלה", "Failed to load data");
+    updateSystemStatus("dataset", "טעינת הנתונים נכשלה", "Failed to load data", "error");
   }
   try {
     const status = runtimeStatus || await fetch(buildLocaleApiUrl("/api/status"), { cache: "no-store" }).then(response => response.json());
     if (!status.configured) throw new Error("not configured");
-    agentStatus.textContent = activeLocaleText("Hermes + MCP מחוברים", "Hermes + MCP connected");
-    agentStatus.className = "agent-live";
+    updateSystemStatus("agent", "Hermes + MCP מחוברים", "Hermes + MCP connected", "ready");
   } catch (error) {
-    agentStatus.textContent = activeLocaleText("מצב הדגמה מקומי", "Local demo mode");
-    agentStatus.className = "agent-error";
+    updateSystemStatus("agent", "מצב הדגמה מקומי", "Local demo mode", "error");
   }
 }
 

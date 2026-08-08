@@ -6,7 +6,7 @@ Compact upper-section controls
 
 ## Current phase
 
-Execution planning complete; controlled implementation starting
+Controlled execution — local implementation complete
 
 ## Overall status
 
@@ -37,7 +37,7 @@ Based on latest `main`; dataset semantics are confirmed and the language switch 
 
 ## Next expected artifact
 
-`checkpoint-001.md` after implementation and local QA.
+VM deployment verification and `checkpoint-002.md`.
 
 ## Parent issue
 
@@ -59,7 +59,7 @@ Not created; local draft at `issues/parent-capability.md`.
 - UX review: `ux-review.md`
 - QA review: `qa-review.md`
 - Execution plan: `execution-plan.md`
-- Latest checkpoint: Not created
+- Latest checkpoint: `checkpoint-001.md`
 - Handoff: `handoff-summary.md`
 
 ## Gate checklist
