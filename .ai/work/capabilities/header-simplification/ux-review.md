@@ -6,7 +6,7 @@ Compact upper-section controls
 
 ## Review status
 
-Draft - pending human approval
+Approved
 
 ## Context reviewed
 
@@ -57,4 +57,4 @@ Mixed RTL/LTR alignment, long errors, responsive stacking, touch screens, and si
 
 ## Review recommendation
 
-Approve the compact direction, conditional on focus/tap parity. Dataset terminology and the language source are confirmed. Human UX approval is required before planning or coding.
+Approved by the user on 2026-08-08. Preserve hover, focus, and tap access to details.

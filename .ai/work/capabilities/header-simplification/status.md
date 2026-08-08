@@ -6,20 +6,20 @@ Compact upper-section controls
 
 ## Current phase
 
-Capability initiation and role enrichment drafts
+Execution planning complete; controlled implementation starting
 
 ## Overall status
 
-Pending human review
+In progress
 
 ## Who needs to act now
 
 | Role | Status | Required action | Due before |
 |---|---|---|---|
 | Product | Confirmed | Dataset semantics and language-control source confirmed | — |
-| Development | Draft prepared | Validate source mapping and implementation approach | Execution planning |
-| UX | Draft prepared | Approve compact control and detail interaction | Execution planning |
-| QA | Pending | Review state and accessibility coverage | Coding |
+| Development | Approved/delegated | Implement the approved plan | Checkpoint review |
+| UX | Approved | Validate rendered result | Checkpoint review |
+| QA | Ready | Run local and VM validation | Deployment |
 | Architecture/Security | Not required | None; no architecture/security change expected | — |
 
 ## Latest change since previous review
@@ -37,7 +37,7 @@ Based on latest `main`; dataset semantics are confirmed and the language switch 
 
 ## Next expected artifact
 
-Human-approved UX/developer review, followed by QA review and `execution-plan.md`.
+`checkpoint-001.md` after implementation and local QA.
 
 ## Parent issue
 
@@ -57,8 +57,8 @@ Not created; local draft at `issues/parent-capability.md`.
 - Decisions: Not created
 - Developer review: `developer-review.md`
 - UX review: `ux-review.md`
-- QA review: Not created
-- Execution plan: Not created
+- QA review: `qa-review.md`
+- Execution plan: `execution-plan.md`
 - Latest checkpoint: Not created
 - Handoff: `handoff-summary.md`
 

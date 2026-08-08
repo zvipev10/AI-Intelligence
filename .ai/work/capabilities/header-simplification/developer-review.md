@@ -6,11 +6,11 @@ Compact upper-section controls
 
 ## Review status
 
-Draft - pending human approval
+Approved by explicit user delegation
 
 ## Reviewer / input source
 
-AI-prepared draft based on repository inspection; not human-approved.
+AI-prepared review explicitly approved/delegated by the user on 2026-08-08.
 
 ## Context reviewed
 
