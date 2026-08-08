@@ -19,7 +19,7 @@ In progress
 | Product | Pending | Review behavior at checkpoints | Final acceptance |
 
 ## Latest change since previous review
-Initialized capability artifacts from the supplied implementation plan and audited latest `main` plus the English WIP.
+Checkpoint 001 recorded the latest-main/WIP audit and identified extensive Hebrew leakage in every English projection family.
 
 ## Current blockers
 None for Slice 1. Production deployment credentials are not required yet.
@@ -28,15 +28,15 @@ None for Slice 1. Production deployment credentials are not required yet.
 English WIP divergence, module-global MCP state, semantic cache isolation, and untranslated generated content.
 
 ## Next expected artifact
-`checkpoint-001.md`
+`checkpoint-002.md` after projection remediation and locale validation.
 
 ## Artifact links
 - Capability brief: `capability-brief.md`
 - Developer review: `developer-review.md`
 - QA review: `qa-review.md`
 - Execution plan: `execution-plan.md`
-- Latest checkpoint: pending
-- Handoff: pending
+- Latest checkpoint: `checkpoint-001.md`
+- Handoff: `handoff-summary.md`
 
 ## Gate checklist
 - [x] Current owner is explicit.
@@ -44,4 +44,3 @@ English WIP divergence, module-global MCP state, semantic cache isolation, and u
 - [x] Blockers are separated from risks.
 - [x] Next artifact is explicit.
 - [ ] Parent and child issue links are current; remote issues will be created when publishing the first checkpoint.
-
