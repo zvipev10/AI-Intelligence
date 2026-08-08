@@ -14,6 +14,14 @@ import server
 
 
 class ScenarioPlaybackApiTests(unittest.TestCase):
+    def wait_for_playback_workers(self):
+        with server._PLAYBACK_REEVALUATION_THREADS_LOCK:
+            workers = list(server._PLAYBACK_REEVALUATION_THREADS.values())
+        for worker in workers:
+            worker.join(timeout=2)
+        with server._PLAYBACK_REEVALUATION_THREADS_LOCK:
+            server._PLAYBACK_REEVALUATION_THREADS.clear()
+
     def setUp(self):
         self.temp_root = tempfile.TemporaryDirectory()
         root = Path(self.temp_root.name)
@@ -67,8 +75,7 @@ class ScenarioPlaybackApiTests(unittest.TestCase):
         ]
         for item in self.patches:
             item.start()
-        with server._PLAYBACK_REEVALUATION_THREADS_LOCK:
-            server._PLAYBACK_REEVALUATION_THREADS.clear()
+        self.wait_for_playback_workers()
         self.httpd = server.ThreadingHTTPServer(("127.0.0.1", 0), server.Handler)
         self.thread = threading.Thread(target=self.httpd.serve_forever, daemon=True)
         self.thread.start()
@@ -86,8 +93,7 @@ class ScenarioPlaybackApiTests(unittest.TestCase):
         self.httpd.shutdown()
         self.httpd.server_close()
         self.thread.join(timeout=2)
-        with server._PLAYBACK_REEVALUATION_THREADS_LOCK:
-            server._PLAYBACK_REEVALUATION_THREADS.clear()
+        self.wait_for_playback_workers()
         for item in reversed(self.patches):
             item.stop()
         self.temp_root.cleanup()
@@ -297,7 +303,7 @@ class ScenarioPlaybackApiTests(unittest.TestCase):
         )
         self.assertEqual(200, status)
         self.assertIsNone(initial["run"])
-        self.assertEqual("historical", initial["mode"])
+        self.assertEqual("real_time", initial["mode"])
 
         status, real_time = self.request("POST", "/api/playback/mode", {
             "investigation_id": "investigation-playback",
@@ -350,9 +356,9 @@ class ScenarioPlaybackApiTests(unittest.TestCase):
             "mode": "historical",
         })
         self.assertEqual(200, status)
-        self.assertEqual("historical", historical["mode"])
+        self.assertEqual("real_time", historical["mode"])
         policy = scenario_playback.load_playback_visibility(self.runs_dir)
-        self.assertFalse(policy["active"])
+        self.assertTrue(policy["active"])
 
         status, resumed = self.request("POST", "/api/playback/mode", {
             "investigation_id": "investigation-playback",
@@ -381,6 +387,43 @@ class ScenarioPlaybackApiTests(unittest.TestCase):
         self.assertEqual("no_active_workstreams", result["moshe_skipped_reason"])
         self.assertIsNone(result["run"]["reevaluation"])
         moshe.assert_not_called()
+
+    def test_initial_next_creates_baseline_without_moshe_reevaluation(self):
+        investigation_id = "investigation-baseline-next"
+        status, _ = self.request("POST", "/api/workstreams", {
+            "investigation_id": investigation_id,
+            "title": "Baseline workstream",
+            "objective": "Should not trigger on baseline.",
+            "participants": [
+                {"participant_id": "moshe-targets-officer", "kind": "agent", "display_name": "משה"}
+            ],
+        })
+        self.assertEqual(201, status)
+        with patch.object(server, "run_moshe_playback_reevaluation") as moshe:
+            status, result = self.request("POST", "/api/playback/next", {
+                "investigation_id": investigation_id,
+                "idempotency_key": "baseline-create",
+            })
+        self.assertEqual(200, status)
+        self.assertEqual(0, result["run"]["current_stage_index"])
+        self.assertFalse(result["moshe_triggered"])
+        self.assertEqual("initial_baseline", result["moshe_skipped_reason"])
+        moshe.assert_not_called()
+
+    def test_ui_layer_rows_respect_active_visible_timeframe(self):
+        investigation_id = "investigation-visible-layer-filter"
+        status, initial = self.request("POST", "/api/playback/mode", {
+            "investigation_id": investigation_id,
+            "mode": "real_time",
+        })
+        self.assertEqual(200, status)
+        result = server.get_ui_layer_rows("events:TikTok", "en")
+        self.assertIsNotNone(result)
+        _, rows = result
+        self.assertTrue(rows)
+        start = server.parse_utc(initial["run"]["visible_timeframe"]["from"])
+        end = server.parse_utc(initial["run"]["visible_timeframe"]["to"])
+        self.assertTrue(all(start <= server.parse_utc(row["timestamp_utc"]) < end for row in rows))
 
     def test_playback_status_recovers_running_reevaluation_after_restart(self):
         status, real_time = self.request("POST", "/api/playback/mode", {
@@ -611,7 +654,7 @@ class ScenarioPlaybackApiTests(unittest.TestCase):
             "reset": True,
         })
         self.assertEqual(200, status)
-        self.assertEqual("historical", historical["mode"])
+        self.assertEqual("real_time", historical["mode"])
         self.assertEqual(0, historical["run"]["current_stage_index"])
 
     def test_final_stage_requires_explicit_complete(self):

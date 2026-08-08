@@ -2458,7 +2458,6 @@ function thinkingIndicatorHtml() {
 }
 
 function activeWorkstreams() {
-  if (state.investigationPlayback?.mode !== "real_time") return [];
   return state.workstreams.filter(item => item?.status !== "archived");
 }
 
@@ -2539,7 +2538,7 @@ function setWorkstreamRailCollapsed(collapsed) {
 function renderWorkstreamIndicator() {
   if (!workstreamRail || !workstreamRailList || !workstreamRailCount) return;
   const workstreams = activeWorkstreams();
-  const visible = workstreams.length > 0 && state.investigationPlayback?.mode === "real_time";
+  const visible = workstreams.length > 0;
   workstreamRail.hidden = !visible;
   document.querySelector(".workspace")?.classList.toggle("workstream-rail-visible", visible);
   workstreamRailCount.textContent = workstreams.length.toLocaleString("en-US");
@@ -2566,7 +2565,7 @@ async function loadWorkstreams() {
   const token = ++state.workstreamLoadToken;
   state.workstreamsLoading = true;
   try {
-    const response = await fetch(`/api/workstreams?investigation_id=${encodeURIComponent(investigationId)}`, { cache: "no-store" });
+    const response = await fetch(`/api/workstreams?investigation_id=${encodeURIComponent(investigationId)}&locale=${encodeURIComponent(currentLocale())}`, { cache: "no-store" });
     const payload = await response.json();
     if (!response.ok) throw new Error(payload.error || activeLocaleText("טעינת המעקבים נכשלה", "Failed to load workstreams"));
     if (token !== state.workstreamLoadToken || investigationId !== state.investigationId) return [];
@@ -2615,7 +2614,7 @@ function workstreamMessage(html, options = {}) {
 }
 
 async function fetchWorkstream(workstreamId) {
-  const response = await fetch(`/api/workstreams/${encodeURIComponent(workstreamId)}`, { cache: "no-store" });
+  const response = await fetch(`/api/workstreams/${encodeURIComponent(workstreamId)}?locale=${encodeURIComponent(currentLocale())}`, { cache: "no-store" });
   const payload = await response.json();
   if (!response.ok) throw new Error(payload.error || activeLocaleText("טעינת המעקב נכשלה", "Failed to load workstream"));
   return payload;
@@ -2639,15 +2638,34 @@ function formatPlaybackTime(value) {
   });
 }
 
+async function reloadOpenCatalogLayers() {
+  const catalogLayerIds = [...new Set(
+    state.layers.map(layer => layer.catalogLayerId).filter(Boolean)
+  )];
+  if (!catalogLayerIds.length) return;
+  for (const layerId of catalogLayerIds) {
+    const existingLayers = state.layers.filter(layer => layer.catalogLayerId === layerId);
+    const wasVisible = existingLayers.some(layer => layer.visible);
+    const savedFilters = existingLayers[0] ? {
+      draftFilters: existingLayers[0].draftFilters,
+      appliedFilters: existingLayers[0].appliedFilters,
+    } : null;
+    state.layers = state.layers.filter(layer => layer.catalogLayerId !== layerId);
+    const restored = await openCatalogLayer(layerId, { silent: true, savedLayer: savedFilters });
+    if (restored) restored.visible = wasVisible;
+  }
+  ensureActiveLayer();
+  renderAllViews();
+  renderLayerSelector();
+  renderQueryLayersModal();
+}
+
 function renderInvestigationPlayback() {
   if (!playbackNextButton || !intelligenceModeSelect || !intelligencePeriod) return;
   const playback = state.investigationPlayback;
-  const mode = playback?.mode || "historical";
-  intelligenceModeSelect.value = mode;
+  intelligenceModeSelect.textContent = activeLocaleText("ניגון מדורג", "Staged playback");
   renderWorkstreamIndicator();
-  const timeframe = mode === "real_time"
-    ? playback?.run?.visible_timeframe
-    : playback?.full_timeframe;
+  const timeframe = playback?.run?.visible_timeframe || playback?.full_timeframe;
   intelligencePeriod.textContent = timeframe?.from && timeframe?.to
     ? `${formatPlaybackTime(timeframe.from)}–${formatPlaybackTime(timeframe.to)}`
     : "";
@@ -2662,7 +2680,7 @@ function renderInvestigationPlayback() {
       : activeLocaleText("העיבוד של משה נכשל", "Moshe processing failed");
     playbackAgentStatus.title = reevaluation?.error || "";
   }
-  playbackNextButton.hidden = mode !== "real_time" || !next?.timeframe;
+  playbackNextButton.hidden = !next?.timeframe;
   playbackNextButton.disabled = processing;
   if (!next?.timeframe) return;
   const nextTimeframe = next.timeframe;
@@ -2674,16 +2692,40 @@ async function fetchInvestigationPlayback() {
   const investigationId = String(state.investigationId || "").trim();
   if (!investigationId) return null;
   const response = await fetch(
-    `/api/playback?investigation_id=${encodeURIComponent(investigationId)}`,
+    `/api/playback?investigation_id=${encodeURIComponent(investigationId)}&locale=${encodeURIComponent(currentLocale())}`,
     { cache: "no-store" }
   );
   const payload = await response.json();
   if (!response.ok) throw new Error(payload.error || activeLocaleText("טעינת מצב הניגון נכשלה", "Failed to load playback state"));
+  if (!payload?.run && payload?.next_stage) {
+    return initializeStagedPlayback();
+  }
   state.investigationPlayback = payload;
   renderInvestigationPlayback();
   if (payload?.run?.reevaluation?.status === "running") {
     void pollMoshePlaybackReevaluation();
   }
+  return payload;
+}
+
+async function initializeStagedPlayback({ reset = false } = {}) {
+  const investigationId = String(state.investigationId || "").trim();
+  if (!investigationId) return null;
+  const response = await fetch("/api/playback/mode", {
+    method: "POST",
+    headers: { "Content-Type": "application/json; charset=utf-8" },
+    body: JSON.stringify({
+      investigation_id: investigationId,
+      mode: "real_time",
+      reset,
+      locale: currentLocale(),
+    }),
+  });
+  const payload = await response.json();
+  if (!response.ok) throw new Error(payload.error || "Failed to initialize staged playback");
+  state.investigationPlayback = payload;
+  renderInvestigationPlayback();
+  await reloadOpenCatalogLayers();
   return payload;
 }
 
@@ -2695,7 +2737,7 @@ async function pollMoshePlaybackReevaluation() {
     if (token !== state.playbackPollToken) return;
     try {
       const response = await fetch(
-        `/api/playback?investigation_id=${encodeURIComponent(investigationId)}`,
+        `/api/playback?investigation_id=${encodeURIComponent(investigationId)}&locale=${encodeURIComponent(currentLocale())}`,
         { cache: "no-store" }
       );
       const payload = await response.json();
@@ -2771,6 +2813,7 @@ async function advanceInvestigationPlayback() {
         investigation_id: state.investigationId,
         expected_revision: run?.revision,
         idempotency_key: `playback:${state.investigationId}:${run?.revision || 0}:${Date.now()}`,
+        locale: currentLocale(),
       }),
     });
     const result = await response.json();
@@ -2782,10 +2825,13 @@ async function advanceInvestigationPlayback() {
       run: result.run,
     };
     renderInvestigationPlayback();
+    await reloadOpenCatalogLayers();
     if (result.moshe_triggered) {
-      workstreamMessage("<p>The timeframe was updated. Moshe is now processing the new information slice against the active workstreams.</p>");
+      workstreamMessage(`<p>${activeLocaleText("טווח הזמן עודכן. משה מעבד עכשיו את פרוסת המידע החדשה מול המעקבים הפעילים.", "The timeframe was updated. Moshe is now processing the new information slice against the active workstreams.")}</p>`);
+    } else if (result.moshe_skipped_reason === "initial_baseline") {
+      workstreamMessage(`<p>${activeLocaleText("טווח הבסיס הופעל. משה לא הופעל עד שתגיע פרוסת המידע הבאה.", "The baseline timeframe is active. Moshe will not be triggered until the next information slice arrives.")}</p>`);
     } else if (result.moshe_skipped_reason === "no_active_workstreams") {
-      workstreamMessage("<p>The timeframe was updated. There are no active workstreams, so Moshe was not triggered.</p>");
+      workstreamMessage(`<p>${activeLocaleText("טווח הזמן עודכן. אין מעקבים פעילים, ולכן משה לא הופעל.", "The timeframe was updated. There are no active workstreams, so Moshe was not triggered.")}</p>`);
     }
     if (result.run?.reevaluation?.status === "running") {
       void pollMoshePlaybackReevaluation();
@@ -2802,29 +2848,13 @@ async function advanceInvestigationPlayback() {
 
 async function changeIntelligenceMode() {
   if (!intelligenceModeSelect) return;
-  const mode = intelligenceModeSelect.value;
-  if (mode !== "real_time") state.playbackPollToken += 1;
-  intelligenceModeSelect.disabled = true;
   try {
-    const response = await fetch("/api/playback/mode", {
-      method: "POST",
-      headers: { "Content-Type": "application/json; charset=utf-8" },
-      body: JSON.stringify({
-        investigation_id: state.investigationId,
-        mode,
-      }),
-    });
-    const payload = await response.json();
-    if (!response.ok) throw new Error(payload.error || "Failed to change intelligence mode");
-    state.investigationPlayback = payload;
-    renderInvestigationPlayback();
+    await initializeStagedPlayback();
   } catch (error) {
     renderInvestigationPlayback();
     workstreamMessage(
-      `<p>I couldn't change the intelligence mode.</p><div class="answer-callout">${escapeHtml(error.message)}</div>`
+      `<p>${activeLocaleText("לא הצלחתי להפעיל את הניגון המדורג.", "I couldn't initialize staged playback.")}</p><div class="answer-callout">${escapeHtml(error.message)}</div>`
     );
-  } finally {
-    intelligenceModeSelect.disabled = false;
   }
 }
 
@@ -2906,7 +2936,7 @@ async function toggleWorkstreamResultVisibility(workstreamId, btn) {
   if (btn) btn.disabled = true;
   try {
     const response = await fetch(
-      `/api/workstreams/${encodeURIComponent(workstreamId)}/presentation`,
+      `/api/workstreams/${encodeURIComponent(workstreamId)}/presentation?locale=${encodeURIComponent(currentLocale())}`,
       { cache: "no-store" }
     );
     const result = await response.json();
@@ -2985,7 +3015,7 @@ async function showWorkstreamUpdate(workstreamId) {
 
 async function archiveWorkstreamFromChat(workstreamId) {
   try {
-    const response = await fetch(`/api/workstreams/${encodeURIComponent(workstreamId)}/archive`, { method: "POST" });
+    const response = await fetch(`/api/workstreams/${encodeURIComponent(workstreamId)}/archive?locale=${encodeURIComponent(currentLocale())}`, { method: "POST" });
     const archived = await response.json();
     if (!response.ok) throw new Error(archived.error || activeLocaleText("העברת המעקב לארכיון נכשלה", "Failed to archive workstream"));
     state.workstreams = state.workstreams.map(item => item.workstream_id === workstreamId ? archived : item);

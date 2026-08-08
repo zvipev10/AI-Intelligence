@@ -112,7 +112,7 @@
   "LOC-011": {
     "country": "Kosovo",
     "latitude": 43.107,
-    "locality": "כפר סמוך",
+    "locality": "Nearby village",
     "longitude": 20.791,
     "municipality": "Leposavić",
     "name": "Northern rural road",
@@ -123,7 +123,7 @@
   "LOC-012": {
     "country": "Kosovo",
     "latitude": 42.922,
-    "locality": "כפר סמוך",
+    "locality": "Nearby village",
     "longitude": 20.677,
     "municipality": "Zubin Potok",
     "name": "Wooded area near the village",
@@ -139,7 +139,7 @@
     "municipality": "Pristina",
     "name": "Interior Ministry",
     "precision": "facility",
-    "region": "מרכז קוסובו",
+    "region": "Central Kosovo",
     "type": "State institution"
   },
   "LOC-014": {
@@ -150,40 +150,40 @@
     "municipality": "Pristina",
     "name": "Government of Kosovo headquarters",
     "precision": "facility",
-    "region": "מרכז קוסובו",
+    "region": "Central Kosovo",
     "type": "State institution"
   },
   "LOC-015": {
-    "country": "סרביה",
+    "country": "Serbia",
     "latitude": 43.279,
     "locality": "Raška",
     "longitude": 20.609,
     "municipality": "Raška",
     "name": "General area near the border",
     "precision": "region",
-    "region": "דרום סרביה",
+    "region": "Southern Serbia",
     "type": "Serbian side"
   },
   "LOC-016": {
-    "country": "סרביה",
+    "country": "Serbia",
     "latitude": 43.136,
     "locality": "Novi Pazar",
     "longitude": 20.509,
     "municipality": "Novi Pazar",
     "name": "Urban center",
     "precision": "town",
-    "region": "דרום סרביה",
+    "region": "Southern Serbia",
     "type": "Serbian side"
   },
   "LOC-017": {
-    "country": "סרביה",
+    "country": "Serbia",
     "latitude": 44.812,
     "locality": "Belgrade",
     "longitude": 20.455,
     "municipality": "Belgrade",
     "name": "Government office",
     "precision": "facility",
-    "region": "מרכז סרביה",
+    "region": "Central Serbia",
     "type": "Governmental"
   },
   "LOC-018": {
@@ -222,7 +222,7 @@
   "LOC-021": {
     "country": "Kosovo",
     "latitude": 42.879,
-    "locality": "כפר 1",
+    "locality": "Village 1",
     "longitude": 20.866,
     "municipality": "North Mitrovica",
     "name": "Nearby village 1",
@@ -299,7 +299,7 @@
   "LOC-028": {
     "country": "Kosovo",
     "latitude": 43.091,
-    "locality": "כפר 8",
+    "locality": "Village 8",
     "longitude": 20.809,
     "municipality": "Leposavić",
     "name": "Nearby village 8",
@@ -321,7 +321,7 @@
   "LOC-030": {
     "country": "Kosovo",
     "latitude": 42.904,
-    "locality": "כפר 10",
+    "locality": "Village 10",
     "longitude": 20.846,
     "municipality": "Zvečan",
     "name": "Gas station 10",
@@ -343,7 +343,7 @@
   "LOC-032": {
     "country": "Kosovo",
     "latitude": 42.895,
-    "locality": "כפר 12",
+    "locality": "Village 12",
     "longitude": 20.872,
     "municipality": "North Mitrovica",
     "name": "School 12",
@@ -354,7 +354,7 @@
   "LOC-033": {
     "country": "Kosovo",
     "latitude": 43.111,
-    "locality": "כפר 13",
+    "locality": "Village 13",
     "longitude": 20.809,
     "municipality": "Leposavić",
     "name": "Nearby village 13",
@@ -376,7 +376,7 @@
   "LOC-035": {
     "country": "Kosovo",
     "latitude": 43.091,
-    "locality": "כפר 15",
+    "locality": "Village 15",
     "longitude": 20.815,
     "municipality": "Leposavić",
     "name": "Central square 15",
@@ -398,7 +398,7 @@
   "LOC-037": {
     "country": "Kosovo",
     "latitude": 42.887,
-    "locality": "כפר 17",
+    "locality": "Village 17",
     "longitude": 20.878,
     "municipality": "North Mitrovica",
     "name": "Nearby village 17",
@@ -409,7 +409,7 @@
   "LOC-038": {
     "country": "Kosovo",
     "latitude": 43.103,
-    "locality": "כפר 18",
+    "locality": "Village 18",
     "longitude": 20.815,
     "municipality": "Leposavić",
     "name": "Access route 18",
@@ -442,7 +442,7 @@
   "LOC-041": {
     "country": "Kosovo",
     "latitude": 42.92,
-    "locality": "כפר 21",
+    "locality": "Village 21",
     "longitude": 20.852,
     "municipality": "Zvečan",
     "name": "Health center 21",
@@ -453,7 +453,7 @@
   "LOC-042": {
     "country": "Kosovo",
     "latitude": 42.879,
-    "locality": "כפר 22",
+    "locality": "Village 22",
     "longitude": 20.884,
     "municipality": "North Mitrovica",
     "name": "Central square 22",
@@ -508,7 +508,7 @@
   "LOC-047": {
     "country": "Kosovo",
     "latitude": 42.899,
-    "locality": "כפר 27",
+    "locality": "Village 27",
     "longitude": 20.884,
     "municipality": "North Mitrovica",
     "name": "Gas station 27",
@@ -519,7 +519,7 @@
   "LOC-048": {
     "country": "Kosovo",
     "latitude": 43.115,
-    "locality": "כפר 28",
+    "locality": "Village 28",
     "longitude": 20.821,
     "municipality": "Leposavić",
     "name": "Gas station 28",
@@ -541,7 +541,7 @@
   "LOC-050": {
     "country": "Kosovo",
     "latitude": 42.9,
-    "locality": "כפר 30",
+    "locality": "Village 30",
     "longitude": 20.822,
     "municipality": "Zvečan",
     "name": "Gas station 30",
@@ -596,7 +596,7 @@
   "LOC-055": {
     "country": "Kosovo",
     "latitude": 42.92,
-    "locality": "כפר 35",
+    "locality": "Village 35",
     "longitude": 20.822,
     "municipality": "Zvečan",
     "name": "Small industrial area 35",
@@ -607,7 +607,7 @@
   "LOC-056": {
     "country": "Kosovo",
     "latitude": 42.902,
-    "locality": "כפר 36",
+    "locality": "Village 36",
     "longitude": 20.677,
     "municipality": "Zubin Potok",
     "name": "Small industrial area 36",
@@ -629,7 +629,7 @@
   "LOC-058": {
     "country": "Kosovo",
     "latitude": 42.887,
-    "locality": "כפר 38",
+    "locality": "Village 38",
     "longitude": 20.854,
     "municipality": "North Mitrovica",
     "name": "Access route 38",
@@ -662,7 +662,7 @@
   "LOC-061": {
     "country": "Kosovo",
     "latitude": 43.111,
-    "locality": "כפר 41",
+    "locality": "Village 41",
     "longitude": 20.791,
     "municipality": "Leposavić",
     "name": "General checkpoint 41",
@@ -673,7 +673,7 @@
   "LOC-062": {
     "country": "Kosovo",
     "latitude": 42.903,
-    "locality": "כפר 42",
+    "locality": "Village 42",
     "longitude": 20.854,
     "municipality": "North Mitrovica",
     "name": "Health center 42",
@@ -695,7 +695,7 @@
   "LOC-064": {
     "country": "Kosovo",
     "latitude": 42.9,
-    "locality": "כפר 44",
+    "locality": "Village 44",
     "longitude": 20.834,
     "municipality": "Zvečan",
     "name": "General checkpoint 44",
@@ -717,7 +717,7 @@
   "LOC-066": {
     "country": "Kosovo",
     "latitude": 42.891,
-    "locality": "כפר 46",
+    "locality": "Village 46",
     "longitude": 20.86,
     "municipality": "North Mitrovica",
     "name": "Access route 46",
@@ -739,7 +739,7 @@
   "LOC-068": {
     "country": "Kosovo",
     "latitude": 42.899,
-    "locality": "כפר 48",
+    "locality": "Village 48",
     "longitude": 20.86,
     "municipality": "North Mitrovica",
     "name": "Access route 48",
@@ -750,7 +750,7 @@
   "LOC-069": {
     "country": "Kosovo",
     "latitude": 42.903,
-    "locality": "כפר 49",
+    "locality": "Village 49",
     "longitude": 20.86,
     "municipality": "North Mitrovica",
     "name": "General checkpoint 49",
@@ -761,7 +761,7 @@
   "LOC-070": {
     "country": "Kosovo",
     "latitude": 42.896,
-    "locality": "כפר 50",
+    "locality": "Village 50",
     "longitude": 20.84,
     "municipality": "Zvečan",
     "name": "Wooded area 50",
@@ -783,7 +783,7 @@
   "LOC-072": {
     "country": "Kosovo",
     "latitude": 42.91,
-    "locality": "כפר 52",
+    "locality": "Village 52",
     "longitude": 20.689,
     "municipality": "Zubin Potok",
     "name": "Gas station 52",
@@ -805,7 +805,7 @@
   "LOC-074": {
     "country": "Kosovo",
     "latitude": 43.107,
-    "locality": "כפר 54",
+    "locality": "Village 54",
     "longitude": 20.803,
     "municipality": "Leposavić",
     "name": "Wooded area 54",
@@ -871,7 +871,7 @@
   "LOC-080": {
     "country": "Kosovo",
     "latitude": 42.908,
-    "locality": "כפר 60",
+    "locality": "Village 60",
     "longitude": 20.846,
     "municipality": "Zvečan",
     "name": "Health center 60",
@@ -893,7 +893,7 @@
   "LOC-082": {
     "country": "Kosovo",
     "latitude": 42.922,
-    "locality": "כפר 62",
+    "locality": "Village 62",
     "longitude": 20.695,
     "municipality": "Zubin Potok",
     "name": "Gas station 62",
@@ -926,7 +926,7 @@
   "LOC-085": {
     "country": "Kosovo",
     "latitude": 42.906,
-    "locality": "כפר 65",
+    "locality": "Village 65",
     "longitude": 20.701,
     "municipality": "Zubin Potok",
     "name": "Nearby village 65",
@@ -992,7 +992,7 @@
   "LOC-091": {
     "country": "Kosovo",
     "latitude": 42.879,
-    "locality": "כפר 71",
+    "locality": "Village 71",
     "longitude": 20.884,
     "municipality": "North Mitrovica",
     "name": "Nearby village 71",
@@ -1003,7 +1003,7 @@
   "LOC-092": {
     "country": "Kosovo",
     "latitude": 42.883,
-    "locality": "כפר 72",
+    "locality": "Village 72",
     "longitude": 20.884,
     "municipality": "North Mitrovica",
     "name": "Access route 72",
@@ -1025,7 +1025,7 @@
   "LOC-094": {
     "country": "Kosovo",
     "latitude": 42.914,
-    "locality": "כפר 74",
+    "locality": "Village 74",
     "longitude": 20.707,
     "municipality": "Zubin Potok",
     "name": "Gas station 74",
@@ -1047,7 +1047,7 @@
   "LOC-096": {
     "country": "Kosovo",
     "latitude": 42.922,
-    "locality": "כפר 76",
+    "locality": "Village 76",
     "longitude": 20.707,
     "municipality": "Zubin Potok",
     "name": "Health center 76",
@@ -1080,7 +1080,7 @@
   "LOC-099": {
     "country": "Kosovo",
     "latitude": 42.9,
-    "locality": "כפר 79",
+    "locality": "Village 79",
     "longitude": 20.822,
     "municipality": "Zvečan",
     "name": "Nearby village 79",
@@ -1102,7 +1102,7 @@
   "LOC-101": {
     "country": "Kosovo",
     "latitude": 42.914,
-    "locality": "כפר 81",
+    "locality": "Village 81",
     "longitude": 20.671,
     "municipality": "Zubin Potok",
     "name": "General checkpoint 81",
@@ -1113,7 +1113,7 @@
   "LOC-102": {
     "country": "Kosovo",
     "latitude": 42.912,
-    "locality": "כפר 82",
+    "locality": "Village 82",
     "longitude": 20.822,
     "municipality": "Zvečan",
     "name": "Nearby village 82",
@@ -1146,7 +1146,7 @@
   "LOC-105": {
     "country": "Kosovo",
     "latitude": 42.896,
-    "locality": "כפר 85",
+    "locality": "Village 85",
     "longitude": 20.828,
     "municipality": "Zvečan",
     "name": "Central square 85",
@@ -1157,7 +1157,7 @@
   "LOC-106": {
     "country": "Kosovo",
     "latitude": 42.883,
-    "locality": "כפר 86",
+    "locality": "Village 86",
     "longitude": 20.854,
     "municipality": "North Mitrovica",
     "name": "Small industrial area 86",
@@ -1223,7 +1223,7 @@
   "LOC-112": {
     "country": "Kosovo",
     "latitude": 43.091,
-    "locality": "כפר 92",
+    "locality": "Village 92",
     "longitude": 20.797,
     "municipality": "Leposavić",
     "name": "Local junction 92",
@@ -1245,7 +1245,7 @@
   "LOC-114": {
     "country": "Kosovo",
     "latitude": 42.904,
-    "locality": "כפר 94",
+    "locality": "Village 94",
     "longitude": 20.834,
     "municipality": "Zvečan",
     "name": "Wooded area 94",
@@ -1256,7 +1256,7 @@
   "LOC-115": {
     "country": "Kosovo",
     "latitude": 43.103,
-    "locality": "כפר 95",
+    "locality": "Village 95",
     "longitude": 20.797,
     "municipality": "Leposavić",
     "name": "Central square 95",
@@ -1311,7 +1311,7 @@
   "LOC-120": {
     "country": "Kosovo",
     "latitude": 43.095,
-    "locality": "כפר 100",
+    "locality": "Village 100",
     "longitude": 20.803,
     "municipality": "Leposavić",
     "name": "Gas station 100",
@@ -1333,7 +1333,7 @@
   "LOC-122": {
     "country": "Kosovo",
     "latitude": 42.891,
-    "locality": "כפר 102",
+    "locality": "Village 102",
     "longitude": 20.866,
     "municipality": "North Mitrovica",
     "name": "Access route 102",
@@ -1366,7 +1366,7 @@
   "LOC-125": {
     "country": "Kosovo",
     "latitude": 42.926,
-    "locality": "כפר 105",
+    "locality": "Village 105",
     "longitude": 20.689,
     "municipality": "Zubin Potok",
     "name": "General checkpoint 105",
@@ -1399,7 +1399,7 @@
   "LOC-128": {
     "country": "Kosovo",
     "latitude": 43.099,
-    "locality": "כפר 108",
+    "locality": "Village 108",
     "longitude": 20.809,
     "municipality": "Leposavić",
     "name": "Central square 108",
@@ -1421,7 +1421,7 @@
   "LOC-130": {
     "country": "Kosovo",
     "latitude": 43.107,
-    "locality": "כפר 110",
+    "locality": "Village 110",
     "longitude": 20.809,
     "municipality": "Leposavić",
     "name": "Nearby village 110",
@@ -1432,7 +1432,7 @@
   "LOC-131": {
     "country": "Kosovo",
     "latitude": 42.916,
-    "locality": "כפר 111",
+    "locality": "Village 111",
     "longitude": 20.846,
     "municipality": "Zvečan",
     "name": "Gas station 111",
@@ -1443,7 +1443,7 @@
   "LOC-132": {
     "country": "Kosovo",
     "latitude": 43.115,
-    "locality": "כפר 112",
+    "locality": "Village 112",
     "longitude": 20.809,
     "municipality": "Leposavić",
     "name": "General checkpoint 112",
@@ -1454,7 +1454,7 @@
   "LOC-133": {
     "country": "Kosovo",
     "latitude": 42.902,
-    "locality": "כפר 113",
+    "locality": "Village 113",
     "longitude": 20.701,
     "municipality": "Zubin Potok",
     "name": "Central square 113",
@@ -1465,7 +1465,7 @@
   "LOC-134": {
     "country": "Kosovo",
     "latitude": 42.9,
-    "locality": "כפר 114",
+    "locality": "Village 114",
     "longitude": 20.852,
     "municipality": "Zvečan",
     "name": "Local junction 114",
@@ -1487,7 +1487,7 @@
   "LOC-136": {
     "country": "Kosovo",
     "latitude": 43.103,
-    "locality": "כפר 116",
+    "locality": "Village 116",
     "longitude": 20.815,
     "municipality": "Leposavić",
     "name": "Small industrial area 116",
@@ -1509,7 +1509,7 @@
   "LOC-138": {
     "country": "Kosovo",
     "latitude": 42.899,
-    "locality": "כפר 118",
+    "locality": "Village 118",
     "longitude": 20.878,
     "municipality": "North Mitrovica",
     "name": "Small industrial area 118",
@@ -1586,7 +1586,7 @@
   "LOC-145": {
     "country": "Kosovo",
     "latitude": 42.899,
-    "locality": "כפר 125",
+    "locality": "Village 125",
     "longitude": 20.884,
     "municipality": "North Mitrovica",
     "name": "Access route 125",
@@ -1597,7 +1597,7 @@
   "LOC-146": {
     "country": "Kosovo",
     "latitude": 43.115,
-    "locality": "כפר 126",
+    "locality": "Village 126",
     "longitude": 20.821,
     "municipality": "Leposavić",
     "name": "Local junction 126",
@@ -1619,7 +1619,7 @@
   "LOC-148": {
     "country": "Kosovo",
     "latitude": 42.906,
-    "locality": "כפר 128",
+    "locality": "Village 128",
     "longitude": 20.671,
     "municipality": "Zubin Potok",
     "name": "School 128",
@@ -1630,7 +1630,7 @@
   "LOC-149": {
     "country": "Kosovo",
     "latitude": 43.099,
-    "locality": "כפר 129",
+    "locality": "Village 129",
     "longitude": 20.785,
     "municipality": "Leposavić",
     "name": "Small industrial area 129",
@@ -1641,7 +1641,7 @@
   "LOC-150": {
     "country": "Kosovo",
     "latitude": 42.891,
-    "locality": "כפר 130",
+    "locality": "Village 130",
     "longitude": 20.848,
     "municipality": "North Mitrovica",
     "name": "Small industrial area 130",
@@ -1650,7 +1650,7 @@
     "type": "Civilian"
   },
   "LOC-151": {
-    "country": "אלבניה",
+    "country": "Albania",
     "latitude": 41.331,
     "locality": "Tirana",
     "longitude": 19.8,
@@ -1661,7 +1661,7 @@
     "type": "Governmental"
   },
   "LOC-152": {
-    "country": "קרואטיה",
+    "country": "Croatia",
     "latitude": 42.908,
     "locality": "Zagreb",
     "longitude": 20.782,
@@ -1690,7 +1690,7 @@
     "municipality": "Peć",
     "name": "Urban center",
     "precision": "town",
-    "region": "מערב קוסובו",
+    "region": "Western Kosovo",
     "type": "Noise/background"
   },
   "LOC-155": {
@@ -1701,63 +1701,63 @@
     "municipality": "Prizren",
     "name": "Urban center",
     "precision": "town",
-    "region": "דרום קוסובו",
+    "region": "Southern Kosovo",
     "type": "Noise/background"
   },
   "LOC-V2-001": {
     "country": "Kosovo",
     "latitude": 43.17,
-    "locality": "יאריניה",
+    "locality": "Jarinje",
     "longitude": 20.7,
     "municipality": "Leposavić",
-    "name": "מרחב מעבר יאריניה",
+    "name": "Jarinje crossing area",
     "precision": "coarse_area",
     "region": "North Kosovo",
-    "type": "מעבר גבול - אזור כללי"
+    "type": "Border crossing - general area"
   },
   "LOC-V2-002": {
     "country": "Kosovo",
     "latitude": 43.14,
-    "locality": "צפון לפוסאביץ'",
+    "locality": "Northern Leposavić",
     "longitude": 20.75,
     "municipality": "Leposavić",
-    "name": "ציר יאריניה–לפוסאביץ'",
+    "name": "Jarinje-Leposavić route",
     "precision": "coarse_area",
     "region": "North Kosovo",
-    "type": "ציר תנועה כללי"
+    "type": "General movement route"
   },
   "LOC-V2-003": {
     "country": "Kosovo",
     "latitude": 42.98,
-    "locality": "ברניאק",
+    "locality": "Brnjak",
     "longitude": 20.5,
     "municipality": "Zubin Potok",
-    "name": "מרחב מעבר ברניאק",
+    "name": "Brnjak crossing area",
     "precision": "coarse_area",
     "region": "North Kosovo",
-    "type": "מעבר גבול - אזור כללי"
+    "type": "Border crossing - general area"
   },
   "LOC-V2-004": {
     "country": "Kosovo",
     "latitude": 42.94,
-    "locality": "מערב זובין פוטוק",
+    "locality": "Western Zubin Potok",
     "longitude": 20.6,
     "municipality": "Zubin Potok",
-    "name": "ציר ברניאק–זובין פוטוק",
+    "name": "Brnjak-Zubin Potok route",
     "precision": "coarse_area",
     "region": "North Kosovo",
-    "type": "ציר תנועה כללי"
+    "type": "General movement route"
   },
   "LOC-V2-005": {
     "country": "Kosovo",
     "latitude": 42.96,
-    "locality": "גזיבודה",
+    "locality": "Gazivoda",
     "longitude": 20.57,
     "municipality": "Zubin Potok",
-    "name": "מרחב גזיבודה הצפוני",
+    "name": "Northern Gazivoda area",
     "precision": "coarse_area",
     "region": "North Kosovo",
-    "type": "מרחב שליטה כללי"
+    "type": "General control area"
   },
   "LOC-V2-006": {
     "country": "Kosovo",
@@ -1765,10 +1765,10 @@
     "locality": "Leposavić",
     "longitude": 20.79,
     "municipality": "Leposavić",
-    "name": "קו חסימה צפוני ללפוסאביץ'",
+    "name": "Northern Leposavić blocking line",
     "precision": "coarse_area",
     "region": "North Kosovo",
-    "type": "קו חסימה תרחישי"
+    "type": "Scenario blocking line"
   },
   "LOC-V2-007": {
     "country": "Kosovo",
@@ -1776,10 +1776,10 @@
     "locality": "Zubin Potok",
     "longitude": 20.67,
     "municipality": "Zubin Potok",
-    "name": "קו חסימה מערבי לזובין פוטוק",
+    "name": "Western Zubin Potok blocking line",
     "precision": "coarse_area",
     "region": "North Kosovo",
-    "type": "קו חסימה תרחישי"
+    "type": "Scenario blocking line"
   },
   "LOC-V2-008": {
     "country": "Kosovo",
@@ -1787,10 +1787,10 @@
     "locality": "Zvečan",
     "longitude": 20.82,
     "municipality": "Zvečan",
-    "name": "גישות צפוניות לזבצ'אן",
+    "name": "Northern approaches to Zvečan",
     "precision": "coarse_area",
     "region": "North Kosovo",
-    "type": "מרחב הגנה כללי"
+    "type": "General defensive area"
   },
   "LOC-V2-009": {
     "country": "Kosovo",
@@ -1798,75 +1798,75 @@
     "locality": "North Mitrovica",
     "longitude": 20.85,
     "municipality": "North Mitrovica",
-    "name": "גישות צפוניות לצפון מיטרוביצה",
+    "name": "Northern approaches to North Mitrovica",
     "precision": "coarse_area",
     "region": "North Kosovo",
-    "type": "מרחב הגנה כללי"
+    "type": "General defensive area"
   },
   "LOC-V2-010": {
     "country": "Kosovo",
     "latitude": 42.89,
-    "locality": "גשר איבר",
+    "locality": "Ibar Bridge",
     "longitude": 20.87,
     "municipality": "North Mitrovica",
-    "name": "מרחב גשר איבר",
+    "name": "Ibar Bridge area",
     "precision": "coarse_area",
     "region": "North Kosovo",
-    "type": "נקודת חסימה אסטרטגית"
+    "type": "Strategic blocking point"
   },
   "LOC-V2-011": {
     "country": "Kosovo",
     "latitude": 42.72,
-    "locality": "נובו סלו",
+    "locality": "Novo Selo",
     "longitude": 21.08,
-    "municipality": "ווצ'יטרן",
-    "name": "מחנה נובו סלו - אזור כללי",
+    "municipality": "Vushtrri",
+    "name": "Camp Novo Selo general area",
     "precision": "coarse_area",
-    "region": "מרכז קוסובו",
-    "type": "מרחב KFOR"
+    "region": "Central Kosovo",
+    "type": "KFOR area"
   },
   "LOC-V2-012": {
     "country": "Kosovo",
     "latitude": 42.36,
-    "locality": "בונדסטיל",
+    "locality": "Bondsteel",
     "longitude": 21.25,
-    "municipality": "פריזאי",
-    "name": "מחנה בונדסטיל - אזור כללי",
+    "municipality": "Ferizaj",
+    "name": "Camp Bondsteel general area",
     "precision": "coarse_area",
-    "region": "דרום-מזרח קוסובו",
-    "type": "מרחב KFOR"
+    "region": "Southeastern Kosovo",
+    "type": "KFOR area"
   },
   "LOC-V2-013": {
     "country": "Kosovo",
     "latitude": 42.76,
-    "locality": "ציר צפוני",
+    "locality": "Northern route",
     "longitude": 21.02,
-    "municipality": "ווצ'יטרן",
-    "name": "ציר תגבור פרישטינה–מיטרוביצה",
+    "municipality": "Vushtrri",
+    "name": "Pristina-Mitrovica reinforcement route",
     "precision": "coarse_area",
-    "region": "מרכז קוסובו",
-    "type": "ציר תגבור כללי"
+    "region": "Central Kosovo",
+    "type": "General reinforcement route"
   },
   "LOC-V2-014": {
     "country": "Kosovo",
     "latitude": 42.57,
-    "locality": "שדה התעופה",
+    "locality": "Airport",
     "longitude": 21.04,
     "municipality": "Pristina",
-    "name": "מרחב שדה התעופה פרישטינה",
+    "name": "Pristina airport area",
     "precision": "coarse_area",
-    "region": "מרכז קוסובו",
-    "type": "מרחב תעופה כללי"
+    "region": "Central Kosovo",
+    "type": "General aviation area"
   },
   "LOC-V2-015": {
     "country": "Kosovo",
     "latitude": 42.94,
-    "locality": "מרדארה",
+    "locality": "Merdare",
     "longitude": 21.27,
-    "municipality": "פודויבו",
-    "name": "מרחב מעבר מרדארה",
+    "municipality": "Podujevo",
+    "name": "Merdare crossing area",
     "precision": "coarse_area",
-    "region": "מזרח קוסובו",
-    "type": "ציר הדגמה כללי"
+    "region": "Eastern Kosovo",
+    "type": "General scenario route"
   }
 }

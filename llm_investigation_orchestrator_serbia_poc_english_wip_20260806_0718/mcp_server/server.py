@@ -11,7 +11,10 @@ import os
 import re
 import sys
 import time
+from collections.abc import Iterator, Mapping, Sequence
 from collections import Counter, defaultdict
+from contextvars import ContextVar
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
@@ -68,21 +71,196 @@ PLAYBACK_VISIBILITY_PATH = Path(os.environ.get(
 CLIENT_SUPPORTS_SAMPLING = False
 NEXT_SERVER_REQUEST_ID = 100000
 
-LOCATIONS = json.loads(LOCATIONS_PATH.read_text(encoding="utf-8")) if LOCATIONS_PATH.exists() else {}
+HEBREW_RE = re.compile(r"[\u0590-\u05ff]")
+ACTIVE_LOCALE: ContextVar[str] = ContextVar("mcp_locale", default="he")
 
-AREA_ALIASES = {
-    "צפון קוסובו": [location_id for location_id, item in LOCATIONS.items() if item.get("region") == "צפון קוסובו"],
-    "צפון מיטרוביצה": [location_id for location_id, item in LOCATIONS.items() if item.get("municipality") == "צפון מיטרוביצה"],
-    "זבצ׳אן": [location_id for location_id, item in LOCATIONS.items() if item.get("municipality") == "זבצ׳אן"],
-    "זובין פוטוק": [location_id for location_id, item in LOCATIONS.items() if item.get("municipality") == "זובין פוטוק"],
-    "לפוסאביץ׳": [location_id for location_id, item in LOCATIONS.items() if item.get("municipality") == "לפוסאביץ׳"],
-    "סרביה": [location_id for location_id, item in LOCATIONS.items() if item.get("country") == "סרביה"],
-    "דרום סרביה": [location_id for location_id, item in LOCATIONS.items() if item.get("region") == "דרום סרביה"],
-    "בלגרד": [location_id for location_id, item in LOCATIONS.items() if item.get("municipality") == "בלגרד"],
-    "פרישטינה": [location_id for location_id, item in LOCATIONS.items() if item.get("municipality") == "פרישטינה"],
-    "ראשקה": [location_id for location_id, item in LOCATIONS.items() if item.get("municipality") == "ראשקה"],
-    "נובי פאזאר": [location_id for location_id, item in LOCATIONS.items() if item.get("municipality") == "נובי פאזאר"],
+
+def localized_path(path: Path, locale: str) -> Path:
+    if locale != "en":
+        return path
+    return path.with_name(path.stem + ".en" + path.suffix)
+
+
+def file_signature(path: Path) -> dict[str, Any]:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return {"path": str(path), "size": path.stat().st_size, "sha256": digest.hexdigest()}
+
+
+@dataclass
+class DatasetRuntime:
+    locale: str
+    dataset_version: str
+    events_path: Path
+    locations_path: Path
+    entities_path: Path
+    semantic_index_dir: Path
+    locations: dict[str, dict[str, Any]] = field(default_factory=dict)
+    events: list[dict[str, Any]] = field(default_factory=list)
+    events_by_id: dict[str, dict[str, Any]] = field(default_factory=dict)
+    fusion_events_by_context: dict[tuple[str, str], list[dict[str, Any]]] = field(default_factory=lambda: defaultdict(list))
+    entity_presentations: dict[str, dict[str, Any]] = field(default_factory=dict)
+    location_presentations: dict[str, dict[str, Any]] = field(default_factory=dict)
+    entities: dict[str, dict[str, Any]] = field(default_factory=dict)
+    area_aliases: dict[str, list[str]] = field(default_factory=dict)
+    semantic_index: SemanticEventIndex | None = None
+    manifest: dict[str, Any] = field(default_factory=dict)
+
+
+def load_runtime(locale: str) -> DatasetRuntime:
+    events_path = localized_path(DATA_PATH, locale)
+    locations_path = localized_path(LOCATIONS_PATH, locale)
+    entities_path = localized_path(ENTITIES_PATH, locale)
+    required = {"events": events_path, "locations": locations_path, "entities": entities_path}
+    missing = [label for label, path in required.items() if not path.is_file()]
+    if missing:
+        raise ValueError(f"{locale} MCP runtime assets unavailable: {', '.join(missing)}")
+    if locale == "en":
+        contaminated = [label for label, path in required.items() if HEBREW_RE.search(path.read_text(encoding="utf-8-sig"))]
+        if contaminated:
+            raise ValueError("English MCP runtime assets contain Hebrew: " + ", ".join(contaminated))
+    locations = json.loads(locations_path.read_text(encoding="utf-8-sig"))
+    runtime = DatasetRuntime(
+        locale=locale,
+        dataset_version=DATASET_VERSION,
+        events_path=events_path,
+        locations_path=locations_path,
+        entities_path=entities_path,
+        semantic_index_dir=SEMANTIC_INDEX_DIR / locale,
+        locations=locations,
+        manifest={label: file_signature(path) for label, path in required.items()},
+    )
+    with events_path.open(encoding="utf-8-sig", newline="") as handle:
+        runtime.events = list(csv.DictReader(handle))
+    for event in runtime.events:
+        location = locations.get(event["location_id"], {})
+        event["location_name"] = location.get("name", event["location_id"])
+        event["location_type"] = location.get("type", "")
+        event["timestamp"] = parse_time(event["timestamp_utc"])
+        runtime.fusion_events_by_context[(event.get("location_id") or "", event.get("entity_id") or "")].append(event)
+    runtime.events.sort(key=lambda item: item["timestamp"])
+    runtime.events_by_id = {event["event_id"]: event for event in runtime.events}
+    alias_fields = ("name", "municipality", "region", "country", "locality")
+    for location_id, item in locations.items():
+        for field_name in alias_fields:
+            value = str(item.get(field_name) or "").strip()
+            if value:
+                runtime.area_aliases.setdefault(value, []).append(location_id)
+    return runtime
+
+
+RUNTIMES: dict[str, DatasetRuntime] = {}
+RUNTIME_ERRORS: dict[str, str] = {}
+
+
+def current_runtime() -> DatasetRuntime:
+    locale = ACTIVE_LOCALE.get()
+    runtime = RUNTIMES.get(locale)
+    if runtime is None:
+        raise ValueError(f"{locale} MCP runtime is unavailable: {RUNTIME_ERRORS.get(locale, 'unknown error')}")
+    return runtime
+
+
+ENGLISH_GENERATED_TEXT = {
+    "לא ידוע": "Unknown",
+    "גבוהה": "High",
+    "בינונית-גבוהה": "Medium-high",
+    "בינונית": "Medium",
+    "נמוכה": "Low",
+    "השאלה מבקשת דפוס, קשר, תרחיש, חלופות או הסבר חקירתי.": "The question asks for a pattern, relationship, scenario, alternatives, or investigative explanation.",
+    "השאלה מבקשת הצגה או ספירה לפי מיקום, ללא בקשת קשרים נסתרים.": "The question asks for presentation or counts by location without hidden-link analysis.",
+    "השאלה מבקשת סדר או עיתוי של אירועים קיימים.": "The question asks for the order or timing of existing events.",
+    "השאלה מבקשת שליפה, סינון, צמצום או ספירה של רשומות קיימות.": "The question asks to retrieve, filter, narrow, or count existing records.",
+    "לא נמצאה בקשה מפורשת לחקירה עמוקה; ברירת המחדל היא שליפה זהירה.": "No explicit deep-investigation request was found; cautious retrieval is the default.",
+    "קיימים seeds מומלצים שעדיין לא הורחבו; אין לסכם או לאתגר השערה לפני טיפול בהם.": "Recommended seeds remain unexpanded; do not summarize or challenge the hypothesis before handling them.",
+    "קיימים רמזים סמנטיים חדשים שעדיין לא נבדקו, ועדיין יש תקציב קריאות סמנטיות.": "New semantic clues remain unchecked and semantic-call budget remains.",
+    "קיימות חוליות סמוכות בשרשרת המועמדת ללא בדיקת גשר ראייתי.": "Adjacent links in the candidate chain have not received an evidentiary-bridge check.",
+    "השרשרת עדיין קצרה ויש תקציב להרחבה מוגבלת לפני מסקנה.": "The chain remains short and budget permits bounded expansion before a conclusion.",
+    "קיימת שרשרת מועמדת מספקת או שה-frontier מוצה; מותר לבצע ביקורת השערה או סיכום עם פערים.": "A sufficient candidate chain exists or the frontier is exhausted; hypothesis challenge or a gap-aware summary is allowed.",
+    "אין frontier מחייב נוסף או תקציב הרחבה משמעותי; יש לסכם את הפערים בלי להציג קשר לא מוכח.": "No mandatory frontier or meaningful expansion budget remains; summarize gaps without presenting an unproven link.",
+    "שם גורם זהה": "Same actor name",
+    "הרשומה מסומנת כהסבר שגרתי או תמים": "The record is marked as a routine or benign explanation",
+    "תיאור של פעולה או תצפית קונקרטית": "Description of a concrete action or observation",
+    "לא ניתן לבדוק קשר כי אחד האירועים לא נמצא.": "The relationship cannot be checked because one event was not found.",
+    "קיים גשר ראייתי ישיר יחסית בין האירועים.": "A relatively direct evidentiary bridge exists between the events.",
+    "קיים קשר נסיבתי המבוסס על זמן, מקום או תוכן, אך לא מזהה ישיר.": "A circumstantial relationship based on time, place, or content exists, but no direct identifier does.",
+    "לא נמצא גשר ראייתי מספיק; יש להציג את המעבר כהשערה או פער.": "No sufficient evidentiary bridge was found; present the transition as a hypothesis or gap.",
+    "פחות משלושה סוגי מקור עצמאיים": "Fewer than three independent source types",
+    "אין מזהה תפעולי משותף שניתן לעקוב אחריו": "No shared traceable operational identifier",
+    "אין תצפית ישירה בין הראיות שסופקו": "No direct observation among the supplied evidence",
+    "הכלי מתאר חוזק, חלופות ופערים באופן דטרמיניסטי; הסוכן חייב להעריך את ההשערה בעצמו.": "The tool describes strength, alternatives, and gaps deterministically; the agent must assess the hypothesis itself.",
 }
+
+
+def english_generated_text(value: str) -> str:
+    translated = ENGLISH_GENERATED_TEXT.get(value, value)
+    patterns = (
+        (r"^פער זמן ([0-9.]+) שעות$", r"Time gap \1 hours"),
+        (r"^מרחק ([0-9.]+) קמ$", r"Distance \1 km"),
+        (r"^מרחק זמן מינימלי ([0-9.]+) שעות$", r"Minimum time distance \1 hours"),
+        (r"^מרחק מינימלי ([0-9.]+) קמ$", r"Minimum distance \1 km"),
+        (r"^נמצא בהרחבה עם (\d+) נימוקי קשר$", r"Found during expansion with \1 linkage reasons"),
+    )
+    for pattern, replacement in patterns:
+        translated = re.sub(pattern, replacement, translated)
+    return translated
+
+
+def validate_english_payload(value: Any, path: str = "result") -> Any:
+    if isinstance(value, dict):
+        return {key: validate_english_payload(item, f"{path}.{key}") for key, item in value.items()}
+    if isinstance(value, list):
+        return [validate_english_payload(item, f"{path}[]") for item in value]
+    if isinstance(value, str):
+        translated = english_generated_text(value)
+        if HEBREW_RE.search(translated):
+            raise ValueError(f"English MCP payload contains untranslated Hebrew at {path}")
+        return translated
+    return value
+
+
+class RuntimeMapping(Mapping):
+    def __init__(self, attribute: str):
+        self.attribute = attribute
+
+    def _value(self) -> Mapping:
+        return getattr(current_runtime(), self.attribute)
+
+    def __getitem__(self, key: Any) -> Any:
+        return self._value()[key]
+
+    def __iter__(self) -> Iterator:
+        return iter(self._value())
+
+    def __len__(self) -> int:
+        return len(self._value())
+
+
+class RuntimeSequence(Sequence):
+    def __init__(self, attribute: str):
+        self.attribute = attribute
+
+    def _value(self) -> Sequence:
+        return getattr(current_runtime(), self.attribute)
+
+    def __getitem__(self, index: Any) -> Any:
+        return self._value()[index]
+
+    def __len__(self) -> int:
+        return len(self._value())
+
+
+LOCATIONS = RuntimeMapping("locations")
+AREA_ALIASES = RuntimeMapping("area_aliases")
+EVENTS = RuntimeSequence("events")
+EVENT_BY_ID = RuntimeMapping("events_by_id")
+EVENTS_BY_ID = EVENT_BY_ID
+FUSION_EVENTS_BY_CONTEXT = RuntimeMapping("fusion_events_by_context")
+ENTITY_PRESENTATIONS = RuntimeMapping("entity_presentations")
+LOCATION_PRESENTATIONS = RuntimeMapping("location_presentations")
+ENTITIES = RuntimeMapping("entities")
 
 EVENT_REFERENCES = {}
 
@@ -125,28 +303,20 @@ def parse_time(value: str | None) -> datetime | None:
     return parsed.astimezone(timezone.utc)
 
 
-def load_events() -> list[dict[str, Any]]:
-    with DATA_PATH.open(encoding="utf-8-sig", newline="") as handle:
-        events = list(csv.DictReader(handle))
-    for event in events:
-        location = LOCATIONS.get(event["location_id"], {})
-        event["location_name"] = location.get("name", event["location_id"])
-        event["location_type"] = location.get("type", "")
-        event["timestamp"] = parse_time(event["timestamp_utc"])
-    events.sort(key=lambda item: item["timestamp"])
-    return events
-
-
-EVENTS = load_events()
-EVENT_BY_ID = {event["event_id"]: event for event in EVENTS}
-EVENTS_BY_ID = {event["event_id"]: event for event in EVENTS}
-FUSION_EVENTS_BY_CONTEXT: dict[tuple[str, str], list[dict[str, Any]]] = defaultdict(list)
-for _fusion_event in EVENTS:
-    FUSION_EVENTS_BY_CONTEXT[(_fusion_event.get("location_id") or "", _fusion_event.get("entity_id") or "")].append(_fusion_event)
-ENTITY_PRESENTATIONS: dict[str, dict[str, Any]] = {}
-LOCATION_PRESENTATIONS: dict[str, dict[str, Any]] = {}
-ENTITIES: dict[str, dict[str, Any]] = {}
-SEMANTIC_INDEX: SemanticEventIndex | None = None
+for _locale in ("he", "en"):
+    try:
+        RUNTIMES[_locale] = load_runtime(_locale)
+    except (OSError, ValueError, json.JSONDecodeError) as _runtime_error:
+        RUNTIME_ERRORS[_locale] = str(_runtime_error)
+if "he" not in RUNTIMES:
+    raise ValueError("Hebrew MCP runtime is unavailable: " + RUNTIME_ERRORS.get("he", "unknown error"))
+if "en" in RUNTIMES:
+    if set(RUNTIMES["he"].events_by_id) != set(RUNTIMES["en"].events_by_id):
+        RUNTIME_ERRORS["en"] = "Hebrew and English MCP event projections have different event IDs"
+        RUNTIMES.pop("en")
+    elif set(RUNTIMES["he"].locations) != set(RUNTIMES["en"].locations):
+        RUNTIME_ERRORS["en"] = "Hebrew and English MCP location projections have different location IDs"
+        RUNTIMES.pop("en")
 
 
 def active_playback_policy() -> dict[str, Any] | None:
@@ -307,7 +477,8 @@ def match_location_term(term: str) -> list[str]:
 
 
 def load_entity_db() -> dict[str, dict[str, Any]]:
-    loaded = json.loads(ENTITIES_PATH.read_text(encoding="utf-8")) if ENTITIES_PATH.exists() else []
+    path = current_runtime().entities_path
+    loaded = json.loads(path.read_text(encoding="utf-8-sig")) if path.exists() else []
     return {item["entity_id"]: item for item in loaded if item.get("entity_id")}
 
 
@@ -331,18 +502,19 @@ def build_entity_layers() -> dict[str, dict[str, Any]]:
                 "longitude": location.get("longitude"),
                 "count": count,
             })
+        english = current_runtime().locale == "en"
         presentations[entity_id] = {
             "entity_id": entity_id,
             "canonical_name": base.get("canonical_name") or entity_id,
-            "entity_type": base.get("entity_type") or "גורם מדווח",
-            "confidence": base.get("confidence") or "entity_id גלוי ברשומה",
-            "basis": base.get("basis") or "ישות מתוך serbia_kosovo_entities.json לפי entity_id ברשומה",
+            "entity_type": base.get("entity_type") or ("Reporting actor" if english else "גורם מדווח"),
+            "confidence": base.get("confidence") or ("Explicit entity_id in the record" if english else "entity_id גלוי ברשומה"),
+            "basis": base.get("basis") or ("Entity metadata resolved by record entity_id" if english else "ישות מתוך serbia_kosovo_entities.json לפי entity_id ברשומה"),
             "aliases": list(dict.fromkeys(base.get("aliases") or [base.get("canonical_name") or entity_id])),
             "event_count": len(events),
             "top_locations": top_locations,
             "top_sources": [{"source_type": key, "count": count} for key, count in Counter(event["source_type"] for event in events).most_common(10)],
-            "certainty_breakdown": dict(Counter(event.get("certainty_level") or "לא ידוע" for event in events)),
-            "reliability_breakdown": dict(Counter(event.get("source_reliability_label") or event.get("source_reliability") or "לא ידוע" for event in events)),
+            "certainty_breakdown": dict(Counter(event.get("certainty_level") or ("Unknown" if english else "לא ידוע") for event in events)),
+            "reliability_breakdown": dict(Counter(event.get("source_reliability_label") or event.get("source_reliability") or ("Unknown" if english else "לא ידוע") for event in events)),
         }
     return presentations
 
@@ -354,6 +526,7 @@ def build_location_layers() -> dict[str, dict[str, Any]]:
         events_by_location[event["location_id"]].append(event)
     for location_id, location in LOCATIONS.items():
         events = events_by_location.get(location_id, [])
+        english = current_runtime().locale == "en"
         presentations[location_id] = {
             "location_id": location_id,
             "location_name": location.get("name", location_id),
@@ -376,14 +549,20 @@ def build_location_layers() -> dict[str, dict[str, Any]]:
                 for entity_id, count in Counter(event.get("entity_id") for event in events if event.get("entity_id")).most_common(10)
             ],
             "top_sources": [{"source_type": key, "count": count} for key, count in Counter(event["source_type"] for event in events).most_common(10)],
-            "certainty_breakdown": dict(Counter(event.get("certainty_level") or "לא ידוע" for event in events)),
-            "reliability_breakdown": dict(Counter(event.get("source_reliability_label") or event.get("source_reliability") or "לא ידוע" for event in events)),
+            "certainty_breakdown": dict(Counter(event.get("certainty_level") or ("Unknown" if english else "לא ידוע") for event in events)),
+            "reliability_breakdown": dict(Counter(event.get("source_reliability_label") or event.get("source_reliability") or ("Unknown" if english else "לא ידוע") for event in events)),
         }
     return presentations
 
 
-ENTITY_PRESENTATIONS = build_entity_layers()
-LOCATION_PRESENTATIONS = build_location_layers()
+for _locale, _runtime in RUNTIMES.items():
+    _token = ACTIVE_LOCALE.set(_locale)
+    try:
+        _runtime.entities = load_entity_db()
+        _runtime.entity_presentations = build_entity_layers()
+        _runtime.location_presentations = build_location_layers()
+    finally:
+        ACTIVE_LOCALE.reset(_token)
 
 
 def event_entity_id(event: dict[str, Any]) -> str | None:
@@ -392,7 +571,8 @@ def event_entity_id(event: dict[str, Any]) -> str | None:
 
 def event_entity_name(event: dict[str, Any]) -> str:
     entity = ENTITY_PRESENTATIONS.get(event_entity_id(event) or "", {})
-    return entity.get("canonical_name") or event_entity_id(event) or "לא ידוע"
+    fallback = "Unknown" if current_runtime().locale == "en" else "לא ידוע"
+    return entity.get("canonical_name") or event_entity_id(event) or fallback
 
 
 def public_event(event: dict[str, Any]) -> dict[str, Any]:
@@ -424,30 +604,24 @@ def public_event(event: dict[str, Any]) -> dict[str, Any]:
 
 
 def semantic_index_signature() -> dict[str, Any]:
-    signature = {}
-    for label, path in [("events", DATA_PATH), ("locations", LOCATIONS_PATH), ("entities", ENTITIES_PATH)]:
-        try:
-            digest = hashlib.sha256()
-            with path.open("rb") as handle:
-                for chunk in iter(lambda: handle.read(1024 * 1024), b""):
-                    digest.update(chunk)
-            signature[f"{label}_sha256"] = digest.hexdigest()
-            signature[f"{label}_size"] = path.stat().st_size
-        except OSError:
-            signature[f"{label}_missing"] = True
+    runtime = current_runtime()
+    signature = {"locale": runtime.locale, "dataset_version": runtime.dataset_version}
+    for label, item in runtime.manifest.items():
+        signature[f"{label}_sha256"] = item["sha256"]
+        signature[f"{label}_size"] = item["size"]
     return signature
 
 
 def get_semantic_index() -> SemanticEventIndex:
-    global SEMANTIC_INDEX
-    if SEMANTIC_INDEX is None:
-        SEMANTIC_INDEX = SemanticEventIndex(
+    runtime = current_runtime()
+    if runtime.semantic_index is None:
+        runtime.semantic_index = SemanticEventIndex(
             [public_event(event) for event in EVENTS],
-            cache_dir=SEMANTIC_INDEX_DIR,
+            cache_dir=runtime.semantic_index_dir,
             signature=semantic_index_signature(),
             backend=SEMANTIC_BACKEND,
         )
-    return SEMANTIC_INDEX
+    return runtime.semantic_index
 
 
 def text_result(payload: Any, is_error: bool = False) -> dict[str, Any]:
@@ -2501,19 +2675,35 @@ def build_event_sequence(arguments: dict[str, Any]) -> dict[str, Any]:
 STEP_BRIDGE_PROPERTY = {
     "type": "string",
     "description": (
-        "Optional model-authored Hebrew sentence explaining the previous-step conclusion "
+        "Optional model-authored user-facing sentence explaining the previous-step conclusion "
         "and why this tool call is the next step. Metadata only; ignored by tool logic."
     ),
+}
+LOCALE_PROPERTY = {
+    "type": "string", "enum": ["he", "en"],
+    "description": "Runtime locale. Omitted values default to Hebrew for backward compatibility.",
 }
 
 
 def with_step_bridge(schema: dict[str, Any]) -> dict[str, Any]:
     properties = dict(schema.get("properties") or {})
     properties.setdefault("step_bridge", STEP_BRIDGE_PROPERTY)
+    properties.setdefault("locale", LOCALE_PROPERTY)
     return {**schema, "properties": properties}
 
 
-TARGET_BANK = TargetBank()
+TARGET_BANKS = {locale: TargetBank(locale=locale) for locale in ("he", "en")}
+TARGET_BANK = TARGET_BANKS["he"]  # Backward-compatible test/integration override.
+
+
+def normalized_locale(value: Any) -> str:
+    return "en" if str(value or "").strip().lower() == "en" else "he"
+
+
+def target_bank_for(value: Any = None) -> TargetBank:
+    locale = value.get("locale") if isinstance(value, dict) else value
+    normalized = normalized_locale(locale)
+    return TARGET_BANK if normalized == "he" else TARGET_BANKS["en"]
 
 
 def _prior_successful_audit_records() -> list[dict[str, Any]]:
@@ -2571,6 +2761,7 @@ def _materialize_presentation_layers(
     *,
     id_prefix: str,
     evidence_references: bool = False,
+    locale: str = "he",
 ) -> list[dict[str, Any]]:
     requested_layers = []
     for index, selection in enumerate(selections, start=1):
@@ -2608,8 +2799,9 @@ def _materialize_presentation_layers(
             result_kind = "entity_metadata"
             capabilities = {"table": True, "map": True, "timeline": False}
         elif kind == "attack_targets":
-            TARGET_BANK.initialize()
-            rows = [TARGET_BANK.get_candidate(row_id) for row_id in row_ids]
+            target_bank = target_bank_for(locale)
+            target_bank.initialize()
+            rows = [target_bank.get_candidate(row_id) for row_id in row_ids]
             result_kind = "attack_targets"
             capabilities = {"table": True, "map": True, "timeline": False}
         elif kind == "aggregate_groups":
@@ -2660,10 +2852,11 @@ def present_requested_results(arguments: dict[str, Any]) -> dict[str, Any]:
     if not selections and not evidence_selections:
         raise ValueError("at least one requested-result or evidence-reference layer is required")
     requested_layers = _materialize_presentation_layers(
-        selections, id_prefix="requested-result"
+        selections, id_prefix="requested-result", locale=arguments.get("locale", "he")
     )
     evidence_layers = _materialize_presentation_layers(
-        evidence_selections, id_prefix="evidence-reference", evidence_references=True
+        evidence_selections, id_prefix="evidence-reference", evidence_references=True,
+        locale=arguments.get("locale", "he")
     )
     return {
         "requested_result_layers": requested_layers,
@@ -2690,37 +2883,41 @@ def validate_target_references(candidate: dict[str, Any], evidence: list[dict[st
 
 
 def search_target_candidates(arguments: dict[str, Any]) -> dict[str, Any]:
-    TARGET_BANK.initialize()
-    candidates = TARGET_BANK.search_candidates(arguments)
+    target_bank = target_bank_for(arguments)
+    target_bank.initialize()
+    candidates = target_bank.search_candidates(arguments)
     return {"candidates": candidates, "returned": len(candidates)}
 
 
 def get_target_candidate(arguments: dict[str, Any]) -> dict[str, Any]:
-    TARGET_BANK.initialize()
-    return {"candidate": TARGET_BANK.get_candidate(arguments.get("target_id"))}
+    target_bank = target_bank_for(arguments)
+    target_bank.initialize()
+    return {"candidate": target_bank.get_candidate(arguments.get("target_id"))}
 
 
 def create_target_candidate(arguments: dict[str, Any]) -> dict[str, Any]:
-    TARGET_BANK.initialize()
+    target_bank = target_bank_for(arguments)
+    target_bank.initialize()
     candidate = {**(arguments.get("candidate") or {}), "created_by": "moshe"}
     supplied_evidence = arguments.get("evidence") or []
     event_ids = [str(item.get("record_id") or "").strip() for item in supplied_evidence]
-    fusion = prepare_candidate(_fusion_events(event_ids), candidate.get("confidence") or "")
+    fusion = prepare_candidate(_fusion_events(event_ids, arguments.get("locale")), candidate.get("confidence") or "")
     if not fusion["persistence_eligible"]:
         raise ValueError("candidate is not persistence eligible: " + "; ".join(fusion["persistence_block_reasons"]))
     evidence = fusion["evidence"]
     candidate.update(fusion["quantity"])
     validate_target_references(candidate, evidence)
-    return {"candidate": TARGET_BANK.create_candidate(candidate, evidence)}
+    return {"candidate": target_bank.create_candidate(candidate, evidence)}
 
 
 def update_target_candidate(arguments: dict[str, Any]) -> dict[str, Any]:
-    TARGET_BANK.initialize()
+    target_bank = target_bank_for(arguments)
+    target_bank.initialize()
     target_id = arguments.get("target_id")
     changes = arguments.get("changes") or {}
-    current = TARGET_BANK.get_candidate(target_id)
+    current = target_bank.get_candidate(target_id)
     validate_target_references({**current, **changes})
-    return {"candidate": TARGET_BANK.update_candidate(target_id, changes)}
+    return {"candidate": target_bank.update_candidate(target_id, changes)}
 
 
 def reconcile_attached_evidence_groups(
@@ -2773,19 +2970,20 @@ def reconcile_attached_evidence_groups(
 
 
 def attach_target_evidence(arguments: dict[str, Any]) -> dict[str, Any]:
-    TARGET_BANK.initialize()
+    target_bank = target_bank_for(arguments)
+    target_bank.initialize()
     target_id = arguments.get("target_id")
     supplied_evidence = arguments.get("evidence") or []
-    current = TARGET_BANK.get_candidate(target_id)
+    current = target_bank.get_candidate(target_id)
     all_ids = [item["record_id"] for item in current["evidence"]] + [str(item.get("record_id") or "").strip() for item in supplied_evidence]
-    fusion = prepare_candidate(_fusion_events(all_ids), current["confidence"])
+    fusion = prepare_candidate(_fusion_events(all_ids, arguments.get("locale")), current["confidence"])
     new_ids = {str(item.get("record_id") or "").strip() for item in supplied_evidence}
     evidence = reconcile_attached_evidence_groups(current["evidence"], fusion["evidence"], new_ids)
     validate_target_references(current, evidence)
-    return {"candidate": TARGET_BANK.attach_evidence(target_id, evidence)}
+    return {"candidate": target_bank.attach_evidence(target_id, evidence)}
 
 
-def _fusion_events(event_ids: list[str]) -> list[dict[str, Any]]:
+def _fusion_events(event_ids: list[str], locale: Any = "he") -> list[dict[str, Any]]:
     if not event_ids:
         raise ValueError("at least one event_id is required")
     if len(set(event_ids)) != len(event_ids):
@@ -2793,12 +2991,15 @@ def _fusion_events(event_ids: list[str]) -> list[dict[str, Any]]:
     unknown = [event_id for event_id in event_ids if visible_event(event_id) is None]
     if unknown:
         raise ValueError(f"unknown event_id: {unknown[0]}")
+    requested_locale = normalized_locale(locale)
+    if requested_locale != current_runtime().locale:
+        raise ValueError("Tool locale does not match the active MCP runtime")
     return [public_event(visible_event(event_id)) for event_id in event_ids]
 
 
 def prepare_target_candidate(arguments: dict[str, Any]) -> dict[str, Any]:
     """Discover corroboration and build a deterministic save-ready assessment without persisting it."""
-    seeds = _fusion_events(arguments.get("event_ids") or [])
+    seeds = _fusion_events(arguments.get("event_ids") or [], arguments.get("locale"))
     if arguments.get("discover_corroboration", True):
         anchor = next((item for item in seeds if item.get("collection_family") == "airborne_isr_video_exploitation"), seeds[0])
         corpus = [
@@ -2807,7 +3008,7 @@ def prepare_target_candidate(arguments: dict[str, Any]) -> dict[str, Any]:
             if event_visible(item)
         ]
         discovery = discover_corroborating_evidence(seeds, corpus)
-        selected = _fusion_events(discovery["selected_event_ids"])
+        selected = _fusion_events(discovery["selected_event_ids"], arguments.get("locale"))
         assessment = prepare_candidate(selected, arguments.get("confidence") or "")
         if discovery["ambiguous"]:
             assessment["persistence_eligible"] = False
@@ -2849,14 +3050,15 @@ def prepare_workstream_indication_proposal(arguments: dict[str, Any]) -> dict[st
     if action not in WORKSTREAM_ACTIONS:
         raise ValueError("unsupported workstream action")
     record_ids = [str(value).strip() for value in arguments.get("record_ids") or []]
-    events = _fusion_events(record_ids) if record_ids else []
+    events = _fusion_events(record_ids, arguments.get("locale")) if record_ids else []
     if action in {"create", "add_indication"} and not events:
         raise ValueError("at least one REC record_id is required for this action")
     target_id = str(arguments.get("target_id") or "").strip()
     target = None
     if target_id:
-        TARGET_BANK.initialize()
-        target = TARGET_BANK.get_candidate(target_id)
+        target_bank = target_bank_for(arguments)
+        target_bank.initialize()
+        target = target_bank.get_candidate(target_id)
         if target is None:
             raise ValueError(f"unknown target_id: {target_id}")
     indications = []
@@ -2925,15 +3127,16 @@ def decide_workstream_indication_proposal(arguments: dict[str, Any]) -> dict[str
 
 def find_duplicate_target_candidates(arguments: dict[str, Any]) -> dict[str, Any]:
     """Find existing candidates that share the assessed target or selected evidence."""
-    TARGET_BANK.initialize()
+    target_bank = target_bank_for(arguments)
+    target_bank.initialize()
     filters = {
         "object_class": arguments.get("object_class"),
         "location_id": arguments.get("location_id"),
         "entity_id": arguments.get("entity_id"),
         "limit": arguments.get("limit", 100),
     }
-    summaries = TARGET_BANK.search_candidates(filters)
-    candidates = [TARGET_BANK.get_candidate(item["target_id"]) for item in summaries]
+    summaries = target_bank.search_candidates(filters)
+    candidates = [target_bank.get_candidate(item["target_id"]) for item in summaries]
     return find_duplicate_candidates(
         candidates,
         arguments.get("event_ids") or [],
@@ -3458,7 +3661,7 @@ TOOLS = [
                 "source_types": {
                     "type": "array",
                     "items": {"type": "string"},
-                    "description": "Optional event/source channel filter for candidate events. Use only source_type values that exist in the dataset, for example טלגרם, טיקטוק, X, פייסבוק, חדשות מקומיות, הודעת דובר, קבוצת וואטסאפ, שמועה מקומית, בלוג פוליטי, or ערוץ חדשות בינלאומי.",
+                    "description": "Optional event/source channel filter for candidate events. Use only source_type values that exist in the selected locale dataset, for example Telegram, TikTok, X, Facebook, Local news, Spokesperson statement, WhatsApp group, Local rumor, Political blog, or International news channel.",
                 },
                 "before_hours": {"type": "number", "minimum": 0, "maximum": 168},
                 "after_hours": {"type": "number", "minimum": 0, "maximum": 168},
@@ -3477,7 +3680,7 @@ TOOLS = [
             "type": "object",
             "properties": {
                 "seed_event_ids": {"type": "array", "items": {"type": "string"}, "maxItems": 50},
-                "keywords": {"type": "array", "items": {"type": "string"}, "description": "Visible claim terms to compare, such as סרטון, תמונה, חציית גבול, שיירה, KFOR, מחסום."},
+                "keywords": {"type": "array", "items": {"type": "string"}, "description": "Visible claim terms to compare, such as video, image, border crossing, convoy, KFOR, or roadblock."},
                 "start_time": {"type": "string", "description": "Optional inclusive ISO-8601 UTC start time."},
                 "end_time": {"type": "string", "description": "Optional inclusive ISO-8601 UTC end time."},
                 "location_ids": {"type": "array", "items": {"type": "string"}},
@@ -3505,7 +3708,32 @@ TOOLS = [
     },
 ]
 
+def get_runtime_health(arguments: dict[str, Any]) -> dict[str, Any]:
+    runtime = current_runtime()
+    return {
+        "locale": runtime.locale,
+        "dataset_version": runtime.dataset_version,
+        "sources": runtime.manifest,
+        "event_count": len(runtime.events),
+        "location_count": len(runtime.locations),
+        "entity_count": len(runtime.entities),
+        "semantic_backend": SEMANTIC_BACKEND,
+        "semantic_cache_namespace": str(runtime.semantic_index_dir),
+        "english_validation": "passed" if runtime.locale == "en" else "not_applicable",
+    }
+
+
+TOOLS.append({
+    "name": "get_runtime_health",
+    "title": "Inspect the selected dataset runtime",
+    "description": "Return the selected locale, dataset version, validated source manifest, checksums, counts, and semantic-cache namespace.",
+    "inputSchema": with_step_bridge({"type": "object", "properties": {}, "additionalProperties": False}),
+    "annotations": {"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": False},
+})
+
+
 TOOL_HANDLERS = {
+    "get_runtime_health": get_runtime_health,
     "prepare_workstream_creation": prepare_workstream_creation,
     "prepare_workstream_indication_proposal": prepare_workstream_indication_proposal,
     "decide_workstream_indication_proposal": decide_workstream_indication_proposal,
@@ -3587,8 +3815,11 @@ def handle_message(message: dict[str, Any]) -> dict[str, Any] | None:
         if handler is None:
             return error_response(request_id, -32602, f"Unknown tool: {name}")
         started = time.perf_counter()
+        locale_token = ACTIVE_LOCALE.set(normalized_locale(arguments.get("locale")))
         try:
             result = handler(arguments)
+            if current_runtime().locale == "en":
+                result = validate_english_payload(result)
             write_audit(name, arguments, result, duration_ms=(time.perf_counter() - started) * 1000)
             return response(request_id, text_result(result))
         except (ValueError, TypeError, KeyError) as exc:
@@ -3597,6 +3828,8 @@ def handle_message(message: dict[str, Any]) -> dict[str, Any] | None:
             return response(request_id, text_result(result, is_error=True))
         except Exception as exc:  # pragma: no cover - boundary safety
             return response(request_id, text_result({"error": "Internal tool failure", "detail": str(exc)}, is_error=True))
+        finally:
+            ACTIVE_LOCALE.reset(locale_token)
     return error_response(request_id, -32601, f"Method not found: {method}")
 
 
@@ -3607,8 +3840,8 @@ def main() -> int:
         sys.stdout.reconfigure(encoding="utf-8")
     if hasattr(sys.stderr, "reconfigure"):
         sys.stderr.reconfigure(encoding="utf-8")
-    if not DATA_PATH.exists():
-        print(f"Dataset not found: {DATA_PATH}", file=sys.stderr, flush=True)
+    if not RUNTIMES["he"].events_path.exists():
+        print("The default Hebrew dataset is unavailable", file=sys.stderr, flush=True)
         return 1
     for line in sys.stdin:
         if not line.strip():

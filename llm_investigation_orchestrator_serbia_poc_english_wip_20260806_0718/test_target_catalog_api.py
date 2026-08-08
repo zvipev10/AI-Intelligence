@@ -21,6 +21,12 @@ class TargetCatalogApiTests(unittest.TestCase):
         self.assertEqual(layer["kind"], "attack_targets")
         self.assertEqual(rows, [target])
 
+    def test_catalog_routes_reads_by_locale(self):
+        with patch.object(server, "load_persisted_attack_targets", return_value=[]) as reader:
+            server.list_ui_layers("en")
+        self.assertEqual(reader.call_count, 1)
+        self.assertEqual(reader.call_args.kwargs, {"locale": "en"})
+
 
 if __name__ == "__main__":
     unittest.main()

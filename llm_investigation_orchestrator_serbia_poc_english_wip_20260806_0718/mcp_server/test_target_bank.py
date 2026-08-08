@@ -149,6 +149,35 @@ class TargetBankTests(unittest.TestCase):
         self.assertTrue(safety.exists())
         self.assertEqual(self.bank.counts(), {"targets": 1, "evidence": 2})
 
+    def test_hebrew_and_english_banks_are_physically_isolated(self):
+        root = Path(self.temp.name)
+        hebrew = TargetBank(root / "he" / "attack_targets.db", root / "backups" / "he", locale="he")
+        english = TargetBank(root / "en" / "attack_targets.db", root / "backups" / "en", locale="en")
+        hebrew.initialize()
+        english.initialize()
+        hebrew.create_candidate(candidate(title="מטרה", summary="סיכום", object_class="רכב", fusion_explanation="שני מקורות"), [
+            evidence("REC-HE-1", "a", relevant_text="ראיה אחת"),
+            evidence("REC-HE-2", "b", relevant_text="ראיה שנייה"),
+        ])
+        self.assertNotEqual(hebrew.db_path, english.db_path)
+        self.assertEqual(hebrew.counts(), {"targets": 1, "evidence": 2})
+        self.assertEqual(english.counts(), {"targets": 0, "evidence": 0})
+
+    def test_english_bank_rejects_hebrew_create_update_and_evidence_atomically(self):
+        root = Path(self.temp.name)
+        english = TargetBank(root / "en" / "attack_targets.db", root / "backups" / "en", locale="en")
+        english.initialize()
+        with self.assertRaisesRegex(ValueError, "contains Hebrew: title"):
+            english.create_candidate(candidate(title="מטרה"), [evidence("REC-1", "a"), evidence("REC-2", "b")])
+        self.assertEqual(english.counts(), {"targets": 0, "evidence": 0})
+        english.create_candidate(candidate(), [evidence("REC-1", "a"), evidence("REC-2", "b")])
+        with self.assertRaisesRegex(ValueError, "contains Hebrew: summary"):
+            english.update_candidate("TGT-TEST-001", {"summary": "סיכום"})
+        with self.assertRaisesRegex(ValueError, "contains Hebrew: relevant_text"):
+            english.attach_evidence("TGT-TEST-001", [evidence("REC-3", "c", relevant_text="ראיה")])
+        self.assertEqual(english.counts(), {"targets": 1, "evidence": 2})
+        self.assertEqual(english.get_candidate("TGT-TEST-001")["summary"], "Fused candidate summary")
+
     @unittest.skipIf(os.name == "nt", "POSIX permission bits are enforced on the production VM")
     def test_posix_permissions(self):
         self.assertEqual(self.bank.db_path.parent.stat().st_mode & 0o777, 0o700)

@@ -12,15 +12,6 @@ ROOT = Path(__file__).resolve().parent
 
 DATASET_VARIANTS = [
     {
-        "name": "v1",
-        "events": ROOT / "data" / "serbia_kosovo_events_projection.csv",
-        "events_en": ROOT / "data" / "serbia_kosovo_events_projection.en.csv",
-        "locations": ROOT / "data" / "serbia_kosovo_locations.json",
-        "locations_en": ROOT / "data" / "serbia_kosovo_locations.en.json",
-        "entities": ROOT / "data" / "serbia_kosovo_entities.json",
-        "entities_en": ROOT / "data" / "serbia_kosovo_entities.en.json",
-    },
-    {
         "name": "v2",
         "events": ROOT / "data" / "serbian_intelligence_v2" / "serbia_kosovo_events_projection_v2.csv",
         "events_en": ROOT / "data" / "serbian_intelligence_v2" / "serbia_kosovo_events_projection_v2.en.csv",
@@ -152,6 +143,129 @@ EXACT_TEXT_MAP = {
     "ממשלת קוסובו": "Government of Kosovo",
     "משרד ההגנה של סרביה": "Serbian Ministry of Defence",
     "נאט״ו": "NATO",
+    "ממשלת סרביה": "Government of Serbia",
+    "גורמים לא מזוהים": "Unidentified actors",
+    "קבוצה חמושה מקומית": "Local armed group",
+    "מנהיגים מקומיים סרבים": "Local Serbian leaders",
+    "עיתונאים מקומיים": "Local journalists",
+    "אמבולנסים": "Ambulances",
+    "KFOR פיקוד אזורי מזרח": "KFOR Regional Command East",
+    "גדוד העתודה הטקטית של KFOR": "KFOR Tactical Reserve Battalion",
+    "כוח התעופה של KFOR": "KFOR aviation force",
+    "כוח נאטו": "NATO force",
+    "כוח עתודה אזורי של נאטו": "NATO regional reserve force",
+    "כוח תגבור נאטו": "NATO reinforcement force",
+    "החטיבה השנייה": "2nd Brigade",
+    "החטיבה השנייה של צבא סרביה": "Serbian Army 2nd Brigade",
+    "החטיבה השלישית": "3rd Brigade",
+    "החטיבה השלישית של צבא סרביה": "Serbian Army 3rd Brigade",
+    "הגדוד הממוכן ה-27": "27th Mechanized Battalion",
+    "הגדוד הממוכן ה-28": "28th Mechanized Battalion",
+    "גדוד החי״ר ה-21": "21st Infantry Battalion",
+    "גדוד החי״ר ה-22": "22nd Infantry Battalion",
+    "גדוד ההנדסה ה-210": "210th Engineering Battalion",
+    "כוח סרבי - מקור פומבי": "Serbian force - public source",
+    "וידאו מכטב\"מ": "UAV video",
+    "חיל האוויר הסרבי - ניצול וידאו מכטב\"ם": "Serbian Air Force - UAV video exploitation",
+    "מקור צבאי סרבי": "Serbian military source",
+    "רכב אזרחי חשוד": "Suspected civilian vehicle",
+    "קבוצת אנשים": "Group of people",
+    "משאית לוגיסטית": "Logistics truck",
+    "רכב משוריין": "Armored vehicle",
+    "שיירת כלי רכב": "Vehicle convoy",
+    "עבודות הנדסיות": "Engineering works",
+    "עמדת תצפית": "Observation post",
+    "מחסום דרכים": "Roadblock",
+    "מסוק": "Helicopter",
+    "שטח היערכות ריק": "Empty staging area",
+    "בנסיגה": "Withdrawing",
+    "בפריסה": "Deploying",
+    "בעצירה": "Stopped",
+    "בתנועה": "Moving",
+    "בהיערכות": "Staging",
+    "ללא שינוי נראה": "No visible change",
+    "צפון": "North",
+    "דרום": "South",
+    "מזרח": "East",
+    "מערב": "West",
+    "צפון-מערב": "Northwest",
+    "צפון-מזרח": "Northeast",
+    "לא ניתן לקביעה": "Indeterminate",
+    "סרביה": "Serbia",
+    "אלבניה": "Albania",
+    "קרואטיה": "Croatia",
+    "מרכז קוסובו": "Central Kosovo",
+    "מזרח קוסובו": "Eastern Kosovo",
+    "מערב קוסובו": "Western Kosovo",
+    "דרום קוסובו": "Southern Kosovo",
+    "דרום-מזרח קוסובו": "Southeastern Kosovo",
+    "מרכז סרביה": "Central Serbia",
+    "דרום סרביה": "Southern Serbia",
+    "כפר סמוך": "Nearby village",
+    "יאריניה": "Jarinje",
+    "ברניאק": "Brnjak",
+    "גזיבודה": "Gazivoda",
+    "מרדארה": "Merdare",
+    "גשר איבר": "Ibar Bridge",
+    "נובו סלו": "Novo Selo",
+    "בונדסטיל": "Bondsteel",
+    "ווצ׳יטרן": "Vushtrri",
+    "פריזאי": "Ferizaj",
+    "פודויבו": "Podujevo",
+    "שדה התעופה": "Airport",
+    "ציר צפוני": "Northern route",
+    "צפון לפוסאביץ׳": "Northern Leposavić",
+    "מערב זובין פוטוק": "Western Zubin Potok",
+    "מרחב מעבר יאריניה": "Jarinje crossing area",
+    "ציר יאריניה–לפוסאביץ׳": "Jarinje-Leposavić route",
+    "מרחב מעבר ברניאק": "Brnjak crossing area",
+    "ציר ברניאק–זובין פוטוק": "Brnjak-Zubin Potok route",
+    "מרחב גזיבודה הצפוני": "Northern Gazivoda area",
+    "קו חסימה צפוני ללפוסאביץ׳": "Northern Leposavić blocking line",
+    "קו חסימה מערבי לזובין פוטוק": "Western Zubin Potok blocking line",
+    "גישות צפוניות לזבצ׳אן": "Northern approaches to Zvečan",
+    "גישות צפוניות לצפון מיטרוביצה": "Northern approaches to North Mitrovica",
+    "מרחב גשר איבר": "Ibar Bridge area",
+    "מחנה נובו סלו - אזור כללי": "Camp Novo Selo general area",
+    "מחנה בונדסטיל - אזור כללי": "Camp Bondsteel general area",
+    "ציר תגבור פרישטינה–מיטרוביצה": "Pristina-Mitrovica reinforcement route",
+    "מרחב שדה התעופה פרישטינה": "Pristina airport area",
+    "מרחב מעבר מרדארה": "Merdare crossing area",
+    "מעבר גבול - אזור כללי": "Border crossing - general area",
+    "ציר תנועה כללי": "General movement route",
+    "מרחב שליטה כללי": "General control area",
+    "קו חסימה תרחישי": "Scenario blocking line",
+    "מרחב הגנה כללי": "General defensive area",
+    "נקודת חסימה אסטרטגית": "Strategic blocking point",
+    "מרחב KFOR": "KFOR area",
+    "ציר תגבור כללי": "General reinforcement route",
+    "מרחב תעופה כללי": "General aviation area",
+    "ציר הדגמה כללי": "General scenario route",
+    "פשיטה משטרתית לילית מוגבלת": "Limited nighttime police raid",
+    "מעצר דמות סרבית מקומית": "Arrest of a local Serbian figure",
+    "קריאה מקומית להפגנות וחסימות": "Local call for protests and blockades",
+    "תגבור משטרת קוסובו סביב מתקנים": "Kosovo Police reinforcement around facilities",
+    "שמועה על רשימת מעצרים נוספת": "Rumor of another arrest list",
+    "עימות ליד מבנה עירייה": "Clash near a municipal building",
+    "דיווחים סותרים על ירי באזור כפרי": "Conflicting reports of gunfire in a rural area",
+    "חסימות ראשונות בצירים עירוניים": "Initial blockades on urban routes",
+    "KFOR מגביר סיורים בצפון": "KFOR increases patrols in the north",
+    "פצועים ראשונים והפצת סרטונים חלקיים": "First injuries and circulation of partial videos",
+    "הודעת קוסובו על מבצע אכיפה מוגבל": "Kosovo announcement of a limited enforcement operation",
+    "אינדיקציות פומביות למעבר צבא סרביה לכוננות מבצעית": "Public indications that the Serbian Army moved to operational readiness",
+    "כניסת כוחות סרביים בצירי יאריניה וברניאק": "Serbian forces enter along the Jarinje and Brnjak routes",
+    "תגבור משטרת קוסובו ו-KSF בחסות KFOR": "Reinforcement of Kosovo Police and KSF under KFOR protection",
+    "נסיגת מוצבי משטרת קוסובו והקמת קווי עיכוב": "Withdrawal of Kosovo Police posts and establishment of delaying lines",
+    "פריסת קווי חסימה של KFOR בצפון": "Deployment of KFOR blocking lines in the north",
+    "ניסיונות תמרון סרביים בצירים חלופיים": "Serbian maneuver attempts on alternate routes",
+    "מעבר KFOR לתמיכה פעילה בכוחות קוסובו בתרחיש": "KFOR shifts to active support for Kosovo forces in the scenario",
+    "התבססות סרבית בשטחי מפתח רדודים בצפון": "Serbian consolidation in shallow key areas in the north",
+    "התגברות סיורי אוויר ותצפית של נאטו": "Increased NATO air patrols and observation",
+    "בלימת ההתקדמות הסרבית מול קווי החסימה": "Serbian advance halted at the blocking lines",
+    "עימותי כלי רכב והצגת נשק ללא לחימה מתמשכת": "Vehicle confrontations and display of weapons without sustained fighting",
+    "תנועת כוח סרבי מוגבלת לעבר מרחב גזיבודה": "Limited Serbian force movement toward the Gazivoda area",
+    "התבססות בכיסי שליטה מוגבלים והתגברות דיסאינפורמציה": "Consolidation in limited control pockets and increased disinformation",
+    "קיפאון מבצעי והסדר מניעת חיכוך זמני": "Operational stalemate and temporary deconfliction arrangement",
 }
 
 PHRASE_REPLACEMENTS = [
@@ -228,11 +342,75 @@ PHRASE_REPLACEMENTS = [
     ("בגלל המצב", "because of the situation"),
     ("באזור", "in the area"),
     ("הצפון", "the north"),
-    ("ירי", "gunfire"),
     ("חסימות", "blockages"),
+    ("כניסת כוחות סרביים בצירי Jarinje וBrnjak", "Serbian forces enter along the Jarinje and Brnjak routes"),
+    ("כניסת כוחות סרביים בצgunfire Jarinje וBrnjak", "Serbian forces enter along the Jarinje and Brnjak routes"),
+    ("תנועת כוח סרבי מוגבלת לעבר מרחב Gazivoda", "Limited Serbian force movement toward the Gazivoda area"),
+    (" ל", " to "),
+    ("; הפרטים חלקיים.", "; details are incomplete."),
+    ("סמוך ל", "near "),
+    ("בקרבת ", "near "),
+    ("טור כלי רכב", "a column of vehicles"),
+    ("מספר כלי רכב שנעו יחד", "several vehicles moving together"),
+    ("שיירה ממונעת", "a motorized convoy"),
+    ("כלים משוריינים", "armored vehicles"),
+    ("רכב כבד ממוגן", "a protected heavy vehicle"),
+    ("כלי רכב בעלי מיגון", "protected vehicles"),
+    ("נקודת חסימה", "a blocking point"),
+    ("חסימה מאוישת על הציר", "a staffed roadblock on the route"),
+    ("עמדת בידוק החוסמת את הדרך", "a checkpoint blocking the road"),
+    ("נקודת תצפית מאוישת", "a staffed observation point"),
+    ("עמדה שולטת לצורכי תצפית", "a commanding observation position"),
+    ("צוות תצפית בעמדה", "an observation team at a post"),
+    ("כלי טיס סובב כנף", "a rotary-wing aircraft"),
+    ("מסוק שנצפה באזור", "a helicopter observed in the area"),
+    ("פעילות מסוק בגובה נמוך", "low-altitude helicopter activity"),
+    ("משאית אספקה", "a supply truck"),
+    ("רכב תובלה לוגיסטי", "a logistics transport vehicle"),
+    ("משאית שנשאה ציוד", "a truck carrying equipment"),
+    ("פעילות הנדסית", "engineering activity"),
+    ("כלים שביצעו הכשרת שטח", "equipment conducting site preparation"),
+    ("עבודות עפר והקמת מיגון", "earthworks and construction of protective positions"),
+    ("פרסום פומבי מצביע על נוכחות אפשרית של ", "A public report indicates a possible presence of "),
+    ("; אין אימות עצמאי להיקף הכוח.", "; there is no independent verification of the force size."),
+    ("תיעוד ברשתות מציג כלי רכב שיוחסו ל", "Online footage shows vehicles attributed to "),
+    (", אך מועד הצילום אינו ודאי.", ", but the recording time is uncertain."),
+    ("מקור גלוי טוען כי ", "A public source claims that "),
+    (" קשור להתפתחות '", " is connected to the development '") ,
+    ("'; הפרטים חלקיים.", "'; details are incomplete."),
+    ("הודעה פומבית מתייחסת ל", "A public statement refers to "),
+    (" ולשינוי היערכות באזור ", " and a change in posture in the area of "),
+    (", ללא פירוט מלא.", ", without full details."),
+    ("בקטע וידאו מכטב״ם תרחישי זוהה ", "A scenario UAV video segment identified "),
+    (" המשויך בהסתברות ", " attributed with "),
+    (" הוערכו ", " An estimated "),
+    (" פריטים, מצב ", " objects were observed, status "),
+    (", כיוון ", ", direction "),
+    (". הזיהוי מבוסס על ניצול חזותי בלבד ודורש הצלבה.", ". The identification is based only on visual exploitation and requires corroboration."),
+    ("פרסום פומבי מתאר ", "A public report describes "),
+    (" המזוהים עם ", " identified with "),
+    ("; לפי הכותב נראו ", "; according to the author, "),
+    (". מועד הצילום והייחוס דורשים אימות.", " were seen. The recording time and attribution require verification."),
+    ("תושבים באזור ", "Residents in "),
+    (" דיווחו על ", " reported "),
+    (" של ", " associated with "),
+    (". ההערכה היא ", ". The estimate is "),
+    (", אך האיכות החזותית מוגבלת.", ", but the visual quality is limited."),
+    ("תיעוד שהופץ ברשת מציג לכאורה ", "Footage circulated online appears to show "),
+    (" הקשורים ל", " linked to "),
+    ("; נמסר על ", "; reports mention "),
+    (". אין מקור עצמאי לקואורדינטה מדויקת.", ". There is no independent source for the precise coordinates."),
+    ("דיווח נוסף מתאר ", "Another report describes "),
+    (". למרות הקרבה הגאוגרפית, אין סימן המקשר את הדיווח לאותו כוח או לאותו רצף תנועה.", ". Despite the geographic proximity, there is no indication linking the report to the same force or movement sequence."),
+    ("כ-", "approximately "),
+    (" פריטים", " objects"),
+    ("בין ", "between "),
+    (" ל-", " and "),
+    ("מספר פריטים, ללא אפשרות לספירה מדויקת", "several objects, without an exact count"),
 ]
 
 LOCATION_PATTERNS = [
+    (re.compile(r"^כפר (\d+)$"), lambda m: f"Village {m.group(1)}"),
     (re.compile(r"^כפר סמוך (\d+)$"), lambda m: f"Nearby village {m.group(1)}"),
     (re.compile(r"^תחנת דלק (\d+)$"), lambda m: f"Gas station {m.group(1)}"),
     (re.compile(r"^נקודת בידוק כללית (\d+)$"), lambda m: f"General checkpoint {m.group(1)}"),
@@ -245,21 +423,34 @@ LOCATION_PATTERNS = [
     (re.compile(r"^אזור מיוער (\d+)$"), lambda m: f"Wooded area {m.group(1)}"),
 ]
 
+HEBREW_RE = re.compile(r"[\u0590-\u05ff]")
+
+
+def normalize_punctuation(value: str) -> str:
+    return value.replace("־", "-").replace("–", "-").replace("״", '"').replace("׳", "'").replace("’", "'")
+
+
+NORMALIZED_EXACT_MAP = {normalize_punctuation(key): value for key, value in EXACT_TEXT_MAP.items()}
+NORMALIZED_REPLACEMENTS = sorted(
+    [(normalize_punctuation(key), value) for key, value in [*PHRASE_REPLACEMENTS, *NORMALIZED_EXACT_MAP.items()]],
+    key=lambda item: len(item[0]),
+    reverse=True,
+)
+
 
 def translate_plain(text: str) -> str:
-    value = str(text or "").strip()
+    value = normalize_punctuation(str(text or "").strip())
     if not value:
         return value
-    if value in EXACT_TEXT_MAP:
-        return EXACT_TEXT_MAP[value]
+    if value in NORMALIZED_EXACT_MAP:
+        return NORMALIZED_EXACT_MAP[value]
     for pattern, repl in LOCATION_PATTERNS:
         match = pattern.fullmatch(value)
         if match:
             return repl(match)
     translated = value
-    for he, en in sorted(PHRASE_REPLACEMENTS, key=lambda item: len(item[0]), reverse=True):
-        translated = translated.replace(he, en)
-    translated = translated.replace("־", "-").replace("״", "\"").replace("׳", "'")
+    for source, replacement in NORMALIZED_REPLACEMENTS:
+        translated = translated.replace(source, replacement)
     translated = re.sub(r"\s+", " ", translated).strip()
     return translated
 
@@ -339,21 +530,55 @@ def project_events(src: Path, dst: Path, locations_src: Path) -> None:
         rows = list(csv.DictReader(handle))
         fieldnames = list(rows[0].keys()) if rows else []
     for row in rows:
-        row["source_type"] = translate_plain(row.get("source_type", ""))
-        row["source_reliability"] = translate_plain(row.get("source_reliability", ""))
-        row["certainty_level"] = translate_plain(row.get("certainty_level", ""))
-        summary = translate_plain(row.get("event_summary", ""))
+        for field in (
+            "source_type", "source_reliability", "certainty_level", "object_class",
+            "movement_status", "movement_direction", "geolocation_confidence",
+            "identification_confidence",
+        ):
+            if field in row:
+                row[field] = translate_plain(row.get(field, ""))
+        summary = normalize_punctuation(row.get("event_summary", ""))
+        for source in (
+            "כניסת כוחות סרביים בצירי יאריניה וברניאק",
+            "תנועת כוח סרבי מוגבלת לעבר מרחב גזיבודה",
+        ):
+            normalized_source = normalize_punctuation(source)
+            summary = summary.replace(normalized_source, NORMALIZED_EXACT_MAP[normalized_source])
         location_id = row.get("location_id", "")
         if location_id in translated_location_names:
-            summary = summary.replace(location_id, location_id)
-            for original in {locations[location_id].get("name", ""), locations[location_id].get("locality", ""), locations[location_id].get("municipality", "")}:
+            location = locations[location_id]
+            location_values = {
+                location.get("name", ""): translated_location_names[location_id],
+                location.get("locality", ""): translate_plain(location.get("locality", "")),
+                location.get("municipality", ""): translate_plain(location.get("municipality", "")),
+            }
+            for original, translated in location_values.items():
                 if original:
-                    summary = summary.replace(original, translate_plain(original))
-        row["event_summary"] = summary
+                    summary = summary.replace(normalize_punctuation(original), translated)
+        row["event_summary"] = translate_plain(summary)
     with dst.open("w", encoding="utf-8", newline="") as handle:
-        writer = csv.DictWriter(handle, fieldnames=fieldnames)
+        writer = csv.DictWriter(handle, fieldnames=fieldnames, lineterminator="\n")
         writer.writeheader()
         writer.writerows(rows)
+
+
+def validate_no_hebrew(paths: list[Path]) -> None:
+    failures: list[str] = []
+    for path in paths:
+        if not path.exists():
+            failures.append(f"{path.relative_to(ROOT)}: missing")
+            continue
+        text = path.read_text(encoding="utf-8-sig")
+        matches = list(HEBREW_RE.finditer(text))
+        if matches:
+            line_numbers = [number for number, line in enumerate(text.splitlines(), 1) if HEBREW_RE.search(line)]
+            sample = ", ".join(str(number) for number in line_numbers[:5])
+            failures.append(
+                f"{path.relative_to(ROOT)}: {len(matches)} Hebrew characters "
+                f"on {len(line_numbers)} lines (first: {sample})"
+            )
+    if failures:
+        raise RuntimeError("English projection validation failed:\n- " + "\n- ".join(failures))
 
 
 def project_recorded_runs(src_dir: Path, dst_dir: Path) -> None:
@@ -375,15 +600,15 @@ def project_recorded_runs(src_dir: Path, dst_dir: Path) -> None:
 
 
 def main() -> None:
+    generated_paths: list[Path] = []
     for variant in DATASET_VARIANTS:
         project_locations(variant["locations"], variant["locations_en"])
         project_entities(variant["entities"], variant["entities_en"])
         project_events(variant["events"], variant["events_en"], variant["locations"])
+        generated_paths.extend((variant["events_en"], variant["locations_en"], variant["entities_en"]))
         print(f"Projected dataset: {variant['name']}")
-    for src, dst in RECORDED_RUNS_VARIANTS:
-        project_recorded_runs(src, dst)
-        if src.exists():
-            print(f"Projected recorded runs: {src.relative_to(ROOT)} -> {dst.relative_to(ROOT)}")
+    validate_no_hebrew(generated_paths)
+    print(f"Validated clean English output: {len(generated_paths)} files")
 
 
 if __name__ == "__main__":
