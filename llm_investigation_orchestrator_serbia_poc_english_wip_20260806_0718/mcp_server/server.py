@@ -140,6 +140,17 @@ def load_events() -> list[dict[str, Any]]:
 EVENTS = load_events()
 EVENT_BY_ID = {event["event_id"]: event for event in EVENTS}
 EVENTS_BY_ID = {event["event_id"]: event for event in EVENTS}
+ENGLISH_DATA_PATH = Path(os.environ.get(
+    "INTELLIGENCE_POC_DATA_EN",
+    str(DEFAULT_DATA_PATH.with_name(DEFAULT_DATA_PATH.stem + ".en" + DEFAULT_DATA_PATH.suffix)),
+))
+if ENGLISH_DATA_PATH.exists():
+    with ENGLISH_DATA_PATH.open(encoding="utf-8-sig", newline="") as _english_stream:
+        ENGLISH_EVENTS_BY_ID = {
+            event["event_id"]: event for event in csv.DictReader(_english_stream)
+        }
+else:
+    ENGLISH_EVENTS_BY_ID = {}
 FUSION_EVENTS_BY_CONTEXT: dict[tuple[str, str], list[dict[str, Any]]] = defaultdict(list)
 for _fusion_event in EVENTS:
     FUSION_EVENTS_BY_CONTEXT[(_fusion_event.get("location_id") or "", _fusion_event.get("entity_id") or "")].append(_fusion_event)
@@ -2501,19 +2512,35 @@ def build_event_sequence(arguments: dict[str, Any]) -> dict[str, Any]:
 STEP_BRIDGE_PROPERTY = {
     "type": "string",
     "description": (
-        "Optional model-authored Hebrew sentence explaining the previous-step conclusion "
+        "Optional model-authored user-facing sentence explaining the previous-step conclusion "
         "and why this tool call is the next step. Metadata only; ignored by tool logic."
     ),
+}
+LOCALE_PROPERTY = {
+    "type": "string", "enum": ["he", "en"],
+    "description": "Runtime locale. Omitted values default to Hebrew for backward compatibility.",
 }
 
 
 def with_step_bridge(schema: dict[str, Any]) -> dict[str, Any]:
     properties = dict(schema.get("properties") or {})
     properties.setdefault("step_bridge", STEP_BRIDGE_PROPERTY)
+    properties.setdefault("locale", LOCALE_PROPERTY)
     return {**schema, "properties": properties}
 
 
-TARGET_BANK = TargetBank()
+TARGET_BANKS = {locale: TargetBank(locale=locale) for locale in ("he", "en")}
+TARGET_BANK = TARGET_BANKS["he"]  # Backward-compatible test/integration override.
+
+
+def normalized_locale(value: Any) -> str:
+    return "en" if str(value or "").strip().lower() == "en" else "he"
+
+
+def target_bank_for(value: Any = None) -> TargetBank:
+    locale = value.get("locale") if isinstance(value, dict) else value
+    normalized = normalized_locale(locale)
+    return TARGET_BANK if normalized == "he" else TARGET_BANKS["en"]
 
 
 def _prior_successful_audit_records() -> list[dict[str, Any]]:
@@ -2571,6 +2598,7 @@ def _materialize_presentation_layers(
     *,
     id_prefix: str,
     evidence_references: bool = False,
+    locale: str = "he",
 ) -> list[dict[str, Any]]:
     requested_layers = []
     for index, selection in enumerate(selections, start=1):
@@ -2608,8 +2636,9 @@ def _materialize_presentation_layers(
             result_kind = "entity_metadata"
             capabilities = {"table": True, "map": True, "timeline": False}
         elif kind == "attack_targets":
-            TARGET_BANK.initialize()
-            rows = [TARGET_BANK.get_candidate(row_id) for row_id in row_ids]
+            target_bank = target_bank_for(locale)
+            target_bank.initialize()
+            rows = [target_bank.get_candidate(row_id) for row_id in row_ids]
             result_kind = "attack_targets"
             capabilities = {"table": True, "map": True, "timeline": False}
         elif kind == "aggregate_groups":
@@ -2660,10 +2689,11 @@ def present_requested_results(arguments: dict[str, Any]) -> dict[str, Any]:
     if not selections and not evidence_selections:
         raise ValueError("at least one requested-result or evidence-reference layer is required")
     requested_layers = _materialize_presentation_layers(
-        selections, id_prefix="requested-result"
+        selections, id_prefix="requested-result", locale=arguments.get("locale", "he")
     )
     evidence_layers = _materialize_presentation_layers(
-        evidence_selections, id_prefix="evidence-reference", evidence_references=True
+        evidence_selections, id_prefix="evidence-reference", evidence_references=True,
+        locale=arguments.get("locale", "he")
     )
     return {
         "requested_result_layers": requested_layers,
@@ -2690,37 +2720,41 @@ def validate_target_references(candidate: dict[str, Any], evidence: list[dict[st
 
 
 def search_target_candidates(arguments: dict[str, Any]) -> dict[str, Any]:
-    TARGET_BANK.initialize()
-    candidates = TARGET_BANK.search_candidates(arguments)
+    target_bank = target_bank_for(arguments)
+    target_bank.initialize()
+    candidates = target_bank.search_candidates(arguments)
     return {"candidates": candidates, "returned": len(candidates)}
 
 
 def get_target_candidate(arguments: dict[str, Any]) -> dict[str, Any]:
-    TARGET_BANK.initialize()
-    return {"candidate": TARGET_BANK.get_candidate(arguments.get("target_id"))}
+    target_bank = target_bank_for(arguments)
+    target_bank.initialize()
+    return {"candidate": target_bank.get_candidate(arguments.get("target_id"))}
 
 
 def create_target_candidate(arguments: dict[str, Any]) -> dict[str, Any]:
-    TARGET_BANK.initialize()
+    target_bank = target_bank_for(arguments)
+    target_bank.initialize()
     candidate = {**(arguments.get("candidate") or {}), "created_by": "moshe"}
     supplied_evidence = arguments.get("evidence") or []
     event_ids = [str(item.get("record_id") or "").strip() for item in supplied_evidence]
-    fusion = prepare_candidate(_fusion_events(event_ids), candidate.get("confidence") or "")
+    fusion = prepare_candidate(_fusion_events(event_ids, arguments.get("locale")), candidate.get("confidence") or "")
     if not fusion["persistence_eligible"]:
         raise ValueError("candidate is not persistence eligible: " + "; ".join(fusion["persistence_block_reasons"]))
     evidence = fusion["evidence"]
     candidate.update(fusion["quantity"])
     validate_target_references(candidate, evidence)
-    return {"candidate": TARGET_BANK.create_candidate(candidate, evidence)}
+    return {"candidate": target_bank.create_candidate(candidate, evidence)}
 
 
 def update_target_candidate(arguments: dict[str, Any]) -> dict[str, Any]:
-    TARGET_BANK.initialize()
+    target_bank = target_bank_for(arguments)
+    target_bank.initialize()
     target_id = arguments.get("target_id")
     changes = arguments.get("changes") or {}
-    current = TARGET_BANK.get_candidate(target_id)
+    current = target_bank.get_candidate(target_id)
     validate_target_references({**current, **changes})
-    return {"candidate": TARGET_BANK.update_candidate(target_id, changes)}
+    return {"candidate": target_bank.update_candidate(target_id, changes)}
 
 
 def reconcile_attached_evidence_groups(
@@ -2773,19 +2807,20 @@ def reconcile_attached_evidence_groups(
 
 
 def attach_target_evidence(arguments: dict[str, Any]) -> dict[str, Any]:
-    TARGET_BANK.initialize()
+    target_bank = target_bank_for(arguments)
+    target_bank.initialize()
     target_id = arguments.get("target_id")
     supplied_evidence = arguments.get("evidence") or []
-    current = TARGET_BANK.get_candidate(target_id)
+    current = target_bank.get_candidate(target_id)
     all_ids = [item["record_id"] for item in current["evidence"]] + [str(item.get("record_id") or "").strip() for item in supplied_evidence]
-    fusion = prepare_candidate(_fusion_events(all_ids), current["confidence"])
+    fusion = prepare_candidate(_fusion_events(all_ids, arguments.get("locale")), current["confidence"])
     new_ids = {str(item.get("record_id") or "").strip() for item in supplied_evidence}
     evidence = reconcile_attached_evidence_groups(current["evidence"], fusion["evidence"], new_ids)
     validate_target_references(current, evidence)
-    return {"candidate": TARGET_BANK.attach_evidence(target_id, evidence)}
+    return {"candidate": target_bank.attach_evidence(target_id, evidence)}
 
 
-def _fusion_events(event_ids: list[str]) -> list[dict[str, Any]]:
+def _fusion_events(event_ids: list[str], locale: Any = "he") -> list[dict[str, Any]]:
     if not event_ids:
         raise ValueError("at least one event_id is required")
     if len(set(event_ids)) != len(event_ids):
@@ -2793,12 +2828,23 @@ def _fusion_events(event_ids: list[str]) -> list[dict[str, Any]]:
     unknown = [event_id for event_id in event_ids if visible_event(event_id) is None]
     if unknown:
         raise ValueError(f"unknown event_id: {unknown[0]}")
-    return [public_event(visible_event(event_id)) for event_id in event_ids]
+    events = [public_event(visible_event(event_id)) for event_id in event_ids]
+    if normalized_locale(locale) != "en":
+        return events
+    if not ENGLISH_EVENTS_BY_ID:
+        raise ValueError("English event projection is unavailable")
+    localized = []
+    for event in events:
+        english = ENGLISH_EVENTS_BY_ID.get(event["event_id"])
+        if english is None:
+            raise ValueError(f"English event projection is missing: {event['event_id']}")
+        localized.append({**event, **english})
+    return localized
 
 
 def prepare_target_candidate(arguments: dict[str, Any]) -> dict[str, Any]:
     """Discover corroboration and build a deterministic save-ready assessment without persisting it."""
-    seeds = _fusion_events(arguments.get("event_ids") or [])
+    seeds = _fusion_events(arguments.get("event_ids") or [], arguments.get("locale"))
     if arguments.get("discover_corroboration", True):
         anchor = next((item for item in seeds if item.get("collection_family") == "airborne_isr_video_exploitation"), seeds[0])
         corpus = [
@@ -2807,7 +2853,7 @@ def prepare_target_candidate(arguments: dict[str, Any]) -> dict[str, Any]:
             if event_visible(item)
         ]
         discovery = discover_corroborating_evidence(seeds, corpus)
-        selected = _fusion_events(discovery["selected_event_ids"])
+        selected = _fusion_events(discovery["selected_event_ids"], arguments.get("locale"))
         assessment = prepare_candidate(selected, arguments.get("confidence") or "")
         if discovery["ambiguous"]:
             assessment["persistence_eligible"] = False
@@ -2849,14 +2895,15 @@ def prepare_workstream_indication_proposal(arguments: dict[str, Any]) -> dict[st
     if action not in WORKSTREAM_ACTIONS:
         raise ValueError("unsupported workstream action")
     record_ids = [str(value).strip() for value in arguments.get("record_ids") or []]
-    events = _fusion_events(record_ids) if record_ids else []
+    events = _fusion_events(record_ids, arguments.get("locale")) if record_ids else []
     if action in {"create", "add_indication"} and not events:
         raise ValueError("at least one REC record_id is required for this action")
     target_id = str(arguments.get("target_id") or "").strip()
     target = None
     if target_id:
-        TARGET_BANK.initialize()
-        target = TARGET_BANK.get_candidate(target_id)
+        target_bank = target_bank_for(arguments)
+        target_bank.initialize()
+        target = target_bank.get_candidate(target_id)
         if target is None:
             raise ValueError(f"unknown target_id: {target_id}")
     indications = []
@@ -2925,15 +2972,16 @@ def decide_workstream_indication_proposal(arguments: dict[str, Any]) -> dict[str
 
 def find_duplicate_target_candidates(arguments: dict[str, Any]) -> dict[str, Any]:
     """Find existing candidates that share the assessed target or selected evidence."""
-    TARGET_BANK.initialize()
+    target_bank = target_bank_for(arguments)
+    target_bank.initialize()
     filters = {
         "object_class": arguments.get("object_class"),
         "location_id": arguments.get("location_id"),
         "entity_id": arguments.get("entity_id"),
         "limit": arguments.get("limit", 100),
     }
-    summaries = TARGET_BANK.search_candidates(filters)
-    candidates = [TARGET_BANK.get_candidate(item["target_id"]) for item in summaries]
+    summaries = target_bank.search_candidates(filters)
+    candidates = [target_bank.get_candidate(item["target_id"]) for item in summaries]
     return find_duplicate_candidates(
         candidates,
         arguments.get("event_ids") or [],

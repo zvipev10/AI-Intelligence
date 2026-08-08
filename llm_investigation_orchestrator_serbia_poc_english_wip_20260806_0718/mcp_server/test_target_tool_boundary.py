@@ -19,6 +19,22 @@ def general_deployment_tools():
 
 
 class TargetToolBoundaryTests(unittest.TestCase):
+    def test_target_bank_registry_routes_hebrew_default_and_english_explicitly(self):
+        with tempfile.TemporaryDirectory() as directory:
+            previous_he = server.TARGET_BANK
+            previous_en = server.TARGET_BANKS["en"]
+            he_bank = TargetBank(Path(directory) / "he.db", Path(directory) / "he-backups", locale="he")
+            en_bank = TargetBank(Path(directory) / "en.db", Path(directory) / "en-backups", locale="en")
+            try:
+                server.TARGET_BANK = he_bank
+                server.TARGET_BANKS["en"] = en_bank
+                self.assertIs(server.target_bank_for(None), he_bank)
+                self.assertIs(server.target_bank_for("he"), he_bank)
+                self.assertIs(server.target_bank_for("en"), en_bank)
+            finally:
+                server.TARGET_BANK = previous_he
+                server.TARGET_BANKS["en"] = previous_en
+
     def test_attachment_preserves_stored_groups_when_only_ordinal_labels_swap(self):
         current = [
             {"record_id": "REC-A", "source_group": "visible-report:002"},

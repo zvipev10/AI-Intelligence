@@ -77,3 +77,25 @@ fixture can change its records without changing platform code.
 Follow-ups:
 Implement retrieval visibility enforcement before exposing playback controls,
 then add UI and automatic agent reevaluation in separately approved slices.
+
+### 2026-08-08 — Isolate mutable target persistence by locale
+
+Decision:
+Use separate Hebrew and English SQLite target-bank instances. Initialize both active databases empty without migrating the former shared targets. Route every target create, update, evidence attachment, read, backup, reset, and restore by normalized locale. Reject Hebrew characters in English persisted presentation and evidence fields.
+
+Context:
+The English UI could expose Hebrew target content because both locales shared one mutable target database even after immutable English projections were corrected.
+
+Rationale:
+Physical separation matches the raw-data locale model, prevents cross-locale reads and writes by construction, and gives each language an independent lifecycle. Empty initialization follows the approved product requirement and avoids carrying mixed or ambiguous legacy records forward.
+
+Alternatives considered:
+- Keep one database with a locale column.
+- Migrate existing shared records into Hebrew.
+- Translate or copy shared records into English.
+
+Impact:
+Hebrew remains the default for omitted locale values, while explicit English operations use only the English database. Future English writes fail atomically if protected text contains Hebrew. The former shared database is rollback-only and is no longer active.
+
+Follow-ups:
+Apply the same explicit locale-ownership review to remaining mutable stores and finish full bilingual runtime acceptance.

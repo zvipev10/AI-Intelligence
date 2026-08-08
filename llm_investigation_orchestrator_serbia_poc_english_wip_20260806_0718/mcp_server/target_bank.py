@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import re
 import sqlite3
 import time
 import uuid
@@ -12,14 +13,25 @@ from pathlib import Path
 from typing import Any, Iterable
 
 
-DEFAULT_DB_PATH = Path(os.environ.get(
+LEGACY_DB_PATH = Path(os.environ.get(
     "INTELLIGENCE_POC_TARGET_BANK",
     "/opt/serbia-poc/data/attack_targets/attack_targets.db",
 ))
-DEFAULT_BACKUP_DIR = Path(os.environ.get(
+LEGACY_BACKUP_DIR = Path(os.environ.get(
     "INTELLIGENCE_POC_TARGET_BACKUPS",
     "/opt/serbia-poc/backups/attack_targets",
 ))
+DEFAULT_DB_PATHS = {
+    "he": Path(os.environ.get("INTELLIGENCE_POC_TARGET_BANK_HE", str(LEGACY_DB_PATH.parent / "he" / "attack_targets.db"))),
+    "en": Path(os.environ.get("INTELLIGENCE_POC_TARGET_BANK_EN", str(LEGACY_DB_PATH.parent / "en" / "attack_targets.db"))),
+}
+DEFAULT_BACKUP_DIRS = {
+    "he": Path(os.environ.get("INTELLIGENCE_POC_TARGET_BACKUPS_HE", str(LEGACY_BACKUP_DIR / "he"))),
+    "en": Path(os.environ.get("INTELLIGENCE_POC_TARGET_BACKUPS_EN", str(LEGACY_BACKUP_DIR / "en"))),
+}
+DEFAULT_DB_PATH = DEFAULT_DB_PATHS["he"]
+DEFAULT_BACKUP_DIR = DEFAULT_BACKUP_DIRS["he"]
+HEBREW_RE = re.compile(r"[\u0590-\u05ff]")
 ALLOWED_CONFIDENCE = frozenset({"medium", "high"})
 ALLOWED_COUNT_ASSESSMENTS = frozenset({"exact", "approximate", "range", "unresolved"})
 TARGET_MUTABLE_FIELDS = frozenset({
@@ -109,7 +121,21 @@ def _optional_count(value: Any, name: str) -> int | None:
     return normalized
 
 
-def normalize_candidate(value: dict[str, Any], *, require_creator: bool) -> dict[str, Any]:
+def normalize_locale(value: Any) -> str:
+    return "en" if str(value or "").strip().lower() == "en" else "he"
+
+
+def _reject_hebrew_fields(value: dict[str, Any], fields: Iterable[str], locale: str) -> None:
+    if locale != "en":
+        return
+    invalid = [field for field in fields if HEBREW_RE.search(str(value.get(field) or ""))]
+    if invalid:
+        raise ValueError("English target-bank text contains Hebrew: " + ", ".join(sorted(invalid)))
+
+
+def normalize_candidate(value: dict[str, Any], *, require_creator: bool, locale: str = "he") -> dict[str, Any]:
+    locale = normalize_locale(locale)
+    _reject_hebrew_fields(value, ("title", "summary", "object_class", "fusion_explanation"), locale)
     confidence = _required_text(value.get("confidence"), "confidence")
     if confidence not in ALLOWED_CONFIDENCE:
         raise ValueError("confidence must be medium or high")
@@ -144,7 +170,9 @@ def normalize_candidate(value: dict[str, Any], *, require_creator: bool) -> dict
     return result
 
 
-def normalize_evidence(value: dict[str, Any]) -> dict[str, Any]:
+def normalize_evidence(value: dict[str, Any], *, locale: str = "he") -> dict[str, Any]:
+    locale = normalize_locale(locale)
+    _reject_hebrew_fields(value, ("source_type", "reported_object", "relevant_text", "evidence_role"), locale)
     return {
         "record_id": _required_text(value.get("record_id"), "record_id"),
         "source_group": _required_text(value.get("source_group"), "source_group"),
@@ -159,9 +187,10 @@ def normalize_evidence(value: dict[str, Any]) -> dict[str, Any]:
 
 
 class TargetBank:
-    def __init__(self, db_path: Path | str = DEFAULT_DB_PATH, backup_dir: Path | str = DEFAULT_BACKUP_DIR):
-        self.db_path = Path(db_path)
-        self.backup_dir = Path(backup_dir)
+    def __init__(self, db_path: Path | str | None = None, backup_dir: Path | str | None = None, *, locale: str = "he"):
+        self.locale = normalize_locale(locale)
+        self.db_path = Path(db_path) if db_path is not None else DEFAULT_DB_PATHS[self.locale]
+        self.backup_dir = Path(backup_dir) if backup_dir is not None else DEFAULT_BACKUP_DIRS[self.locale]
 
     def initialize(self) -> None:
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
@@ -194,8 +223,8 @@ class TargetBank:
             connection.close()
 
     def create_candidate(self, candidate: dict[str, Any], evidence: Iterable[dict[str, Any]]) -> dict[str, Any]:
-        normalized = normalize_candidate(candidate, require_creator=True)
-        normalized_evidence = [normalize_evidence(item) for item in evidence]
+        normalized = normalize_candidate(candidate, require_creator=True, locale=self.locale)
+        normalized_evidence = [normalize_evidence(item, locale=self.locale) for item in evidence]
         if len({item["source_group"] for item in normalized_evidence}) < 2:
             raise ValueError("a candidate requires at least two independent source groups")
         if len({item["record_id"] for item in normalized_evidence}) != len(normalized_evidence):
@@ -289,7 +318,7 @@ class TargetBank:
             raise ValueError(f"unsupported candidate fields: {', '.join(sorted(unknown))}")
         current = self.get_candidate(target_id)
         merged = {**current, **changes}
-        normalized = normalize_candidate(merged, require_creator=False)
+        normalized = normalize_candidate(merged, require_creator=False, locale=self.locale)
         now = utc_now()
         columns = list(normalized)
         with self.connect() as connection:
@@ -303,7 +332,7 @@ class TargetBank:
         return self.get_candidate(target_id)
 
     def attach_evidence(self, target_id: str, evidence: Iterable[dict[str, Any]]) -> dict[str, Any]:
-        normalized = [normalize_evidence(item) for item in evidence]
+        normalized = [normalize_evidence(item, locale=self.locale) for item in evidence]
         if not normalized:
             raise ValueError("at least one evidence record is required")
         now = utc_now()

@@ -113,10 +113,11 @@ TARGET_CATALOG_READER = Path(os.environ.get(
     "INTELLIGENCE_POC_TARGET_CATALOG_READER",
     "/opt/serbia-poc/mcp_server/target_catalog_reader.py",
 ))
-TARGET_BANK_PATH = Path(os.environ.get(
-    "INTELLIGENCE_POC_TARGET_BANK",
-    "/opt/serbia-poc/data/attack_targets/attack_targets.db",
-))
+TARGET_BANK_ROOT = Path("/opt/serbia-poc/data/attack_targets")
+TARGET_BANK_PATHS = {
+    "he": Path(os.environ.get("INTELLIGENCE_POC_TARGET_BANK_HE", str(TARGET_BANK_ROOT / "he" / "attack_targets.db"))),
+    "en": Path(os.environ.get("INTELLIGENCE_POC_TARGET_BANK_EN", str(TARGET_BANK_ROOT / "en" / "attack_targets.db"))),
+}
 CONFIG_PATH = ROOT / ".hermes-api.json"
 RECORDED_RUNS_PATH = ROOT / "test_runs" / "compact_demo_after_general_instructions_20260620T151848Z.json"
 DATASET_VERSION = os.environ.get("INTELLIGENCE_POC_DATASET_VERSION", "v2").strip().lower()
@@ -328,12 +329,14 @@ def ui_layer_data(locale: str = "he") -> tuple[list[dict[str, Any]], dict[str, d
 
 def load_persisted_attack_targets(
     entities: dict[str, dict[str, Any]], locations: dict[str, dict[str, Any]], limit: int = 500,
+    locale: str = "he",
 ) -> list[dict[str, Any]]:
-    if not TARGET_CATALOG_READER.is_file() or not TARGET_BANK_PATH.is_file():
+    target_bank_path = TARGET_BANK_PATHS[normalize_locale(locale)]
+    if not TARGET_CATALOG_READER.is_file() or not target_bank_path.is_file():
         return []
     try:
         completed = subprocess.run(
-            [sys.executable, str(TARGET_CATALOG_READER), "--db", str(TARGET_BANK_PATH), "--limit", str(limit)],
+            [sys.executable, str(TARGET_CATALOG_READER), "--db", str(target_bank_path), "--limit", str(limit)],
             capture_output=True, text=True, encoding="utf-8", timeout=8, check=True, shell=False,
         )
         rows = json.loads(completed.stdout).get("rows", [])
@@ -350,7 +353,7 @@ def load_persisted_attack_targets(
 def list_ui_layers(locale: str = "he") -> list[dict[str, Any]]:
     locale = normalize_locale(locale)
     events, entities, locations = ui_layer_data(locale)
-    targets = load_persisted_attack_targets(entities, locations)
+    targets = load_persisted_attack_targets(entities, locations, locale=locale)
     unknown_source = "Unknown source" if locale == "en" else "מקור לא ידוע"
     layers = [
         {
@@ -408,7 +411,7 @@ def get_ui_layer_rows(layer_id: str, locale: str = "he") -> tuple[dict[str, Any]
     elif layer_id == "location-metadata:all":
         rows = sorted(locations.values(), key=lambda item: (-int(item.get("event_count") or 0), str(item.get("location_name") or "")))
     elif layer_id == ATTACK_TARGET_CATALOG_LAYER_ID:
-        rows = load_persisted_attack_targets(entities, locations)
+        rows = load_persisted_attack_targets(entities, locations, locale=locale)
     elif layer_id.startswith("events:"):
         source_type = layer.get("source_type") or layer_id.split(":", 1)[1]
         unknown_source = "Unknown source" if locale == "en" else "מקור לא ידוע"
@@ -953,6 +956,7 @@ def build_english_agent_instructions(
     lines = [
         "You are an investigation agent inside an experimental intelligence workspace for a North Kosovo / Serbia escalation scenario.",
         "All user-facing content must be in English only. Keep raw identifiers, record IDs, and source titles exactly as they appear in the data.",
+        "Include locale=\"en\" in every MCP tool call. Target searches and writes must use only the English target bank.",
         f"Use only MCP tools whose names start with {HERMES_TOOL_PREFIX} and only the data they return. Do not use shell, filesystem, web, system tools, or any other external capability.",
         "Analytic viewpoint: Serbian military intelligence analyst. The dataset is biased toward open sources and synthetic Serbian ISR drone observations about rival forces and the surrounding environment.",
         "Always distinguish observation, identification, inference, and uncertainty. Counts derived from video are estimates and require corroboration.",

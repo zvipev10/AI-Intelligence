@@ -4,39 +4,39 @@
 Hebrew and English runtime localization
 
 ## Current phase
-Architecture review — locale-isolated target banks
+Controlled execution — remaining bilingual runtime paths
 
 ## Overall status
-In progress
+In progress; locale-isolated target-bank slice deployed
 
 ## Who needs to act now
 
 | Role | Status | Required action | Due before |
 |---|---|---|---|
-| Development | Pending approval | Implement the two-database target-bank split after checkpoint 005 approval | Checkpoint 005 gate |
-| QA | Pending | Validate isolation, migration, English-write rejection, and rollback | Implementation checkpoint |
-| Architecture/Product | Action required | Approve the physical DB split and migration behavior | Before coding/migration |
+| Development | Active | Continue remaining localized MCP/entity/workstream paths | Next execution slice |
+| QA | Complete for target-bank slice | Target isolation, empty initialization, English-write rejection, and rollback verified | Final acceptance |
+| Architecture/Product | Approved | Two physical empty databases; no migration | Complete |
 | UX | Pending | Review consolidated bilingual UI | Slice 3 acceptance |
 | Product | Pending | Review behavior at checkpoints | Final acceptance |
 
 ## Latest change since previous review
-Checkpoint 005 defines two physical target-bank instances. Existing 21 Hebrew targets move to the Hebrew DB; the English DB starts empty and rejects Hebrew presentation/evidence text.
+Checkpoint 006 deploys two physical target-bank instances. Both active databases are empty, future writes are locale-routed, and English writes containing Hebrew are rejected.
 
 ## Current blockers
-None for Slice 1. Production deployment credentials are not required yet.
+None for the target-bank slice.
 
 ## Current risks
 Active MCP data localization, target-bank presentation, entity metadata defaults, workstream metadata, legacy v1, and mutable-state locale isolation remain pending.
 
 ## Next expected artifact
-Human approval of `checkpoint-005.md`, followed by controlled implementation and a separately reviewed production migration.
+Implementation of the remaining English MCP/entity/workstream data paths identified in checkpoint 004.
 
 ## Artifact links
 - Capability brief: `capability-brief.md`
 - Developer review: `developer-review.md`
 - QA review: `qa-review.md`
 - Execution plan: `execution-plan.md`
-- Latest checkpoint: `checkpoint-005.md`
+- Latest checkpoint: `checkpoint-006.md`
 - Handoff: `handoff-summary.md`
 
 ## Gate checklist
