@@ -2,7 +2,7 @@
 
 ## Current outcome
 
-The compact-header request is defined against latest `main`. Product code has not changed because the UX/developer gate is pending.
+The compact bilingual header is implemented, pushed, deployed to the VM, and verified.
 
 ## Key findings
 
@@ -12,7 +12,14 @@ The compact-header request is defined against latest `main`. Product code has no
 
 ## Required next action
 
-UX should approve the compact interaction, including focus/tap parity. Development should approve the technical review so an execution plan can be created.
+No required action. Optional follow-up: merge `codex/header-simplification-latest` after review.
+
+## Deployment handoff
+
+- Implementation commit: `4af81c2`
+- VM root: `/opt/serbia-poc-ui`
+- VM backup: `/opt/serbia-poc-ui.backup-header-20260808T140508Z`
+- Final deployment verification: `checkpoint-002.md`
 
 ## Durable docs
 
