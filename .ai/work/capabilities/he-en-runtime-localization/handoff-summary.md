@@ -10,7 +10,10 @@ Commit `eb9168c` on `origin/codex/he-en-localization` contains the brief, develo
 The screenshot was caused by partially translated `.en` assets, not by the English UI toggle. The old generator accepted mixed Hebrew/English output. The regenerated active v2.1 runtime contains 14,800 rows with zero Hebrew matches; the TikTok subset contains 1,101 clean rows.
 
 ## Next action
-Continue the remaining localized MCP/entity/workstream paths, then run full bilingual acceptance.
+Approve checkpoint 007, implement the complete locale-keyed MCP runtime (inspection section 1), then implement locale-isolated workstreams (section 4), and finally run full bilingual acceptance.
+
+## Section 1 and 4 plan
+`checkpoint-007.md` defines manifest-validated per-locale MCP runtime bundles, isolated semantic caches, fail-closed English asset loading, physically separate workstream roots, English nested-write guards, legacy Hebrew ownership, and complete automated/production acceptance criteria. No workstream migration or automatic translation is planned.
 
 ## Target-bank decision implemented
 Two physical SQLite instances are selected by locale. No records were migrated: both started and finished empty. Future English presentation/evidence writes reject Hebrew characters, and MCP tools, UI reads, and administrative operations route explicitly by locale.

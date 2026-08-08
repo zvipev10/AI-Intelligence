@@ -29,3 +29,5 @@ Schema checks, locale fallback tests, Hebrew/English retrieval assertions, seman
 3. UI merge.
 4. Full regression and manual QA.
 
+## Checkpoint 007 refinement
+For inspection findings 1 and 4, use a manifest-validated `DatasetRuntime` registry rather than adding more parallel globals. Separate semantic cache identity by locale and checksum. Split workstream persistence physically by locale, treat untagged legacy records as Hebrew, and start English empty. Do not implement translation or migration in these slices.

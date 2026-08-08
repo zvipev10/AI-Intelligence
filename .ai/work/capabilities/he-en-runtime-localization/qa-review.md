@@ -25,3 +25,10 @@ Extend MCP tests and benchmark inputs for both locales; add request-routing and 
 ## Acceptance recommendation
 Continue slice-by-slice. Pause after any public tool-schema, prompt contract, or UI behavior checkpoint for review evidence.
 
+## Checkpoint 007 additions
+- Scan every English MCP payload, not only UI layer responses.
+- Test missing/corrupt English manifests fail closed.
+- Test exact, fusion, and semantic calls under alternating locales.
+- Exercise the full workstream lifecycle and nested document validation in both locales.
+- Assert cross-locale workstream IDs return not found and cannot mutate another store.
+- Re-run the complete checkpoint-004 production inspection before acceptance.

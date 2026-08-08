@@ -37,8 +37,16 @@ Import verified `.en` assets, add locale normalization and per-locale runtime st
 Risk: medium. Reviewer: development/QA. Stop after slice: yes.
 
 ### Slice 1B — Locale-isolated target banks
-Replace the shared target-bank singleton with Hebrew and English SQLite instances, enforce English-only persisted text, migrate the existing 21 records to Hebrew, initialize English empty, route UI/MCP/admin operations by locale, and validate backup/rollback behavior.
+Replace the shared target-bank singleton with Hebrew and English SQLite instances, enforce English-only persisted text, initialize both databases empty without migration, route UI/MCP/admin operations by locale, and validate backup/rollback behavior.
 Risk: high (persistent data, API/tool routing, production migration). Reviewer: development/QA/architecture. Stop after slice: yes.
+
+### Slice 1C — Complete locale-keyed MCP runtime
+Create a manifest-validated `DatasetRuntime` per locale and dataset version, generate/deploy every tool-visible English asset, isolate exact/fusion/semantic indexes, and fail closed instead of falling back to Hebrew when English data is incomplete. Full design and acceptance criteria are in `checkpoint-007.md`.
+Risk: high (all tool reads and semantic state). Reviewer: development/QA/architecture. Stop after slice: yes.
+
+### Slice 1D — Locale-isolated workstreams
+Split workstream persistence into Hebrew and English roots, persist locale on new workstreams, propagate locale through HTTP/MCP/playback/presentation paths, reject Hebrew in nested English persisted fields, classify legacy untagged records as Hebrew, and initialize English empty without migration. Full design and acceptance criteria are in `checkpoint-007.md`.
+Risk: high (persistent collaboration state and public API behavior). Reviewer: development/QA/product. Stop after slice: yes.
 
 ### Slice 2 — Agent prompt and routing
 Port localized prompts and propagate session locale through investigation and MCP calls.
