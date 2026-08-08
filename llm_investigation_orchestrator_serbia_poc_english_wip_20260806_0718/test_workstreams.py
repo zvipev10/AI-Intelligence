@@ -81,9 +81,10 @@ class WorkstreamApiTests(unittest.TestCase):
         self.assertIsNone(created["archived_at_utc"])
 
         workstream_id = created["workstream_id"]
-        stored_path = Path(self.temp_dir.name) / f"{workstream_id}.json"
+        stored_path = server.workstream_dir("he") / f"{workstream_id}.json"
         self.assertTrue(stored_path.exists())
         self.assertFalse(stored_path.with_suffix(".json.tmp").exists())
+        self.assertEqual(created["locale"], "he")
 
         status, listing = self.request(
             "GET", "/api/workstreams?investigation_id=investigation-42"
@@ -238,6 +239,49 @@ class WorkstreamApiTests(unittest.TestCase):
         self.assertEqual("playback-12", listing["workstreams"][0]["latest_activity_id"])
         self.assertEqual("playback_assessment", listing["workstreams"][0]["latest_activity_type"])
         self.assertEqual("2026-08-05T20:06:36Z", listing["workstreams"][0]["latest_activity_at_utc"])
+
+    def test_workstreams_are_physically_isolated_by_locale(self):
+        he_payload = self.create_payload()
+        he_payload["title"] = "Hebrew-owned workstream"
+        status, he_created = self.request("POST", "/api/workstreams", he_payload)
+        self.assertEqual(status, 201)
+
+        en_payload = self.create_payload()
+        en_payload["locale"] = "en"
+        en_payload["title"] = "English workstream"
+        en_payload["objective"] = "Maintain an English analytical flow."
+        en_payload["participants"][0]["display_name"] = "Analyst"
+        en_payload["participants"][0]["role"] = "Owner"
+        en_payload["participants"][1]["display_name"] = "Moshe"
+        en_payload["participants"][1]["role"] = "Targets officer"
+        en_payload["assignments"][0]["responsibility"] = "Maintain the English working assessment."
+        status, en_created = self.request("POST", "/api/workstreams", en_payload)
+        self.assertEqual(status, 201)
+
+        self.assertTrue((server.workstream_dir("he") / f"{he_created['workstream_id']}.json").exists())
+        self.assertTrue((server.workstream_dir("en") / f"{en_created['workstream_id']}.json").exists())
+
+        status, en_listing = self.request(
+            "GET", "/api/workstreams?investigation_id=investigation-42&locale=en"
+        )
+        self.assertEqual(status, 200)
+        self.assertEqual([item["workstream_id"] for item in en_listing["workstreams"]], [en_created["workstream_id"]])
+
+        status, missing = self.request(
+            "GET", f"/api/workstreams/{he_created['workstream_id']}?locale=en"
+        )
+        self.assertEqual(status, 404)
+        self.assertEqual(missing["error"], "Workstream not found")
+
+    def test_english_workstream_rejects_hebrew_without_partial_write(self):
+        payload = self.create_payload()
+        payload["locale"] = "en"
+        payload["title"] = "English workstream"
+        payload["objective"] = "בדיקה"
+        status, error = self.request("POST", "/api/workstreams", payload)
+        self.assertEqual(status, 400)
+        self.assertIn("English workstream field contains Hebrew", error["error"])
+        self.assertEqual([], list(server.workstream_dir("en").glob("ws_*.json")))
 
 
 if __name__ == "__main__":

@@ -36,14 +36,30 @@ def _text(value: Any, field: str, limit: int, required: bool = False) -> str:
     return text
 
 
-def _text_list(value: Any, field: str, *, item_limit: int = 1000, max_items: int = 50) -> list[str]:
+def _validate_text(value: str, field: str, validator: Callable[[str, str], None] | None) -> str:
+    if validator:
+        validator(value, field)
+    return value
+
+
+def _text_list(
+    value: Any,
+    field: str,
+    *,
+    item_limit: int = 1000,
+    max_items: int = 50,
+    validate_text: Callable[[str, str], None] | None = None,
+) -> list[str]:
     if value is None:
         return []
     if not isinstance(value, list):
         raise ValueError(f"Invalid {field}")
     if any(not isinstance(item, str) for item in value[:max_items]):
         raise ValueError(f"Invalid {field}")
-    return [_text(item, field, item_limit, required=True) for item in value[:max_items]]
+    return [
+        _validate_text(_text(item, field, item_limit, required=True), field, validate_text)
+        for item in value[:max_items]
+    ]
 
 
 def _actor(value: Any, workstream: dict, *, require_human: bool = False) -> dict:
@@ -95,6 +111,7 @@ def _indication(
     actor: dict,
     now: str,
     id_factory: Callable[[str], str],
+    validate_text: Callable[[str, str], None] | None = None,
 ) -> dict:
     if not isinstance(value, dict):
         raise ValueError("Invalid indication")
@@ -124,9 +141,9 @@ def _indication(
             "source_type": _text(event.get("source_type"), "source_type", 160),
             "collection_family": _text(event.get("collection_family"), "collection_family", 160),
         },
-        "relevance": _text(value.get("relevance"), "relevance", 1200),
+        "relevance": _validate_text(_text(value.get("relevance"), "relevance", 1200), "relevance", validate_text),
         "role": role,
-        "annotation": _text(value.get("annotation"), "annotation", 2000),
+        "annotation": _validate_text(_text(value.get("annotation"), "annotation", 2000), "annotation", validate_text),
         "added_by": actor,
         "added_at_utc": now,
         "state": "active",
@@ -142,6 +159,7 @@ def _initial_content(
     actor: dict,
     now: str,
     id_factory: Callable[[str], str],
+    validate_text: Callable[[str, str], None] | None = None,
 ) -> dict:
     if not isinstance(value, dict):
         raise ValueError("Invalid artifact content")
@@ -153,7 +171,7 @@ def _initial_content(
     indications = [
         _indication(
             item, workstream=workstream, resolve_event=resolve_event, actor=actor, now=now,
-            id_factory=id_factory,
+            id_factory=id_factory, validate_text=validate_text,
         )
         for item in raw_indications
     ]
@@ -162,14 +180,18 @@ def _initial_content(
         raise ValueError("Duplicate indication record_id")
     return {
         "subject_reference": _subject(value.get("subject_reference"), resolve_target),
-        "lead_statement": _text(value.get("lead_statement"), "lead_statement", 3000, required=True),
+        "lead_statement": _validate_text(
+            _text(value.get("lead_statement"), "lead_statement", 3000, required=True),
+            "lead_statement",
+            validate_text,
+        ),
         "indications": indications,
-        "supporting_signals": _text_list(value.get("supporting_signals"), "supporting_signals"),
-        "contradictions": _text_list(value.get("contradictions"), "contradictions"),
-        "assessment_questions": _text_list(value.get("assessment_questions"), "assessment_questions"),
-        "gaps": _text_list(value.get("gaps"), "gaps"),
+        "supporting_signals": _text_list(value.get("supporting_signals"), "supporting_signals", validate_text=validate_text),
+        "contradictions": _text_list(value.get("contradictions"), "contradictions", validate_text=validate_text),
+        "assessment_questions": _text_list(value.get("assessment_questions"), "assessment_questions", validate_text=validate_text),
+        "gaps": _text_list(value.get("gaps"), "gaps", validate_text=validate_text),
         "assigned_to": _text(value.get("assigned_to"), "assigned_to", 120),
-        "annotation": _text(value.get("annotation"), "annotation", 3000),
+        "annotation": _validate_text(_text(value.get("annotation"), "annotation", 3000), "annotation", validate_text),
     }
 
 
@@ -193,6 +215,7 @@ def create_artifact(
     now: str,
     id_factory: Callable[[str], str],
     require_human_actor: bool = True,
+    validate_text: Callable[[str, str], None] | None = None,
 ) -> dict:
     if workstream.get("status") == "archived":
         raise ValueError("Archived workstream cannot be updated")
@@ -207,6 +230,7 @@ def create_artifact(
     content = _initial_content(
         request.get("content"), workstream=workstream, resolve_event=resolve_event,
         resolve_target=resolve_target, actor=actor, now=now, id_factory=id_factory,
+        validate_text=validate_text,
     )
     artifact_id = id_factory("artifact")
     artifact = {
@@ -243,6 +267,7 @@ def revise_artifact(
     now: str,
     id_factory: Callable[[str], str],
     require_human_actor: bool = True,
+    validate_text: Callable[[str, str], None] | None = None,
 ) -> dict:
     if workstream.get("status") == "archived":
         raise ValueError("Archived workstream cannot be updated")
@@ -271,7 +296,7 @@ def revise_artifact(
     if action == "add_indication":
         indication = _indication(
             payload.get("indication"), workstream=workstream, resolve_event=resolve_event,
-            actor=actor, now=now, id_factory=id_factory,
+            actor=actor, now=now, id_factory=id_factory, validate_text=validate_text,
         )
         record_id = indication["source_reference"]["record_id"]
         if any(
@@ -299,18 +324,19 @@ def revise_artifact(
         indication["removed_at_utc"] = now
         summary = f"Removed indication {indication_id}"
     elif action == "update_annotation":
-        content["annotation"] = _text(payload.get("annotation"), "annotation", 3000)
+        content["annotation"] = _validate_text(_text(payload.get("annotation"), "annotation", 3000), "annotation", validate_text)
         summary = "Updated annotation"
     elif action == "update_lead_statement":
         content["lead_statement"] = _text(
             payload.get("lead_statement"), "lead_statement", 3000, required=True
         )
+        _validate_text(content["lead_statement"], "lead_statement", validate_text)
         summary = "Updated lead statement"
     elif action == "request_completion":
         content["assessment_questions"] = _text_list(
-            payload.get("assessment_questions"), "assessment_questions"
+            payload.get("assessment_questions"), "assessment_questions", validate_text=validate_text
         )
-        content["gaps"] = _text_list(payload.get("gaps"), "gaps")
+        content["gaps"] = _text_list(payload.get("gaps"), "gaps", validate_text=validate_text)
         summary = "Updated assessment questions and gaps"
     elif action == "send_to_assessment":
         if not any(item.get("state") == "active" for item in content.get("indications") or []):

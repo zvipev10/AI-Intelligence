@@ -2538,7 +2538,7 @@ async function loadWorkstreams() {
   const token = ++state.workstreamLoadToken;
   state.workstreamsLoading = true;
   try {
-    const response = await fetch(`/api/workstreams?investigation_id=${encodeURIComponent(investigationId)}`, { cache: "no-store" });
+    const response = await fetch(`/api/workstreams?investigation_id=${encodeURIComponent(investigationId)}&locale=${encodeURIComponent(currentLocale())}`, { cache: "no-store" });
     const payload = await response.json();
     if (!response.ok) throw new Error(payload.error || activeLocaleText("טעינת המעקבים נכשלה", "Failed to load workstreams"));
     if (token !== state.workstreamLoadToken || investigationId !== state.investigationId) return [];
@@ -2587,7 +2587,7 @@ function workstreamMessage(html, options = {}) {
 }
 
 async function fetchWorkstream(workstreamId) {
-  const response = await fetch(`/api/workstreams/${encodeURIComponent(workstreamId)}`, { cache: "no-store" });
+  const response = await fetch(`/api/workstreams/${encodeURIComponent(workstreamId)}?locale=${encodeURIComponent(currentLocale())}`, { cache: "no-store" });
   const payload = await response.json();
   if (!response.ok) throw new Error(payload.error || activeLocaleText("טעינת המעקב נכשלה", "Failed to load workstream"));
   return payload;
@@ -2646,7 +2646,7 @@ async function fetchInvestigationPlayback() {
   const investigationId = String(state.investigationId || "").trim();
   if (!investigationId) return null;
   const response = await fetch(
-    `/api/playback?investigation_id=${encodeURIComponent(investigationId)}`,
+    `/api/playback?investigation_id=${encodeURIComponent(investigationId)}&locale=${encodeURIComponent(currentLocale())}`,
     { cache: "no-store" }
   );
   const payload = await response.json();
@@ -2667,7 +2667,7 @@ async function pollMoshePlaybackReevaluation() {
     if (token !== state.playbackPollToken) return;
     try {
       const response = await fetch(
-        `/api/playback?investigation_id=${encodeURIComponent(investigationId)}`,
+        `/api/playback?investigation_id=${encodeURIComponent(investigationId)}&locale=${encodeURIComponent(currentLocale())}`,
         { cache: "no-store" }
       );
       const payload = await response.json();
@@ -2743,6 +2743,7 @@ async function advanceInvestigationPlayback() {
         investigation_id: state.investigationId,
         expected_revision: run?.revision,
         idempotency_key: `playback:${state.investigationId}:${run?.revision || 0}:${Date.now()}`,
+        locale: currentLocale(),
       }),
     });
     const result = await response.json();
@@ -2784,6 +2785,7 @@ async function changeIntelligenceMode() {
       body: JSON.stringify({
         investigation_id: state.investigationId,
         mode,
+        locale: currentLocale(),
       }),
     });
     const payload = await response.json();
@@ -2878,7 +2880,7 @@ async function toggleWorkstreamResultVisibility(workstreamId, btn) {
   if (btn) btn.disabled = true;
   try {
     const response = await fetch(
-      `/api/workstreams/${encodeURIComponent(workstreamId)}/presentation`,
+      `/api/workstreams/${encodeURIComponent(workstreamId)}/presentation?locale=${encodeURIComponent(currentLocale())}`,
       { cache: "no-store" }
     );
     const result = await response.json();
@@ -2957,7 +2959,7 @@ async function showWorkstreamUpdate(workstreamId) {
 
 async function archiveWorkstreamFromChat(workstreamId) {
   try {
-    const response = await fetch(`/api/workstreams/${encodeURIComponent(workstreamId)}/archive`, { method: "POST" });
+    const response = await fetch(`/api/workstreams/${encodeURIComponent(workstreamId)}/archive?locale=${encodeURIComponent(currentLocale())}`, { method: "POST" });
     const archived = await response.json();
     if (!response.ok) throw new Error(archived.error || activeLocaleText("העברת המעקב לארכיון נכשלה", "Failed to archive workstream"));
     state.workstreams = state.workstreams.map(item => item.workstream_id === workstreamId ? archived : item);

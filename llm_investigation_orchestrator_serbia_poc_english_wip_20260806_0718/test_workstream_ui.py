@@ -13,7 +13,8 @@ class WorkstreamUiTests(unittest.TestCase):
         cls.styles = (ROOT / "styles.css").read_text(encoding="utf-8")
 
     def test_plus_menu_enters_tracking_mode(self):
-        self.assertIn('data-prompt-option="workstream">מעקב</button>', self.index)
+        self.assertIn('data-prompt-option="workstream"', self.index)
+        self.assertIn('data-i18n-text-he="מעקב"', self.index)
         self.assertIn('promptOption.dataset.promptOption === "workstream"', self.app)
         self.assertIn("startWorkstreamComposerMode()", self.app)
 
@@ -55,7 +56,7 @@ class WorkstreamUiTests(unittest.TestCase):
         self.assertNotIn("על איזה מהם להציג עדכון?", self.app)
 
     def test_workstream_rail_tracks_unseen_changes(self):
-        self.assertIn("serbia-poc-workstream-seen-v1", self.app)
+        self.assertIn("serbia-poc-workstream-seen-v2", self.app)
         self.assertIn("function workstreamHasNewItems(workstream)", self.app)
         self.assertIn("function markWorkstreamSeen(workstream)", self.app)
         self.assertIn("updated_at_utc", self.app)
@@ -95,14 +96,16 @@ class WorkstreamUiTests(unittest.TestCase):
         self.assertIn("/presentation", self.app)
         self.assertIn("workstreamResultSourceId", self.app)
         self.assertIn("final-answer-show-btn layers-hidden", self.app)
-        self.assertIn('<span class="final-answer-show-label">הצג תוצאות</span>', self.app)
+        self.assertIn('activeLocaleText("הצג תוצאות", "Show results")', self.app)
 
     def test_investigation_playback_control_is_visible_in_upper_bar(self):
         self.assertIn('id="playbackNextButton"', self.index)
         self.assertIn('class="playback-header-button"', self.index)
         self.assertIn('id="intelligenceModeSelect"', self.index)
-        self.assertIn('value="historical">מידע היסטורי', self.index)
-        self.assertIn('value="real_time">זמן אמת', self.index)
+        self.assertIn('value="historical"', self.index)
+        self.assertIn('data-i18n-text-he="מידע היסטורי"', self.index)
+        self.assertIn('value="real_time"', self.index)
+        self.assertIn('data-i18n-text-he="זמן אמת"', self.index)
         self.assertIn('id="intelligencePeriod"', self.index)
         self.assertIn("/api/playback/next", self.app)
         self.assertIn("/api/playback/mode", self.app)
@@ -151,7 +154,7 @@ class WorkstreamUiTests(unittest.TestCase):
         self.assertNotIn("fallback=latest", self.app)
         self.assertNotIn("allowLatestFallback", self.app)
         self.assertIn(
-            "fetch(`/api/workstreams?investigation_id=${encodeURIComponent(investigationId)}`",
+            "fetch(`/api/workstreams?investigation_id=${encodeURIComponent(investigationId)}&locale=${encodeURIComponent(currentLocale())}`",
             self.app,
         )
 
@@ -204,7 +207,7 @@ class WorkstreamUiTests(unittest.TestCase):
 
     def test_thinking_indicator_is_preserved(self):
         self.assertIn("function thinkingIndicatorHtml()", self.app)
-        self.assertIn('aria-label="חושב"', self.app)
+        self.assertIn('aria-label="${escapeHtml(activeLocaleText("חושב", "Thinking"))}"', self.app)
         self.assertIn("thinkingIndicatorHtml()", self.app)
         self.assertIn(".thinking-indicator", self.styles)
         self.assertIn("@keyframes thinking-dot", self.styles)

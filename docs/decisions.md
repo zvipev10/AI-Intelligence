@@ -121,3 +121,25 @@ Hebrew remains the compatibility default. English calls use only validated Engli
 
 Follow-ups:
 Recover the VM, upload the prebuilt English v2.1 cache, complete production semantic acceptance, and apply locale ownership to workstream persistence.
+
+### 2026-08-08 — Isolate workstream persistence and flows by locale
+
+Decision:
+Use separate Hebrew and English workstream roots for each dataset state. New v2.1 workstreams persist under `workstreams/v2_1/he/` or `workstreams/v2_1/en/`; legacy untagged/shared workstream files are treated as Hebrew-owned fallback data only. Route workstream list, get, create, update, archive, artifacts, presentation, chat actions, and playback reevaluation by normalized locale. Reject Hebrew characters in English persisted user-visible workstream and artifact fields.
+
+Context:
+After the immutable English dataset and MCP runtime were corrected, mutable workstream state could still mix Hebrew and English because both languages shared the same workstream files and runtime routes.
+
+Rationale:
+Physical separation prevents accidental cross-language reads and writes by construction, preserves Hebrew compatibility for existing records, and starts English workstreams cleanly without migration or automatic translation. Atomic English write validation protects future creation and updates from reintroducing Hebrew text.
+
+Alternatives considered:
+- Keep one workstream store with a `locale` field.
+- Migrate existing shared workstreams into the new Hebrew root.
+- Translate or copy Hebrew workstreams into English.
+
+Impact:
+Hebrew remains the compatibility default for omitted locale values. English workstreams start empty and can only be populated through explicit English flows. Cross-locale workstream IDs are not visible through list/get APIs.
+
+Follow-ups:
+Deploy the workstream slice to production and run bilingual smoke tests for physical-store separation, English rejection, and playback locale routing.
