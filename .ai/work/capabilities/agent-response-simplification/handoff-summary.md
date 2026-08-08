@@ -1,5 +1,14 @@
 # Handoff summary
 
+## Latest delivered slice — collapsed research steps
+
+- Default tool-execution steps now show only step number and a specific readable title.
+- Native expansion restores the previous detailed card and actions.
+- Implemented in commit `74a8d37` on `codex/agent-step-collapse`.
+- Deployed to `/opt/serbia-poc-ui` and verified.
+- Rollback backup: `/opt/serbia-poc-ui.backup-agent-steps-20260808T142346Z`.
+- Deployment evidence: `checkpoint-002.md`.
+
 ## Completed
 
 - Inventoried all known chat response situations.
@@ -10,9 +19,7 @@
 
 ## Not completed
 
-- No product behavior or code was changed.
-- The proposed contract has not been approved.
-- No implementation plan was created because the product/UX checkpoint is pending.
+- The broader typed response contract and final-answer restructuring remain future work; this delivery intentionally covers only collapsed research steps.
 
 ## Durable documentation
 
@@ -20,5 +27,5 @@ No updates are proposed yet for `docs/product-context.md`, `docs/architecture.md
 
 ## Next step
 
-Review and approve or amend the visible response structure in `capability-brief.md`.
+Optionally review and merge `codex/agent-step-collapse`. Continue the broader response contract only as a separate approved slice.
 
