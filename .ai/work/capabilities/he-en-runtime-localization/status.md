@@ -4,23 +4,23 @@
 Hebrew and English runtime localization
 
 ## Current phase
-Controlled execution — deployment consistency fix deployed
+Controlled execution — Next button visibility fix deployed
 
 ## Overall status
-In progress; MCP locale runtime, target-bank isolation, locale-isolated workstreams, unified staged playback, and header locale/status deployment consistency fix deployed
+In progress; MCP locale runtime, target-bank isolation, locale-isolated workstreams, unified staged playback, header locale/status deployment consistency fix, and Next button visibility fix deployed
 
 ## Who needs to act now
 
 | Role | Status | Required action | Due before |
 |---|---|---|---|
-| Development | Complete for checkpoint 011 | Hand off deployed locale/status fix | Final acceptance |
-| QA | Ready | Review checkpoint 011 production smoke evidence | Final acceptance |
+| Development | Complete for checkpoint 012 | Hand off deployed Next button fix | Final acceptance |
+| QA | Ready | Review checkpoint 012 production smoke evidence | Final acceptance |
 | Architecture/Product | Approved by execution request | Locale-keyed runtime implemented | Complete for Section 1 design |
 | UX | Pending | Review consolidated bilingual UI | Slice 3 acceptance |
 | Product | Pending | Review behavior at checkpoints | Final acceptance |
 
 ## Latest change since previous review
-Checkpoint 011 is deployed: the VM now has matching merged `main` frontend assets for the header language toggle and system status indicators. The regression was deployment drift: newer indicator markup was deployed without the matching status-rendering JS/styles. Production checks verified `renderSystemStatuses`, `datasetStatusIndicator`, `status-indicator` styles, compact `E`/`ע` language slider markup, and active UI service.
+Checkpoint 012 is deployed: the frontend no longer tries to auto-create the staged baseline during page-load playback fetch. It stores the API payload and renders Next from top-level `next_stage` when no run exists. Production checks verified both Hebrew and English `/api/playback` responses expose the first staged timeframe and deployed `index.html` references `app.js?v=142`.
 
 ## Current blockers
 None for checkpoint 010.
@@ -36,7 +36,7 @@ Final bilingual acceptance review / next localization slice.
 - Developer review: `developer-review.md`
 - QA review: `qa-review.md`
 - Execution plan: `execution-plan.md`
-- Latest checkpoint: `checkpoint-011.md`
+- Latest checkpoint: `checkpoint-012.md`
 - Handoff: `handoff-summary.md`
 
 ## Gate checklist

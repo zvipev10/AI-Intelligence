@@ -2697,9 +2697,6 @@ async function fetchInvestigationPlayback() {
   );
   const payload = await response.json();
   if (!response.ok) throw new Error(payload.error || activeLocaleText("טעינת מצב הניגון נכשלה", "Failed to load playback state"));
-  if (!payload?.run && payload?.next_stage) {
-    return initializeStagedPlayback();
-  }
   state.investigationPlayback = payload;
   renderInvestigationPlayback();
   if (payload?.run?.reevaluation?.status === "running") {
