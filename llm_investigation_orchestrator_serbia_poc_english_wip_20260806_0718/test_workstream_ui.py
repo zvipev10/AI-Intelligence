@@ -62,8 +62,8 @@ class WorkstreamUiTests(unittest.TestCase):
         self.assertIn("updated_at_utc", self.app)
         self.assertIn("workstream-new-badge", self.app)
 
-    def test_workstream_rail_is_only_visible_in_real_time(self):
-        self.assertIn('state.investigationPlayback?.mode === "real_time"', self.app)
+    def test_workstream_rail_is_visible_for_active_workstreams(self):
+        self.assertNotIn('state.investigationPlayback?.mode === "real_time"', self.app)
         self.assertIn("workstreamRail.hidden = !visible", self.app)
 
     def test_tracking_option_is_only_visible_for_moshe(self):
@@ -102,10 +102,9 @@ class WorkstreamUiTests(unittest.TestCase):
         self.assertIn('id="playbackNextButton"', self.index)
         self.assertIn('class="playback-header-button"', self.index)
         self.assertIn('id="intelligenceModeSelect"', self.index)
-        self.assertIn('value="historical"', self.index)
-        self.assertIn('data-i18n-text-he="מידע היסטורי"', self.index)
-        self.assertIn('value="real_time"', self.index)
-        self.assertIn('data-i18n-text-he="זמן אמת"', self.index)
+        self.assertNotIn('value="historical"', self.index)
+        self.assertNotIn('value="real_time"', self.index)
+        self.assertIn('data-i18n-text-he="ניגון מדורג"', self.index)
         self.assertIn('id="intelligencePeriod"', self.index)
         self.assertIn("/api/playback/next", self.app)
         self.assertIn("/api/playback/mode", self.app)
@@ -113,7 +112,7 @@ class WorkstreamUiTests(unittest.TestCase):
         self.assertIn("advanceInvestigationPlayback", self.app)
         self.assertIn("changeIntelligenceMode", self.app)
         self.assertNotIn("initializeHistoricalPlayback", self.app)
-        self.assertIn('state.investigationPlayback?.mode !== "real_time"', self.app)
+        self.assertNotIn('state.investigationPlayback?.mode !== "real_time"', self.app)
         self.assertIn("reevaluation?.assessment?.answer", self.app)
         self.assertIn("appendMoshePlaybackAssessment", self.app)
         self.assertIn("buildTypedResultLayers(result)", self.app)

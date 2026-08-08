@@ -319,13 +319,45 @@ def build_ui_location_layers(events: list[dict[str, Any]], entity_presentations:
 
 
 def ui_layer_data(locale: str = "he") -> tuple[list[dict[str, Any]], dict[str, dict[str, Any]], dict[str, dict[str, Any]]]:
-    events = load_ui_events(locale)
+    events = visible_ui_events(locale)
     entities = build_ui_entity_layers(events, locale)
     locations = build_ui_location_layers(events, entities, locale)
     for event in events:
         entity = entities.get(event.get("entity_id") or "", {})
         event["entity_name"] = entity.get("canonical_name") or event.get("entity_id") or ""
     return events, entities, locations
+
+
+def active_playback_timeframe() -> dict | None:
+    policy = load_playback_visibility(SCENARIO_RUNS_DIR) or {}
+    if not policy.get("active"):
+        return None
+    timeframe = policy.get("visible_timeframe")
+    if not isinstance(timeframe, dict):
+        return None
+    start = parse_utc(timeframe.get("from"))
+    end = parse_utc(timeframe.get("to"))
+    if start is None or end is None or start >= end:
+        return None
+    return {
+        "from": timeframe.get("from"),
+        "to": timeframe.get("to"),
+        "_from": start,
+        "_to": end,
+    }
+
+
+def visible_ui_events(locale: str = "he") -> list[dict[str, Any]]:
+    events = load_ui_events(locale)
+    timeframe = active_playback_timeframe()
+    if timeframe is None:
+        return events
+    visible: list[dict[str, Any]] = []
+    for event in events:
+        timestamp = parse_utc(event.get("timestamp_utc"))
+        if timestamp is not None and timeframe["_from"] <= timestamp < timeframe["_to"]:
+            visible.append(event)
+    return visible
 
 
 def load_persisted_attack_targets(
@@ -1740,7 +1772,7 @@ def investigation_playback_status(investigation_id: str, locale: str = "he") -> 
     if not INVESTIGATION_ID_PATTERN.fullmatch(investigation_id or ""):
         raise ValueError("Invalid investigation id")
     policy = load_playback_visibility(SCENARIO_RUNS_DIR) or {}
-    mode = policy.get("mode") if policy.get("mode") in {"historical", "real_time"} else "historical"
+    mode = "real_time"
     event_times = sorted(
         str(item.get("timestamp_utc") or "")
         for item in load_ui_events()
@@ -1754,8 +1786,7 @@ def investigation_playback_status(investigation_id: str, locale: str = "he") -> 
     }
     run = find_investigation_run(SCENARIO_RUNS_DIR, investigation_id, locale)
     if run is not None:
-        if mode == "real_time":
-            ensure_current_playback_reevaluation(run)
+        ensure_current_playback_reevaluation(run)
         run = load_scenario_run(SCENARIO_RUNS_DIR, run["run_id"]) or run
         return {
             "investigation_id": investigation_id,
@@ -4119,77 +4150,54 @@ class Handler(SimpleHTTPRequestHandler):
                     raise ValueError("Invalid playback mode payload")
                 locale = normalize_locale(request.get("locale"))
                 investigation_id = str(request.get("investigation_id") or "").strip()
-                mode = str(request.get("mode") or "").strip()
+                mode = "real_time"
                 reset = request.get("reset", False)
                 if not INVESTIGATION_ID_PATTERN.fullmatch(investigation_id):
                     raise ValueError("Invalid investigation id")
-                if mode not in {"historical", "real_time"}:
-                    raise ValueError("Invalid intelligence mode")
                 if not isinstance(reset, bool):
                     raise ValueError("Invalid playback reset flag")
-                if mode == "historical":
-                    if reset:
-                        run = find_investigation_run(
-                            SCENARIO_RUNS_DIR, investigation_id, locale
-                        )
-                        if run is not None:
-                            transition_scenario_run(
-                                SCENARIO_MANIFESTS_DIR,
-                                SCENARIO_RUNS_DIR,
-                                run["run_id"],
-                                {
-                                    "expected_revision": int(run["revision"]),
-                                    "idempotency_key": (
-                                        f"app-refresh-reset-{investigation_id}-"
-                                        f"{int(time.time() * 1000)}"
-                                    ),
-                                },
-                                "reset",
-                            )
-                    write_historical_visibility(SCENARIO_RUNS_DIR)
-                else:
-                    run = find_investigation_run(SCENARIO_RUNS_DIR, investigation_id, locale)
-                    if run is None:
-                        manifest = prepared_playback_manifest()
-                        if manifest is None:
-                            raise LookupError("Prepared scenario not found")
-                        run, _ = start_scenario_run(
-                            SCENARIO_MANIFESTS_DIR,
-                            SCENARIO_RUNS_DIR,
-                            {
-                                "scenario_id": manifest["scenario_id"],
-                                "version": manifest["version"],
-                                "investigation_id": investigation_id,
-                                "locale": locale,
-                                "idempotency_key": (
-                                    f"mode-real-time-{investigation_id}-"
-                                    f"{int(time.time() * 1000)}"
-                                ),
-                            },
-                            lambda workstream_id, investigation_id: scenario_workstream_exists(
-                                workstream_id, investigation_id, locale
+                run = find_investigation_run(SCENARIO_RUNS_DIR, investigation_id, locale)
+                if run is None:
+                    manifest = prepared_playback_manifest()
+                    if manifest is None:
+                        raise LookupError("Prepared scenario not found")
+                    run, _ = start_scenario_run(
+                        SCENARIO_MANIFESTS_DIR,
+                        SCENARIO_RUNS_DIR,
+                        {
+                            "scenario_id": manifest["scenario_id"],
+                            "version": manifest["version"],
+                            "investigation_id": investigation_id,
+                            "locale": locale,
+                            "idempotency_key": (
+                                f"mode-real-time-{investigation_id}-"
+                                f"{int(time.time() * 1000)}"
                             ),
-                        )
-                    elif reset:
-                        run, _ = transition_scenario_run(
-                            SCENARIO_MANIFESTS_DIR,
-                            SCENARIO_RUNS_DIR,
-                            run["run_id"],
-                            {
-                                "expected_revision": int(run["revision"]),
-                                "idempotency_key": (
-                                    f"app-refresh-reset-{investigation_id}-"
-                                    f"{int(time.time() * 1000)}"
-                                ),
-                            },
-                            "reset",
-                        )
-                        if run is None:
-                            raise LookupError("Scenario run not found")
-                    current = load_scenario_run(SCENARIO_RUNS_DIR, run["run_id"])
-                    if current is None:
+                        },
+                        lambda workstream_id, investigation_id: scenario_workstream_exists(
+                            workstream_id, investigation_id, locale
+                        ),
+                    )
+                elif reset:
+                    run, _ = transition_scenario_run(
+                        SCENARIO_MANIFESTS_DIR,
+                        SCENARIO_RUNS_DIR,
+                        run["run_id"],
+                        {
+                            "expected_revision": int(run["revision"]),
+                            "idempotency_key": (
+                                f"app-refresh-reset-{investigation_id}-"
+                                f"{int(time.time() * 1000)}"
+                            ),
+                        },
+                        "reset",
+                    )
+                    if run is None:
                         raise LookupError("Scenario run not found")
-                    write_playback_visibility(SCENARIO_RUNS_DIR, current)
+                current = load_scenario_run(SCENARIO_RUNS_DIR, run["run_id"])
+                if current is None:
+                    raise LookupError("Scenario run not found")
+                write_playback_visibility(SCENARIO_RUNS_DIR, current)
                 self.send_json(200, investigation_playback_status(investigation_id, locale))
             except PlaybackConflictError as exc:
                 self.send_json(409, {
@@ -4215,11 +4223,9 @@ class Handler(SimpleHTTPRequestHandler):
                 investigation_id = str(request.get("investigation_id") or "").strip()
                 if not INVESTIGATION_ID_PATTERN.fullmatch(investigation_id):
                     raise ValueError("Invalid investigation id")
-                policy = load_playback_visibility(SCENARIO_RUNS_DIR) or {}
-                if policy.get("mode") != "real_time" or not policy.get("active"):
-                    raise ValueError("Real-time intelligence mode is not active")
                 existing = find_investigation_run(SCENARIO_RUNS_DIR, investigation_id, locale)
                 claimed_revision = None
+                baseline_created = False
                 if existing is None:
                     manifest = prepared_playback_manifest()
                     if manifest is None:
@@ -4245,6 +4251,7 @@ class Handler(SimpleHTTPRequestHandler):
                         "to_exclusive": True,
                     }
                     claimed_revision = int(run["revision"])
+                    baseline_created = True
                 elif (
                     existing.get("transition_history")
                     and existing["transition_history"][0].get("idempotency_key")
@@ -4266,6 +4273,7 @@ class Handler(SimpleHTTPRequestHandler):
                         "to_exclusive": True,
                     }
                     claimed_revision = 1
+                    baseline_created = True
                 else:
                     run, _ = transition_scenario_run(
                         SCENARIO_MANIFESTS_DIR,
@@ -4288,7 +4296,7 @@ class Handler(SimpleHTTPRequestHandler):
                     raise LookupError("Scenario run not found")
                 write_playback_visibility(SCENARIO_RUNS_DIR, current)
                 claimed = False
-                if playback_has_active_workstreams(run):
+                if not baseline_created and playback_has_active_workstreams(run):
                     _, claimed = claim_reevaluation(
                         SCENARIO_RUNS_DIR, run["run_id"], claimed_revision
                     )
@@ -4301,7 +4309,11 @@ class Handler(SimpleHTTPRequestHandler):
                     "run": run_with_next_stage(SCENARIO_MANIFESTS_DIR, current),
                     "released_timeframe": released_timeframe,
                     "moshe_triggered": claimed,
-                    "moshe_skipped_reason": None if claimed else "no_active_workstreams",
+                    "moshe_skipped_reason": (
+                        None if claimed
+                        else "initial_baseline" if baseline_created
+                        else "no_active_workstreams"
+                    ),
                 })
             except PlaybackConflictError as exc:
                 self.send_json(409, {

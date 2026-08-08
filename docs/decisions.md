@@ -143,3 +143,25 @@ Hebrew remains the compatibility default for omitted locale values. English work
 
 Follow-ups:
 Deploy the workstream slice to production and run bilingual smoke tests for physical-store separation, English rejection, and playback locale routing.
+
+### 2026-08-08 — Use one staged playback flow with cumulative visible timeframe
+
+Decision:
+Remove the user-facing distinction between historical and real-time playback modes. Use one staged playback flow where the initial baseline exposes data from the dataset beginning through the first slice boundary, and subsequent Next actions extend the cumulative `visible_timeframe`. Moshe reevaluation is skipped for baseline creation and can run only after a later slice releases new data and active workstreams exist.
+
+Context:
+The historical mode and real-time mode created confusing UX and different mental models. Product wanted the initial state to behave like historical today while keeping staged progression and future reevaluation behavior.
+
+Rationale:
+A large initial slice preserves the analyst's ability to ask broad historical questions at the beginning of a scenario while keeping one consistent playback mechanism for UI, MCP, and data-layer visibility. Deferring Moshe until the next slice prevents an unnecessary reevaluation of the baseline state.
+
+Alternatives considered:
+- Keep separate historical and real-time modes.
+- Start real-time playback only at the first narrow scenario slice.
+- Trigger Moshe immediately when the baseline is created.
+
+Impact:
+Playback controls show timeframe and Next without a mode selector. UI/data-layer rows and MCP tools must respect the active `visible_timeframe`. Existing API clients that send `mode: "historical"` are treated as compatibility callers and routed to the staged flow.
+
+Follow-ups:
+Run production smoke with active playback visibility restoration, then complete UX acceptance for the simplified staged control.
