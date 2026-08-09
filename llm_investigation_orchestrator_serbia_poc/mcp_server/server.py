@@ -2984,7 +2984,7 @@ TOOLS = [
     {
         "name": "prepare_workstream_creation",
         "title": "Prepare a workstream for creation",
-        "description": "Use only in the dedicated workstream-creation conversation after title, objective, and Moshe's responsibility are clear. If any are unclear, ask the user instead of calling this tool. The app server persists the returned handoff immediately; there is no separate approval step.",
+        "description": "Use only in the dedicated workstream-creation conversation after resolving every supplied TGT/REC identifier and deriving title, objective, and Moshe's responsibility from verified target/evidence context. Do not ask the user for fields that can be inferred. Ask at most one focused question only after lookup when a blocking ambiguity remains. The app server persists the returned handoff immediately; there is no separate approval step.",
         "inputSchema": {
             "type": "object",
             "properties": {

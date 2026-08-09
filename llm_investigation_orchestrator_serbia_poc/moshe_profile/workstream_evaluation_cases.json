@@ -30,5 +30,40 @@
       "@משה עכשיו אפשר לשמור"
     ],
     "expected": ["proposal_without_persistence", "corrected_proposal_without_persistence", "create_after_distinct_confirmation"]
+  },
+  {
+    "name": "target_seeded_creation_infers_fields",
+    "turns": [
+      "@משה צור מעקב אחר TGT-F2CA47CB9859"
+    ],
+    "expected": ["resolve_target_before_question", "infer_creation_fields", "create_without_metadata_question"]
+  },
+  {
+    "name": "multiple_targets_are_all_resolved",
+    "turns": [
+      "@משה צור מעקב אחר TGT-D4DC7A7EBE02 וגם TGT-F2CA47CB9859"
+    ],
+    "expected": ["resolve_all_targets_before_question", "infer_coherent_scope_or_one_focused_question"]
+  },
+  {
+    "name": "raw_record_creation_discovers_target_context",
+    "turns": [
+      "@משה צור מעקב אחר REC-V2-000001"
+    ],
+    "expected": ["search_existing_target_membership", "prepare_candidate_context_without_target_persistence", "infer_creation_fields"]
+  },
+  {
+    "name": "mixed_partial_resolution_is_explicit",
+    "turns": [
+      "@משה צור מעקב אחר TGT-D4DC7A7EBE02, REC-V2-000001 וגם TGT-NOT-FOUND"
+    ],
+    "expected": ["resolve_all_identifiers_before_question", "name_unresolved_identifier", "one_focused_question_without_persistence"]
+  },
+  {
+    "name": "authorized_playback_keeps_target_write_contract",
+    "turns": [
+      "@משה עדכן את המעקב מתוך פרוסת ה-playback החדשה"
+    ],
+    "expected": ["playback_update_without_extra_confirmation", "eligible_target_create_or_update_allowed"]
   }
 ]

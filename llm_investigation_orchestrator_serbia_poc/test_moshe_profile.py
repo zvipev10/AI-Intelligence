@@ -69,6 +69,28 @@ class MosheProfileTests(unittest.TestCase):
         self.assertIn("evidence_layers", soul)
         self.assertIn("אל תכתוב שורת טקסט חופשי `מזהי ראיות:`", soul)
 
+    def test_workstream_creation_is_evidence_first_and_preserves_playback_boundary(self):
+        soul = (ROOT / "moshe_profile" / "SOUL.md").read_text(encoding="utf-8")
+        for marker in (
+            'גישת "חקור תחילה"', "get_target_candidate", "search_target_candidates",
+            "prepare_target_candidate", "אל תבקש מהמשתמש כותרת, מטרה או אחריות",
+            "לכל היותר שאלה אחת", "אין להשתמש ב-`create_target_candidate`",
+            "רק במצב playback שאושר במפורש",
+        ):
+            self.assertIn(marker, soul)
+
+        server_source = (ROOT / "server.py").read_text(encoding="utf-8")
+        for marker in (
+            "ביצירת מעקב חקור תחילה", "אל תבקש מהמשתמש שדות אלה",
+            "prepare_target_candidate משמש לגילוי ולהכנה בלבד",
+            "במצב playback המעקב כבר אושר", "צור או עדכן מועמד מטרה",
+        ):
+            self.assertIn(marker, server_source)
+
+        mcp_source = (ROOT / "mcp_server" / "server.py").read_text(encoding="utf-8")
+        self.assertIn("after resolving every supplied TGT/REC identifier", mcp_source)
+        self.assertIn("Ask at most one focused question only after lookup", mcp_source)
+
     def test_backend_merges_only_selected_agent_endpoint(self):
         base = {
             "remote_host": "127.0.0.1", "remote_port": 8642, "api_key": "secret",
