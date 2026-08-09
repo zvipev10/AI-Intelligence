@@ -57,6 +57,10 @@ An audit of the historical Next-slice reevaluation found that it is present and 
 production. A UI recovery gap prevents an already completed assessment from being rendered after a
 refresh/reopen; see `playback-reevaluation-audit.md`. No playback code was changed in this slice.
 
+Product validated both target corrections on 2026-08-09 and explicitly authorized merging the branch
+to `main`. The capability is accepted; the playback rehydration gap remains a separate follow-up and
+does not block this merge.
+
 ## Suggested durable documentation updates
 
 The evidence-first creation and target-persistence boundary is recorded in `docs/decisions.md`.

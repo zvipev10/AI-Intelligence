@@ -6,30 +6,30 @@ Evidence-first workstream creation
 
 ## Current phase
 
-Phase 5 — corrective target-results and wording validation
+Phase 6 — accepted and merged
 
 ## Overall status
 
-Target-results visibility and target-ID wording corrections deployed; awaiting user validation before merge
+Target-results visibility and target-ID wording corrections accepted by product and merged to `main`
 
 ## Who needs to act now
 
 | Role | Status | Required action | Due before |
 |---|---|---|---|
-| Product | Validation required | Test target-based show/hide results control and target ID wording | Merge approval |
-| Development | Complete | Preserve rollback path until validation | Merge approval |
-| UX | Review required | Confirm target and raw-record controls behave consistently | Product validation |
-| QA/Security | Complete | Regression and bilingual production contract checks passed | Merge approval |
+| Product | Complete | Accepted the deployed target corrections | Complete |
+| Development | Complete | Merged the accepted branch to `main` | Complete |
+| UX | Complete | Target and raw-record presentation behavior accepted | Complete |
+| QA/Security | Complete | Regression and bilingual production contract checks passed | Complete |
 | Architecture/Security | Not independently triggered | Join developer/QA review if a new orchestration guard or permission is proposed | Implementation |
 
 ## Latest change since previous review
 
-The deployed UI renders the shared show/hide-results control for root target references. Target-backed
-workstreams now also persist every target ID in both title and objective.
+Product accepted the deployed show/hide-results correction and target-ID wording invariant and
+authorized merging them to `main`.
 
 ## Current blockers
 
-- Merge is blocked on validation of both target corrections.
+- None for the accepted workstream-creation simplification capability.
 
 ## Current risks
 
@@ -39,8 +39,8 @@ workstreams now also persist every target ID in both title and objective.
 
 ## Next expected artifact
 
-User validation result, followed by merge approval or corrective refinement. The separate playback
-rehydration gap is documented in `playback-reevaluation-audit.md`.
+Address the separate playback completed-assessment rehydration gap documented in
+`playback-reevaluation-audit.md` as a new corrective task if prioritized.
 
 ## Parent issue
 
