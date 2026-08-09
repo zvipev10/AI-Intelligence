@@ -6,17 +6,17 @@ Evidence-first workstream creation
 
 ## Current phase
 
-Phase 5 — corrective target-results validation
+Phase 5 — corrective target-results and wording validation
 
 ## Overall status
 
-Target-results visibility correction deployed; awaiting user validation before merge
+Target-results visibility and target-ID wording corrections deployed; awaiting user validation before merge
 
 ## Who needs to act now
 
 | Role | Status | Required action | Due before |
 |---|---|---|---|
-| Product | Validation required | Test target-based show/hide results control | Merge approval |
+| Product | Validation required | Test target-based show/hide results control and target ID wording | Merge approval |
 | Development | Complete | Preserve rollback path until validation | Merge approval |
 | UX | Review required | Confirm target and raw-record controls behave consistently | Product validation |
 | QA/Security | Complete | Regression and bilingual production contract checks passed | Merge approval |
@@ -24,12 +24,12 @@ Target-results visibility correction deployed; awaiting user validation before m
 
 ## Latest change since previous review
 
-The deployed UI now renders the shared show/hide-results control for root target references as well
-as active artifact indications.
+The deployed UI renders the shared show/hide-results control for root target references. Target-backed
+workstreams now also persist every target ID in both title and objective.
 
 ## Current blockers
 
-- Merge is blocked on validation of the target-results visibility correction.
+- Merge is blocked on validation of both target corrections.
 
 ## Current risks
 
@@ -39,7 +39,8 @@ as active artifact indications.
 
 ## Next expected artifact
 
-User validation result, followed by merge approval or corrective refinement.
+User validation result, followed by merge approval or corrective refinement. The separate playback
+rehydration gap is documented in `playback-reevaluation-audit.md`.
 
 ## Parent issue
 
@@ -63,7 +64,8 @@ Pending remote creation; local draft: `issues/parent-capability.md`.
 - UX review: `ux-review.md`
 - QA review: `qa-review.md`
 - Execution plan: `execution-plan.md`
-- Latest checkpoint: `checkpoint-006-target-results-toggle.md`
+- Latest checkpoint: `checkpoint-007-target-id-wording.md`
+- Playback audit: `playback-reevaluation-audit.md`
 - Handoff: `handoff-summary.md`
 
 ## Gate checklist

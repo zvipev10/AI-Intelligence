@@ -47,6 +47,16 @@ presentation API was already correct; the UI eligibility predicate ignored root 
 rollback backup `/opt/serbia-poc-ui-backups/workstream-target-toggle-20260809T142447Z`. Await explicit
 product approval before merging this correction.
 
+The same correction branch now also guarantees that each target ID appears in both the saved title
+and objective. It is deployed with rollback backup
+`/opt/serbia-poc-ui-backups/workstream-target-wording-20260809T143641Z`; bilingual live smokes passed.
+Checkpoint 007 records the exact workstream IDs and checks. Merge still awaits explicit product
+approval.
+
+An audit of the historical Next-slice reevaluation found that it is present and has completed in
+production. A UI recovery gap prevents an already completed assessment from being rendered after a
+refresh/reopen; see `playback-reevaluation-audit.md`. No playback code was changed in this slice.
+
 ## Suggested durable documentation updates
 
 The evidence-first creation and target-persistence boundary is recorded in `docs/decisions.md`.
