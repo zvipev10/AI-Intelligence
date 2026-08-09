@@ -210,6 +210,23 @@ class WorkstreamApiTests(unittest.TestCase):
         persisted = server.load_workstream(created["workstream_id"])
         self.assertEqual(artifact["artifact_id"], persisted["artifacts"][0]["artifact_id"])
 
+    def test_mixed_creation_links_artifact_to_validated_root_target_without_catalog_row(self):
+        event = {"record_id": "REC-V2-000001", "_canonical_layer_id": "events:report"}
+        with patch.object(server, "resolve_workstream_event", return_value=event), patch.object(
+            server, "resolve_workstream_target", return_value=None
+        ):
+            created = server.apply_workstream_creation("investigation-mixed", {
+                "title": "Mixed tracking",
+                "objective": "Assess the supplied target and indication.",
+                "responsibility": "Corroborate reports.",
+                "target_ids": ["TGT-F2CA47CB9859"],
+                "record_ids": ["REC-V2-000001"],
+            })
+        self.assertEqual(
+            {"kind": "target", "target_id": "TGT-F2CA47CB9859", "label": "TGT-F2CA47CB9859"},
+            created["artifacts"][0]["content"]["subject_reference"],
+        )
+
     def test_rejects_invalid_input_and_cross_participant_assignment(self):
         invalid = self.create_payload()
         invalid["investigation_id"] = "../escape"

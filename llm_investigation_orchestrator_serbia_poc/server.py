@@ -1147,7 +1147,10 @@ def apply_workstream_creation(investigation_id: str, creation: Any) -> dict | No
                 },
             },
             resolve_event=resolve_workstream_event,
-            resolve_target=resolve_workstream_target,
+            resolve_target=lambda target_id: (
+                resolve_workstream_target(target_id)
+                or ({"target_id": target_id, "title": target_id} if target_id in target_ids else None)
+            ),
             now=now,
             id_factory=artifact_id,
         )
