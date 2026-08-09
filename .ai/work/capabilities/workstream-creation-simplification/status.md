@@ -6,30 +6,30 @@ Evidence-first workstream creation
 
 ## Current phase
 
-Phase 6 — panel-selection correction accepted and merged
+Phase 4 — bounded playback instruction correction
 
 ## Overall status
 
-Workstream panel color and automatic-presentation correction accepted by product and merged to `main`
+Bounded Next-slice evidence-discovery instructions tested; deployment pending
 
 ## Who needs to act now
 
 | Role | Status | Required action | Due before |
 |---|---|---|---|
-| Product | Complete | Accepted deployed panel behavior | Complete |
-| Development | Complete | Merged accepted branch to `main` | Complete |
-| UX | Complete | Grey/green semantics and automatic map behavior accepted | Complete |
+| Product | Validation required | Compare Next-slice scope and latency | Merge approval |
+| Development | Complete | Deploy bilingual prompt with rollback | Product validation |
+| UX | Complete | No new UI behavior | Complete |
 | QA/Security | Complete | Focused and broad regression checks passed | Deployment |
 | Architecture/Security | Not independently triggered | Join developer/QA review if a new orchestration guard or permission is proposed | Implementation |
 
 ## Latest change since previous review
 
-Product accepted the deployed grey/green indicators and automatic result presentation and authorized
-merging them to `main`.
+Next-slice instructions are being constrained to exact-window evidence discovery without changing the
+playback data model or execution order.
 
 ## Current blockers
 
-- None for this correction.
+- Merge is blocked on product timing validation; automated checks passed.
 
 ## Current risks
 
@@ -39,7 +39,7 @@ merging them to `main`.
 
 ## Next expected artifact
 
-Address the separate playback completed-assessment rehydration gap if prioritized.
+Checkpoint 009 test and deployment results.
 
 ## Parent issue
 
@@ -63,7 +63,7 @@ Pending remote creation; local draft: `issues/parent-capability.md`.
 - UX review: `ux-review.md`
 - QA review: `qa-review.md`
 - Execution plan: `execution-plan.md`
-- Latest checkpoint: `checkpoint-008-panel-selection.md`
+- Latest checkpoint: `checkpoint-009-bounded-playback-discovery.md`
 - Playback audit: `playback-reevaluation-audit.md`
 - Handoff: `handoff-summary.md`
 

@@ -357,6 +357,20 @@ class ScenarioPlaybackApiTests(unittest.TestCase):
         self.assertEqual(200, status)
         self.assertEqual(2, resumed["run"]["revision"])
 
+    def test_playback_prompt_limits_discovery_to_new_slice(self):
+        prompt = server.build_moshe_playback_prompt(
+            {"workstream_id": "WS-1", "title": "Focused playback"},
+            {"visible_timeframe": {"from": "2026-09-17T02:00:00Z", "to": "2026-09-17T09:00:00Z"}},
+            {"from": "2026-09-17T06:00:00Z", "to": "2026-09-17T09:00:00Z"},
+        )
+
+        self.assertIn("אך ורק", prompt)
+        self.assertIn("לכל היותר חיפוש אירועים מדויק אחד", prompt)
+        self.assertIn("אל תחפש רשומות מוקדמות או מאוחרות יותר", prompt)
+        self.assertIn("semantic_search_events", prompt)
+        self.assertIn("להשוואת הקשר בלבד, לא לגילוי ראיות חדשות", prompt)
+        self.assertIn("לא נמצאו רשומות חדשות ורלוונטיות", prompt)
+
     def test_investigation_next_skips_moshe_without_active_workstreams(self):
         investigation_id = "investigation-without-workstreams"
         status, real_time = self.request("POST", "/api/playback/mode", {

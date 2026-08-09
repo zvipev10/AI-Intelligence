@@ -74,6 +74,11 @@ validation, which was subsequently granted.
 Product validated the panel correction on 2026-08-09 and explicitly authorized merging it to `main`.
 The deployed rollback backup remains available.
 
+Corrective branch `codex/playback-new-slice-instructions` tightens Moshe's Next-slice prompt to exact
+released-window discovery, one exact discovery search, comparison-only cumulative context, and no
+broad historical expansion unless an already identified new record cannot be resolved. This is an
+instruction-only performance correction; snapshot retrieval and parallelism remain follow-ups.
+
 ## Suggested durable documentation updates
 
 The evidence-first creation and target-persistence boundary is recorded in `docs/decisions.md`.

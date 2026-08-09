@@ -3082,6 +3082,25 @@ class HermesClient:
         raise TimeoutError("Hermes investigation exceeded 480 seconds")
 
 
+def build_moshe_playback_prompt(context: dict, run: dict, released_timeframe: dict) -> str:
+    return (
+        "התקדם שלב אחד בתרחיש זמן אמת ועדכן את המעקב הפעיל הבא: "
+        f"{context.get('title') or context['workstream_id']}. "
+        "גלה ראיות חדשות אך ורק מתוך רשומות שחותמת הזמן שלהן נמצאת בחלון המידע החדש; "
+        "אל תחפש רשומות מוקדמות או מאוחרות יותר. בצע לכל היותר חיפוש אירועים מדויק אחד בחלון החדש. "
+        "השתמש בארטיפקט המעקב ובמטרה הקיימת רק כהקשר להשוואה, ואל תגלה מחדש את הראיות ההיסטוריות שלהם. "
+        "אל תפעיל semantic_search_events, aggregate_events, find_actor_history או find_related_events, "
+        "אלא אם נמצאה רשומה חדשה שלא ניתן לפתור בחיפוש ממוקד לפי המזהה שלה. "
+        "אם לא נמצאו רשומות חדשות ורלוונטיות, דווח שהמעקב לא השתנה וסיים ללא הרחבת חיפוש. "
+        "לאחר זיהוי ראיה חדשה ורלוונטית, בדוק כיצד היא משנה את האינדיקציות ואת הערכת המטרה ובצע רק "
+        "את פעולות המעקב הנדרשות. אם הראיות עומדות במדיניות הכשירות, בדוק כפילויות וצור או עדכן "
+        "מועמד מטרה באמצעות כלי בנק המטרות; אין צורך באישור אנליסט נוסף במהלך playback. "
+        f"חלון המידע החדש: {released_timeframe.get('from')} עד {released_timeframe.get('to')}. "
+        f"החלון המצטבר {run['visible_timeframe'].get('from')} עד {run['visible_timeframe'].get('to')} "
+        "ניתן להשוואת הקשר בלבד, לא לגילוי ראיות חדשות."
+    )
+
+
 def run_moshe_playback_reevaluation(run: dict, released_timeframe: dict) -> dict:
     """Run one playback-filtered Moshe assessment for a newly released window."""
     workstream_id = run.get("workstream_id")
@@ -3114,16 +3133,7 @@ def run_moshe_playback_reevaluation(run: dict, released_timeframe: dict) -> dict
     config = load_agent_hermes_config(MOSHE_AGENT_ID)
 
     def assess(context: dict) -> dict:
-        prompt = (
-            "התקדם שלב אחד בתרחיש זמן אמת ועדכן את המעקב הפעיל הבא: "
-            f"{context.get('title') or context['workstream_id']}. "
-            "קלוט את פרוסת המידע החדשה, בדוק כיצד היא משנה את האינדיקציות ואת הערכת המטרה, "
-            "ובצע את פעולות המעקב הנדרשות. אם הראיות עומדות במדיניות הכשירות, בדוק כפילויות "
-            "וצור או עדכן מועמד מטרה באמצעות כלי בנק המטרות; אין צורך באישור אנליסט נוסף במהלך playback. "
-            "השתמש רק במידע הזמין כעת דרך כלי הראיות. "
-            f"חלון המידע החדש: {released_timeframe.get('from')} עד {released_timeframe.get('to')}. "
-            f"חלון מצטבר זמין: {run['visible_timeframe'].get('from')} עד {run['visible_timeframe'].get('to')}."
-        )
+        prompt = build_moshe_playback_prompt(context, run, released_timeframe)
         result = HermesClient(config).investigate(
             prompt,
             [],

@@ -75,6 +75,20 @@ Decision: target IDs are part of the durable title and description contract, not
 Decision: selecting a workstream is an explicit request to present it. Automatic presentation reuses
 the existing workstream presentation endpoint and result-layer contract.
 
+## Corrective slice 7 — bounded Next-slice discovery
+
+1. Tighten the playback prompt so new evidence discovery is restricted to the exact released window.
+2. Permit at most one exact event search for discovery per workstream.
+3. Treat existing artifacts, targets, and the cumulative window as comparison context only.
+4. Prohibit semantic, aggregation, actor-history, and related-event expansion unless a newly released
+   record cannot be resolved by exact identifier.
+5. End without expansion when no relevant new records exist.
+6. Preserve target-bank operations after relevant new evidence has been identified.
+7. Add prompt-contract coverage and deploy bilingually for timing validation.
+
+Decision: this is an instruction-only performance correction. It does not yet guarantee single
+retrieval across workstreams or parallel execution.
+
 ## Rollback
 
 Revert the focused implementation commit. No migration is involved; existing workstreams default to
