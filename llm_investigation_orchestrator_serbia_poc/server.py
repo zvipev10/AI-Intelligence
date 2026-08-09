@@ -1425,6 +1425,12 @@ def workstream_presentation(workstream_id: str) -> dict | None:
         [row for row in target_result[1] if row.get("target_id") in set(target_ids)]
         if target_result is not None else []
     )
+    resolved_target_ids = {str(row.get("target_id") or "") for row in target_rows}
+    target_rows.extend(
+        {"target_id": target_id, "title": target_id}
+        for target_id in target_ids
+        if target_id not in resolved_target_ids
+    )
     if target_rows:
         layers.append({
             "id": f"workstream:{workstream_id}:target",

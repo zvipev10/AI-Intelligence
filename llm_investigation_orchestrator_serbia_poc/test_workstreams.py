@@ -165,6 +165,22 @@ class WorkstreamApiTests(unittest.TestCase):
         self.assertIsNone(result["artifact_revision"])
         self.assertEqual([target], result["requested_result_layers"][0]["rows"])
 
+    def test_root_target_reference_is_presented_when_catalog_row_is_unavailable(self):
+        created = server.apply_workstream_creation("investigation-42", {
+            "title": "Target tracking",
+            "objective": "Track changes.",
+            "responsibility": "Corroborate reports.",
+            "target_ids": ["TGT-F2CA47CB9859"],
+        })
+        with patch.object(server, "load_playback_visibility", return_value={
+            "mode": "real_time", "active": True,
+        }), patch.object(server, "get_ui_layer_rows", return_value=(None, [])):
+            result = server.workstream_presentation(created["workstream_id"])
+        self.assertEqual(
+            [{"target_id": "TGT-F2CA47CB9859", "title": "TGT-F2CA47CB9859"}],
+            result["requested_result_layers"][0]["rows"],
+        )
+
     def test_rejects_invalid_input_and_cross_participant_assignment(self):
         invalid = self.create_payload()
         invalid["investigation_id"] = "../escape"
