@@ -79,6 +79,11 @@ released-window discovery, one exact discovery search, comparison-only cumulativ
 broad historical expansion unless an already identified new record cannot be resolved. This is an
 instruction-only performance correction; snapshot retrieval and parallelism remain follow-ups.
 
+The bilingual prompt is deployed with rollback backup
+`/opt/serbia-poc-ui-backups/playback-new-slice-instructions-20260809T192101Z`. Hebrew and English
+health checks passed. English playback advancement remains blocked by the separately documented
+global-run/locale ownership defect, so the next timing validation must currently use Hebrew.
+
 ## Suggested durable documentation updates
 
 The evidence-first creation and target-persistence boundary is recorded in `docs/decisions.md`.

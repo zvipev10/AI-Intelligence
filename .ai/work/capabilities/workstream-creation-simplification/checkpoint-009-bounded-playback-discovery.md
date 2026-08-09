@@ -21,4 +21,10 @@ historical expansion except for resolving an already identified new record.
 
 ## Publishing
 
-Branch: `codex/playback-new-slice-instructions`. Deployment and merge require product validation.
+Branch: `codex/playback-new-slice-instructions` at `7260b9f`.
+
+The bilingual production server was patched semantically with equivalent Hebrew and English prompts.
+Both locale health checks passed and the UI service is active. Rollback backup:
+`/opt/serbia-poc-ui-backups/playback-new-slice-instructions-20260809T192101Z`.
+
+Merge requires product timing validation.

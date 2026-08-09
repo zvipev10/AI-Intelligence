@@ -10,14 +10,14 @@ Phase 4 — bounded playback instruction correction
 
 ## Overall status
 
-Bounded Next-slice evidence-discovery instructions tested; deployment pending
+Bounded Next-slice evidence-discovery instructions deployed; awaiting timing validation
 
 ## Who needs to act now
 
 | Role | Status | Required action | Due before |
 |---|---|---|---|
 | Product | Validation required | Compare Next-slice scope and latency | Merge approval |
-| Development | Complete | Deploy bilingual prompt with rollback | Product validation |
+| Development | Complete | Preserve rollback and inspect next live timing | Product validation |
 | UX | Complete | No new UI behavior | Complete |
 | QA/Security | Complete | Focused and broad regression checks passed | Deployment |
 | Architecture/Security | Not independently triggered | Join developer/QA review if a new orchestration guard or permission is proposed | Implementation |
@@ -29,7 +29,7 @@ playback data model or execution order.
 
 ## Current blockers
 
-- Merge is blocked on product timing validation; automated checks passed.
+- Merge is blocked on product timing validation; automated and production health checks passed.
 
 ## Current risks
 
@@ -39,7 +39,7 @@ playback data model or execution order.
 
 ## Next expected artifact
 
-Checkpoint 009 test and deployment results.
+Product timing result from the next successful Hebrew playback transition.
 
 ## Parent issue
 
