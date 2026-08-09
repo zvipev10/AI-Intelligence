@@ -6,29 +6,29 @@ Evidence-first workstream creation
 
 ## Current phase
 
-Phase 5 — checkpoint review before deployment
+Phase 5 — deployed product validation
 
 ## Overall status
 
-Main-based implementation complete and published; not deployed
+Deployed from main-based implementation; awaiting user validation before merge
 
 ## Who needs to act now
 
 | Role | Status | Required action | Due before |
 |---|---|---|---|
-| Product | Approved | User requested implementation from `main` | Final acceptance |
-| Development | Complete | Review focused diff | Deployment planning |
-| UX | Ready | Review inferred-field and clarification contracts | Deployment planning |
-| QA/Security | Ready | Review results and known unrelated test failure | Deployment planning |
+| Product | Validation required | Test deployed target/raw-record creation | Merge approval |
+| Development | Complete | Preserve rollback path until validation | Merge approval |
+| UX | Validation required | Review inferred wording and question behavior | Merge approval |
+| QA/Security | Complete | Live target and raw-record smoke passed | Merge approval |
 | Architecture/Security | Not independently triggered | Join developer/QA review if a new orchestration guard or permission is proposed | Implementation |
 
 ## Latest change since previous review
 
-Implemented and published commit `ca49cc2`; 122 UI/backend and 22 focused MCP tests pass.
+Narrow deployment completed; target and raw-record live smokes passed without metadata questions.
 
 ## Current blockers
 
-- Deployment is intentionally pending checkpoint review.
+- Merge is blocked on user product validation.
 
 ## Current risks
 
@@ -38,7 +38,7 @@ Implemented and published commit `ca49cc2`; 122 UI/backend and 22 focused MCP te
 
 ## Next expected artifact
 
-Deployment plan using only the main-based branch and a narrow file list.
+User validation result, then merge or corrective refinement.
 
 ## Parent issue
 
@@ -62,7 +62,7 @@ Pending remote creation; local draft: `issues/parent-capability.md`.
 - UX review: `ux-review.md`
 - QA review: `qa-review.md`
 - Execution plan: `execution-plan.md`
-- Latest checkpoint: `checkpoint-001-main-implementation.md`
+- Latest checkpoint: `checkpoint-002-deployment.md`
 - Handoff: `handoff-summary.md`
 
 ## Gate checklist

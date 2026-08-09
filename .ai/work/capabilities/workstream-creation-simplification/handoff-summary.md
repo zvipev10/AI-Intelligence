@@ -19,7 +19,7 @@ ported from the old workstream branch.
 - Branch: `codex/workstream-simplification-main`
 - Base: `origin/main` at `01c21ff`
 - Implementation: `ca49cc2`
-- Deployment: not performed
+- Deployment: active for user validation; exact rollback is recorded in `checkpoint-002-deployment.md`
 
 ## Assumptions
 
@@ -36,8 +36,8 @@ ported from the old workstream branch.
 
 ## Next step
 
-Review the focused diff and prepare a narrow, hash-guarded deployment from this branch. Do not deploy
-the old `codex/workstream-creation-simplification` branch or its broad legacy deployment script.
+User validates the deployed experience. Merge `codex/workstream-simplification-main` only after explicit
+approval; otherwise refine and redeploy through the same narrow guarded process.
 
 ## Suggested durable documentation updates
 
