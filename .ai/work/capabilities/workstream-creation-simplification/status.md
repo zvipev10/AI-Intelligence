@@ -10,14 +10,14 @@ Phase 4 — corrective panel-selection implementation
 
 ## Overall status
 
-Workstream panel color and automatic-presentation correction implemented; awaiting deployment approval
+Workstream panel color and automatic-presentation correction deployed; awaiting product validation
 
 ## Who needs to act now
 
 | Role | Status | Required action | Due before |
 |---|---|---|---|
 | Product | Validation required | Test panel colors and selection behavior | Deployment/merge approval |
-| Development | Complete | Publish tested branch and preserve deployment rollback path | Product validation |
+| Development | Complete | Preserve deployment rollback path | Product validation |
 | UX | Validation required | Confirm grey/green semantics and automatic map behavior | Product validation |
 | QA/Security | Complete | Focused and broad regression checks passed | Deployment |
 | Architecture/Security | Not independently triggered | Join developer/QA review if a new orchestration guard or permission is proposed | Implementation |
@@ -29,7 +29,7 @@ contract; neutral and unseen colors are being changed to grey and green respecti
 
 ## Current blockers
 
-- Deployment and merge are blocked on product validation; automated checks passed.
+- Merge is blocked on product validation; automated checks and production health passed.
 
 ## Current risks
 
@@ -39,7 +39,7 @@ contract; neutral and unseen colors are being changed to grey and green respecti
 
 ## Next expected artifact
 
-Product approval to deploy the tested branch for live validation.
+Product validation result, followed by merge approval or corrective refinement.
 
 ## Parent issue
 

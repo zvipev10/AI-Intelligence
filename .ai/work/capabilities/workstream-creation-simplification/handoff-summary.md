@@ -64,8 +64,12 @@ does not block this merge.
 Corrective branch `codex/workstream-panel-interaction` changes seen workstream indicators from green
 to grey and unseen updates from blue to green. Selecting a presentable workstream now appends its chat
 summary and automatically loads its result layers, activating the map while keeping time-capable raw
-indications available on the timeline. Checkpoint 008 records the tests. Deployment and merge await
-product approval.
+indications available on the timeline. Checkpoint 008 records the tests.
+
+The correction is now deployed to the bilingual production UI with rollback backup
+`/opt/serbia-poc-ui-backups/workstream-panel-interaction-20260809T163215Z`. Asset cache versions were
+advanced to ensure clients receive the change. Production health passed; merge still awaits product
+validation.
 
 ## Suggested durable documentation updates
 

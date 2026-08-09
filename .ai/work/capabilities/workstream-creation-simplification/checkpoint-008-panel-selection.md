@@ -24,4 +24,10 @@ Implementation complete.
 
 ## Publishing status
 
-Branch: `codex/workstream-panel-interaction`. Deployment and merge require product validation.
+Branch: `codex/workstream-panel-interaction` at `31fb95c`.
+
+The bilingual production UI was patched semantically rather than overwritten. Live cache versions are
+`styles.css?v=133` and `app.js?v=146`; the UI service is active and the Hebrew health check passed.
+Rollback backup: `/opt/serbia-poc-ui-backups/workstream-panel-interaction-20260809T163215Z`.
+
+Merge requires product validation.
