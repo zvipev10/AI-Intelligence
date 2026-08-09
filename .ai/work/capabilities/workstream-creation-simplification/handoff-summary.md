@@ -19,7 +19,8 @@ ported from the old workstream branch.
 - Branch: `codex/workstream-simplification-main`
 - Base: `origin/main` at `01c21ff`
 - Implementation: `ca49cc2`
-- Deployment: active for user validation; exact rollback is recorded in `checkpoint-002-deployment.md`
+- Deployment: accepted after bilingual target and raw-record validation; rollback paths are recorded
+  in checkpoints 002, 004, and 005.
 
 ## Assumptions
 
@@ -36,15 +37,11 @@ ported from the old workstream branch.
 
 ## Next step
 
-The target and raw-record acceptance gaps are corrected and deployed. Resolved existing targets are
-persisted as root-level `target_ids`; verified raw records are persisted as indications in one initial
-active artifact. Hebrew and English live smokes saved `REC-V2-000001` in their artifacts. Low
-confidence no longer blocks an explicitly requested workstream, while target creation remains
-unauthorized outside playback. Await the user's next product test; do not merge until explicitly
-approved.
+Product accepted the target and raw-record behavior and explicitly requested merge to `main`. Publish
+the final capability commit, fast-forward `main`, and push it. Keep the existing production rollback
+backups available; no additional deployment is required because the accepted commits are already live.
 
 ## Suggested durable documentation updates
 
-After live acceptance, record the evidence-first creation policy and ordinary-chat/playback target
-persistence boundary in `docs/product-context.md` and `docs/decisions.md`. No architecture update is
-needed because APIs, schema, permissions, and data flow are unchanged.
+The evidence-first creation and target-persistence boundary is recorded in `docs/decisions.md`.
+`docs/product-context.md` does not exist. No architecture update is needed.

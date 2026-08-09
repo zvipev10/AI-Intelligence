@@ -165,3 +165,34 @@ Playback controls show timeframe and Next without a mode selector. UI/data-layer
 
 Follow-ups:
 Run production smoke with active playback visibility restoration, then complete UX acceptance for the simplified staged control.
+
+### 2026-08-09 — Create workstreams from verified evidence without redundant metadata questions
+
+Decision:
+When a user explicitly requests a workstream from supplied `TGT-*` or `REC-*` identifiers, Moshe
+resolves the identifiers first and infers the title, objective, and responsibility whenever the
+evidence supports them. Resolved existing targets persist as root-level `target_ids`. Verified raw
+records persist as indications in one initial `target_assessment_lead` artifact. Ordinary creation
+does not authorize creating or updating a target candidate.
+
+Context:
+The previous creation flow asked users for metadata that could be derived from the referenced data,
+and early simplification versions used targets and records only as transient inference context.
+
+Rationale:
+The workstream must retain the objects that motivated its creation. Targets are durable subjects of
+the workstream, while raw records are evidence and therefore belong in an assessment artifact.
+Keeping target persistence authorization separate preserves the existing safety boundary.
+
+Alternatives considered:
+- Require users to supply title, objective, and responsibility.
+- Store raw records directly on the workstream root.
+- Automatically create a new target candidate from raw records.
+
+Impact:
+Target-backed and record-backed workstreams can be created in one turn in Hebrew and English. Low
+confidence or missing corroboration may limit target persistence but does not block an explicitly
+requested evidence-tracking workstream.
+
+Follow-ups:
+If multi-target assessment is needed later, revisit the current single-active-artifact-per-type rule.

@@ -6,20 +6,20 @@ Evidence-first workstream creation
 
 ## Current phase
 
-Phase 5 — corrected deployment validation
+Phase 6 — accepted; merge publication in progress
 
 ## Overall status
 
-Target and raw-record persistence corrected and deployed; awaiting user retest before merge
+Accepted by product; ready for final merge publication
 
 ## Who needs to act now
 
 | Role | Status | Required action | Due before |
 |---|---|---|---|
-| Product | Validation required | Retest target-backed and raw-record-backed creation | Merge approval |
-| Development | Complete | Preserve rollback paths until validation | Merge approval |
-| UX | Validation required | Confirm target-reference presentation is sufficient | Merge approval |
-| QA/Security | Complete | Live target and raw-record smoke passed | Merge approval |
+| Product | Complete | Accepted target and raw-record behavior | Complete |
+| Development | Complete | Merge and publish `main` | Complete |
+| UX | Complete | Current artifact model accepted for now | Complete |
+| QA/Security | Complete | Automated and bilingual live validation passed | Complete |
 | Architecture/Security | Not independently triggered | Join developer/QA review if a new orchestration guard or permission is proposed | Implementation |
 
 ## Latest change since previous review
@@ -29,7 +29,7 @@ as indications in an initial artifact in both locales.
 
 ## Current blockers
 
-- Merge is blocked on the user's next product validation.
+- None.
 
 ## Current risks
 
@@ -39,7 +39,7 @@ as indications in an initial artifact in both locales.
 
 ## Next expected artifact
 
-User validation result, followed by merge approval or another corrective checkpoint.
+Merge publication and final handoff.
 
 ## Parent issue
 
@@ -49,11 +49,11 @@ Pending remote creation; local draft: `issues/parent-capability.md`.
 
 | Issue | Role | Purpose | Status | Blocking? |
 |---|---|---|---|---|
-| Pending | Product | Approve capability semantics | Draft | Yes |
-| Pending | Development | Validate tool and orchestration approach | Not started | Yes |
-| Pending | UX | Review inferred-fields and clarification experience | Not started | Yes |
-| Pending | QA/Security | Review tests and protected-write boundary | Not started | Yes |
-| Pending | Planning | Produce execution plan after reviews | Blocked | Yes |
+| Pending remote issue | Product | Approve capability semantics | Complete in artifacts | No |
+| Pending remote issue | Development | Validate tool and orchestration approach | Complete in artifacts | No |
+| Pending remote issue | UX | Review inferred-fields and clarification experience | Complete in artifacts | No |
+| Pending remote issue | QA/Security | Review tests and protected-write boundary | Complete in artifacts | No |
+| Pending remote issue | Planning | Produce execution plan after reviews | Complete in artifacts | No |
 
 ## Artifact links
 
