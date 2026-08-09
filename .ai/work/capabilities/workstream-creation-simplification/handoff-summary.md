@@ -36,8 +36,11 @@ ported from the old workstream branch.
 
 ## Next step
 
-User validates the deployed experience. Merge `codex/workstream-simplification-main` only after explicit
-approval; otherwise refine and redeploy through the same narrow guarded process.
+Product validation found an acceptance-blocking gap: the supplied target is not durably attached to
+either the Hebrew or English workstream. Decide whether seed targets belong at the workstream root or
+in an initial target-assessment artifact, then update the plan, implement, test both locales, and
+redeploy through the same narrow guarded process. Do not merge until the corrected behavior is
+explicitly approved.
 
 ## Suggested durable documentation updates
 
