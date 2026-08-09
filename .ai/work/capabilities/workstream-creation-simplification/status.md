@@ -6,29 +6,29 @@ Evidence-first workstream creation
 
 ## Current phase
 
-Phase 4 — controlled implementation from `origin/main`
+Phase 5 — checkpoint review before deployment
 
 ## Overall status
 
-In progress — main-based implementation
+Main-based implementation complete and published; not deployed
 
 ## Who needs to act now
 
 | Role | Status | Required action | Due before |
 |---|---|---|---|
 | Product | Approved | User requested implementation from `main` | Final acceptance |
-| Development | Ready | Implement the focused instruction slice | Checkpoint review |
-| UX | Ready | Verify inferred-field and clarification contracts | Checkpoint review |
-| QA/Security | Ready | Run focused and broad main regression suites | Checkpoint review |
+| Development | Complete | Review focused diff | Deployment planning |
+| UX | Ready | Review inferred-field and clarification contracts | Deployment planning |
+| QA/Security | Ready | Review results and known unrelated test failure | Deployment planning |
 | Architecture/Security | Not independently triggered | Join developer/QA review if a new orchestration guard or permission is proposed | Implementation |
 
 ## Latest change since previous review
 
-Audited clean `origin/main` baseline `01c21ff`; all supporting tools and workstream contracts exist.
+Implemented and published commit `ca49cc2`; 122 UI/backend and 22 focused MCP tests pass.
 
 ## Current blockers
 
-- No current blocker.
+- Deployment is intentionally pending checkpoint review.
 
 ## Current risks
 
@@ -38,7 +38,7 @@ Audited clean `origin/main` baseline `01c21ff`; all supporting tools and workstr
 
 ## Next expected artifact
 
-Implementation checkpoint from the clean main-based branch.
+Deployment plan using only the main-based branch and a narrow file list.
 
 ## Parent issue
 
@@ -62,8 +62,8 @@ Pending remote creation; local draft: `issues/parent-capability.md`.
 - UX review: `ux-review.md`
 - QA review: `qa-review.md`
 - Execution plan: `execution-plan.md`
-- Latest checkpoint: pending
-- Handoff: pending
+- Latest checkpoint: `checkpoint-001-main-implementation.md`
+- Handoff: `handoff-summary.md`
 
 ## Gate checklist
 
