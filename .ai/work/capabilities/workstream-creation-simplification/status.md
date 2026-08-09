@@ -6,30 +6,30 @@ Evidence-first workstream creation
 
 ## Current phase
 
-Phase 4 — corrective panel-selection implementation
+Phase 6 — panel-selection correction accepted and merged
 
 ## Overall status
 
-Workstream panel color and automatic-presentation correction deployed; awaiting product validation
+Workstream panel color and automatic-presentation correction accepted by product and merged to `main`
 
 ## Who needs to act now
 
 | Role | Status | Required action | Due before |
 |---|---|---|---|
-| Product | Validation required | Test panel colors and selection behavior | Deployment/merge approval |
-| Development | Complete | Preserve deployment rollback path | Product validation |
-| UX | Validation required | Confirm grey/green semantics and automatic map behavior | Product validation |
+| Product | Complete | Accepted deployed panel behavior | Complete |
+| Development | Complete | Merged accepted branch to `main` | Complete |
+| UX | Complete | Grey/green semantics and automatic map behavior accepted | Complete |
 | QA/Security | Complete | Focused and broad regression checks passed | Deployment |
 | Architecture/Security | Not independently triggered | Join developer/QA review if a new orchestration guard or permission is proposed | Implementation |
 
 ## Latest change since previous review
 
-Panel selection now automatically presents the selected workstream through the existing result-layer
-contract; neutral and unseen colors are being changed to grey and green respectively.
+Product accepted the deployed grey/green indicators and automatic result presentation and authorized
+merging them to `main`.
 
 ## Current blockers
 
-- Merge is blocked on product validation; automated checks and production health passed.
+- None for this correction.
 
 ## Current risks
 
@@ -39,7 +39,7 @@ contract; neutral and unseen colors are being changed to grey and green respecti
 
 ## Next expected artifact
 
-Product validation result, followed by merge approval or corrective refinement.
+Address the separate playback completed-assessment rehydration gap if prioritized.
 
 ## Parent issue
 

@@ -69,7 +69,10 @@ indications available on the timeline. Checkpoint 008 records the tests.
 The correction is now deployed to the bilingual production UI with rollback backup
 `/opt/serbia-poc-ui-backups/workstream-panel-interaction-20260809T163215Z`. Asset cache versions were
 advanced to ensure clients receive the change. Production health passed; merge still awaits product
-validation.
+validation, which was subsequently granted.
+
+Product validated the panel correction on 2026-08-09 and explicitly authorized merging it to `main`.
+The deployed rollback backup remains available.
 
 ## Suggested durable documentation updates
 
