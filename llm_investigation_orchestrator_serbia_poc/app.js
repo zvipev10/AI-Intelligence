@@ -2294,8 +2294,20 @@ function workstreamHasNewItems(workstream) {
 
 function markWorkstreamSeen(workstream) {
   if (!workstream?.workstream_id) return;
+  const listedWorkstream = state.workstreams.find(
+    item => item?.workstream_id === workstream.workstream_id
+  );
+  const seenAt = [
+    workstream.updated_at_utc,
+    workstream.created_at_utc,
+    listedWorkstream?.updated_at_utc,
+    listedWorkstream?.created_at_utc,
+  ].reduce((latest, value) => {
+    const timestamp = Date.parse(value || "");
+    return Number.isFinite(timestamp) && timestamp > latest ? timestamp : latest;
+  }, 0);
   state.workstreamSeen[workstreamSeenKey(workstream.workstream_id)] =
-    workstream.updated_at_utc || new Date().toISOString();
+    seenAt ? new Date(seenAt).toISOString() : new Date().toISOString();
   saveWorkstreamSeenState();
 }
 

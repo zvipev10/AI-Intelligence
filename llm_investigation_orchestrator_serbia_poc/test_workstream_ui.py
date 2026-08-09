@@ -61,6 +61,13 @@ class WorkstreamUiTests(unittest.TestCase):
         self.assertIn("updated_at_utc", self.app)
         self.assertIn("workstream-new-badge", self.app)
 
+    def test_opening_workstream_marks_the_latest_listed_version_seen(self):
+        mark_seen = self.app.split("function markWorkstreamSeen(workstream)", 1)[1]
+        mark_seen = mark_seen.split("function workstreamUpdatedLabel", 1)[0]
+        self.assertIn("state.workstreams.find", mark_seen)
+        self.assertIn("listedWorkstream?.updated_at_utc", mark_seen)
+        self.assertIn("new Date(seenAt).toISOString()", mark_seen)
+
     def test_workstream_rail_uses_grey_for_seen_and_green_for_new(self):
         self.assertIn("background: var(--muted)", self.styles)
         self.assertIn(".workstream-new-badge", self.styles)
