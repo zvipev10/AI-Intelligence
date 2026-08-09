@@ -6,29 +6,29 @@ Evidence-first workstream creation
 
 ## Current phase
 
-Phase 4 — controlled execution, Slice 1
+Phase 5 — final review and acceptance
 
 ## Overall status
 
-Implementation validated locally; deployment pending
+Deployed and target-seeded live smoke passed; user acceptance pending
 
 ## Who needs to act now
 
 | Role | Status | Required action | Due before |
 |---|---|---|---|
 | Product | Approved | User authorized deployment on 2026-08-09 | Final acceptance |
-| Development | Ready | Validate deployment contract | Deployment |
-| UX | Ready | Validate the live response behavior | Final acceptance |
-| QA/Security | Ready | Validate services and protected-write contract | Deployment |
+| Development | Complete | Deployment contract passed | Complete |
+| UX | Acceptance pending | Validate inferred wording quality | Final acceptance |
+| QA/Security | Complete | Services and protected-write contract passed | Complete |
 | Architecture/Security | Not independently triggered | Join developer/QA review if a new orchestration guard or permission is proposed | Implementation |
 
 ## Latest change since previous review
 
-Evidence-first instructions, contract tests, and evaluation cases implemented and validated locally.
+Deployment and exact target-seeded live smoke completed successfully.
 
 ## Current blockers
 
-- Deployment verification has not yet completed.
+- No implementation blocker remains; final product wording acceptance is pending.
 
 ## Current risks
 
@@ -38,7 +38,7 @@ Evidence-first instructions, contract tests, and evaluation cases implemented an
 
 ## Next expected artifact
 
-Deployment checkpoint and final handoff.
+User acceptance after optional raw-record live validation.
 
 ## Parent issue
 
@@ -62,8 +62,8 @@ Pending remote creation; local draft: `issues/parent-capability.md`.
 - UX review: `ux-review.md`
 - QA review: `qa-review.md`
 - Execution plan: `execution-plan.md`
-- Latest checkpoint: pending
-- Handoff: pending
+- Latest checkpoint: `checkpoint-001.md`
+- Handoff: `handoff-summary.md`
 
 ## Gate checklist
 
