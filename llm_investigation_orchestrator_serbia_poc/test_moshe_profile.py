@@ -76,6 +76,7 @@ class MosheProfileTests(unittest.TestCase):
             "prepare_target_candidate", "אל תבקש מהמשתמש כותרת, מטרה או אחריות",
             "לכל היותר שאלה אחת", "אין להשתמש ב-`create_target_candidate`",
             "רק במצב playback שאושר במפורש", "אינם סיבה לעצור את יצירת המעקב",
+            "בכותרת ובתיאור של מעקב מבוסס מטרה",
         ):
             self.assertIn(marker, soul)
 

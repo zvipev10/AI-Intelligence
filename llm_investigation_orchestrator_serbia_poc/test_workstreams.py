@@ -143,12 +143,25 @@ class WorkstreamApiTests(unittest.TestCase):
         self.assertEqual("moshe-targets-officer", created["assignments"][0]["owner_id"])
         self.assertEqual("משה", created["participants"][1]["display_name"])
         self.assertEqual(["TGT-F2CA47CB9859"], created["target_ids"])
+        self.assertIn("TGT-F2CA47CB9859", created["title"])
+        self.assertIn("TGT-F2CA47CB9859", created["objective"])
 
         answer = server.workstream_created_answer(created)
         self.assertIn("המעקב נפתח ונשמר בהצלחה.", answer)
         self.assertIn("UAV indications", answer)
         self.assertIn("Corroborate reports and expose gaps.", answer)
         self.assertNotIn("prepare_workstream_creation", answer)
+
+    def test_target_ids_are_not_duplicated_in_existing_workstream_wording(self):
+        created = server.apply_workstream_creation("investigation-labeled", {
+            "title": "Track TGT-F2CA47CB9859",
+            "objective": "Assess TGT-F2CA47CB9859 for changes.",
+            "responsibility": "Corroborate reports.",
+            "target_ids": ["TGT-F2CA47CB9859"],
+            "record_ids": [],
+        })
+        self.assertEqual(1, created["title"].count("TGT-F2CA47CB9859"))
+        self.assertEqual(1, created["objective"].count("TGT-F2CA47CB9859"))
 
     def test_root_targets_are_presented_without_an_assessment_artifact(self):
         created = server.apply_workstream_creation("investigation-42", {

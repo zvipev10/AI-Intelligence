@@ -50,6 +50,16 @@ authorization to create or update a target candidate.
 Decision: target and raw-record workstreams use the same results visibility control and presentation
 endpoint; no parallel target-specific toggle is introduced.
 
+## Corrective slice 5 — target IDs in saved wording
+
+1. Require target-backed creation wording to include every resolved `TGT-*` ID.
+2. Enforce the requirement at persistence time for both title and objective, within existing limits.
+3. Preserve wording that already includes the IDs without duplication.
+4. Cover target-backed, already-labeled, and record-only creation.
+5. Deploy the server and Moshe instruction changes narrowly for bilingual validation.
+
+Decision: target IDs are part of the durable title and description contract, not optional model copy.
+
 ## Rollback
 
 Revert the focused implementation commit. No migration is involved; existing workstreams default to

@@ -954,6 +954,15 @@ def normalize_workstream_text(value: Any, field: str, limit: int, required: bool
     return text
 
 
+def include_workstream_reference_ids(value: str, reference_ids: list[str], limit: int) -> str:
+    """Append missing canonical IDs while preserving the field's existing size contract."""
+    missing = [reference_id for reference_id in reference_ids if reference_id not in value]
+    if not missing:
+        return value
+    suffix = f" · {', '.join(missing)}"
+    return f"{value[:max(0, limit - len(suffix))].rstrip()}{suffix}"[:limit]
+
+
 def normalize_participants(value: Any) -> list[dict]:
     if value is None:
         return []
@@ -1086,6 +1095,14 @@ def apply_workstream_creation(investigation_id: str, creation: Any) -> dict | No
         creation.get("responsibility"), "responsibility", 2000, required=True
     )
     target_ids = creation.get("target_ids") or []
+    if not isinstance(target_ids, list):
+        raise ValueError("target_ids must be an array")
+    target_ids = list(dict.fromkeys(
+        normalize_workstream_text(value, "target_id", 120, required=True)
+        for value in target_ids
+    ))
+    title = include_workstream_reference_ids(title, target_ids, 240)
+    objective = include_workstream_reference_ids(objective, target_ids, 4000)
     record_ids = creation.get("record_ids") or []
     if not isinstance(record_ids, list):
         raise ValueError("record_ids must be an array")
@@ -2853,7 +2870,7 @@ class HermesClient:
                 "ביצירת מעקב חקור תחילה: פתור את כל מזהי TGT ו-REC לפני בקשת מידע. עבור כל TGT קרא ל-get_target_candidate כדי לטעון את פרטיו וראיותיו. "
                 "עבור כל REC קרא תחילה ל-search_target_candidates עם record_id, ואז ל-prepare_target_candidate עם הרשומה כעוגן כדי לגלות ראיות נוספות ולהכין הקשר למועמד חדש ללא שמירה כאשר אין מטרה קיימת מספקת. "
                 "הסק מהמידע המאומת כותרת, מטרת מעקב ואחריות פונקציונלית שלך; אל תבקש מהמשתמש שדות אלה רק משום שלא כתב אותם. "
-                "כאשר ניתן להסיק אותם בבטחה, קרא פעם אחת ל-prepare_workstream_creation, העבר ב-target_ids את כל המטרות הקיימות שנמסרו או התגלו ונפתרו, העבר ב-record_ids את כל רשומות REC המאומתות שסיפק המשתמש, והשלם את יצירת המעקב באותו תור כך שהרשומות יישמרו כאינדיקציות בארטיפקט הראשוני. "
+                "כאשר ניתן להסיק אותם בבטחה, קרא פעם אחת ל-prepare_workstream_creation, כלול את מזהי TGT בכותרת ובתיאור, העבר ב-target_ids את כל המטרות הקיימות שנמסרו או התגלו ונפתרו, העבר ב-record_ids את כל רשומות REC המאומתות שסיפק המשתמש, והשלם את יצירת המעקב באותו תור כך שהרשומות יישמרו כאינדיקציות בארטיפקט הראשוני. "
                 "שאל לכל היותר שאלה אחת קצרה ורק לאחר החיפוש, אם מזהה לא נפתר, קיימות כמה כוונות שונות מהותית, או שהשלמת שדה תחייב המצאת עובדות. "
                 "אם רק חלק מהמזהים נפתרו, ציין את המזהים שלא נפתרו ושאל אם להמשיך עם היתר; אל תשמיט אותם בשקט. "
                 "כאשר המשתמש ביקש במפורש ליצור מעקב ולפחות מזהה אחד נפתר, היעדר חיזוק עצמאי, ביטחון נמוך או היעדר מטרה קיימת אינם סיבה לעצור: צור את המעקב ושמור את רשומות REC המאומתות כאינדיקציות הקשר בארטיפקט הראשוני. מגבלות הביטחון חלות על שמירת מטרה חדשה ולא על מעקב הראיות המבוקש. "
