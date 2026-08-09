@@ -60,6 +60,21 @@ endpoint; no parallel target-specific toggle is introduced.
 
 Decision: target IDs are part of the durable title and description contract, not optional model copy.
 
+## Corrective slice 6 — workstream panel selection
+
+1. Use neutral grey for a seen/unchanged workstream and green for an unseen update.
+2. Preserve the textual `חדש` badge and collapsed-rail color cue.
+3. When a user selects a presentable workstream, load and show its result layers automatically after
+   appending its summary to chat.
+4. Keep the explicit show/hide button operational; automatic selection must never toggle an already
+   visible workstream off.
+5. Activate the map immediately. Event layers remain available in the timeline through their existing
+   capabilities; target-only workstreams have no temporal rows to plot.
+6. Add focused UI regression coverage and run the full app/backend suite before deployment.
+
+Decision: selecting a workstream is an explicit request to present it. Automatic presentation reuses
+the existing workstream presentation endpoint and result-layer contract.
+
 ## Rollback
 
 Revert the focused implementation commit. No migration is involved; existing workstreams default to

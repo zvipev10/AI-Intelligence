@@ -6,30 +6,30 @@ Evidence-first workstream creation
 
 ## Current phase
 
-Phase 6 — accepted and merged
+Phase 4 — corrective panel-selection implementation
 
 ## Overall status
 
-Target-results visibility and target-ID wording corrections accepted by product and merged to `main`
+Workstream panel color and automatic-presentation correction implemented; awaiting deployment approval
 
 ## Who needs to act now
 
 | Role | Status | Required action | Due before |
 |---|---|---|---|
-| Product | Complete | Accepted the deployed target corrections | Complete |
-| Development | Complete | Merged the accepted branch to `main` | Complete |
-| UX | Complete | Target and raw-record presentation behavior accepted | Complete |
-| QA/Security | Complete | Regression and bilingual production contract checks passed | Complete |
+| Product | Validation required | Test panel colors and selection behavior | Deployment/merge approval |
+| Development | Complete | Publish tested branch and preserve deployment rollback path | Product validation |
+| UX | Validation required | Confirm grey/green semantics and automatic map behavior | Product validation |
+| QA/Security | Complete | Focused and broad regression checks passed | Deployment |
 | Architecture/Security | Not independently triggered | Join developer/QA review if a new orchestration guard or permission is proposed | Implementation |
 
 ## Latest change since previous review
 
-Product accepted the deployed show/hide-results correction and target-ID wording invariant and
-authorized merging them to `main`.
+Panel selection now automatically presents the selected workstream through the existing result-layer
+contract; neutral and unseen colors are being changed to grey and green respectively.
 
 ## Current blockers
 
-- None for the accepted workstream-creation simplification capability.
+- Deployment and merge are blocked on product validation; automated checks passed.
 
 ## Current risks
 
@@ -39,8 +39,7 @@ authorized merging them to `main`.
 
 ## Next expected artifact
 
-Address the separate playback completed-assessment rehydration gap documented in
-`playback-reevaluation-audit.md` as a new corrective task if prioritized.
+Product approval to deploy the tested branch for live validation.
 
 ## Parent issue
 
@@ -64,7 +63,7 @@ Pending remote creation; local draft: `issues/parent-capability.md`.
 - UX review: `ux-review.md`
 - QA review: `qa-review.md`
 - Execution plan: `execution-plan.md`
-- Latest checkpoint: `checkpoint-007-target-id-wording.md`
+- Latest checkpoint: `checkpoint-008-panel-selection.md`
 - Playback audit: `playback-reevaluation-audit.md`
 - Handoff: `handoff-summary.md`
 

@@ -61,6 +61,13 @@ class WorkstreamUiTests(unittest.TestCase):
         self.assertIn("updated_at_utc", self.app)
         self.assertIn("workstream-new-badge", self.app)
 
+    def test_workstream_rail_uses_grey_for_seen_and_green_for_new(self):
+        self.assertIn("background: var(--muted)", self.styles)
+        self.assertIn(".workstream-new-badge", self.styles)
+        self.assertIn("color: var(--green)", self.styles)
+        self.assertIn(".workstream-rail-card.has-new", self.styles)
+        self.assertIn("rgba(129,201,149,.38)", self.styles)
+
     def test_workstream_rail_is_only_visible_in_real_time(self):
         self.assertIn('state.investigationPlayback?.mode === "real_time"', self.app)
         self.assertIn("workstreamRail.hidden = !visible", self.app)
@@ -99,6 +106,14 @@ class WorkstreamUiTests(unittest.TestCase):
         self.assertIn("Array.isArray(workstream.target_ids)", self.app)
         self.assertIn("targetIds.some", self.app)
         self.assertIn("artifact.content?.indications", self.app)
+
+    def test_selecting_workstream_automatically_shows_results(self):
+        self.assertIn("async function showWorkstreamResultVisibility(workstreamId, btn)", self.app)
+        show_update = self.app.split("async function showWorkstreamUpdate(workstreamId)", 1)[1]
+        show_update = show_update.split("async function archiveWorkstreamFromChat", 1)[0]
+        self.assertIn("appendWorkstreamUpdate(workstream)", show_update)
+        self.assertIn("await showWorkstreamResultVisibility(", show_update)
+        self.assertIn('activateView("map", { reason: "תוצאות המעקב" })', self.app)
 
     def test_investigation_playback_control_is_visible_in_upper_bar(self):
         self.assertIn('id="playbackNextButton"', self.index)

@@ -61,6 +61,12 @@ Product validated both target corrections on 2026-08-09 and explicitly authorize
 to `main`. The capability is accepted; the playback rehydration gap remains a separate follow-up and
 does not block this merge.
 
+Corrective branch `codex/workstream-panel-interaction` changes seen workstream indicators from green
+to grey and unseen updates from blue to green. Selecting a presentable workstream now appends its chat
+summary and automatically loads its result layers, activating the map while keeping time-capable raw
+indications available on the timeline. Checkpoint 008 records the tests. Deployment and merge await
+product approval.
+
 ## Suggested durable documentation updates
 
 The evidence-first creation and target-persistence boundary is recorded in `docs/decisions.md`.

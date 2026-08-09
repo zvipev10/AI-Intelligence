@@ -2692,6 +2692,11 @@ async function toggleWorkstreamResultVisibility(workstreamId, btn) {
     renderAllViews();
     return;
   }
+  await showWorkstreamResultVisibility(workstreamId, btn);
+}
+
+async function showWorkstreamResultVisibility(workstreamId, btn) {
+  const sourceId = workstreamResultSourceId(workstreamId);
   if (btn) btn.disabled = true;
   try {
     const response = await fetch(
@@ -2759,6 +2764,7 @@ function appendWorkstreamUpdate(workstream) {
   message.dataset.workstreamUpdateId = workstream.workstream_id;
   const resultsButton = message.querySelector("[data-workstream-results]");
   if (resultsButton) updateSourceVisibilityBtn(resultsButton);
+  return message;
 }
 
 async function showWorkstreamUpdate(workstreamId) {
@@ -2766,7 +2772,13 @@ async function showWorkstreamUpdate(workstreamId) {
     const workstream = await fetchWorkstream(workstreamId);
     markWorkstreamSeen(workstream);
     renderWorkstreamIndicator();
-    appendWorkstreamUpdate(workstream);
+    const message = appendWorkstreamUpdate(workstream);
+    if (workstreamHasPresentation(workstream)) {
+      await showWorkstreamResultVisibility(
+        workstreamId,
+        message.querySelector("[data-workstream-results]")
+      );
+    }
   } catch (error) {
     workstreamMessage(`<p>לא הצלחתי לטעון את עדכון המעקב.</p><div class="answer-callout">${escapeHtml(error.message)}</div>`);
   }

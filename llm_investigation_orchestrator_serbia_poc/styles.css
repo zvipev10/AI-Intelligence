@@ -100,20 +100,20 @@ button { cursor: pointer; }
 .workstream-rail-list { min-height: 0; display: grid; align-content: start; gap: 7px; padding: 8px; overflow-y: auto; scrollbar-width: thin; }
 .workstream-rail-card { position: relative; min-width: 0; width: 100%; display: grid; grid-template-columns: 7px minmax(0, 1fr) auto; align-items: center; gap: 7px; border: 1px solid rgba(146,170,205,.2); border-radius: 8px; background: rgba(255,255,255,.025); color: var(--ink); padding: 9px 8px; text-align: right; cursor: pointer; }
 .workstream-rail-card:hover, .workstream-rail-card:focus-visible { border-color: rgba(88,166,255,.45); background: rgba(88,166,255,.09); outline: none; }
-.workstream-card-state { width: 7px; height: 7px; border-radius: 50%; background: var(--green); box-shadow: 0 0 0 3px rgba(129,201,149,.09); }
+.workstream-card-state { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); box-shadow: 0 0 0 3px rgba(146,170,205,.09); }
 .workstream-card-body { min-width: 0; display: grid; gap: 5px; }
 .workstream-card-body strong { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; line-height: 1.35; }
 .workstream-card-meta { min-width: 0; display: flex; align-items: center; justify-content: space-between; gap: 6px; color: var(--muted); font-size: 9px; }
 .workstream-card-meta time { direction: ltr; white-space: nowrap; }
-.workstream-new-badge { flex: 0 0 auto; padding: 3px 6px; border-radius: 999px; background: rgba(88,166,255,.16); color: var(--blue); font-size: 9px; font-weight: 900; }
-.workstream-rail-card.has-new { border-color: rgba(88,166,255,.38); background: rgba(88,166,255,.07); }
+.workstream-new-badge { flex: 0 0 auto; padding: 3px 6px; border-radius: 999px; background: rgba(129,201,149,.16); color: var(--green); font-size: 9px; font-weight: 900; }
+.workstream-rail-card.has-new { border-color: rgba(129,201,149,.38); background: rgba(129,201,149,.07); }
 .workstream-rail.collapsed .workstream-rail-header { justify-content: center; padding: 0; }
 .workstream-rail.collapsed .workstream-rail-heading { display: none; }
 .workstream-rail.collapsed .workstream-rail-list { padding: 7px 5px; }
 .workstream-rail.collapsed .workstream-rail-card { min-height: 34px; grid-template-columns: 1fr; place-items: center; padding: 6px; }
 .workstream-rail.collapsed .workstream-card-body, .workstream-rail.collapsed .workstream-new-badge { display: none; }
 .workstream-rail.collapsed .workstream-card-state { width: 9px; height: 9px; }
-.workstream-rail.collapsed .workstream-rail-card.has-new .workstream-card-state { background: var(--blue); box-shadow: 0 0 0 3px rgba(88,166,255,.16); }
+.workstream-rail.collapsed .workstream-rail-card.has-new .workstream-card-state { background: var(--green); box-shadow: 0 0 0 3px rgba(129,201,149,.16); }
 .conversation-panel, .result-panel { min-width: 0; min-height: 0; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
 .result-panel { border: 0; border-radius: 0; background: transparent; }
 .conversation-panel { transition: opacity .14s ease, border-color .14s ease; }
