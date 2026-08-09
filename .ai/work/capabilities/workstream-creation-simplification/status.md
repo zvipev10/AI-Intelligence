@@ -6,29 +6,29 @@ Evidence-first workstream creation
 
 ## Current phase
 
-Phase 5 — final review and acceptance
+Phase 4 — corrective implementation planning
 
 ## Overall status
 
-Deployed and target-seeded live smoke passed; user acceptance pending
+Rolled back after old-baseline deployment regression; current production restored
 
 ## Who needs to act now
 
 | Role | Status | Required action | Due before |
 |---|---|---|---|
-| Product | Approved | User authorized deployment on 2026-08-09 | Final acceptance |
-| Development | Complete | Deployment contract passed | Complete |
-| UX | Acceptance pending | Validate inferred wording quality | Final acceptance |
-| QA/Security | Complete | Services and protected-write contract passed | Complete |
+| Product | Approved | Original simplified behavior remains approved | Corrected deployment |
+| Development | Action required | Rebase onto current production and build narrow deploy path | Redeployment |
+| UX | Waiting | Validate after corrected deployment | Final acceptance |
+| QA/Security | Action required | Add current-feature regression checks | Redeployment |
 | Architecture/Security | Not independently triggered | Join developer/QA review if a new orchestration guard or permission is proposed | Implementation |
 
 ## Latest change since previous review
 
-Deployment and exact target-seeded live smoke completed successfully.
+Unsafe old-baseline deployment was diagnosed and rolled back byte-for-byte to the pre-deployment backup.
 
 ## Current blockers
 
-- No implementation blocker remains; final product wording acceptance is pending.
+- Corrected current-baseline implementation and narrow deployment mechanism are required.
 
 ## Current risks
 
@@ -38,7 +38,7 @@ Deployment and exact target-seeded live smoke completed successfully.
 
 ## Next expected artifact
 
-User acceptance after optional raw-record live validation.
+Corrective developer review and revised execution plan.
 
 ## Parent issue
 
@@ -62,7 +62,7 @@ Pending remote creation; local draft: `issues/parent-capability.md`.
 - UX review: `ux-review.md`
 - QA review: `qa-review.md`
 - Execution plan: `execution-plan.md`
-- Latest checkpoint: `checkpoint-001.md`
+- Latest checkpoint: `checkpoint-002-deployment-regression-rollback.md`
 - Handoff: `handoff-summary.md`
 
 ## Gate checklist

@@ -2,8 +2,9 @@
 
 ## Summary
 
-Moshe now uses evidence-first workstream creation. Supplied target and raw-record identifiers are
-resolved before clarification, and Moshe fills required workstream metadata from verified context.
+The first deployment was rolled back after it was found to contain an older complete UI/MCP baseline.
+Current production functionality is restored. The evidence-first change remains implemented only on
+the feature branch and must be rebased onto the current production source before redeployment.
 
 ## Changed files
 
@@ -16,13 +17,14 @@ resolved before clarification, and Moshe fills required workstream metadata from
 
 ## Tests and deployment
 
-29 focused tests passed, syntax and diff checks passed, deployment verification passed, and the exact
-target-seeded example created a fully populated workstream without a metadata questionnaire.
+29 feature-branch tests passed, but they did not cover newer production functionality and were
+therefore insufficient. Rollback verification confirmed exact restoration of managed files, active
+services, and a healthy locale-aware v2.1 endpoint.
 
 ## Publishing status
 
-Implementation commit `37bfa1e` is pushed on `codex/workstream-creation-simplification`. The deployment
-checkpoint and handoff are published in the subsequent documentation commit.
+Implementation commit `37bfa1e` remains pushed on `codex/workstream-creation-simplification` but must
+not be deployed as-is. The rollback incident is recorded in `checkpoint-002-deployment-regression-rollback.md`.
 
 ## Assumptions
 
@@ -31,12 +33,13 @@ target-bank record.
 
 ## Remaining risk
 
-Live validation of a raw-record-seeded creation request remains useful for product acceptance.
+The feature branch is based on an old workstream version. Its broad deployment script can overwrite
+newer UI, localization, classification, and result-presentation functionality.
 
 ## Next step
 
-User validates one raw-record creation request and either approves inferred wording quality or requests
-prompt refinements.
+Rebase the three intended instruction changes onto the current production baseline, add regression
+coverage for current capabilities, and use a narrow hash-guarded deployment path.
 
 ## Suggested durable documentation updates
 
