@@ -36,10 +36,12 @@ ported from the old workstream branch.
 
 ## Next step
 
-The acceptance-blocking gap is corrected and deployed: resolved existing targets are persisted as
-root-level `target_ids` and included in presentation without manufacturing an assessment artifact.
-The Hebrew and English live smokes both saved and presented `TGT-F2CA47CB9859`. Await the user's next
-product test; do not merge until the corrected behavior is explicitly approved.
+The target and raw-record acceptance gaps are corrected and deployed. Resolved existing targets are
+persisted as root-level `target_ids`; verified raw records are persisted as indications in one initial
+active artifact. Hebrew and English live smokes saved `REC-V2-000001` in their artifacts. Low
+confidence no longer blocks an explicitly requested workstream, while target creation remains
+unauthorized outside playback. Await the user's next product test; do not merge until explicitly
+approved.
 
 ## Suggested durable documentation updates
 

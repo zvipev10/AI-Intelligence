@@ -10,13 +10,13 @@ Phase 5 — corrected deployment validation
 
 ## Overall status
 
-Corrected and deployed; awaiting user retest before merge
+Target and raw-record persistence corrected and deployed; awaiting user retest before merge
 
 ## Who needs to act now
 
 | Role | Status | Required action | Due before |
 |---|---|---|---|
-| Product | Validation required | Retest Hebrew and English target-backed creation | Merge approval |
+| Product | Validation required | Retest target-backed and raw-record-backed creation | Merge approval |
 | Development | Complete | Preserve rollback paths until validation | Merge approval |
 | UX | Validation required | Confirm target-reference presentation is sufficient | Merge approval |
 | QA/Security | Complete | Live target and raw-record smoke passed | Merge approval |
@@ -24,7 +24,8 @@ Corrected and deployed; awaiting user retest before merge
 
 ## Latest change since previous review
 
-The corrective deployment persists supplied targets and presents them in both locales.
+The corrective deployment persists supplied targets on the workstream root and supplied raw records
+as indications in an initial artifact in both locales.
 
 ## Current blockers
 
@@ -62,7 +63,7 @@ Pending remote creation; local draft: `issues/parent-capability.md`.
 - UX review: `ux-review.md`
 - QA review: `qa-review.md`
 - Execution plan: `execution-plan.md`
-- Latest checkpoint: `checkpoint-004-target-reference-fix.md`
+- Latest checkpoint: `checkpoint-005-raw-record-artifacts.md`
 - Handoff: `handoff-summary.md`
 
 ## Gate checklist
