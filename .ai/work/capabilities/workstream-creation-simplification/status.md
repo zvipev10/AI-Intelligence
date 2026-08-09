@@ -10,22 +10,22 @@ Phase 5 — corrective target-results validation
 
 ## Overall status
 
-Post-merge UI gap confirmed; correction in progress on a new branch
+Target-results visibility correction deployed; awaiting user validation before merge
 
 ## Who needs to act now
 
 | Role | Status | Required action | Due before |
 |---|---|---|---|
 | Product | Validation required | Test target-based show/hide results control | Merge approval |
-| Development | In progress | Implement and deploy shared visibility eligibility | Product validation |
+| Development | Complete | Preserve rollback path until validation | Merge approval |
 | UX | Review required | Confirm target and raw-record controls behave consistently | Product validation |
-| QA/Security | In progress | Run regression and production smoke | Deployment |
+| QA/Security | Complete | Regression and bilingual production contract checks passed | Merge approval |
 | Architecture/Security | Not independently triggered | Join developer/QA review if a new orchestration guard or permission is proposed | Implementation |
 
 ## Latest change since previous review
 
-The target presentation API is correct, but the UI suppresses the show/hide button when a workstream
-has root targets and no indication artifact.
+The deployed UI now renders the shared show/hide-results control for root target references as well
+as active artifact indications.
 
 ## Current blockers
 
@@ -39,7 +39,7 @@ has root targets and no indication artifact.
 
 ## Next expected artifact
 
-Implementation checkpoint and validation deployment.
+User validation result, followed by merge approval or corrective refinement.
 
 ## Parent issue
 
@@ -63,7 +63,7 @@ Pending remote creation; local draft: `issues/parent-capability.md`.
 - UX review: `ux-review.md`
 - QA review: `qa-review.md`
 - Execution plan: `execution-plan.md`
-- Latest checkpoint: `checkpoint-005-raw-record-artifacts.md`
+- Latest checkpoint: `checkpoint-006-target-results-toggle.md`
 - Handoff: `handoff-summary.md`
 
 ## Gate checklist

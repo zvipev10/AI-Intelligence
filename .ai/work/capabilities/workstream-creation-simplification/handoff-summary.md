@@ -41,6 +41,12 @@ Product accepted the target and raw-record behavior and explicitly requested mer
 the final capability commit, fast-forward `main`, and push it. Keep the existing production rollback
 backups available; no additional deployment is required because the accepted commits are already live.
 
+After that merge, product found that target-only workstreams lacked the visible results toggle. The
+presentation API was already correct; the UI eligibility predicate ignored root `target_ids`. Branch
+`codex/workstream-target-results-toggle` adds root targets to the shared predicate and is deployed with
+rollback backup `/opt/serbia-poc-ui-backups/workstream-target-toggle-20260809T142447Z`. Await explicit
+product approval before merging this correction.
+
 ## Suggested durable documentation updates
 
 The evidence-first creation and target-persistence boundary is recorded in `docs/decisions.md`.
