@@ -6,32 +6,29 @@ Evidence-first workstream creation
 
 ## Current phase
 
-Phase 5 — corrective design after failed product validation
+Phase 5 — corrected deployment validation
 
 ## Overall status
 
-Changes requested: supplied targets are not persisted in created workstreams; merge blocked
+Corrected and deployed; awaiting user retest before merge
 
 ## Who needs to act now
 
 | Role | Status | Required action | Due before |
 |---|---|---|---|
-| Product | Decision required | Choose durable seed-target representation | Corrective implementation |
-| Development | Blocked on product decision | Preserve rollback path and prepare correction | Corrective implementation |
-| UX | Review required | Review how attached targets appear in the workstream | Corrective implementation |
+| Product | Validation required | Retest Hebrew and English target-backed creation | Merge approval |
+| Development | Complete | Preserve rollback paths until validation | Merge approval |
+| UX | Validation required | Confirm target-reference presentation is sufficient | Merge approval |
 | QA/Security | Complete | Live target and raw-record smoke passed | Merge approval |
 | Architecture/Security | Not independently triggered | Join developer/QA review if a new orchestration guard or permission is proposed | Implementation |
 
 ## Latest change since previous review
 
-Product validation found that both Hebrew and English target-backed workstreams omit the supplied
-target from their saved data.
+The corrective deployment persists supplied targets and presents them in both locales.
 
 ## Current blockers
 
-- Merge is blocked because supplied targets are used for inference but not persisted in workstreams.
-- Corrective implementation is blocked on choosing root-level target references versus an initial
-  target-assessment artifact.
+- Merge is blocked on the user's next product validation.
 
 ## Current risks
 
@@ -41,7 +38,7 @@ target from their saved data.
 
 ## Next expected artifact
 
-Corrective design decision and execution-plan update.
+User validation result, followed by merge approval or another corrective checkpoint.
 
 ## Parent issue
 
@@ -65,7 +62,7 @@ Pending remote creation; local draft: `issues/parent-capability.md`.
 - UX review: `ux-review.md`
 - QA review: `qa-review.md`
 - Execution plan: `execution-plan.md`
-- Latest checkpoint: `checkpoint-003-target-reference-gap.md`
+- Latest checkpoint: `checkpoint-004-target-reference-fix.md`
 - Handoff: `handoff-summary.md`
 
 ## Gate checklist

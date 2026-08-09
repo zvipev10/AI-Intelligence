@@ -36,11 +36,10 @@ ported from the old workstream branch.
 
 ## Next step
 
-Product validation found an acceptance-blocking gap: the supplied target is not durably attached to
-either the Hebrew or English workstream. Decide whether seed targets belong at the workstream root or
-in an initial target-assessment artifact, then update the plan, implement, test both locales, and
-redeploy through the same narrow guarded process. Do not merge until the corrected behavior is
-explicitly approved.
+The acceptance-blocking gap is corrected and deployed: resolved existing targets are persisted as
+root-level `target_ids` and included in presentation without manufacturing an assessment artifact.
+The Hebrew and English live smokes both saved and presented `TGT-F2CA47CB9859`. Await the user's next
+product test; do not merge until the corrected behavior is explicitly approved.
 
 ## Suggested durable documentation updates
 
