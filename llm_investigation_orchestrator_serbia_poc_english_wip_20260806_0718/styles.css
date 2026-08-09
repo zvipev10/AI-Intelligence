@@ -466,17 +466,24 @@ th { position: sticky; top: 0; z-index: 1; background: #202530; }
   .thinking-dots i { animation: none; opacity: .65; }
 }
 .activity-list { margin: 0; padding: 0; list-style: none; display: grid; align-content: start; gap: 12px; overflow: visible; }
-.activity-item { position: relative; padding: 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel-2); box-shadow: 0 1px 2px rgba(0,0,0,.18); }
+.activity-item { position: relative; padding: 0; border: 1px solid var(--line); border-radius: 8px; background: var(--panel-2); box-shadow: 0 1px 2px rgba(0,0,0,.18); }
 .activity-item:not(:last-child)::after { content: ""; position: absolute; right: 25px; bottom: -13px; width: 1px; height: 13px; background: var(--line); }
-.activity-card-header { display: flex; align-items: center; gap: 9px; }
+.activity-disclosure { min-width: 0; }
+.activity-card-summary { min-width: 0; display: flex; align-items: center; gap: 9px; padding: 10px 12px; border-radius: 8px; cursor: pointer; list-style: none; user-select: none; }
+.activity-card-summary::-webkit-details-marker { display: none; }
+.activity-card-summary:hover { background: rgba(255,255,255,.035); }
+.activity-card-summary:focus-visible { outline: 2px solid rgba(88,166,255,.45); outline-offset: -2px; }
 .activity-step-number { display: grid; place-items: center; width: 25px; height: 25px; flex: 0 0 25px; border-radius: 50%; background: var(--blue); color: white; font-size: 11px; font-weight: 800; }
-.activity-card-title { min-width: 0; display: grid; gap: 2px; flex: 1; }
-.activity-card-title strong { color: var(--ink); font-size: 12px; }
+.activity-step-title { min-width: 0; flex: 1; overflow: hidden; color: var(--ink); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.activity-expand-icon { flex: 0 0 auto; color: var(--muted); font-size: 19px; transition: transform .16s ease, color .16s ease; }
+.activity-disclosure[open] .activity-expand-icon { transform: rotate(180deg); color: var(--blue); }
+.activity-expanded { padding: 0 12px 12px; }
+.activity-card-meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-top: 9px; border-top: 1px solid var(--line); }
 .activity-tool { color: var(--blue); font-size: 9px; font-weight: 700; direction: ltr; text-align: left; }
 .activity-status { padding: 3px 7px; border-radius: 999px; font-size: 9px; font-weight: 800; }
 .activity-status.success { color: var(--green); background: rgba(129, 201, 149, .12); }
 .activity-status.error { color: var(--red); background: rgba(242, 139, 130, .12); }
-.activity-flow { margin-top: 10px; display: grid; gap: 8px; }
+.activity-flow { margin-top: 9px; display: grid; gap: 8px; }
 .activity-section { padding: 8px 9px; border-radius: 6px; background: #151922; border: 1px solid var(--line); }
 .clue-section { background: var(--yellow-soft); border-color: #554522; }
 .rationale-section { background: var(--blue-soft); border-color: #2e4d72; }

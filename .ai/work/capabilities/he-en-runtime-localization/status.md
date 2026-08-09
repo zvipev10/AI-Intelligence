@@ -4,23 +4,23 @@
 Hebrew and English runtime localization
 
 ## Current phase
-Controlled execution — staged playback title removed
+Controlled execution — collapsed steps and final-result presentation restored
 
 ## Overall status
-In progress; MCP locale runtime, target-bank isolation, locale-isolated workstreams, unified staged playback, header locale/status deployment consistency fix, Next button visibility fix, and title removal deployed
+In progress; MCP locale runtime, target-bank isolation, locale-isolated workstreams, unified staged playback, header locale/status deployment consistency fix, Next button visibility fix, title removal, collapsed step details, and automatic final-result presentation deployed
 
 ## Who needs to act now
 
 | Role | Status | Required action | Due before |
 |---|---|---|---|
-| Development | Complete for checkpoint 013 | Hand off deployed title removal | Final acceptance |
-| QA | Ready | Review checkpoint 013 production smoke evidence | Final acceptance |
+| Development | Complete for checkpoint 014 | Hand off restored collapsed steps and final-result presentation | Final acceptance |
+| QA | Ready | Review checkpoint 014 production smoke evidence and run manual browser smoke | Final acceptance |
 | Architecture/Product | Approved by execution request | Locale-keyed runtime implemented | Complete for Section 1 design |
 | UX | Pending | Review consolidated bilingual UI | Slice 3 acceptance |
 | Product | Pending | Review behavior at checkpoints | Final acceptance |
 
 ## Latest change since previous review
-Checkpoint 013 is deployed: the visible `Staged playback` / `ניגון מדורג` title was removed from the header. The timeframe, Moshe playback status, and Next button remain. Production checks verified the title strings and unused `intelligenceModeSelect` element are absent, public `index.html` references `app.js?v=143`, and the UI service is active.
+Checkpoint 014 is deployed: collapsed investigation-step details and automatic final-result map/timeline presentation were restored from the previously implemented feature branches. Production checks verified the deployed assets contain the disclosure UI, final-result presenter, and updated cache keys.
 
 ## Current blockers
 None for checkpoint 010.
@@ -36,7 +36,7 @@ Final bilingual acceptance review / next localization slice.
 - Developer review: `developer-review.md`
 - QA review: `qa-review.md`
 - Execution plan: `execution-plan.md`
-- Latest checkpoint: `checkpoint-013.md`
+- Latest checkpoint: `checkpoint-014.md`
 - Handoff: `handoff-summary.md`
 
 ## Gate checklist
