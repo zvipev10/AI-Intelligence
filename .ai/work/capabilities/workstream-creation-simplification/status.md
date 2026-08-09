@@ -6,30 +6,30 @@ Evidence-first workstream creation
 
 ## Current phase
 
-Phase 6 — accepted; merge publication in progress
+Phase 5 — corrective target-results validation
 
 ## Overall status
 
-Accepted by product; ready for final merge publication
+Post-merge UI gap confirmed; correction in progress on a new branch
 
 ## Who needs to act now
 
 | Role | Status | Required action | Due before |
 |---|---|---|---|
-| Product | Complete | Accepted target and raw-record behavior | Complete |
-| Development | Complete | Merge and publish `main` | Complete |
-| UX | Complete | Current artifact model accepted for now | Complete |
-| QA/Security | Complete | Automated and bilingual live validation passed | Complete |
+| Product | Validation required | Test target-based show/hide results control | Merge approval |
+| Development | In progress | Implement and deploy shared visibility eligibility | Product validation |
+| UX | Review required | Confirm target and raw-record controls behave consistently | Product validation |
+| QA/Security | In progress | Run regression and production smoke | Deployment |
 | Architecture/Security | Not independently triggered | Join developer/QA review if a new orchestration guard or permission is proposed | Implementation |
 
 ## Latest change since previous review
 
-The corrective deployment persists supplied targets on the workstream root and supplied raw records
-as indications in an initial artifact in both locales.
+The target presentation API is correct, but the UI suppresses the show/hide button when a workstream
+has root targets and no indication artifact.
 
 ## Current blockers
 
-- None.
+- Merge is blocked on validation of the target-results visibility correction.
 
 ## Current risks
 
@@ -39,7 +39,7 @@ as indications in an initial artifact in both locales.
 
 ## Next expected artifact
 
-Merge publication and final handoff.
+Implementation checkpoint and validation deployment.
 
 ## Parent issue
 

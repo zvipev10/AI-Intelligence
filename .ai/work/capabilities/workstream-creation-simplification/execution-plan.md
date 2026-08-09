@@ -40,6 +40,16 @@ governed analytical work and are not synthesized during creation.
 Decision: raw records are evidence indications in an artifact, never workstream-root targets and never
 authorization to create or update a target candidate.
 
+## Corrective slice 4 — target-result visibility control
+
+1. Update the UI presentation predicate so root-level `target_ids` make a workstream presentable.
+2. Preserve the existing raw-record artifact predicate and shared show/hide toggle path.
+3. Add regression coverage for target-only and raw-record-based button eligibility.
+4. Run the UI/backend regression suite and deploy only the tested UI asset with a rollback backup.
+
+Decision: target and raw-record workstreams use the same results visibility control and presentation
+endpoint; no parallel target-specific toggle is introduced.
+
 ## Rollback
 
 Revert the focused implementation commit. No migration is involved; existing workstreams default to

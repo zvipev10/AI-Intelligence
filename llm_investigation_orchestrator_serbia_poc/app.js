@@ -2673,6 +2673,8 @@ function workstreamResultSourceId(workstreamId) {
 }
 
 function workstreamHasPresentation(workstream) {
+  const targetIds = Array.isArray(workstream.target_ids) ? workstream.target_ids : [];
+  if (targetIds.some(targetId => String(targetId || "").trim())) return true;
   const artifacts = Array.isArray(workstream.artifacts) ? workstream.artifacts : [];
   return artifacts.some(artifact =>
     artifact.artifact_type === "target_assessment_lead"

@@ -96,6 +96,9 @@ class WorkstreamUiTests(unittest.TestCase):
         self.assertIn("workstreamResultSourceId", self.app)
         self.assertIn("final-answer-show-btn layers-hidden", self.app)
         self.assertIn('<span class="final-answer-show-label">הצג תוצאות</span>', self.app)
+        self.assertIn("Array.isArray(workstream.target_ids)", self.app)
+        self.assertIn("targetIds.some", self.app)
+        self.assertIn("artifact.content?.indications", self.app)
 
     def test_investigation_playback_control_is_visible_in_upper_bar(self):
         self.assertIn('id="playbackNextButton"', self.index)
