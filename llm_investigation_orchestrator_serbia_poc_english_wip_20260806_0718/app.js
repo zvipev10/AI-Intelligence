@@ -3166,7 +3166,9 @@ const TOOL_LABELS = {
 
 function humanToolLabel(tool) {
   const clean = String(tool || "").replace(/^\d+\.\s*/, "");
-  return TOOL_LABELS[clean] || "Investigation action";
+  if (TOOL_LABELS[clean]) return TOOL_LABELS[clean];
+  const readable = clean.replace(/[_-]+/g, " ").trim();
+  return readable ? readable.charAt(0).toUpperCase() + readable.slice(1) : "Investigation action";
 }
 
 function formatTechnical(technical, fallbackTool) {
@@ -3208,6 +3210,40 @@ function buildFinalQueryContext(result, prompt) {
     result,
     preferredLayer: result?.recommended_view || inferred.view
   };
+}
+
+function resolveFinalResultView(result = {}, layers = []) {
+  const requestedView = layers.find(layer => ["map", "timeline"].includes(layer.preferredView))?.preferredView
+    || result.recommended_view;
+  if (["map", "timeline"].includes(requestedView)) return requestedView;
+  if (layers.some(layer => layer.capabilities?.map)) return "map";
+  if (layers.some(layer => layer.capabilities?.timeline)) return "timeline";
+  return "map";
+}
+
+function presentFinalAgentResult(result, prompt, options = {}) {
+  const typedLayers = buildTypedResultLayers(result);
+  const requestedView = resolveFinalResultView(result, typedLayers);
+  state.queryContext = buildFinalQueryContext(result, prompt);
+  const addedLayers = addResultLayers({
+    sourceId: finalSourceId(result),
+    sourceLabel: result.responding_agent === "moshe" ? activeLocaleText("תשובת משה", "Moshe response") : activeLocaleText("תשובת הסוכן", "Agent response"),
+    preferredView: requestedView,
+    layers: typedLayers
+  });
+  if (options.showSummary) {
+    showResult(
+      activeLocaleText("ממצאי הסוכן", "Agent findings"),
+      localizedRestoreOnlySummary(addedLayers.length)
+    );
+  }
+  activateView(requestedView, {
+    automatic: true,
+    reason: result.view_reason || activeLocaleText("הנתונים נבחרו כתשובה לבקשת המשתמש", "Data selected as the answer to the user's request")
+  });
+  renderAllViews();
+  renderQueryInspector();
+  return addedLayers;
 }
 
 function buildStepQueryContext(step, label) {
@@ -3701,38 +3737,41 @@ function addActivity(tool, detail, result, options = {}) {
   const label = humanToolLabel(cleanTool);
   const queryDetails = stepQueryDetails(stepData, label);
   item.innerHTML = `
-    <div class="activity-card-header">
-      <span class="activity-step-number">${stepNumber}</span>
-      <div class="activity-card-title">
-        <strong>${escapeHtml(label)}</strong>
-        <span class="activity-tool">${escapeHtml(cleanTool)}</span>
+    <details class="activity-disclosure">
+      <summary class="activity-card-summary" aria-label="${escapeHtml(activeLocaleText(`פתח פרטי שלב ${stepNumber}: ${label}`, `Expand step ${stepNumber}: ${label}`))}">
+        <span class="activity-step-number">${stepNumber}</span>
+        <strong class="activity-step-title">${escapeHtml(label)}</strong>
+        <span class="material-symbols-rounded activity-expand-icon" aria-hidden="true">expand_more</span>
+      </summary>
+      <div class="activity-expanded">
+        <div class="activity-card-meta">
+          <span class="activity-tool">${escapeHtml(cleanTool)}</span>
+          <span class="activity-status ${options.isError ? "error" : "success"}">${options.isError ? activeLocaleText("נכשל", "Failed") : activeLocaleText("הושלם", "Completed")}</span>
+        </div>
+        <div class="activity-flow">
+          <section class="activity-section rationale-section">
+            <div class="activity-section-label">${activeLocaleText("ניתוח הסוכן והחלטת הצעד הבא", "Agent analysis and next-step decision")}</div>
+            <p class="activity-rationale">${escapeHtml(bridgeSummary)}</p>
+          </section>
+          <section class="activity-section">
+            <div class="activity-section-label">${activeLocaleText("מה נבדק", "What was checked")}</div>
+            <p class="activity-detail">${escapeHtml(detail)}</p>
+          </section>
+          <section class="activity-section result-section">
+            <div class="activity-section-label">${activeLocaleText("מה חזר", "What came back")}</div>
+            <p class="activity-result">${escapeHtml(result)}</p>
+          </section>
+        </div>
+        ${hasStepData ? `
+          <div class="activity-step-actions">
+            <button type="button" class="step-visibility-btn layers-hidden" data-source-id="${escapeHtml(sourceId)}" title="${escapeHtml(activeLocaleText("הצג תוצאות", "Show results"))}" aria-label="${escapeHtml(activeLocaleText("הצג תוצאות", "Show results"))}" aria-pressed="false">
+              <span class="step-visibility-label">${escapeHtml(activeLocaleText("הצג תוצאות", "Show results"))}</span>
+            </button>
+            <button type="button" class="step-query-btn" title="${escapeHtml(activeLocaleText("הצג שאילתה", "Show query"))}">${activeLocaleText("הצג שאילתה", "Show query")}</button>
+            <button type="button" class="step-continue-btn" title="${escapeHtml(activeLocaleText("המשך מהשלב הזה", "Continue from this step"))}">${activeLocaleText("המשך מכאן", "Continue from here")}</button>
+          </div>` : ""}
       </div>
-      <div class="activity-card-actions">
-        <span class="activity-status ${options.isError ? "error" : "success"}">${options.isError ? activeLocaleText("נכשל", "Failed") : activeLocaleText("הושלם", "Completed")}</span>
-      </div>
-    </div>
-    <div class="activity-flow">
-      <section class="activity-section rationale-section">
-        <div class="activity-section-label">${activeLocaleText("ניתוח הסוכן והחלטת הצעד הבא", "Agent analysis and next-step decision")}</div>
-        <p class="activity-rationale">${escapeHtml(bridgeSummary)}</p>
-      </section>
-      <section class="activity-section">
-        <div class="activity-section-label">${activeLocaleText("מה נבדק", "What was checked")}</div>
-        <p class="activity-detail">${escapeHtml(detail)}</p>
-      </section>
-      <section class="activity-section result-section">
-        <div class="activity-section-label">${activeLocaleText("מה חזר", "What came back")}</div>
-        <p class="activity-result">${escapeHtml(result)}</p>
-      </section>
-    </div>
-    ${hasStepData ? `
-      <div class="activity-step-actions">
-        <button type="button" class="step-visibility-btn layers-hidden" data-source-id="${escapeHtml(sourceId)}" title="${escapeHtml(activeLocaleText("הצג תוצאות", "Show results"))}" aria-label="${escapeHtml(activeLocaleText("הצג תוצאות", "Show results"))}" aria-pressed="false">
-          <span class="step-visibility-label">${escapeHtml(activeLocaleText("הצג תוצאות", "Show results"))}</span>
-        </button>
-        <button type="button" class="step-query-btn" title="${escapeHtml(activeLocaleText("הצג שאילתה", "Show query"))}">${activeLocaleText("הצג שאילתה", "Show query")}</button>
-        <button type="button" class="step-continue-btn" title="${escapeHtml(activeLocaleText("המשך מהשלב הזה", "Continue from this step"))}">${activeLocaleText("המשך מכאן", "Continue from here")}</button>
-      </div>` : ""}`;
+    </details>`;
   if (hasStepData) {
     const visibilityBtn = item.querySelector(".step-visibility-btn");
     visibilityBtn.addEventListener("click", event => {
@@ -4010,21 +4049,7 @@ function applyAgentResult(result, prompt, options = {}) {
   }
 
   if (options.restoreOnly) {
-    state.queryContext = buildFinalQueryContext(result, prompt);
-    const typedLayers = buildTypedResultLayers(result);
-    const requestedView = typedLayers[0]?.preferredView || result.recommended_view || "map";
-    const addedLayers = addResultLayers({
-      sourceId: finalSourceId(result),
-      sourceLabel: result.responding_agent === "moshe" ? activeLocaleText("תשובת משה", "Moshe response") : activeLocaleText("תשובת הסוכן", "Agent response"),
-      preferredView: requestedView,
-      layers: typedLayers
-    });
-    showResult(
-      activeLocaleText("ממצאי הסוכן", "Agent findings"),
-      localizedRestoreOnlySummary(addedLayers.length)
-    );
-    activateView(requestedView, { reason: result.view_reason || activeLocaleText("הנתונים נבחרו כתשובה לבקשת המשתמש", "Data selected as the answer to the user's request") });
-    renderQueryInspector();
+    presentFinalAgentResult(result, prompt, { showSummary: true });
     return;
   }
   if (!options.keepRenderedSteps) renderActivitySteps(result.investigation_steps || [], result);
@@ -4049,6 +4074,7 @@ function applyAgentResult(result, prompt, options = {}) {
   }
 
   finalizeAssistantMessage(result.answer, { result, prompt });
+  presentFinalAgentResult(result, prompt);
   if (buildTypedResultLayers(result).some(layer => layer.kind === "attack_targets")) {
     void refreshOpenAttackTargetCatalogLayer();
   }
