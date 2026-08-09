@@ -137,16 +137,33 @@ class WorkstreamApiTests(unittest.TestCase):
             "title": "UAV indications",
             "objective": "Track indications of a command position.",
             "responsibility": "Corroborate reports and expose gaps.",
+            "target_ids": ["TGT-F2CA47CB9859", "TGT-F2CA47CB9859"],
         })
         self.assertEqual("investigation-42", created["investigation_id"])
         self.assertEqual("moshe-targets-officer", created["assignments"][0]["owner_id"])
         self.assertEqual("משה", created["participants"][1]["display_name"])
+        self.assertEqual(["TGT-F2CA47CB9859"], created["target_ids"])
 
         answer = server.workstream_created_answer(created)
         self.assertIn("המעקב נפתח ונשמר בהצלחה.", answer)
         self.assertIn("UAV indications", answer)
         self.assertIn("Corroborate reports and expose gaps.", answer)
         self.assertNotIn("prepare_workstream_creation", answer)
+
+    def test_root_targets_are_presented_without_an_assessment_artifact(self):
+        created = server.apply_workstream_creation("investigation-42", {
+            "title": "Target tracking",
+            "objective": "Track changes.",
+            "responsibility": "Corroborate reports.",
+            "target_ids": ["TGT-F2CA47CB9859"],
+        })
+        target = {"target_id": "TGT-F2CA47CB9859", "title": "KFOR target"}
+        with patch.object(server, "load_playback_visibility", return_value={
+            "mode": "real_time", "active": True,
+        }), patch.object(server, "get_ui_layer_rows", return_value=(None, [target])):
+            result = server.workstream_presentation(created["workstream_id"])
+        self.assertIsNone(result["artifact_revision"])
+        self.assertEqual([target], result["requested_result_layers"][0]["rows"])
 
     def test_rejects_invalid_input_and_cross_participant_assignment(self):
         invalid = self.create_payload()

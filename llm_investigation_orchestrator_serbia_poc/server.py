@@ -1027,6 +1027,18 @@ def normalize_workstream_request(request: dict, existing: dict | None = None) ->
         request.get("assignments", existing.get("assignments") or []),
         {item["participant_id"] for item in participants},
     )
+    raw_target_ids = request.get("target_ids", existing.get("target_ids") or [])
+    if not isinstance(raw_target_ids, list):
+        raise ValueError("target_ids must be an array")
+    target_ids = []
+    for value in raw_target_ids:
+        target_id = normalize_workstream_text(value, "target_id", 120, required=True)
+        if not target_id.startswith("TGT-"):
+            raise ValueError("Invalid target_id")
+        if target_id not in target_ids:
+            target_ids.append(target_id)
+    if len(target_ids) > 100:
+        raise ValueError("Too many target_ids")
     return {
         "investigation_id": investigation_id,
         "title": title,
@@ -1034,6 +1046,7 @@ def normalize_workstream_request(request: dict, existing: dict | None = None) ->
         "status": status,
         "participants": participants,
         "assignments": assignments,
+        "target_ids": target_ids,
     }
 
 
@@ -1072,10 +1085,12 @@ def apply_workstream_creation(investigation_id: str, creation: Any) -> dict | No
     responsibility = normalize_workstream_text(
         creation.get("responsibility"), "responsibility", 2000, required=True
     )
+    target_ids = creation.get("target_ids") or []
     return create_workstream({
         "investigation_id": investigation_id,
         "title": title,
         "objective": objective,
+        "target_ids": target_ids,
         "participants": [
             {
                 "participant_id": "current-analyst",
@@ -1366,7 +1381,7 @@ def workstream_presentation(workstream_id: str) -> dict | None:
         key=lambda item: (int(item.get("revision") or 0), str(item.get("updated_at_utc") or "")),
         default=None,
     )
-    if artifact is None:
+    if artifact is None and not workstream.get("target_ids"):
         return {
             "workstream_id": workstream_id,
             "title": workstream.get("title"),
@@ -1375,7 +1390,7 @@ def workstream_presentation(workstream_id: str) -> dict | None:
         }
     record_ids = list(dict.fromkeys(
         str(item.get("source_reference", {}).get("record_id") or "").strip()
-        for item in artifact.get("content", {}).get("indications") or []
+        for item in (artifact or {}).get("content", {}).get("indications") or []
         if item.get("state") != "removed"
         and str(item.get("source_reference", {}).get("record_id") or "").strip()
     ))
@@ -1395,7 +1410,8 @@ def workstream_presentation(workstream_id: str) -> dict | None:
             "recommended_view": "map",
         })
     target_ids = []
-    subject = artifact.get("content", {}).get("subject_reference") or {}
+    target_ids.extend(str(value) for value in workstream.get("target_ids") or [])
+    subject = (artifact or {}).get("content", {}).get("subject_reference") or {}
     if subject.get("kind") == "target" and subject.get("target_id"):
         target_ids.append(str(subject["target_id"]))
     target_ids.extend(
@@ -1421,7 +1437,7 @@ def workstream_presentation(workstream_id: str) -> dict | None:
     return {
         "workstream_id": workstream_id,
         "title": workstream.get("title"),
-        "artifact_revision": artifact.get("revision"),
+        "artifact_revision": artifact.get("revision") if artifact else None,
         "requested_result_layers": layers,
     }
 
@@ -2786,7 +2802,7 @@ class HermesClient:
                 "ביצירת מעקב חקור תחילה: פתור את כל מזהי TGT ו-REC לפני בקשת מידע. עבור כל TGT קרא ל-get_target_candidate כדי לטעון את פרטיו וראיותיו. "
                 "עבור כל REC קרא תחילה ל-search_target_candidates עם record_id, ואז ל-prepare_target_candidate עם הרשומה כעוגן כדי לגלות ראיות נוספות ולהכין הקשר למועמד חדש ללא שמירה כאשר אין מטרה קיימת מספקת. "
                 "הסק מהמידע המאומת כותרת, מטרת מעקב ואחריות פונקציונלית שלך; אל תבקש מהמשתמש שדות אלה רק משום שלא כתב אותם. "
-                "כאשר ניתן להסיק אותם בבטחה, קרא פעם אחת ל-prepare_workstream_creation והשלם את יצירת המעקב באותו תור. "
+                "כאשר ניתן להסיק אותם בבטחה, קרא פעם אחת ל-prepare_workstream_creation, העבר ב-target_ids את כל המטרות הקיימות שנמסרו או התגלו ונפתרו, והשלם את יצירת המעקב באותו תור. "
                 "שאל לכל היותר שאלה אחת קצרה ורק לאחר החיפוש, אם מזהה לא נפתר, קיימות כמה כוונות שונות מהותית, או שהשלמת שדה תחייב המצאת עובדות. "
                 "אם רק חלק מהמזהים נפתרו, ציין את המזהים שלא נפתרו ושאל אם להמשיך עם היתר; אל תשמיט אותם בשקט. "
             )

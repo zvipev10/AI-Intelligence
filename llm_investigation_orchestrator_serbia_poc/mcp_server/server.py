@@ -2833,11 +2833,24 @@ def prepare_workstream_creation(arguments: dict[str, Any]) -> dict[str, Any]:
         raise ValueError("objective is required")
     if not responsibility:
         raise ValueError("responsibility is required")
+    raw_target_ids = arguments.get("target_ids") or []
+    if not isinstance(raw_target_ids, list):
+        raise ValueError("target_ids must be an array")
+    target_ids = []
+    TARGET_BANK.initialize()
+    for value in raw_target_ids:
+        target_id = str(value or "").strip()
+        if not target_id or target_id in target_ids:
+            continue
+        if TARGET_BANK.get_candidate(target_id) is None:
+            raise ValueError(f"unknown target_id: {target_id}")
+        target_ids.append(target_id)
     return {
         "workstream_creation": {
             "title": title,
             "objective": objective,
             "responsibility": responsibility,
+            "target_ids": target_ids,
         },
         "persisted": False,
     }
@@ -2991,8 +3004,13 @@ TOOLS = [
                 "title": {"type": "string", "minLength": 1, "maxLength": 240},
                 "objective": {"type": "string", "minLength": 1, "maxLength": 4000},
                 "responsibility": {"type": "string", "minLength": 1, "maxLength": 2000},
+                "target_ids": {
+                    "type": "array",
+                    "items": {"type": "string", "minLength": 1},
+                    "maxItems": 100,
+                },
             },
-            "required": ["title", "objective", "responsibility"],
+            "required": ["title", "objective", "responsibility", "target_ids"],
             "additionalProperties": False,
         },
         "annotations": {"readOnlyHint": True, "destructiveHint": False, "idempotentHint": False, "openWorldHint": False},

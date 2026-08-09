@@ -1,23 +1,41 @@
 import unittest
+from unittest.mock import patch
 
 import server
 
 
 class WorkstreamIndicationToolsTest(unittest.TestCase):
     def test_prepares_complete_workstream_creation_handoff(self):
-        result = server.prepare_workstream_creation({
-            "title": "מעקב רחפנים",
-            "objective": "לזהות אינדיקציות למרכז פיקוד",
-            "responsibility": "לאתר, להצליב ולהציג פערים",
-        })
+        with patch.object(server.TARGET_BANK, "initialize"), patch.object(
+            server.TARGET_BANK, "get_candidate", return_value={"target_id": "TGT-ONE"}
+        ):
+            result = server.prepare_workstream_creation({
+                "title": "מעקב רחפנים",
+                "objective": "לזהות אינדיקציות למרכז פיקוד",
+                "responsibility": "לאתר, להצליב ולהציג פערים",
+                "target_ids": ["TGT-ONE", "TGT-ONE"],
+            })
         self.assertFalse(result["persisted"])
         self.assertEqual("מעקב רחפנים", result["workstream_creation"]["title"])
+        self.assertEqual(["TGT-ONE"], result["workstream_creation"]["target_ids"])
+
+    def test_workstream_creation_rejects_unknown_target(self):
+        with patch.object(server.TARGET_BANK, "initialize"), patch.object(
+            server.TARGET_BANK, "get_candidate", return_value=None
+        ), self.assertRaisesRegex(ValueError, "unknown target_id"):
+            server.prepare_workstream_creation({
+                "title": "Target tracking",
+                "objective": "Track changes",
+                "responsibility": "Corroborate reports",
+                "target_ids": ["TGT-MISSING"],
+            })
 
     def test_workstream_creation_requires_conversationally_complete_data(self):
         with self.assertRaisesRegex(ValueError, "responsibility is required"):
             server.prepare_workstream_creation({
                 "title": "מעקב רחפנים",
                 "objective": "לזהות אינדיקציות למרכז פיקוד",
+                "target_ids": [],
             })
 
     def test_prepare_resolves_records_without_persisting(self):
