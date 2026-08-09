@@ -2845,12 +2845,21 @@ def prepare_workstream_creation(arguments: dict[str, Any]) -> dict[str, Any]:
         if TARGET_BANK.get_candidate(target_id) is None:
             raise ValueError(f"unknown target_id: {target_id}")
         target_ids.append(target_id)
+    raw_record_ids = arguments.get("record_ids") or []
+    if not isinstance(raw_record_ids, list):
+        raise ValueError("record_ids must be an array")
+    record_ids = list(dict.fromkeys(str(value or "").strip() for value in raw_record_ids if str(value or "").strip()))
+    if len(record_ids) > 100:
+        raise ValueError("too many record_ids")
+    if record_ids:
+        _fusion_events(record_ids)
     return {
         "workstream_creation": {
             "title": title,
             "objective": objective,
             "responsibility": responsibility,
             "target_ids": target_ids,
+            "record_ids": record_ids,
         },
         "persisted": False,
     }
@@ -3009,8 +3018,13 @@ TOOLS = [
                     "items": {"type": "string", "minLength": 1},
                     "maxItems": 100,
                 },
+                "record_ids": {
+                    "type": "array",
+                    "items": {"type": "string", "minLength": 1},
+                    "maxItems": 100,
+                },
             },
-            "required": ["title", "objective", "responsibility", "target_ids"],
+            "required": ["title", "objective", "responsibility", "target_ids", "record_ids"],
             "additionalProperties": False,
         },
         "annotations": {"readOnlyHint": True, "destructiveHint": False, "idempotentHint": False, "openWorldHint": False},

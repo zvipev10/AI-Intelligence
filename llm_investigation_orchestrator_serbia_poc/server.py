@@ -1086,7 +1086,16 @@ def apply_workstream_creation(investigation_id: str, creation: Any) -> dict | No
         creation.get("responsibility"), "responsibility", 2000, required=True
     )
     target_ids = creation.get("target_ids") or []
-    return create_workstream({
+    record_ids = creation.get("record_ids") or []
+    if not isinstance(record_ids, list):
+        raise ValueError("record_ids must be an array")
+    record_ids = list(dict.fromkeys(
+        normalize_workstream_text(value, "record_id", 160, required=True)
+        for value in record_ids
+    ))
+    if len(record_ids) > 100:
+        raise ValueError("Too many record_ids")
+    workstream = create_workstream({
         "investigation_id": investigation_id,
         "title": title,
         "objective": objective,
@@ -1111,6 +1120,39 @@ def apply_workstream_creation(investigation_id: str, creation: Any) -> dict | No
             "responsibility": responsibility,
         }],
     })
+    if record_ids:
+        now = utc_now_iso()
+        create_artifact(
+            workstream,
+            {
+                "artifact_type": "target_assessment_lead",
+                "actor": {"participant_id": "current-analyst", "kind": "human"},
+                "confirmation_turn": {
+                    "message_id": f"workstream-creation:{investigation_id}"[:160],
+                    "text": "Created from explicit workstream request",
+                },
+                "content": {
+                    "subject_reference": (
+                        {"kind": "target", "target_id": target_ids[0]}
+                        if len(target_ids) == 1 else None
+                    ),
+                    "lead_statement": objective,
+                    "indications": [
+                        {
+                            "source_reference": {"kind": "event_record", "record_id": record_id},
+                            "role": "context",
+                        }
+                        for record_id in record_ids
+                    ],
+                },
+            },
+            resolve_event=resolve_workstream_event,
+            resolve_target=resolve_workstream_target,
+            now=now,
+            id_factory=artifact_id,
+        )
+        write_workstream(workstream)
+    return workstream
 
 
 def workstream_created_answer(workstream: dict) -> str:
@@ -2808,7 +2850,7 @@ class HermesClient:
                 "ביצירת מעקב חקור תחילה: פתור את כל מזהי TGT ו-REC לפני בקשת מידע. עבור כל TGT קרא ל-get_target_candidate כדי לטעון את פרטיו וראיותיו. "
                 "עבור כל REC קרא תחילה ל-search_target_candidates עם record_id, ואז ל-prepare_target_candidate עם הרשומה כעוגן כדי לגלות ראיות נוספות ולהכין הקשר למועמד חדש ללא שמירה כאשר אין מטרה קיימת מספקת. "
                 "הסק מהמידע המאומת כותרת, מטרת מעקב ואחריות פונקציונלית שלך; אל תבקש מהמשתמש שדות אלה רק משום שלא כתב אותם. "
-                "כאשר ניתן להסיק אותם בבטחה, קרא פעם אחת ל-prepare_workstream_creation, העבר ב-target_ids את כל המטרות הקיימות שנמסרו או התגלו ונפתרו, והשלם את יצירת המעקב באותו תור. "
+                "כאשר ניתן להסיק אותם בבטחה, קרא פעם אחת ל-prepare_workstream_creation, העבר ב-target_ids את כל המטרות הקיימות שנמסרו או התגלו ונפתרו, העבר ב-record_ids את כל רשומות REC המאומתות שסיפק המשתמש, והשלם את יצירת המעקב באותו תור כך שהרשומות יישמרו כאינדיקציות בארטיפקט הראשוני. "
                 "שאל לכל היותר שאלה אחת קצרה ורק לאחר החיפוש, אם מזהה לא נפתר, קיימות כמה כוונות שונות מהותית, או שהשלמת שדה תחייב המצאת עובדות. "
                 "אם רק חלק מהמזהים נפתרו, ציין את המזהים שלא נפתרו ושאל אם להמשיך עם היתר; אל תשמיט אותם בשקט. "
             )

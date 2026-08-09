@@ -27,6 +27,19 @@
 Decision: root-level target references represent creation inputs; assessment artifacts remain separately
 governed analytical work and are not synthesized during creation.
 
+## Corrective slice 3 — durable raw-record artifacts
+
+1. Extend the creation handoff with verified `record_ids`.
+2. Persist supplied raw records as indications in one initial `target_assessment_lead` artifact.
+3. Use the inferred objective as the initial lead statement and the explicit creation request as the
+   artifact authorization.
+4. Preserve all root-level target references for mixed TGT/REC requests.
+5. Cover record validation, artifact persistence, target-only compatibility, and mixed creation.
+6. Deploy narrowly with a fresh rollback point and verify both locales.
+
+Decision: raw records are evidence indications in an artifact, never workstream-root targets and never
+authorization to create or update a target candidate.
+
 ## Rollback
 
 Revert the focused implementation commit. No migration is involved; existing workstreams default to

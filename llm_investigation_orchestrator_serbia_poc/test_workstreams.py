@@ -181,6 +181,35 @@ class WorkstreamApiTests(unittest.TestCase):
             result["requested_result_layers"][0]["rows"],
         )
 
+    def test_raw_records_are_persisted_as_initial_workstream_artifact(self):
+        event = {
+            "record_id": "REC-V2-000001",
+            "text": "Observed movement",
+            "timestamp_utc": "2026-08-09T10:00:00Z",
+            "source_type": "report",
+            "collection_family": "public_report",
+            "_canonical_layer_id": "events:report",
+        }
+        with patch.object(server, "resolve_workstream_event", return_value=event):
+            created = server.apply_workstream_creation("investigation-record", {
+                "title": "Record tracking",
+                "objective": "Assess the supplied indication.",
+                "responsibility": "Corroborate reports.",
+                "target_ids": [],
+                "record_ids": ["REC-V2-000001", "REC-V2-000001"],
+            })
+        self.assertEqual([], created["target_ids"])
+        self.assertEqual(1, len(created["artifacts"]))
+        artifact = created["artifacts"][0]
+        self.assertEqual("target_assessment_lead", artifact["artifact_type"])
+        self.assertEqual("Assess the supplied indication.", artifact["content"]["lead_statement"])
+        self.assertEqual(
+            "REC-V2-000001",
+            artifact["content"]["indications"][0]["source_reference"]["record_id"],
+        )
+        persisted = server.load_workstream(created["workstream_id"])
+        self.assertEqual(artifact["artifact_id"], persisted["artifacts"][0]["artifact_id"])
+
     def test_rejects_invalid_input_and_cross_participant_assignment(self):
         invalid = self.create_payload()
         invalid["investigation_id"] = "../escape"

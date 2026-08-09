@@ -14,6 +14,7 @@ class WorkstreamIndicationToolsTest(unittest.TestCase):
                 "objective": "לזהות אינדיקציות למרכז פיקוד",
                 "responsibility": "לאתר, להצליב ולהציג פערים",
                 "target_ids": ["TGT-ONE", "TGT-ONE"],
+                "record_ids": [],
             })
         self.assertFalse(result["persisted"])
         self.assertEqual("מעקב רחפנים", result["workstream_creation"]["title"])
@@ -28,7 +29,22 @@ class WorkstreamIndicationToolsTest(unittest.TestCase):
                 "objective": "Track changes",
                 "responsibility": "Corroborate reports",
                 "target_ids": ["TGT-MISSING"],
+                "record_ids": [],
             })
+
+    def test_workstream_creation_resolves_and_deduplicates_raw_records(self):
+        with patch.object(server.TARGET_BANK, "initialize"), patch.object(
+            server, "_fusion_events", return_value=[{"event_id": "REC-ONE"}]
+        ) as resolve:
+            result = server.prepare_workstream_creation({
+                "title": "Record tracking",
+                "objective": "Assess the supplied record",
+                "responsibility": "Corroborate it",
+                "target_ids": [],
+                "record_ids": ["REC-ONE", "REC-ONE"],
+            })
+        self.assertEqual(["REC-ONE"], result["workstream_creation"]["record_ids"])
+        resolve.assert_called_once_with(["REC-ONE"])
 
     def test_workstream_creation_requires_conversationally_complete_data(self):
         with self.assertRaisesRegex(ValueError, "responsibility is required"):
@@ -36,6 +52,7 @@ class WorkstreamIndicationToolsTest(unittest.TestCase):
                 "title": "מעקב רחפנים",
                 "objective": "לזהות אינדיקציות למרכז פיקוד",
                 "target_ids": [],
+                "record_ids": [],
             })
 
     def test_prepare_resolves_records_without_persisting(self):
