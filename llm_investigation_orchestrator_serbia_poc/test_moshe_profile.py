@@ -75,7 +75,7 @@ class MosheProfileTests(unittest.TestCase):
             'גישת "חקור תחילה"', "get_target_candidate", "search_target_candidates",
             "prepare_target_candidate", "אל תבקש מהמשתמש כותרת, מטרה או אחריות",
             "לכל היותר שאלה אחת", "אין להשתמש ב-`create_target_candidate`",
-            "רק במצב playback שאושר במפורש",
+            "רק במצב playback שאושר במפורש", "אינם סיבה לעצור את יצירת המעקב",
         ):
             self.assertIn(marker, soul)
 
@@ -84,12 +84,14 @@ class MosheProfileTests(unittest.TestCase):
             "ביצירת מעקב חקור תחילה", "אל תבקש מהמשתמש שדות אלה",
             "prepare_target_candidate משמש לגילוי ולהכנה בלבד",
             "במצב playback המעקב כבר אושר", "צור או עדכן מועמד מטרה",
+            "אינם סיבה לעצור",
         ):
             self.assertIn(marker, server_source)
 
         mcp_source = (ROOT / "mcp_server" / "server.py").read_text(encoding="utf-8")
         self.assertIn("after resolving every supplied TGT/REC identifier", mcp_source)
         self.assertIn("Ask at most one focused question only after lookup", mcp_source)
+        self.assertIn("does not block an explicitly requested workstream", mcp_source)
 
     def test_backend_merges_only_selected_agent_endpoint(self):
         base = {

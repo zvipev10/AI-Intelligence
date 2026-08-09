@@ -3006,7 +3006,7 @@ TOOLS = [
     {
         "name": "prepare_workstream_creation",
         "title": "Prepare a workstream for creation",
-        "description": "Use only in the dedicated workstream-creation conversation after resolving every supplied TGT/REC identifier and deriving title, objective, and Moshe's responsibility from verified target/evidence context. Do not ask the user for fields that can be inferred. Ask at most one focused question only after lookup when a blocking ambiguity remains. The app server persists the returned handoff immediately; there is no separate approval step.",
+        "description": "Use only in the dedicated workstream-creation conversation after resolving every supplied TGT/REC identifier and deriving title, objective, and Moshe's responsibility from verified target/evidence context. Pass every verified supplied REC in record_ids so the app stores it in the initial artifact. Low confidence, missing corroboration, or no existing target does not block an explicitly requested workstream; those limits block target persistence only. Do not ask the user for fields that can be inferred. Ask at most one focused question only after lookup when a blocking ambiguity remains. The app server persists the returned handoff immediately; there is no separate approval step.",
         "inputSchema": {
             "type": "object",
             "properties": {
