@@ -6,30 +6,29 @@ Evidence-first workstream creation
 
 ## Current phase
 
-Phase 1 — capability initiation by Product
+Phase 4 — controlled execution, Slice 1
 
 ## Overall status
 
-Draft — pending human product approval
+Implementation validated locally; deployment pending
 
 ## Who needs to act now
 
 | Role | Status | Required action | Due before |
 |---|---|---|---|
-| Product | Review required | Approve the behavior and target-persistence boundary in `capability-brief.md` | Role reviews |
-| Development | Waiting | Review tool coverage after product approval | Execution planning |
-| UX | Waiting | Review inference summary and one-question fallback after product approval | Execution planning |
-| QA/Security | Waiting | Review evaluation and protected-write coverage after product approval | Execution planning |
+| Product | Approved | User authorized deployment on 2026-08-09 | Final acceptance |
+| Development | Ready | Validate deployment contract | Deployment |
+| UX | Ready | Validate the live response behavior | Final acceptance |
+| QA/Security | Ready | Validate services and protected-write contract | Deployment |
 | Architecture/Security | Not independently triggered | Join developer/QA review if a new orchestration guard or permission is proposed | Implementation |
 
 ## Latest change since previous review
 
-Initial capability brief created from the reported over-questioning example.
+Evidence-first instructions, contract tests, and evaluation cases implemented and validated locally.
 
 ## Current blockers
 
-- Human product approval is required because this changes workstream behavior and the handling of
-  raw records near the target-bank persistence boundary.
+- Deployment verification has not yet completed.
 
 ## Current risks
 
@@ -39,7 +38,7 @@ Initial capability brief created from the reported over-questioning example.
 
 ## Next expected artifact
 
-Human-approved capability brief, followed by `developer-review.md`.
+Deployment checkpoint and final handoff.
 
 ## Parent issue
 
@@ -49,20 +48,20 @@ Pending remote creation; local draft: `issues/parent-capability.md`.
 
 | Issue | Role | Purpose | Status | Blocking? |
 |---|---|---|---|---|
-| Pending | Product | Approve capability semantics | Draft | Yes |
-| Pending | Development | Validate tool and orchestration approach | Not started | Yes |
-| Pending | UX | Review inferred-fields and clarification experience | Not started | Yes |
-| Pending | QA/Security | Review tests and protected-write boundary | Not started | Yes |
-| Pending | Planning | Produce execution plan after reviews | Blocked | Yes |
+| Pending | Product | Approve capability semantics | Approved by user | No |
+| Pending | Development | Validate tool and orchestration approach | Ready | No |
+| Pending | UX | Review inferred-fields and clarification experience | Ready | No |
+| Pending | QA/Security | Review tests and protected-write boundary | Ready | No |
+| Pending | Planning | Produce execution plan after reviews | Complete | No |
 
 ## Artifact links
 
 - Capability brief: `capability-brief.md`
 - Decisions: pending
-- Developer review: pending
-- UX review: pending
-- QA review: pending
-- Execution plan: pending
+- Developer review: `developer-review.md`
+- UX review: `ux-review.md`
+- QA review: `qa-review.md`
+- Execution plan: `execution-plan.md`
 - Latest checkpoint: pending
 - Handoff: pending
 

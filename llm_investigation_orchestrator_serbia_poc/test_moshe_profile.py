@@ -55,6 +55,25 @@ class MosheProfileTests(unittest.TestCase):
         self.assertIn("evidence_layers", soul)
         self.assertIn("אל תכתוב שורת טקסט חופשי `מזהי ראיות:`", soul)
 
+    def test_workstream_creation_is_evidence_first_and_does_not_persist_targets(self):
+        soul = (ROOT / "moshe_profile" / "SOUL.md").read_text(encoding="utf-8")
+        self.assertIn('גישת "חקור תחילה"', soul)
+        self.assertIn("get_target_candidate", soul)
+        self.assertIn("search_target_candidates", soul)
+        self.assertIn("prepare_target_candidate", soul)
+        self.assertIn("אל תבקש מהמשתמש כותרת, מטרה או אחריות", soul)
+        self.assertIn("לכל היותר שאלה אחת", soul)
+        self.assertIn("אין להשתמש ב-`create_target_candidate`", soul)
+
+        server_source = (ROOT / "server.py").read_text(encoding="utf-8")
+        self.assertIn("ביצירת מעקב חקור תחילה", server_source)
+        self.assertIn("אל תבקש מהמשתמש שדות אלה", server_source)
+        self.assertIn("prepare_target_candidate משמש בה לגילוי ולהכנה בלבד", server_source)
+
+        mcp_source = (ROOT / "mcp_server" / "server.py").read_text(encoding="utf-8")
+        self.assertIn("after resolving every supplied TGT/REC identifier", mcp_source)
+        self.assertIn("Ask at most one focused question only after lookup", mcp_source)
+
     def test_backend_merges_only_selected_agent_endpoint(self):
         base = {
             "remote_host": "127.0.0.1", "remote_port": 8642, "api_key": "secret",
