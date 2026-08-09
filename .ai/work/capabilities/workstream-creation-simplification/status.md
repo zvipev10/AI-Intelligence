@@ -6,30 +6,29 @@ Evidence-first workstream creation
 
 ## Current phase
 
-Phase 1 — capability initiation by Product
+Phase 4 — controlled implementation from `origin/main`
 
 ## Overall status
 
-Draft — pending human product approval
+In progress — main-based implementation
 
 ## Who needs to act now
 
 | Role | Status | Required action | Due before |
 |---|---|---|---|
-| Product | Review required | Approve the behavior and target-persistence boundary in `capability-brief.md` | Role reviews |
-| Development | Waiting | Review tool coverage after product approval | Execution planning |
-| UX | Waiting | Review inference summary and one-question fallback after product approval | Execution planning |
-| QA/Security | Waiting | Review evaluation and protected-write coverage after product approval | Execution planning |
+| Product | Approved | User requested implementation from `main` | Final acceptance |
+| Development | Ready | Implement the focused instruction slice | Checkpoint review |
+| UX | Ready | Verify inferred-field and clarification contracts | Checkpoint review |
+| QA/Security | Ready | Run focused and broad main regression suites | Checkpoint review |
 | Architecture/Security | Not independently triggered | Join developer/QA review if a new orchestration guard or permission is proposed | Implementation |
 
 ## Latest change since previous review
 
-Initial capability brief created from the reported over-questioning example.
+Audited clean `origin/main` baseline `01c21ff`; all supporting tools and workstream contracts exist.
 
 ## Current blockers
 
-- Human product approval is required because this changes workstream behavior and the handling of
-  raw records near the target-bank persistence boundary.
+- No current blocker.
 
 ## Current risks
 
@@ -39,7 +38,7 @@ Initial capability brief created from the reported over-questioning example.
 
 ## Next expected artifact
 
-Human-approved capability brief, followed by `developer-review.md`.
+Implementation checkpoint from the clean main-based branch.
 
 ## Parent issue
 
@@ -59,10 +58,10 @@ Pending remote creation; local draft: `issues/parent-capability.md`.
 
 - Capability brief: `capability-brief.md`
 - Decisions: pending
-- Developer review: pending
-- UX review: pending
-- QA review: pending
-- Execution plan: pending
+- Developer review: `developer-review.md`
+- UX review: `ux-review.md`
+- QA review: `qa-review.md`
+- Execution plan: `execution-plan.md`
 - Latest checkpoint: pending
 - Handoff: pending
 
