@@ -4,19 +4,19 @@
 Investigation Memory (`investigation-memory`)
 
 ## Current Phase
-Checkpoint 007 deployed; user acceptance.
+Checkpoint 008 implementation complete; Product review before deployment.
 
 ## Overall Status
-The investigation-isolation fix and legacy investigation reset are deployed. Production has zero persisted investigations, and browsers remove the legacy registry when they load `v133`. Workstreams remain untouched.
+Newly saved result-derived layers now carry a reconstruction definition and can be resolved through the standard typed-layer presentation path. Agent requests can return structured saved-layer presentation actions. Existing context-only memory is intentionally not migrated.
 
 ## Who Needs To Act Now
 
 | Role | Status | Required Action | Due Before |
 |---|---|---|---|
-| Development | Complete | Investigation isolation deployed and publicly verified. | Done |
-| Product | Review needed | Confirm restore/context behavior and catalog-only visual restore limitation. | Before merge |
-| UX | Review needed | Confirm restored layers/filters appear as expected when switching investigations. | Before merge |
-| QA | Review needed | Validate save, switch investigation, restore layers/filters, and agent context continuity. | Before merge |
+| Development | Complete | Saved result-layer reconstruction implementation is ready. | Done |
+| Product | Review needed | Review Checkpoint 008 and authorize deployment. | Before deployment |
+| UX | Review needed | Confirm partial/unavailable messaging and normal-layer presentation. | Before merge |
+| QA | Deferred by Product | No new tests requested for this slice; validate manually after deployment if authorized. | Before merge |
 | Architecture/Security | Not blocking | Review server-side persistence and authorization before productionizing. | Production |
 
 ## Current Blockers
@@ -24,13 +24,13 @@ None.
 
 ## Current Risks
 - No production authorization model for server-side investigation memory yet.
-- Future memory-saved layer restore must avoid persisting full row payloads.
+- Reconstruction stores typed IDs rather than full row payloads; a saved layer is capped at 5,000 IDs.
 - Slice 2 summary is deterministic and compact, not an LLM-authored narrative summary.
 - Slice 3 saves layer/filter metadata only; it does not persist full layer rows.
-- Slice 4 visually reopens catalog-backed saved layers only; result-derived saved layers remain available to the agent as context.
+- Existing result-derived memory records without reconstruction metadata remain context-only because migration was explicitly excluded.
 
 ## Next Expected Artifact
-Review of `checkpoint-004.md` and `checkpoint-005.md`, then final QA/acceptance.
+Product review of `checkpoint-008-saved-layer-presentation.md`, followed by deployment authorization or requested changes.
 
 ## Parent Issue
 Not created yet. Local issue body can be added if this capability continues beyond Slice 1.
@@ -46,4 +46,4 @@ Not created yet. Local issue body can be added if this capability continues beyo
 | TBD | Development/Product/QA | Provide saved memory to agent prompt context. | Complete in `checkpoint-005.md`; awaiting review | No |
 
 ## Latest Change Since Previous Review
-Checkpoint 007 moves the browser registry to `v2`, actively removes the legacy `v1` registry, and prepares a recoverable production investigation-memory reset.
+Checkpoint 008 implements reconstructable saved result layers and structured agent-driven presentation without migration or new tests.

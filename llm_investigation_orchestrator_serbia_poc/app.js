@@ -213,6 +213,7 @@ const state = {
   investigationMemoryLoading: false,
   investigationMemoryError: "",
   investigationMemoryLoadToken: 0,
+  datasetVersion: "",
   investigationSelectorOpen: false,
   investigationSearchQuery: "",
   recordedQuestions: [],
@@ -1461,6 +1462,12 @@ function normalizeSavedMemoryForAgent(memory = currentSavedMemory()) {
       value: stringifyFilterValue(filter.value)
     })).filter(filter => filter.field && filter.value),
     sample_ids: Array.isArray(item.sample_ids) ? item.sample_ids.slice(0, 80) : [],
+    reconstruction: item.reconstruction && typeof item.reconstruction === "object" ? {
+      type: item.reconstruction.type || "",
+      layer_kind: item.reconstruction.layer_kind || "",
+      dataset_version: item.reconstruction.dataset_version || "",
+      locale: item.reconstruction.locale || ""
+    } : null,
     restore_status: item.restore_status || ""
   }));
   return {
@@ -1502,6 +1509,14 @@ async function restoreMemorySavedLayers(memoryPayload, token) {
   const restoredMemoryLayers = [];
   for (const savedLayer of savedLayers) {
     if (token !== state.investigationMemoryLoadToken) return;
+    if (savedLayer.reconstruction?.record_ids?.length) {
+      const restored = await presentMemorySavedLayer(savedLayer.id, { silent: true });
+      restoredMemoryLayers.push({
+        ...savedLayer,
+        restore_status: restored?.restore_status || "unavailable"
+      });
+      continue;
+    }
     const catalogLayerId = savedLayer.catalog_layer_id || "";
     if (!catalogLayerId) {
       restoredMemoryLayers.push({ ...savedLayer, restore_status: "context_only" });
@@ -1528,6 +1543,58 @@ async function restoreMemorySavedLayers(memoryPayload, token) {
   renderAllViews();
   renderLayerSelector();
   renderQueryLayersModal();
+}
+
+async function presentMemorySavedLayer(memoryLayerId, options = {}) {
+  const query = new URLSearchParams({
+    investigation_id: state.investigationId,
+    locale: document.documentElement.lang || "he"
+  });
+  try {
+    const response = await fetch(
+      `/api/investigation-memory/layers/${encodeURIComponent(memoryLayerId)}/presentation?${query}`,
+      { cache: "no-store" }
+    );
+    const payload = await response.json();
+    if (!response.ok) throw new Error(payload.error || "טעינת השכבה השמורה נכשלה");
+    if (payload.restore_status === "unavailable") {
+      throw new Error(payload.reason || "השכבה השמורה אינה זמינה במאגר הנוכחי");
+    }
+    const layers = buildTypedResultLayers(payload);
+    if (!layers.length) throw new Error("לא נמצאו רשומות זמינות לשחזור השכבה");
+    const sourceId = sanitizeLayerKey(`memory:${memoryLayerId}`);
+    state.layers = state.layers.filter(layer => layer.sourceId !== sourceId);
+    const addedLayers = addResultLayers({
+      sourceId,
+      sourceLabel: payload.label || "שכבה מזיכרון החקירה",
+      preferredView: layers[0]?.preferredView || "map",
+      layers
+    });
+    addedLayers.forEach(layer => applySavedFiltersToLayer(layer, {
+      id: memoryLayerId,
+      applied_filters: payload.applied_filters || []
+    }));
+    state.rawOverlayMinimized = false;
+    activateView(layers[0]?.preferredView || "map", { reason: payload.label || "שכבה מזיכרון החקירה" });
+    renderAllViews();
+    if (payload.restore_status === "partially_restored" && !options.silent) {
+      workstreamMessage(`<p>השכבה שוחזרה חלקית: ${Number(payload.restored_count || 0).toLocaleString("he-IL")} מתוך ${Number(payload.requested_count || 0).toLocaleString("he-IL")} רשומות זמינות.</p>`);
+    }
+    return payload;
+  } catch (error) {
+    if (!options.silent) {
+      workstreamMessage(`<p>לא הצלחתי להציג את השכבה השמורה.</p><div class="answer-callout">${escapeHtml(error.message)}</div>`);
+    }
+    return { restore_status: "unavailable", error: error.message };
+  }
+}
+
+async function applyMemoryLayerActions(result = {}) {
+  const actions = Array.isArray(result.memory_layer_actions) ? result.memory_layer_actions : [];
+  for (const action of actions) {
+    if (action?.action !== "present" || !action.memory_layer_id) continue;
+    await presentMemorySavedLayer(action.memory_layer_id);
+  }
 }
 
 async function loadInvestigationMemory(options = {}) {
@@ -1568,6 +1635,7 @@ function layerMemoryPayload(layer) {
   const sourceType = layer.source_type
     || firstItem.source_type
     || (String(layer.catalogLayerId || "").startsWith("events:") ? String(layer.catalogLayerId).slice("events:".length) : "");
+  const reconstructionIds = evidenceLayerIdentifiers({ ...layer, items: filteredItems });
   return {
     id: layer.id,
     label: layer.label,
@@ -1580,7 +1648,14 @@ function layerMemoryPayload(layer) {
     original_count: (layer.items || []).length,
     filtered_count: filteredItems.length,
     applied_filters: appliedFilters,
-    sample_ids: identifiersForLayerContext(layer, filteredItems)
+    sample_ids: identifiersForLayerContext(layer, filteredItems),
+    reconstruction: reconstructionIds.length ? {
+      type: "typed_ids",
+      layer_kind: layer.kind,
+      record_ids: reconstructionIds,
+      dataset_version: state.datasetVersion || "",
+      locale: document.documentElement.lang || "he"
+    } : null
   };
 }
 
@@ -4014,6 +4089,7 @@ async function runPrompt(prompt, options = {}) {
     state.history.push({ role: "user", content: clean }, { role: "assistant", content: result.answer });
     const renderStarted = performance.now();
     applyAgentResult(result, clean);
+    await applyMemoryLayerActions(result);
     const renderEnded = performance.now();
     const clientPerformance = {
       total_ms: Number((renderEnded - clientStarted).toFixed(3)),
@@ -5059,6 +5135,7 @@ async function boot() {
   let runtimeStatus = null;
   try {
     runtimeStatus = await fetch("/api/status", { cache: "no-store" }).then(response => response.json());
+    state.datasetVersion = runtimeStatus.dataset_version || "";
     if (runtimeStatus.locations_url) {
       const runtimeLocations = await fetch(runtimeStatus.locations_url, { cache: "no-store" }).then(response => response.json());
       Object.entries(runtimeLocations).forEach(([locationId, location]) => {

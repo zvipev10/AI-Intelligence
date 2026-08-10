@@ -2673,6 +2673,30 @@ def present_requested_results(arguments: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def present_saved_memory_layers(arguments: dict[str, Any]) -> dict[str, Any]:
+    action = str(arguments.get("action") or "present").strip()
+    memory_layer_ids = list(dict.fromkeys(
+        str(value).strip() for value in arguments.get("memory_layer_ids") or [] if str(value).strip()
+    ))
+    if not memory_layer_ids:
+        raise ValueError("at least one memory_layer_id is required")
+    if action == "clarify":
+        return {
+            "memory_layer_actions": [{
+                "action": "clarify",
+                "candidate_memory_layer_ids": memory_layer_ids,
+            }],
+            "status": "ambiguous",
+        }
+    return {
+        "memory_layer_actions": [
+            {"action": "present", "memory_layer_id": memory_layer_id}
+            for memory_layer_id in memory_layer_ids
+        ],
+        "status": "ready",
+    }
+
+
 def validate_target_references(candidate: dict[str, Any], evidence: list[dict[str, Any]] | None = None) -> None:
     location_id = str(candidate.get("location_id") or "").strip()
     if location_id not in LOCATIONS:
@@ -3134,6 +3158,26 @@ TOOLS = [
         "annotations": {"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": False},
     },
     {
+        "name": "present_saved_memory_layers",
+        "title": "Present saved investigation-memory layers",
+        "description": "Return structured UI actions for saved memory-layer IDs already provided in investigation memory. Use action=present when the analyst asks to show specific or all saved layers. Use action=clarify when several saved layers exist and the analyst's request does not identify which one. This tool does not retrieve or fabricate layer rows.",
+        "inputSchema": with_step_bridge({
+            "type": "object",
+            "properties": {
+                "action": {"type": "string", "enum": ["present", "clarify"]},
+                "memory_layer_ids": {
+                    "type": "array",
+                    "items": {"type": "string", "minLength": 1},
+                    "minItems": 1,
+                    "maxItems": 12,
+                },
+            },
+            "required": ["action", "memory_layer_ids"],
+            "additionalProperties": False,
+        }),
+        "annotations": {"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": False},
+    },
+    {
         "name": "prepare_target_candidate",
         "title": "Prepare a fused target candidate",
         "description": "Starting from visible seed evidence, retrieves and ranks nearby independent public corroboration, selects the strongest evidence pair, groups sources, reconciles quantity, builds compact evidence snapshots, and reports whether medium/high-confidence persistence is allowed. Returns pair scores, reasons, alternatives, and an ambiguity margin. It does not save anything.",
@@ -3542,6 +3586,7 @@ TOOL_HANDLERS = {
     "prepare_workstream_indication_proposal": prepare_workstream_indication_proposal,
     "decide_workstream_indication_proposal": decide_workstream_indication_proposal,
     "present_requested_results": present_requested_results,
+    "present_saved_memory_layers": present_saved_memory_layers,
     "prepare_target_candidate": prepare_target_candidate,
     "find_duplicate_target_candidates": find_duplicate_target_candidates,
     "search_target_candidates": search_target_candidates,

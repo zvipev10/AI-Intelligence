@@ -23,6 +23,7 @@ from urllib.parse import parse_qs, unquote, urlparse
 from agent_result_pipeline import (
     build_agent_result,
     evidence_reference_layers_from_audit,
+    memory_layer_actions_from_audit,
     normalize_aggregate_groups,
     normalize_entity_layers,
     normalize_location_layers,
@@ -789,7 +790,7 @@ def normalize_memory_filters(value: Any) -> list[dict]:
     return filters[:20]
 
 
-def normalize_memory_ids(value: Any) -> list[str]:
+def normalize_memory_ids(value: Any, limit: int = 80) -> list[str]:
     if not isinstance(value, list):
         return []
     ids: list[str] = []
@@ -800,9 +801,26 @@ def normalize_memory_ids(value: Any) -> list[str]:
             continue
         ids.append(text)
         seen.add(text)
-        if len(ids) >= 80:
+        if len(ids) >= limit:
             break
     return ids
+
+
+def normalize_memory_reconstruction(value: Any) -> dict | None:
+    if not isinstance(value, dict):
+        return None
+    reconstruction_type = compact_text(value.get("type"), 40)
+    layer_kind = compact_text(value.get("layer_kind"), 80)
+    record_ids = normalize_memory_ids(value.get("record_ids"), limit=5000)
+    if reconstruction_type != "typed_ids" or not layer_kind or not record_ids:
+        return None
+    return {
+        "type": reconstruction_type,
+        "layer_kind": layer_kind,
+        "record_ids": record_ids,
+        "dataset_version": compact_text(value.get("dataset_version"), 40),
+        "locale": compact_text(value.get("locale"), 12) or "he",
+    }
 
 
 def memory_count(value: Any) -> int:
@@ -845,6 +863,7 @@ def create_layer_memory(request: dict) -> dict:
         "filtered_count": memory_count(layer.get("filtered_count")),
         "applied_filters": normalize_memory_filters(layer.get("applied_filters")),
         "sample_ids": normalize_memory_ids(layer.get("sample_ids")),
+        "reconstruction": normalize_memory_reconstruction(layer.get("reconstruction")),
     }
 
     existing = load_investigation_memory(investigation_id)
@@ -860,6 +879,95 @@ def create_layer_memory(request: dict) -> dict:
         }
     })
     return {"saved": item, "memory": saved}
+
+
+def memory_layer_presentation(investigation_id: str, memory_layer_id: str, locale: str = "he") -> dict | None:
+    memory_payload = load_investigation_memory(investigation_id)
+    memory = memory_payload.get("memory") if isinstance(memory_payload.get("memory"), dict) else {}
+    saved_layer = next(
+        (item for item in normalize_memory_list(memory.get("layers")) if item.get("id") == memory_layer_id),
+        None,
+    )
+    if saved_layer is None:
+        return None
+    reconstruction = normalize_memory_reconstruction(saved_layer.get("reconstruction"))
+    if reconstruction is None:
+        return {
+            "memory_layer_id": memory_layer_id,
+            "label": saved_layer.get("label"),
+            "restore_status": "unavailable",
+            "reason": "missing_reconstruction_definition",
+            "requested_result_layers": [],
+        }
+    requested_locale = "en" if str(locale).lower() == "en" else "he"
+    if reconstruction["locale"] != requested_locale:
+        return {
+            "memory_layer_id": memory_layer_id,
+            "label": saved_layer.get("label"),
+            "restore_status": "unavailable",
+            "reason": "locale_mismatch",
+            "requested_result_layers": [],
+        }
+    if reconstruction["dataset_version"] and reconstruction["dataset_version"] != DATASET_VERSION:
+        return {
+            "memory_layer_id": memory_layer_id,
+            "label": saved_layer.get("label"),
+            "restore_status": "unavailable",
+            "reason": "dataset_version_mismatch",
+            "requested_result_layers": [],
+        }
+
+    layer_kind = reconstruction["layer_kind"]
+    requested_ids = reconstruction["record_ids"]
+    events, entities, locations = ui_layer_data()
+    rows_by_id: dict[str, dict[str, Any]] = {}
+    capabilities = {"table": True, "map": False, "timeline": False}
+    if layer_kind == "events":
+        rows_by_id = {
+            str(row.get("record_id") or row.get("event_id") or ""): row for row in events
+        }
+        capabilities = {"table": True, "map": True, "timeline": True}
+    elif layer_kind in {"locations", "location_metadata"}:
+        rows_by_id = locations
+        capabilities = {"table": True, "map": True, "timeline": False}
+    elif layer_kind in {"entities", "entity_metadata"}:
+        rows_by_id = entities
+    elif layer_kind == "attack_targets":
+        target_result = get_ui_layer_rows(ATTACK_TARGET_CATALOG_LAYER_ID)
+        rows_by_id = {
+            str(row.get("target_id") or ""): row for row in (target_result[1] if target_result else [])
+        }
+        capabilities = {"table": True, "map": True, "timeline": False}
+    else:
+        return {
+            "memory_layer_id": memory_layer_id,
+            "label": saved_layer.get("label"),
+            "restore_status": "unavailable",
+            "reason": "unsupported_layer_kind",
+            "requested_result_layers": [],
+        }
+
+    rows = [rows_by_id[item_id] for item_id in requested_ids if item_id in rows_by_id]
+    missing_ids = [item_id for item_id in requested_ids if item_id not in rows_by_id]
+    restore_status = "fully_restored" if not missing_ids else ("partially_restored" if rows else "unavailable")
+    result_kind = {"locations": "location_metadata", "entities": "entity_metadata"}.get(layer_kind, layer_kind)
+    return {
+        "memory_layer_id": memory_layer_id,
+        "label": saved_layer.get("label"),
+        "applied_filters": normalize_memory_filters(saved_layer.get("applied_filters")),
+        "restore_status": restore_status,
+        "requested_count": len(requested_ids),
+        "restored_count": len(rows),
+        "missing_ids": missing_ids,
+        "requested_result_layers": ([{
+            "id": f"memory:{memory_layer_id}",
+            "label": saved_layer.get("label") or "Saved investigation layer",
+            "kind": result_kind,
+            "rows": rows,
+            "capabilities": capabilities,
+            "recommended_view": "map" if capabilities["map"] else "evidence",
+        }] if rows else []),
+    }
 
 
 def normalize_investigation_memory(request: dict) -> dict:
@@ -2598,7 +2706,10 @@ class HermesClient:
                     sample_ids = layer.get("sample_ids") or []
                     ids_text = ", ".join(str(item) for item in sample_ids[:80] if item)
                     restore_status = str(layer.get("restore_status") or "").strip()
+                    memory_layer_id = str(layer.get("id") or "").strip()
                     parts = [f"- {label}", f"kind={kind}"]
+                    if memory_layer_id:
+                        parts.append(f"memory_layer_id={memory_layer_id}")
                     if catalog_id:
                         parts.append(f"catalog_layer_id={catalog_id}")
                     if source_type:
@@ -2615,6 +2726,7 @@ class HermesClient:
                         parts.append(f"restore_status={restore_status}")
                     lines.append(" | ".join(parts))
                 lines.append("זיכרון זה נשמר ידנית; כאשר השאלה מתייחסת לחקירה הקודמת, המשך ממנו במקום להתחיל מאפס.")
+                lines.append("כאשר האנליסט מבקש להציג שכבה שמורה, חובה לקרוא ל-present_saved_memory_layers עם memory_layer_id מהרשימה. אין להסתפק בתיאור טקסטואלי של השכבה.")
 
         lines.append("--- המשך החקירה משאלת האנליסט הנוכחית ---")
         return "\n".join(lines)
@@ -3063,6 +3175,26 @@ class HermesClient:
                     entities=load_ui_entity_db(),
                 )
                 collaboration = normalize_workstream_collaboration(audit_records)
+                available_memory_layer_ids = {
+                    str(item.get("id") or "")
+                    for item in ((investigation_state or {}).get("saved_memory") or {}).get("layers") or []
+                    if isinstance(item, dict) and item.get("id")
+                }
+                memory_layer_actions = []
+                for action in memory_layer_actions_from_audit(audit_records):
+                    action_type = action.get("action")
+                    if action_type == "present" and action.get("memory_layer_id") in available_memory_layer_ids:
+                        memory_layer_actions.append(action)
+                    elif action_type == "clarify":
+                        candidates = [
+                            item for item in action.get("candidate_memory_layer_ids") or []
+                            if item in available_memory_layer_ids
+                        ]
+                        if candidates:
+                            memory_layer_actions.append({
+                                "action": "clarify",
+                                "candidate_memory_layer_ids": candidates,
+                            })
                 return build_agent_result({
                     "run_id": run_id,
                     "answer": clean_output,
@@ -3074,6 +3206,7 @@ class HermesClient:
                     "events": events,
                     "usage": status.get("usage", {}),
                     "performance_log": performance_log_path.name,
+                    "memory_layer_actions": memory_layer_actions,
                     **collaboration,
                 }, responding_agent=responding_agent, session_id=session_id, mission_run_id=mission_run_id,
                     requested_result_layers=requested_layers,
@@ -3432,6 +3565,23 @@ class Handler(SimpleHTTPRequestHandler):
                 self.send_json(400, {"error": str(exc)})
                 return
             self.send_json(200, result)
+            return
+        if path.path.startswith("/api/investigation-memory/layers/") and path.path.endswith("/presentation"):
+            memory_layer_id = unquote(
+                path.path[len("/api/investigation-memory/layers/"):-len("/presentation")].rstrip("/")
+            )
+            query = parse_qs(path.query)
+            investigation_id = (query.get("investigation_id") or [""])[0]
+            locale = (query.get("locale") or ["he"])[0]
+            try:
+                result = memory_layer_presentation(investigation_id, memory_layer_id, locale)
+            except ValueError as exc:
+                self.send_json(400, {"error": str(exc)})
+                return
+            if result is None:
+                self.send_json(404, {"error": "Saved memory layer not found"})
+            else:
+                self.send_json(200, result)
             return
         if path.path == "/api/scenarios":
             try:

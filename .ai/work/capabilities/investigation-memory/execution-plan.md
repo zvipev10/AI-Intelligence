@@ -55,6 +55,18 @@ Expected changes:
 - Include loaded saved memory in `investigation_state`.
 - Render memory into Hermes prompt context as user-saved investigation memory.
 
+### Slice 6: Reconstruct And Present Saved Result Layers
+Expected changes:
+- Persist typed reconstruction IDs, dataset version, and locale for newly saved layers.
+- Add a server presentation endpoint that resolves saved IDs into the standard typed-layer contract.
+- Reuse the normal map/table/timeline layer pipeline for automatic restore and explicit presentation.
+- Add a read-only agent tool that returns structured present/clarify actions for saved memory-layer IDs.
+- Report fully restored, partially restored, unavailable, and ambiguous states.
+
+Explicit exclusions:
+- No migration of existing context-only memory records.
+- No new automated tests in this slice, per Product instruction.
+
 ## Stop Conditions
 - Any need for automatic memory capture.
 - Any need to store full layer row payloads.
