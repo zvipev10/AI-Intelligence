@@ -4,7 +4,7 @@
 Investigation Memory (`investigation-memory`)
 
 ## Current Phase
-Checkpoint 010 implementation; VM deployment and Product validation.
+Checkpoint 010 deployed; Product validation.
 
 ## Overall Status
 Server-backed investigations are hydrated into the browser selector. Checkpoint 010 fixes the remaining saved-layer request routing gap by enabling the dedicated memory tool, preventing a conflicting generic presentation call, and recovering invalid evidence-reference views. Automatic layer restoration remains unchanged by Product direction.
@@ -13,7 +13,7 @@ Server-backed investigations are hydrated into the browser selector. Checkpoint 
 
 | Role | Status | Required Action | Due Before |
 |---|---|---|---|
-| Development | In progress | Deploy and verify the saved-layer routing correction. | Before Product validation |
+| Development | Complete | Saved-layer routing correction is deployed and production-verified. | Done |
 | Product | Review needed | Request the saved TikTok layer and confirm the exact saved layer is presented. | Before merge |
 | UX | Review needed | Confirm partial/unavailable messaging and normal-layer presentation. | Before merge |
 | QA | Deferred by Product | No new tests requested for this slice; validate manually after deployment if authorized. | Before merge |
@@ -30,7 +30,7 @@ None.
 - Existing result-derived memory records without reconstruction metadata remain context-only because migration was explicitly excluded.
 
 ## Next Expected Artifact
-VM deployment verification, followed by Product validation of exact saved-layer presentation.
+Product validation of exact saved-layer presentation.
 
 ## Parent Issue
 Not created yet. Local issue body can be added if this capability continues beyond Slice 1.
