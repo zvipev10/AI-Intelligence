@@ -4,17 +4,17 @@
 Investigation Memory (`investigation-memory`)
 
 ## Current Phase
-Checkpoint 009 deployed; Product validation.
+Checkpoint 010 implementation; VM deployment and Product validation.
 
 ## Overall Status
-Server-backed investigations are now hydrated into the browser selector during boot, closing the gap that hid KFOR when its local registry entry was absent. Saved result-derived layer reconstruction remains deployed; existing context-only memory is intentionally not migrated.
+Server-backed investigations are hydrated into the browser selector. Checkpoint 010 fixes the remaining saved-layer request routing gap by enabling the dedicated memory tool, preventing a conflicting generic presentation call, and recovering invalid evidence-reference views. Automatic layer restoration remains unchanged by Product direction.
 
 ## Who Needs To Act Now
 
 | Role | Status | Required Action | Due Before |
 |---|---|---|---|
-| Development | Complete | Investigation registry hydration is deployed and production-verified. | Done |
-| Product | Review needed | Confirm KFOR is visible in the selector, then validate normal map presentation. | Before merge |
+| Development | In progress | Deploy and verify the saved-layer routing correction. | Before Product validation |
+| Product | Review needed | Request the saved TikTok layer and confirm the exact saved layer is presented. | Before merge |
 | UX | Review needed | Confirm partial/unavailable messaging and normal-layer presentation. | Before merge |
 | QA | Deferred by Product | No new tests requested for this slice; validate manually after deployment if authorized. | Before merge |
 | Architecture/Security | Not blocking | Review server-side persistence and authorization before productionizing. | Production |
@@ -30,7 +30,7 @@ None.
 - Existing result-derived memory records without reconstruction metadata remain context-only because migration was explicitly excluded.
 
 ## Next Expected Artifact
-Product validation of KFOR visibility and saved-layer presentation.
+VM deployment verification, followed by Product validation of exact saved-layer presentation.
 
 ## Parent Issue
 Not created yet. Local issue body can be added if this capability continues beyond Slice 1.
@@ -46,4 +46,4 @@ Not created yet. Local issue body can be added if this capability continues beyo
 | TBD | Development/Product/QA | Provide saved memory to agent prompt context. | Complete in `checkpoint-005.md`; awaiting review | No |
 
 ## Latest Change Since Previous Review
-Checkpoint 009 hydrates server-backed investigation metadata into the browser selector while preserving local-only entries and graceful offline behavior.
+Checkpoint 010 enables the dedicated saved-layer tool in Hermes, removes the generic-presenter conflict for saved-layer requests, and normalizes invalid evidence-reference views.

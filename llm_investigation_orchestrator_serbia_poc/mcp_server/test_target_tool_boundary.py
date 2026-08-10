@@ -121,6 +121,7 @@ class TargetToolBoundaryTests(unittest.TestCase):
         write_tools = {"create_target_candidate", "update_target_candidate", "attach_target_evidence"}
         self.assertTrue(write_tools.isdisjoint(general_deployment_tools()))
         self.assertIn("present_requested_results", general_deployment_tools())
+        self.assertIn("present_saved_memory_layers", general_deployment_tools())
 
     def test_tool_schemas_do_not_expose_lifecycle_or_review_mutation(self):
         by_name = {item["name"]: item for item in server.TOOLS}
@@ -172,13 +173,13 @@ class TargetToolBoundaryTests(unittest.TestCase):
         self.assertEqual(evidence["id"], "evidence-reference:1")
         self.assertEqual(evidence["rows"][0]["event_id"], second["event_id"])
         self.assertEqual(evidence["recommended_view"], "timeline")
-        with self.assertRaisesRegex(ValueError, "map or timeline"):
-            server.present_requested_results({"evidence_layers": [{
-                "kind": "events",
-                "ids": [first["event_id"]],
-                "label": "Table-only evidence",
-                "view": "evidence",
-            }]})
+        recovered = server.present_requested_results({"evidence_layers": [{
+            "kind": "events",
+            "ids": [first["event_id"]],
+            "label": "Table-requested evidence",
+            "view": "evidence",
+        }]})
+        self.assertEqual(recovered["evidence_reference_layers"][0]["recommended_view"], "map")
 
     def test_evidence_only_selection_is_allowed_but_empty_call_is_rejected(self):
         event = server.EVENTS[0]

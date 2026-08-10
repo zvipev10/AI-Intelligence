@@ -2636,11 +2636,13 @@ def _materialize_presentation_layers(
                 capabilities = {"table": True, "map": False, "timeline": False}
         else:
             raise ValueError(f"unsupported requested-result kind: {kind}")
+        if evidence_references and (view not in {"map", "timeline"} or not capabilities.get(view)):
+            view = "map" if capabilities.get("map") else ("timeline" if capabilities.get("timeline") else view)
         view_capability = {"map": "map", "timeline": "timeline", "evidence": "table"}.get(view)
         if view_capability is None:
             raise ValueError(f"unsupported requested view: {view}")
         if evidence_references and view not in {"map", "timeline"}:
-            raise ValueError("evidence-reference layers support map or timeline views only")
+            raise ValueError("evidence-reference layer has no supported map or timeline view")
         if not capabilities.get(view_capability):
             raise ValueError(f"requested view {view} is incompatible with {result_kind}")
         requested_layers.append({
