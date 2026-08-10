@@ -4,7 +4,7 @@
 Investigation Memory (`investigation-memory`)
 
 ## Current Phase
-Checkpoint 009 implementation; VM deployment and Product validation.
+Checkpoint 009 deployed; Product validation.
 
 ## Overall Status
 Server-backed investigations are now hydrated into the browser selector during boot, closing the gap that hid KFOR when its local registry entry was absent. Saved result-derived layer reconstruction remains deployed; existing context-only memory is intentionally not migrated.
@@ -13,7 +13,7 @@ Server-backed investigations are now hydrated into the browser selector during b
 
 | Role | Status | Required Action | Due Before |
 |---|---|---|---|
-| Development | In progress | Deploy and verify investigation registry hydration. | Before Product validation |
+| Development | Complete | Investigation registry hydration is deployed and production-verified. | Done |
 | Product | Review needed | Confirm KFOR is visible in the selector, then validate normal map presentation. | Before merge |
 | UX | Review needed | Confirm partial/unavailable messaging and normal-layer presentation. | Before merge |
 | QA | Deferred by Product | No new tests requested for this slice; validate manually after deployment if authorized. | Before merge |
@@ -30,7 +30,7 @@ None.
 - Existing result-derived memory records without reconstruction metadata remain context-only because migration was explicitly excluded.
 
 ## Next Expected Artifact
-VM deployment verification, followed by Product validation of KFOR visibility and saved-layer presentation.
+Product validation of KFOR visibility and saved-layer presentation.
 
 ## Parent Issue
 Not created yet. Local issue body can be added if this capability continues beyond Slice 1.

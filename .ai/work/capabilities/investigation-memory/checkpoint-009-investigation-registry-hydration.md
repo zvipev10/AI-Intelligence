@@ -2,7 +2,7 @@
 
 ## Status
 
-Implemented and ready for VM deployment.
+Implemented, published, and deployed for Product validation.
 
 ## Problem
 
@@ -28,5 +28,18 @@ memory remained intact.
 
 ## Deployment
 
-Pending.
+- Published commit: `53f1047` on `codex/investigation-memory-layer-presentation`.
+- Forward-ported the focused change onto the current bilingual production asset.
+- Public cache version: `app.js?v=150`.
+- Updated only `app.js` and `index.html`.
+- `serbia-poc-ui.service` is active with zero automatic restarts.
+- The deployed and staged asset hashes match.
+- Hebrew and English `/api/investigations` responses both contain `KFOR involvement`
+  with two chat summaries and one saved layer.
+- Rollback backup:
+  `/opt/serbia-poc-ui-backups/investigation-registry-hydration-20260810T161001Z`.
 
+## Remaining validation
+
+Product should refresh the app, open the investigation selector, and confirm
+that `KFOR involvement` is visible and opens its saved memory.
