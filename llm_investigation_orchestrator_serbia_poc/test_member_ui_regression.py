@@ -208,6 +208,11 @@ class MemberUiRegressionTests(unittest.TestCase):
         self.assertIn('options.result.saved_question_id ? "נשמר" : "שמור הקלטה"', self.app)
         self.assertIn('button.textContent = "שמור הקלטה";', self.app)
 
+    def test_restored_saved_filters_are_visible_and_keep_unknown_fields(self):
+        self.assertIn("layer.filterPanelOpen = filters.length > 0;", self.app)
+        self.assertIn("selectedField && !fields.includes(selectedField)", self.app)
+        self.assertIn("? [selectedField, ...fields]", self.app)
+
     def test_agent_waiting_message_is_temporary_animated_thinking_indicator(self):
         styles = (ROOT / "styles.css").read_text(encoding="utf-8")
         self.assertIn("function thinkingIndicatorHtml()", self.app)

@@ -1496,6 +1496,7 @@ function applySavedFiltersToLayer(layer, savedLayer) {
   const filters = filtersFromSavedMemory(savedLayer);
   layer.appliedFilters = cloneFilters(filters);
   layer.draftFilters = cloneFilters(filters);
+  layer.filterPanelOpen = filters.length > 0;
   layer.filterError = "";
   layer.investigation_memory_layer_id = savedLayer.id || true;
 }
@@ -2002,9 +2003,14 @@ function renderLayerFilterPanel(layer) {
   const fields = filterFieldsForLayer(layer);
   const draftFilters = draftFiltersForLayer(layer);
   const appliedFilters = validAppliedFilters(layer);
-  const fieldOptionsFor = selectedField => fields.length
-    ? fields.map(field => `<option value="${escapeHtml(field)}" ${field === selectedField ? "selected" : ""}>${escapeHtml(field)}</option>`).join("")
+  const fieldOptionsFor = selectedField => {
+    const availableFields = selectedField && !fields.includes(selectedField)
+      ? [selectedField, ...fields]
+      : fields;
+    return availableFields.length
+    ? availableFields.map(field => `<option value="${escapeHtml(field)}" ${field === selectedField ? "selected" : ""}>${escapeHtml(field)}</option>`).join("")
     : '<option value="">אין שדות זמינים</option>';
+  };
   const draftHtml = draftFilters.length
     ? draftFilters.map((filter, index) => `
       <div class="filter-draft-row">
