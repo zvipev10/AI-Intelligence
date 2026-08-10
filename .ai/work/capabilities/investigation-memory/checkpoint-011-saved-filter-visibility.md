@@ -36,6 +36,13 @@ reconstructed row schema could also disappear from the filter-field selector.
 - Rollback backup:
   `/opt/serbia-poc-ui-backups/saved-filter-visibility-20260810T175132Z`.
 
+Product follow-up removed automatic filter-panel opening while retaining restored
+filters and saved-field visibility. The follow-up is deployed as `app.js?v=152`;
+the served asset contains no automatic-open assignment, both deployed hashes
+match staging, and the UI service is active with zero restarts. Follow-up
+rollback backup:
+`/opt/serbia-poc-ui-backups/restored-filter-panel-closed-20260810T175756Z`.
+
 ## Review request
 
 Restore a saved layer with applied filters, confirm that the panel remains
