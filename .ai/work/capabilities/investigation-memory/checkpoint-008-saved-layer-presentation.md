@@ -2,7 +2,7 @@
 
 ## Status
 
-Implementation complete; pending Product review and deployment authorization.
+Implemented, deployed, and ready for Product validation.
 
 ## Scope
 
@@ -40,6 +40,19 @@ Implementation complete; pending Product review and deployment authorization.
 - Existing saved records without a reconstruction definition remain context-only.
 - The repository source baseline is behind the bilingual production asset; deployment must forward-port this focused change onto the locale-aware production version rather than overwrite it wholesale.
 
+## Deployment
+
+- Deployed by semantically applying the focused implementation to the current bilingual production files.
+- Public UI cache version: `app.js?v=149`.
+- Updated UI files: `app.js`, `server.py`, and `agent_result_pipeline.py`.
+- Updated MCP file: `/opt/serbia-poc/mcp_server/server.py`.
+- Restarted services: `serbia-poc-ui`, `hermes-gateway`, and `hermes-moshe-gateway`.
+- All three services are active with zero automatic restarts after startup.
+- Hebrew and English status endpoints each report the correct v2.1 dataset with 14,800 rows.
+- Public asset verification confirmed both locale-aware boot and saved-memory presentation code.
+- Rollback backup: `/opt/serbia-poc-ui-backups/memory-layer-presentation-20260810T160253Z`.
+- The existing KFOR memory layer reports `missing_reconstruction_definition`, as expected because migration was excluded. Product must save a new layer to validate reconstruction.
+
 ## Review request
 
-Product should confirm the implementation contract and decide whether to deploy for manual validation.
+Product should save a new result-derived layer, request that saved layer in a later prompt, and confirm it opens as a regular map/table/timeline layer.

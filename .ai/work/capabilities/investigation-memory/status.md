@@ -4,17 +4,17 @@
 Investigation Memory (`investigation-memory`)
 
 ## Current Phase
-Checkpoint 008 implementation complete; Product review before deployment.
+Checkpoint 008 deployed; Product manual validation.
 
 ## Overall Status
-Newly saved result-derived layers now carry a reconstruction definition and can be resolved through the standard typed-layer presentation path. Agent requests can return structured saved-layer presentation actions. Existing context-only memory is intentionally not migrated.
+Newly saved result-derived layers now carry a reconstruction definition and can be resolved through the standard typed-layer presentation path. Agent requests can return structured saved-layer presentation actions. The capability is deployed for manual validation; existing context-only memory is intentionally not migrated.
 
 ## Who Needs To Act Now
 
 | Role | Status | Required Action | Due Before |
 |---|---|---|---|
 | Development | Complete | Saved result-layer reconstruction implementation is ready. | Done |
-| Product | Review needed | Review Checkpoint 008 and authorize deployment. | Before deployment |
+| Product | Review needed | Save a new result-derived layer, then request it from memory and validate normal map presentation. | Before merge |
 | UX | Review needed | Confirm partial/unavailable messaging and normal-layer presentation. | Before merge |
 | QA | Deferred by Product | No new tests requested for this slice; validate manually after deployment if authorized. | Before merge |
 | Architecture/Security | Not blocking | Review server-side persistence and authorization before productionizing. | Production |
@@ -30,7 +30,7 @@ None.
 - Existing result-derived memory records without reconstruction metadata remain context-only because migration was explicitly excluded.
 
 ## Next Expected Artifact
-Product review of `checkpoint-008-saved-layer-presentation.md`, followed by deployment authorization or requested changes.
+Product validation of the deployed flow, followed by acceptance or requested changes.
 
 ## Parent Issue
 Not created yet. Local issue body can be added if this capability continues beyond Slice 1.
