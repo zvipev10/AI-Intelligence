@@ -1877,6 +1877,46 @@ function loadInvestigationRegistry() {
   saveInvestigationRegistry();
 }
 
+async function hydrateInvestigationRegistry() {
+  try {
+    const response = await fetch("/api/investigations", { cache: "no-store" });
+    if (!response.ok) throw new Error(`investigation registry unavailable (${response.status})`);
+    const payload = await response.json();
+    const remoteInvestigations = Array.isArray(payload?.investigations) ? payload.investigations : [];
+    const localById = new Map(state.investigations.map(item => [item.id, item]));
+    const localByName = new Map(state.investigations.map(item => [investigationNameKey(item.name), item]));
+
+    remoteInvestigations.forEach(item => {
+      const id = String(item?.investigation_id || item?.id || "").trim();
+      const name = normalizeInvestigationName(item?.name);
+      if (!id || !name) return;
+      const existing = localById.get(id) || localByName.get(investigationNameKey(name));
+      const hydrated = {
+        id,
+        name,
+        created_at: item?.created_at_utc || existing?.created_at || new Date().toISOString()
+      };
+      if (existing) {
+        const index = state.investigations.indexOf(existing);
+        state.investigations[index] = hydrated;
+        if (state.investigationId === existing.id) {
+          state.investigationId = hydrated.id;
+          state.investigationName = hydrated.name;
+        }
+      } else {
+        state.investigations.push(hydrated);
+      }
+      localById.set(id, hydrated);
+      localByName.set(investigationNameKey(name), hydrated);
+    });
+
+    saveInvestigationRegistry();
+    renderInvestigationSelector();
+  } catch (error) {
+    console.warn("Could not hydrate investigations from server", error);
+  }
+}
+
 function matchingInvestigations(query) {
   const key = investigationNameKey(query);
   if (!key) return state.investigations;
@@ -5129,6 +5169,7 @@ renderInvestigationSelector();
 
 async function boot() {
   initMap();
+  await hydrateInvestigationRegistry();
   await loadLayerCatalog();
   await loadWorkstreams();
   await loadInvestigationMemory({ restoreLayers: true });
