@@ -1496,7 +1496,6 @@ function applySavedFiltersToLayer(layer, savedLayer) {
   const filters = filtersFromSavedMemory(savedLayer);
   layer.appliedFilters = cloneFilters(filters);
   layer.draftFilters = cloneFilters(filters);
-  layer.filterPanelOpen = filters.length > 0;
   layer.filterError = "";
   layer.investigation_memory_layer_id = savedLayer.id || true;
 }

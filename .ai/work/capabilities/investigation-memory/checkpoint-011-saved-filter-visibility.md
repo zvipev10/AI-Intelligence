@@ -13,8 +13,8 @@ reconstructed row schema could also disappear from the filter-field selector.
 
 ## Change
 
-- Open the active layer's filter panel automatically when restored saved filters
-  exist.
+- Restore saved filters without opening the filter panel automatically; the
+  funnel state continues to indicate that filters are applied.
 - Keep a saved filter field visible and selected even when the reconstructed row
   schema does not currently advertise that field.
 - Keep automatic layer restoration unchanged.
@@ -38,5 +38,5 @@ reconstructed row schema could also disappear from the filter-field selector.
 
 ## Review request
 
-Restore a saved layer with applied filters and confirm that the filter panel
-opens with the saved field/value chips visible.
+Restore a saved layer with applied filters, confirm that the panel remains
+closed, then open it manually and confirm the saved field/value chips are visible.
