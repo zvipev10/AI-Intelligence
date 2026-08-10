@@ -4,7 +4,7 @@
 Investigation Memory (`investigation-memory`)
 
 ## Current Phase
-Checkpoint 011 implemented; VM deployment pending.
+Checkpoint 011 deployed; Product validation.
 
 ## Overall Status
 Server-backed investigations are hydrated and dedicated saved-layer routing is deployed. Checkpoint 011 makes restored saved filters immediately visible on the active layer and preserves saved filter fields in the selector. Automatic layer restoration remains unchanged by Product direction.
@@ -13,7 +13,7 @@ Server-backed investigations are hydrated and dedicated saved-layer routing is d
 
 | Role | Status | Required Action | Due Before |
 |---|---|---|---|
-| Development | Ready to deploy | Deploy the saved-filter visibility correction after authorization. | Before Product validation |
+| Development | Complete | Saved-filter visibility correction is deployed and production-verified. | Done |
 | Product | Review needed | Restore a filtered saved layer and confirm its filter panel and chips are visible. | Before merge |
 | UX | Review needed | Confirm partial/unavailable messaging and normal-layer presentation. | Before merge |
 | QA | Deferred by Product | No new tests requested for this slice; validate manually after deployment if authorized. | Before merge |
@@ -30,7 +30,7 @@ None.
 - Existing result-derived memory records without reconstruction metadata remain context-only because migration was explicitly excluded.
 
 ## Next Expected Artifact
-VM deployment, then Product validation of saved-filter visibility.
+Product validation of saved-filter visibility.
 
 ## Parent Issue
 Not created yet. Local issue body can be added if this capability continues beyond Slice 1.

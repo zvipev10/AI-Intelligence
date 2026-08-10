@@ -2,7 +2,7 @@
 
 ## Status
 
-Implemented and ready for VM deployment.
+Implemented, published, deployed, and ready for Product validation.
 
 ## Problem
 
@@ -27,5 +27,16 @@ reconstructed row schema could also disappear from the filter-field selector.
 
 ## Deployment
 
-Pending explicit deployment authorization.
+- Forward-ported the focused change onto the current bilingual production asset.
+- Updated only `app.js` and `index.html`.
+- Production cache version: `app.js?v=151`.
+- Local staging and deployed file hashes match.
+- `serbia-poc-ui.service` is active with zero automatic restarts.
+- Hebrew v2.1 status reports 14,800 rows.
+- Rollback backup:
+  `/opt/serbia-poc-ui-backups/saved-filter-visibility-20260810T175132Z`.
 
+## Review request
+
+Restore a saved layer with applied filters and confirm that the filter panel
+opens with the saved field/value chips visible.
