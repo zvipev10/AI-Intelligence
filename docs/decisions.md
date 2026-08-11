@@ -196,3 +196,33 @@ requested evidence-tracking workstream.
 
 Follow-ups:
 If multi-target assessment is needed later, revisit the current single-active-artifact-per-type rule.
+
+### 2026-08-11 — Keep staged playback global across investigations
+
+Decision:
+Use one active staged playback run for the deployed UI/MCP process. Changing the
+selected investigation changes investigation context but does not select, create,
+or advance a separate scenario run. Playback status, mode changes, reset, and Next
+all resolve the same active global run.
+
+Context:
+Playback visibility was global, but the status and Next endpoints looked up runs by
+the selected investigation. After switching investigations, the UI showed the global
+Next control while the server attempted to create a second run and returned
+`Another scenario run is already active`.
+
+Rationale:
+One global scenario clock ensures every investigation sees the same released evidence
+window and makes the Next control consistent with the existing global retrieval boundary.
+
+Alternatives considered:
+- Maintain a separate playback run and visibility boundary per investigation.
+- Hide Next outside the investigation that originally started playback.
+
+Impact:
+Switching investigations preserves the active run ID, revision, stage, and timeframe.
+Pressing Next from any investigation advances that run once and cannot create a second run.
+
+Follow-ups:
+Retain automated coverage for switching investigations before reading status, changing
+mode, or pressing Next.

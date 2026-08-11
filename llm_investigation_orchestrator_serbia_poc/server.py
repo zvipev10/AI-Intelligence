@@ -36,7 +36,7 @@ from agent_routing import AgentRouteRegistry, MOSHE_AGENT_ID
 from scenario_playback import (
     PlaybackConflictError,
     claim_reevaluation,
-    find_investigation_run,
+    find_active_run,
     finish_reevaluation,
     get_manifest,
     list_scenarios,
@@ -1469,7 +1469,7 @@ def investigation_playback_status(investigation_id: str) -> dict:
         "from_inclusive": True,
         "to_inclusive": True,
     }
-    run = find_investigation_run(SCENARIO_RUNS_DIR, investigation_id)
+    run = find_active_run(SCENARIO_RUNS_DIR)
     if run is not None:
         return {
             "investigation_id": investigation_id,
@@ -3730,9 +3730,7 @@ class Handler(SimpleHTTPRequestHandler):
                     raise ValueError("Invalid playback reset flag")
                 if mode == "historical":
                     if reset:
-                        run = find_investigation_run(
-                            SCENARIO_RUNS_DIR, investigation_id
-                        )
+                        run = find_active_run(SCENARIO_RUNS_DIR)
                         if run is not None:
                             transition_scenario_run(
                                 SCENARIO_MANIFESTS_DIR,
@@ -3749,7 +3747,7 @@ class Handler(SimpleHTTPRequestHandler):
                             )
                     write_historical_visibility(SCENARIO_RUNS_DIR)
                 else:
-                    run = find_investigation_run(SCENARIO_RUNS_DIR, investigation_id)
+                    run = find_active_run(SCENARIO_RUNS_DIR)
                     if run is None:
                         manifest = prepared_playback_manifest()
                         if manifest is None:
@@ -3815,7 +3813,12 @@ class Handler(SimpleHTTPRequestHandler):
                 policy = load_playback_visibility(SCENARIO_RUNS_DIR) or {}
                 if policy.get("mode") != "real_time" or not policy.get("active"):
                     raise ValueError("Real-time intelligence mode is not active")
-                existing = find_investigation_run(SCENARIO_RUNS_DIR, investigation_id)
+                existing = None
+                policy_run_id = str(policy.get("run_id") or "").strip()
+                if policy_run_id:
+                    existing = load_scenario_run(SCENARIO_RUNS_DIR, policy_run_id)
+                if existing is None:
+                    existing = find_active_run(SCENARIO_RUNS_DIR)
                 claimed_revision = None
                 if existing is None:
                     manifest = prepared_playback_manifest()

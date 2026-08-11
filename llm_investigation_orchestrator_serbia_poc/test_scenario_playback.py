@@ -378,6 +378,42 @@ class ScenarioPlaybackApiTests(unittest.TestCase):
         self.assertIsNone(result["run"]["reevaluation"])
         moshe.assert_not_called()
 
+    def test_next_advances_the_global_run_after_switching_investigations(self):
+        status, started = self.request("POST", "/api/playback/mode", {
+            "investigation_id": "investigation-a",
+            "mode": "real_time",
+        })
+        self.assertEqual(200, status)
+        self.assertEqual("investigation-a", started["run"]["investigation_id"])
+
+        status, switched = self.request(
+            "GET", "/api/playback?investigation_id=investigation-b"
+        )
+        self.assertEqual(200, status)
+        self.assertEqual("real_time", switched["mode"])
+        self.assertEqual(started["run"]["run_id"], switched["run"]["run_id"])
+
+        status, switched_mode = self.request("POST", "/api/playback/mode", {
+            "investigation_id": "investigation-b",
+            "mode": "real_time",
+        })
+        self.assertEqual(200, status)
+        self.assertEqual(started["run"]["run_id"], switched_mode["run"]["run_id"])
+
+        with patch.object(server, "run_moshe_playback_reevaluation"):
+            status, advanced = self.request("POST", "/api/playback/next", {
+                "investigation_id": "investigation-b",
+                "expected_revision": switched_mode["run"]["revision"],
+                "idempotency_key": "global-next-after-switch",
+            })
+
+        self.assertEqual(200, status)
+        self.assertEqual(started["run"]["run_id"], advanced["run"]["run_id"])
+        self.assertEqual("investigation-a", advanced["run"]["investigation_id"])
+        self.assertEqual(2, advanced["run"]["revision"])
+        self.assertEqual("stage-2", advanced["run"]["current_stage"]["id"])
+        self.assertEqual(1, len(list(self.runs_dir.glob("run_*.json"))))
+
     def test_playback_assessment_revisions_the_active_workstream(self):
         first_event = server.load_ui_events()[0]
         event_id = first_event.get("record_id") or first_event["event_id"]
