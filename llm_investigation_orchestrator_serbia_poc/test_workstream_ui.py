@@ -43,6 +43,10 @@ class WorkstreamUiTests(unittest.TestCase):
         self.assertIn('id="workstreamRail"', self.index)
         self.assertIn('id="workstreamRailList"', self.index)
         self.assertIn('id="workstreamRailToggle"', self.index)
+        self.assertIn(
+            'state.workstreamRailCollapsed ? "chevron_right" : "chevron_left"',
+            self.app,
+        )
         self.assertNotIn('id="workstreamIndicator"', self.index)
         self.assertNotIn('id="workstreamMenu"', self.index)
         self.assertIn("appendWorkstreamUpdate", self.app)
