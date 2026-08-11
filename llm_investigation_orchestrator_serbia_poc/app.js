@@ -2452,7 +2452,7 @@ function setWorkstreamRailCollapsed(collapsed) {
     workstreamRailToggle.setAttribute("aria-label", state.workstreamRailCollapsed ? "הרחב מעקבים" : "מזער מעקבים");
     workstreamRailToggle.title = state.workstreamRailCollapsed ? "הרחב מעקבים" : "מזער מעקבים";
     const icon = workstreamRailToggle.querySelector(".material-symbols-rounded");
-    if (icon) icon.textContent = state.workstreamRailCollapsed ? "chevron_right" : "chevron_left";
+    if (icon) icon.textContent = state.workstreamRailCollapsed ? "chevron_left" : "chevron_right";
   }
   if (state.map) setTimeout(() => state.map.resize(), 220);
 }

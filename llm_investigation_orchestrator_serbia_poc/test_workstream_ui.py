@@ -44,7 +44,7 @@ class WorkstreamUiTests(unittest.TestCase):
         self.assertIn('id="workstreamRailList"', self.index)
         self.assertIn('id="workstreamRailToggle"', self.index)
         self.assertIn(
-            'state.workstreamRailCollapsed ? "chevron_right" : "chevron_left"',
+            'state.workstreamRailCollapsed ? "chevron_left" : "chevron_right"',
             self.app,
         )
         self.assertNotIn('id="workstreamIndicator"', self.index)
