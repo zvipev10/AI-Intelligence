@@ -19,6 +19,11 @@ class FinalResultAutoVisualizationTests(unittest.TestCase):
     def test_agent_map_and_timeline_decisions_are_honored(self):
         resolver = self.app.split("function resolveFinalResultView", 1)[1].split("function presentFinalAgentResult", 1)[0]
         self.assertIn('["map", "timeline"].includes(requestedView)', resolver)
+        self.assertIn('["map", "timeline"].includes(result.recommended_view)', resolver)
+        self.assertLess(
+            resolver.index('["map", "timeline"].includes(result.recommended_view)'),
+            resolver.index("layers.find"),
+        )
         self.assertIn('layer.capabilities?.map', resolver)
         self.assertIn('layer.capabilities?.timeline', resolver)
         self.assertIn('return "map";', resolver)
