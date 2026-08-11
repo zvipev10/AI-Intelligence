@@ -2,7 +2,11 @@
 
 ## Current state
 
-Implementation and deployment are current through checkpoint 020. The production
+Implementation and deployment are current through checkpoint 021. Playback
+reevaluation now discovers all active workstreams in the run locale and loads
+each with its own investigation ID; the global run's original investigation no
+longer limits Moshe's workstream scope. Playback is reset to the initial slice.
+The production
 registry now contains only `KFOR involvement` and `NATO involvement`; 36 unwanted
 memory, workstream, scenario-run, and visibility files were archived to a recoverable
 backup. Browser-local stale entries are now replaced by the server registry rather
@@ -33,6 +37,12 @@ locale-aware VM build and pending Product/QA hands-on acceptance.
 
 ## Validation
 
+- Checkpoint 021 cross-investigation focused playback tests: 2 passed.
+- Checkpoint 021 full Python discovery: 135 tests passed.
+- Production retained the cross-investigation active workstream and reset the
+  shared run to stage index 0, revision 9.
+- Checkpoint 021 rollback backup:
+  `/home/ubuntu/deploy-backups/global-workstream-playback-20260811T174028Z`.
 - Checkpoint 020 focused investigation/UI suite: 32 tests passed.
 - Checkpoint 020 full Python discovery: 135 tests passed.
 - Production returned exactly the two retained investigations and served

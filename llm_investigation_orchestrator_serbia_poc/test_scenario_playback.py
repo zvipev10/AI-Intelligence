@@ -359,6 +359,10 @@ class ScenarioPlaybackApiTests(unittest.TestCase):
 
     def test_investigation_next_skips_moshe_without_active_workstreams(self):
         investigation_id = "investigation-without-workstreams"
+        status, _ = self.request(
+            "POST", f"/api/workstreams/{self.workstream['workstream_id']}/archive"
+        )
+        self.assertEqual(200, status)
         status, real_time = self.request("POST", "/api/playback/mode", {
             "investigation_id": investigation_id,
             "mode": "real_time",
@@ -400,7 +404,16 @@ class ScenarioPlaybackApiTests(unittest.TestCase):
         self.assertEqual(200, status)
         self.assertEqual(started["run"]["run_id"], switched_mode["run"]["run_id"])
 
-        with patch.object(server, "run_moshe_playback_reevaluation"):
+        status, _ = self.request("POST", "/api/workstreams", {
+            "investigation_id": "investigation-b",
+            "title": "Global playback workstream",
+            "objective": "Verify cross-investigation playback reevaluation.",
+            "participants": [],
+            "assignments": [],
+        })
+        self.assertEqual(201, status)
+
+        with patch.object(server, "run_moshe_playback_reevaluation") as moshe:
             status, advanced = self.request("POST", "/api/playback/next", {
                 "investigation_id": "investigation-b",
                 "expected_revision": switched_mode["run"]["revision"],
@@ -413,6 +426,13 @@ class ScenarioPlaybackApiTests(unittest.TestCase):
         self.assertEqual(2, advanced["run"]["revision"])
         self.assertEqual("stage-2", advanced["run"]["current_stage"]["id"])
         self.assertEqual(1, len(list(self.runs_dir.glob("run_*.json"))))
+        self.assertTrue(advanced["moshe_triggered"])
+        moshe.assert_called_once()
+        self.assertTrue(server.playback_has_active_workstreams(advanced["run"]))
+        self.assertIn(
+            "investigation-b",
+            {item["investigation_id"] for item in server.list_active_workstreams()},
+        )
 
     def test_playback_assessment_revisions_the_active_workstream(self):
         first_event = server.load_ui_events()[0]

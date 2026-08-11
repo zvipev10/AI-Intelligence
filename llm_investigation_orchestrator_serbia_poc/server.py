@@ -1388,6 +1388,17 @@ def list_workstreams(investigation_id: str) -> list[dict]:
     return sorted(items, key=lambda item: str(item.get("updated_at_utc") or ""), reverse=True)
 
 
+def list_active_workstreams() -> list[dict]:
+    if not WORKSTREAMS_DIR.exists():
+        return []
+    items: list[dict] = []
+    for path in WORKSTREAMS_DIR.glob("ws_*.json"):
+        payload = load_workstream(path.stem)
+        if payload and payload.get("status") == "active":
+            items.append(workstream_metadata(payload))
+    return sorted(items, key=lambda item: str(item.get("updated_at_utc") or ""), reverse=True)
+
+
 def list_workstreams_with_latest_fallback(investigation_id: str) -> dict:
     exact = list_workstreams(investigation_id)
     if exact:
@@ -3274,15 +3285,13 @@ def run_moshe_playback_reevaluation(run: dict, released_timeframe: dict) -> dict
             run["investigation_id"],
         ))
     else:
-        for workstream in list_workstreams(run["investigation_id"]):
-            if workstream.get("status") != "active":
-                continue
+        for workstream in list_active_workstreams():
             workstream_contexts.append(bounded_workstream_context(
                 {
                     "workstream_id": workstream["workstream_id"],
                     "current_turn_message_id": f"playback-revision-{run['revision']}",
                 },
-                run["investigation_id"],
+                workstream["investigation_id"],
             ))
     scenario_playback = {
             "run_id": run["run_id"],
@@ -3483,10 +3492,7 @@ def playback_has_active_workstreams(run: dict) -> bool:
     if workstream_id:
         workstream = load_workstream(workstream_id)
         return bool(workstream and workstream.get("status") == "active")
-    return any(
-        workstream.get("status") == "active"
-        for workstream in list_workstreams(run["investigation_id"])
-    )
+    return bool(list_active_workstreams())
 
 
 def complete_moshe_playback_reevaluation(
