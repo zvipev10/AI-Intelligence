@@ -22,4 +22,13 @@ and opens the same recommended view used by normal workstream selection.
 
 ## Review recommendation
 
-Approve for deployment after localized production assets receive the same change.
+Approved and deployed.
+
+## Production
+
+- VM: `151.145.93.180`
+- Public asset: `app.js?v=160`
+- `serbia-poc-ui.service`, `hermes-gateway.service`, and
+  `hermes-moshe-gateway.service` are active.
+- Public status and recorded-result replay asset checks passed.
+- Rollback: `/home/ubuntu/deploy-backups/recorded-workstream-results-20260811T184831Z`

@@ -17,3 +17,5 @@ Checkpoint 003 fixes recorded detail playback so result layers are presented as
 they are during normal workstream selection. New recordings contain a stable
 typed presentation snapshot; older recordings fall back to the live endpoint
 when available. Validation: 36 focused and 141 full-suite tests passed.
+Production serves `app.js?v=160`; all UI and Hermes services are active.
+Rollback: `/home/ubuntu/deploy-backups/recorded-workstream-results-20260811T184831Z`.

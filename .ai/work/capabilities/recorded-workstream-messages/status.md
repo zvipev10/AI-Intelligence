@@ -6,11 +6,11 @@ Recorded workstream messages
 
 ## Current phase
 
-Bug-fix validation
+Final acceptance
 
 ## Overall status
 
-Result-presentation fix implemented and validated; deployment pending
+Result-presentation fix implemented, deployed, and approved for merge
 
 ## Who needs to act now
 
@@ -39,7 +39,7 @@ stored HTML.
 
 ## Next expected artifact
 
-Deploy the localized asset and merge the verified fix when requested.
+Merge the verified implementation to `main`.
 
 ## Parent issue
 
