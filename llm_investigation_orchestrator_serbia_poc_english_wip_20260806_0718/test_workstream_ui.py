@@ -109,7 +109,7 @@ class WorkstreamUiTests(unittest.TestCase):
         self.assertNotIn('value="historical"', self.index)
         self.assertNotIn('value="real_time"', self.index)
         self.assertIn('id="intelligencePeriod"', self.index)
-        self.assertIn('app.js?v=144', self.index)
+        self.assertIn('app.js?v=153', self.index)
         self.assertIn("/api/playback/next", self.app)
         self.assertIn("/api/playback/mode", self.app)
         self.assertIn("investigation_id: state.investigationId", self.app)

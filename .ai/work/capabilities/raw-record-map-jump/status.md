@@ -6,20 +6,20 @@ Raw record to map jump
 
 ## Current phase
 
-Phase 1 — capability initiation
+Phase 4 — controlled execution
 
 ## Overall status
 
-Pending review
+In progress
 
 ## Who needs to act now
 
 | Role | Status | Required action | Due before |
 |---|---|---|---|
-| Product/user | Pending | Approve the interaction contract and assumptions | Role enrichment |
-| Development | Not started | Review feasibility after product approval | Execution planning |
-| UX | Not started | Review action placement, popup content, and accessibility | Execution planning |
-| QA | Not started | Review acceptance and regression coverage | Execution planning |
+| Product/user | Approved | Requested development and deployment | Final acceptance |
+| Development | In progress | Implement the approved slice | Checkpoint review |
+| UX | Ready | Validate deployed interaction | Final acceptance |
+| QA | Ready | Run focused and deployed checks | Deployment |
 | Architecture/Security | Not required | No new service, permission, or data flow | N/A |
 
 ## Latest change since previous review
@@ -28,7 +28,7 @@ Initial capability brief created from the user request and current table/map imp
 
 ## Current blockers
 
-Human approval is required before role reviews and implementation planning.
+None.
 
 ## Current risks
 
@@ -36,7 +36,7 @@ Focused-popup lifecycle during map rerenders; generic table control column index
 
 ## Next expected artifact
 
-Product approval, then draft `developer-review.md`, `ux-review.md`, and `qa-review.md`.
+Implementation checkpoint and deployment confirmation.
 
 ## Parent issue
 
@@ -46,19 +46,19 @@ Local draft: `issues/parent-capability.md`
 
 | Issue | Role | Purpose | Status | Blocking? |
 |---|---|---|---|---|
-| `issues/product-review.md` | Product/user | Approve behavior and scope | Open | Yes |
-| Developer review | Development | Select implementation approach | Not created | Yes |
-| UX review | UX | Confirm interaction details | Not created | Yes |
-| QA review | QA | Confirm validation plan | Not created | Yes |
+| `issues/product-review.md` | Product/user | Approve behavior and scope | Complete | No |
+| Developer review | Development | Select implementation approach | Complete | No |
+| UX review | UX | Confirm interaction details | Complete | No |
+| QA review | QA | Confirm validation plan | Complete | No |
 
 ## Artifact links
 
 - Capability brief: `capability-brief.md`
 - Decisions: not created
-- Developer review: not created
-- UX review: not created
-- QA review: not created
-- Execution plan: not created
+- Developer review: `developer-review.md`
+- UX review: `ux-review.md`
+- QA review: `qa-review.md`
+- Execution plan: `execution-plan.md`
 - Latest checkpoint: not created
 - Handoff: not created
 

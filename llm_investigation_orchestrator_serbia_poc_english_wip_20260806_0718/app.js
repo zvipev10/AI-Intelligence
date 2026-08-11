@@ -323,6 +323,7 @@ const state = {
   map: null,
   mapReady: false,
   markers: [],
+  focusedEventPopup: null,
   history: [],
   investigationId: createInvestigationId(),
   investigationName: defaultInvestigationName(INITIAL_LOCALE),
@@ -4408,6 +4409,8 @@ function initPanelResizers() {
 function clearMarkers() {
   state.markers.forEach(marker => marker.remove());
   state.markers = [];
+  state.focusedEventPopup?.remove();
+  state.focusedEventPopup = null;
 }
 
 function renderMap() {
@@ -4518,6 +4521,45 @@ function renderMap() {
   if (!bounds.isEmpty()) state.map.fitBounds(bounds, { padding: 110, maxZoom: 10.2, duration: 450 });
 }
 
+function eventMapCoordinates(event = {}) {
+  const canonical = LOCATIONS[event.location_id] || null;
+  const lon = canonical?.lon ?? event.longitude ?? event.lon;
+  const lat = canonical?.lat ?? event.latitude ?? event.lat;
+  if (lon == null || lat == null || !Number.isFinite(Number(lon)) || !Number.isFinite(Number(lat))) return null;
+  return { lon: Number(lon), lat: Number(lat) };
+}
+
+function showEventOnMap(layerId, eventId) {
+  const layer = state.layers.find(item => String(item.id) === String(layerId));
+  const selectedEvent = (layer?.items || []).find(item => String(item.record_id || item.event_id || "") === String(eventId || ""));
+  const coordinates = eventMapCoordinates(selectedEvent);
+  if (!selectedEvent || !coordinates) return;
+
+  activateView("map");
+  setTimeout(() => {
+    if (!state.mapReady || !state.map) return;
+    state.focusedEventPopup?.remove();
+    const recordId = String(selectedEvent.record_id || selectedEvent.event_id || "-");
+    const popupHtml = `
+      <div class="map-popup event-map-popup" dir="${currentLocale() === "en" ? "ltr" : "rtl"}">
+        <strong dir="ltr">${escapeHtml(recordId)}</strong>
+        <span dir="ltr">${escapeHtml(String(selectedEvent.timestamp_utc || "-"))}</span>
+        <span>${escapeHtml(String(selectedEvent.entity_name || selectedEvent.entity_id || "-"))}</span>
+        <em>${escapeHtml(String(selectedEvent.location_name || selectedEvent.location_id || "-"))}</em>
+        <p>${escapeHtml(String(selectedEvent.event_summary || ""))}</p>
+      </div>`;
+    state.map.easeTo({
+      center: [coordinates.lon, coordinates.lat],
+      zoom: Math.max(Number(state.map.getZoom?.() || 0), 13),
+      duration: 450
+    });
+    state.focusedEventPopup = new maplibregl.Popup({ offset: 20, closeButton: true, closeOnClick: false })
+      .setLngLat([coordinates.lon, coordinates.lat])
+      .setHTML(popupHtml)
+      .addTo(state.map);
+  }, 0);
+}
+
 function renderTimeline() {
   const timeline = document.getElementById("timeline");
   const eventTimelineItems = visibleLayers("timeline")
@@ -4617,6 +4659,7 @@ function enhanceResultsTable(layer) {
   if (!head || !layer) return;
   const control = resultTableControl(layer.id);
   [...head.querySelectorAll("th")].forEach((cell, column) => {
+    if (cell.dataset.resultActionColumn === "true") return;
     const label = normalizedTableCellText(cell.textContent);
     const activeSort = control.sortColumn === column;
     const filterValue = String(control.filters[column] || "");
@@ -4800,9 +4843,14 @@ function renderEvidence() {
     enhanceResultsTable(activeLayer);
     return;
   }
-  head.innerHTML = `<tr><th>${escapeHtml(activeLocaleText("מזהה רשומה", "Record ID"))}</th><th>${escapeHtml(activeLocaleText("זמן", "Time"))}</th><th>${escapeHtml(activeLocaleText("אמינות", "Reliability"))}</th><th>${escapeHtml(activeLocaleText("ודאות", "Certainty"))}</th><th>${escapeHtml(activeLocaleText("גורם", "Actor"))}</th><th>${escapeHtml(activeLocaleText("מיקום", "Location"))}</th><th>${escapeHtml(activeLocaleText("תקציר", "Summary"))}</th></tr>`;
-  body.innerHTML = activeItems.length ? activeItems.map(event => `
+  head.innerHTML = `<tr><th class="result-map-action-column" data-result-action-column="true" aria-label="${escapeHtml(activeLocaleText("פעולות", "Actions"))}"></th><th>${escapeHtml(activeLocaleText("מזהה רשומה", "Record ID"))}</th><th>${escapeHtml(activeLocaleText("זמן", "Time"))}</th><th>${escapeHtml(activeLocaleText("אמינות", "Reliability"))}</th><th>${escapeHtml(activeLocaleText("ודאות", "Certainty"))}</th><th>${escapeHtml(activeLocaleText("גורם", "Actor"))}</th><th>${escapeHtml(activeLocaleText("מיקום", "Location"))}</th><th>${escapeHtml(activeLocaleText("תקציר", "Summary"))}</th></tr>`;
+  body.innerHTML = activeItems.length ? activeItems.map(event => {
+    const eventId = String(event.record_id || event.event_id || "");
+    const hasMapLocation = Boolean(eventMapCoordinates(event));
+    const mapLabel = activeLocaleText(`הצג את ${eventId || "הרשומה"} במפה`, `Show ${eventId || "record"} on map`);
+    return `
     <tr>
+      <td class="result-map-action-cell"><button type="button" class="result-map-action" data-result-map-event="${escapeHtml(eventId)}" data-result-map-layer="${escapeHtml(String(activeLayer.id))}" title="${escapeHtml(mapLabel)}" aria-label="${escapeHtml(mapLabel)}" ${hasMapLocation ? "" : "disabled"}><span class="material-symbols-rounded" aria-hidden="true">location_on</span></button></td>
       <td dir="ltr">${escapeHtml(event.record_id || event.event_id || "-")}</td>
       <td dir="ltr">${escapeHtml(event.timestamp_utc)}</td>
       <td>${escapeHtml(event.source_reliability_label || event.source_reliability || "-")}</td>
@@ -4810,7 +4858,8 @@ function renderEvidence() {
       <td>${escapeHtml(event.entity_name || event.entity_id || "-")}</td>
       <td>${escapeHtml(event.location_name || "-")}</td>
       <td>${escapeHtml(event.event_summary || "-")}</td>
-    </tr>`).join("") : `<tr><td colspan="7" class="empty-cell">${escapeHtml(activeLocaleText("השכבה מוסתרת או ריקה.", "Layer is hidden or empty."))}</td></tr>`;
+    </tr>`;
+  }).join("") : `<tr><td colspan="8" class="empty-cell">${escapeHtml(activeLocaleText("השכבה מוסתרת או ריקה.", "Layer is hidden or empty."))}</td></tr>`;
   enhanceResultsTable(activeLayer);
 }
 
@@ -4889,6 +4938,11 @@ document.addEventListener("input", event => {
 });
 
 document.addEventListener("click", event => {
+  const resultMapEvent = event.target.closest(".result-map-action[data-result-map-event]");
+  if (resultMapEvent) {
+    showEventOnMap(resultMapEvent.dataset.resultMapLayer, resultMapEvent.dataset.resultMapEvent);
+    return;
+  }
   const columnFilterToggle = event.target.closest(".result-column-filter-toggle[data-result-filter-toggle]");
   if (columnFilterToggle) {
     const layerId = columnFilterToggle.dataset.resultLayer;

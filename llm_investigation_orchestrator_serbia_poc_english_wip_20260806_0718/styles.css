@@ -358,6 +358,11 @@ textarea.mention-source::placeholder { color: var(--muted) !important; }
 .result-column-filter-clear:hover { background: rgba(255, 255, 255, .07); color: var(--ink); }
 .result-column-filter-clear .material-symbols-rounded { font-size: 15px; }
 .result-table-no-match td { text-align: center; }
+.result-map-action-column, .result-map-action-cell { width: 38px; min-width: 38px; text-align: center; }
+.result-map-action { width: 26px; height: 26px; display: inline-grid; place-items: center; border: 1px solid rgba(88, 166, 255, .3); border-radius: 6px; background: rgba(88, 166, 255, .08); color: var(--blue); padding: 0; cursor: pointer; }
+.result-map-action:hover, .result-map-action:focus-visible { border-color: rgba(88, 166, 255, .75); background: rgba(88, 166, 255, .18); outline: none; }
+.result-map-action:disabled { border-color: transparent; background: transparent; color: var(--muted); cursor: not-allowed; opacity: .45; }
+.result-map-action .material-symbols-rounded { font-size: 18px; }
 .raw-events-table td:last-child { min-width: 360px; max-width: 560px; line-height: 1.45; }
 .layer-filter-panel { position: absolute; z-index: 4; left: 14px; bottom: calc(var(--raw-overlay-height) + 12px); width: min(320px, calc(100% - 28px)); max-height: min(340px, calc(100% - var(--raw-overlay-height) - 72px)); min-width: 0; border: 1px solid var(--map-control-border); border-radius: 8px; background: var(--map-control-surface); box-shadow: var(--map-control-shadow); backdrop-filter: blur(8px); padding: 10px; overflow: auto; color: var(--ink); text-shadow: var(--readability-shadow); }
 .layer-filter-panel[hidden] { display: none; }
@@ -438,6 +443,8 @@ textarea.mention-source::placeholder { color: var(--muted) !important; }
 .map-popup strong { font-size: 13px; }
 .map-popup span { margin-top: 3px; color: #3b4354; font-size: 11px; }
 .map-popup em { margin-top: 3px; color: #1f5c8f; font-size: 10px; font-style: normal; }
+.event-map-popup { max-width: 320px; }
+.event-map-popup p { margin: 7px 0 0; color: #242b38; font-size: 11px; line-height: 1.45; }
 .timeline { height: 100%; padding: 18px; overflow: auto; }
 .empty-state { display: grid; place-items: center; color: var(--muted); }
 .timeline-item { position: relative; padding: 0 34px 18px 0; }
