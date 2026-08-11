@@ -2,12 +2,12 @@
 
 ## Current state
 
-Implementation is current through checkpoint 017. Investigation selection now
-shows the full registered list, marks one selected investigation active, and
-loads exact investigation-scoped state without adopting unrelated latest
-workstreams. The timeframe-stage interaction from checkpoint 016 remains
-implemented. Checkpoint 017 is deployed from commit `c473a97`; PR #47 remains
-draft pending hands-on acceptance.
+Implementation is current through checkpoint 018. The playback run, visibility
+boundary, status, mode, reset, and Next transition now share one global scope.
+Switching investigations preserves and advances the existing run instead of
+attempting to create a conflicting run. Investigation-scoped workstream state
+remains separate from this global scenario clock. Checkpoint 018 is pending
+Product/QA review and deployment.
 
 ## Delivered in Slice 2
 
@@ -25,6 +25,10 @@ draft pending hands-on acceptance.
 
 ## Validation
 
+- Checkpoint 018 focused scenario playback suite: 16 tests passed.
+- Checkpoint 018 full Python discovery: 132 tests passed.
+- Checkpoint 018 cross-investigation regression confirms one run advances to
+  revision 2 and no second run is created.
 - Checkpoint 017 focused JavaScript/API/playback suite: 45 tests passed.
 - Checkpoint 017 full discovery: 113 tests passed.
 - JavaScript syntax and `git diff --check` passed for checkpoint 017.
@@ -47,6 +51,6 @@ An unconfirmed proposal is lost on refresh. This is the explicitly approved MVP 
 
 ## Next step
 
-Perform hands-on acceptance of `checkpoint-017.md`, review PR #47, and complete
-the outstanding review of `checkpoint-016.md`. The deployment is live and has
-a recoverable pre-deploy `app.js` backup on the VM.
+Review `checkpoint-018.md`, deploy the correction, and verify Next after switching
+investigations. Then complete the outstanding checkpoint 017 and checkpoint 016
+acceptance work.

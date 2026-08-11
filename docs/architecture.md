@@ -38,7 +38,9 @@ Visibility contract:
 
 - UI data-layer queries must filter rows by the active playback `visible_timeframe`.
 - MCP/data queries must respect `active_visibility.json` when active.
-- The active playback visibility policy is currently global for the deployed UI/MCP process.
+- The active playback run and visibility policy are global for the deployed UI/MCP process.
+- Investigation selection changes request and UI context only; it does not select or create a separate playback run.
+- `/api/playback`, `/api/playback/mode`, and `/api/playback/next` resolve the same active global run across investigations.
 - Production smoke or diagnostics that alter `active_visibility.json` must restore the previous policy before completion.
 
 UX contract:

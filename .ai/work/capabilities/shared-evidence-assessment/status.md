@@ -6,11 +6,11 @@ Collaborative Scenario Playback
 
 ## Current phase
 
-Investigation selection correction checkpoint
+Global playback correction checkpoint
 
 ## Overall status
 
-Checkpoint 017 exact investigation selection is deployed and pending Product/UX hands-on acceptance; checkpoint 016 playback acceptance also remains pending
+Checkpoint 018 global playback correction is implemented and pending Product/QA review; checkpoint 017 and checkpoint 016 acceptance also remain pending
 
 ## Accepted direction captured
 
@@ -26,7 +26,7 @@ Checkpoint 017 exact investigation selection is deployed and pending Product/UX 
 | Role | Status | Required action |
 |---|---|---|
 | Product | Review required | Review checkpoint 016 and authorize deployment if accepted. |
-| Development/Architecture | Complete | Minimal interaction and trigger are implemented. |
+| Development/Architecture | Complete | Global playback run resolution is corrected across investigations. |
 | UX | Review required | Confirm the one-button interaction and tooltip. |
 | QA/Security | Complete | Duplicate-trigger and regression coverage pass. |
 
@@ -38,6 +38,9 @@ Checkpoint 017 exact investigation selection is deployed and pending Product/UX 
 
 ## Latest change
 
+- Corrected playback status, mode, reset, and Next to resolve the single active global run.
+- Switching investigations no longer attempts to create a second scenario run.
+- Added a regression test proving investigation B advances the run started from investigation A.
 - Separated investigation search from the active investigation name.
 - Explicit investigation selection now loads exact scoped state and cannot adopt the latest unrelated investigation.
 - Bootstrap-only fallback and stale-response protection preserve legacy continuity without overriding user selection.
@@ -81,7 +84,7 @@ Checkpoint 017 exact investigation selection is deployed and pending Product/UX 
 
 ## Next expected artifact
 
-Product/UX hands-on acceptance of deployed checkpoint 017, plus the outstanding Product approval of checkpoint 016. Draft PR #47 remains open.
+Product/QA review of `checkpoint-018.md`, followed by deployment and hands-on validation. Checkpoint 017 and checkpoint 016 acceptance remain outstanding.
 
 ## Parent and child issues
 
@@ -135,4 +138,5 @@ Product/UX hands-on acceptance of deployed checkpoint 017, plus the outstanding 
 - Playback retrieval visibility: `checkpoint-015.md`
 - Minimal next-stage playback: `checkpoint-016.md`
 - Investigation selection correction: `checkpoint-017.md`
+- Global playback correction: `checkpoint-018.md`
 - Investigation selection plan: `investigation-selection-execution-plan.md`
