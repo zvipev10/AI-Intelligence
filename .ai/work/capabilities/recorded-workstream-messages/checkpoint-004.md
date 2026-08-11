@@ -22,4 +22,16 @@ Validation passed:
 - Focused recorded-workstream/UI suite: 37 tests passed.
 - Full Python discovery: 142 tests passed.
 
-Localized VM deployment is pending.
+## Production
+
+- Deployed to VM `151.145.93.180`.
+- Public asset: `app.js?v=162`.
+- Hebrew and English recorded result-toggle paths were verified in the public
+  cache-bypassed asset.
+- `serbia-poc-ui.service`, `hermes-gateway.service`, and
+  `hermes-moshe-gateway.service` are active.
+- Rollback: `/home/ubuntu/deploy-backups/recorded-result-toggle-20260811T190123Z`.
+
+## Recommendation
+
+Approved for merge.

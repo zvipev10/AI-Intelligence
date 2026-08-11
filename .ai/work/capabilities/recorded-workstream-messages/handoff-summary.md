@@ -19,3 +19,8 @@ typed presentation snapshot; older recordings fall back to the live endpoint
 when available. Validation: 36 focused and 141 full-suite tests passed.
 Production serves `app.js?v=160`; all UI and Hermes services are active.
 Rollback: `/home/ubuntu/deploy-backups/recorded-workstream-results-20260811T184831Z`.
+
+Checkpoint 004 restores the read-only Show/Hide results button on recorded
+workstream detail cards. Validation: 37 focused and 142 full-suite tests passed.
+Production serves `app.js?v=162`; rollback is
+`/home/ubuntu/deploy-backups/recorded-result-toggle-20260811T190123Z`.

@@ -6,11 +6,11 @@ Recorded workstream messages
 
 ## Current phase
 
-Recorded result-toggle correction
+Final acceptance
 
 ## Overall status
 
-Recorded result-toggle correction in validation
+Recorded result-toggle correction implemented, deployed, and approved for merge
 
 ## Who needs to act now
 
@@ -26,6 +26,8 @@ Recorded result-toggle correction in validation
 
 Recorded workstream cards now expose a read-only Show/Hide results control for
 their restored presentation layers.
+Production serves the bilingual correction as `app.js?v=162`; public asset
+verification passed and all UI/Hermes services are active.
 Recorded workstream detail playback now saves and restores the typed result-layer
 snapshot, matching normal workstream selection. Older recordings fall back to
 the live presentation endpoint when the workstream is still available.
