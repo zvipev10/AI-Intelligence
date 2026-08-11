@@ -6,7 +6,7 @@ Collaborative Scenario Playback
 
 ## Current phase
 
-Global playback correction checkpoint
+Playback reset-control implementation
 
 ## Overall status
 
@@ -38,6 +38,8 @@ Checkpoint 018 global playback correction is deployed and smoke-validated, pendi
 
 ## Latest change
 
+- Added a reload-style header control beside Next that resets the global run to
+  its initial time slice through the existing playback mode endpoint.
 - Corrected playback status, mode, reset, and Next to resolve the single active global run.
 - Switching investigations no longer attempts to create a second scenario run.
 - Added a regression test proving investigation B advances the run started from investigation A.
@@ -143,6 +145,7 @@ Product/QA hands-on validation of `checkpoint-018.md`. Checkpoint 017 and checkp
 - Minimal next-stage playback: `checkpoint-016.md`
 - Investigation selection correction: `checkpoint-017.md`
 - Global playback correction: `checkpoint-018.md`
+- Initial time-slice reset control: `checkpoint-022.md`
 - Server-backed investigation registry: `checkpoint-019.md`
 - Production investigation cleanup: `checkpoint-020.md`
 - Global playback workstream reevaluation: `checkpoint-021.md`

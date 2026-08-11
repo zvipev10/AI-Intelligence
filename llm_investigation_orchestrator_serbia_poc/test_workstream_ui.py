@@ -128,6 +128,9 @@ class WorkstreamUiTests(unittest.TestCase):
 
     def test_investigation_playback_control_is_visible_in_upper_bar(self):
         self.assertIn('id="playbackNextButton"', self.index)
+        self.assertIn('id="playbackResetButton"', self.index)
+        self.assertIn('aria-label="איפוס לפרוסת הזמן הראשונה"', self.index)
+        self.assertIn('>refresh</span>', self.index)
         self.assertIn('class="playback-header-button"', self.index)
         self.assertIn('id="intelligenceModeSelect"', self.index)
         self.assertIn('value="historical">מידע היסטורי', self.index)
@@ -137,6 +140,10 @@ class WorkstreamUiTests(unittest.TestCase):
         self.assertIn("/api/playback/mode", self.app)
         self.assertIn("investigation_id: state.investigationId", self.app)
         self.assertIn("advanceInvestigationPlayback", self.app)
+        self.assertIn("resetInvestigationPlayback", self.app)
+        self.assertIn('mode: "real_time",', self.app)
+        self.assertIn("reset: true,", self.app)
+        self.assertIn('playbackResetButton?.addEventListener("click", resetInvestigationPlayback)', self.app)
         self.assertIn("changeIntelligenceMode", self.app)
         self.assertNotIn("initializeHistoricalPlayback", self.app)
         self.assertIn('state.investigationPlayback?.mode !== "real_time"', self.app)

@@ -273,6 +273,7 @@ const workstreamRailList = document.getElementById("workstreamRailList");
 const workstreamRailCount = document.getElementById("workstreamRailCount");
 const workstreamRailToggle = document.getElementById("workstreamRailToggle");
 const playbackNextButton = document.getElementById("playbackNextButton");
+const playbackResetButton = document.getElementById("playbackResetButton");
 const intelligenceModeSelect = document.getElementById("intelligenceModeSelect");
 const intelligencePeriod = document.getElementById("intelligencePeriod");
 const playbackAgentStatus = document.getElementById("playbackAgentStatus");
@@ -2572,7 +2573,7 @@ function formatPlaybackTime(value) {
 }
 
 function renderInvestigationPlayback() {
-  if (!playbackNextButton || !intelligenceModeSelect || !intelligencePeriod) return;
+  if (!playbackNextButton || !playbackResetButton || !intelligenceModeSelect || !intelligencePeriod) return;
   const playback = state.investigationPlayback;
   const mode = playback?.mode || "historical";
   intelligenceModeSelect.value = mode;
@@ -2594,6 +2595,8 @@ function renderInvestigationPlayback() {
   }
   playbackNextButton.hidden = mode !== "real_time" || !next?.timeframe;
   playbackNextButton.disabled = processing;
+  playbackResetButton.hidden = mode !== "real_time";
+  playbackResetButton.disabled = processing;
   if (!next?.timeframe) return;
   const nextTimeframe = next.timeframe;
   const tooltip = `פרק הזמן של השלב הבא: ${formatPlaybackTime(nextTimeframe.from)}–${formatPlaybackTime(nextTimeframe.to)}`;
@@ -2847,6 +2850,35 @@ async function fetchWorkstreamPresentation(workstreamId) {
   const result = await response.json();
   if (!response.ok) throw new Error(result.error || "טעינת תוצאות המעקב נכשלה");
   return result;
+}
+
+async function resetInvestigationPlayback() {
+  if (!playbackResetButton || playbackResetButton.disabled) return;
+  state.playbackPollToken += 1;
+  playbackResetButton.disabled = true;
+  playbackResetButton.innerHTML = '<span class="material-symbols-rounded" aria-hidden="true">progress_activity</span>';
+  try {
+    const response = await fetch("/api/playback/mode", {
+      method: "POST",
+      headers: { "Content-Type": "application/json; charset=utf-8" },
+      body: JSON.stringify({
+        investigation_id: state.investigationId,
+        mode: "real_time",
+        reset: true,
+      }),
+    });
+    const payload = await response.json();
+    if (!response.ok) throw new Error(payload.error || "איפוס התרחיש נכשל");
+    state.investigationPlayback = payload;
+    renderInvestigationPlayback();
+  } catch (error) {
+    workstreamMessage(
+      `<p>לא הצלחתי לאפס לפרוסת הזמן הראשונה.</p><div class="answer-callout">${escapeHtml(error.message)}</div>`
+    );
+  } finally {
+    playbackResetButton.innerHTML = '<span class="material-symbols-rounded" aria-hidden="true">refresh</span>';
+    renderInvestigationPlayback();
+  }
 }
 
 async function showWorkstreamResultVisibility(workstreamId, btn) {
@@ -5248,6 +5280,7 @@ promptOptionsButton.addEventListener("click", event => {
 });
 workstreamRailToggle?.addEventListener("click", () => setWorkstreamRailCollapsed(!state.workstreamRailCollapsed));
 playbackNextButton?.addEventListener("click", advanceInvestigationPlayback);
+playbackResetButton?.addEventListener("click", resetInvestigationPlayback);
 intelligenceModeSelect?.addEventListener("change", changeIntelligenceMode);
 workstreamComposerCancel?.addEventListener("click", () => setWorkstreamComposerMode(false));
 selectedLayersButton.addEventListener("click", openQueryLayersModal);
