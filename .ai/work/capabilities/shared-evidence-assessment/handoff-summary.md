@@ -2,12 +2,12 @@
 
 ## Current state
 
-Implementation is current through checkpoint 018. The playback run, visibility
+Implementation and deployment are current through checkpoint 018. The playback run, visibility
 boundary, status, mode, reset, and Next transition now share one global scope.
 Switching investigations preserves and advances the existing run instead of
 attempting to create a conflicting run. Investigation-scoped workstream state
-remains separate from this global scenario clock. Checkpoint 018 is pending
-Product/QA review and deployment.
+remains separate from this global scenario clock. The correction is live on the
+locale-aware VM build and pending Product/QA hands-on acceptance.
 
 ## Delivered in Slice 2
 
@@ -29,6 +29,9 @@ Product/QA review and deployment.
 - Checkpoint 018 full Python discovery: 132 tests passed.
 - Checkpoint 018 cross-investigation regression confirms one run advances to
   revision 2 and no second run is created.
+- Production smoke confirmed different investigation IDs return the same global
+  run ID/revision, both services are active, and public arrow assets are correct.
+- Rollback backup: `/home/ubuntu/deploy-backups/global-playback-arrow-20260811T160526Z`.
 - Checkpoint 017 focused JavaScript/API/playback suite: 45 tests passed.
 - Checkpoint 017 full discovery: 113 tests passed.
 - JavaScript syntax and `git diff --check` passed for checkpoint 017.
@@ -51,6 +54,6 @@ An unconfirmed proposal is lost on refresh. This is the explicitly approved MVP 
 
 ## Next step
 
-Review `checkpoint-018.md`, deploy the correction, and verify Next after switching
-investigations. Then complete the outstanding checkpoint 017 and checkpoint 016
-acceptance work.
+Review `checkpoint-018.md` in the live UI and verify Next after switching
+investigations plus the collapsed workstream arrow direction. Then complete the
+outstanding checkpoint 017 and checkpoint 016 acceptance work.

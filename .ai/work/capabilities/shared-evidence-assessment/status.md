@@ -10,7 +10,7 @@ Global playback correction checkpoint
 
 ## Overall status
 
-Checkpoint 018 global playback correction is implemented and pending Product/QA review; checkpoint 017 and checkpoint 016 acceptance also remain pending
+Checkpoint 018 global playback correction is deployed and smoke-validated, pending Product/QA hands-on acceptance; checkpoint 017 and checkpoint 016 acceptance also remain pending
 
 ## Accepted direction captured
 
@@ -26,7 +26,7 @@ Checkpoint 018 global playback correction is implemented and pending Product/QA 
 | Role | Status | Required action |
 |---|---|---|
 | Product | Review required | Review checkpoint 016 and authorize deployment if accepted. |
-| Development/Architecture | Complete | Global playback run resolution is corrected across investigations. |
+| Development/Architecture | Complete | Global playback run resolution is corrected and deployed across investigations. |
 | UX | Review required | Confirm the one-button interaction and tooltip. |
 | QA/Security | Complete | Duplicate-trigger and regression coverage pass. |
 
@@ -41,6 +41,10 @@ Checkpoint 018 global playback correction is implemented and pending Product/QA 
 - Corrected playback status, mode, reset, and Next to resolve the single active global run.
 - Switching investigations no longer attempts to create a second scenario run.
 - Added a regression test proving investigation B advances the run started from investigation A.
+- Deployed the correction against the newer locale-aware VM build and verified
+  two investigation IDs return the same active run and revision.
+- Preserved `app.js?v=154`; its closed workstream arrow was already correct, and
+  corrected the initial expanded icon in the live HTML.
 - Separated investigation search from the active investigation name.
 - Explicit investigation selection now loads exact scoped state and cannot adopt the latest unrelated investigation.
 - Bootstrap-only fallback and stale-response protection preserve legacy continuity without overriding user selection.
@@ -84,7 +88,7 @@ Checkpoint 018 global playback correction is implemented and pending Product/QA 
 
 ## Next expected artifact
 
-Product/QA review of `checkpoint-018.md`, followed by deployment and hands-on validation. Checkpoint 017 and checkpoint 016 acceptance remain outstanding.
+Product/QA hands-on validation of `checkpoint-018.md`. Checkpoint 017 and checkpoint 016 acceptance remain outstanding.
 
 ## Parent and child issues
 

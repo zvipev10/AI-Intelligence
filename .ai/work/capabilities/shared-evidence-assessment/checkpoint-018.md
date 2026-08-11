@@ -2,7 +2,7 @@
 
 ## Checkpoint status
 
-Implemented; pending Product/QA review and deployment.
+Deployed and smoke-validated; pending Product/QA hands-on acceptance.
 
 ## Problem
 
@@ -34,6 +34,21 @@ second run and returned `Another scenario run is already active`.
 - `python -m unittest discover -p 'test_*.py'`: 132 tests passed.
 - Python compilation: passed.
 - `git diff --check`: passed.
+- Live Hebrew status endpoint reports the configured V2.1 runtime with 14,800 rows.
+- Two read-only playback requests with different investigation IDs returned the
+  same active run ID and revision.
+- Public HTML and JavaScript returned HTTP 200 and exposed the corrected initial
+  and collapsed workstream arrows.
+- `serbia-poc-ui.service` and `hermes-gateway.service` remained active.
+
+## Deployment
+
+- Deployed to `/opt/serbia-poc-ui` on 2026-08-11.
+- Preserved the newer localized production build instead of replacing it with
+  the older repository asset versions.
+- Patched the locale-aware live `server.py` and the initial workstream icon in
+  `index.html`; live `app.js?v=154` already contained the requested dynamic arrow mapping.
+- Rollback backup: `/home/ubuntu/deploy-backups/global-playback-arrow-20260811T160526Z`.
 
 ## Risks
 
@@ -44,5 +59,6 @@ second run and returned `Another scenario run is already active`.
 
 ## Review request
 
-Product/QA should verify that switching investigations preserves the timeframe and
-that one press of Next advances it without a conflict message or duplicate run.
+Product/QA should verify in the browser that switching investigations preserves the
+timeframe, that one press of Next advances it without a conflict message or duplicate
+run, and that the collapsed workstream arrow points right.
