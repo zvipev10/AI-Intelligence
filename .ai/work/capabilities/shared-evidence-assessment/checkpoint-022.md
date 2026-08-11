@@ -25,4 +25,16 @@ Implementation validation passed:
 - Focused playback/header UI suite: 33 tests passed.
 - Full Python discovery: 141 tests passed.
 
-Localized VM deployment is pending.
+## Production
+
+- Deployed to VM `151.145.93.180`.
+- Public asset: `app.js?v=161`.
+- Hebrew and English labels and the reset handler were verified in the public
+  cache-bypassed assets.
+- `serbia-poc-ui.service`, `hermes-gateway.service`, and
+  `hermes-moshe-gateway.service` are active.
+- Rollback: `/home/ubuntu/deploy-backups/playback-reset-button-20260811T185306Z`.
+
+## Recommendation
+
+Approved for merge.

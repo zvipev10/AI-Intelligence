@@ -6,7 +6,7 @@ Collaborative Scenario Playback
 
 ## Current phase
 
-Playback reset-control implementation
+Playback reset-control final acceptance
 
 ## Overall status
 
@@ -40,6 +40,8 @@ Checkpoint 018 global playback correction is deployed and smoke-validated, pendi
 
 - Added a reload-style header control beside Next that resets the global run to
   its initial time slice through the existing playback mode endpoint.
+- Deployed the bilingual control as `app.js?v=161`; public asset checks passed
+  and all UI/Hermes services are active.
 - Corrected playback status, mode, reset, and Next to resolve the single active global run.
 - Switching investigations no longer attempts to create a second scenario run.
 - Added a regression test proving investigation B advances the run started from investigation A.
