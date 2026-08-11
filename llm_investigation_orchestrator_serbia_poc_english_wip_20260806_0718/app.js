@@ -3193,8 +3193,9 @@ function buildFinalQueryContext(result, prompt) {
 }
 
 function resolveFinalResultView(result = {}, layers = []) {
-  const requestedView = layers.find(layer => ["map", "timeline"].includes(layer.preferredView))?.preferredView
-    || result.recommended_view;
+  const requestedView = ["map", "timeline"].includes(result.recommended_view)
+    ? result.recommended_view
+    : layers.find(layer => ["map", "timeline"].includes(layer.preferredView))?.preferredView;
   if (["map", "timeline"].includes(requestedView)) return requestedView;
   if (layers.some(layer => layer.capabilities?.map)) return "map";
   if (layers.some(layer => layer.capabilities?.timeline)) return "timeline";
