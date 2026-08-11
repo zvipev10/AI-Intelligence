@@ -233,6 +233,14 @@ class WorkstreamUiTests(unittest.TestCase):
         self.assertIn('result.workstream_recording = {', self.app)
         self.assertIn('kind: "creation"', self.app)
         self.assertIn('${!options.recorded ? `<button type="button" class="danger-button"', self.app)
+
+    def test_saved_recordings_replay_steps_with_two_second_delays_before_final_answer(self):
+        self.assertIn("const SAVED_REPLAY_STEP_DELAY_MS = 2000;", self.app)
+        self.assertIn("renderActivitySteps(steps.slice(0, index + 1), result);", self.app)
+        self.assertIn("if (index > 0) await sleep(SAVED_REPLAY_STEP_DELAY_MS);", self.app)
+        self.assertIn("await sleep(SAVED_REPLAY_STEP_DELAY_MS);", self.app)
+        self.assertIn("applyAgentResult(result, prompt, { keepRenderedSteps: true });", self.app)
+        self.assertIn("await replaySavedResult(result, prompt);", self.app)
         self.assertIn(".workstream-rail[hidden]", self.styles)
         self.assertIn(".workstream-rail-card.has-new", self.styles)
 

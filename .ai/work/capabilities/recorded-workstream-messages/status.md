@@ -24,8 +24,8 @@ Implemented and deployed
 
 ## Latest change since previous review
 
-Product clarified that both workstream messages must expose the actual existing
-recording save interaction, including persistence—not replay support alone.
+Timed saved-recording replay now reveals steps every two seconds and withholds
+the final message until two seconds after the last step.
 
 ## Current blockers
 
@@ -60,7 +60,7 @@ Draft: `issues/parent-capability.md`
 - UX review: `ux-review.md`
 - QA review: `qa-review.md`
 - Execution plan: `execution-plan.md`
-- Checkpoint: `checkpoint-001.md`
+- Checkpoint: `checkpoint-002.md`
 - Handoff: `handoff-summary.md`
 
 ## Gate checklist

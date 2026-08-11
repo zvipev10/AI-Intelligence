@@ -3735,16 +3735,20 @@ function inferRecommendedView(prompt, answer) {
   return { view, reason: reasons[view] };
 }
 
-function renderActivitySteps(steps, sourceBase = null) {
-  const shouldFollow = conversationIsNearBottom();
-  ensureAssistantResearchMessage();
-  state.activeActivityList.innerHTML = "";
+function visibleActivitySteps(steps) {
   const internalWorkstreamTools = new Set([
     "prepare_workstream_creation",
     "prepare_workstream_indication_proposal",
     "decide_workstream_indication_proposal"
   ]);
-  (steps || []).filter(step => !internalWorkstreamTools.has(step.tool)).forEach((step, index) => {
+  return (steps || []).filter(step => !internalWorkstreamTools.has(step.tool));
+}
+
+function renderActivitySteps(steps, sourceBase = null) {
+  const shouldFollow = conversationIsNearBottom();
+  ensureAssistantResearchMessage();
+  state.activeActivityList.innerHTML = "";
+  visibleActivitySteps(steps).forEach((step, index) => {
     const explanation = step.model_explanation || {};
     const number = index + 1;
     addActivity(step.tool, step.action, step.result, {
@@ -3764,6 +3768,23 @@ function renderActivitySteps(steps, sourceBase = null) {
 
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+const SAVED_REPLAY_STEP_DELAY_MS = 2000;
+
+async function replaySavedResult(result, prompt) {
+  const steps = visibleActivitySteps(result.investigation_steps || []);
+  if (!steps.length) {
+    applyAgentResult(result, prompt);
+    return;
+  }
+  startAssistantResearchMessage();
+  for (let index = 0; index < steps.length; index += 1) {
+    if (index > 0) await sleep(SAVED_REPLAY_STEP_DELAY_MS);
+    renderActivitySteps(steps.slice(0, index + 1), result);
+  }
+  await sleep(SAVED_REPLAY_STEP_DELAY_MS);
+  applyAgentResult(result, prompt, { keepRenderedSteps: true });
 }
 
 function canSaveResult(result, prompt) {
@@ -3996,7 +4017,7 @@ async function runSavedQuestion(savedId) {
     if (result.workstream_recording?.kind === "detail" && result.workstream_recording?.workstream) {
       appendWorkstreamUpdate(result.workstream_recording.workstream, { recorded: true });
     } else {
-      applyAgentResult(result, prompt);
+      await replaySavedResult(result, prompt);
     }
   } catch (error) {
     startAssistantResearchMessage("טעינת שאלה שמורה נכשלה.");
