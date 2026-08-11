@@ -40,7 +40,7 @@ class FinalResultAutoVisualizationTests(unittest.TestCase):
         self.assertNotIn("buildEvidenceReferenceLayers", presenter)
 
     def test_asset_cache_key_is_bumped(self):
-        self.assertIn('app.js?v=153', self.index)
+        self.assertIn('app.js?v=154', self.index)
 
 
 if __name__ == "__main__":

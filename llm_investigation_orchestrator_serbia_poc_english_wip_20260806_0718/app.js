@@ -324,6 +324,7 @@ const state = {
   mapReady: false,
   markers: [],
   focusedEventPopup: null,
+  focusedMapSelection: null,
   history: [],
   investigationId: createInvestigationId(),
   investigationName: defaultInvestigationName(INITIAL_LOCALE),
@@ -4522,40 +4523,76 @@ function renderMap() {
 }
 
 function eventMapCoordinates(event = {}) {
-  const canonical = LOCATIONS[event.location_id] || null;
+  const locationId = event.location_id || event.key;
+  const requestedName = String(event.location_name || event.name || event.label || "").trim().toLowerCase();
+  const canonical = LOCATIONS[locationId] || Object.values(LOCATIONS).find(location => (
+    requestedName && String(location.name || "").trim().toLowerCase() === requestedName
+  )) || null;
   const lon = canonical?.lon ?? event.longitude ?? event.lon;
   const lat = canonical?.lat ?? event.latitude ?? event.lat;
   if (lon == null || lat == null || !Number.isFinite(Number(lon)) || !Number.isFinite(Number(lat))) return null;
   return { lon: Number(lon), lat: Number(lat) };
 }
 
-function showEventOnMap(layerId, eventId) {
+function mapSelectionKey(layerId, kind, itemId) {
+  return `${String(layerId)}:${String(kind)}:${String(itemId)}`;
+}
+
+function isMapItemSelected(layerId, kind, itemId) {
+  return state.focusedMapSelection === mapSelectionKey(layerId, kind, itemId);
+}
+
+function mapItemId(item = {}, kind = "event") {
+  if (kind === "target") return String(item.target_id || item.id || "");
+  if (kind === "location") return String(item.location_id || item.key || item.id || "");
+  return String(item.record_id || item.event_id || item.id || "");
+}
+
+function mapActionButton(layerId, kind, itemId, item) {
+  const selected = isMapItemSelected(layerId, kind, itemId);
+  const available = Boolean(eventMapCoordinates(item));
+  const label = selected
+    ? activeLocaleText("בטל בחירה במפה", "Clear map selection")
+    : activeLocaleText("הצג במפה", "Show on map");
+  return `<button type="button" class="result-map-action ${selected ? "active" : ""}" data-result-map-kind="${escapeHtml(kind)}" data-result-map-item="${escapeHtml(itemId)}" data-result-map-layer="${escapeHtml(String(layerId))}" title="${escapeHtml(label)}" aria-label="${escapeHtml(label)}" aria-pressed="${selected ? "true" : "false"}" ${available ? "" : "disabled"}><span class="material-symbols-rounded" aria-hidden="true">${selected ? "location_off" : "location_on"}</span></button>`;
+}
+
+function mapItemPopupHtml(item, kind) {
+  if (kind === "target") return `<div class="map-popup target-map-popup" dir="${currentLocale() === "en" ? "ltr" : "rtl"}"><strong>${escapeHtml(String(item.title || item.target_id || activeLocaleText("מועמד מטרה", "Target candidate")))}</strong><span>${escapeHtml(String(item.object_class || "-"))} · ${escapeHtml(String(item.entity_name || item.entity_id || "-"))}</span><span>${escapeHtml(activeLocaleText("ביטחון", "Confidence"))} ${escapeHtml(String(confidenceLabel(item.confidence)))}</span><p>${escapeHtml(String(item.summary || ""))}</p></div>`;
+  if (kind === "location") return `<div class="map-popup" dir="${currentLocale() === "en" ? "ltr" : "rtl"}"><strong>${escapeHtml(String(item.location_name || item.name || item.label || item.location_id || item.key || "-"))}</strong><span dir="ltr">${escapeHtml(String(item.location_id || item.key || "-"))}</span><span>${escapeHtml(activeLocaleText("כמות", "Count"))}: ${Number(item.event_count || item.count || 0).toLocaleString(currentLocaleTag())}</span>${item.municipality ? `<em>${escapeHtml(String(item.municipality))}</em>` : ""}</div>`;
+  const recordId = String(item.record_id || item.event_id || "-");
+  return `<div class="map-popup event-map-popup" dir="${currentLocale() === "en" ? "ltr" : "rtl"}"><strong dir="ltr">${escapeHtml(recordId)}</strong><span dir="ltr">${escapeHtml(String(item.timestamp_utc || "-"))}</span><span>${escapeHtml(String(item.entity_name || item.entity_id || "-"))}</span><em>${escapeHtml(String(item.location_name || item.location_id || "-"))}</em><p>${escapeHtml(String(item.event_summary || ""))}</p></div>`;
+}
+
+function toggleMapItem(layerId, kind, itemId) {
   const layer = state.layers.find(item => String(item.id) === String(layerId));
-  const selectedEvent = (layer?.items || []).find(item => String(item.record_id || item.event_id || "") === String(eventId || ""));
+  const selectedEvent = (layer?.items || []).find(item => mapItemId(item, kind) === String(itemId || ""));
   const coordinates = eventMapCoordinates(selectedEvent);
   if (!selectedEvent || !coordinates) return;
+  const selectionKey = mapSelectionKey(layerId, kind, itemId);
+  if (state.focusedMapSelection === selectionKey) {
+    state.focusedMapSelection = null;
+    state.focusedEventPopup?.remove();
+    state.focusedEventPopup = null;
+    renderEvidence();
+    return;
+  }
+  state.focusedEventPopup?.remove();
+  state.focusedEventPopup = null;
+  state.focusedMapSelection = selectionKey;
+  renderEvidence();
 
   activateView("map");
   setTimeout(() => {
     if (!state.mapReady || !state.map) return;
-    state.focusedEventPopup?.remove();
-    const recordId = String(selectedEvent.record_id || selectedEvent.event_id || "-");
-    const popupHtml = `
-      <div class="map-popup event-map-popup" dir="${currentLocale() === "en" ? "ltr" : "rtl"}">
-        <strong dir="ltr">${escapeHtml(recordId)}</strong>
-        <span dir="ltr">${escapeHtml(String(selectedEvent.timestamp_utc || "-"))}</span>
-        <span>${escapeHtml(String(selectedEvent.entity_name || selectedEvent.entity_id || "-"))}</span>
-        <em>${escapeHtml(String(selectedEvent.location_name || selectedEvent.location_id || "-"))}</em>
-        <p>${escapeHtml(String(selectedEvent.event_summary || ""))}</p>
-      </div>`;
     state.map.easeTo({
       center: [coordinates.lon, coordinates.lat],
-      zoom: Math.max(Number(state.map.getZoom?.() || 0), 13),
+      zoom: Math.max(Number(state.map.getZoom?.() || 0), kind === "location" ? 12 : 13),
       duration: 450
     });
     state.focusedEventPopup = new maplibregl.Popup({ offset: 20, closeButton: true, closeOnClick: false })
       .setLngLat([coordinates.lon, coordinates.lat])
-      .setHTML(popupHtml)
+      .setHTML(mapItemPopupHtml(selectedEvent, kind))
       .addTo(state.map);
   }, 0);
 }
@@ -4758,9 +4795,13 @@ function renderEvidence() {
   renderLayerFilterPanel(activeLayer);
   const activeItems = activeLayer.visible ? itemsForLayerPresentation(activeLayer) : [];
   if (activeLayer.kind === "attack_targets") {
-    head.innerHTML = `<tr><th>${escapeHtml(activeLocaleText("מטרה", "Target"))}</th><th>${escapeHtml(activeLocaleText("סוג אובייקט", "Object type"))}</th><th>${escapeHtml(activeLocaleText("ישות", "Entity"))}</th><th>${escapeHtml(activeLocaleText("מיקום קנוני", "Canonical location"))}</th><th>${escapeHtml(activeLocaleText("ביטחון", "Confidence"))}</th><th>${escapeHtml(activeLocaleText("כמות", "Quantity"))}</th><th>${escapeHtml(activeLocaleText("סיכום", "Summary"))}</th><th>${escapeHtml(activeLocaleText("סוגי מקור", "Source types"))}</th><th>${escapeHtml(activeLocaleText("רשומות גולמיות", "Raw records"))}</th></tr>`;
-    body.innerHTML = activeItems.length ? activeItems.map(item => `
-      <tr class="attack-target-row">
+    head.innerHTML = `<tr><th class="result-map-action-column" data-result-action-column="true"></th><th>${escapeHtml(activeLocaleText("מטרה", "Target"))}</th><th>${escapeHtml(activeLocaleText("סוג אובייקט", "Object type"))}</th><th>${escapeHtml(activeLocaleText("ישות", "Entity"))}</th><th>${escapeHtml(activeLocaleText("מיקום קנוני", "Canonical location"))}</th><th>${escapeHtml(activeLocaleText("ביטחון", "Confidence"))}</th><th>${escapeHtml(activeLocaleText("כמות", "Quantity"))}</th><th>${escapeHtml(activeLocaleText("סיכום", "Summary"))}</th><th>${escapeHtml(activeLocaleText("סוגי מקור", "Source types"))}</th><th>${escapeHtml(activeLocaleText("רשומות גולמיות", "Raw records"))}</th></tr>`;
+    body.innerHTML = activeItems.length ? activeItems.map(item => {
+      const itemId = mapItemId(item, "target");
+      const selected = isMapItemSelected(activeLayer.id, "target", itemId);
+      return `
+      <tr class="attack-target-row ${selected ? "map-selected-row" : ""}">
+        <td class="result-map-action-cell">${mapActionButton(activeLayer.id, "target", itemId, item)}</td>
         <td><strong>${escapeHtml(String(item.title || item.target_id || "-"))}</strong><small dir="ltr">${escapeHtml(String(item.target_id || "-"))}</small></td>
         <td>${escapeHtml(String(item.object_class || "-"))}</td>
         <td>${escapeHtml(String(item.entity_name || item.entity_id || "-"))}</td>
@@ -4770,21 +4811,27 @@ function renderEvidence() {
         <td>${escapeHtml(String(item.summary || "-"))}</td>
         <td>${(item.source_types || []).length ? (item.source_types || []).map(sourceType => `<span class="target-source-type">${escapeHtml(String(sourceType))}</span>`).join("<br>") : "-"}</td>
         <td><strong>${Number(item.evidence_count || (item.raw_data_references || []).length || 0).toLocaleString(currentLocaleTag())}</strong></td>
-      </tr>`).join("") : `<tr><td colspan="9" class="empty-cell">${escapeHtml(activeLocaleText("לא נמצאו מועמדי מטרה להצגה.", "No target candidates found for display."))}</td></tr>`;
+      </tr>`;
+    }).join("") : `<tr><td colspan="10" class="empty-cell">${escapeHtml(activeLocaleText("לא נמצאו מועמדי מטרה להצגה.", "No target candidates found for display."))}</td></tr>`;
     enhanceResultsTable(activeLayer);
     return;
   }
   if (activeLayer.kind === "location_metadata") {
-    head.innerHTML = `<tr><th>${escapeHtml(activeLocaleText("מיקום", "Location"))}</th><th>${escapeHtml(activeLocaleText("אירועים", "Events"))}</th><th>${escapeHtml(activeLocaleText("רשות", "Municipality"))}</th><th>${escapeHtml(activeLocaleText("סוג", "Type"))}</th><th>${escapeHtml(activeLocaleText("דיוק", "Precision"))}</th><th>ID</th></tr>`;
-    body.innerHTML = activeItems.length ? activeItems.map(item => `
-      <tr>
+    head.innerHTML = `<tr><th class="result-map-action-column" data-result-action-column="true"></th><th>${escapeHtml(activeLocaleText("מיקום", "Location"))}</th><th>${escapeHtml(activeLocaleText("אירועים", "Events"))}</th><th>${escapeHtml(activeLocaleText("רשות", "Municipality"))}</th><th>${escapeHtml(activeLocaleText("סוג", "Type"))}</th><th>${escapeHtml(activeLocaleText("דיוק", "Precision"))}</th><th>ID</th></tr>`;
+    body.innerHTML = activeItems.length ? activeItems.map(item => {
+      const itemId = mapItemId(item, "location");
+      const selected = isMapItemSelected(activeLayer.id, "location", itemId);
+      return `
+      <tr class="${selected ? "map-selected-row" : ""}">
+        <td class="result-map-action-cell">${mapActionButton(activeLayer.id, "location", itemId, item)}</td>
         <td>${escapeHtml(item.location_name || item.name || item.location_id || "-")}</td>
         <td>${Number(item.event_count || item.count || 0).toLocaleString(currentLocaleTag())}</td>
         <td>${escapeHtml(item.municipality || "-")}</td>
         <td>${escapeHtml(item.type || "-")}</td>
         <td>${escapeHtml(item.precision || "-")}</td>
         <td dir="ltr">${escapeHtml(item.location_id || "-")}</td>
-      </tr>`).join("") : `<tr><td colspan="6" class="empty-cell">${escapeHtml(activeLocaleText("השכבה מוסתרת או ריקה.", "Layer is hidden or empty."))}</td></tr>`;
+      </tr>`;
+    }).join("") : `<tr><td colspan="7" class="empty-cell">${escapeHtml(activeLocaleText("השכבה מוסתרת או ריקה.", "Layer is hidden or empty."))}</td></tr>`;
     enhanceResultsTable(activeLayer);
     return;
   }
@@ -4807,14 +4854,19 @@ function renderEvidence() {
     return;
   }
   if (activeLayer.kind === "locations") {
-    head.innerHTML = `<tr><th>${escapeHtml(activeLocaleText("מיקום", "Location"))}</th><th>${escapeHtml(activeLocaleText("כמות", "Count"))}</th><th>ID</th><th>${escapeHtml(activeLocaleText("סוג שכבה", "Layer type"))}</th></tr>`;
-    body.innerHTML = activeItems.length ? activeItems.map(item => `
-      <tr>
+    head.innerHTML = `<tr><th class="result-map-action-column" data-result-action-column="true"></th><th>${escapeHtml(activeLocaleText("מיקום", "Location"))}</th><th>${escapeHtml(activeLocaleText("כמות", "Count"))}</th><th>ID</th><th>${escapeHtml(activeLocaleText("סוג שכבה", "Layer type"))}</th></tr>`;
+    body.innerHTML = activeItems.length ? activeItems.map(item => {
+      const itemId = mapItemId(item, "location");
+      const selected = isMapItemSelected(activeLayer.id, "location", itemId);
+      return `
+      <tr class="${selected ? "map-selected-row" : ""}">
+        <td class="result-map-action-cell">${mapActionButton(activeLayer.id, "location", itemId, item)}</td>
         <td>${escapeHtml(item.location_name || item.label || item.key || item.location_id || "-")}</td>
         <td>${Number(item.count || 0).toLocaleString(currentLocaleTag())}</td>
         <td dir="ltr">${escapeHtml(item.location_id || item.key || "-")}</td>
         <td>${escapeHtml(activeLayer.label)}</td>
-      </tr>`).join("") : `<tr><td colspan="4" class="empty-cell">${escapeHtml(activeLocaleText("השכבה מוסתרת או ריקה.", "Layer is hidden or empty."))}</td></tr>`;
+      </tr>`;
+    }).join("") : `<tr><td colspan="5" class="empty-cell">${escapeHtml(activeLocaleText("השכבה מוסתרת או ריקה.", "Layer is hidden or empty."))}</td></tr>`;
     enhanceResultsTable(activeLayer);
     return;
   }
@@ -4846,11 +4898,10 @@ function renderEvidence() {
   head.innerHTML = `<tr><th class="result-map-action-column" data-result-action-column="true" aria-label="${escapeHtml(activeLocaleText("פעולות", "Actions"))}"></th><th>${escapeHtml(activeLocaleText("מזהה רשומה", "Record ID"))}</th><th>${escapeHtml(activeLocaleText("זמן", "Time"))}</th><th>${escapeHtml(activeLocaleText("אמינות", "Reliability"))}</th><th>${escapeHtml(activeLocaleText("ודאות", "Certainty"))}</th><th>${escapeHtml(activeLocaleText("גורם", "Actor"))}</th><th>${escapeHtml(activeLocaleText("מיקום", "Location"))}</th><th>${escapeHtml(activeLocaleText("תקציר", "Summary"))}</th></tr>`;
   body.innerHTML = activeItems.length ? activeItems.map(event => {
     const eventId = String(event.record_id || event.event_id || "");
-    const hasMapLocation = Boolean(eventMapCoordinates(event));
-    const mapLabel = activeLocaleText(`הצג את ${eventId || "הרשומה"} במפה`, `Show ${eventId || "record"} on map`);
+    const selected = isMapItemSelected(activeLayer.id, "event", eventId);
     return `
-    <tr>
-      <td class="result-map-action-cell"><button type="button" class="result-map-action" data-result-map-event="${escapeHtml(eventId)}" data-result-map-layer="${escapeHtml(String(activeLayer.id))}" title="${escapeHtml(mapLabel)}" aria-label="${escapeHtml(mapLabel)}" ${hasMapLocation ? "" : "disabled"}><span class="material-symbols-rounded" aria-hidden="true">location_on</span></button></td>
+    <tr class="${selected ? "map-selected-row" : ""}">
+      <td class="result-map-action-cell">${mapActionButton(activeLayer.id, "event", eventId, event)}</td>
       <td dir="ltr">${escapeHtml(event.record_id || event.event_id || "-")}</td>
       <td dir="ltr">${escapeHtml(event.timestamp_utc)}</td>
       <td>${escapeHtml(event.source_reliability_label || event.source_reliability || "-")}</td>
@@ -4877,6 +4928,7 @@ function resetInvestigation(options = {}) {
   state.rawOverlayMinimized = false;
   state.rawOverlayHeight = 28;
   state.resultTableControls.clear();
+  state.focusedMapSelection = null;
   state.history = [];
   state.workstreamLoadToken += 1;
   state.workstreams = [];
@@ -4938,9 +4990,9 @@ document.addEventListener("input", event => {
 });
 
 document.addEventListener("click", event => {
-  const resultMapEvent = event.target.closest(".result-map-action[data-result-map-event]");
+  const resultMapEvent = event.target.closest(".result-map-action[data-result-map-item]");
   if (resultMapEvent) {
-    showEventOnMap(resultMapEvent.dataset.resultMapLayer, resultMapEvent.dataset.resultMapEvent);
+    toggleMapItem(resultMapEvent.dataset.resultMapLayer, resultMapEvent.dataset.resultMapKind, resultMapEvent.dataset.resultMapItem);
     return;
   }
   const columnFilterToggle = event.target.closest(".result-column-filter-toggle[data-result-filter-toggle]");
@@ -5384,6 +5436,7 @@ async function boot() {
           lon: Number(location.longitude)
         };
       });
+      renderEvidence();
     }
     const datasetUrl = runtimeStatus.dataset_url || "./data/serbia_kosovo_events_projection.csv";
     const response = await fetch(datasetUrl, { cache: "no-store" });
