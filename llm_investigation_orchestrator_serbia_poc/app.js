@@ -1780,6 +1780,10 @@ function workstreamContextForChat(messageId) {
 
 function applyWorkstreamChatResult(result) {
   if (result.workstream_created) {
+    result.workstream_recording = {
+      kind: "creation",
+      workstream: result.workstream_created
+    };
     state.workstreams = [
       result.workstream_created,
       ...state.workstreams.filter(item => item.workstream_id !== result.workstream_created.workstream_id)
@@ -2867,7 +2871,9 @@ async function showWorkstreamResultVisibility(workstreamId, btn) {
   }
 }
 
-function appendWorkstreamUpdate(workstream) {
+const workstreamRecordingSnapshots = new Map();
+
+function appendWorkstreamUpdate(workstream, options = {}) {
   conversation.querySelectorAll("[data-workstream-update-id]").forEach(message => {
     if (message.dataset.workstreamUpdateId === workstream.workstream_id) message.remove();
   });
@@ -2895,13 +2901,15 @@ function appendWorkstreamUpdate(workstream) {
     ${responsibilityHtml}
     ${workstreamArtifactHtml(workstream)}
     <div class="workstream-message-actions">
-      ${workstreamHasPresentation(workstream) ? `<button type="button" class="final-answer-show-btn layers-hidden" data-workstream-results="${escapeHtml(workstream.workstream_id)}" data-source-id="${escapeHtml(workstreamResultSourceId(workstream.workstream_id))}" title="הצג תוצאות" aria-label="הצג תוצאות" aria-pressed="false"><span class="final-answer-show-label">הצג תוצאות</span></button>` : ""}
-      <button type="button" class="danger-button" data-workstream-archive="${escapeHtml(workstream.workstream_id)}">העברה לארכיון</button>
+      ${!options.recorded && workstreamHasPresentation(workstream) ? `<button type="button" class="final-answer-show-btn layers-hidden" data-workstream-results="${escapeHtml(workstream.workstream_id)}" data-source-id="${escapeHtml(workstreamResultSourceId(workstream.workstream_id))}" title="הצג תוצאות" aria-label="הצג תוצאות" aria-pressed="false"><span class="final-answer-show-label">הצג תוצאות</span></button>` : ""}
+      <button type="button" class="final-answer-save-btn" data-workstream-save="${escapeHtml(workstream.workstream_id)}" ${options.recorded ? "disabled" : ""}>${options.recorded ? "נשמר" : "שמור הקלטה"}</button>
+      ${!options.recorded ? `<button type="button" class="danger-button" data-workstream-archive="${escapeHtml(workstream.workstream_id)}">העברה לארכיון</button>` : ""}
     </div>`, {
       label: agent ? `${agent.display_name} · עדכון מעקב` : "עדכון מעקב",
       memberId: agent?.participant_id,
     });
   message.dataset.workstreamUpdateId = workstream.workstream_id;
+  if (!options.recorded) workstreamRecordingSnapshots.set(workstream.workstream_id, workstream);
   const resultsButton = message.querySelector("[data-workstream-results]");
   if (resultsButton) updateSourceVisibilityBtn(resultsButton);
   return message;
@@ -3985,7 +3993,11 @@ async function runSavedQuestion(savedId) {
     const prompt = (saved.question || "").trim();
     appendMessage("user", `<p>${highlightedPromptHtml(prompt)}</p>`);
     state.history.push({ role: "user", content: prompt }, { role: "assistant", content: result.answer || "" });
-    applyAgentResult(result, prompt);
+    if (result.workstream_recording?.kind === "detail" && result.workstream_recording?.workstream) {
+      appendWorkstreamUpdate(result.workstream_recording.workstream, { recorded: true });
+    } else {
+      applyAgentResult(result, prompt);
+    }
   } catch (error) {
     startAssistantResearchMessage("טעינת שאלה שמורה נכשלה.");
     finalizeAssistantMessage(`<p>לא הצלחתי להציג את השאלה השמורה.</p><div class="answer-callout">${escapeHtml(error.message)}</div>`, { html: true });
@@ -4062,7 +4074,7 @@ async function loadRecordedQuestions() {
         <div class="saved-question-main">
           <strong>${escapeHtml(item.title || item.question || "שאלה שמורה")}</strong>
           <p>${escapeHtml(item.question || "")}</p>
-          <span>${escapeHtml(formatSavedTime(item.saved_at_utc))} · ${escapeHtml(VIEW_LABELS[item.recommended_view] || item.recommended_view || "תצוגה")} · ${Number(item.step_count || 0)} צעדים</span>
+          <span>${escapeHtml(formatSavedTime(item.saved_at_utc))} · ${item.recording_type === "workstream_message" ? "מעקב" : escapeHtml(VIEW_LABELS[item.recommended_view] || item.recommended_view || "תצוגה")} · ${Number(item.step_count || 0)} צעדים</span>
         </div>
         <div class="saved-question-actions">
           <button type="button" data-saved-id="${escapeHtml(item.id)}">פתח</button>
@@ -4841,6 +4853,21 @@ document.addEventListener("click", event => {
   const archiveWorkstream = event.target.closest("[data-workstream-archive]");
   if (archiveWorkstream) {
     void archiveWorkstreamFromChat(archiveWorkstream.dataset.workstreamArchive);
+    return;
+  }
+  const saveWorkstream = event.target.closest("[data-workstream-save]");
+  if (saveWorkstream) {
+    const workstreamId = saveWorkstream.dataset.workstreamSave;
+    const workstream = workstreamRecordingSnapshots.get(workstreamId)
+      || state.workstreams.find(item => item.workstream_id === workstreamId);
+    if (workstream) {
+      const prompt = `עדכון מעקב — ${workstream.title || "מעקב"}`;
+      void saveResultQuestion({
+        answer: prompt,
+        investigation_steps: [],
+        workstream_recording: { kind: "detail", workstream }
+      }, prompt, saveWorkstream);
+    }
     return;
   }
   const workstreamResults = event.target.closest("[data-workstream-results]");

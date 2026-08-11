@@ -6,11 +6,11 @@ Recorded workstream messages
 
 ## Current phase
 
-Execution-plan review gate
+Final acceptance
 
 ## Overall status
 
-Ready for implementation review
+Implemented and deployed
 
 ## Who needs to act now
 
@@ -29,7 +29,7 @@ recording save interaction, including persistence—not replay support alone.
 
 ## Current blockers
 
-No product blockers. Implementation waits at the execution-plan review gate.
+No blockers.
 
 ## Current risks
 
@@ -38,7 +38,7 @@ stored HTML.
 
 ## Next expected artifact
 
-Human authorization to execute `execution-plan.md`.
+Merge verified implementation to `main`.
 
 ## Parent issue
 
@@ -60,8 +60,8 @@ Draft: `issues/parent-capability.md`
 - UX review: `ux-review.md`
 - QA review: `qa-review.md`
 - Execution plan: `execution-plan.md`
-- Checkpoint: none
-- Handoff: pending
+- Checkpoint: `checkpoint-001.md`
+- Handoff: `handoff-summary.md`
 
 ## Gate checklist
 

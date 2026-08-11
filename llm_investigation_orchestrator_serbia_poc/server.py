@@ -1828,6 +1828,7 @@ def parse_artifact_api_path(path: str) -> tuple[str, str | None, bool] | None:
 
 def saved_question_metadata(payload: dict) -> dict:
     result = payload.get("result") if isinstance(payload.get("result"), dict) else {}
+    workstream_recording = result.get("workstream_recording") if isinstance(result.get("workstream_recording"), dict) else None
     return {
         "id": payload.get("id"),
         "title": payload.get("title") or payload.get("question") or "שאלה שמורה",
@@ -1836,6 +1837,7 @@ def saved_question_metadata(payload: dict) -> dict:
         "source_run_id": payload.get("source_run_id") or result.get("run_id"),
         "recommended_view": result.get("recommended_view") or "evidence",
         "step_count": len(result.get("investigation_steps") or []),
+        "recording_type": "workstream_message" if workstream_recording else "investigation_result",
     }
 
 
@@ -1889,6 +1891,16 @@ def create_saved_question(request: dict) -> dict:
         raise ValueError("Missing result")
     if not str(result.get("answer") or "").strip():
         raise ValueError("Missing result answer")
+    workstream_recording = result.get("workstream_recording")
+    if workstream_recording is not None:
+        if not isinstance(workstream_recording, dict):
+            raise ValueError("Invalid workstream recording")
+        kind = str(workstream_recording.get("kind") or "").strip()
+        workstream = workstream_recording.get("workstream")
+        if kind not in {"creation", "detail"} or not isinstance(workstream, dict):
+            raise ValueError("Invalid workstream recording")
+        if not WORKSTREAM_ID_PATTERN.fullmatch(str(workstream.get("workstream_id") or "")):
+            raise ValueError("Invalid recorded workstream id")
     if not isinstance(result.get("investigation_steps"), list):
         result = {**result, "investigation_steps": []}
     now = utc_now_iso()

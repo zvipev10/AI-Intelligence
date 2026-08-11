@@ -225,6 +225,14 @@ class WorkstreamUiTests(unittest.TestCase):
     def test_tracking_and_workstream_messages_have_visible_states(self):
         self.assertIn(".prompt-form.tracking-mode", self.styles)
         self.assertIn(".workstream-message", self.styles)
+
+    def test_workstream_messages_support_recording_save_and_read_only_replay(self):
+        self.assertIn('data-workstream-save="${escapeHtml(workstream.workstream_id)}"', self.app)
+        self.assertIn('workstream_recording: { kind: "detail", workstream }', self.app)
+        self.assertIn('appendWorkstreamUpdate(result.workstream_recording.workstream, { recorded: true });', self.app)
+        self.assertIn('result.workstream_recording = {', self.app)
+        self.assertIn('kind: "creation"', self.app)
+        self.assertIn('${!options.recorded ? `<button type="button" class="danger-button"', self.app)
         self.assertIn(".workstream-rail[hidden]", self.styles)
         self.assertIn(".workstream-rail-card.has-new", self.styles)
 
