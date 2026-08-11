@@ -6,11 +6,11 @@ Recorded workstream messages
 
 ## Current phase
 
-Final acceptance
+Recorded result-toggle correction
 
 ## Overall status
 
-Result-presentation fix implemented, deployed, and approved for merge
+Recorded result-toggle correction in validation
 
 ## Who needs to act now
 
@@ -24,6 +24,8 @@ Result-presentation fix implemented, deployed, and approved for merge
 
 ## Latest change since previous review
 
+Recorded workstream cards now expose a read-only Show/Hide results control for
+their restored presentation layers.
 Recorded workstream detail playback now saves and restores the typed result-layer
 snapshot, matching normal workstream selection. Older recordings fall back to
 the live presentation endpoint when the workstream is still available.

@@ -236,7 +236,7 @@ class WorkstreamUiTests(unittest.TestCase):
     def test_workstream_messages_support_recording_save_and_read_only_replay(self):
         self.assertIn('data-workstream-save="${escapeHtml(workstream.workstream_id)}"', self.app)
         self.assertIn('workstream_recording: { kind: "detail", workstream, presentation }', self.app)
-        self.assertIn('appendWorkstreamUpdate(result.workstream_recording.workstream, { recorded: true });', self.app)
+        self.assertIn("const message = appendWorkstreamUpdate(result.workstream_recording.workstream, {", self.app)
         self.assertIn('result.workstream_recording = {', self.app)
         self.assertIn('kind: "creation"', self.app)
         self.assertIn('${!options.recorded ? `<button type="button" class="danger-button"', self.app)
@@ -244,10 +244,16 @@ class WorkstreamUiTests(unittest.TestCase):
     def test_recorded_workstream_restores_the_saved_presentation_snapshot(self):
         self.assertIn("async function fetchWorkstreamPresentation(workstreamId)", self.app)
         self.assertIn('workstream_recording: { kind: "detail", workstream, presentation }', self.app)
-        self.assertIn("async function showRecordedWorkstreamPresentation(recording)", self.app)
+        self.assertIn("async function showRecordedWorkstreamPresentation(recording, btn = null)", self.app)
         self.assertIn("let presentation = recording?.presentation;", self.app)
         self.assertIn("presentation = await fetchWorkstreamPresentation(workstreamId);", self.app)
-        self.assertIn("await showRecordedWorkstreamPresentation(result.workstream_recording);", self.app)
+        self.assertIn("await showRecordedWorkstreamPresentation(", self.app)
+
+    def test_recorded_workstream_can_show_and_hide_its_saved_results(self):
+        self.assertIn("data-recorded-workstream-results", self.app)
+        self.assertIn("function toggleRecordedWorkstreamResultVisibility(btn)", self.app)
+        self.assertIn("sourceLayers.forEach(layer => { layer.visible = !anyVisible; });", self.app)
+        self.assertIn('message.querySelector("[data-recorded-workstream-results]")', self.app)
 
     def test_saved_recordings_replay_steps_with_two_second_delays_before_final_answer(self):
         self.assertIn("const SAVED_REPLAY_STEP_DELAY_MS = 2000;", self.app)

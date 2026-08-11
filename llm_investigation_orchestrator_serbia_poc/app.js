@@ -2908,21 +2908,28 @@ async function showWorkstreamResultVisibility(workstreamId, btn) {
   }
 }
 
-async function showRecordedWorkstreamPresentation(recording) {
+async function showRecordedWorkstreamPresentation(recording, btn = null) {
   let presentation = recording?.presentation;
   const workstreamId = recording?.workstream?.workstream_id || presentation?.workstream_id;
   if (!presentation && workstreamId) {
     try {
       presentation = await fetchWorkstreamPresentation(workstreamId);
     } catch (error) {
+      if (btn) btn.remove();
       return;
     }
   }
-  if (!presentation) return;
+  if (!presentation) {
+    if (btn) btn.remove();
+    return;
+  }
   const sourceId = workstreamResultSourceId(workstreamId || "recorded");
   state.layers = state.layers.filter(layer => layer.sourceId !== sourceId);
   const layers = buildTypedResultLayers(presentation);
-  if (!layers.length) return;
+  if (!layers.length) {
+    if (btn) btn.remove();
+    return;
+  }
   addResultLayers({
     sourceId,
     sourceLabel: presentation.title || recording?.workstream?.title || "תוצאות מעקב",
@@ -2931,6 +2938,18 @@ async function showRecordedWorkstreamPresentation(recording) {
   });
   state.rawOverlayMinimized = false;
   activateView(layers[0]?.preferredView || "map", { reason: "תוצאות מעקב מוקלטות" });
+  renderAllViews();
+  if (btn) updateSourceVisibilityBtn(btn);
+}
+
+function toggleRecordedWorkstreamResultVisibility(btn) {
+  const sourceId = btn?.dataset.sourceId;
+  if (!sourceId) return;
+  const sourceLayers = state.layers.filter(layer => layer.sourceId === sourceId);
+  if (!sourceLayers.length) return;
+  const anyVisible = sourceLayers.some(layer => layer.visible);
+  sourceLayers.forEach(layer => { layer.visible = !anyVisible; });
+  updateSourceVisibilityBtn(btn);
   renderAllViews();
 }
 
@@ -2958,6 +2977,8 @@ function appendWorkstreamUpdate(workstream, options = {}) {
     responsibility,
     value => `<p class="workstream-message-meta">אחריות: ${escapeHtml(value)}</p>`
   );
+  const hasRecordedPresentation = options.recorded
+    && (Boolean(options.recording?.presentation) || workstreamHasPresentation(workstream));
   const message = workstreamMessage(`
     <p class="workstream-message-title">עדכון מעקב — ${escapeHtml(title)}</p>
     ${objectiveHtml}
@@ -2965,6 +2986,7 @@ function appendWorkstreamUpdate(workstream, options = {}) {
     ${workstreamArtifactHtml(workstream)}
     <div class="workstream-message-actions">
       ${!options.recorded && workstreamHasPresentation(workstream) ? `<button type="button" class="final-answer-show-btn layers-hidden" data-workstream-results="${escapeHtml(workstream.workstream_id)}" data-source-id="${escapeHtml(workstreamResultSourceId(workstream.workstream_id))}" title="הצג תוצאות" aria-label="הצג תוצאות" aria-pressed="false"><span class="final-answer-show-label">הצג תוצאות</span></button>` : ""}
+      ${hasRecordedPresentation ? `<button type="button" class="final-answer-show-btn layers-hidden" data-recorded-workstream-results data-source-id="${escapeHtml(workstreamResultSourceId(workstream.workstream_id))}" title="הצג תוצאות" aria-label="הצג תוצאות" aria-pressed="false"><span class="final-answer-show-label">הצג תוצאות</span></button>` : ""}
       <button type="button" class="final-answer-save-btn" data-workstream-save="${escapeHtml(workstream.workstream_id)}" ${options.recorded ? "disabled" : ""}>${options.recorded ? "נשמר" : "שמור הקלטה"}</button>
       ${!options.recorded ? `<button type="button" class="danger-button" data-workstream-archive="${escapeHtml(workstream.workstream_id)}">העברה לארכיון</button>` : ""}
     </div>`, {
@@ -4078,8 +4100,14 @@ async function runSavedQuestion(savedId) {
     appendMessage("user", `<p>${highlightedPromptHtml(prompt)}</p>`);
     state.history.push({ role: "user", content: prompt }, { role: "assistant", content: result.answer || "" });
     if (result.workstream_recording?.kind === "detail" && result.workstream_recording?.workstream) {
-      appendWorkstreamUpdate(result.workstream_recording.workstream, { recorded: true });
-      await showRecordedWorkstreamPresentation(result.workstream_recording);
+      const message = appendWorkstreamUpdate(result.workstream_recording.workstream, {
+        recorded: true,
+        recording: result.workstream_recording,
+      });
+      await showRecordedWorkstreamPresentation(
+        result.workstream_recording,
+        message.querySelector("[data-recorded-workstream-results]")
+      );
     } else {
       await replaySavedResult(result, prompt);
     }
@@ -4977,6 +5005,11 @@ document.addEventListener("click", event => {
       workstreamResults.dataset.workstreamResults,
       workstreamResults
     );
+    return;
+  }
+  const recordedWorkstreamResults = event.target.closest("[data-recorded-workstream-results]");
+  if (recordedWorkstreamResults) {
+    toggleRecordedWorkstreamResultVisibility(recordedWorkstreamResults);
     return;
   }
   const viewButton = event.target.closest("[data-view]");
