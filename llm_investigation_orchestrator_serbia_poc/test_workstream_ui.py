@@ -208,6 +208,14 @@ class WorkstreamUiTests(unittest.TestCase):
             'const LEGACY_INVESTIGATIONS_STORAGE_KEYS = ["serbia-poc-investigations-v1"];',
             self.app,
         )
+
+    def test_investigations_hydrate_from_server_and_deduplicate_by_id(self):
+        self.assertIn("await hydrateInvestigationRegistry();", self.app)
+        self.assertIn('fetch("/api/investigations", { cache: "no-store" })', self.app)
+        self.assertIn("await Promise.allSettled(state.investigations.map(registerInvestigationRecord));", self.app)
+        self.assertIn("const existing = localById.get(id);", self.app)
+        self.assertNotIn("localByName", self.app)
+        self.assertIn("const key = item.id;", self.app)
         self.assertIn(
             "LEGACY_INVESTIGATIONS_STORAGE_KEYS.forEach(key => localStorage.removeItem(key));",
             self.app,

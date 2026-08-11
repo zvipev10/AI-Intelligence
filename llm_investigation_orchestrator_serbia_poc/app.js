@@ -1839,7 +1839,22 @@ function ensureInvestigationRecord(name) {
   const created = createInvestigationRecord(safeName);
   state.investigations.push(created);
   saveInvestigationRegistry();
+  void registerInvestigationRecord(created);
   return created;
+}
+
+async function registerInvestigationRecord(investigation) {
+  if (!investigation?.id || !investigation?.name) return null;
+  const response = await fetch("/api/investigations", {
+    method: "POST",
+    headers: { "Content-Type": "application/json; charset=utf-8" },
+    body: JSON.stringify({
+      investigation_id: investigation.id,
+      name: investigation.name,
+    }),
+  });
+  if (!response.ok) throw new Error(`investigation registration unavailable (${response.status})`);
+  return response.json();
 }
 
 function loadInvestigationRegistry() {
@@ -1859,7 +1874,7 @@ function loadInvestigationRegistry() {
           created_at: item?.created_at || new Date().toISOString()
         }))
         .filter(item => {
-          const key = investigationNameKey(item.name);
+          const key = item.id;
           if (!item.name || seen.has(key)) return false;
           seen.add(key);
           return true;
@@ -1879,18 +1894,18 @@ function loadInvestigationRegistry() {
 
 async function hydrateInvestigationRegistry() {
   try {
+    await Promise.allSettled(state.investigations.map(registerInvestigationRecord));
     const response = await fetch("/api/investigations", { cache: "no-store" });
     if (!response.ok) throw new Error(`investigation registry unavailable (${response.status})`);
     const payload = await response.json();
     const remoteInvestigations = Array.isArray(payload?.investigations) ? payload.investigations : [];
     const localById = new Map(state.investigations.map(item => [item.id, item]));
-    const localByName = new Map(state.investigations.map(item => [investigationNameKey(item.name), item]));
 
     remoteInvestigations.forEach(item => {
       const id = String(item?.investigation_id || item?.id || "").trim();
       const name = normalizeInvestigationName(item?.name);
       if (!id || !name) return;
-      const existing = localById.get(id) || localByName.get(investigationNameKey(name));
+      const existing = localById.get(id);
       const hydrated = {
         id,
         name,
@@ -1907,7 +1922,6 @@ async function hydrateInvestigationRegistry() {
         state.investigations.push(hydrated);
       }
       localById.set(id, hydrated);
-      localByName.set(investigationNameKey(name), hydrated);
     });
 
     saveInvestigationRegistry();

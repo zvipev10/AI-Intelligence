@@ -296,3 +296,27 @@ button. Deployment remains separately approved.
 Follow-ups:
 Validate the interaction and Moshe response on the VM after explicit deployment
 approval.
+
+### 2026-08-11 — Make the investigation registry server-backed and ID-keyed
+
+Decision:
+Treat the server as the shared source for investigation discovery. Build the
+registry from durable investigation memory, workstreams, and scenario runs;
+register browser-known investigations at boot; and merge exclusively by ID.
+
+Context:
+Checkpoint 017 retained browser persistence and deduplicated entries by display
+name. A different or cleared browser could therefore omit investigations, while
+different investigation IDs with the same name could collapse into one option.
+
+Rationale:
+Investigation identity is the stable ID, not a mutable or non-unique display
+name. Server discovery makes the selector consistent across browsers and users.
+
+Impact:
+The selector is no longer limited to one browser's cache. Existing local entries
+are promoted to durable server records the next time that browser loads the app.
+
+Follow-ups:
+Define an explicit archive/delete lifecycle if obsolete investigations must be
+removed from the shared selector.

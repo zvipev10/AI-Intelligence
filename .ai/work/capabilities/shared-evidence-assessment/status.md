@@ -143,4 +143,5 @@ Product/QA hands-on validation of `checkpoint-018.md`. Checkpoint 017 and checkp
 - Minimal next-stage playback: `checkpoint-016.md`
 - Investigation selection correction: `checkpoint-017.md`
 - Global playback correction: `checkpoint-018.md`
+- Server-backed investigation registry: `checkpoint-019.md`
 - Investigation selection plan: `investigation-selection-execution-plan.md`

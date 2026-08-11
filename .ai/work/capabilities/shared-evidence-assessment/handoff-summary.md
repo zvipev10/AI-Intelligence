@@ -2,7 +2,11 @@
 
 ## Current state
 
-Implementation and deployment are current through checkpoint 018. The playback run, visibility
+Implementation and deployment are current through checkpoint 019. The investigation
+selector now hydrates from a durable server registry assembled by investigation ID
+from investigation memory, workstreams, and scenario runs. Browser-local entries are
+registered with the server during boot, and duplicate display names no longer hide
+distinct investigations. The playback run, visibility
 boundary, status, mode, reset, and Next transition now share one global scope.
 Switching investigations preserves and advances the existing run instead of
 attempting to create a conflicting run. Investigation-scoped workstream state
@@ -25,6 +29,13 @@ locale-aware VM build and pending Product/QA hands-on acceptance.
 
 ## Validation
 
+- Checkpoint 019 focused investigation/UI suite: 32 tests passed.
+- Checkpoint 019 full Python discovery: 135 tests passed.
+- Checkpoint 019 JavaScript syntax and Python compilation passed.
+- Production registry returned 11 Hebrew-locale investigations, the public page
+  served `app.js?v=156`, and the UI plus both Hermes gateways were active.
+- Checkpoint 019 rollback backup:
+  `/home/ubuntu/deploy-backups/investigation-registry-20260811T162222Z`.
 - Checkpoint 018 focused scenario playback suite: 16 tests passed.
 - Checkpoint 018 full Python discovery: 132 tests passed.
 - Checkpoint 018 cross-investigation regression confirms one run advances to
@@ -54,6 +65,5 @@ An unconfirmed proposal is lost on refresh. This is the explicitly approved MVP 
 
 ## Next step
 
-Review `checkpoint-018.md` in the live UI and verify Next after switching
-investigations plus the collapsed workstream arrow direction. Then complete the
-outstanding checkpoint 017 and checkpoint 016 acceptance work.
+Verify the complete investigation list from a second browser profile, then review
+`checkpoint-018.md` in the live UI and complete the outstanding playback acceptance.

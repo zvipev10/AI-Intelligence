@@ -1033,17 +1033,62 @@ def save_investigation_memory(request: dict) -> dict:
 
 
 def list_investigation_memory_metadata() -> list[dict]:
-    if not INVESTIGATIONS_DIR.exists():
-        return []
-    items: list[dict] = []
-    for path in sorted(INVESTIGATIONS_DIR.glob("*.json")):
-        investigation_id = path.stem
-        try:
-            payload = load_investigation_memory(investigation_id)
-        except ValueError:
-            continue
-        items.append(investigation_memory_metadata(payload))
-    return sorted(items, key=lambda item: str(item.get("updated_at_utc") or ""), reverse=True)
+    items_by_id: dict[str, dict] = {}
+    if INVESTIGATIONS_DIR.exists():
+        for path in sorted(INVESTIGATIONS_DIR.glob("*.json")):
+            investigation_id = path.stem
+            try:
+                payload = load_investigation_memory(investigation_id)
+            except ValueError:
+                continue
+            items_by_id[investigation_id] = investigation_memory_metadata(payload)
+    if WORKSTREAMS_DIR.exists():
+        for path in WORKSTREAMS_DIR.glob("ws_*.json"):
+            payload = load_workstream(path.stem)
+            investigation_id = str((payload or {}).get("investigation_id") or "").strip()
+            if not INVESTIGATION_ID_PATTERN.fullmatch(investigation_id):
+                continue
+            items_by_id.setdefault(investigation_id, {
+                "investigation_id": investigation_id,
+                "name": investigation_id,
+                "created_at_utc": (payload or {}).get("created_at_utc"),
+                "updated_at_utc": (payload or {}).get("updated_at_utc"),
+                "chat_summary_count": 0,
+                "layer_count": 0,
+            })
+    if SCENARIO_RUNS_DIR.exists():
+        for path in SCENARIO_RUNS_DIR.glob("run_*.json"):
+            payload = load_scenario_run(SCENARIO_RUNS_DIR, path.stem)
+            investigation_id = str((payload or {}).get("investigation_id") or "").strip()
+            if not INVESTIGATION_ID_PATTERN.fullmatch(investigation_id):
+                continue
+            items_by_id.setdefault(investigation_id, {
+                "investigation_id": investigation_id,
+                "name": investigation_id,
+                "created_at_utc": (payload or {}).get("created_at_utc"),
+                "updated_at_utc": (payload or {}).get("updated_at_utc"),
+                "chat_summary_count": 0,
+                "layer_count": 0,
+            })
+    return sorted(
+        items_by_id.values(),
+        key=lambda item: str(item.get("updated_at_utc") or item.get("created_at_utc") or ""),
+        reverse=True,
+    )
+
+
+def register_investigation(request: dict) -> dict:
+    investigation_id = str(request.get("investigation_id") or "").strip()
+    if not INVESTIGATION_ID_PATTERN.fullmatch(investigation_id):
+        raise ValueError("Invalid investigation id")
+    name = compact_text(request.get("name"), 240)
+    if not name:
+        raise ValueError("Missing investigation name")
+    path = investigation_memory_path(investigation_id)
+    payload = load_investigation_memory(investigation_id) if path.exists() else empty_investigation_memory(investigation_id, name)
+    payload["name"] = name
+    payload["updated_at_utc"] = utc_now_iso()
+    return investigation_memory_metadata(save_investigation_memory(payload))
 
 
 def workstream_path(workstream_id: str) -> Path:
@@ -3710,6 +3755,21 @@ class Handler(SimpleHTTPRequestHandler):
 
     def do_POST(self):
         path = urlparse(self.path).path
+        if path == "/api/investigations":
+            try:
+                length = int(self.headers.get("Content-Length", "0"))
+                if length > 1_000_000:
+                    self.send_json(413, {"error": "Investigation payload too large"})
+                    return
+                request = json.loads(self.rfile.read(length).decode("utf-8-sig"))
+                if not isinstance(request, dict):
+                    raise ValueError("Invalid investigation payload")
+                self.send_json(200, register_investigation(request))
+            except ValueError as exc:
+                self.send_json(400, {"error": str(exc)})
+            except Exception as exc:
+                self.send_json(502, {"error": str(exc)})
+            return
         if path == "/api/playback/mode":
             try:
                 length = int(self.headers.get("Content-Length", "0"))
