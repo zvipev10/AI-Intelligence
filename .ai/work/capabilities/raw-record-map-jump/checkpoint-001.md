@@ -19,10 +19,13 @@ Implemented the approved client-side interaction on top of the latest deployed m
 - 40 focused regression tests passed.
 - `git diff --check`
 
-## Incomplete
+## Deployment and browser validation
 
-- VM deployment and browser smoke validation.
+- Deployed assets: `app.js?v=153`, `styles.css?v=134`.
+- VM service: active; `/api/status` reports 14,800 V2.1 events.
+- Browser smoke: opened the 3,745-row UAV video layer, activated `Show REC-V2-006948 on map`, confirmed map view active and exactly one event popup containing that record's ID, time, entity, location, and summary.
+- Rollback backup: `/opt/serbia-poc-ui.backup-raw-map-jump-20260811T153527Z`.
 
 ## Review recommendation
 
-Continue to deployment and final QA.
+Approve for user acceptance.

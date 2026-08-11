@@ -6,20 +6,20 @@ Raw record to map jump
 
 ## Current phase
 
-Phase 4 — controlled execution
+Phase 5 — final review and acceptance
 
 ## Overall status
 
-In progress
+Complete and deployed; awaiting user acceptance
 
 ## Who needs to act now
 
 | Role | Status | Required action | Due before |
 |---|---|---|---|
 | Product/user | Approved | Requested development and deployment | Final acceptance |
-| Development | In progress | Implement the approved slice | Checkpoint review |
-| UX | Ready | Validate deployed interaction | Final acceptance |
-| QA | Ready | Run focused and deployed checks | Deployment |
+| Development | Complete | No further action | Final acceptance |
+| UX | Complete | Browser interaction validated | Final acceptance |
+| QA | Complete | Automated and deployed smoke checks passed | Final acceptance |
 | Architecture/Security | Not required | No new service, permission, or data flow | N/A |
 
 ## Latest change since previous review
@@ -36,7 +36,7 @@ Focused-popup lifecycle during map rerenders; generic table control column index
 
 ## Next expected artifact
 
-Implementation checkpoint and deployment confirmation.
+User acceptance after testing the deployed feature.
 
 ## Parent issue
 
@@ -59,8 +59,8 @@ Local draft: `issues/parent-capability.md`
 - UX review: `ux-review.md`
 - QA review: `qa-review.md`
 - Execution plan: `execution-plan.md`
-- Latest checkpoint: not created
-- Handoff: not created
+- Latest checkpoint: `checkpoint-001.md`
+- Handoff: `handoff-summary.md`
 
 ## Gate checklist
 
