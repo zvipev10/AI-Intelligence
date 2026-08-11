@@ -15,7 +15,10 @@ directly as read-only cards.
 - Focused recording/workstream UI suite: 34 tests passed.
 - Full Python discovery: 139 tests passed.
 - JavaScript syntax and diff checks passed.
+- Localized production serves `app.js?v=159` with the timed replay path.
+- UI and both Hermes gateway services are active.
+- Rollback: `/home/ubuntu/deploy-backups/recorded-step-replay-20260811T182103Z`.
 
 ## Status
 
-Implemented and ready for deployment review.
+Implemented, deployed, and approved for merge.

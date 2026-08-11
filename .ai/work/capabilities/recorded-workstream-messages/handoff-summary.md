@@ -10,4 +10,5 @@ verified. Rollback: `/home/ubuntu/deploy-backups/recorded-workstreams-20260811T1
 
 Checkpoint 002 adds live-style timed replay: one visible step every two seconds,
 then the final message after another two seconds. Validation is 34 focused and
-139 full-suite tests.
+139 full-suite tests. Production serves `app.js?v=159`; rollback is
+`/home/ubuntu/deploy-backups/recorded-step-replay-20260811T182103Z`.

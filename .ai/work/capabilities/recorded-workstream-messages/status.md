@@ -10,7 +10,7 @@ Final acceptance
 
 ## Overall status
 
-Implemented and deployed
+Implemented, deployed, and merged
 
 ## Who needs to act now
 
