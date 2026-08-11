@@ -12,3 +12,8 @@ Checkpoint 002 adds live-style timed replay: one visible step every two seconds,
 then the final message after another two seconds. Validation is 34 focused and
 139 full-suite tests. Production serves `app.js?v=159`; rollback is
 `/home/ubuntu/deploy-backups/recorded-step-replay-20260811T182103Z`.
+
+Checkpoint 003 fixes recorded detail playback so result layers are presented as
+they are during normal workstream selection. New recordings contain a stable
+typed presentation snapshot; older recordings fall back to the live endpoint
+when available. Validation: 36 focused and 141 full-suite tests passed.

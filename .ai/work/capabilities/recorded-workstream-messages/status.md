@@ -6,11 +6,11 @@ Recorded workstream messages
 
 ## Current phase
 
-Final acceptance
+Bug-fix validation
 
 ## Overall status
 
-Implemented, deployed, and merged
+Result-presentation fix implemented and validated; deployment pending
 
 ## Who needs to act now
 
@@ -24,8 +24,9 @@ Implemented, deployed, and merged
 
 ## Latest change since previous review
 
-Timed saved-recording replay now reveals steps every two seconds and withholds
-the final message until two seconds after the last step.
+Recorded workstream detail playback now saves and restores the typed result-layer
+snapshot, matching normal workstream selection. Older recordings fall back to
+the live presentation endpoint when the workstream is still available.
 
 ## Current blockers
 
@@ -38,7 +39,7 @@ stored HTML.
 
 ## Next expected artifact
 
-Merge verified implementation to `main`.
+Deploy the localized asset and merge the verified fix when requested.
 
 ## Parent issue
 
@@ -60,7 +61,7 @@ Draft: `issues/parent-capability.md`
 - UX review: `ux-review.md`
 - QA review: `qa-review.md`
 - Execution plan: `execution-plan.md`
-- Checkpoint: `checkpoint-002.md`
+- Latest checkpoint: `checkpoint-003.md`
 - Handoff: `handoff-summary.md`
 
 ## Gate checklist

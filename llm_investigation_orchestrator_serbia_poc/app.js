@@ -2839,16 +2839,21 @@ async function toggleWorkstreamResultVisibility(workstreamId, btn) {
   await showWorkstreamResultVisibility(workstreamId, btn);
 }
 
+async function fetchWorkstreamPresentation(workstreamId) {
+  const response = await fetch(
+    `/api/workstreams/${encodeURIComponent(workstreamId)}/presentation`,
+    { cache: "no-store" }
+  );
+  const result = await response.json();
+  if (!response.ok) throw new Error(result.error || "טעינת תוצאות המעקב נכשלה");
+  return result;
+}
+
 async function showWorkstreamResultVisibility(workstreamId, btn) {
   const sourceId = workstreamResultSourceId(workstreamId);
   if (btn) btn.disabled = true;
   try {
-    const response = await fetch(
-      `/api/workstreams/${encodeURIComponent(workstreamId)}/presentation`,
-      { cache: "no-store" }
-    );
-    const result = await response.json();
-    if (!response.ok) throw new Error(result.error || "טעינת תוצאות המעקב נכשלה");
+    const result = await fetchWorkstreamPresentation(workstreamId);
     state.layers = state.layers.filter(layer => layer.sourceId !== sourceId);
     const layers = buildTypedResultLayers(result);
     if (!layers.length) throw new Error("אין למעקב תוצאות שניתן להציג");
@@ -2869,6 +2874,32 @@ async function showWorkstreamResultVisibility(workstreamId, btn) {
     if (btn) btn.disabled = false;
     updateSourceVisibilityBtn(btn);
   }
+}
+
+async function showRecordedWorkstreamPresentation(recording) {
+  let presentation = recording?.presentation;
+  const workstreamId = recording?.workstream?.workstream_id || presentation?.workstream_id;
+  if (!presentation && workstreamId) {
+    try {
+      presentation = await fetchWorkstreamPresentation(workstreamId);
+    } catch (error) {
+      return;
+    }
+  }
+  if (!presentation) return;
+  const sourceId = workstreamResultSourceId(workstreamId || "recorded");
+  state.layers = state.layers.filter(layer => layer.sourceId !== sourceId);
+  const layers = buildTypedResultLayers(presentation);
+  if (!layers.length) return;
+  addResultLayers({
+    sourceId,
+    sourceLabel: presentation.title || recording?.workstream?.title || "תוצאות מעקב",
+    preferredView: layers[0]?.preferredView || "map",
+    layers
+  });
+  state.rawOverlayMinimized = false;
+  activateView(layers[0]?.preferredView || "map", { reason: "תוצאות מעקב מוקלטות" });
+  renderAllViews();
 }
 
 const workstreamRecordingSnapshots = new Map();
@@ -4016,6 +4047,7 @@ async function runSavedQuestion(savedId) {
     state.history.push({ role: "user", content: prompt }, { role: "assistant", content: result.answer || "" });
     if (result.workstream_recording?.kind === "detail" && result.workstream_recording?.workstream) {
       appendWorkstreamUpdate(result.workstream_recording.workstream, { recorded: true });
+      await showRecordedWorkstreamPresentation(result.workstream_recording);
     } else {
       await replaySavedResult(result, prompt);
     }
@@ -4883,11 +4915,27 @@ document.addEventListener("click", event => {
       || state.workstreams.find(item => item.workstream_id === workstreamId);
     if (workstream) {
       const prompt = `עדכון מעקב — ${workstream.title || "מעקב"}`;
-      void saveResultQuestion({
-        answer: prompt,
-        investigation_steps: [],
-        workstream_recording: { kind: "detail", workstream }
-      }, prompt, saveWorkstream);
+      void (async () => {
+        let presentation = null;
+        if (workstreamHasPresentation(workstream)) {
+          try {
+            presentation = await fetchWorkstreamPresentation(workstreamId);
+          } catch (error) {
+            saveWorkstream.textContent = "נכשל";
+            saveWorkstream.title = error.message;
+            setTimeout(() => {
+              saveWorkstream.textContent = "שמור הקלטה";
+              saveWorkstream.title = "שמור את הקלטת המעקב";
+            }, 2500);
+            return;
+          }
+        }
+        await saveResultQuestion({
+          answer: prompt,
+          investigation_steps: [],
+          workstream_recording: { kind: "detail", workstream, presentation }
+        }, prompt, saveWorkstream);
+      })();
     }
     return;
   }

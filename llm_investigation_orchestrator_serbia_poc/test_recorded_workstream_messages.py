@@ -48,6 +48,26 @@ class RecordedWorkstreamMessageTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "Invalid workstream recording"):
             server.create_saved_question(request)
 
+    def test_preserves_recorded_workstream_presentation_snapshot(self):
+        request = self.request()
+        request["result"]["workstream_recording"]["presentation"] = {
+            "workstream_id": "ws_20260811_120000_abcdef12",
+            "title": "Recorded workstream",
+            "requested_result_layers": [{
+                "id": "recorded-targets",
+                "label": "Targets",
+                "kind": "attack_targets",
+                "rows": [{"target_id": "target-1", "title": "Target 1"}],
+                "recommended_view": "map",
+            }],
+        }
+
+        saved = server.create_saved_question(request)
+
+        loaded = server.load_saved_question(saved["id"])
+        presentation = loaded["result"]["workstream_recording"]["presentation"]
+        self.assertEqual("target-1", presentation["requested_result_layers"][0]["rows"][0]["target_id"])
+
 
 if __name__ == "__main__":
     unittest.main()
