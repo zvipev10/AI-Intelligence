@@ -23,8 +23,9 @@ Recordings omit two key workstream messages, preventing complete repeatable demo
 
 ## MVP scope
 
-Save, list, replay, and delete structured read-only snapshots of the creation
-confirmation and opened workstream detail card.
+Expose the existing-style `Save recording` button directly on both supported
+workstream messages, then save, list, replay, and delete their structured
+read-only snapshots.
 
 ## Acceptance criteria
 

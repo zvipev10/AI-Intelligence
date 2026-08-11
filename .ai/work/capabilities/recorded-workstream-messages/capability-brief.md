@@ -36,7 +36,11 @@ workstream workflows.
 
 ## Proposed behavior
 
-- Both supported workstream cards expose the existing `Save recording` action.
+- Both supported workstream cards expose a visible `Save recording` button in the
+  message itself, matching the placement, wording, loading, success, and failure
+  states of the existing recordable investigation-answer messages.
+- Pressing that button persists a new recording through the application API; this
+  capability is not limited to replaying fixture or manually prepared entries.
 - A saved entry is typed as a workstream-message recording and stores a sanitized
   display snapshot plus enough metadata to label it in the Recordings modal.
 - Opening the recording appends the same workstream message/card to chat.
@@ -60,8 +64,14 @@ workstream workflows.
 
 ## Acceptance criteria
 
-- [ ] The creation confirmation can be saved from its chat message.
-- [ ] The opened workstream detail card can be saved from its chat message.
+- [ ] The creation confirmation displays an enabled `Save recording` button and
+      can be persisted directly from its chat message.
+- [ ] The opened workstream detail card displays an enabled `Save recording`
+      button and can be persisted directly from its chat message.
+- [ ] While saving, the control follows the existing `Saving…`, `Saved`, and
+      recoverable failure states used by investigation-answer recordings.
+- [ ] A successful save immediately appears in the Recordings modal without a
+      manually created fixture or server-side file.
 - [ ] Each saved card appears in Recordings with a clear workstream type label.
 - [ ] Opening either entry reproduces the recorded chat card without API mutation
       or agent execution.
@@ -110,6 +120,12 @@ underlying workstream changes to prove snapshot stability.
 - UX: should replay show an explicit `Recorded` badge on the card?
 - Product/UX: should the creation confirmation and opened detail use separate
   type labels in the modal?
+
+## Confirmed product input
+
+- Saving is a first-class user action on each supported workstream message, not
+  merely backend/replay support.
+- The save interaction should reuse the established recording control pattern.
 
 ## Missing inputs
 

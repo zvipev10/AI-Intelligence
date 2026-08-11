@@ -24,7 +24,8 @@ Pending review
 
 ## Latest change since previous review
 
-Initial capability brief created from the requested two workstream recording types.
+Product clarified that both workstream messages must expose the actual existing
+recording save interaction, including persistence—not replay support alone.
 
 ## Current blockers
 
