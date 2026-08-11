@@ -212,8 +212,9 @@ class WorkstreamUiTests(unittest.TestCase):
     def test_investigations_hydrate_from_server_and_deduplicate_by_id(self):
         self.assertIn("await hydrateInvestigationRegistry();", self.app)
         self.assertIn('fetch("/api/investigations", { cache: "no-store" })', self.app)
-        self.assertIn("await Promise.allSettled(state.investigations.map(registerInvestigationRecord));", self.app)
-        self.assertIn("const existing = localById.get(id);", self.app)
+        self.assertNotIn("state.investigations.map(registerInvestigationRecord)", self.app)
+        self.assertIn("state.investigations = hydratedInvestigations;", self.app)
+        self.assertIn("const active = hydratedInvestigations.find(item => item.id === state.investigationId) || hydratedInvestigations[0];", self.app)
         self.assertNotIn("localByName", self.app)
         self.assertIn("const key = item.id;", self.app)
         self.assertIn(

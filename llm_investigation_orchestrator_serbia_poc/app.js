@@ -1894,35 +1894,29 @@ function loadInvestigationRegistry() {
 
 async function hydrateInvestigationRegistry() {
   try {
-    await Promise.allSettled(state.investigations.map(registerInvestigationRecord));
     const response = await fetch("/api/investigations", { cache: "no-store" });
     if (!response.ok) throw new Error(`investigation registry unavailable (${response.status})`);
     const payload = await response.json();
     const remoteInvestigations = Array.isArray(payload?.investigations) ? payload.investigations : [];
     const localById = new Map(state.investigations.map(item => [item.id, item]));
-
-    remoteInvestigations.forEach(item => {
+    const hydratedInvestigations = remoteInvestigations.map(item => {
       const id = String(item?.investigation_id || item?.id || "").trim();
       const name = normalizeInvestigationName(item?.name);
-      if (!id || !name) return;
+      if (!id || !name) return null;
       const existing = localById.get(id);
-      const hydrated = {
+      return {
         id,
         name,
         created_at: item?.created_at_utc || existing?.created_at || new Date().toISOString()
       };
-      if (existing) {
-        const index = state.investigations.indexOf(existing);
-        state.investigations[index] = hydrated;
-        if (state.investigationId === existing.id) {
-          state.investigationId = hydrated.id;
-          state.investigationName = hydrated.name;
-        }
-      } else {
-        state.investigations.push(hydrated);
-      }
-      localById.set(id, hydrated);
-    });
+    }).filter(Boolean);
+
+    if (hydratedInvestigations.length) {
+      state.investigations = hydratedInvestigations;
+      const active = hydratedInvestigations.find(item => item.id === state.investigationId) || hydratedInvestigations[0];
+      state.investigationId = active.id;
+      state.investigationName = active.name;
+    }
 
     saveInvestigationRegistry();
     renderInvestigationSelector();

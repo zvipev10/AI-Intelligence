@@ -2,7 +2,11 @@
 
 ## Current state
 
-Implementation and deployment are current through checkpoint 019. The investigation
+Implementation and deployment are current through checkpoint 020. The production
+registry now contains only `KFOR involvement` and `NATO involvement`; 36 unwanted
+memory, workstream, scenario-run, and visibility files were archived to a recoverable
+backup. Browser-local stale entries are now replaced by the server registry rather
+than re-uploaded during startup. The investigation
 selector now hydrates from a durable server registry assembled by investigation ID
 from investigation memory, workstreams, and scenario runs. Browser-local entries are
 registered with the server during boot, and duplicate display names no longer hide
@@ -29,6 +33,12 @@ locale-aware VM build and pending Product/QA hands-on acceptance.
 
 ## Validation
 
+- Checkpoint 020 focused investigation/UI suite: 32 tests passed.
+- Checkpoint 020 full Python discovery: 135 tests passed.
+- Production returned exactly the two retained investigations and served
+  `app.js?v=157`; all three application/gateway services were active.
+- Cleanup recovery backup:
+  `/home/ubuntu/deploy-backups/investigation-cleanup-20260811T163026Z`.
 - Checkpoint 019 focused investigation/UI suite: 32 tests passed.
 - Checkpoint 019 full Python discovery: 135 tests passed.
 - Checkpoint 019 JavaScript syntax and Python compilation passed.
