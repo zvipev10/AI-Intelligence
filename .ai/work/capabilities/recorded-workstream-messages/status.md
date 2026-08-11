@@ -6,20 +6,20 @@ Recorded workstream messages
 
 ## Current phase
 
-Capability definition / review gate
+Execution-plan review gate
 
 ## Overall status
 
-Pending review
+Ready for implementation review
 
 ## Who needs to act now
 
 | Role | Status | Required action | Due before |
 |---|---|---|---|
-| Product | Pending | Approve read-only snapshot behavior and duplicate policy | Planning |
-| Development | Pending | Review typed schema and shared renderer approach | Planning |
-| UX | Pending | Approve modal labels, replay badge, and disabled actions | Planning |
-| QA | Pending | Review mutation-safety and regression coverage | Planning |
+| Product | Approved | Duplicates and existing replay convention confirmed | Complete |
+| Development | Ready | Review execution plan | Implementation |
+| UX | Approved | Existing replay convention confirmed | Complete |
+| QA | Ready | Review execution plan and required coverage | Implementation |
 | Architecture/Security | Not triggered | Reassess if raw HTML persistence is proposed | Implementation |
 
 ## Latest change since previous review
@@ -29,7 +29,7 @@ recording save interaction, including persistence—not replay support alone.
 
 ## Current blockers
 
-Product and UX choices in `capability-brief.md` remain open.
+No product blockers. Implementation waits at the execution-plan review gate.
 
 ## Current risks
 
@@ -38,7 +38,7 @@ stored HTML.
 
 ## Next expected artifact
 
-Developer, UX, and QA review artifacts after Product confirms the proposed MVP.
+Human authorization to execute `execution-plan.md`.
 
 ## Parent issue
 
@@ -56,8 +56,10 @@ Draft: `issues/parent-capability.md`
 - Capability brief: `capability-brief.md`
 - Status: `status.md`
 - Parent issue: `issues/parent-capability.md`
-- Reviews: pending
-- Execution plan: pending
+- Developer review: `developer-review.md`
+- UX review: `ux-review.md`
+- QA review: `qa-review.md`
+- Execution plan: `execution-plan.md`
 - Checkpoint: none
 - Handoff: pending
 

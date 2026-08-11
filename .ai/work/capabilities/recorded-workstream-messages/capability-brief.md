@@ -116,16 +116,16 @@ underlying workstream changes to prove snapshot stability.
 
 ## Open questions
 
-- Product: should duplicate snapshots of the same workstream be allowed?
-- UX: should replay show an explicit `Recorded` badge on the card?
-- Product/UX: should the creation confirmation and opened detail use separate
-  type labels in the modal?
+None blocking.
 
 ## Confirmed product input
 
 - Saving is a first-class user action on each supported workstream message, not
   merely backend/replay support.
 - The save interaction should reuse the established recording control pattern.
+- Duplicate recordings of the same workstream are allowed.
+- Badge and replay-action behavior must match existing recording replays; do not
+  introduce a workstream-specific replay convention.
 
 ## Missing inputs
 
