@@ -312,6 +312,7 @@ function defaultInvestigationName(locale = currentLocale()) {
 
 const state = {
   locale: INITIAL_LOCALE,
+  pageView: "welcome",
   events: [],
   current: [],
   stage: 0,
@@ -377,6 +378,9 @@ const conversation = document.getElementById("conversation");
 const suggestions = document.getElementById("suggestions");
 const promptForm = document.getElementById("promptForm");
 const promptInput = document.getElementById("promptInput");
+const welcomePromptForm = document.getElementById("welcomePromptForm");
+const welcomePromptInput = document.getElementById("welcomePromptInput");
+const welcomePromptOptionsButton = document.getElementById("welcomePromptOptionsButton");
 const resultTitle = document.getElementById("resultTitle");
 const resultSubtitle = document.getElementById("resultSubtitle");
 const resultCount = document.getElementById("resultCount");
@@ -394,6 +398,15 @@ const workstreamRailToggle = document.getElementById("workstreamRailToggle");
 const playbackNextButton = document.getElementById("playbackNextButton");
 const playbackResetButton = document.getElementById("playbackResetButton");
 const languageToggle = document.getElementById("languageToggle");
+const appHomeButton = document.getElementById("appHomeButton");
+const welcomePage = document.getElementById("welcomePage");
+const myInvestigationsList = document.getElementById("myInvestigationsList");
+const myInvestigationsCount = document.getElementById("myInvestigationsCount");
+const similarInvestigationsList = document.getElementById("similarInvestigationsList");
+const welcomeActionModal = document.getElementById("welcomeActionModal");
+const welcomeActionTitle = document.getElementById("welcomeActionTitle");
+const welcomeActionDescription = document.getElementById("welcomeActionDescription");
+const welcomeActionClose = document.getElementById("welcomeActionClose");
 const intelligencePeriod = document.getElementById("intelligencePeriod");
 const playbackAgentStatus = document.getElementById("playbackAgentStatus");
 const workstreamComposerMode = document.getElementById("workstreamComposerMode");
@@ -611,8 +624,7 @@ function applyLocaleUi() {
   const helpButton = document.querySelector(".help-button");
   helpButton?.setAttribute("aria-label", activeLocaleText("פתח עזרה", "Open help"));
   if (helpButton) helpButton.href = `./help.html?lang=${currentLocale()}`;
-  const headerTitle = document.querySelector(".header-copy h1");
-  if (headerTitle) headerTitle.textContent = activeLocaleText("סביבת מודיעין", "Intelligence Workspace");
+  if (appHomeButton) appHomeButton.textContent = activeLocaleText("סביבת מודיעין", "Intelligence Workspace");
   const investigationLabel = document.querySelector('.investigation-switcher label[for="investigationInput"]');
   if (investigationLabel) investigationLabel.textContent = activeLocaleText("חקירה פעילה", "Active investigation");
   if (investigationInput) {
@@ -629,6 +641,7 @@ function applyLocaleUi() {
   updatePromptPlaceholder();
   renderMichlolTeam();
   renderInvestigationSelector();
+  renderWelcomePage();
   renderAllViews();
   if (!state.lastResult && !state.busy) setSuggestions(DEFAULT_SUGGESTIONS[currentLocale()]);
 }
@@ -1965,6 +1978,154 @@ function ensureInvestigationRecord(name) {
   return created;
 }
 
+const SIMILAR_INVESTIGATIONS = [
+  {
+    id: "regional-infrastructure",
+    titleHe: "תשתיות קריטיות בצפון קוסובו",
+    titleEn: "Critical infrastructure in North Kosovo",
+    summaryHe: "מעקב אזורי אחר שיבושים, חסימות ודפוסי פעילות סביב תשתיות חיוניות.",
+    summaryEn: "Regional monitoring of disruptions, roadblocks, and activity around critical infrastructure.",
+    reasonHe: "חפיפה גאוגרפית גבוהה",
+    reasonEn: "High geographic overlap",
+    participants: 2,
+    action: "request"
+  },
+  {
+    id: "cross-border-movement",
+    titleHe: "תנועות חוצות גבול במערב הבלקן",
+    titleEn: "Cross-border movement in the Western Balkans",
+    summaryHe: "חקירה משותפת של דיווחי תנועה, נתיבי מעבר וסימנים מקדימים להסלמה.",
+    summaryEn: "A collaborative investigation of movement reports, transit routes, and escalation indicators.",
+    reasonHe: "נושאים ומקורות משותפים",
+    reasonEn: "Shared topics and sources",
+    participants: 3,
+    action: "join"
+  },
+  {
+    id: "information-environment",
+    titleHe: "סביבת המידע וההשפעה האזורית",
+    titleEn: "Regional information and influence environment",
+    summaryHe: "זיהוי נרטיבים מתואמים, שמועות חוזרות וקשרים בין ערוצי הפצה.",
+    summaryEn: "Identifying coordinated narratives, recurring rumors, and relationships between distribution channels.",
+    reasonHe: "התאמה לתחום המומחיות שלך",
+    reasonEn: "Matches your expertise",
+    participants: 6,
+    action: "request"
+  }
+];
+
+function welcomeAvatarHtml(member) {
+  return `<span class="ribbon-avatar" title="${escapeHtml(`${member.displayName} · ${member.roleLabel}`)}"><span>${escapeHtml(member.initial)}</span><img src="${escapeHtml(member.avatar)}" alt="" onerror="this.remove()"></span>`;
+}
+
+function welcomeParticipantsHtml(count = currentMembers().length) {
+  const participantCount = Math.max(0, Number(count) || 0);
+  const members = currentMembers().slice(0, Math.min(5, participantCount));
+  return `
+    <div class="ribbon-participants">
+      <span class="ribbon-label">${activeLocaleText("משתתפים", "Participants")}</span>
+      <div class="ribbon-avatar-row">
+        ${members.map(welcomeAvatarHtml).join("")}
+        <span class="ribbon-participant-count">${participantCount.toLocaleString(currentLocaleTag())}</span>
+      </div>
+    </div>`;
+}
+
+function ownedInvestigationRibbonHtml(investigation, index) {
+  const progress = Math.max(42, 68 - (index * 9));
+  const openLabel = activeLocaleText(`פתח את ${investigation.name}`, `Open ${investigation.name}`);
+  return `
+    <article class="investigation-ribbon" data-owned-investigation-id="${escapeHtml(investigation.id)}">
+      <button class="ribbon-main-action" type="button" data-open-investigation="${escapeHtml(investigation.id)}" aria-label="${escapeHtml(openLabel)}">
+        <div class="ribbon-primary">
+          <div class="ribbon-title-row">
+            <h3 class="ribbon-title">${escapeHtml(investigation.name)}</h3>
+            <span class="ribbon-status">${activeLocaleText("פעילה", "Active")}</span>
+          </div>
+          <p class="ribbon-summary">${activeLocaleText("חקירת המודיעין הפעילה על צפון קוסובו וסרביה.", "Active intelligence investigation covering North Kosovo and Serbia.")}</p>
+          <span class="ribbon-attention"><span class="material-symbols-rounded" aria-hidden="true">priority_high</span>${activeLocaleText("2 פריטים דורשים תשומת לב", "2 items need attention")}</span>
+        </div>
+        ${welcomeParticipantsHtml()}
+        <div class="ribbon-metrics">
+          <div class="ribbon-metric"><span>${activeLocaleText("פעילות אחרונה", "Recent activity")}</span><strong>${activeLocaleText("עודכן לפני 18 דקות", "Updated 18 minutes ago")}</strong></div>
+          <div class="ribbon-metric"><span>${activeLocaleText("אבן הדרך הבאה", "Next milestone")}</span><strong>${activeLocaleText("הערכת דפוסי הסלמה", "Assess escalation patterns")}</strong></div>
+          <div class="ribbon-progress" role="progressbar" aria-label="${activeLocaleText("התקדמות", "Progress")}" aria-valuenow="${progress}" aria-valuemin="0" aria-valuemax="100"><span style="width:${progress}%"></span></div>
+        </div>
+      </button>
+      <div class="ribbon-actions">
+        <button class="ribbon-action" type="button" data-welcome-action="invite" data-investigation-name="${escapeHtml(investigation.name)}"><span class="material-symbols-rounded" aria-hidden="true">person_add</span>${activeLocaleText("הזמנה / הוספה", "Invite / add")}</button>
+      </div>
+    </article>`;
+}
+
+function similarInvestigationRibbonHtml(investigation) {
+  const actionLabel = investigation.action === "join"
+    ? activeLocaleText("הצטרפות", "Join")
+    : activeLocaleText("בקשת הצטרפות", "Request to join");
+  return `
+    <article class="investigation-ribbon similar">
+      <div class="ribbon-similar-content">
+        <div class="ribbon-primary">
+          <div class="ribbon-title-row"><h3 class="ribbon-title">${escapeHtml(activeLocaleText(investigation.titleHe, investigation.titleEn))}</h3><span class="ribbon-status">${activeLocaleText("מומלצת", "Recommended")}</span></div>
+          <p class="ribbon-summary">${escapeHtml(activeLocaleText(investigation.summaryHe, investigation.summaryEn))}</p>
+          <span class="ribbon-attention"><span class="material-symbols-rounded" aria-hidden="true">auto_awesome</span>${escapeHtml(activeLocaleText(investigation.reasonHe, investigation.reasonEn))}</span>
+        </div>
+        ${welcomeParticipantsHtml(investigation.participants)}
+        <div class="ribbon-metrics">
+          <div class="ribbon-metric"><span>${activeLocaleText("רמת פעילות", "Activity level")}</span><strong>${activeLocaleText("פעילות גבוהה השבוע", "High activity this week")}</strong></div>
+          <div class="ribbon-metric"><span>${activeLocaleText("גישה", "Access")}</span><strong>${investigation.action === "join" ? activeLocaleText("פתוחה להשתתפות", "Open participation") : activeLocaleText("דורשת אישור בעלים", "Owner approval required")}</strong></div>
+        </div>
+      </div>
+      <div class="ribbon-actions"><button class="ribbon-action secondary" type="button" data-welcome-action="${investigation.action}" data-investigation-name="${escapeHtml(activeLocaleText(investigation.titleHe, investigation.titleEn))}">${actionLabel}</button></div>
+    </article>`;
+}
+
+function renderWelcomePage() {
+  if (!myInvestigationsList || !similarInvestigationsList) return;
+  const investigations = state.investigations.length ? state.investigations : [{ id: state.investigationId, name: state.investigationName }];
+  myInvestigationsCount.textContent = investigations.length.toLocaleString(currentLocaleTag());
+  myInvestigationsList.innerHTML = investigations.map(ownedInvestigationRibbonHtml).join("");
+  similarInvestigationsList.innerHTML = SIMILAR_INVESTIGATIONS.map(similarInvestigationRibbonHtml).join("");
+}
+
+function setPageView(view, options = {}) {
+  state.pageView = view === "workspace" ? "workspace" : "welcome";
+  const showingWelcome = state.pageView === "welcome";
+  if (welcomePage) welcomePage.hidden = !showingWelcome;
+  if (workspace) workspace.hidden = showingWelcome;
+  document.body.classList.toggle("welcome-active", showingWelcome);
+  if (showingWelcome) {
+    renderWelcomePage();
+    if (options.focus !== false) document.getElementById("welcomeTitle")?.focus?.();
+    return;
+  }
+  window.requestAnimationFrame(() => {
+    state.map?.resize();
+    window.requestAnimationFrame(() => state.map?.resize());
+  });
+  if (options.focus !== false) promptInput?.focus();
+}
+
+function openWelcomeAction(action, investigationName) {
+  if (!welcomeActionModal) return;
+  const title = action === "invite"
+    ? activeLocaleText("הזמנת משתתפים", "Invite participants")
+    : action === "join"
+      ? activeLocaleText("הצטרפות לחקירה", "Join investigation")
+      : activeLocaleText("בקשת הצטרפות", "Request to join");
+  welcomeActionTitle.textContent = title;
+  welcomeActionDescription.textContent = activeLocaleText(
+    `זוהי פעולת הדגמה עבור „${investigationName}”. לא בוצע שינוי בנתונים ולא נשלחה הודעה.`,
+    `This is a demo action for “${investigationName}.” No data was changed and no message was sent.`
+  );
+  welcomeActionModal.hidden = false;
+  welcomeActionClose?.focus();
+}
+
+function closeWelcomeAction() {
+  if (welcomeActionModal) welcomeActionModal.hidden = true;
+}
+
 async function registerInvestigationRecord(investigation) {
   if (!investigation?.id || !investigation?.name) return null;
   const response = await fetch("/api/investigations", {
@@ -2013,6 +2174,7 @@ function loadInvestigationRegistry() {
   state.investigationId = active.id;
   state.investigationName = active.name;
   saveInvestigationRegistry();
+  renderWelcomePage();
 }
 
 async function hydrateInvestigationRegistry() {
@@ -2043,6 +2205,7 @@ async function hydrateInvestigationRegistry() {
 
     saveInvestigationRegistry();
     renderInvestigationSelector();
+    renderWelcomePage();
   } catch (error) {
     console.warn("Investigation registry hydration failed", error);
   }
@@ -2102,6 +2265,15 @@ function addOrSelectInvestigation() {
     return;
   }
   selectInvestigation(investigation, { focusInput: true });
+}
+
+function startDraftInvestigation(prompt) {
+  const text = String(prompt || "").trim();
+  if (!text || state.busy) return;
+  const investigation = ensureInvestigationRecord(activeLocaleText("חקירת טיוטה", "Draft investigation"));
+  selectInvestigation(investigation);
+  setPageView("workspace", { focus: false });
+  runPrompt(text);
 }
 
 function setInvestigationSelectorOpen(open) {
@@ -5536,6 +5708,34 @@ promptForm.addEventListener("submit", event => {
   runPrompt(prompt);
 });
 
+welcomePromptForm?.addEventListener("submit", event => {
+  event.preventDefault();
+  const prompt = welcomePromptInput?.value || "";
+  if (!prompt.trim()) {
+    welcomePromptInput?.focus();
+    return;
+  }
+  welcomePromptInput.value = "";
+  startDraftInvestigation(prompt);
+});
+
+welcomePromptInput?.addEventListener("keydown", event => {
+  if (event.key === "Enter" && !event.shiftKey) {
+    event.preventDefault();
+    welcomePromptForm?.requestSubmit();
+  }
+});
+
+welcomePromptOptionsButton?.addEventListener("click", () => {
+  if (state.busy) return;
+  const investigation = ensureInvestigationRecord(activeLocaleText("חקירת טיוטה", "Draft investigation"));
+  selectInvestigation(investigation);
+  setPageView("workspace", { focus: false });
+  promptInput.value = welcomePromptInput?.value || "";
+  syncMentionHighlight(promptInput);
+  promptOptionsButton?.click();
+});
+
 promptInput.addEventListener("keydown", event => {
   if (handleTeamMentionKeydown(event)) return;
   if (event.key === "Enter" && !event.shiftKey) {
@@ -5603,6 +5803,28 @@ languageToggle?.addEventListener("change", () => {
   url.searchParams.set("lang", state.locale);
   window.location.assign(url.toString());
 });
+appHomeButton?.addEventListener("click", () => setPageView("welcome"));
+welcomePage?.addEventListener("click", event => {
+  const action = event.target.closest("[data-welcome-action]");
+  if (action) {
+    openWelcomeAction(action.dataset.welcomeAction, action.dataset.investigationName || "");
+    return;
+  }
+  const opener = event.target.closest("[data-open-investigation]");
+  if (!opener) return;
+  const investigation = state.investigations.find(item => item.id === opener.dataset.openInvestigation);
+  if (investigation && investigation.id !== state.investigationId) selectInvestigation(investigation);
+  setPageView("workspace");
+});
+welcomeActionClose?.addEventListener("click", closeWelcomeAction);
+welcomeActionModal?.addEventListener("click", event => {
+  if (event.target === welcomeActionModal) closeWelcomeAction();
+});
+document.addEventListener("keydown", event => {
+  if (event.key === "Escape" && welcomeActionModal && !welcomeActionModal.hidden) {
+    closeWelcomeAction();
+  }
+});
 workstreamComposerCancel?.addEventListener("click", () => setWorkstreamComposerMode(false));
 selectedLayersButton.addEventListener("click", openQueryLayersModal);
 selectedLayersClear.addEventListener("click", event => {
@@ -5630,6 +5852,8 @@ initPanelResizers();
 loadInvestigationRegistry();
 loadWorkstreamSeenState();
 renderInvestigationSelector();
+renderWelcomePage();
+setPageView("welcome", { focus: false });
 
 async function boot() {
   initMap();
