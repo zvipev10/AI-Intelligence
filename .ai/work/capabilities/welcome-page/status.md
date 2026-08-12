@@ -6,25 +6,25 @@ Investigation welcome page (`welcome-page`)
 
 ## Current phase
 
-Phase 5 — deployed and verified
+Phase 4 — draft exploration composer ready for review
 
 ## Overall status
 
-Complete for approved slice
+Pending review
 
 ## Who needs to act now
 
 | Role | Status | Required action | Due before |
 |---|---|---|---|
-| Product | Complete | None for approved slice | — |
-| Development | Complete | None for approved slice | — |
-| UX | Complete | None for approved slice | — |
-| QA | Complete | None for approved slice | — |
+| Product | Pending review | Review draft-investigation behavior and copy | Deployment |
+| Development | Complete for slice | Address review findings | Deployment |
+| UX | Pending review | Review composer placement and responsive behavior | Deployment |
+| QA | Complete for slice | Repeat production smoke after deployment approval | Deployment |
 | Architecture/Security | Not required | Reassess only if persistence or permissions enter scope | Implementation |
 
 ## Latest change since previous review
 
-Approved refinements were implemented, validated, and deployed to production as UI assets v163/v136.
+Added and locally validated the draft-investigation exploration composer as UI candidate v164/v137.
 
 ## Current blockers
 
@@ -32,11 +32,12 @@ None.
 
 ## Current risks
 
-- Supporting investigation metadata and collaboration actions remain mocked by design.
+- Submitting the welcome composer creates or reuses a locale-named draft investigation in the existing registry.
+- Production remains on the previously deployed v163/v136 until explicit deployment approval.
 
 ## Next expected artifact
 
-No further artifact required for this slice.
+Product/UX review decision or deployment request.
 
 ## Parent issue
 
@@ -59,7 +60,7 @@ Remote issue not created. Draft: `issues/parent-capability.md`.
 - UX review: `ux-review.md`
 - QA review: `qa-review.md`
 - Execution plan: `execution-plan.md`
-- Latest checkpoint: `checkpoint-002.md`
+- Latest checkpoint: `checkpoint-003.md`
 - Handoff: `handoff-summary.md`
 
 ## Gate checklist

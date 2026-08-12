@@ -12,10 +12,10 @@ The manifest is provenance, not a second source tree. Future application
 changes belong only in the package root. A deployment must be built from a
 reviewed Git commit and must update the public asset version when required.
 
-`SHA256SUMS-v163.txt` records the reviewed welcome-page source candidate. It
-keeps the v162 backend sources and advances the canonical UI assets to
-`app.js?v=163` and `styles.css?v=136`. It is a deployment candidate until the
-corresponding commit is accepted and deployed.
+The v163 welcome-page source was accepted and deployed with `app.js?v=163` and
+`styles.css?v=136`. `SHA256SUMS-v164.txt` records the next reviewed source
+candidate, which adds the welcome-page draft-investigation composer and
+advances the UI assets to `app.js?v=164` and `styles.css?v=137`.
 
 Secrets, datasets, investigations, workstreams, scenario runs, recordings,
 caches, logs, and generated runtime state are intentionally excluded.

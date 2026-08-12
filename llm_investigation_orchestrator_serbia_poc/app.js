@@ -378,6 +378,8 @@ const conversation = document.getElementById("conversation");
 const suggestions = document.getElementById("suggestions");
 const promptForm = document.getElementById("promptForm");
 const promptInput = document.getElementById("promptInput");
+const welcomePromptForm = document.getElementById("welcomePromptForm");
+const welcomePromptInput = document.getElementById("welcomePromptInput");
 const resultTitle = document.getElementById("resultTitle");
 const resultSubtitle = document.getElementById("resultSubtitle");
 const resultCount = document.getElementById("resultCount");
@@ -2261,6 +2263,15 @@ function addOrSelectInvestigation() {
     return;
   }
   selectInvestigation(investigation, { focusInput: true });
+}
+
+function startDraftInvestigation(prompt) {
+  const text = String(prompt || "").trim();
+  if (!text || state.busy) return;
+  const investigation = ensureInvestigationRecord(activeLocaleText("חקירת טיוטה", "Draft investigation"));
+  selectInvestigation(investigation);
+  setPageView("workspace", { focus: false });
+  runPrompt(text);
 }
 
 function setInvestigationSelectorOpen(open) {
@@ -5693,6 +5704,24 @@ promptForm.addEventListener("submit", event => {
   syncMentionHighlight(promptInput);
   closeTeamMentionMenu();
   runPrompt(prompt);
+});
+
+welcomePromptForm?.addEventListener("submit", event => {
+  event.preventDefault();
+  const prompt = welcomePromptInput?.value || "";
+  if (!prompt.trim()) {
+    welcomePromptInput?.focus();
+    return;
+  }
+  welcomePromptInput.value = "";
+  startDraftInvestigation(prompt);
+});
+
+welcomePromptInput?.addEventListener("keydown", event => {
+  if (event.key === "Enter" && !event.shiftKey) {
+    event.preventDefault();
+    welcomePromptForm?.requestSubmit();
+  }
 });
 
 promptInput.addEventListener("keydown", event => {

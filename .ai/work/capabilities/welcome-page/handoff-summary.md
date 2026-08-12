@@ -18,4 +18,8 @@ Implementation commit `b2043de` is published on `codex/welcome-page-implementati
 
 ## Next action
 
-No further action is required for this approved slice.
+Review checkpoint 003. If approved, deploy the v164/v137 candidate using the targeted three-asset deployment procedure and repeat the production smoke check.
+
+## Latest candidate
+
+The welcome page now includes the existing composer visual treatment between the welcome message and investigation list. Submitting a non-empty prompt creates or reuses `חקירת טיוטה` / `Draft investigation`, opens its workspace, and runs the prompt. Production remains on v163/v136 pending explicit deployment approval.

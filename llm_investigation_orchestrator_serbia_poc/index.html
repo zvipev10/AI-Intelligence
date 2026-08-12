@@ -6,7 +6,7 @@
   <title>סביבת מודיעין</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="./vendor/maplibre-gl.css">
-  <link rel="stylesheet" href="./styles.css?v=136">
+  <link rel="stylesheet" href="./styles.css?v=137">
 </head>
 <body class="welcome-active">
   <a class="help-button" href="./help.html" target="_blank" rel="noopener" aria-label="פתח עזרה" data-i18n-aria-he="פתח עזרה" data-i18n-aria-en="Open help">?</a>
@@ -60,6 +60,13 @@
         <p data-i18n-text-he="חזרו לחקירה פעילה או הצטרפו לחקירה דומה." data-i18n-text-en="Continue an active investigation or join a related one.">חזרו לחקירה פעילה או הצטרפו לחקירה דומה.</p>
       </div>
     </section>
+
+    <form id="welcomePromptForm" class="prompt-form welcome-prompt-form">
+      <textarea id="welcomePromptInput" rows="2" aria-label="התחלת אקספלורציה בחקירת טיוטה" data-i18n-aria-he="התחלת אקספלורציה בחקירת טיוטה" data-i18n-aria-en="Start exploring in a draft investigation" placeholder="התחל אקספלורציה בחקירת טיוטה..." data-i18n-placeholder-he="התחל אקספלורציה בחקירת טיוטה..." data-i18n-placeholder-en="Start exploring in a draft investigation..."></textarea>
+      <div class="prompt-actions">
+        <button id="welcomeSendButton" class="prompt-icon-button send-icon-button" type="submit" title="שלח" aria-label="שלח" data-i18n-title-he="שלח" data-i18n-title-en="Send" data-i18n-aria-he="שלח" data-i18n-aria-en="Send">↑</button>
+      </div>
+    </form>
 
     <section class="welcome-section" aria-labelledby="myInvestigationsTitle">
       <div class="welcome-section-heading">
@@ -289,6 +296,6 @@
   </div>
 
   <script src="./vendor/maplibre-gl.js"></script>
-  <script src="./app.js?v=163"></script>
+  <script src="./app.js?v=164"></script>
 </body>
 </html>

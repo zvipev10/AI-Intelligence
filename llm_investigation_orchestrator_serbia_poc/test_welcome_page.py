@@ -35,6 +35,17 @@ class WelcomePageContractTests(unittest.TestCase):
         self.assertNotIn('investigationAddButton', welcome_markup)
         self.assertNotIn('New investigation', welcome_markup)
 
+    def test_welcome_prompt_starts_a_draft_investigation(self):
+        welcome_markup = self.index.split('<main id="welcomePage"', 1)[1].split('</main>', 1)[0]
+        self.assertIn('id="welcomePromptForm" class="prompt-form welcome-prompt-form"', welcome_markup)
+        self.assertIn('data-i18n-placeholder-he="התחל אקספלורציה בחקירת טיוטה..."', welcome_markup)
+        self.assertIn('data-i18n-placeholder-en="Start exploring in a draft investigation..."', welcome_markup)
+        self.assertIn('function startDraftInvestigation(prompt)', self.app)
+        self.assertIn('activeLocaleText("חקירת טיוטה", "Draft investigation")', self.app)
+        self.assertIn('setPageView("workspace", { focus: false });', self.app)
+        self.assertIn('runPrompt(text);', self.app)
+        self.assertIn('.welcome-prompt-form', self.styles)
+
     def test_welcome_uses_centered_content_without_blue_kickers_or_open_hint(self):
         welcome_markup = self.index.split('<main id="welcomePage"', 1)[1].split('</main>', 1)[0]
         self.assertNotIn('class="welcome-eyebrow"', welcome_markup)
