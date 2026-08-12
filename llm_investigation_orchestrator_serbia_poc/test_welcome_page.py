@@ -26,7 +26,7 @@ class WelcomePageContractTests(unittest.TestCase):
 
     def test_real_investigation_and_members_are_rendered_from_state(self):
         self.assertIn("investigations.map(ownedInvestigationRibbonHtml)", self.app)
-        self.assertIn("currentMembers().slice(0, 5)", self.app)
+        self.assertIn("currentMembers().slice(0, Math.min(5, participantCount))", self.app)
         self.assertIn('data-open-investigation=', self.app)
         self.assertIn('data-welcome-action="invite"', self.app)
 
@@ -63,6 +63,7 @@ class WelcomePageContractTests(unittest.TestCase):
         similar_data = self.app.split("const SIMILAR_INVESTIGATIONS = [", 1)[1].split("];", 1)[0]
         participant_counts = [line.strip() for line in similar_data.splitlines() if "participants:" in line]
         self.assertEqual(["participants: 2,", "participants: 3,", "participants: 6,"], participant_counts)
+        self.assertIn("slice(0, Math.min(5, participantCount))", self.app)
         self.assertIn('id="similarInvestigationsList"', self.index)
         self.assertIn('data-i18n-text-he="הדגמה בלבד"', self.index)
         self.assertIn("No data was changed and no message was sent.", self.app)

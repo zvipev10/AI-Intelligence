@@ -2019,13 +2019,14 @@ function welcomeAvatarHtml(member) {
 }
 
 function welcomeParticipantsHtml(count = currentMembers().length) {
-  const members = currentMembers().slice(0, 5);
+  const participantCount = Math.max(0, Number(count) || 0);
+  const members = currentMembers().slice(0, Math.min(5, participantCount));
   return `
     <div class="ribbon-participants">
       <span class="ribbon-label">${activeLocaleText("משתתפים", "Participants")}</span>
       <div class="ribbon-avatar-row">
         ${members.map(welcomeAvatarHtml).join("")}
-        <span class="ribbon-participant-count">${Number(count).toLocaleString(currentLocaleTag())}</span>
+        <span class="ribbon-participant-count">${participantCount.toLocaleString(currentLocaleTag())}</span>
       </div>
     </div>`;
 }
