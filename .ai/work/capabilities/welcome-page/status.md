@@ -6,7 +6,7 @@ Investigation welcome page (`welcome-page`)
 
 ## Current phase
 
-Phase 1 — capability initiation
+Phase 4 — checkpoint review after slice 1
 
 ## Overall status
 
@@ -16,20 +16,19 @@ Pending review
 
 | Role | Status | Required action | Due before |
 |---|---|---|---|
-| Product | Pending human input | Approve scope and answer navigation/action questions | Role enrichment |
-| Development | Pending | Review initialization and view-switching feasibility | Execution planning |
-| UX | Pending | Review ribbon structure, nested controls, and RTL flow | Execution planning |
-| QA | Pending | Define regression and accessibility coverage | Execution planning |
+| Product | Pending review | Review implemented behavior and copy | Slice 2 |
+| Development | Complete for slice | Address checkpoint findings | Slice 2 |
+| UX | Pending review | Review ribbon hierarchy and responsive behavior | Slice 2 |
+| QA | Pending review | Review validation evidence and repeat smoke | Slice 2 |
 | Architecture/Security | Not required | Reassess only if persistence or permissions enter scope | Implementation |
 
 ## Latest change since previous review
 
-Initial capability brief created from the requested welcome-page behavior and the existing Serbia/North Kosovo frontend.
+Welcome page implemented and validated; checkpoint 001 is ready for review.
 
 ## Current blockers
 
-- Required human checkpoint has not approved product/UX behavior.
-- Return-to-welcome, workspace header, mock action, language control, and refresh behavior are not yet decided.
+None for slice 1.
 
 ## Current risks
 
@@ -39,7 +38,7 @@ Initial capability brief created from the requested welcome-page behavior and th
 
 ## Next expected artifact
 
-Draft developer and UX reviews after product answers/accepts the open questions.
+Checkpoint review decision or requested changes.
 
 ## Parent issue
 
@@ -58,12 +57,12 @@ Remote issue not created. Draft: `issues/parent-capability.md`.
 
 - Capability brief: `capability-brief.md`
 - Decisions: Not created
-- Developer review: Not created
-- UX review: Not created
-- QA review: Not created
-- Execution plan: Not created
-- Latest checkpoint: Not created
-- Handoff: Not created
+- Developer review: `developer-review.md`
+- UX review: `ux-review.md`
+- QA review: `qa-review.md`
+- Execution plan: `execution-plan.md`
+- Latest checkpoint: `checkpoint-001.md`
+- Handoff: `handoff-summary.md`
 
 ## Gate checklist
 

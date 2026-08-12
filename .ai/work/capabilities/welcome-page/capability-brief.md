@@ -14,7 +14,7 @@ Not created remotely. Draft: `issues/parent-capability.md`.
 
 ## Current status
 
-Draft — pending product, UX, development, and QA review. See `status.md`.
+Approved for controlled implementation. See `status.md`.
 
 ## User problem
 
@@ -57,7 +57,7 @@ Analysts and investigation participants using the Serbia/North Kosovo intelligen
 - Implementing recommendation logic.
 - Adding a new route or opening investigations in a new page.
 - Replacing the existing investigation registry or team model.
-- Building the English translation in this slice unless separately approved; the language control may be presentation-only for the mock.
+- Replacing or duplicating the existing bilingual localization runtime.
 
 ## Acceptance criteria
 
@@ -114,17 +114,16 @@ Analysts and investigation participants using the Serbia/North Kosovo intelligen
 
 ## Open questions
 
-1. After entering an investigation, how does the user return to the welcome page: app name, back control, browser history, or no return control in MVP?
-2. Should the existing investigation switcher and its `+` creation control remain visible inside the investigation workspace?
-3. Should invite/add participant open a demo modal, show a disabled/coming-soon state, or reuse an existing team-management interaction?
-4. Should `E / ע` switch the full UI now or be a non-functional first-step control?
-5. Should refreshing the page always return to welcome or remember that the user entered the investigation?
+None blocking for the first slice.
 
-## Missing inputs
+## Approved product decisions
 
-- Approved welcome-page wireframe or visual direction.
-- Approved behavior for the five open questions above.
-- Confirmation of which mock investigation titles/content are appropriate.
+- The app name returns users to the welcome page.
+- The investigation switcher and its `+` control remain available inside the workspace.
+- Invite/add participant opens a demo-only modal.
+- The existing functional `E / ע` switcher and full localization runtime are reused.
+- Refresh starts on the welcome page.
+- Mock investigation content may be selected during implementation.
 
 ## Required reviewers
 

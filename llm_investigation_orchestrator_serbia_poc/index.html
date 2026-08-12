@@ -6,13 +6,13 @@
   <title>סביבת מודיעין</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="./vendor/maplibre-gl.css">
-  <link rel="stylesheet" href="./styles.css?v=135">
+  <link rel="stylesheet" href="./styles.css?v=136">
 </head>
-<body>
+<body class="welcome-active">
   <a class="help-button" href="./help.html" target="_blank" rel="noopener" aria-label="פתח עזרה" data-i18n-aria-he="פתח עזרה" data-i18n-aria-en="Open help">?</a>
   <header class="app-header">
     <div class="header-copy">
-      <h1 data-i18n-text-he="סביבת מודיעין" data-i18n-text-en="Intelligence Workspace">סביבת מודיעין</h1>
+      <h1><button id="appHomeButton" class="app-home-button" type="button" data-i18n-text-he="סביבת מודיעין" data-i18n-text-en="Intelligence Workspace" aria-label="חזרה לדף הבית" data-i18n-aria-he="חזרה לדף הבית" data-i18n-aria-en="Return to welcome page">סביבת מודיעין</button></h1>
       <div class="intelligence-mode-control">
         <label class="language-switch" for="languageToggle" aria-label="החלפת שפה" data-i18n-aria-he="החלפת שפה" data-i18n-aria-en="Switch language">
           <span class="language-switch-track">
@@ -53,7 +53,38 @@
     </div>
   </header>
 
-  <main class="workspace">
+  <main id="welcomePage" class="welcome-page">
+    <section class="welcome-intro" aria-labelledby="welcomeTitle">
+      <div>
+        <span class="welcome-eyebrow" data-i18n-text-he="מרחב החקירות שלך" data-i18n-text-en="Your investigation workspace">מרחב החקירות שלך</span>
+        <h2 id="welcomeTitle" data-i18n-text-he="ברוכים הבאים" data-i18n-text-en="Welcome back">ברוכים הבאים</h2>
+        <p data-i18n-text-he="חזרו לחקירה פעילה או הצטרפו לחקירה דומה." data-i18n-text-en="Continue an active investigation or join a related one.">חזרו לחקירה פעילה או הצטרפו לחקירה דומה.</p>
+      </div>
+    </section>
+
+    <section class="welcome-section" aria-labelledby="myInvestigationsTitle">
+      <div class="welcome-section-heading">
+        <div>
+          <span class="welcome-section-kicker" data-i18n-text-he="העבודה שלי" data-i18n-text-en="My work">העבודה שלי</span>
+          <h2 id="myInvestigationsTitle" data-i18n-text-he="החקירות שלי" data-i18n-text-en="My investigations">החקירות שלי</h2>
+        </div>
+        <span id="myInvestigationsCount" class="welcome-count"></span>
+      </div>
+      <div id="myInvestigationsList" class="investigation-ribbon-list"></div>
+    </section>
+
+    <section class="welcome-section similar-investigations-section" aria-labelledby="similarInvestigationsTitle">
+      <div class="welcome-section-heading">
+        <div>
+          <span class="welcome-section-kicker" data-i18n-text-he="אפשרויות לשיתוף פעולה" data-i18n-text-en="Collaboration opportunities">אפשרויות לשיתוף פעולה</span>
+          <h2 id="similarInvestigationsTitle" data-i18n-text-he="חקירות דומות להשתתפות" data-i18n-text-en="Similar investigations to join">חקירות דומות להשתתפות</h2>
+        </div>
+      </div>
+      <div id="similarInvestigationsList" class="investigation-ribbon-list"></div>
+    </section>
+  </main>
+
+  <main class="workspace" hidden>
     <aside id="conversationPanel" class="conversation-panel">
       <div id="conversation" class="conversation" aria-live="polite">
         <article class="message assistant-message">
@@ -154,6 +185,18 @@
 
   </main>
 
+  <div id="welcomeActionModal" class="modal-backdrop welcome-action-backdrop" hidden>
+    <section class="welcome-action-modal" role="dialog" aria-modal="true" aria-labelledby="welcomeActionTitle" aria-describedby="welcomeActionDescription">
+      <div class="welcome-action-icon"><span class="material-symbols-rounded" aria-hidden="true">group_add</span></div>
+      <div>
+        <span class="welcome-section-kicker" data-i18n-text-he="הדגמה בלבד" data-i18n-text-en="Demo only">הדגמה בלבד</span>
+        <h2 id="welcomeActionTitle"></h2>
+        <p id="welcomeActionDescription"></p>
+      </div>
+      <button id="welcomeActionClose" class="primary-filter-action" type="button" data-i18n-text-he="הבנתי" data-i18n-text-en="Got it">הבנתי</button>
+    </section>
+  </div>
+
   <div id="stepInjectModal" class="step-inject-backdrop" hidden>
     <section class="step-inject-window" role="dialog" aria-modal="true" aria-labelledby="stepInjectTitle">
       <div class="step-inject-header">
@@ -249,6 +292,6 @@
   </div>
 
   <script src="./vendor/maplibre-gl.js"></script>
-  <script src="./app.js?v=162"></script>
+  <script src="./app.js?v=163"></script>
 </body>
 </html>
