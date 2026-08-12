@@ -18,8 +18,8 @@ Implementation commit `b2043de` is published on `codex/welcome-page-implementati
 
 ## Next action
 
-Review checkpoint 003. If approved, deploy the v164/v137 candidate using the targeted three-asset deployment procedure and repeat the production smoke check.
+No further action is required for this approved slice.
 
 ## Latest candidate
 
-The welcome page now includes the existing composer visual treatment between the welcome message and investigation list. Submitting a non-empty prompt creates or reuses `חקירת טיוטה` / `Draft investigation`, opens its workspace, and runs the prompt. Production remains on v163/v136 pending explicit deployment approval.
+The welcome page now includes the existing composer visual treatment between the welcome message and investigation list. Submitting a non-empty prompt creates or reuses `חקירת טיוטה` / `Draft investigation`, opens its workspace, and runs the prompt. Production serves v164/v137; the deployed hashes match `SHA256SUMS-v164.txt`.

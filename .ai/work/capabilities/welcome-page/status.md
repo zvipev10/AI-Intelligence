@@ -6,25 +6,25 @@ Investigation welcome page (`welcome-page`)
 
 ## Current phase
 
-Phase 4 — draft exploration composer ready for review
+Phase 5 — draft exploration composer deployed and verified
 
 ## Overall status
 
-Pending review
+Complete for approved slice
 
 ## Who needs to act now
 
 | Role | Status | Required action | Due before |
 |---|---|---|---|
-| Product | Pending review | Review draft-investigation behavior and copy | Deployment |
-| Development | Complete for slice | Address review findings | Deployment |
-| UX | Pending review | Review composer placement and responsive behavior | Deployment |
-| QA | Complete for slice | Repeat production smoke after deployment approval | Deployment |
+| Product | Complete | None for approved slice | — |
+| Development | Complete | None for approved slice | — |
+| UX | Complete | None for approved slice | — |
+| QA | Complete | None for approved slice | — |
 | Architecture/Security | Not required | Reassess only if persistence or permissions enter scope | Implementation |
 
 ## Latest change since previous review
 
-Added and locally validated the draft-investigation exploration composer as UI candidate v164/v137.
+Deployed and production-verified the draft-investigation exploration composer as UI v164/v137.
 
 ## Current blockers
 
@@ -33,11 +33,11 @@ None.
 ## Current risks
 
 - Submitting the welcome composer creates or reuses a locale-named draft investigation in the existing registry.
-- Production remains on the previously deployed v163/v136 until explicit deployment approval.
+- Supporting investigation metadata and collaboration actions remain mocked by design.
 
 ## Next expected artifact
 
-Product/UX review decision or deployment request.
+No further artifact required for this slice.
 
 ## Parent issue
 

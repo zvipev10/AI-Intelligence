@@ -2,7 +2,7 @@
 
 ## Status
 
-Implemented and locally validated; pending product/UX review and deployment approval.
+Implemented, deployed, and verified in production.
 
 ## What changed
 
@@ -27,4 +27,8 @@ No new API or model. The feature uses the existing investigation registry and pr
 
 ## Deployment
 
-Not deployed. Production remains on v163/v136 pending explicit approval.
+Deployed through the targeted three-asset procedure. Production serves `app.js?v=164` and `styles.css?v=137`, and deployed hashes match `deployment/SHA256SUMS-v164.txt`.
+
+Backup: `/opt/serbia-poc-ui-backups/welcome-draft-composer-20260812T101820Z`.
+
+Production verification covered Hebrew RTL copy and placement, visible add/send controls, no horizontal overflow, the existing switch to English LTR with the English placeholder, HTTP 200 for both locale URLs, and HTTP 200 for `/api/investigations`. The live submit action was not invoked during smoke testing to avoid creating test production data; its end-to-end behavior was verified locally before deployment.
