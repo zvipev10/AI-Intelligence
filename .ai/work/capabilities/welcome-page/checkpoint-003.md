@@ -35,4 +35,6 @@ Production verification covered Hebrew RTL copy and placement, visible add/send 
 
 ## Follow-up participant-count update
 
-The first two mocked similar-investigation participant counts were changed from 8 and 12 to 2 and 3. The candidate advances to `app.js?v=165`; production deployment evidence will be recorded after verification.
+The first two mocked similar-investigation participant counts were changed from 8 and 12 to 2 and 3. Production now serves `app.js?v=165`; the deployed hashes match `deployment/SHA256SUMS-v165.txt`. Live Hebrew and English rendering both show participant counts `[2, 3, 6]` with no horizontal overflow.
+
+Backup: `/opt/serbia-poc-ui-backups/similar-participants-20260812T113027Z`.
