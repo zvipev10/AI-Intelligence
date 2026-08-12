@@ -29,6 +29,7 @@
     li+li { margin-top:7px; }
     figure { margin:28px 0 0; }
     figure img { display:block; width:100%; max-height:650px; object-fit:contain; border:1px solid #242b38; border-radius:14px; background:var(--navy); }
+    video { display:block; width:100%; margin-top:28px; border:1px solid #242b38; border-radius:14px; background:var(--navy); box-shadow:0 18px 50px #17203320; }
     figcaption { margin-top:10px; color:var(--muted); text-align:center; font-size:.88rem; font-style:italic; }
     .split { display:grid; grid-template-columns:minmax(0,1.65fr) minmax(280px,.85fr); gap:22px; align-items:start; }
     .split .stack { display:grid; gap:16px; }
@@ -59,6 +60,13 @@
         <article class="card"><h3>Start immediately</h3><ul><li>Begin from the welcome-page conversation input.</li><li>A new exploration starts in a draft investigation, ready to accumulate memory and results.</li></ul></article>
         <article class="card"><h3>Health and orientation</h3><ul><li>See whether the intelligence dataset and agent services are available.</li><li>Move directly into the investigation workspace.</li></ul></article>
       </div>
+      <figure>
+        <video controls preload="metadata" poster="./welcome-investigations-demo-poster.png" aria-label="Welcome page and investigations feature demonstration">
+          <source src="./welcome-investigations-demo.mp4" type="video/mp4">
+          Your browser does not support embedded video. <a href="./welcome-investigations-demo.mp4">Download the demonstration video</a>.
+        </video>
+        <figcaption>A short walkthrough of starting an exploration, reviewing investigations and participants, collaboration actions, related investigations, and opening the KFOR workspace.</figcaption>
+      </figure>
     </section>
     <section id="assistant"><h2>2. Explore with the personal investigation assistant</h2><p class="lead">The general agent acts as the user's personal assistant across the complete investigation. It supports broad exploration without replacing specialist roles.</p>
       <div class="split"><figure><img src="./design-qa-implementation.png" alt="Investigation workspace with map and conversational assistant"><figcaption>Visual analysis on the map with the conversational assistant alongside it.</figcaption></figure>
