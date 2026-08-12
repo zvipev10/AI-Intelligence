@@ -35,6 +35,16 @@ class WelcomePageContractTests(unittest.TestCase):
         self.assertNotIn('investigationAddButton', welcome_markup)
         self.assertNotIn('New investigation', welcome_markup)
 
+    def test_welcome_uses_centered_content_without_blue_kickers_or_open_hint(self):
+        welcome_markup = self.index.split('<main id="welcomePage"', 1)[1].split('</main>', 1)[0]
+        self.assertNotIn('class="welcome-eyebrow"', welcome_markup)
+        self.assertNotIn('מרחב החקירות שלך', welcome_markup)
+        self.assertNotIn('אפשרויות לשיתוף פעולה', welcome_markup)
+        self.assertNotIn('העבודה שלי', welcome_markup)
+        self.assertNotIn('לחצו על הסרט לפתיחה', self.app)
+        self.assertNotIn('ribbon-open-hint', self.app)
+        self.assertIn('justify-content: center', self.styles)
+
     def test_similar_investigations_and_demo_actions_are_explicit(self):
         self.assertIn("const SIMILAR_INVESTIGATIONS = [", self.app)
         self.assertIn('id="similarInvestigationsList"', self.index)

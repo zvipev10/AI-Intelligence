@@ -2050,7 +2050,6 @@ function ownedInvestigationRibbonHtml(investigation, index) {
       </button>
       <div class="ribbon-actions">
         <button class="ribbon-action" type="button" data-welcome-action="invite" data-investigation-name="${escapeHtml(investigation.name)}"><span class="material-symbols-rounded" aria-hidden="true">person_add</span>${activeLocaleText("הזמנה / הוספה", "Invite / add")}</button>
-        <span class="ribbon-open-hint">${activeLocaleText("לחצו על הסרט לפתיחה", "Select ribbon to open")}<span class="material-symbols-rounded" aria-hidden="true">arrow_forward</span></span>
       </div>
     </article>`;
 }
