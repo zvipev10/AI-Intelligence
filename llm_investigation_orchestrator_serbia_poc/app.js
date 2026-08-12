@@ -380,6 +380,7 @@ const promptForm = document.getElementById("promptForm");
 const promptInput = document.getElementById("promptInput");
 const welcomePromptForm = document.getElementById("welcomePromptForm");
 const welcomePromptInput = document.getElementById("welcomePromptInput");
+const welcomePromptOptionsButton = document.getElementById("welcomePromptOptionsButton");
 const resultTitle = document.getElementById("resultTitle");
 const resultSubtitle = document.getElementById("resultSubtitle");
 const resultCount = document.getElementById("resultCount");
@@ -5722,6 +5723,16 @@ welcomePromptInput?.addEventListener("keydown", event => {
     event.preventDefault();
     welcomePromptForm?.requestSubmit();
   }
+});
+
+welcomePromptOptionsButton?.addEventListener("click", () => {
+  if (state.busy) return;
+  const investigation = ensureInvestigationRecord(activeLocaleText("חקירת טיוטה", "Draft investigation"));
+  selectInvestigation(investigation);
+  setPageView("workspace", { focus: false });
+  promptInput.value = welcomePromptInput?.value || "";
+  syncMentionHighlight(promptInput);
+  promptOptionsButton?.click();
 });
 
 promptInput.addEventListener("keydown", event => {

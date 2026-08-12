@@ -7,6 +7,7 @@ Implemented and locally validated; pending product/UX review and deployment appr
 ## What changed
 
 - Added the existing chat-composer visual treatment between the welcome message and “My investigations.”
+- Preserved both existing composer actions: send starts the draft exploration, while add opens the existing attachment/options menu inside the draft workspace and carries over any typed text.
 - Added localized prompt copy: `התחל אקספלורציה בחקירת טיוטה...` / `Start exploring in a draft investigation...`.
 - Enter without Shift and the send arrow both submit; Shift+Enter remains available for a newline.
 - Empty submission keeps focus in the welcome composer.

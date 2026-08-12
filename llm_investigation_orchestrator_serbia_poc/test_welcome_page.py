@@ -40,10 +40,12 @@ class WelcomePageContractTests(unittest.TestCase):
         self.assertIn('id="welcomePromptForm" class="prompt-form welcome-prompt-form"', welcome_markup)
         self.assertIn('data-i18n-placeholder-he="התחל אקספלורציה בחקירת טיוטה..."', welcome_markup)
         self.assertIn('data-i18n-placeholder-en="Start exploring in a draft investigation..."', welcome_markup)
+        self.assertIn('id="welcomePromptOptionsButton"', welcome_markup)
         self.assertIn('function startDraftInvestigation(prompt)', self.app)
         self.assertIn('activeLocaleText("חקירת טיוטה", "Draft investigation")', self.app)
         self.assertIn('setPageView("workspace", { focus: false });', self.app)
         self.assertIn('runPrompt(text);', self.app)
+        self.assertIn('welcomePromptOptionsButton?.addEventListener("click"', self.app)
         self.assertIn('.welcome-prompt-form', self.styles)
 
     def test_welcome_uses_centered_content_without_blue_kickers_or_open_hint(self):
