@@ -17,6 +17,9 @@ The v163 welcome-page source was accepted and deployed with `app.js?v=163` and
 candidate, which adds the welcome-page draft-investigation composer and
 advances the UI assets to `app.js?v=164` and `styles.css?v=137`.
 
+`SHA256SUMS-v165.txt` records the participant-count copy update for the first
+two mocked similar investigations and advances the script to `app.js?v=165`.
+
 Secrets, datasets, investigations, workstreams, scenario runs, recordings,
 caches, logs, and generated runtime state are intentionally excluded.
 

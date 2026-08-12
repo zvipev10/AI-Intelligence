@@ -1987,7 +1987,7 @@ const SIMILAR_INVESTIGATIONS = [
     summaryEn: "Regional monitoring of disruptions, roadblocks, and activity around critical infrastructure.",
     reasonHe: "חפיפה גאוגרפית גבוהה",
     reasonEn: "High geographic overlap",
-    participants: 8,
+    participants: 2,
     action: "request"
   },
   {
@@ -1998,7 +1998,7 @@ const SIMILAR_INVESTIGATIONS = [
     summaryEn: "A collaborative investigation of movement reports, transit routes, and escalation indicators.",
     reasonHe: "נושאים ומקורות משותפים",
     reasonEn: "Shared topics and sources",
-    participants: 12,
+    participants: 3,
     action: "join"
   },
   {

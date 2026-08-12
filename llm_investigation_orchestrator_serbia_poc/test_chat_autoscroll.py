@@ -35,7 +35,7 @@ class ChatAutoScrollTests(unittest.TestCase):
         )
 
     def test_asset_version_is_bumped(self):
-        self.assertIn('app.js?v=164', self.index)
+        self.assertIn('app.js?v=165', self.index)
 
 
 if __name__ == "__main__":

@@ -32,3 +32,7 @@ Deployed through the targeted three-asset procedure. Production serves `app.js?v
 Backup: `/opt/serbia-poc-ui-backups/welcome-draft-composer-20260812T101820Z`.
 
 Production verification covered Hebrew RTL copy and placement, visible add/send controls, no horizontal overflow, the existing switch to English LTR with the English placeholder, HTTP 200 for both locale URLs, and HTTP 200 for `/api/investigations`. The live submit action was not invoked during smoke testing to avoid creating test production data; its end-to-end behavior was verified locally before deployment.
+
+## Follow-up participant-count update
+
+The first two mocked similar-investigation participant counts were changed from 8 and 12 to 2 and 3. The candidate advances to `app.js?v=165`; production deployment evidence will be recorded after verification.
