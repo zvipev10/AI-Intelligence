@@ -17,7 +17,7 @@ All 131 package tests pass. Focused tests cover empty-memory silence, triggering
 
 ## Release
 
-Deploy only the reviewed source files and preserve all production runtime data, configuration, and secrets. Verify the v167 asset, health endpoint, and source hashes after restart.
+Deployed the reviewed runtime files to production with runtime data, configuration, and secrets preserved. The service is healthy, serves `app.js?v=167`, and all deployed hashes match commit `5ebdfb8`. The commit is merged into remote `main`.
 
 ## Remaining risk
 

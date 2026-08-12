@@ -6,15 +6,15 @@ Investigation memory update on time-slice progression
 
 ## Current phase
 
-Phase 6 — final handoff and publication
+Complete
 
 ## Overall status
 
-Implemented and validated; pending deployment and merge
+Deployed to production and merged to remote main
 
 ## Who needs to act now
 
-Release owner is deploying the validated v167 slice and merging it to main.
+No further action is required for the approved slice.
 
 ## Blockers
 
@@ -22,8 +22,15 @@ None.
 
 ## Next artifact
 
-Production verification and final publication record.
+None.
 
 ## Parent issue
 
 Remote issue not created. Draft: `issues/parent-capability.md`.
+
+## Publication
+
+- Implementation commit: `5ebdfb8`
+- Production asset: `app.js?v=167`
+- Production backup: `/opt/serbia-poc-ui-backups/v167-20260812T161050Z`
+- Remote main: `5ebdfb8`
