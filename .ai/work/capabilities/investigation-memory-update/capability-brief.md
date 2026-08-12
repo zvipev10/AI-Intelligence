@@ -10,7 +10,7 @@ Time-slice progression currently produces Moshe assessments for active workstrea
 
 ## Proposed behavior
 
-After a real-time slice advances, a general agent generates one investigation update using the current investigation memory as its primary context. The update is separate from Moshe's specialist workstream updates.
+After a real-time slice advances, a general agent generates one investigation update using the current investigation memory as its primary context and the newly released slice as the source of potential change. This flow is fully independent of Moshe and all workstream-update processing.
 
 The first slice should produce a read-only update containing:
 
@@ -24,18 +24,17 @@ The first slice should produce a read-only update containing:
 ## Recommended orchestration
 
 1. Advance the time slice and release the new data window.
-2. Run Moshe's existing workstream reevaluations.
-3. Load the investigation memory and current workstream presentation summaries.
-4. Run the general agent as an investigation synthesizer.
-5. Present the result as a distinct “Investigation update” in the conversation/activity UI.
-6. Let the analyst explicitly save the update to investigation memory; do not auto-write memory in the first slice.
+2. Check whether the investigation has saved memory; if it is empty, do nothing.
+3. Independently load the investigation memory and run the general agent against the newly released slice.
+4. Present the result as a distinct “Investigation update” in chat only.
+5. Let the analyst explicitly save the update to investigation memory; do not auto-write memory in the first slice.
 
 ## Why this boundary
 
 - Moshe remains responsible for targets and workstream artifacts.
-- The general agent synthesizes across the investigation rather than modifying specialist work.
+- The general agent synthesizes across the investigation without reading, waiting for, modifying, or reporting the status of specialist work.
 - Human confirmation prevents generated summaries from recursively becoming trusted memory without review.
-- Running after specialist updates lets the general synthesis include their latest conclusions.
+- Independent execution isolates latency and failures between the general investigation update and workstream processing.
 
 ## Inputs
 
@@ -43,8 +42,9 @@ The first slice should produce a read-only update containing:
 - scenario run ID, revision, and newly released timeframe;
 - saved chat summaries;
 - saved memory layers, filters, counts, and sample evidence IDs;
-- current active-workstream presentation summaries;
 - optionally, the previous generated investigation update for delta comparison.
+
+Workstream records, workstream presentations, Moshe results, and target-bank state are explicitly excluded inputs.
 
 ## Output contract
 
@@ -58,12 +58,11 @@ The agent should return structured data rather than only prose:
 - `suggested_actions[]`
 - `evidence_ids[]`
 - `memory_references[]`
-- `workstream_references[]`
 - `no_material_change`
 
 ## Trigger and ordering recommendation
 
-Trigger once per successful time-slice revision, after Moshe has completed or failed. A Moshe failure should not block the general update; the output should disclose unavailable specialist context.
+Trigger once per successful time-slice revision as an independent job. It must not wait for, poll, consume, or disclose Moshe/workstream-update state. Either job may succeed or fail without affecting the other.
 
 ## Persistence and idempotency
 
@@ -73,34 +72,37 @@ Trigger once per successful time-slice revision, after Moshe has completed or fa
 
 ## Empty-memory behavior
 
-If investigation memory has no saved summaries or layers, do not pretend to be memory-grounded. Either skip with a clear reason or generate a visibly labeled baseline update from current workstreams and the new slice. Product must choose which behavior is preferred.
+If investigation memory has no saved summaries or layers, do nothing: do not start the agent, create a chat message, or create a stored update record.
 
 ## Non-goals for the first slice
 
 - Automatically changing workstreams or target-bank records.
 - Automatically writing generated content back into trusted investigation memory.
 - Replacing Moshe's specialist reevaluation.
+- Reading or incorporating workstream updates, presentations, or target-bank state.
 - Broad, unconstrained rediscovery of historical events.
 
 ## Acceptance criteria
 
 - One general-agent update is generated at most once per time-slice revision.
 - The update uses saved investigation memory and identifies its memory references.
-- Moshe and general-agent outputs are visually and semantically distinct.
+- The update appears in chat only and is labeled as a general investigation update.
 - The update does not mutate workstreams, targets, or trusted memory.
-- Failures are isolated: Moshe failure does not prevent synthesis, and synthesis failure does not undo the slice advance.
+- The general update neither waits for nor consumes workstream processing.
+- Failures are isolated: either update path may fail without affecting the other or undoing the slice advance.
+- Empty investigation memory produces no agent run, chat message, or update record.
 - The analyst can explicitly save an accepted update to memory.
 - No-material-change output is concise and does not invent developments.
 
-## Open product decisions
+## Approved product decisions
 
-1. Should empty memory cause a skip, or a labeled baseline update?
-2. Should the update appear only in chat, or also as an investigation-level activity card?
-3. Should generation wait for all specialist workstreams or use a bounded timeout and disclose pending work?
+1. Empty investigation memory produces no action.
+2. The update appears only in chat.
+3. General-agent generation is fully independent of workstream updates: no waiting, no workstream inputs, and no shared failure state.
 
 ## Main risks
 
 - Recursive contamination if generated updates are automatically fed back into trusted memory.
 - Unsupported synthesis if memory references are not preserved in the output.
-- Latency when multiple workstreams must finish before the general update starts.
+- Concurrent general and specialist agent jobs may compete for runtime capacity unless execution limits are defined.
 - Duplicate updates after retries unless revision-level idempotency is enforced.

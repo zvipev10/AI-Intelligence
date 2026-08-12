@@ -6,15 +6,14 @@ Add a general-agent investigation synthesis grounded in saved investigation memo
 
 ## Required action
 
-Review and approve the product decisions and acceptance criteria in `capability-brief.md`.
+Complete developer, UX, and QA reviews against the approved product decisions in `capability-brief.md`.
 
 ## Owner role
 
-Product
+Development, UX, and QA
 
 ## Completion criteria
 
-- Empty-memory behavior is chosen.
-- Presentation surface is chosen.
-- Specialist-wait behavior is chosen.
-- Developer, UX, and QA reviews are requested.
+- Developer feasibility and orchestration boundaries are reviewed.
+- UX chat states and labels are reviewed.
+- QA concurrency, idempotency, empty-memory, and failure-isolation coverage is defined.

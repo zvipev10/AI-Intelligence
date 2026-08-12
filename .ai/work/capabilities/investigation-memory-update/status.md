@@ -10,19 +10,19 @@ Phase 1 — capability definition
 
 ## Overall status
 
-Pending product review
+Product decisions recorded; pending role reviews
 
 ## Who needs to act now
 
-Product should decide empty-memory behavior, presentation surface, and specialist-wait behavior before developer/UX/QA review.
+Development, UX, and QA should review the approved behavior before execution planning.
 
 ## Blockers
 
-None for definition. The three open product decisions block execution planning.
+Developer, UX, and QA review artifacts are not yet complete.
 
 ## Next artifact
 
-Developer, UX, and QA reviews after product decisions are recorded.
+Developer review, UX review, and QA review.
 
 ## Parent issue
 
