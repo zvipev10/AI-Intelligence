@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>סביבת מודיעין</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="./vendor/maplibre-gl.css">
+  <link rel="stylesheet" href="./styles.css?v=135">
+</head>
+<body>
+  <a class="help-button" href="./help.html" target="_blank" rel="noopener" aria-label="פתח עזרה" data-i18n-aria-he="פתח עזרה" data-i18n-aria-en="Open help">?</a>
+  <header class="app-header">
+    <div class="header-copy">
+      <h1 data-i18n-text-he="סביבת מודיעין" data-i18n-text-en="Intelligence Workspace">סביבת מודיעין</h1>
+      <div class="intelligence-mode-control">
+        <label class="language-switch" for="languageToggle" aria-label="החלפת שפה" data-i18n-aria-he="החלפת שפה" data-i18n-aria-en="Switch language">
+          <span class="language-switch-track">
+            <input id="languageToggle" type="checkbox" aria-label="Switch language">
+            <span class="language-switch-slider" aria-hidden="true"><span>E</span><span>ע</span></span>
+          </span>
+        </label>
+        <span id="intelligencePeriod" class="intelligence-period"></span>
+        <span id="playbackAgentStatus" class="playback-agent-status" hidden aria-live="polite"></span>
+        <button id="playbackNextButton" class="playback-header-button" type="button" hidden aria-label="השלב הבא" data-i18n-aria-he="השלב הבא" data-i18n-aria-en="Next step">
+          <span class="material-symbols-rounded" aria-hidden="true">skip_next</span>
+        </button>
+        <button id="playbackResetButton" class="playback-header-button" type="button" hidden title="איפוס לפרוסת הזמן הראשונה" aria-label="איפוס לפרוסת הזמן הראשונה" data-i18n-title-he="איפוס לפרוסת הזמן הראשונה" data-i18n-title-en="Reset to the initial time slice" data-i18n-aria-he="איפוס לפרוסת הזמן הראשונה" data-i18n-aria-en="Reset to the initial time slice">
+          <span class="material-symbols-rounded" aria-hidden="true">refresh</span>
+        </button>
+      </div>
+    </div>
+    <section class="investigation-switcher" aria-label="ניהול חקירות" data-i18n-aria-he="ניהול חקירות" data-i18n-aria-en="Investigation controls">
+      <label for="investigationInput" data-i18n-text-he="חקירה פעילה" data-i18n-text-en="Active investigation">חקירה פעילה</label>
+      <div class="investigation-workgroup">
+        <div class="investigation-combobox">
+          <input id="investigationInput" type="text" autocomplete="off" spellcheck="false" aria-label="בחר או צור חקירה" data-i18n-aria-he="בחר או צור חקירה" data-i18n-aria-en="Choose or create an investigation" aria-expanded="false" aria-controls="investigationList" role="combobox">
+          <button id="investigationAddButton" type="button" title="צור חקירה חדשה" aria-label="צור חקירה חדשה" data-i18n-title-he="צור חקירה חדשה" data-i18n-title-en="Create a new investigation" data-i18n-aria-he="צור חקירה חדשה" data-i18n-aria-en="Create a new investigation">+</button>
+          <div id="investigationList" class="investigation-list" role="listbox" hidden></div>
+        </div>
+        <div id="michlolTeam" class="michlol-team" role="list" aria-label="מכלול" data-i18n-aria-he="מכלול" data-i18n-aria-en="Team cell"></div>
+      </div>
+    </section>
+    <div class="header-status" aria-label="מצב מערכת" data-i18n-aria-he="מצב מערכת" data-i18n-aria-en="System status">
+      <button id="datasetStatusIndicator" class="status-indicator" type="button" data-state="loading" aria-describedby="datasetStatusTooltip">
+        <span class="material-symbols-rounded status-icon" aria-hidden="true">database</span><span class="status-state-mark" aria-hidden="true"></span>
+        <span id="datasetStatusTooltip" class="status-tooltip" role="tooltip"><strong data-i18n-text-he="מאגר הנתונים" data-i18n-text-en="Dataset">מאגר הנתונים</strong><span id="datasetStatus">טוען נתונים</span></span>
+      </button>
+      <button id="agentStatusIndicator" class="status-indicator" type="button" data-state="loading" aria-describedby="agentStatusTooltip">
+        <span class="material-symbols-rounded status-icon" aria-hidden="true">smart_toy</span><span class="status-state-mark" aria-hidden="true"></span>
+        <span id="agentStatusTooltip" class="status-tooltip" role="tooltip"><strong>Hermes</strong><span id="agentStatus">בודק חיבור לסוכן</span></span>
+      </button>
+    </div>
+  </header>
+
+  <main class="workspace">
+    <aside id="conversationPanel" class="conversation-panel">
+      <div id="conversation" class="conversation" aria-live="polite">
+        <article class="message assistant-message">
+          <div class="message-label" data-i18n-text-he="סוכן חקירה" data-i18n-text-en="Investigation Agent">סוכן חקירה</div>
+          <p data-i18n-text-he="אפשר להתחיל בשאלה פתוחה. אשתמש בכלי החיפוש, הזמן והמפה כדי לבנות תשובה שניתן לבדוק מול האירועים הגולמיים." data-i18n-text-en="You can start with an open question. I’ll use search, time, and map tools to build an answer you can verify against the raw events.">אפשר להתחיל בשאלה פתוחה. אשתמש בכלי החיפוש, הזמן והמפה כדי לבנות תשובה שניתן לבדוק מול האירועים הגולמיים.</p>
+        </article>
+      </div>
+      <div id="suggestions" class="suggestions">
+        <button type="button" data-prompt="האם הטענה על חציית גבול מגובה במקור אמין?">האם הטענה על חציית גבול מגובה במקור אמין?</button>
+        <button type="button" data-prompt="איפה יש ריכוזי דיווחים מרכזיים בצפון קוסובו?">איפה יש ריכוזי דיווחים מרכזיים בצפון קוסובו?</button>
+      </div>
+      <form id="promptForm" class="prompt-form">
+        <div id="workstreamComposerMode" class="workstream-composer-mode" hidden>
+          <span data-i18n-text-he="יצירת מעקב" data-i18n-text-en="Create workstream">יצירת מעקב</span>
+          <button id="workstreamComposerCancel" type="button" title="בטל יצירת מעקב" aria-label="בטל יצירת מעקב" data-i18n-title-he="בטל יצירת מעקב" data-i18n-title-en="Cancel workstream creation" data-i18n-aria-he="בטל יצירת מעקב" data-i18n-aria-en="Cancel workstream creation">×</button>
+        </div>
+        <textarea id="promptInput" rows="2" aria-label="שאלת חקירה" data-i18n-aria-he="שאלת חקירה" data-i18n-aria-en="Investigation question" placeholder="כתוב שאלת חקירה..." data-i18n-placeholder-he="כתוב שאלת חקירה..." data-i18n-placeholder-en="Write an investigation question..."></textarea>
+        <div class="prompt-actions">
+          <div class="prompt-options">
+            <button id="promptOptionsButton" class="prompt-icon-button prompt-options-button" type="button" title="הוסף" aria-label="הוסף" data-i18n-title-he="הוסף" data-i18n-title-en="Add" data-i18n-aria-he="הוסף" data-i18n-aria-en="Add" aria-expanded="false" aria-controls="promptOptionsMenu">+</button>
+            <div id="promptOptionsMenu" class="prompt-options-menu" role="menu" hidden>
+              <button type="button" role="menuitem" data-prompt-option="recordings" data-i18n-text-he="הקלטות" data-i18n-text-en="Saved runs">הקלטות</button>
+              <button type="button" role="menuitem" data-prompt-option="layers" data-i18n-text-he="שכבות" data-i18n-text-en="Layers">שכבות</button>
+              <button type="button" role="menuitem" data-prompt-option="workstream" data-i18n-text-he="מעקב" data-i18n-text-en="Workstream">מעקב</button>
+            </div>
+          </div>
+          <button id="selectedLayersButton" class="selected-layers-button" type="button" aria-label="שנה שכבות לשאילתה" data-i18n-aria-he="שנה שכבות לשאילתה" data-i18n-aria-en="Change query layers" hidden>
+            <span id="selectedLayersLabel" class="selected-layers-label"></span>
+            <span id="selectedLayersSummary" class="selected-layers-summary"></span>
+            <span id="selectedLayersClear" class="selected-layers-clear" role="button" tabindex="0" title="הסר שכבות מהשאילתה" aria-label="הסר שכבות מהשאילתה" data-i18n-title-he="הסר שכבות מהשאילתה" data-i18n-title-en="Remove layers from the query" data-i18n-aria-he="הסר שכבות מהשאילתה" data-i18n-aria-en="Remove layers from the query">×</span>
+          </button>
+          <button id="sendButton" class="prompt-icon-button send-icon-button" type="submit" title="שלח" aria-label="שלח" data-i18n-title-he="שלח" data-i18n-title-en="Send" data-i18n-aria-he="שלח" data-i18n-aria-en="Send">↑</button>
+        </div>
+      </form>
+    </aside>
+
+    <div class="panel-resizer" data-resizer="left" role="separator" aria-label="שינוי רוחב שיחה ותצוגה" data-i18n-aria-he="שינוי רוחב שיחה ותצוגה" data-i18n-aria-en="Resize conversation and results panels">
+      <button id="chatPanelToggle" class="chat-panel-toggle" type="button" title="מזער שיחה" aria-label="מזער שיחה" data-i18n-title-he="מזער שיחה" data-i18n-title-en="Collapse conversation" data-i18n-aria-he="מזער שיחה" data-i18n-aria-en="Collapse conversation" aria-controls="conversationPanel" aria-expanded="true">
+        <span class="material-symbols-rounded" aria-hidden="true">chevron_right</span>
+      </button>
+    </div>
+
+    <aside id="workstreamRail" class="workstream-rail" aria-label="מעקבים פעילים" data-i18n-aria-he="מעקבים פעילים" data-i18n-aria-en="Active workstreams" hidden>
+      <div class="workstream-rail-header">
+        <div class="workstream-rail-heading">
+          <span class="material-symbols-rounded" aria-hidden="true">monitoring</span>
+          <strong data-i18n-text-he="מעקבים" data-i18n-text-en="Workstreams">מעקבים</strong>
+          <span id="workstreamRailCount" class="workstream-rail-count"></span>
+        </div>
+        <button id="workstreamRailToggle" class="workstream-rail-toggle" type="button" title="מזער מעקבים" aria-label="מזער מעקבים" data-i18n-title-he="מזער מעקבים" data-i18n-title-en="Collapse workstreams" data-i18n-aria-he="מזער מעקבים" data-i18n-aria-en="Collapse workstreams" aria-expanded="true">
+          <span class="material-symbols-rounded" aria-hidden="true">chevron_right</span>
+        </button>
+      </div>
+      <div id="workstreamRailList" class="workstream-rail-list" role="list"></div>
+    </aside>
+
+    <section class="result-panel">
+      <nav class="view-tabs" aria-label="תצוגות תוצאה" data-i18n-aria-he="תצוגות תוצאה" data-i18n-aria-en="Result views">
+        <div class="view-tab-list">
+          <button class="view-tab active" data-view="map" type="button" data-i18n-text-he="מפה" data-i18n-text-en="Map">מפה</button>
+          <button class="view-tab" data-view="timeline" type="button" data-i18n-text-he="ציר זמן" data-i18n-text-en="Timeline">ציר זמן</button>
+        </div>
+        <div class="layer-selector" aria-label="חיפוש שכבה להוספה" data-i18n-aria-he="חיפוש שכבה להוספה" data-i18n-aria-en="Search for a layer to add">
+          <div class="layer-selector-search" role="combobox" aria-haspopup="listbox" aria-expanded="false" aria-owns="layerSelectorList">
+            <input id="layerSelectorSearch" type="search" autocomplete="off" spellcheck="false" placeholder="חפש שכבה להוספה" data-i18n-placeholder-he="חפש שכבה להוספה" data-i18n-placeholder-en="Search for a layer to add" aria-label="חיפוש שכבה להוספה" data-i18n-aria-he="חיפוש שכבה להוספה" data-i18n-aria-en="Search for a layer to add" aria-controls="layerSelectorList">
+            <div id="layerSelectorStatus" class="layer-selector-status" aria-live="polite" data-i18n-text-he="טוען שכבות" data-i18n-text-en="Loading layers">טוען שכבות</div>
+            <div id="layerSelectorList" class="layer-selector-list" role="listbox" aria-label="תוצאות חיפוש שכבות" data-i18n-aria-he="תוצאות חיפוש שכבות" data-i18n-aria-en="Layer search results" hidden></div>
+          </div>
+        </div>
+      </nav>
+      <div id="viewRecommendation" class="view-recommendation" aria-live="polite" hidden></div>
+      <div class="view-stack">
+        <section id="mapView" class="view-pane active">
+          <div id="map" class="map-canvas"></div>
+        </section>
+        <section id="timelineView" class="view-pane"><div id="timeline" class="timeline empty-state" data-i18n-text-he="לא נבחרו אירועים להצגה." data-i18n-text-en="No events were selected for display.">לא נבחרו אירועים להצגה.</div></section>
+        <section id="rawEventsOverlay" class="raw-events-overlay" aria-label="אירועים גולמיים" data-i18n-aria-he="אירועים גולמיים" data-i18n-aria-en="Raw events" hidden>
+          <div class="raw-events-resize-handle" id="rawEventsResizeHandle" role="separator" aria-orientation="horizontal" aria-label="שינוי גודל טבלת אירועים" data-i18n-aria-he="שינוי גודל טבלת אירועים" data-i18n-aria-en="Resize results table"></div>
+          <div class="raw-events-header">
+            <div class="raw-events-tabs" id="rawEventsTabs" role="tablist" aria-label="סינון לפי מקור" data-i18n-aria-he="סינון לפי מקור" data-i18n-aria-en="Filter by source"></div>
+            <div class="raw-events-window-actions" aria-label="פעולות חלון תוצאות" data-i18n-aria-he="פעולות חלון תוצאות" data-i18n-aria-en="Results window actions">
+              <button id="rawEventsMinimize" class="raw-events-window-btn" type="button" aria-label="מזער טבלת תוצאות" title="מזער" data-i18n-aria-he="מזער טבלת תוצאות" data-i18n-aria-en="Minimize results table" data-i18n-title-he="מזער" data-i18n-title-en="Minimize">−</button>
+              <button id="rawEventsClose" class="raw-events-window-btn" type="button" aria-label="סגור ונקה תוצאות" title="סגור ונקה תוצאות" data-i18n-aria-he="סגור ונקה תוצאות" data-i18n-aria-en="Close and clear results" data-i18n-title-he="סגור ונקה תוצאות" data-i18n-title-en="Close and clear results">×</button>
+            </div>
+          </div>
+          <div class="raw-events-content">
+            <div class="raw-events-table table-wrap">
+              <table>
+                <thead id="evidenceHead"><tr><th data-i18n-text-he="מזהה רשומה" data-i18n-text-en="Record ID">מזהה רשומה</th><th data-i18n-text-he="זמן" data-i18n-text-en="Time">זמן</th><th data-i18n-text-he="אמינות" data-i18n-text-en="Reliability">אמינות</th><th data-i18n-text-he="ודאות" data-i18n-text-en="Confidence">ודאות</th><th data-i18n-text-he="גורם" data-i18n-text-en="Actor">גורם</th><th data-i18n-text-he="מיקום" data-i18n-text-en="Location">מיקום</th><th data-i18n-text-he="תקציר" data-i18n-text-en="Summary">תקציר</th></tr></thead>
+                <tbody id="evidenceRows"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+        <aside id="layerFilterPanel" class="layer-filter-panel" aria-label="מסנני שכבה" data-i18n-aria-he="מסנני שכבה" data-i18n-aria-en="Layer filters" hidden></aside>
+      </div>
+    </section>
+
+  </main>
+
+  <div id="stepInjectModal" class="step-inject-backdrop" hidden>
+    <section class="step-inject-window" role="dialog" aria-modal="true" aria-labelledby="stepInjectTitle">
+      <div class="step-inject-header">
+        <div>
+          <span class="step-inject-kicker" data-i18n-text-he="המשך מצעד" data-i18n-text-en="Continue from step">המשך מצעד</span>
+          <h3 id="stepInjectTitle"></h3>
+        </div>
+        <button id="stepInjectClose" class="modal-close-button" type="button" aria-label="סגור" title="סגור" data-i18n-aria-he="סגור" data-i18n-aria-en="Close" data-i18n-title-he="סגור" data-i18n-title-en="Close">×</button>
+      </div>
+      <div class="step-inject-body">
+        <div class="form-group">
+          <label for="stepInjectPrompt" data-i18n-text-he="הוראה לסוכן:" data-i18n-text-en="Instruction to the agent:">הוראה לסוכן:</label>
+          <textarea id="stepInjectPrompt" rows="3" placeholder="מה לבדוק בהמשך..." data-i18n-placeholder-he="מה לבדוק בהמשך..." data-i18n-placeholder-en="What should the agent check next?"></textarea>
+        </div>
+        <div class="form-group" id="stepInjectLayersGroup">
+          <label data-i18n-text-he="בסס על שכבות:" data-i18n-text-en="Base on layers:">בסס על שכבות:</label>
+          <div id="stepInjectLayers" class="step-inject-layer-list"></div>
+        </div>
+      </div>
+      <div class="step-inject-footer">
+        <div id="stepInjectError" class="step-inject-error" hidden></div>
+        <button id="stepInjectSubmit" type="button" class="primary-filter-action" data-i18n-text-he="שלח להמשך חקירה" data-i18n-text-en="Send to continue investigation">שלח להמשך חקירה</button>
+      </div>
+    </section>
+  </div>
+
+  <div id="recordedModal" class="modal-backdrop" hidden>
+    <section class="recorded-modal" role="dialog" aria-modal="true" aria-labelledby="recordedModalTitle">
+      <div class="recorded-modal-header">
+        <div>
+          <span class="eyebrow" data-i18n-text-he="חקירות שנשמרו" data-i18n-text-en="Saved investigations">חקירות שנשמרו</span>
+          <h2 id="recordedModalTitle" data-i18n-text-he="שאלות שמורות" data-i18n-text-en="Saved questions">שאלות שמורות</h2>
+        </div>
+        <button id="recordedClose" class="modal-close-button" type="button" aria-label="סגור" title="סגור" data-i18n-aria-he="סגור" data-i18n-aria-en="Close" data-i18n-title-he="סגור" data-i18n-title-en="Close">×</button>
+      </div>
+      <p class="recorded-modal-note" data-i18n-text-he="בחירה בשאלה תטען תוצאת חקירה שמורה בלי להריץ את הסוכן מחדש." data-i18n-text-en="Selecting a question will load a saved investigation result without running the agent again.">בחירה בשאלה תטען תוצאת חקירה שמורה בלי להריץ את הסוכן מחדש.</p>
+      <div id="recordedList" class="recorded-list"></div>
+    </section>
+  </div>
+
+  <div id="queryLayersModal" class="step-inject-backdrop" hidden>
+    <section class="step-inject-window" role="dialog" aria-modal="true" aria-labelledby="queryLayersModalTitle">
+      <div class="step-inject-header">
+        <div>
+          <span class="step-inject-kicker" data-i18n-text-he="שכבות פתוחות" data-i18n-text-en="Open layers">שכבות פתוחות</span>
+          <h3 id="queryLayersModalTitle" data-i18n-text-he="בחירת שכבות לשאילתה" data-i18n-text-en="Choose layers for the query">בחירת שכבות לשאילתה</h3>
+        </div>
+        <button id="queryLayersClose" class="modal-close-button" type="button" aria-label="סגור" title="סגור" data-i18n-aria-he="סגור" data-i18n-aria-en="Close" data-i18n-title-he="סגור" data-i18n-title-en="Close">×</button>
+      </div>
+      <div class="step-inject-body">
+        <div class="form-group" id="queryLayersGroup">
+          <label data-i18n-text-he="בסס על שכבות:" data-i18n-text-en="Base on layers:">בסס על שכבות:</label>
+          <div id="queryLayersList" class="step-inject-layer-list"></div>
+        </div>
+      </div>
+      <div class="step-inject-footer">
+        <div id="queryLayersError" class="step-inject-error" hidden></div>
+        <button id="queryLayersSubmit" type="button" class="primary-filter-action" data-i18n-text-he="בחר שכבות" data-i18n-text-en="Choose layers">בחר שכבות</button>
+      </div>
+    </section>
+  </div>
+
+  <div id="queryModal" class="modal-backdrop query-modal-backdrop" hidden>
+    <section class="query-modal" role="dialog" aria-modal="true" aria-labelledby="queryModalTitle">
+      <div class="query-modal-header">
+        <div>
+          <span class="eyebrow" data-i18n-text-he="שאילתה פעילה" data-i18n-text-en="Active query">שאילתה פעילה</span>
+          <h2 id="queryModalTitle" data-i18n-text-he="עריכת השאילתה" data-i18n-text-en="Edit query">עריכת השאילתה</h2>
+        </div>
+        <div class="query-modal-header-actions">
+          <button id="queryFormRunButton" type="button" class="run-button" disabled data-i18n-text-he="תריץ שאילתה חדשה" data-i18n-text-en="Run updated query">תריץ שאילתה חדשה</button>
+          <button id="queryModalClose" class="modal-close-button" type="button" aria-label="סגור" title="סגור" data-i18n-aria-he="סגור" data-i18n-aria-en="Close" data-i18n-title-he="סגור" data-i18n-title-en="Close">×</button>
+        </div>
+      </div>
+      <form id="queryForm" class="query-form">
+        <div class="form-group">
+          <label for="queryFormTool" data-i18n-text-he="כלי:" data-i18n-text-en="Tool:">כלי:</label>
+          <div id="queryFormTool" class="form-read-only"></div>
+        </div>
+        <div class="form-group">
+          <label for="queryFormLayer" data-i18n-text-he="שכבה:" data-i18n-text-en="Layer:">שכבה:</label>
+          <select id="queryFormLayer" name="layer">
+            <option value="map" data-i18n-text-he="מפה" data-i18n-text-en="Map">מפה</option>
+            <option value="timeline" data-i18n-text-he="ציר זמן" data-i18n-text-en="Timeline">ציר זמן</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="queryFormArguments" data-i18n-text-he="פרמטרים:" data-i18n-text-en="Arguments:">פרמטרים:</label>
+          <textarea id="queryFormArguments" name="arguments" class="arguments-editor" spellcheck="false"></textarea>
+        </div>
+      </form>
+    </section>
+  </div>
+
+  <script src="./vendor/maplibre-gl.js"></script>
+  <script src="./app.js?v=162"></script>
+</body>
+</html>

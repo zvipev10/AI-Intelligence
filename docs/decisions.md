@@ -226,3 +226,36 @@ Pressing Next from any investigation advances that run once and cannot create a 
 Follow-ups:
 Retain automated coverage for switching investigations before reading status, changing
 mode, or pressing Next.
+
+### 2026-08-12 — Track the deployed production variant as an immutable source snapshot
+
+Decision:
+Store the exact non-secret source files deployed at `/opt/serbia-poc-ui` under
+`llm_investigation_orchestrator_serbia_poc/deployment/vm-production-v162/`,
+with SHA-256 hashes and Git text conversion disabled. Keep the canonical package
+root unchanged until the two variants are deliberately consolidated.
+
+Context:
+The active VM served `app.js?v=162`, but its complete source state was not
+reproducible from remote `main`. Copying that state directly over the canonical
+package broke the existing regression contract.
+
+Rationale:
+An exact, hash-pinned snapshot makes the deployed state auditable immediately
+without changing production or silently replacing the canonical implementation.
+
+Alternatives considered:
+- Overwrite the canonical package with the VM files.
+- Leave the VM-only changes untracked.
+- Reconstruct production from selected historical commits.
+
+Impact:
+Remote Git can reproduce and review the current production source while the VM
+remains untouched. Two source trees temporarily exist and their roles are
+explicit: the package root is canonical development code; the deployment
+snapshot is the authoritative record of production v162.
+
+Follow-ups:
+Consolidate the variants through a separately reviewed capability, and require
+future deployments to update the versioned snapshot and hashes in the same
+change.
