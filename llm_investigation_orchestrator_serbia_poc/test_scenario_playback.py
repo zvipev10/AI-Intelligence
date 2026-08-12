@@ -20,6 +20,7 @@ class ScenarioPlaybackApiTests(unittest.TestCase):
         self.manifests_dir = root / "manifests"
         self.runs_dir = root / "runs"
         self.workstreams_dir = root / "workstreams"
+        self.investigations_dir = root / "investigations"
         self.manifests_dir.mkdir()
         self.write_manifest({
             "scenario_id": "timeframe-demo",
@@ -63,6 +64,7 @@ class ScenarioPlaybackApiTests(unittest.TestCase):
             patch.object(server, "SCENARIO_MANIFESTS_DIR", self.manifests_dir),
             patch.object(server, "SCENARIO_RUNS_DIR", self.runs_dir),
             patch.object(server, "WORKSTREAMS_DIR", self.workstreams_dir),
+            patch.object(server, "INVESTIGATIONS_DIR", self.investigations_dir),
             patch.object(server, "DATASET_VERSION", "v2.1"),
         ]
         for item in self.patches:
@@ -380,7 +382,98 @@ class ScenarioPlaybackApiTests(unittest.TestCase):
         self.assertFalse(result["moshe_triggered"])
         self.assertEqual("no_active_workstreams", result["moshe_skipped_reason"])
         self.assertIsNone(result["run"]["reevaluation"])
+        self.assertFalse(result["memory_update_triggered"])
+        self.assertEqual("empty_memory", result["memory_update_skipped_reason"])
+        self.assertIsNone(result["run"]["memory_update"])
         moshe.assert_not_called()
+
+    def test_memory_update_runs_without_workstreams_when_memory_exists(self):
+        investigation_id = "memory-only-investigation"
+        status, _ = self.request(
+            "POST", f"/api/workstreams/{self.workstream['workstream_id']}/archive"
+        )
+        self.assertEqual(200, status)
+        server.save_investigation_memory({
+            "investigation_id": investigation_id,
+            "name": "Memory only",
+            "memory": {
+                "chat_summaries": [{"id": "summary-1", "summary": "Saved finding"}],
+                "layers": [],
+            },
+        })
+        status, real_time = self.request("POST", "/api/playback/mode", {
+            "investigation_id": investigation_id,
+            "mode": "real_time",
+        })
+        self.assertEqual(200, status)
+
+        assessment = {
+            "answer": "A memory-grounded development",
+            "responding_agent": "general",
+            "event_ids": ["event-1"],
+            "memory_references": ["summary-1"],
+        }
+        with patch.object(server, "run_moshe_playback_reevaluation") as moshe, patch.object(
+            server, "run_investigation_memory_update", return_value=assessment
+        ) as general:
+            status, result = self.request("POST", "/api/playback/next", {
+                "investigation_id": investigation_id,
+                "expected_revision": real_time["run"]["revision"],
+                "idempotency_key": "memory-without-workstreams",
+            })
+            self.assertEqual(200, status)
+            self.assertFalse(result["moshe_triggered"])
+            self.assertEqual("no_active_workstreams", result["moshe_skipped_reason"])
+            self.assertTrue(result["memory_update_triggered"])
+
+            completed = None
+            for _ in range(50):
+                status, current = self.request(
+                    "GET", f"/api/playback?investigation_id={investigation_id}"
+                )
+                self.assertEqual(200, status)
+                if current["run"]["memory_update"]["status"] == "completed":
+                    completed = current
+                    break
+                time.sleep(0.01)
+
+        self.assertIsNotNone(completed)
+        self.assertEqual(
+            "A memory-grounded development",
+            completed["run"]["memory_update"]["assessment"]["answer"],
+        )
+        moshe.assert_not_called()
+        general.assert_called_once()
+
+    def test_general_memory_update_context_excludes_workstreams(self):
+        memory = {
+            "memory": {
+                "chat_summaries": [{"id": "summary-1", "summary": "Saved finding"}],
+                "layers": [],
+            }
+        }
+        run = {
+            "run_id": "run-context",
+            "revision": 2,
+            "locale": "en",
+            "visible_timeframe": {"from": "a", "to": "b"},
+        }
+        with patch.object(server, "load_agent_hermes_config", return_value={}), patch.object(
+            server, "HermesClient"
+        ) as client:
+            client.return_value.investigate.return_value = {
+                "answer": "No material change",
+                "event_ids": [],
+            }
+            result = server.run_investigation_memory_update(
+                run, "memory-only-investigation", memory, {"from": "b", "to": "c"}
+            )
+
+        kwargs = client.return_value.investigate.call_args.kwargs
+        self.assertEqual({"saved_memory", "scenario_playback"}, set(kwargs["investigation_state"]))
+        self.assertNotIn("workstreams", kwargs["investigation_state"])
+        self.assertEqual("general", kwargs["responding_agent"])
+        self.assertTrue(result["no_material_change"])
 
     def test_next_advances_the_global_run_after_switching_investigations(self):
         status, started = self.request("POST", "/api/playback/mode", {

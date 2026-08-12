@@ -35,8 +35,10 @@ from agent_result_pipeline import (
 from agent_routing import AgentRouteRegistry, MOSHE_AGENT_ID
 from scenario_playback import (
     PlaybackConflictError,
+    claim_memory_update,
     claim_reevaluation,
     find_active_run,
+    finish_memory_update,
     finish_reevaluation,
     get_manifest,
     list_scenarios,
@@ -170,6 +172,8 @@ ACTIVE_RUN_STARTED_AT = None
 ACTIVE_RUN_STARTED_AT_BY_AUDIT: dict[str, datetime] = {}
 _PLAYBACK_REEVALUATION_THREADS: dict[tuple[str, int], threading.Thread] = {}
 _PLAYBACK_REEVALUATION_THREADS_LOCK = threading.Lock()
+_MEMORY_UPDATE_THREADS: dict[tuple[str, int], threading.Thread] = {}
+_MEMORY_UPDATE_THREADS_LOCK = threading.Lock()
 APP_BUILD = f"serbia-poc-{DATASET_VERSION}"
 REMOTE_AUDIT_PATH = "/opt/serbia-poc/mcp_audit.jsonl"
 HERMES_TOOL_PREFIX = "mcp_serbia_events_poc_"
@@ -2032,6 +2036,7 @@ def investigation_playback_status(investigation_id: str, locale: str = "he") -> 
     run = find_active_run(SCENARIO_RUNS_DIR)
     if run is not None:
         ensure_current_playback_reevaluation(run)
+        ensure_current_memory_update(run)
         run = load_scenario_run(SCENARIO_RUNS_DIR, run["run_id"]) or run
         return {
             "investigation_id": investigation_id,
@@ -4289,6 +4294,164 @@ def start_moshe_playback_reevaluation(
     return True
 
 
+def investigation_memory_has_content(payload: dict) -> bool:
+    memory = payload.get("memory") if isinstance(payload.get("memory"), dict) else {}
+    return bool(memory.get("chat_summaries") or memory.get("layers"))
+
+
+def build_investigation_memory_update_prompt(
+    released_timeframe: dict, locale: str = "he"
+) -> str:
+    if normalize_locale(locale) == "en":
+        return (
+            "Generate a concise investigation update grounded in the saved investigation memory. "
+            "Discover potential changes only from records inside the newly released time window. "
+            "Do not read, infer, mention, or update workstreams, Moshe assessments, or target-bank state. "
+            "Compare new evidence with saved findings and saved layers. Clearly separate material changes, "
+            "confirmations, contradictions, intelligence gaps, and suggested next actions. Cite exact event "
+            "identifiers and saved-memory references. If nothing material changed, say so briefly and do not "
+            "invent a development. Do not persist or modify any data. "
+            f"Newly released window: {released_timeframe.get('from')} to {released_timeframe.get('to')}."
+        )
+    return (
+        "צור עדכון חקירה תמציתי המבוסס על זיכרון החקירה השמור. "
+        "גלה שינויים אפשריים רק מרשומות בתוך חלון הזמן החדש ששוחרר. "
+        "אל תקרא, תסיק, תזכיר או תעדכן מעקבים, הערכות של משה או את בנק המטרות. "
+        "השווה ראיות חדשות לממצאים ולשכבות שנשמרו בזיכרון. הפרד בבירור בין שינויים מהותיים, "
+        "אישושים, סתירות, פערי מודיעין ופעולות המשך מוצעות. ציין מזהי אירועים מדויקים והפניות "
+        "לפריטי זיכרון שמורים. אם לא חל שינוי מהותי, אמור זאת בקצרה ואל תמציא התפתחות. "
+        "אל תשמור ואל תשנה נתונים. "
+        f"חלון הזמן החדש: {released_timeframe.get('from')} עד {released_timeframe.get('to')}."
+    )
+
+
+def run_investigation_memory_update(
+    run: dict,
+    investigation_id: str,
+    memory_payload: dict,
+    released_timeframe: dict,
+) -> dict:
+    """Run the general agent with memory and slice context only."""
+    locale = normalize_locale(run.get("locale"))
+    memory = memory_payload.get("memory") if isinstance(memory_payload.get("memory"), dict) else {}
+    prompt = build_investigation_memory_update_prompt(released_timeframe, locale)
+    mission_id = f"{run['run_id']}:memory:{run['revision']}:{investigation_id}"
+    result = HermesClient(load_agent_hermes_config("general")).investigate(
+        prompt,
+        [],
+        investigation_state={
+            "saved_memory": memory,
+            "scenario_playback": {
+                "run_id": run["run_id"],
+                "revision": run["revision"],
+                "newly_released_timeframe": released_timeframe,
+                "visible_timeframe": run.get("visible_timeframe"),
+            },
+        },
+        investigation_id=mission_id,
+        responding_agent="general",
+        mission_run_id=mission_id,
+        locale=locale,
+    )
+    memory_references = [
+        str(item.get("id")) for group in ("chat_summaries", "layers")
+        for item in memory.get(group) or []
+        if isinstance(item, dict) and item.get("id")
+    ]
+    return {
+        "run_id": mission_id,
+        "investigation_id": investigation_id,
+        "answer": compact_text(result.get("answer"), 20_000),
+        "responding_agent": "general",
+        "event_ids": [
+            str(value) for value in result.get("event_ids") or []
+            if isinstance(value, str)
+        ][:500],
+        "memory_references": memory_references[:100],
+        "released_timeframe": released_timeframe,
+        "no_material_change": not bool(result.get("event_ids")),
+    }
+
+
+def complete_investigation_memory_update(
+    run: dict,
+    investigation_id: str,
+    memory_payload: dict,
+    released_timeframe: dict,
+    revision: int,
+) -> None:
+    try:
+        assessment = run_investigation_memory_update(
+            run, investigation_id, memory_payload, released_timeframe
+        )
+        finish_memory_update(
+            SCENARIO_RUNS_DIR, run["run_id"], revision, "completed", assessment=assessment
+        )
+    except Exception as exc:
+        finish_memory_update(
+            SCENARIO_RUNS_DIR, run["run_id"], revision, "failed", str(exc)
+        )
+
+
+def start_investigation_memory_update(
+    run: dict,
+    investigation_id: str,
+    memory_payload: dict,
+    released_timeframe: dict,
+    revision: int,
+) -> bool:
+    key = (run["run_id"], int(revision))
+    with _MEMORY_UPDATE_THREADS_LOCK:
+        worker = _MEMORY_UPDATE_THREADS.get(key)
+        if worker is not None and worker.is_alive():
+            return False
+        if worker is not None:
+            _MEMORY_UPDATE_THREADS.pop(key, None)
+
+        def worker_target() -> None:
+            try:
+                complete_investigation_memory_update(
+                    dict(run), investigation_id, dict(memory_payload),
+                    dict(released_timeframe), revision
+                )
+            finally:
+                with _MEMORY_UPDATE_THREADS_LOCK:
+                    current = _MEMORY_UPDATE_THREADS.get(key)
+                    if current is threading.current_thread():
+                        _MEMORY_UPDATE_THREADS.pop(key, None)
+
+        worker = threading.Thread(
+            target=worker_target,
+            daemon=True,
+            name=f"memory-update-{run['run_id']}-{revision}",
+        )
+        _MEMORY_UPDATE_THREADS[key] = worker
+    worker.start()
+    return True
+
+
+def ensure_current_memory_update(run: dict) -> bool:
+    revision = int(run.get("revision") or 0)
+    current = (run.get("_memory_updates") or {}).get(str(revision))
+    if not isinstance(current, dict) or current.get("status") != "running":
+        return False
+    investigation_id = str(current.get("investigation_id") or "").strip()
+    if not INVESTIGATION_ID_PATTERN.fullmatch(investigation_id):
+        return False
+    memory_payload = load_investigation_memory(investigation_id)
+    if not investigation_memory_has_content(memory_payload):
+        finish_memory_update(
+            SCENARIO_RUNS_DIR, run["run_id"], revision, "failed", "Investigation memory is empty"
+        )
+        return False
+    released_timeframe = current_playback_timeframe(run)
+    if released_timeframe is None:
+        return False
+    return start_investigation_memory_update(
+        run, investigation_id, memory_payload, released_timeframe, revision
+    )
+
+
 class Handler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=str(ROOT), **kwargs)
@@ -4687,6 +4850,29 @@ class Handler(SimpleHTTPRequestHandler):
                     start_moshe_playback_reevaluation(
                         run, released_timeframe, claimed_revision
                     )
+                memory_update_claimed = False
+                memory_update_skipped_reason = None
+                if baseline_created:
+                    memory_update_skipped_reason = "initial_baseline"
+                else:
+                    memory_payload = load_investigation_memory(investigation_id)
+                    if investigation_memory_has_content(memory_payload):
+                        _, memory_update_claimed = claim_memory_update(
+                            SCENARIO_RUNS_DIR,
+                            run["run_id"],
+                            claimed_revision,
+                            investigation_id,
+                        )
+                        if memory_update_claimed:
+                            start_investigation_memory_update(
+                                run,
+                                investigation_id,
+                                memory_payload,
+                                released_timeframe,
+                                claimed_revision,
+                            )
+                    else:
+                        memory_update_skipped_reason = "empty_memory"
                 current = load_scenario_run(SCENARIO_RUNS_DIR, run["run_id"]) or run
                 self.send_json(200, {
                     "run": run_with_next_stage(SCENARIO_MANIFESTS_DIR, current),
@@ -4697,6 +4883,8 @@ class Handler(SimpleHTTPRequestHandler):
                         else "initial_baseline" if baseline_created
                         else "no_active_workstreams"
                     ),
+                    "memory_update_triggered": memory_update_claimed,
+                    "memory_update_skipped_reason": memory_update_skipped_reason,
                 })
             except PlaybackConflictError as exc:
                 self.send_json(409, {

@@ -375,6 +375,9 @@ def run_with_next_stage(manifests_dir: Path, payload: dict) -> dict:
     reevaluations = payload.get("_reevaluations") or {}
     reevaluation = reevaluations.get(str(payload.get("revision")))
     result["reevaluation"] = dict(reevaluation) if isinstance(reevaluation, dict) else None
+    memory_updates = payload.get("_memory_updates") or {}
+    memory_update = memory_updates.get(str(payload.get("revision")))
+    result["memory_update"] = dict(memory_update) if isinstance(memory_update, dict) else None
     manifest = get_manifest(
         manifests_dir, payload.get("scenario_id") or "", payload.get("scenario_version")
     )
@@ -430,6 +433,54 @@ def finish_reevaluation(
         if payload is None:
             return None
         claims = payload.setdefault("_reevaluations", {})
+        claim = claims.setdefault(str(revision), {})
+        claim.update({
+            "status": status,
+            "completed_at_utc": utc_now_iso(),
+            "error": compact_text(error, 500) if error else None,
+            "assessment": assessment if status == "completed" else None,
+        })
+        write_run(directory, payload)
+        return public_run(payload)
+
+
+def claim_memory_update(
+    directory: Path, run_id: str, revision: int, investigation_id: str
+) -> tuple[dict | None, bool]:
+    """Claim one independent investigation-memory update per released revision."""
+    with _STATE_LOCK:
+        payload = load_run(directory, run_id)
+        if payload is None:
+            return None, False
+        claims = payload.setdefault("_memory_updates", {})
+        key = str(revision)
+        existing = claims.get(key)
+        if isinstance(existing, dict):
+            return public_run(payload), False
+        claims[key] = {
+            "status": "running",
+            "investigation_id": investigation_id,
+            "started_at_utc": utc_now_iso(),
+        }
+        write_run(directory, payload)
+        return public_run(payload), True
+
+
+def finish_memory_update(
+    directory: Path,
+    run_id: str,
+    revision: int,
+    status: str,
+    error: str | None = None,
+    assessment: dict | None = None,
+) -> dict | None:
+    if status not in {"completed", "failed"}:
+        raise ValueError("Invalid memory update status")
+    with _STATE_LOCK:
+        payload = load_run(directory, run_id)
+        if payload is None:
+            return None
+        claims = payload.setdefault("_memory_updates", {})
         claim = claims.setdefault(str(revision), {})
         claim.update({
             "status": status,
@@ -501,6 +552,7 @@ def start_run(
             "completed_at_utc": None,
             "_idempotency": {},
             "_reevaluations": {},
+            "_memory_updates": {},
         }
         write_run(runs_dir, payload)
         return public_run(payload), True

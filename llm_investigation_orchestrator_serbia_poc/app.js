@@ -360,6 +360,8 @@ const state = {
   workstreamRailCollapsed: false,
   investigationPlayback: null,
   playbackPollToken: 0,
+  memoryUpdatePollToken: 0,
+  renderedMemoryUpdateKeys: new Set(),
   pendingMosheWorkstreamProposal: null,
   activeConversationMemberId: null,
   openingLayerIds: new Set(),
@@ -2240,6 +2242,7 @@ function selectInvestigation(investigation, options = {}) {
   state.investigationSelectorOpen = false;
   state.investigationSearchQuery = "";
   state.investigationMemoryLoadToken += 1;
+  state.memoryUpdatePollToken += 1;
   state.investigationMemory = null;
   state.investigationMemoryError = "";
   state.investigationMemoryLoading = false;
@@ -2928,6 +2931,7 @@ async function fetchInvestigationPlayback() {
   if (payload?.run?.reevaluation?.status === "running") {
     void pollMoshePlaybackReevaluation();
   }
+  handleInvestigationMemoryUpdate(payload?.run);
   return payload;
 }
 
@@ -3022,6 +3026,84 @@ function appendMoshePlaybackAssessment(assessment = {}) {
   return article;
 }
 
+function investigationMemoryUpdateKey(run = {}) {
+  return `${run.run_id || "playback"}:${run.revision || 0}:${state.investigationId || "investigation"}`;
+}
+
+function investigationMemoryUpdateLabel() {
+  return activeLocaleText("עדכון חקירה", "Investigation update");
+}
+
+function findMemoryUpdateProcessingMessage(key) {
+  return [...conversation.querySelectorAll("[data-memory-update-processing]")]
+    .find(element => element.dataset.memoryUpdateProcessing === key) || null;
+}
+
+function removeMemoryUpdateProcessingMessage(key) {
+  findMemoryUpdateProcessingMessage(key)?.remove();
+}
+
+function handleInvestigationMemoryUpdate(run = {}) {
+  const update = run?.memory_update;
+  if (!update) return;
+  const key = investigationMemoryUpdateKey(run);
+  const status = String(update.status || "");
+  if (status === "running") {
+    if (!state.renderedMemoryUpdateKeys.has(key) && !findMemoryUpdateProcessingMessage(key)) {
+      const article = appendMessage(
+        "assistant",
+        `<p>${activeLocaleText("סוכן החקירה בוחן את פרוסת המידע החדשה מול זיכרון החקירה.", "The investigation agent is checking the new information slice against the investigation memory.")}</p>`,
+        { label: investigationMemoryUpdateLabel(), className: "memory-update-message" }
+      );
+      article.dataset.memoryUpdateProcessing = key;
+    }
+    void pollInvestigationMemoryUpdate();
+    return;
+  }
+  if (state.renderedMemoryUpdateKeys.has(key)) return;
+  removeMemoryUpdateProcessingMessage(key);
+  state.renderedMemoryUpdateKeys.add(key);
+  if (status === "completed") {
+    const answer = String(update.assessment?.answer || "").trim();
+    if (answer) {
+      appendMessage(
+        "assistant",
+        `<div class="answer-body">${answerHtml(cleanAssistantAnswer(answer))}</div>`,
+        { label: investigationMemoryUpdateLabel(), className: "memory-update-message" }
+      );
+    }
+  } else if (status === "failed") {
+    appendMessage(
+      "assistant",
+      `<p>${activeLocaleText("עדכון החקירה נכשל.", "The investigation update failed.")}</p><div class="answer-callout">${escapeHtml(update.error || "")}</div>`,
+      { label: investigationMemoryUpdateLabel(), className: "memory-update-message" }
+    );
+  }
+}
+
+async function pollInvestigationMemoryUpdate() {
+  const token = ++state.memoryUpdatePollToken;
+  const investigationId = String(state.investigationId || "").trim();
+  while (token === state.memoryUpdatePollToken && investigationId === String(state.investigationId || "").trim()) {
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    if (token !== state.memoryUpdatePollToken) return;
+    try {
+      const response = await fetch(
+        `/api/playback?investigation_id=${encodeURIComponent(investigationId)}&locale=${encodeURIComponent(currentLocale())}`,
+        { cache: "no-store" }
+      );
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || activeLocaleText("טעינת מצב התרחיש נכשלה", "Failed to load playback state"));
+      state.investigationPlayback = payload;
+      renderInvestigationPlayback();
+      handleInvestigationMemoryUpdate(payload?.run);
+      if (payload?.run?.memory_update?.status !== "running") return;
+    } catch {
+      return;
+    }
+  }
+}
+
 async function advanceInvestigationPlayback() {
   if (!playbackNextButton || playbackNextButton.disabled) return;
   const playback = state.investigationPlayback || await fetchInvestigationPlayback();
@@ -3049,6 +3131,7 @@ async function advanceInvestigationPlayback() {
     };
     renderInvestigationPlayback();
     await reloadOpenCatalogLayers();
+    handleInvestigationMemoryUpdate(result.run);
     if (result.moshe_triggered) {
       workstreamMessage(`<p>${activeLocaleText("טווח הזמן עודכן. משה מעבד עכשיו את פרוסת המידע החדשה מול המעקבים הפעילים.", "The timeframe was updated. Moshe is now processing the new information slice against the active workstreams.")}</p>`);
     } else if (result.moshe_skipped_reason === "initial_baseline") {
@@ -5282,6 +5365,7 @@ function resetInvestigation(options = {}) {
   state.workstreams = [];
   state.workstreamsLoading = false;
   state.investigationPlayback = null;
+  state.memoryUpdatePollToken += 1;
   state.pendingMosheWorkstreamProposal = null;
   state.workstreamComposerMode = false;
   if (!options.keepInvestigation) {

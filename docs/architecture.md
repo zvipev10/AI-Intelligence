@@ -33,6 +33,13 @@ Runtime contract:
 - Pressing Next advances the cumulative `visible_timeframe`.
 - Moshe reevaluation is skipped when the baseline is created.
 - Moshe reevaluation can run only after a later slice arrives and active workstreams exist.
+- A separate general-agent memory update can run after a later slice when the
+  selected investigation has non-empty saved memory.
+- General memory updates are revision-scoped background jobs and receive only
+  saved investigation memory plus playback timeframe context; they do not
+  receive workstreams, Moshe assessments, or target-bank state.
+- General memory-update lifecycle and output are exposed through the playback
+  status payload and rendered only in chat.
 
 Visibility contract:
 

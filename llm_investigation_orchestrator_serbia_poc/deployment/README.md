@@ -23,6 +23,11 @@ two mocked similar investigations and advances the script to `app.js?v=165`.
 `SHA256SUMS-v166.txt` aligns each mocked investigation's visible avatar count
 with its displayed participant count and advances the script to `app.js?v=166`.
 
+`SHA256SUMS-v167.txt` adds an independent general-agent investigation update
+after each newly released playback slice when saved investigation memory is
+non-empty. The update appears only in chat, never mutates workstreams, and
+advances the script to `app.js?v=167`.
+
 Secrets, datasets, investigations, workstreams, scenario runs, recordings,
 caches, logs, and generated runtime state are intentionally excluded.
 

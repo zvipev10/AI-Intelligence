@@ -6,23 +6,23 @@ Investigation memory update on time-slice progression
 
 ## Current phase
 
-Phase 1 — capability definition
+Phase 6 — final handoff and publication
 
 ## Overall status
 
-Product decisions recorded; pending role reviews
+Implemented and validated; pending deployment and merge
 
 ## Who needs to act now
 
-Development, UX, and QA should review the approved behavior before execution planning.
+Release owner is deploying the validated v167 slice and merging it to main.
 
 ## Blockers
 
-Developer, UX, and QA review artifacts are not yet complete.
+None.
 
 ## Next artifact
 
-Developer review, UX review, and QA review.
+Production verification and final publication record.
 
 ## Parent issue
 

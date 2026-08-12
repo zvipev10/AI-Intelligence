@@ -265,3 +265,32 @@ The variants were consolidated without deploying. The v162 files now live only
 in the canonical package root; `deployment/SHA256SUMS-v162.txt` retains their
 capture hashes. Future application changes and deployments use the package root
 instead of maintaining a second snapshot source tree.
+
+### 2026-08-12 — Keep investigation-memory updates independent from workstreams
+
+Decision:
+After a non-baseline playback slice is released, run a general-agent update only
+when the selected investigation has saved memory. Show its lifecycle and answer
+only in chat. Do not supply, read, or mutate workstreams, Moshe assessments, or
+target-bank state.
+
+Context:
+Analysts need a broad investigation-level interpretation of new evidence in
+addition to Moshe's workstream-specific reevaluation.
+
+Rationale:
+Separate revision-scoped job state prevents the general update from changing
+Moshe behavior and lets either job succeed or fail independently.
+
+Alternatives considered:
+- Extend Moshe's existing reevaluation.
+- Generate an update when investigation memory is empty.
+- Persist the result into workstreams or investigation memory automatically.
+
+Impact:
+Playback advancement can start two isolated background jobs. Empty memory stays
+silent, and the general-agent result is conversational output only.
+
+Follow-ups:
+Monitor provider latency and consider a shared status stream if polling volume
+becomes material.
