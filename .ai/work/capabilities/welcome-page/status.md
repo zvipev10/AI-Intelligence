@@ -6,39 +6,37 @@ Investigation welcome page (`welcome-page`)
 
 ## Current phase
 
-Phase 4 — checkpoint review after slice 1
+Phase 5 — deployed and verified
 
 ## Overall status
 
-Pending review
+Complete for approved slice
 
 ## Who needs to act now
 
 | Role | Status | Required action | Due before |
 |---|---|---|---|
-| Product | Pending review | Review implemented behavior and copy | Slice 2 |
-| Development | Complete for slice | Address checkpoint findings | Slice 2 |
-| UX | Pending review | Review ribbon hierarchy and responsive behavior | Slice 2 |
-| QA | Pending review | Review validation evidence and repeat smoke | Slice 2 |
+| Product | Complete | None for approved slice | — |
+| Development | Complete | None for approved slice | — |
+| UX | Complete | None for approved slice | — |
+| QA | Complete | None for approved slice | — |
 | Architecture/Security | Not required | Reassess only if persistence or permissions enter scope | Implementation |
 
 ## Latest change since previous review
 
-Welcome page implemented and validated; checkpoint 001 is ready for review.
+Approved refinements were implemented, validated, and deployed to production as UI assets v163/v136.
 
 ## Current blockers
 
-None for slice 1.
+None.
 
 ## Current risks
 
-- Map rendering after revealing an initially hidden workspace.
-- Conflicting semantics between clickable ribbons and nested action controls.
-- Demo actions appearing persistent.
+- Supporting investigation metadata and collaboration actions remain mocked by design.
 
 ## Next expected artifact
 
-Checkpoint review decision or requested changes.
+No further artifact required for this slice.
 
 ## Parent issue
 
@@ -61,7 +59,7 @@ Remote issue not created. Draft: `issues/parent-capability.md`.
 - UX review: `ux-review.md`
 - QA review: `qa-review.md`
 - Execution plan: `execution-plan.md`
-- Latest checkpoint: `checkpoint-001.md`
+- Latest checkpoint: `checkpoint-002.md`
 - Handoff: `handoff-summary.md`
 
 ## Gate checklist
