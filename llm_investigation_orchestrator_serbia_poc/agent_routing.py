@@ -11,7 +11,7 @@ from dataclasses import dataclass
 
 MOSHE_AGENT_ID = "moshe"
 GENERAL_AGENT_ID = "general"
-MOSHE_MENTION = re.compile(r"(?<![\w\u0590-\u05ff])@משה(?![\w\u0590-\u05ff])")
+MOSHE_MENTION = re.compile(r"(?<![\w\u0590-\u05ff])@(משה|Moshe)(?![\w\u0590-\u05ff])", re.IGNORECASE)
 
 
 @dataclass(frozen=True)

@@ -293,7 +293,7 @@ class ScenarioPlaybackApiTests(unittest.TestCase):
         )
         self.assertEqual(200, status)
         self.assertIsNone(initial["run"])
-        self.assertEqual("historical", initial["mode"])
+        self.assertEqual("real_time", initial["mode"])
 
         status, real_time = self.request("POST", "/api/playback/mode", {
             "investigation_id": "investigation-playback",
@@ -346,9 +346,9 @@ class ScenarioPlaybackApiTests(unittest.TestCase):
             "mode": "historical",
         })
         self.assertEqual(200, status)
-        self.assertEqual("historical", historical["mode"])
+        self.assertEqual("real_time", historical["mode"])
         policy = scenario_playback.load_playback_visibility(self.runs_dir)
-        self.assertFalse(policy["active"])
+        self.assertTrue(policy["active"])
 
         status, resumed = self.request("POST", "/api/playback/mode", {
             "investigation_id": "investigation-playback",
@@ -596,7 +596,7 @@ class ScenarioPlaybackApiTests(unittest.TestCase):
             "reset": True,
         })
         self.assertEqual(200, status)
-        self.assertEqual("historical", historical["mode"])
+        self.assertEqual("real_time", historical["mode"])
         self.assertEqual(0, historical["run"]["current_stage_index"])
 
     def test_final_stage_requires_explicit_complete(self):

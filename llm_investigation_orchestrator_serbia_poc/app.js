@@ -1,4 +1,4 @@
-const LOCATIONS = {
+﻿const LOCATIONS = {
   "LOC-001": { name: "אזור גשר איבר", type: "מוקד ליבה", lat: 42.883, lon: 20.848 },
   "LOC-002": { name: "מבנה העירייה", type: "מוקד ליבה", lat: 42.887, lon: 20.848 },
   "LOC-003": { name: "אזור מבנה העירייה", type: "מוקד ליבה", lat: 42.908, lon: 20.822 },
@@ -165,11 +165,13 @@ function createInvestigationId() {
 }
 
 function liveStepsUrl(currentPrompt) {
-  return /(^|[^\p{L}\p{N}_])@משה(?![\p{L}\p{N}_])/u.test(String(currentPrompt || ""))
+  return /(^|[^\p{L}\p{N}_])@(משה|Moshe)(?![\p{L}\p{N}_])/iu.test(String(currentPrompt || ""))
     ? "/api/live-steps?agent=moshe"
     : "/api/live-steps?agent=general";
 }
 
+const LOCALE_STORAGE_KEY = "serbia-poc-locale-v1";
+const DEFAULT_LOCALE = "he";
 const INVESTIGATIONS_STORAGE_KEY = "serbia-poc-investigations-v2";
 const LEGACY_INVESTIGATIONS_STORAGE_KEYS = ["serbia-poc-investigations-v1"];
 const DEFAULT_INVESTIGATION_NAME = "חקירה חדשה";
@@ -179,21 +181,137 @@ const TEAM_MENTION_AGENT_INSTRUCTION = [
   "אל תתייחס לשמות חברי המכלול כאל ישויות מודיעיניות, אנשים לחקירה, מקורות, מיקומים או מילות מפתח, אלא אם המשתמש מבקש במפורש לנתח את חברי המכלול עצמם."
 ].join("\n");
 
-const MICHLOL_MEMBERS = [
-  { id: "moshe-targets-officer", displayName: "משה", roleLabel: "קצין מטרות", memberType: "user", avatar: "./assets/michlol/moshe.png", initial: "מ" },
-  { id: "talia-tama-officer", displayName: "טליה", roleLabel: "קצינת תמא", memberType: "user", avatar: "./assets/michlol/talia.png", initial: "ט" },
-  { id: "naama-field-officer", displayName: "נעמה", roleLabel: "קצינת שטח", memberType: "user", avatar: "./assets/michlol/naama.png", initial: "נ" },
-  { id: "gadi-collection-officer", displayName: "גדי", roleLabel: "קצין איסוף", memberType: "user", avatar: "./assets/michlol/gadi.png", initial: "ג" },
-  { id: "yahli-processing-officer", displayName: "יהלי", roleLabel: "קצין עיבוד", memberType: "user", avatar: "./assets/michlol/yahli.png", initial: "י" }
-];
+const MICHLOL_MEMBERS = {
+  he: [
+    { id: "moshe-targets-officer", displayName: "משה", roleLabel: "קצין מטרות", memberType: "user", avatar: "./assets/michlol/moshe.png", initial: "מ" },
+    { id: "talia-tama-officer", displayName: "טליה", roleLabel: "קצינת תמא", memberType: "user", avatar: "./assets/michlol/talia.png", initial: "ט" },
+    { id: "naama-field-officer", displayName: "נעמה", roleLabel: "קצינת שטח", memberType: "user", avatar: "./assets/michlol/naama.png", initial: "נ" },
+    { id: "gadi-collection-officer", displayName: "גדי", roleLabel: "קצין איסוף", memberType: "user", avatar: "./assets/michlol/gadi.png", initial: "ג" },
+    { id: "yahli-processing-officer", displayName: "יהלי", roleLabel: "קצין עיבוד", memberType: "user", avatar: "./assets/michlol/yahli.png", initial: "י" }
+  ],
+  en: [
+    { id: "moshe-targets-officer", displayName: "Moshe", roleLabel: "Targets Officer", memberType: "user", avatar: "./assets/michlol/moshe.png", initial: "M" },
+    { id: "talia-tama-officer", displayName: "Talia", roleLabel: "Terrain Officer", memberType: "user", avatar: "./assets/michlol/talia.png", initial: "T" },
+    { id: "naama-field-officer", displayName: "Naama", roleLabel: "Field Officer", memberType: "user", avatar: "./assets/michlol/naama.png", initial: "N" },
+    { id: "gadi-collection-officer", displayName: "Gadi", roleLabel: "Collection Officer", memberType: "user", avatar: "./assets/michlol/gadi.png", initial: "G" },
+    { id: "yahli-processing-officer", displayName: "Yahli", roleLabel: "Processing Officer", memberType: "user", avatar: "./assets/michlol/yahli.png", initial: "Y" }
+  ]
+};
 
-const MICHLOL_MEMBER_WELCOME = "אני מחובר עכשיו לשיחה הזו. שלח לי את המשימה או השאלה הבאה, ובשלב הבא נחבר כאן סוכן ייעודי לחבר המכלול.";
+const MICHLOL_MEMBER_WELCOME = {
+  he: "אני מחובר עכשיו לשיחה הזו. שלח לי את המשימה או השאלה הבאה, ובשלב הבא נחבר כאן סוכן ייעודי לחבר המכלול.",
+  en: "I’m connected to this conversation now. Send me the next task or question, and in the next step we’ll connect a dedicated agent for this team member here."
+};
 const MOSHE_MEMBER_ID = "moshe-targets-officer";
-const WORKSTREAM_SEEN_STORAGE_KEY = "serbia-poc-workstream-seen-v1";
-const MOSHE_MESSAGE_LABEL = "משה - קצין מטרות";
-const MOSHE_WELCOME = "אני משה, קצין המטרות. אפשר לשאול אותי על אינדיקציות ומטרות, או לפתוח מעקב חדש.";
+const WORKSTREAM_SEEN_STORAGE_KEY = "serbia-poc-workstream-seen-v2";
+const MOSHE_MESSAGE_LABEL = {
+  he: "משה - קצין מטרות",
+  en: "Moshe - Targets Officer"
+};
+const MOSHE_WELCOME = {
+  he: "אני משה, קצין המטרות. אפשר לשאול אותי על אינדיקציות ומטרות, או לפתוח מעקב חדש.",
+  en: "I’m Moshe, the targets officer. You can ask me about indications and targets, or open a new workstream."
+};
+const DEFAULT_SUGGESTIONS = {
+  he: [
+    "האם הטענה על חציית גבול מגובה במקור אמין?",
+    "איפה יש ריכוזי דיווחים מרכזיים בצפון קוסובו?"
+  ],
+  en: [
+    "Is the border-crossing claim supported by a reliable source?",
+    "Where are the main reporting hotspots in North Kosovo?"
+  ]
+};
+const FOLLOWUP_SUGGESTIONS = {
+  he: [
+    "אילו הסברים אזרחיים חלופיים יכולים להתאים לאותן ראיות?",
+    "מה חסר כדי להעלות את רמת הביטחון?",
+    "הצג את רצף האירועים לפי זמן"
+  ],
+  en: [
+    "What benign explanations could fit the same evidence?",
+    "What is missing to raise the confidence level?",
+    "Show the event sequence in time order"
+  ]
+};
+
+function requestedLocaleFromUrl() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const lang = params.get("lang");
+    return lang == null ? null : normalizeLocale(lang);
+  } catch (error) {
+    return null;
+  }
+}
+
+function normalizeLocale(value) {
+  const locale = String(value || "").trim().toLowerCase();
+  return locale === "en" ? "en" : "he";
+}
+
+const INITIAL_LOCALE = normalizeLocale((() => {
+  const requested = requestedLocaleFromUrl();
+  if (requested) return requested;
+  try {
+    return localStorage.getItem(LOCALE_STORAGE_KEY);
+  } catch (error) {
+    return DEFAULT_LOCALE;
+  }
+})());
+
+function currentLocale() {
+  return state.locale === "en" ? "en" : "he";
+}
+
+function currentLocaleTag() {
+  return currentLocale() === "en" ? "en-US" : "he-IL";
+}
+
+function currentMembers() {
+  return MICHLOL_MEMBERS[currentLocale()];
+}
+
+function activeLocaleText(he, en) {
+  return currentLocale() === "en" ? en : he;
+}
+
+function buildLocaleApiUrl(path) {
+  const url = new URL(path, window.location.origin);
+  url.searchParams.set("lang", currentLocale());
+  return url.toString();
+}
+
+function applyLocaleAttributeSet(attributeName, applyValue) {
+  document.querySelectorAll(`[${attributeName}-he][${attributeName}-en]`).forEach(element => {
+    const value = currentLocale() === "en"
+      ? element.getAttribute(`${attributeName}-en`)
+      : element.getAttribute(`${attributeName}-he`);
+    if (value != null) applyValue(element, value);
+  });
+}
+
+function applyLocaleAttributes() {
+  applyLocaleAttributeSet("data-i18n-text", (element, value) => {
+    element.textContent = value;
+  });
+  applyLocaleAttributeSet("data-i18n-aria", (element, value) => {
+    element.setAttribute("aria-label", value);
+  });
+  applyLocaleAttributeSet("data-i18n-title", (element, value) => {
+    element.title = value;
+  });
+  applyLocaleAttributeSet("data-i18n-placeholder", (element, value) => {
+    element.setAttribute("placeholder", value);
+  });
+}
+
+function defaultInvestigationName(locale = currentLocale()) {
+  return normalizeLocale(locale) === "en" ? "New investigation" : "חקירה חדשה";
+}
 
 const state = {
+  locale: INITIAL_LOCALE,
   events: [],
   current: [],
   stage: 0,
@@ -205,15 +323,16 @@ const state = {
   map: null,
   mapReady: false,
   markers: [],
+  focusedEventPopup: null,
+  focusedMapSelection: null,
   history: [],
   investigationId: createInvestigationId(),
-  investigationName: DEFAULT_INVESTIGATION_NAME,
+  investigationName: defaultInvestigationName(INITIAL_LOCALE),
   investigations: [],
   investigationMemory: null,
   investigationMemoryLoading: false,
   investigationMemoryError: "",
   investigationMemoryLoadToken: 0,
-  datasetVersion: "",
   investigationSelectorOpen: false,
   investigationSearchQuery: "",
   recordedQuestions: [],
@@ -274,7 +393,7 @@ const workstreamRailCount = document.getElementById("workstreamRailCount");
 const workstreamRailToggle = document.getElementById("workstreamRailToggle");
 const playbackNextButton = document.getElementById("playbackNextButton");
 const playbackResetButton = document.getElementById("playbackResetButton");
-const intelligenceModeSelect = document.getElementById("intelligenceModeSelect");
+const languageToggle = document.getElementById("languageToggle");
 const intelligencePeriod = document.getElementById("intelligencePeriod");
 const playbackAgentStatus = document.getElementById("playbackAgentStatus");
 const workstreamComposerMode = document.getElementById("workstreamComposerMode");
@@ -291,7 +410,10 @@ const queryLayersClose = document.getElementById("queryLayersClose");
 const queryLayersList = document.getElementById("queryLayersList");
 const queryLayersSubmit = document.getElementById("queryLayersSubmit");
 const queryLayersError = document.getElementById("queryLayersError");
+const datasetStatus = document.getElementById("datasetStatus");
+const datasetStatusIndicator = document.getElementById("datasetStatusIndicator");
 const agentStatus = document.getElementById("agentStatus");
+const agentStatusIndicator = document.getElementById("agentStatusIndicator");
 const viewRecommendation = document.getElementById("viewRecommendation");
 const layerSelectorSearch = document.getElementById("layerSelectorSearch");
 const layerSelectorList = document.getElementById("layerSelectorList");
@@ -301,21 +423,45 @@ const chatPanelToggle = document.getElementById("chatPanelToggle");
 const queryLayerName = document.getElementById("queryLayerName");
 const queryToolName = document.getElementById("queryToolName");
 const queryModal = document.getElementById("queryModal");
+
+const systemStatuses = {
+  dataset: { element: datasetStatus, indicator: datasetStatusIndicator, labelHe: "מאגר הנתונים", labelEn: "Dataset", he: "טוען נתונים", en: "Loading data", state: "loading" },
+  agent: { element: agentStatus, indicator: agentStatusIndicator, labelHe: "Hermes", labelEn: "Hermes", he: "בודק חיבור לסוכן", en: "Checking agent connection", state: "loading" }
+};
+
+function renderSystemStatuses() {
+  Object.values(systemStatuses).forEach(status => {
+    const english = currentLocale() === "en";
+    const detail = english ? status.en : status.he;
+    if (status.element) status.element.textContent = detail;
+    if (status.indicator) {
+      status.indicator.dataset.state = status.state;
+      status.indicator.setAttribute("aria-label", `${english ? status.labelEn : status.labelHe}: ${detail}`);
+    }
+  });
+}
+
+function updateSystemStatus(kind, he, en, statusState) {
+  const status = systemStatuses[kind];
+  if (!status) return;
+  Object.assign(status, { he, en, state: statusState });
+  renderSystemStatuses();
+}
 const queryModalTitle = document.getElementById("queryModalTitle");
 const queryModalBody = document.getElementById("queryModalBody");
 const queryModalClose = document.getElementById("queryModalClose");
 
-const VIEW_LABELS = {
-  map: "מפה",
-  timeline: "ציר זמן",
-  evidence: "אירועים גולמיים"
-};
+function viewLabels() {
+  return currentLocale() === "en"
+    ? { map: "Map", timeline: "Timeline", evidence: "Raw events" }
+    : { map: "מפה", timeline: "ציר זמן", evidence: "אירועים גולמיים" };
+}
 
-const LAYER_QUERY_LABELS = {
-  map: "שכבת אירועים גולמיים",
-  timeline: "שכבת אירועים גולמיים",
-  evidence: "שכבת אירועים גולמיים"
-};
+function layerQueryLabels() {
+  return currentLocale() === "en"
+    ? { map: "Raw events layer", timeline: "Raw events layer", evidence: "Raw events layer" }
+    : { map: "שכבת אירועים גולמיים", timeline: "שכבת אירועים גולמיים", evidence: "שכבת אירועים גולמיים" };
+}
 
 const LAYER_COLORS = [
   "#8ab4f8",
@@ -332,12 +478,11 @@ const LAYER_COLORS = [
   "#7fd1ae"
 ];
 
-const LAYER_FAMILY_LABELS = {
-  entities: "ישויות",
-  locations: "מיקומים",
-  events: "אירועים לפי source_type",
-  targets: "מטרות"
-};
+function layerFamilyLabels() {
+  return currentLocale() === "en"
+    ? { entities: "Entities", locations: "Locations", events: "Events by source_type", targets: "Targets" }
+    : { entities: "ישויות", locations: "מיקומים", events: "אירועים לפי source_type", targets: "מטרות" };
+}
 
 const ATTACK_TARGET_CATALOG_LAYER_ID = "attack-targets:all";
 const teamMentionState = {
@@ -364,14 +509,15 @@ function michlolMemberHtml(member) {
 
 function renderMichlolTeam() {
   if (!michlolTeam) return;
-  const visible = MICHLOL_MEMBERS.slice(0, 3);
-  const hidden = MICHLOL_MEMBERS.slice(3);
+  const members = currentMembers();
+  const visible = members.slice(0, 3);
+  const hidden = members.slice(3);
   michlolTeam.innerHTML = `
-    <span class="michlol-title">מכלול</span>
+    <span class="michlol-title">${activeLocaleText("מכלול", "Team")}</span>
     ${visible.map(michlolMemberHtml).join("")}
     ${hidden.length ? `
       <details class="michlol-more">
-        <summary title="הצג חברי מכלול נוספים" aria-label="הצג חברי מכלול נוספים">...</summary>
+        <summary title="${activeLocaleText("הצג חברי מכלול נוספים", "Show more team members")}" aria-label="${activeLocaleText("הצג חברי מכלול נוספים", "Show more team members")}">...</summary>
         <div class="michlol-more-list">
           ${hidden.map(michlolMemberHtml).join("")}
         </div>
@@ -385,37 +531,39 @@ function renderPromptOptions() {
 }
 
 function activeConversationMember() {
-  return MICHLOL_MEMBERS.find(member => member.id === state.activeConversationMemberId) || null;
+  return currentMembers().find(member => member.id === state.activeConversationMemberId) || null;
 }
 
 function updatePromptPlaceholder() {
   if (!promptInput) return;
   if (state.workstreamComposerMode) {
-    promptInput.placeholder = "תאר מה לעקוב אחריו ומה מטרת המעקב...";
+    promptInput.placeholder = activeLocaleText("תאר מה לעקוב אחריו ומה מטרת המעקב...", "Describe what to track and what the workstream is for...");
     return;
   }
   const member = activeConversationMember();
-  promptInput.placeholder = member ? `כתוב אל ${member.displayName}...` : "כתוב שאלת חקירה...";
+  promptInput.placeholder = member
+    ? activeLocaleText(`כתוב אל ${member.displayName}...`, `Write to ${member.displayName}...`)
+    : activeLocaleText("כתוב שאלת חקירה...", "Ask an investigation question...");
 }
 
 function memberMessageLabel(member) {
-  if (member.id === MOSHE_MEMBER_ID) return MOSHE_MESSAGE_LABEL;
+  if (member.id === MOSHE_MEMBER_ID) return MOSHE_MESSAGE_LABEL[currentLocale()];
   return `${member.displayName} · ${member.roleLabel}`;
 }
 
 function assistantMessageLabel() {
   const member = activeConversationMember();
-  if (state.activeTeamMentions.some(mention => mention.id === MOSHE_MEMBER_ID)) return MOSHE_MESSAGE_LABEL;
-  return member ? memberMessageLabel(member) : "סוכן חקירה";
+  if (state.activeTeamMentions.some(mention => mention.id === MOSHE_MEMBER_ID)) return MOSHE_MESSAGE_LABEL[currentLocale()];
+  return member ? memberMessageLabel(member) : activeLocaleText("סוכן חקירה", "Investigation Agent");
 }
 
 function resultMessageLabel(result = {}) {
-  return result.responding_agent === "moshe" ? MOSHE_MESSAGE_LABEL : assistantMessageLabel();
+  return result.responding_agent === "moshe" ? MOSHE_MESSAGE_LABEL[currentLocale()] : assistantMessageLabel();
 }
 
 function appendMemberWelcomeMessage(member) {
   conversation.querySelectorAll(".member-welcome-message").forEach(message => message.remove());
-  const welcome = member.id === MOSHE_MEMBER_ID ? MOSHE_WELCOME : MICHLOL_MEMBER_WELCOME;
+  const welcome = member.id === MOSHE_MEMBER_ID ? MOSHE_WELCOME[currentLocale()] : MICHLOL_MEMBER_WELCOME[currentLocale()];
   return appendMessage("assistant", `<p>${escapeHtml(welcome)}</p>`, {
     label: memberMessageLabel(member),
     className: "member-welcome-message",
@@ -424,7 +572,7 @@ function appendMemberWelcomeMessage(member) {
 }
 
 function selectConversationMember(memberId) {
-  const member = MICHLOL_MEMBERS.find(item => item.id === memberId);
+  const member = currentMembers().find(item => item.id === memberId);
   if (!member) return;
   if (state.activeConversationMemberId === member.id) {
     if (state.workstreamComposerMode) setWorkstreamComposerMode(false);
@@ -446,12 +594,51 @@ function selectConversationMember(memberId) {
   conversation.scrollTop = conversation.scrollHeight;
 }
 
+function applyLocaleUi() {
+  document.documentElement.lang = currentLocale();
+  document.documentElement.dir = currentLocale() === "en" ? "ltr" : "rtl";
+  if (languageToggle) languageToggle.checked = currentLocale() === "en";
+  try {
+    const url = new URL(window.location.href);
+    url.searchParams.set("lang", currentLocale());
+    window.history.replaceState({}, "", url);
+  } catch (error) {
+    // Ignore URL rewrite issues and continue applying locale in-memory.
+  }
+  applyLocaleAttributes();
+  renderSystemStatuses();
+  document.title = activeLocaleText("סביבת מודיעין", "Intelligence Workspace");
+  const helpButton = document.querySelector(".help-button");
+  helpButton?.setAttribute("aria-label", activeLocaleText("פתח עזרה", "Open help"));
+  if (helpButton) helpButton.href = `./help.html?lang=${currentLocale()}`;
+  const headerTitle = document.querySelector(".header-copy h1");
+  if (headerTitle) headerTitle.textContent = activeLocaleText("סביבת מודיעין", "Intelligence Workspace");
+  const investigationLabel = document.querySelector('.investigation-switcher label[for="investigationInput"]');
+  if (investigationLabel) investigationLabel.textContent = activeLocaleText("חקירה פעילה", "Active investigation");
+  if (investigationInput) {
+    investigationInput.setAttribute("aria-label", activeLocaleText("בחר או צור חקירה", "Choose or create an investigation"));
+  }
+  if (investigationAddButton) {
+    investigationAddButton.title = activeLocaleText("צור חקירה חדשה", "Create a new investigation");
+    investigationAddButton.setAttribute("aria-label", investigationAddButton.title);
+  }
+  if (promptInput) {
+    promptInput.setAttribute("aria-label", activeLocaleText("שאלת חקירה", "Investigation question"));
+  }
+  if (recordedList && !state.savedQuestions.length) recordedList.innerHTML = `<div class="activity-empty">${activeLocaleText("לא נמצאו שאלות שמורות.", "No saved questions found.")}</div>`;
+  updatePromptPlaceholder();
+  renderMichlolTeam();
+  renderInvestigationSelector();
+  renderAllViews();
+  if (!state.lastResult && !state.busy) setSuggestions(DEFAULT_SUGGESTIONS[currentLocale()]);
+}
+
 function createTeamMentionMenu() {
   const menu = document.createElement("div");
   menu.id = "teamMentionMenu";
   menu.className = "team-mention-menu";
   menu.setAttribute("role", "listbox");
-  menu.setAttribute("aria-label", "בחירת חבר מכלול");
+  menu.setAttribute("aria-label", activeLocaleText("בחירת חבר מכלול", "Choose a team member"));
   menu.hidden = true;
   document.body.appendChild(menu);
   menu.addEventListener("mousedown", event => event.preventDefault());
@@ -466,7 +653,7 @@ function createTeamMentionMenu() {
 const teamMentionMenu = createTeamMentionMenu();
 
 function normalizeTeamMentionText(value) {
-  return String(value || "").normalize("NFKC").trim().toLocaleLowerCase("he-IL");
+  return String(value || "").normalize("NFKC").trim().toLocaleLowerCase(currentLocaleTag());
 }
 
 function activeMentionRange(textarea) {
@@ -484,8 +671,8 @@ function activeMentionRange(textarea) {
 
 function matchingTeamMembers(query) {
   const normalized = normalizeTeamMentionText(query);
-  if (!normalized) return MICHLOL_MEMBERS;
-  return MICHLOL_MEMBERS.filter(member => {
+  if (!normalized) return currentMembers();
+  return currentMembers().filter(member => {
     const haystack = normalizeTeamMentionText(`${member.displayName} ${member.roleLabel} ${member.id}`);
     return haystack.includes(normalized);
   });
@@ -494,7 +681,7 @@ function matchingTeamMembers(query) {
 function recognizedTeamMemberByMention(rawMention) {
   const normalized = normalizeTeamMentionText(rawMention).replace(/^@/, "").replace(/[^\p{L}\p{N}_-]+$/gu, "");
   if (!normalized) return null;
-  return MICHLOL_MEMBERS.find(member => normalizeTeamMentionText(member.displayName) === normalized) || null;
+  return currentMembers().find(member => normalizeTeamMentionText(member.displayName) === normalized) || null;
 }
 
 function highlightedPromptHtml(value) {
@@ -721,7 +908,7 @@ function teamMentionsForPrompt(prompt) {
   let match;
   while ((match = mentionPattern.exec(prompt || ""))) {
     const query = normalizeTeamMentionText(match[1]);
-    const member = MICHLOL_MEMBERS.find(item => normalizeTeamMentionText(item.displayName) === query);
+    const member = currentMembers().find(item => normalizeTeamMentionText(item.displayName) === query);
     if (!member || seen.has(member.id)) continue;
     seen.add(member.id);
     mentions.push({
@@ -1082,7 +1269,7 @@ function updateEvidenceReferenceButton(btn) {
   const visible = sourceLayers.some(layer => layer.visible);
   btn.classList.toggle("is-visible", visible);
   btn.setAttribute("aria-pressed", visible ? "true" : "false");
-  btn.title = visible ? "הסתר שכבת ראיות" : "הצג שכבת ראיות";
+  btn.title = visible ? "Hide evidence layer" : "Show evidence layer";
 }
 
 function updateEvidenceReferenceButtons() {
@@ -1100,12 +1287,12 @@ function toggleEvidenceReferenceLayer(result, layer, btn) {
   }
   addResultLayers({
     sourceId,
-    sourceLabel: `ראיות: ${layer.label}`,
+    sourceLabel: `Evidence: ${layer.label}`,
     preferredView: layer.preferredView,
     layers: [layer]
   });
   state.rawOverlayMinimized = false;
-  activateView(layer.preferredView, { reason: `שכבת ראיות: ${layer.label}` });
+  activateView(layer.preferredView, { reason: `Evidence layer: ${layer.label}` });
   renderAllViews();
   updateEvidenceReferenceButtons();
 }
@@ -1116,7 +1303,7 @@ function buildEvidenceReferencesSection(result) {
   const section = document.createElement("details");
   section.className = "evidence-references";
   section.innerHTML = `
-    <summary class="evidence-references-summary">מזהי ראיות · ${layers.length.toLocaleString("he-IL")} שכבות</summary>
+    <summary class="evidence-references-summary">Evidence IDs · ${layers.length.toLocaleString("en-US")} layers</summary>
     <ul class="evidence-reference-list"></ul>`;
   const list = section.querySelector(".evidence-reference-list");
   layers.forEach(layer => {
@@ -1129,13 +1316,13 @@ function buildEvidenceReferencesSection(result) {
       <details class="evidence-reference-details">
         <summary class="evidence-reference-link" aria-pressed="false">
           <span class="evidence-reference-label">${escapeHtml(layer.label)}</span>
-          <span class="evidence-reference-view">${layer.preferredView === "timeline" ? "ציר זמן" : "מפה"} · ${(layer.items || []).length.toLocaleString("he-IL")}</span>
+          <span class="evidence-reference-view">${layer.preferredView === "timeline" ? "Timeline" : "Map"} · ${(layer.items || []).length.toLocaleString("en-US")}</span>
         </summary>
-        ${shown.length ? `<div class="evidence-reference-identifiers" dir="ltr">${shown.map(escapeHtml).join(", ")}${overflow ? ` <span dir="rtl">ועוד ${overflow.toLocaleString("he-IL")}</span>` : ""}</div>` : ""}
+        ${shown.length ? `<div class="evidence-reference-identifiers" dir="ltr">${shown.map(escapeHtml).join(", ")}${overflow ? ` <span dir="ltr">and ${overflow.toLocaleString("en-US")} more</span>` : ""}</div>` : ""}
       </details>`;
     const btn = item.querySelector(".evidence-reference-link");
     btn.dataset.sourceId = evidenceLayerSourceId(result, layer);
-    btn.title = "הצג שכבת ראיות";
+    btn.title = "Show evidence layer";
     btn.addEventListener("click", () => toggleEvidenceReferenceLayer(result, layer, btn));
     list.appendChild(item);
   });
@@ -1305,7 +1492,7 @@ function filterFieldsForLayer(layer) {
   ensureLayerFilterState(layer);
   const fields = new Set();
   (layer?.items || []).forEach(item => filterFieldPathsForValue(item, "", fields));
-  return [...fields].sort((a, b) => a.localeCompare(b, "he"));
+  return [...fields].sort((a, b) => a.localeCompare(b, "en"));
 }
 
 function valueForFilterField(item, field) {
@@ -1322,7 +1509,7 @@ function stringifyFilterValue(value) {
   if (Array.isArray(value)) return value.map(item => stringifyFilterValue(item)).filter(Boolean).join(" ");
   if (typeof value === "object") {
     return Object.keys(value)
-      .sort((a, b) => a.localeCompare(b, "he"))
+      .sort((a, b) => a.localeCompare(b, "en"))
       .map(key => stringifyFilterValue(value[key]))
       .filter(Boolean)
       .join(" ");
@@ -1331,7 +1518,7 @@ function stringifyFilterValue(value) {
 }
 
 function normalizeFilterText(value) {
-  return stringifyFilterValue(value).trim().replace(/\s+/g, " ").toLocaleLowerCase("he-IL");
+  return stringifyFilterValue(value).trim().replace(/\s+/g, " ").toLocaleLowerCase("en-US");
 }
 
 function validAppliedFilters(layer) {
@@ -1361,16 +1548,16 @@ function targetQuantityLabel(target = {}) {
   const min = target.count_min;
   const max = target.count_max;
   const estimate = target.count_estimate;
-  if (target.count_assessment === "range" && min != null && max != null) return `${Number(min).toLocaleString("he-IL")}–${Number(max).toLocaleString("he-IL")}`;
-  if (estimate != null) return `${target.count_assessment === "approximate" ? "כ־" : ""}${Number(estimate).toLocaleString("he-IL")}`;
-  if (min != null && max != null && min !== max) return `${Number(min).toLocaleString("he-IL")}–${Number(max).toLocaleString("he-IL")}`;
-  if (min != null) return Number(min).toLocaleString("he-IL");
-  if (max != null) return Number(max).toLocaleString("he-IL");
-  return "לא הוכרע";
+  if (target.count_assessment === "range" && min != null && max != null) return `${Number(min).toLocaleString("en-US")}–${Number(max).toLocaleString("en-US")}`;
+  if (estimate != null) return `${target.count_assessment === "approximate" ? "~" : ""}${Number(estimate).toLocaleString("en-US")}`;
+  if (min != null && max != null && min !== max) return `${Number(min).toLocaleString("en-US")}–${Number(max).toLocaleString("en-US")}`;
+  if (min != null) return Number(min).toLocaleString("en-US");
+  if (max != null) return Number(max).toLocaleString("en-US");
+  return "Undetermined";
 }
 
 function confidenceLabel(value) {
-  return value === "high" ? "גבוה" : value === "medium" ? "בינוני" : (value || "-");
+  return value === "high" ? "High" : value === "medium" ? "Medium" : (value || "-");
 }
 
 function identifiersForLayerContext(layer, items, limit = 80) {
@@ -1463,12 +1650,6 @@ function normalizeSavedMemoryForAgent(memory = currentSavedMemory()) {
       value: stringifyFilterValue(filter.value)
     })).filter(filter => filter.field && filter.value),
     sample_ids: Array.isArray(item.sample_ids) ? item.sample_ids.slice(0, 80) : [],
-    reconstruction: item.reconstruction && typeof item.reconstruction === "object" ? {
-      type: item.reconstruction.type || "",
-      layer_kind: item.reconstruction.layer_kind || "",
-      dataset_version: item.reconstruction.dataset_version || "",
-      locale: item.reconstruction.locale || ""
-    } : null,
     restore_status: item.restore_status || ""
   }));
   return {
@@ -1510,14 +1691,6 @@ async function restoreMemorySavedLayers(memoryPayload, token) {
   const restoredMemoryLayers = [];
   for (const savedLayer of savedLayers) {
     if (token !== state.investigationMemoryLoadToken) return;
-    if (savedLayer.reconstruction?.record_ids?.length) {
-      const restored = await presentMemorySavedLayer(savedLayer.id, { silent: true });
-      restoredMemoryLayers.push({
-        ...savedLayer,
-        restore_status: restored?.restore_status || "unavailable"
-      });
-      continue;
-    }
     const catalogLayerId = savedLayer.catalog_layer_id || "";
     if (!catalogLayerId) {
       restoredMemoryLayers.push({ ...savedLayer, restore_status: "context_only" });
@@ -1546,58 +1719,6 @@ async function restoreMemorySavedLayers(memoryPayload, token) {
   renderQueryLayersModal();
 }
 
-async function presentMemorySavedLayer(memoryLayerId, options = {}) {
-  const query = new URLSearchParams({
-    investigation_id: state.investigationId,
-    locale: document.documentElement.lang || "he"
-  });
-  try {
-    const response = await fetch(
-      `/api/investigation-memory/layers/${encodeURIComponent(memoryLayerId)}/presentation?${query}`,
-      { cache: "no-store" }
-    );
-    const payload = await response.json();
-    if (!response.ok) throw new Error(payload.error || "טעינת השכבה השמורה נכשלה");
-    if (payload.restore_status === "unavailable") {
-      throw new Error(payload.reason || "השכבה השמורה אינה זמינה במאגר הנוכחי");
-    }
-    const layers = buildTypedResultLayers(payload);
-    if (!layers.length) throw new Error("לא נמצאו רשומות זמינות לשחזור השכבה");
-    const sourceId = sanitizeLayerKey(`memory:${memoryLayerId}`);
-    state.layers = state.layers.filter(layer => layer.sourceId !== sourceId);
-    const addedLayers = addResultLayers({
-      sourceId,
-      sourceLabel: payload.label || "שכבה מזיכרון החקירה",
-      preferredView: layers[0]?.preferredView || "map",
-      layers
-    });
-    addedLayers.forEach(layer => applySavedFiltersToLayer(layer, {
-      id: memoryLayerId,
-      applied_filters: payload.applied_filters || []
-    }));
-    state.rawOverlayMinimized = false;
-    activateView(layers[0]?.preferredView || "map", { reason: payload.label || "שכבה מזיכרון החקירה" });
-    renderAllViews();
-    if (payload.restore_status === "partially_restored" && !options.silent) {
-      workstreamMessage(`<p>השכבה שוחזרה חלקית: ${Number(payload.restored_count || 0).toLocaleString("he-IL")} מתוך ${Number(payload.requested_count || 0).toLocaleString("he-IL")} רשומות זמינות.</p>`);
-    }
-    return payload;
-  } catch (error) {
-    if (!options.silent) {
-      workstreamMessage(`<p>לא הצלחתי להציג את השכבה השמורה.</p><div class="answer-callout">${escapeHtml(error.message)}</div>`);
-    }
-    return { restore_status: "unavailable", error: error.message };
-  }
-}
-
-async function applyMemoryLayerActions(result = {}) {
-  const actions = Array.isArray(result.memory_layer_actions) ? result.memory_layer_actions : [];
-  for (const action of actions) {
-    if (action?.action !== "present" || !action.memory_layer_id) continue;
-    await presentMemorySavedLayer(action.memory_layer_id);
-  }
-}
-
 async function loadInvestigationMemory(options = {}) {
   if (!state.investigationId) return null;
   const token = ++state.investigationMemoryLoadToken;
@@ -1606,14 +1727,14 @@ async function loadInvestigationMemory(options = {}) {
   try {
     const response = await fetch(`/api/investigation-memory?id=${encodeURIComponent(state.investigationId)}`, { cache: "no-store" });
     const payload = await response.json();
-    if (!response.ok) throw new Error(payload.error || "טעינת זיכרון החקירה נכשלה");
+    if (!response.ok) throw new Error(payload.error || activeLocaleText("טעינת זיכרון החקירה נכשלה", "Failed to load investigation memory"));
     if (token !== state.investigationMemoryLoadToken) return null;
     state.investigationMemory = payload;
     if (options.restoreLayers) await restoreMemorySavedLayers(payload, token);
     return payload;
   } catch (error) {
     if (token === state.investigationMemoryLoadToken) {
-      state.investigationMemoryError = error.message || "טעינת זיכרון החקירה נכשלה";
+      state.investigationMemoryError = error.message || activeLocaleText("טעינת זיכרון החקירה נכשלה", "Failed to load investigation memory");
       state.investigationMemory = null;
     }
     return null;
@@ -1636,7 +1757,6 @@ function layerMemoryPayload(layer) {
   const sourceType = layer.source_type
     || firstItem.source_type
     || (String(layer.catalogLayerId || "").startsWith("events:") ? String(layer.catalogLayerId).slice("events:".length) : "");
-  const reconstructionIds = evidenceLayerIdentifiers({ ...layer, items: filteredItems });
   return {
     id: layer.id,
     label: layer.label,
@@ -1649,14 +1769,7 @@ function layerMemoryPayload(layer) {
     original_count: (layer.items || []).length,
     filtered_count: filteredItems.length,
     applied_filters: appliedFilters,
-    sample_ids: identifiersForLayerContext(layer, filteredItems),
-    reconstruction: reconstructionIds.length ? {
-      type: "typed_ids",
-      layer_kind: layer.kind,
-      record_ids: reconstructionIds,
-      dataset_version: state.datasetVersion || "",
-      locale: document.documentElement.lang || "he"
-    } : null
+    sample_ids: identifiersForLayerContext(layer, filteredItems)
   };
 }
 
@@ -1673,8 +1786,8 @@ function canSaveLayerToMemory(layer) {
 async function saveLayerToInvestigationMemory(layer, button) {
   if (!canSaveLayerToMemory(layer) || state.busy || button?.dataset.memorySaving === "true") return;
   button.dataset.memorySaving = "true";
-  button.title = "שומר שכבה לזיכרון החקירה";
-  button.setAttribute("aria-label", "שומר שכבה לזיכרון החקירה");
+  button.title = "Saving layer to investigation memory";
+  button.setAttribute("aria-label", "Saving layer to investigation memory");
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 15000);
   try {
@@ -1689,13 +1802,15 @@ async function saveLayerToInvestigationMemory(layer, button) {
       }),
     });
     const payload = await response.json();
-    if (!response.ok) throw new Error(payload.error || "שמירת השכבה לזיכרון נכשלה");
+    if (!response.ok) throw new Error(payload.error || activeLocaleText("שמירת השכבה לזיכרון נכשלה", "Failed to save layer to memory"));
     layer.investigation_memory_layer_id = payload.saved?.id || true;
-    button.title = "השכבה נשמרה לזיכרון החקירה";
-    button.setAttribute("aria-label", "השכבה נשמרה לזיכרון החקירה");
+    button.title = activeLocaleText("השכבה נשמרה בזיכרון החקירה", "Layer saved to investigation memory");
+    button.setAttribute("aria-label", button.title);
     renderEvidence();
   } catch (error) {
-    button.title = error.name === "AbortError" ? "שמירת השכבה נמשכה יותר מדי זמן. נסה שוב." : error.message;
+    button.title = error.name === "AbortError"
+      ? activeLocaleText("שמירת השכבה ארכה יותר מדי זמן. נסו שוב.", "Saving the layer took too long. Try again.")
+      : error.message;
     button.setAttribute("aria-label", button.title);
   } finally {
     clearTimeout(timeout);
@@ -1711,16 +1826,21 @@ function renderSelectedLayersButton() {
   if (!layers.length) {
     selectedLayersLabel.textContent = "";
     selectedLayersSummary.textContent = "";
-    selectedLayersButton.title = "בחר שכבות לשאילתה";
+    selectedLayersButton.title = activeLocaleText("בחר שכבות לשאילתה", "Choose layers for the query");
     return;
   }
   const preview = layers.slice(0, 2).map(layer => layer.label).join(" · ");
   const remaining = layers.length > 2 ? ` +${layers.length - 2}` : "";
   selectedLayersLabel.textContent = state.workstreamComposerMode
-    ? "שכבת מעקב"
-    : (layers.length === 1 ? "שכבה אחת נבחרה" : `${layers.length.toLocaleString("he-IL")} שכבות נבחרו`);
+    ? activeLocaleText("שכבת מעקב", "Workstream layer")
+    : (layers.length === 1
+      ? activeLocaleText("נבחרה שכבה אחת", "1 layer selected")
+      : activeLocaleText(`${layers.length.toLocaleString(currentLocaleTag())} שכבות נבחרו`, `${layers.length.toLocaleString(currentLocaleTag())} layers selected`));
   selectedLayersSummary.textContent = `${preview}${remaining}`;
-  selectedLayersButton.title = `שנה שכבות לשאילתה: ${layers.map(layer => layer.label).join(", ")}`;
+  selectedLayersButton.title = activeLocaleText(
+    `שנה שכבות לשאילתה: ${layers.map(layer => layer.label).join(", ")}`,
+    `Change query layers: ${layers.map(layer => layer.label).join(", ")}`
+  );
 }
 
 function clearPromptLayerSelection() {
@@ -1732,8 +1852,8 @@ function clearPromptLayerSelection() {
 function selectedLayerContextText(layers) {
   if (!layers.length) return "";
   const lines = [
-    "הקשר שכבות שנבחרו בממשק:",
-    "התייחס לשכבות אלה כהקשר ולמסננים שהאנליסט בחר לפני שליחת השאלה. אם השאלה מתייחסת לתוצאות/שכבות/הבחירה הנוכחית, השתמש בהן כדי לצמצם את החיפוש."
+    "Interface-selected layer context:",
+    "Treat these layers as context and as the filters the analyst chose before sending the question. If the question refers to the current results/layers/selection, use them to narrow the search."
   ];
   layers.forEach(layer => {
     const count = layer.applied_filters.length
@@ -1745,7 +1865,7 @@ function selectedLayerContextText(layers) {
       : "";
     const ids = layer.sample_ids.length ? `, sample_ids=${layer.sample_ids.join(", ")}` : "";
     const more = layer.filtered_count > layer.sample_ids.length ? `, sample_ids_are_partial=true` : "";
-    lines.push(`- ${layer.label} (${layer.kind}, ${layer.catalog_layer_id || "no-catalog-id"}): ${count} רשומות${source}${filters}${ids}${more}`);
+    lines.push(`- ${layer.label} (${layer.kind}, ${layer.catalog_layer_id || "no-catalog-id"}): ${count} records${source}${filters}${ids}${more}`);
   });
   return lines.join("\n");
 }
@@ -1781,10 +1901,7 @@ function workstreamContextForChat(messageId) {
 
 function applyWorkstreamChatResult(result) {
   if (result.workstream_created) {
-    result.workstream_recording = {
-      kind: "creation",
-      workstream: result.workstream_created
-    };
+    result.workstream_recording = { kind: "creation", workstream: result.workstream_created };
     state.workstreams = [
       result.workstream_created,
       ...state.workstreams.filter(item => item.workstream_id !== result.workstream_created.workstream_id)
@@ -1802,10 +1919,10 @@ function applyWorkstreamChatResult(result) {
   }
   if (result.workstream_artifact) {
     state.pendingMosheWorkstreamProposal = null;
-    result.answer = `${result.answer}\n\nהשינוי נשמר במעקב (גרסה ${result.workstream_artifact.revision}).`;
+    result.answer = `${result.answer}\n\nThe change was saved to the workstream (revision ${result.workstream_artifact.revision}).`;
     void loadWorkstreams();
   } else if (result.workstream_conflict?.error) {
-    result.answer = `${result.answer}\n\nלא שמרתי את השינוי: ${result.workstream_conflict.error}`;
+    result.answer = `${result.answer}\n\nI did not save the change: ${result.workstream_conflict.error}`;
   }
 }
 
@@ -1829,7 +1946,7 @@ function saveInvestigationRegistry() {
 }
 
 function createInvestigationRecord(name) {
-  const safeName = normalizeInvestigationName(name) || DEFAULT_INVESTIGATION_NAME;
+  const safeName = normalizeInvestigationName(name) || defaultInvestigationName();
   return {
     id: createInvestigationId(),
     name: safeName,
@@ -1838,7 +1955,7 @@ function createInvestigationRecord(name) {
 }
 
 function ensureInvestigationRecord(name) {
-  const safeName = normalizeInvestigationName(name) || DEFAULT_INVESTIGATION_NAME;
+  const safeName = normalizeInvestigationName(name) || defaultInvestigationName();
   const existing = state.investigations.find(item => investigationNameKey(item.name) === investigationNameKey(safeName));
   if (existing) return existing;
   const created = createInvestigationRecord(safeName);
@@ -1856,7 +1973,8 @@ async function registerInvestigationRecord(investigation) {
     body: JSON.stringify({
       investigation_id: investigation.id,
       name: investigation.name,
-    }),
+      locale: currentLocale()
+    })
   });
   if (!response.ok) throw new Error(`investigation registration unavailable (${response.status})`);
   return response.json();
@@ -1887,7 +2005,7 @@ function loadInvestigationRegistry() {
     : [];
   if (!investigations.length) investigations.push({
     id: state.investigationId,
-    name: DEFAULT_INVESTIGATION_NAME,
+    name: defaultInvestigationName(),
     created_at: new Date().toISOString()
   });
   state.investigations = investigations;
@@ -1899,7 +2017,7 @@ function loadInvestigationRegistry() {
 
 async function hydrateInvestigationRegistry() {
   try {
-    const response = await fetch("/api/investigations", { cache: "no-store" });
+    const response = await fetch(buildLocaleApiUrl("/api/investigations"), { cache: "no-store" });
     if (!response.ok) throw new Error(`investigation registry unavailable (${response.status})`);
     const payload = await response.json();
     const remoteInvestigations = Array.isArray(payload?.investigations) ? payload.investigations : [];
@@ -1926,7 +2044,7 @@ async function hydrateInvestigationRegistry() {
     saveInvestigationRegistry();
     renderInvestigationSelector();
   } catch (error) {
-    console.warn("Could not hydrate investigations from server", error);
+    console.warn("Investigation registry hydration failed", error);
   }
 }
 
@@ -1939,7 +2057,7 @@ function matchingInvestigations(query) {
 function renderInvestigationSelector() {
   if (!investigationInput || !investigationList) return;
   if (document.activeElement !== investigationInput) {
-    investigationInput.value = state.investigationName || DEFAULT_INVESTIGATION_NAME;
+    investigationInput.value = state.investigationName || defaultInvestigationName();
   }
   const matches = matchingInvestigations(state.investigationSearchQuery);
   investigationInput.setAttribute("aria-expanded", state.investigationSelectorOpen && matches.length ? "true" : "false");
@@ -1947,7 +2065,7 @@ function renderInvestigationSelector() {
   investigationList.innerHTML = matches.map(item => `
     <button type="button" class="investigation-option ${item.id === state.investigationId ? "active" : ""}" role="option" aria-selected="${item.id === state.investigationId}" data-investigation-id="${escapeHtml(item.id)}">
       <span>${escapeHtml(item.name)}</span>
-      ${item.id === state.investigationId ? "<small>פעילה</small>" : ""}
+      ${item.id === state.investigationId ? `<small>${activeLocaleText("פעילה", "Active")}</small>` : ""}
     </button>
   `).join("");
 }
@@ -1977,7 +2095,7 @@ async function loadSelectedInvestigation(investigationId) {
 }
 
 function addOrSelectInvestigation() {
-  const name = normalizeInvestigationName(investigationInput?.value) || DEFAULT_INVESTIGATION_NAME;
+  const name = normalizeInvestigationName(investigationInput?.value) || defaultInvestigationName();
   const investigation = ensureInvestigationRecord(name);
   if (state.busy) {
     renderInvestigationSelector();
@@ -2015,23 +2133,18 @@ function renderLayerFilterPanel(layer) {
   const fields = filterFieldsForLayer(layer);
   const draftFilters = draftFiltersForLayer(layer);
   const appliedFilters = validAppliedFilters(layer);
-  const fieldOptionsFor = selectedField => {
-    const availableFields = selectedField && !fields.includes(selectedField)
-      ? [selectedField, ...fields]
-      : fields;
-    return availableFields.length
-    ? availableFields.map(field => `<option value="${escapeHtml(field)}" ${field === selectedField ? "selected" : ""}>${escapeHtml(field)}</option>`).join("")
-    : '<option value="">אין שדות זמינים</option>';
-  };
+  const fieldOptionsFor = selectedField => fields.length
+    ? fields.map(field => `<option value="${escapeHtml(field)}" ${field === selectedField ? "selected" : ""}>${escapeHtml(field)}</option>`).join("")
+    : '<option value="">No fields available</option>';
   const draftHtml = draftFilters.length
     ? draftFilters.map((filter, index) => `
       <div class="filter-draft-row">
-        <select class="layer-filter-select filter-field-select" data-filter-field data-filter-index="${index}" aria-label="בחר שדה מסנן">
+        <select class="layer-filter-select filter-field-select" data-filter-field data-filter-index="${index}" aria-label="Choose a filter field">
           ${fieldOptionsFor(filter.field)}
         </select>
         <span class="filter-operator">contains</span>
-        <input class="layer-filter-input filter-value-input" data-filter-value data-filter-index="${index}" type="text" value="${escapeHtml(stringifyFilterValue(filter.value))}" placeholder="ערך לחיפוש" aria-label="ערך מסנן">
-        <button type="button" class="filter-remove-button" data-filter-remove="${index}" aria-label="הסר מסנן" title="הסר מסנן">×</button>
+        <input class="layer-filter-input filter-value-input" data-filter-value data-filter-index="${index}" type="text" value="${escapeHtml(stringifyFilterValue(filter.value))}" placeholder="Value to search" aria-label="Filter value">
+        <button type="button" class="filter-remove-button" data-filter-remove="${index}" aria-label="Remove filter" title="Remove filter">×</button>
       </div>`).join("")
     : "";
   const appliedHtml = appliedFilters.length
@@ -2041,7 +2154,7 @@ function renderLayerFilterPanel(layer) {
         <span>contains</span>
         <strong>${escapeHtml(stringifyFilterValue(filter.value))}</strong>
       </span>`).join("")
-    : '<span class="filter-empty inline">אין מסננים פעילים.</span>';
+    : `<span class="filter-empty inline">${escapeHtml(activeLocaleText("אין מסננים פעילים.", "No active filters."))}</span>`;
   const addDisabled = fields.length ? "" : "disabled";
   const errorHtml = layer.filterError
     ? `<div class="filter-error" role="alert">${escapeHtml(layer.filterError)}</div>`
@@ -2051,15 +2164,15 @@ function renderLayerFilterPanel(layer) {
   panel.innerHTML = `
     <div class="layer-filter-header">
       <div>
-        <span class="layer-filter-kicker">מסנני שכבה</span>
+        <span class="layer-filter-kicker">${escapeHtml(activeLocaleText("מסנני שכבה", "Layer filters"))}</span>
         <h3>${escapeHtml(layer.label)}</h3>
       </div>
-      <button type="button" class="layer-filter-close" data-layer-filter="${escapeHtml(layer.id)}" aria-label="סגור מסננים" title="סגור מסננים">×</button>
+      <button type="button" class="layer-filter-close" data-layer-filter="${escapeHtml(layer.id)}" aria-label="${escapeHtml(activeLocaleText("סגור מסננים", "Close filters"))}" title="${escapeHtml(activeLocaleText("סגור מסננים", "Close filters"))}">×</button>
     </div>
     ${draftFilters.length ? `<div class="layer-filter-section"><div class="filter-draft-list">${draftHtml}</div>${errorHtml}</div>` : errorHtml ? `<div class="layer-filter-section">${errorHtml}</div>` : ""}
     <div class="layer-filter-actions">
-      <button type="button" class="filter-add-button" data-filter-add ${addDisabled}>הוסף מסנן</button>
-      <button type="button" class="primary-filter-action" data-filter-apply>החל</button>
+      <button type="button" class="filter-add-button" data-filter-add ${addDisabled}>${escapeHtml(activeLocaleText("הוסף מסנן", "Add filter"))}</button>
+      <button type="button" class="primary-filter-action" data-filter-apply>${escapeHtml(activeLocaleText("החל", "Apply"))}</button>
     </div>`;
 }
 
@@ -2067,7 +2180,7 @@ function addDraftFilter(layer) {
   ensureLayerFilterState(layer);
   const [firstField] = filterFieldsForLayer(layer);
   if (!firstField) {
-    layer.filterError = "אין שדות זמינים לסינון בשכבה הזו.";
+    layer.filterError = activeLocaleText("אין שדות זמינים לסינון בשכבה זו.", "No fields are available for filtering in this layer.");
     return;
   }
   layer.draftFilters.push({ id: createFilterId(), field: firstField, value: "" });
@@ -2105,7 +2218,7 @@ function applyDraftFilters(layer) {
   const draftFilters = draftFiltersForLayer(layer);
   const invalid = draftFilters.find(filter => !filter.field || !normalizeFilterText(filter.value));
   if (invalid) {
-    layer.filterError = "יש למלא שדה וערך לפני החלת המסננים.";
+    layer.filterError = activeLocaleText("יש למלא שדה וערך לפני החלת המסננים.", "Fill in a field and value before applying filters.");
     return false;
   }
   layer.appliedFilters = cloneFilters(draftFilters);
@@ -2119,11 +2232,11 @@ function isCatalogLayerOpen(layerId) {
 }
 
 function normalizeLayerSearch(value) {
-  return String(value ?? "").trim().toLocaleLowerCase("he-IL");
+  return String(value ?? "").trim().toLocaleLowerCase("en-US");
 }
 
 function layerSearchText(layer) {
-  const familyLabel = LAYER_FAMILY_LABELS[layer.family] || layer.family || "";
+    const familyLabel = layerFamilyLabels()[layer.family] || layer.family || "";
   return normalizeLayerSearch([layer.label, familyLabel, layer.kind, layer.id].filter(Boolean).join(" "));
 }
 
@@ -2138,7 +2251,7 @@ function matchingCatalogLayers() {
 function renderLayerSelector() {
   if (!layerSelectorSearch || !layerSelectorList || !layerSelectorStatus) return;
   if (state.layerCatalogLoading) {
-    layerSelectorStatus.textContent = "טוען שכבות";
+    layerSelectorStatus.textContent = activeLocaleText("טוען שכבות", "Loading layers");
   } else if (state.layerCatalogError) {
     layerSelectorStatus.textContent = state.layerCatalogError;
   } else {
@@ -2161,29 +2274,29 @@ function renderLayerSelector() {
     return;
   }
   if (state.layerCatalogLoading && !state.layerCatalog.length) {
-    layerSelectorList.innerHTML = '<div class="layer-selector-empty">טוען שכבות...</div>';
+    layerSelectorList.innerHTML = `<div class="layer-selector-empty">${escapeHtml(activeLocaleText("טוען שכבות...", "Loading layers..."))}</div>`;
     return;
   }
   if (!state.layerCatalog.length) {
-    layerSelectorList.innerHTML = '<div class="layer-selector-empty">אין שכבות זמינות.</div>';
+    layerSelectorList.innerHTML = `<div class="layer-selector-empty">${escapeHtml(activeLocaleText("אין שכבות זמינות.", "No layers available."))}</div>`;
     return;
   }
 
   if (!normalizeLayerSearch(state.layerSearchQuery)) {
-    layerSelectorList.innerHTML = '<div class="layer-selector-empty">הקלד שם שכבה או סוג מקור.</div>';
+    layerSelectorList.innerHTML = `<div class="layer-selector-empty">${escapeHtml(activeLocaleText("הקלד שם שכבה או סוג מקור.", "Type a layer name or source type."))}</div>`;
     return;
   }
 
   const matches = matchingCatalogLayers();
   if (!matches.length) {
-    layerSelectorList.innerHTML = '<div class="layer-selector-empty">לא נמצאו שכבות תואמות.</div>';
+    layerSelectorList.innerHTML = `<div class="layer-selector-empty">${escapeHtml(activeLocaleText("לא נמצאו שכבות תואמות.", "No matching layers found."))}</div>`;
     return;
   }
 
   layerSelectorList.innerHTML = matches.map(layer => {
     const open = isCatalogLayerOpen(layer.id);
     const loading = state.openingLayerIds.has(layer.id);
-    const family = LAYER_FAMILY_LABELS[layer.family] || layer.family || "שכבה";
+    const family = layerFamilyLabels()[layer.family] || layer.family || activeLocaleText("שכבה", "Layer");
     return `
       <button type="button" role="option" class="layer-select-option ${open ? "selected" : ""}" data-layer-select="${escapeHtml(layer.id)}" title="${escapeHtml(layer.label)}" ${loading ? "disabled" : ""}>
         <span class="layer-select-main">
@@ -2191,8 +2304,8 @@ function renderLayerSelector() {
           <span class="layer-select-family">${escapeHtml(family)}</span>
         </span>
         <span class="layer-select-meta">
-          <span class="layer-select-count">${Number(layer.count || 0).toLocaleString("he-IL")}</span>
-          ${open ? '<span class="layer-select-state">פתוחה</span>' : ""}
+          <span class="layer-select-count">${Number(layer.count || 0).toLocaleString(currentLocaleTag())}</span>
+          ${open ? `<span class="layer-select-state">${escapeHtml(activeLocaleText("פתוחה", "Open"))}</span>` : ""}
         </span>
       </button>`;
   }).join("");
@@ -2204,9 +2317,11 @@ function renderQueryLayersModal() {
   queryLayersError.hidden = true;
   queryLayersError.textContent = "";
   queryLayersSubmit.disabled = openLayers.length === 0;
-  queryLayersSubmit.textContent = state.workstreamComposerMode ? "צרף שכבה" : "בחר שכבות";
+  queryLayersSubmit.textContent = state.workstreamComposerMode
+    ? activeLocaleText("צרף שכבה", "Attach layer")
+    : activeLocaleText("בחר שכבות", "Choose layers");
   if (!openLayers.length) {
-    queryLayersList.innerHTML = '<div class="layer-selector-empty">אין שכבות פתוחות לבחירה.</div>';
+    queryLayersList.innerHTML = `<div class="layer-selector-empty">${escapeHtml(activeLocaleText("אין שכבות פתוחות זמינות לבחירה.", "No open layers available to choose."))}</div>`;
     return;
   }
   queryLayersList.innerHTML = openLayers.map(layer => {
@@ -2215,7 +2330,7 @@ function renderQueryLayersModal() {
       <input type="${state.workstreamComposerMode ? "radio" : "checkbox"}" name="${state.workstreamComposerMode ? "workstream-layer" : ""}" value="${escapeHtml(layer.id)}" ${state.promptSelectedLayerIds.has(layer.id) ? "checked" : ""}>
       <span class="step-inject-layer-color"></span>
       <span class="step-inject-layer-name">${escapeHtml(layer.label)}</span>
-      <span class="step-inject-layer-count">${itemsForLayerPresentation(layer).length.toLocaleString("he-IL")}</span>
+      <span class="step-inject-layer-count">${itemsForLayerPresentation(layer).length.toLocaleString("en-US")}</span>
     </label>`;
   }).join("");
 }
@@ -2226,12 +2341,12 @@ async function loadLayerCatalog() {
   state.layerCatalogError = "";
   renderLayerSelector();
   try {
-    const response = await fetch("/api/layers", { cache: "no-store" });
+    const response = await fetch(buildLocaleApiUrl("/api/layers"), { cache: "no-store" });
     const payload = await response.json();
-    if (!response.ok) throw new Error(payload.error || "טעינת השכבות נכשלה");
+    if (!response.ok) throw new Error(payload.error || activeLocaleText("טעינת השכבות נכשלה", "Failed to load layers"));
     state.layerCatalog = payload.layers || [];
   } catch (error) {
-    state.layerCatalogError = error.message || "טעינת השכבות נכשלה";
+    state.layerCatalogError = error.message || activeLocaleText("טעינת השכבות נכשלה", "Failed to load layers");
   } finally {
     state.layerCatalogLoading = false;
     renderLayerSelector();
@@ -2262,9 +2377,9 @@ async function openCatalogLayer(layerId, options = {}) {
     renderLayerSelector();
     renderQueryLayersModal();
   try {
-    const response = await fetch(`/api/layers/${encodeURIComponent(layerId)}/rows`, { cache: "no-store" });
+    const response = await fetch(buildLocaleApiUrl(`/api/layers/${encodeURIComponent(layerId)}/rows`), { cache: "no-store" });
     const payload = await response.json();
-    if (!response.ok) throw new Error(payload.error || "טעינת נתוני השכבה נכשלה");
+    if (!response.ok) throw new Error(payload.error || activeLocaleText("טעינת נתוני השכבה נכשלה", "Failed to load layer data"));
     const openedLayer = buildCatalogLayer(payload.layer || layer, payload.rows || []);
     const added = addResultLayers({
       sourceId: `catalog:${layerId}`,
@@ -2302,7 +2417,7 @@ async function refreshOpenAttackTargetCatalogLayer() {
   const existing = state.layers.find(item => item.catalogLayerId === ATTACK_TARGET_CATALOG_LAYER_ID);
   if (!existing) return null;
   try {
-    const response = await fetch(`/api/layers/${encodeURIComponent(ATTACK_TARGET_CATALOG_LAYER_ID)}/rows`, { cache: "no-store" });
+    const response = await fetch(buildLocaleApiUrl(`/api/layers/${encodeURIComponent(ATTACK_TARGET_CATALOG_LAYER_ID)}/rows`), { cache: "no-store" });
     const payload = await response.json();
     if (!response.ok) throw new Error(payload.error || "רענון שכבת המטרות נכשל");
     const refreshed = buildCatalogLayer(payload.layer, payload.rows || []);
@@ -2377,7 +2492,7 @@ function appendMessage(role, html, options = {}) {
   const article = document.createElement("article");
   article.className = `message ${role === "user" ? "user-message" : "assistant-message"}${options.className ? ` ${options.className}` : ""}`;
   if (options.memberId) article.dataset.conversationMemberId = options.memberId;
-  article.innerHTML = `<div class="message-label">${escapeHtml(options.label || (role === "user" ? "אנליסט" : assistantMessageLabel()))}</div>${html}`;
+  article.innerHTML = `<div class="message-label">${escapeHtml(options.label || (role === "user" ? activeLocaleText("אנליסט", "Analyst") : assistantMessageLabel()))}</div>${html}`;
   conversation.appendChild(article);
   followConversationAfterUpdate(shouldFollow);
   return article;
@@ -2385,22 +2500,20 @@ function appendMessage(role, html, options = {}) {
 
 function thinkingIndicatorHtml() {
   return `
-    <span class="thinking-indicator" role="status" aria-label="חושב">
-      <span>חושב</span><span class="thinking-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+    <span class="thinking-indicator" role="status" aria-label="${escapeHtml(activeLocaleText("חושב", "Thinking"))}">
+      <span>${escapeHtml(activeLocaleText("חושב", "Thinking"))}</span><span class="thinking-dots" aria-hidden="true"><i></i><i></i><i></i></span>
     </span>`;
 }
 
 function activeWorkstreams() {
-  if (state.investigationPlayback?.mode !== "real_time") return [];
   return state.workstreams.filter(item => item?.status !== "archived");
 }
 
-const WORKSTREAM_STATUS_LABELS = {
-  active: "פעיל",
-  paused: "מושהה",
-  completed: "הושלם",
-  archived: "בארכיון"
-};
+function workstreamStatusLabels() {
+  return currentLocale() === "en"
+    ? { active: "Active", paused: "Paused", completed: "Completed", archived: "Archived" }
+    : { active: "פעיל", paused: "מושהה", completed: "הושלם", archived: "בארכיון" };
+}
 
 function loadWorkstreamSeenState() {
   try {
@@ -2419,28 +2532,24 @@ function workstreamSeenKey(workstreamId) {
   return `${state.investigationId || "investigation"}:${workstreamId}`;
 }
 
+function workstreamSeenMarker(workstream) {
+  if (!workstream) return "";
+  const activityId = String(workstream.latest_activity_id || "").trim();
+  if (activityId) return `activity:${activityId}`;
+  const updated = String(workstream.updated_at_utc || workstream.created_at_utc || "").trim();
+  return updated ? `time:${updated}` : "";
+}
+
 function workstreamHasNewItems(workstream) {
-  const updated = Date.parse(workstream?.updated_at_utc || workstream?.created_at_utc || "");
-  const seen = Date.parse(state.workstreamSeen[workstreamSeenKey(workstream?.workstream_id)] || "");
-  return Number.isFinite(updated) && (!Number.isFinite(seen) || updated > seen);
+  const marker = workstreamSeenMarker(workstream);
+  if (!marker) return false;
+  return state.workstreamSeen[workstreamSeenKey(workstream?.workstream_id)] !== marker;
 }
 
 function markWorkstreamSeen(workstream) {
   if (!workstream?.workstream_id) return;
-  const listedWorkstream = state.workstreams.find(
-    item => item?.workstream_id === workstream.workstream_id
-  );
-  const seenAt = [
-    workstream.updated_at_utc,
-    workstream.created_at_utc,
-    listedWorkstream?.updated_at_utc,
-    listedWorkstream?.created_at_utc,
-  ].reduce((latest, value) => {
-    const timestamp = Date.parse(value || "");
-    return Number.isFinite(timestamp) && timestamp > latest ? timestamp : latest;
-  }, 0);
-  state.workstreamSeen[workstreamSeenKey(workstream.workstream_id)] =
-    seenAt ? new Date(seenAt).toISOString() : new Date().toISOString();
+  const marker = workstreamSeenMarker(workstream) || `time:${new Date().toISOString()}`;
+  state.workstreamSeen[workstreamSeenKey(workstream.workstream_id)] = marker;
   saveWorkstreamSeenState();
 }
 
@@ -2448,7 +2557,7 @@ function workstreamUpdatedLabel(workstream) {
   const value = workstream?.updated_at_utc || workstream?.created_at_utc;
   const date = value ? new Date(value) : null;
   if (!date || Number.isNaN(date.getTime())) return "";
-  return new Intl.DateTimeFormat("he-IL", {
+  return new Intl.DateTimeFormat("en-US", {
     day: "2-digit",
     month: "2-digit",
     hour: "2-digit",
@@ -2462,10 +2571,19 @@ function setWorkstreamRailCollapsed(collapsed) {
   document.querySelector(".workspace")?.classList.toggle("workstream-rail-collapsed", state.workstreamRailCollapsed);
   if (workstreamRailToggle) {
     workstreamRailToggle.setAttribute("aria-expanded", state.workstreamRailCollapsed ? "false" : "true");
-    workstreamRailToggle.setAttribute("aria-label", state.workstreamRailCollapsed ? "הרחב מעקבים" : "מזער מעקבים");
-    workstreamRailToggle.title = state.workstreamRailCollapsed ? "הרחב מעקבים" : "מזער מעקבים";
+    workstreamRailToggle.setAttribute("aria-label", state.workstreamRailCollapsed
+      ? activeLocaleText("הרחב מעקבים", "Expand workstreams")
+      : activeLocaleText("מזער מעקבים", "Collapse workstreams"));
+    workstreamRailToggle.title = state.workstreamRailCollapsed
+      ? activeLocaleText("הרחב מעקבים", "Expand workstreams")
+      : activeLocaleText("מזער מעקבים", "Collapse workstreams");
     const icon = workstreamRailToggle.querySelector(".material-symbols-rounded");
-    if (icon) icon.textContent = state.workstreamRailCollapsed ? "chevron_left" : "chevron_right";
+    if (icon) {
+      const pointsLeft = currentLocale() === "he"
+        ? state.workstreamRailCollapsed
+        : !state.workstreamRailCollapsed;
+      icon.textContent = pointsLeft ? "chevron_left" : "chevron_right";
+    }
   }
   if (state.map) setTimeout(() => state.map.resize(), 220);
 }
@@ -2473,22 +2591,22 @@ function setWorkstreamRailCollapsed(collapsed) {
 function renderWorkstreamIndicator() {
   if (!workstreamRail || !workstreamRailList || !workstreamRailCount) return;
   const workstreams = activeWorkstreams();
-  const visible = workstreams.length > 0 && state.investigationPlayback?.mode === "real_time";
+  const visible = workstreams.length > 0;
   workstreamRail.hidden = !visible;
   document.querySelector(".workspace")?.classList.toggle("workstream-rail-visible", visible);
-  workstreamRailCount.textContent = workstreams.length.toLocaleString("he-IL");
+  workstreamRailCount.textContent = workstreams.length.toLocaleString("en-US");
   workstreamRailList.innerHTML = workstreams.map(item => {
     const hasNew = workstreamHasNewItems(item);
-    const status = WORKSTREAM_STATUS_LABELS[item.status] || item.status || "פעיל";
+    const status = workstreamStatusLabels()[item.status] || item.status || activeLocaleText("פעיל", "Active");
     const updated = workstreamUpdatedLabel(item);
     return `
-      <button type="button" class="workstream-rail-card ${hasNew ? "has-new" : ""}" role="listitem" data-workstream-show="${escapeHtml(item.workstream_id)}" title="${escapeHtml(item.title || "מעקב")}">
+      <button type="button" class="workstream-rail-card ${hasNew ? "has-new" : ""}" role="listitem" data-workstream-show="${escapeHtml(item.workstream_id)}" title="${escapeHtml(item.title || "Workstream")}">
         <span class="workstream-card-state" aria-hidden="true"></span>
         <span class="workstream-card-body">
-          <strong>${escapeHtml(item.title || "מעקב")}</strong>
+          <strong>${escapeHtml(item.title || "Workstream")}</strong>
           <span class="workstream-card-meta"><span>${escapeHtml(status)}</span>${updated ? `<time>${escapeHtml(updated)}</time>` : ""}</span>
         </span>
-        ${hasNew ? '<span class="workstream-new-badge" aria-label="פריטים חדשים">חדש</span>' : ""}
+        ${hasNew ? '<span class="workstream-new-badge" aria-label="New items">New</span>' : ""}
       </button>`;
   }).join("");
   setWorkstreamRailCollapsed(state.workstreamRailCollapsed);
@@ -2500,9 +2618,9 @@ async function loadWorkstreams() {
   const token = ++state.workstreamLoadToken;
   state.workstreamsLoading = true;
   try {
-    const response = await fetch(`/api/workstreams?investigation_id=${encodeURIComponent(investigationId)}`, { cache: "no-store" });
+    const response = await fetch(`/api/workstreams?investigation_id=${encodeURIComponent(investigationId)}&locale=${encodeURIComponent(currentLocale())}`, { cache: "no-store" });
     const payload = await response.json();
-    if (!response.ok) throw new Error(payload.error || "טעינת המעקבים נכשלה");
+    if (!response.ok) throw new Error(payload.error || activeLocaleText("טעינת המעקבים נכשלה", "Failed to load workstreams"));
     if (token !== state.workstreamLoadToken || investigationId !== state.investigationId) return [];
     state.workstreams = Array.isArray(payload.workstreams) ? payload.workstreams : [];
     renderWorkstreamIndicator();
@@ -2540,7 +2658,7 @@ function startWorkstreamComposerMode() {
 
 function workstreamMessage(html, options = {}) {
   const article = appendMessage("assistant", html, {
-    label: options.label || "עדכון מעקב",
+    label: options.label || activeLocaleText("עדכון מעקב", "Workstream update"),
     className: `workstream-message${options.className ? ` ${options.className}` : ""}`,
     memberId: options.memberId,
   });
@@ -2549,9 +2667,9 @@ function workstreamMessage(html, options = {}) {
 }
 
 async function fetchWorkstream(workstreamId) {
-  const response = await fetch(`/api/workstreams/${encodeURIComponent(workstreamId)}`, { cache: "no-store" });
+  const response = await fetch(`/api/workstreams/${encodeURIComponent(workstreamId)}?locale=${encodeURIComponent(currentLocale())}`, { cache: "no-store" });
   const payload = await response.json();
-  if (!response.ok) throw new Error(payload.error || "טעינת המעקב נכשלה");
+  if (!response.ok) throw new Error(payload.error || activeLocaleText("טעינת המעקב נכשלה", "Failed to load workstream"));
   return payload;
 }
 
@@ -2562,25 +2680,44 @@ function playbackNextStage(playback) {
 function formatPlaybackTime(value) {
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return String(value || "");
-  return parsed.toLocaleString("he-IL", {
+  return parsed.toLocaleString(currentLocaleTag(), {
     timeZone: "UTC",
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
+    hour12: false,
   });
 }
 
+async function reloadOpenCatalogLayers() {
+  const catalogLayerIds = [...new Set(
+    state.layers.map(layer => layer.catalogLayerId).filter(Boolean)
+  )];
+  if (!catalogLayerIds.length) return;
+  for (const layerId of catalogLayerIds) {
+    const existingLayers = state.layers.filter(layer => layer.catalogLayerId === layerId);
+    const wasVisible = existingLayers.some(layer => layer.visible);
+    const savedFilters = existingLayers[0] ? {
+      draftFilters: existingLayers[0].draftFilters,
+      appliedFilters: existingLayers[0].appliedFilters,
+    } : null;
+    state.layers = state.layers.filter(layer => layer.catalogLayerId !== layerId);
+    const restored = await openCatalogLayer(layerId, { silent: true, savedLayer: savedFilters });
+    if (restored) restored.visible = wasVisible;
+  }
+  ensureActiveLayer();
+  renderAllViews();
+  renderLayerSelector();
+  renderQueryLayersModal();
+}
+
 function renderInvestigationPlayback() {
-  if (!playbackNextButton || !playbackResetButton || !intelligenceModeSelect || !intelligencePeriod) return;
+  if (!playbackNextButton || !playbackResetButton || !intelligencePeriod) return;
   const playback = state.investigationPlayback;
-  const mode = playback?.mode || "historical";
-  intelligenceModeSelect.value = mode;
   renderWorkstreamIndicator();
-  const timeframe = mode === "real_time"
-    ? playback?.run?.visible_timeframe
-    : playback?.full_timeframe;
+  const timeframe = playback?.run?.visible_timeframe || playback?.full_timeframe;
   intelligencePeriod.textContent = timeframe?.from && timeframe?.to
     ? `${formatPlaybackTime(timeframe.from)}–${formatPlaybackTime(timeframe.to)}`
     : "";
@@ -2590,34 +2727,56 @@ function renderInvestigationPlayback() {
   if (playbackAgentStatus) {
     playbackAgentStatus.hidden = !processing && reevaluation?.status !== "failed";
     playbackAgentStatus.classList.toggle("failed", reevaluation?.status === "failed");
-    playbackAgentStatus.textContent = processing ? "משה מעבד…" : "העיבוד של משה נכשל";
+    playbackAgentStatus.textContent = processing
+      ? activeLocaleText("משה מעבד…", "Moshe is processing…")
+      : activeLocaleText("העיבוד של משה נכשל", "Moshe processing failed");
     playbackAgentStatus.title = reevaluation?.error || "";
   }
-  playbackNextButton.hidden = mode !== "real_time" || !next?.timeframe;
+  playbackNextButton.hidden = !next?.timeframe;
   playbackNextButton.disabled = processing;
-  playbackResetButton.hidden = mode !== "real_time";
+  playbackResetButton.hidden = !playback?.run;
   playbackResetButton.disabled = processing;
   if (!next?.timeframe) return;
   const nextTimeframe = next.timeframe;
-  const tooltip = `פרק הזמן של השלב הבא: ${formatPlaybackTime(nextTimeframe.from)}–${formatPlaybackTime(nextTimeframe.to)}`;
+  const tooltip = `${activeLocaleText("הטווח הבא", "Next range")}: ${formatPlaybackTime(nextTimeframe.from)}–${formatPlaybackTime(nextTimeframe.to)}`;
   playbackNextButton.title = tooltip;
-  playbackNextButton.setAttribute("aria-label", `השלב הבא. ${tooltip}`);
+  playbackNextButton.setAttribute("aria-label", activeLocaleText(`השלב הבא. ${tooltip}`, `Next step. ${tooltip}`));
 }
-
 async function fetchInvestigationPlayback() {
   const investigationId = String(state.investigationId || "").trim();
   if (!investigationId) return null;
   const response = await fetch(
-    `/api/playback?investigation_id=${encodeURIComponent(investigationId)}`,
+    `/api/playback?investigation_id=${encodeURIComponent(investigationId)}&locale=${encodeURIComponent(currentLocale())}`,
     { cache: "no-store" }
   );
   const payload = await response.json();
-  if (!response.ok) throw new Error(payload.error || "טעינת מצב התרחיש נכשלה");
+  if (!response.ok) throw new Error(payload.error || activeLocaleText("טעינת מצב הניגון נכשלה", "Failed to load playback state"));
   state.investigationPlayback = payload;
   renderInvestigationPlayback();
   if (payload?.run?.reevaluation?.status === "running") {
     void pollMoshePlaybackReevaluation();
   }
+  return payload;
+}
+
+async function initializeStagedPlayback({ reset = false } = {}) {
+  const investigationId = String(state.investigationId || "").trim();
+  if (!investigationId) return null;
+  const response = await fetch("/api/playback/mode", {
+    method: "POST",
+    headers: { "Content-Type": "application/json; charset=utf-8" },
+    body: JSON.stringify({
+      investigation_id: investigationId,
+      mode: "real_time",
+      reset,
+      locale: currentLocale(),
+    }),
+  });
+  const payload = await response.json();
+  if (!response.ok) throw new Error(payload.error || "Failed to initialize staged playback");
+  state.investigationPlayback = payload;
+  renderInvestigationPlayback();
+  await reloadOpenCatalogLayers();
   return payload;
 }
 
@@ -2629,11 +2788,11 @@ async function pollMoshePlaybackReevaluation() {
     if (token !== state.playbackPollToken) return;
     try {
       const response = await fetch(
-        `/api/playback?investigation_id=${encodeURIComponent(investigationId)}`,
+        `/api/playback?investigation_id=${encodeURIComponent(investigationId)}&locale=${encodeURIComponent(currentLocale())}`,
         { cache: "no-store" }
       );
       const payload = await response.json();
-      if (!response.ok) throw new Error(payload.error || "טעינת מצב התרחיש נכשלה");
+      if (!response.ok) throw new Error(payload.error || activeLocaleText("טעינת מצב התרחיש נכשלה", "Failed to load playback state"));
       state.investigationPlayback = payload;
       renderInvestigationPlayback();
       const status = payload?.run?.reevaluation?.status;
@@ -2646,10 +2805,10 @@ async function pollMoshePlaybackReevaluation() {
           if (answer) {
             appendMoshePlaybackAssessment(payload.run.reevaluation.assessment);
           } else {
-            workstreamMessage("<p>משה סיים לעבד את פרוסת המידע החדשה.</p>");
+            workstreamMessage(`<p>${activeLocaleText("משה סיים לעבד את פרוסת המידע החדשה.", "Moshe finished processing the new information slice.")}</p>`);
           }
         } else if (status === "failed") {
-          workstreamMessage(`<p>הטווח עודכן, אך העיבוד של משה נכשל.</p><div class="answer-callout">${escapeHtml(payload.run.reevaluation.error || "")}</div>`);
+          workstreamMessage(`<p>${activeLocaleText("טווח הזמן עודכן, אך העיבוד של משה נכשל.", "The timeframe was updated, but Moshe's processing failed.")}</p><div class="answer-callout">${escapeHtml(payload.run.reevaluation.error || "")}</div>`);
         }
         return;
       }
@@ -2657,7 +2816,7 @@ async function pollMoshePlaybackReevaluation() {
       if (token === state.playbackPollToken && playbackAgentStatus) {
         playbackAgentStatus.hidden = false;
         playbackAgentStatus.classList.add("failed");
-        playbackAgentStatus.textContent = "לא ניתן לבדוק את מצב משה";
+        playbackAgentStatus.textContent = activeLocaleText("לא ניתן לבדוק את הסטטוס של משה", "Unable to check Moshe's status");
       }
       return;
     }
@@ -2674,12 +2833,12 @@ function appendMoshePlaybackAssessment(assessment = {}) {
     `<div class="answer-body">
       ${answerHtml(cleanAssistantAnswer(String(assessment.answer || "")))}
       ${hasRequestedResults ? `<div class="final-answer-actions">
-        <button type="button" class="final-answer-show-btn layers-hidden" data-source-id="${escapeHtml(finalSourceId(result))}" title="הצג תוצאות" aria-label="הצג תוצאות" aria-pressed="false">
-          <span class="final-answer-show-label">הצג תוצאות</span>
+        <button type="button" class="final-answer-show-btn layers-hidden" data-source-id="${escapeHtml(finalSourceId(result))}" title="${escapeHtml(activeLocaleText("הצג תוצאות", "Show results"))}" aria-label="${escapeHtml(activeLocaleText("הצג תוצאות", "Show results"))}" aria-pressed="false">
+          <span class="final-answer-show-label">${escapeHtml(activeLocaleText("הצג תוצאות", "Show results"))}</span>
         </button>
       </div>` : ""}
     </div>`,
-    { label: MOSHE_MESSAGE_LABEL, memberId: MOSHE_MEMBER_ID }
+    { label: MOSHE_MESSAGE_LABEL[currentLocale()], memberId: MOSHE_MEMBER_ID }
   );
   const button = article.querySelector(".final-answer-show-btn");
   if (button) {
@@ -2705,10 +2864,11 @@ async function advanceInvestigationPlayback() {
         investigation_id: state.investigationId,
         expected_revision: run?.revision,
         idempotency_key: `playback:${state.investigationId}:${run?.revision || 0}:${Date.now()}`,
+        locale: currentLocale(),
       }),
     });
     const result = await response.json();
-    if (!response.ok) throw new Error(result.error || "התקדמות התרחיש נכשלה");
+    if (!response.ok) throw new Error(result.error || "Failed to advance playback");
     state.investigationPlayback = {
       ...state.investigationPlayback,
       investigation_id: state.investigationId,
@@ -2716,17 +2876,20 @@ async function advanceInvestigationPlayback() {
       run: result.run,
     };
     renderInvestigationPlayback();
+    await reloadOpenCatalogLayers();
     if (result.moshe_triggered) {
-      workstreamMessage("<p>הטווח עודכן. משה מעבד כעת את פרוסת המידע החדשה מול המעקבים הפעילים.</p>");
+      workstreamMessage(`<p>${activeLocaleText("טווח הזמן עודכן. משה מעבד עכשיו את פרוסת המידע החדשה מול המעקבים הפעילים.", "The timeframe was updated. Moshe is now processing the new information slice against the active workstreams.")}</p>`);
+    } else if (result.moshe_skipped_reason === "initial_baseline") {
+      workstreamMessage(`<p>${activeLocaleText("טווח הבסיס הופעל. משה לא הופעל עד שתגיע פרוסת המידע הבאה.", "The baseline timeframe is active. Moshe will not be triggered until the next information slice arrives.")}</p>`);
     } else if (result.moshe_skipped_reason === "no_active_workstreams") {
-      workstreamMessage("<p>הטווח עודכן. אין מעקבים פעילים, לכן לא הופעל עיבוד של משה.</p>");
+      workstreamMessage(`<p>${activeLocaleText("טווח הזמן עודכן. אין מעקבים פעילים, ולכן משה לא הופעל.", "The timeframe was updated. There are no active workstreams, so Moshe was not triggered.")}</p>`);
     }
     if (result.run?.reevaluation?.status === "running") {
       void pollMoshePlaybackReevaluation();
     }
   } catch (error) {
     workstreamMessage(
-      `<p>לא הצלחתי להתקדם לשלב הבא.</p><div class="answer-callout">${escapeHtml(error.message)}</div>`
+      `<p>I couldn't advance to the next step.</p><div class="answer-callout">${escapeHtml(error.message)}</div>`
     );
   } finally {
     playbackNextButton.innerHTML = '<span class="material-symbols-rounded" aria-hidden="true">skip_next</span>';
@@ -2735,30 +2898,13 @@ async function advanceInvestigationPlayback() {
 }
 
 async function changeIntelligenceMode() {
-  if (!intelligenceModeSelect) return;
-  const mode = intelligenceModeSelect.value;
-  if (mode !== "real_time") state.playbackPollToken += 1;
-  intelligenceModeSelect.disabled = true;
   try {
-    const response = await fetch("/api/playback/mode", {
-      method: "POST",
-      headers: { "Content-Type": "application/json; charset=utf-8" },
-      body: JSON.stringify({
-        investigation_id: state.investigationId,
-        mode,
-      }),
-    });
-    const payload = await response.json();
-    if (!response.ok) throw new Error(payload.error || "שינוי מצב המידע נכשל");
-    state.investigationPlayback = payload;
-    renderInvestigationPlayback();
+    await initializeStagedPlayback();
   } catch (error) {
     renderInvestigationPlayback();
     workstreamMessage(
-      `<p>לא הצלחתי לשנות את מצב המידע.</p><div class="answer-callout">${escapeHtml(error.message)}</div>`
+      `<p>${activeLocaleText("לא הצלחתי להפעיל את הניגון המדורג.", "I couldn't initialize staged playback.")}</p><div class="answer-callout">${escapeHtml(error.message)}</div>`
     );
-  } finally {
-    intelligenceModeSelect.disabled = false;
   }
 }
 
@@ -2767,16 +2913,16 @@ function workstreamAgent(workstream) {
 }
 
 const WORKSTREAM_ARTIFACT_STATUS_LABELS = {
-  active: "פעיל",
-  ready_for_assessment: "מוכן להערכה",
-  rejected: "נדחה",
-  closed: "סגור"
+  active: "Active",
+  ready_for_assessment: "Ready for assessment",
+  rejected: "Rejected",
+  closed: "Closed"
 };
 
 const INDICATION_ROLE_LABELS = {
-  supports: "תומכת",
-  contradicts: "סותרת",
-  context: "הקשר"
+  supports: "Supports",
+  contradicts: "Contradicts",
+  context: "Context"
 };
 
 function workstreamArtifactHtml(workstream) {
@@ -2784,27 +2930,27 @@ function workstreamArtifactHtml(workstream) {
   const artifact = artifacts.find(item => item.artifact_type === "target_assessment_lead"
     && !["closed", "rejected"].includes(item.status))
     || artifacts.find(item => item.artifact_type === "target_assessment_lead");
-  if (!artifact) return '<p class="workstream-message-meta">עדיין אין הובלה להערכה במעקב.</p>';
+  if (!artifact) return `<p class="workstream-message-meta">${escapeHtml(activeLocaleText("עדיין אין הובלה להערכה במעקב.", "There is no assessment lead in this workstream yet."))}</p>`;
   const content = artifact.content || {};
   const activeIndications = (content.indications || []).filter(item => item.state !== "removed");
   const indications = activeIndications.length
     ? `<ul>${activeIndications.map(item => {
         const reference = item.source_reference || {};
         const detail = item.annotation || item.relevance || item.observed_claim || "";
-        return `<li><strong>${escapeHtml(reference.record_id || "")}</strong> · ${escapeHtml(INDICATION_ROLE_LABELS[item.role] || item.role || "הקשר")}${detail ? ` — ${escapeHtml(detail)}` : ""}</li>`;
+        return `<li><strong>${escapeHtml(reference.record_id || "")}</strong> · ${escapeHtml(INDICATION_ROLE_LABELS[item.role] || item.role || activeLocaleText("הקשר", "Context"))}${detail ? ` — ${escapeHtml(detail)}` : ""}</li>`;
       }).join("")}</ul>`
-    : "<p>אין אינדיקציות פעילות.</p>";
+    : `<p>${escapeHtml(activeLocaleText("אין אינדיקציות פעילות.", "No active indications."))}</p>`;
   const gaps = (content.gaps || []).length
-    ? `<p><strong>פערים:</strong> ${escapeHtml(content.gaps.join(" · "))}</p>`
-    : "<p><strong>פערים:</strong> לא נרשמו</p>";
+    ? `<p><strong>${escapeHtml(activeLocaleText("פערים:", "Gaps:"))}</strong> ${escapeHtml(content.gaps.join(" · "))}</p>`
+    : `<p><strong>${escapeHtml(activeLocaleText("פערים:", "Gaps:"))}</strong> ${escapeHtml(activeLocaleText("לא נרשמו", "None recorded"))}</p>`;
   const questions = (content.assessment_questions || []).length
-    ? `<p><strong>שאלות להערכה:</strong> ${escapeHtml(content.assessment_questions.join(" · "))}</p>`
+    ? `<p><strong>${escapeHtml(activeLocaleText("שאלות להערכה:", "Assessment questions:"))}</strong> ${escapeHtml(content.assessment_questions.join(" · "))}</p>`
     : "";
   return `
     <section class="workstream-artifact-summary">
-      <p><strong>הובלה להערכה:</strong> ${escapeHtml(content.lead_statement || "ללא ניסוח")}</p>
-      <p class="workstream-message-meta">סטטוס: ${escapeHtml(WORKSTREAM_ARTIFACT_STATUS_LABELS[artifact.status] || artifact.status || "לא ידוע")} · גרסה: ${Number(artifact.revision || 0).toLocaleString("he-IL")}</p>
-      <p><strong>אינדיקציות:</strong></p>
+      <p><strong>${escapeHtml(activeLocaleText("הובלה להערכה:", "Assessment lead:"))}</strong> ${escapeHtml(content.lead_statement || activeLocaleText("ללא ניסוח", "No wording"))}</p>
+      <p class="workstream-message-meta">${escapeHtml(activeLocaleText("סטטוס", "Status"))}: ${escapeHtml(WORKSTREAM_ARTIFACT_STATUS_LABELS[artifact.status] || artifact.status || activeLocaleText("לא ידוע", "Unknown"))} · ${escapeHtml(activeLocaleText("גרסה", "Revision"))}: ${Number(artifact.revision || 0).toLocaleString(currentLocaleTag())}</p>
+      <p><strong>${escapeHtml(activeLocaleText("אינדיקציות:", "Indications:"))}</strong></p>
       ${indications}
       ${gaps}
       ${questions}
@@ -2812,7 +2958,7 @@ function workstreamArtifactHtml(workstream) {
 }
 
 function normalizedWorkstreamSummaryText(value) {
-  return String(value || "").replace(/\s+/g, " ").trim().toLocaleLowerCase("he-IL");
+  return String(value || "").replace(/\s+/g, " ").trim().toLocaleLowerCase(currentLocaleTag());
 }
 
 function workstreamResultSourceId(workstreamId) {
@@ -2820,8 +2966,6 @@ function workstreamResultSourceId(workstreamId) {
 }
 
 function workstreamHasPresentation(workstream) {
-  const targetIds = Array.isArray(workstream.target_ids) ? workstream.target_ids : [];
-  if (targetIds.some(targetId => String(targetId || "").trim())) return true;
   const artifacts = Array.isArray(workstream.artifacts) ? workstream.artifacts : [];
   return artifacts.some(artifact =>
     artifact.artifact_type === "target_assessment_lead"
@@ -2842,43 +2986,31 @@ async function toggleWorkstreamResultVisibility(workstreamId, btn) {
   await showWorkstreamResultVisibility(workstreamId, btn);
 }
 
-async function fetchWorkstreamPresentation(workstreamId) {
-  const response = await fetch(
-    `/api/workstreams/${encodeURIComponent(workstreamId)}/presentation`,
-    { cache: "no-store" }
-  );
-  const result = await response.json();
-  if (!response.ok) throw new Error(result.error || "טעינת תוצאות המעקב נכשלה");
-  return result;
-}
-
 async function resetInvestigationPlayback() {
   if (!playbackResetButton || playbackResetButton.disabled) return;
   state.playbackPollToken += 1;
   playbackResetButton.disabled = true;
   playbackResetButton.innerHTML = '<span class="material-symbols-rounded" aria-hidden="true">progress_activity</span>';
   try {
-    const response = await fetch("/api/playback/mode", {
-      method: "POST",
-      headers: { "Content-Type": "application/json; charset=utf-8" },
-      body: JSON.stringify({
-        investigation_id: state.investigationId,
-        mode: "real_time",
-        reset: true,
-      }),
-    });
-    const payload = await response.json();
-    if (!response.ok) throw new Error(payload.error || "איפוס התרחיש נכשל");
-    state.investigationPlayback = payload;
-    renderInvestigationPlayback();
+    await initializeStagedPlayback({ reset: true });
   } catch (error) {
     workstreamMessage(
-      `<p>לא הצלחתי לאפס לפרוסת הזמן הראשונה.</p><div class="answer-callout">${escapeHtml(error.message)}</div>`
+      `<p>${activeLocaleText("לא הצלחתי לאפס לפרוסת הזמן הראשונה.", "I couldn't reset to the initial time slice.")}</p><div class="answer-callout">${escapeHtml(error.message)}</div>`
     );
   } finally {
     playbackResetButton.innerHTML = '<span class="material-symbols-rounded" aria-hidden="true">refresh</span>';
     renderInvestigationPlayback();
   }
+}
+
+async function fetchWorkstreamPresentation(workstreamId) {
+  const response = await fetch(
+    `/api/workstreams/${encodeURIComponent(workstreamId)}/presentation?locale=${encodeURIComponent(currentLocale())}`,
+    { cache: "no-store" }
+  );
+  const result = await response.json();
+  if (!response.ok) throw new Error(result.error || activeLocaleText("טעינת תוצאות המעקב נכשלה", "Failed to load workstream results"));
+  return result;
 }
 
 async function showWorkstreamResultVisibility(workstreamId, btn) {
@@ -2888,19 +3020,19 @@ async function showWorkstreamResultVisibility(workstreamId, btn) {
     const result = await fetchWorkstreamPresentation(workstreamId);
     state.layers = state.layers.filter(layer => layer.sourceId !== sourceId);
     const layers = buildTypedResultLayers(result);
-    if (!layers.length) throw new Error("אין למעקב תוצאות שניתן להציג");
+    if (!layers.length) throw new Error(activeLocaleText("אין למעקב תוצאות שניתן להציג", "This workstream has no results that can be displayed"));
     addResultLayers({
       sourceId,
-      sourceLabel: result.title || "תוצאות מעקב",
+      sourceLabel: result.title || activeLocaleText("תוצאות מעקב", "Workstream results"),
       preferredView: "map",
       layers
     });
     state.rawOverlayMinimized = false;
-    activateView("map", { reason: "תוצאות המעקב" });
+    activateView("map", { reason: activeLocaleText("תוצאות המעקב", "Workstream results") });
     renderAllViews();
   } catch (error) {
     workstreamMessage(
-      `<p>לא הצלחתי להציג את תוצאות המעקב.</p><div class="answer-callout">${escapeHtml(error.message)}</div>`
+      `<p>${escapeHtml(activeLocaleText("לא הצלחתי להציג את תוצאות המעקב.", "I couldn't display the workstream results."))}</p><div class="answer-callout">${escapeHtml(error.message)}</div>`
     );
   } finally {
     if (btn) btn.disabled = false;
@@ -2932,12 +3064,12 @@ async function showRecordedWorkstreamPresentation(recording, btn = null) {
   }
   addResultLayers({
     sourceId,
-    sourceLabel: presentation.title || recording?.workstream?.title || "תוצאות מעקב",
+    sourceLabel: presentation.title || recording?.workstream?.title || activeLocaleText("תוצאות מעקב", "Workstream results"),
     preferredView: layers[0]?.preferredView || "map",
     layers
   });
   state.rawOverlayMinimized = false;
-  activateView(layers[0]?.preferredView || "map", { reason: "תוצאות מעקב מוקלטות" });
+  activateView(layers[0]?.preferredView || "map", { reason: activeLocaleText("תוצאות מעקב מוקלטות", "Recorded workstream results") });
   renderAllViews();
   if (btn) updateSourceVisibilityBtn(btn);
 }
@@ -2962,7 +3094,7 @@ function appendWorkstreamUpdate(workstream, options = {}) {
   const agent = workstreamAgent(workstream);
   const assignment = (workstream.assignments || []).find(item => item.status === "active")
     || (workstream.assignments || [])[0];
-  const title = String(workstream.title || "מעקב").trim();
+  const title = String(workstream.title || activeLocaleText("מעקב", "Workstream")).trim();
   const objective = String(workstream.objective || "").trim();
   const responsibility = String(assignment?.responsibility || "").trim();
   const renderedValues = new Set([normalizedWorkstreamSummaryText(title)]);
@@ -2975,22 +3107,22 @@ function appendWorkstreamUpdate(workstream, options = {}) {
   const objectiveHtml = distinctDetail(objective, value => `<p>${escapeHtml(value)}</p>`);
   const responsibilityHtml = distinctDetail(
     responsibility,
-    value => `<p class="workstream-message-meta">אחריות: ${escapeHtml(value)}</p>`
+    value => `<p class="workstream-message-meta">${escapeHtml(activeLocaleText("אחריות", "Responsibility"))}: ${escapeHtml(value)}</p>`
   );
   const hasRecordedPresentation = options.recorded
     && (Boolean(options.recording?.presentation) || workstreamHasPresentation(workstream));
   const message = workstreamMessage(`
-    <p class="workstream-message-title">עדכון מעקב — ${escapeHtml(title)}</p>
+    <p class="workstream-message-title">${escapeHtml(activeLocaleText("עדכון מעקב", "Workstream update"))} — ${escapeHtml(title)}</p>
     ${objectiveHtml}
     ${responsibilityHtml}
     ${workstreamArtifactHtml(workstream)}
     <div class="workstream-message-actions">
-      ${!options.recorded && workstreamHasPresentation(workstream) ? `<button type="button" class="final-answer-show-btn layers-hidden" data-workstream-results="${escapeHtml(workstream.workstream_id)}" data-source-id="${escapeHtml(workstreamResultSourceId(workstream.workstream_id))}" title="הצג תוצאות" aria-label="הצג תוצאות" aria-pressed="false"><span class="final-answer-show-label">הצג תוצאות</span></button>` : ""}
-      ${hasRecordedPresentation ? `<button type="button" class="final-answer-show-btn layers-hidden" data-recorded-workstream-results data-source-id="${escapeHtml(workstreamResultSourceId(workstream.workstream_id))}" title="הצג תוצאות" aria-label="הצג תוצאות" aria-pressed="false"><span class="final-answer-show-label">הצג תוצאות</span></button>` : ""}
-      <button type="button" class="final-answer-save-btn" data-workstream-save="${escapeHtml(workstream.workstream_id)}" ${options.recorded ? "disabled" : ""}>${options.recorded ? "נשמר" : "שמור הקלטה"}</button>
-      ${!options.recorded ? `<button type="button" class="danger-button" data-workstream-archive="${escapeHtml(workstream.workstream_id)}">העברה לארכיון</button>` : ""}
+      ${!options.recorded && workstreamHasPresentation(workstream) ? `<button type="button" class="final-answer-show-btn layers-hidden" data-workstream-results="${escapeHtml(workstream.workstream_id)}" data-source-id="${escapeHtml(workstreamResultSourceId(workstream.workstream_id))}" title="${escapeHtml(activeLocaleText("הצג תוצאות", "Show results"))}" aria-label="${escapeHtml(activeLocaleText("הצג תוצאות", "Show results"))}" aria-pressed="false"><span class="final-answer-show-label">${escapeHtml(activeLocaleText("הצג תוצאות", "Show results"))}</span></button>` : ""}
+      ${hasRecordedPresentation ? `<button type="button" class="final-answer-show-btn layers-hidden" data-recorded-workstream-results data-source-id="${escapeHtml(workstreamResultSourceId(workstream.workstream_id))}" title="${escapeHtml(activeLocaleText("הצג תוצאות", "Show results"))}" aria-label="${escapeHtml(activeLocaleText("הצג תוצאות", "Show results"))}" aria-pressed="false"><span class="final-answer-show-label">${escapeHtml(activeLocaleText("הצג תוצאות", "Show results"))}</span></button>` : ""}
+      <button type="button" class="final-answer-save-btn" data-workstream-save="${escapeHtml(workstream.workstream_id)}" ${options.recorded ? "disabled" : ""}>${options.recorded ? activeLocaleText("נשמר", "Saved") : activeLocaleText("שמור הקלטה", "Save recording")}</button>
+      ${!options.recorded ? `<button type="button" class="danger-button" data-workstream-archive="${escapeHtml(workstream.workstream_id)}">${escapeHtml(activeLocaleText("העברה לארכיון", "Archive"))}</button>` : ""}
     </div>`, {
-      label: agent ? `${agent.display_name} · עדכון מעקב` : "עדכון מעקב",
+      label: agent ? `${agent.display_name} · ${activeLocaleText("עדכון מעקב", "Workstream update")}` : activeLocaleText("עדכון מעקב", "Workstream update"),
       memberId: agent?.participant_id,
     });
   message.dataset.workstreamUpdateId = workstream.workstream_id;
@@ -3013,20 +3145,20 @@ async function showWorkstreamUpdate(workstreamId) {
       );
     }
   } catch (error) {
-    workstreamMessage(`<p>לא הצלחתי לטעון את עדכון המעקב.</p><div class="answer-callout">${escapeHtml(error.message)}</div>`);
+    workstreamMessage(`<p>${escapeHtml(activeLocaleText("לא הצלחתי לטעון את עדכון המעקב.", "I couldn't load the workstream update."))}</p><div class="answer-callout">${escapeHtml(error.message)}</div>`);
   }
 }
 
 async function archiveWorkstreamFromChat(workstreamId) {
   try {
-    const response = await fetch(`/api/workstreams/${encodeURIComponent(workstreamId)}/archive`, { method: "POST" });
+    const response = await fetch(`/api/workstreams/${encodeURIComponent(workstreamId)}/archive?locale=${encodeURIComponent(currentLocale())}`, { method: "POST" });
     const archived = await response.json();
-    if (!response.ok) throw new Error(archived.error || "העברת המעקב לארכיון נכשלה");
+    if (!response.ok) throw new Error(archived.error || activeLocaleText("העברת המעקב לארכיון נכשלה", "Failed to archive workstream"));
     state.workstreams = state.workstreams.map(item => item.workstream_id === workstreamId ? archived : item);
     renderWorkstreamIndicator();
-    workstreamMessage(`<p>המעקב <strong>${escapeHtml(archived.title || "")}</strong> הועבר לארכיון.</p>`);
+    workstreamMessage(`<p>${escapeHtml(activeLocaleText("המעקב", "The workstream"))} <strong>${escapeHtml(archived.title || "")}</strong> ${escapeHtml(activeLocaleText("הועבר לארכיון.", "was archived."))}</p>`);
   } catch (error) {
-    workstreamMessage(`<p>לא הצלחתי להעביר את המעקב לארכיון.</p><div class="answer-callout">${escapeHtml(error.message)}</div>`);
+    workstreamMessage(`<p>${escapeHtml(activeLocaleText("לא הצלחתי להעביר את המעקב לארכיון.", "I couldn't archive the workstream."))}</p><div class="answer-callout">${escapeHtml(error.message)}</div>`);
   }
 }
 
@@ -3037,7 +3169,7 @@ function startAssistantResearchMessage(message = "") {
   article.innerHTML = `
     <div class="message-label">${escapeHtml(assistantMessageLabel())}</div>
     <section class="research-process research-process-live">
-      <h3>תהליך המחקר</h3>
+      <h3>${escapeHtml(activeLocaleText("תהליך המחקר", "Research process"))}</h3>
       <ol class="activity-list"></ol>
       <div class="activity-empty">${message ? escapeHtml(message) : thinkingIndicatorHtml()}</div>
     </section>`;
@@ -3075,13 +3207,13 @@ function finalizeAssistantMessage(answer, options = {}) {
   const research = article.querySelector(".research-process");
   const details = document.createElement("details");
   details.className = "research-steps-toggle";
-  details.innerHTML = `<summary>תהליך המחקר${stepsCount ? ` · ${stepsCount} צעדים` : ""}</summary>`;
+  details.innerHTML = `<summary>${escapeHtml(activeLocaleText("תהליך המחקר", "Research process"))}${stepsCount ? ` · ${stepsCount} ${escapeHtml(activeLocaleText("צעדים", "steps"))}` : ""}</summary>`;
   if (existingList && stepsCount) {
     details.appendChild(existingList);
   } else {
     const empty = document.createElement("div");
     empty.className = "activity-empty";
-    empty.textContent = "לא התקבל פירוט צעדי מחקר.";
+    empty.textContent = activeLocaleText("לא התקבל פירוט צעדי מחקר.", "No research-step details were received.");
     details.appendChild(empty);
   }
   if (research) research.replaceWith(details);
@@ -3095,11 +3227,11 @@ function finalizeAssistantMessage(answer, options = {}) {
     const finalId = finalSourceId(options.result);
     const hasRequestedResults = buildTypedResultLayers(options.result).length > 0;
     actions.innerHTML = `
-      ${hasRequestedResults ? `<button type="button" class="final-answer-show-btn layers-hidden" data-source-id="${escapeHtml(finalId)}" title="הצג תוצאות" aria-label="הצג תוצאות" aria-pressed="false">
-        <span class="final-answer-show-label">הצג תוצאות</span>
+      ${hasRequestedResults ? `<button type="button" class="final-answer-show-btn layers-hidden" data-source-id="${escapeHtml(finalId)}" title="${escapeHtml(activeLocaleText("הצג תוצאות", "Show results"))}" aria-label="${escapeHtml(activeLocaleText("הצג תוצאות", "Show results"))}" aria-pressed="false">
+        <span class="final-answer-show-label">${escapeHtml(activeLocaleText("הצג תוצאות", "Show results"))}</span>
       </button>` : ""}
-      <button type="button" class="final-answer-save-btn" ${options.result.saved_question_id ? "disabled" : ""}>${options.result.saved_question_id ? "נשמר" : "שמור הקלטה"}</button>
-      <button type="button" class="final-answer-memory-btn" ${options.result.investigation_memory_summary_id ? "disabled" : ""}>${options.result.investigation_memory_summary_id ? "נשמר בזיכרון" : "שמור לזיכרון"}</button>
+      <button type="button" class="final-answer-save-btn" ${options.result.saved_question_id ? "disabled" : ""}>${options.result.saved_question_id ? activeLocaleText("נשמר", "Saved") : activeLocaleText("שמור הקלטה", "Save run")}</button>
+      <button type="button" class="final-answer-memory-btn" ${options.result.investigation_memory_summary_id ? "disabled" : ""}>${options.result.investigation_memory_summary_id ? activeLocaleText("נשמר בזיכרון", "Saved to memory") : activeLocaleText("שמור לזיכרון", "Save to memory")}</button>
     `;
     const finalShowBtn = actions.querySelector(".final-answer-show-btn");
     if (finalShowBtn) {
@@ -3153,34 +3285,36 @@ function toggleFinalAnswerVisibility(result, prompt, btn) {
 }
 
 const TOOL_LABELS = {
-  classify_question_intent: "סיווג כוונת השאלה",
-  resolve_location: "הבנת המקום",
-  resolve_event_reference: "זיהוי אירוע העוגן",
-  search_events: "חיפוש ממוקד במאגר",
-  semantic_search_events: "חיפוש סמנטי במאגר",
-  get_objects: "שליפת אובייקטים",
-  find_actor_history: "בדיקת היסטוריית גורם",
-  aggregate_events: "זיהוי ריכוזים",
-  explain_linkage: "בדיקת גשר ראייתי",
-  build_event_sequence: "בניית רצף האירועים",
-  resolve_entity: "פתרון שמות וכינויים",
-  trace_identifier: "מעקב אחר מזהה חוזר",
-  trace_semantic_clues: "מעקב אחר רמזים סמנטיים",
-  plan_next_investigation_step: "בקרת תהליך החקירה",
-  find_related_events: "הרחבת מעגל הראיות",
-  challenge_hypothesis: "בדיקת ההשערה מול חלופות",
-  prepare_target_candidate: "הכנת מועמד מטרה",
-  find_duplicate_target_candidates: "בדיקת כפילות מטרה",
-  search_target_candidates: "חיפוש מועמדי מטרות",
-  get_target_candidate: "שליפת מועמד מטרה",
-  create_target_candidate: "יצירת מועמד מטרה",
-  update_target_candidate: "עדכון מועמד מטרה",
-  attach_target_evidence: "צירוף ראיות למטרה"
+  classify_question_intent: "Question intent classification",
+  resolve_location: "Location resolution",
+  resolve_event_reference: "Anchor event identification",
+  search_events: "Focused dataset search",
+  semantic_search_events: "Semantic dataset search",
+  get_objects: "Object retrieval",
+  find_actor_history: "Actor history check",
+  aggregate_events: "Cluster identification",
+  explain_linkage: "Evidence bridge check",
+  build_event_sequence: "Event sequence building",
+  resolve_entity: "Name and alias resolution",
+  trace_identifier: "Recurring identifier trace",
+  trace_semantic_clues: "Semantic clue tracing",
+  plan_next_investigation_step: "Investigation flow control",
+  find_related_events: "Evidence expansion",
+  challenge_hypothesis: "Hypothesis challenge",
+  prepare_target_candidate: "Target candidate preparation",
+  find_duplicate_target_candidates: "Target duplicate check",
+  search_target_candidates: "Target candidate search",
+  get_target_candidate: "Target candidate retrieval",
+  create_target_candidate: "Target candidate creation",
+  update_target_candidate: "Target candidate update",
+  attach_target_evidence: "Attach evidence to target"
 };
 
 function humanToolLabel(tool) {
   const clean = String(tool || "").replace(/^\d+\.\s*/, "");
-  return TOOL_LABELS[clean] || "פעולת חקירה";
+  if (TOOL_LABELS[clean]) return TOOL_LABELS[clean];
+  const readable = clean.replace(/[_-]+/g, " ").trim();
+  return readable ? readable.charAt(0).toUpperCase() + readable.slice(1) : "Investigation action";
 }
 
 function formatTechnical(technical, fallbackTool) {
@@ -3224,6 +3358,41 @@ function buildFinalQueryContext(result, prompt) {
   };
 }
 
+function resolveFinalResultView(result = {}, layers = []) {
+  const requestedView = ["map", "timeline"].includes(result.recommended_view)
+    ? result.recommended_view
+    : layers.find(layer => ["map", "timeline"].includes(layer.preferredView))?.preferredView;
+  if (["map", "timeline"].includes(requestedView)) return requestedView;
+  if (layers.some(layer => layer.capabilities?.map)) return "map";
+  if (layers.some(layer => layer.capabilities?.timeline)) return "timeline";
+  return "map";
+}
+
+function presentFinalAgentResult(result, prompt, options = {}) {
+  const typedLayers = buildTypedResultLayers(result);
+  const requestedView = resolveFinalResultView(result, typedLayers);
+  state.queryContext = buildFinalQueryContext(result, prompt);
+  const addedLayers = addResultLayers({
+    sourceId: finalSourceId(result),
+    sourceLabel: result.responding_agent === "moshe" ? activeLocaleText("תשובת משה", "Moshe response") : activeLocaleText("תשובת הסוכן", "Agent response"),
+    preferredView: requestedView,
+    layers: typedLayers
+  });
+  if (options.showSummary) {
+    showResult(
+      activeLocaleText("ממצאי הסוכן", "Agent findings"),
+      localizedRestoreOnlySummary(addedLayers.length)
+    );
+  }
+  activateView(requestedView, {
+    automatic: true,
+    reason: result.view_reason || activeLocaleText("הנתונים נבחרו כתשובה לבקשת המשתמש", "Data selected as the answer to the user's request")
+  });
+  renderAllViews();
+  renderQueryInspector();
+  return addedLayers;
+}
+
 function buildStepQueryContext(step, label) {
   return {
     mode: "step",
@@ -3241,7 +3410,7 @@ function activeLayer() {
 function queryReadoutForLayer(layer) {
   if (!state.queryContext) {
     return {
-      tool: "אין שאילתה פעילה",
+      tool: activeLocaleText("אין שאילתה פעילה", "No active query"),
       text: "",
       available: false
     };
@@ -3275,7 +3444,7 @@ function renderQueryInspector() {
   const button = document.getElementById("queryToolName");
   if (!button) return;
   const layer = activeLayer();
-  if (queryLayerName) queryLayerName.textContent = LAYER_QUERY_LABELS[layer] || "שכבת אירועים גולמיים";
+  if (queryLayerName) queryLayerName.textContent = layerQueryLabels()[layer] || activeLocaleText("שכבת אירועים גולמיים", "Raw events layer");
   const readout = queryReadoutForLayer(layer);
   button.textContent = readout.tool;
   button.disabled = !readout.available;
@@ -3347,7 +3516,7 @@ const stepInjectError = document.getElementById("stepInjectError");
 
 function openStepInjectModal(stepLabel, stepNumber) {
   stepInjectModal.dataset.fromStep = stepNumber;
-  stepInjectTitle.textContent = `צעד ${stepNumber}: ${stepLabel}`;
+  stepInjectTitle.textContent = activeLocaleText(`צעד ${stepNumber}: ${stepLabel}`, `Step ${stepNumber}: ${stepLabel}`);
   stepInjectPrompt.value = "";
   syncMentionHighlight(stepInjectPrompt);
   stepInjectError.hidden = true;
@@ -3360,11 +3529,11 @@ function openStepInjectModal(stepLabel, stepNumber) {
       <input type="checkbox" value="${escapeHtml(layer.id)}" checked>
       <span class="step-inject-layer-color"></span>
       <span class="step-inject-layer-name">${escapeHtml(layer.label)}</span>
-      <span class="step-inject-layer-count">${itemsForLayerPresentation(layer).length.toLocaleString("he-IL")}</span>
+      <span class="step-inject-layer-count">${itemsForLayerPresentation(layer).length.toLocaleString("en-US")}</span>
     </label>`).join("");
 
   stepInjectSubmit.disabled = false;
-  stepInjectSubmit.textContent = "שלח להמשך חקירה";
+  stepInjectSubmit.textContent = activeLocaleText("שלח להמשך חקירה", "Send to continue investigation");
   stepInjectModal.hidden = false;
   stepInjectPrompt.focus();
 }
@@ -3385,20 +3554,20 @@ function originalClassificationContext(steps) {
 }
 
 function buildContinuationPrompt(instruction, selectedLayers, classificationContext = null) {
-  const lines = [`הוראה מהמשתמש: ${instruction}`];
+  const lines = [`User instruction: ${instruction}`];
   if (classificationContext?.summary) {
     lines.push(
-      "\nמסגרת החקירה המקורית לשימור:",
+      "\nOriginal investigation frame to preserve:",
       classificationContext.summary,
-      "אין לסווג מחדש את השאלה. המשך לפי אותו recommended_mode ואותו tool_budget שנקבעו בסיווג המקורי."
+      "Do not reclassify the question. Continue with the same recommended_mode and tool_budget set by the original classification."
     );
   }
   if (selectedLayers.length) {
-    lines.push("\nשכבות שנבחרו להמשך:");
+    lines.push("\nLayers selected for continuation:");
     selectedLayers.forEach(layer => {
       const items = itemsForLayerPresentation(layer);
       const eventIds = items.map(item => item.event_id).filter(Boolean).slice(0, 100);
-      lines.push(`- ${layer.label}: ${items.length} רשומות${eventIds.length ? `, מזהים: ${eventIds.join(", ")}` : ""}`);
+      lines.push(`- ${layer.label}: ${items.length} records${eventIds.length ? `, IDs: ${eventIds.join(", ")}` : ""}`);
     });
   }
   return lines.join("\n");
@@ -3407,12 +3576,12 @@ function buildContinuationPrompt(instruction, selectedLayers, classificationCont
 async function submitStepInject() {
   const instruction = stepInjectPrompt.value.trim();
   if (!instruction) {
-    stepInjectError.textContent = "יש להזין הוראה לסוכן.";
+    stepInjectError.textContent = "Enter an instruction for the agent.";
     stepInjectError.hidden = false;
     return;
   }
   if (state.busy) {
-    stepInjectError.textContent = "חקירה כבר פעילה — המתן לסיומה.";
+    stepInjectError.textContent = "An investigation is already running — wait for it to finish.";
     stepInjectError.hidden = false;
     return;
   }
@@ -3423,7 +3592,7 @@ async function submitStepInject() {
   const selectedLayers = state.layers.filter(l => checkedIds.has(l.id));
 
   stepInjectSubmit.disabled = true;
-  stepInjectSubmit.textContent = "שולח...";
+  stepInjectSubmit.textContent = "Sending...";
   stepInjectError.hidden = true;
   closeStepInjectModal();
 
@@ -3475,7 +3644,7 @@ async function submitStepInject() {
             isError: step.technical?.is_error,
             stepData: step,
             sourceId: stepSourceId(state.investigationId, num),
-            sourceLabel: `צעד ${num}: ${humanToolLabel(step.tool)}`
+            sourceLabel: `Step ${num}: ${humanToolLabel(step.tool)}`
           });
         });
         liveStepCount = steps.length;
@@ -3499,7 +3668,8 @@ async function submitStepInject() {
           original_classification: classificationContext,
           from_step: fromStep || null
         },
-        is_continuation: true
+        is_continuation: true,
+        locale: currentLocale()
       })
     });
     const result = await response.json();
@@ -3511,8 +3681,8 @@ async function submitStepInject() {
     result.investigation_steps = [...priorSteps, ...newSteps];
     applyAgentResult(result, continuationPrompt, { keepRenderedSteps: true });
   } catch (error) {
-    addActivity("connection_error", "לא ניתן היה להשלים את המשך החקירה.", error.message);
-    finalizeAssistantMessage(`<p>לא הצלחתי להשלים את המשך החקירה.</p><div class="answer-callout">${escapeHtml(error.message)}</div>`, { html: true });
+    addActivity("connection_error", "Unable to complete the investigation continuation.", error.message);
+    finalizeAssistantMessage(`<p>I couldn't complete the investigation continuation.</p><div class="answer-callout">${escapeHtml(error.message)}</div>`, { html: true });
   } finally {
     if (progressTimer) clearInterval(progressTimer);
     state.busy = false;
@@ -3582,7 +3752,7 @@ function showStepResult(step) {
       timeLabel: group.label || group.key,
       count: Number(group.count || 0),
       sortKey: group.key || group.label,
-      summary: `${Number(group.count || 0).toLocaleString("he-IL")} אירועים`
+      summary: `${Number(group.count || 0).toLocaleString("en-US")} events`
     }));
     state.aggregateGroups = genericGroups;
   } else {
@@ -3603,7 +3773,7 @@ function showStepResult(step) {
   });
   const addedLayers = addResultLayers({
     sourceId: resolvedStepSourceId(step),
-    sourceLabel: step.__sourceLabel || `צעד ${step.__stepNumber || ""}: ${label}`.trim(),
+    sourceLabel: step.__sourceLabel || `Step ${step.__stepNumber || ""}: ${label}`.trim(),
     preferredView: layerFromStep(step),
     layers: candidateLayers
   });
@@ -3617,18 +3787,18 @@ function showStepResult(step) {
     || addedLayers.find(layer => layer.capabilities.table);
   if (preferredStepLayer) state.activeLayerId = preferredStepLayer.id;
   showResult(
-    `צעד: ${label}`,
+    `Step: ${label}`,
     hasData
-      ? `נוספו או הוצגו ${addedLayers.length.toLocaleString("he-IL")} שכבות מהצעד הזה.`
-      : "הצעד הזה לא החזיר נתונים שניתן להציג בתצוגה."
+      ? `${addedLayers.length.toLocaleString("en-US")} layers were added or shown from this step.`
+      : "This step did not return data that can be displayed."
   );
 
   if (state.aggregateTimeline.length) {
-    activateView("timeline", { automatic: true, reason: "צעד עם נתוני זמן" });
+    activateView("timeline", { automatic: true, reason: "Step with time data" });
   } else if (state.aggregateLocations.length || state.locationMetadata.length || state.entityMetadata.length || state.current.some(e => e.location_id)) {
-    activateView("map", { automatic: true, reason: "צעד עם נתוני מיקום" });
+    activateView("map", { automatic: true, reason: "Step with location data" });
   } else {
-    activateView("map", { automatic: true, reason: "צעד עם רשומות" });
+    activateView("map", { automatic: true, reason: "Step with records" });
   }
 
   updateStepVisibilityButtons();
@@ -3643,8 +3813,8 @@ function updateSourceVisibilityBtn(btn) {
   if (icon) icon.classList.toggle("off", !anyVisible);
   const label = btn.querySelector(".step-visibility-label, .final-answer-show-label");
   const actionLabel = label
-    ? (anyVisible ? "הסתר תוצאות" : "הצג תוצאות")
-    : (anyVisible ? "הסתר שכבות" : "הצג שכבות");
+    ? (anyVisible ? activeLocaleText("הסתר תוצאות", "Hide results") : activeLocaleText("הצג תוצאות", "Show results"))
+    : (anyVisible ? activeLocaleText("הסתר שכבות", "Hide layers") : activeLocaleText("הצג שכבות", "Show layers"));
   btn.title = actionLabel;
   btn.setAttribute("aria-label", actionLabel);
   btn.setAttribute("aria-pressed", anyVisible ? "true" : "false");
@@ -3696,7 +3866,7 @@ function addActivity(tool, detail, result, options = {}) {
   item.className = "activity-item";
   const stepNumber = options.stepNumber || state.activeActivityList.children.length + 1;
   const cleanTool = String(tool || "").replace(/^\d+\.\s*/, "");
-  const bridgeSummary = options.bridgeSummary || options.rationale || "הסוכן ממשיך לצעד זה כדי לצמצם את השאלה לפי ההקשר שנאסף עד עכשיו.";
+  const bridgeSummary = options.bridgeSummary || options.rationale || activeLocaleText("הסוכן ממשיך בצעד הזה כדי לצמצם את השאלה לפי ההקשר שנאסף עד כה.", "The agent continues with this step to narrow the question using the context gathered so far.");
   const baseStepData = options.stepData || {
     tool: cleanTool,
     action: detail,
@@ -3706,7 +3876,7 @@ function addActivity(tool, detail, result, options = {}) {
   const stepData = {
     ...baseStepData,
     __sourceId: options.sourceId || baseStepData.__sourceId || stepSourceId(state.lastResult || state.investigationId, stepNumber),
-    __sourceLabel: options.sourceLabel || baseStepData.__sourceLabel || `צעד ${stepNumber}: ${humanToolLabel(cleanTool)}`,
+    __sourceLabel: options.sourceLabel || baseStepData.__sourceLabel || `Step ${stepNumber}: ${humanToolLabel(cleanTool)}`,
     __stepNumber: stepNumber
   };
   const hasStepData = Boolean(stepData);
@@ -3714,38 +3884,41 @@ function addActivity(tool, detail, result, options = {}) {
   const label = humanToolLabel(cleanTool);
   const queryDetails = stepQueryDetails(stepData, label);
   item.innerHTML = `
-    <div class="activity-card-header">
-      <span class="activity-step-number">${stepNumber}</span>
-      <div class="activity-card-title">
-        <strong>${escapeHtml(label)}</strong>
-        <span class="activity-tool">${escapeHtml(cleanTool)}</span>
+    <details class="activity-disclosure">
+      <summary class="activity-card-summary" aria-label="${escapeHtml(activeLocaleText(`פתח פרטי שלב ${stepNumber}: ${label}`, `Expand step ${stepNumber}: ${label}`))}">
+        <span class="activity-step-number">${stepNumber}</span>
+        <strong class="activity-step-title">${escapeHtml(label)}</strong>
+        <span class="material-symbols-rounded activity-expand-icon" aria-hidden="true">expand_more</span>
+      </summary>
+      <div class="activity-expanded">
+        <div class="activity-card-meta">
+          <span class="activity-tool">${escapeHtml(cleanTool)}</span>
+          <span class="activity-status ${options.isError ? "error" : "success"}">${options.isError ? activeLocaleText("נכשל", "Failed") : activeLocaleText("הושלם", "Completed")}</span>
+        </div>
+        <div class="activity-flow">
+          <section class="activity-section rationale-section">
+            <div class="activity-section-label">${activeLocaleText("ניתוח הסוכן והחלטת הצעד הבא", "Agent analysis and next-step decision")}</div>
+            <p class="activity-rationale">${escapeHtml(bridgeSummary)}</p>
+          </section>
+          <section class="activity-section">
+            <div class="activity-section-label">${activeLocaleText("מה נבדק", "What was checked")}</div>
+            <p class="activity-detail">${escapeHtml(detail)}</p>
+          </section>
+          <section class="activity-section result-section">
+            <div class="activity-section-label">${activeLocaleText("מה חזר", "What came back")}</div>
+            <p class="activity-result">${escapeHtml(result)}</p>
+          </section>
+        </div>
+        ${hasStepData ? `
+          <div class="activity-step-actions">
+            <button type="button" class="step-visibility-btn layers-hidden" data-source-id="${escapeHtml(sourceId)}" title="${escapeHtml(activeLocaleText("הצג תוצאות", "Show results"))}" aria-label="${escapeHtml(activeLocaleText("הצג תוצאות", "Show results"))}" aria-pressed="false">
+              <span class="step-visibility-label">${escapeHtml(activeLocaleText("הצג תוצאות", "Show results"))}</span>
+            </button>
+            <button type="button" class="step-query-btn" title="${escapeHtml(activeLocaleText("הצג שאילתה", "Show query"))}">${activeLocaleText("הצג שאילתה", "Show query")}</button>
+            <button type="button" class="step-continue-btn" title="${escapeHtml(activeLocaleText("המשך מהשלב הזה", "Continue from this step"))}">${activeLocaleText("המשך מכאן", "Continue from here")}</button>
+          </div>` : ""}
       </div>
-      <div class="activity-card-actions">
-        <span class="activity-status ${options.isError ? "error" : "success"}">${options.isError ? "נכשל" : "הושלם"}</span>
-      </div>
-    </div>
-    <div class="activity-flow">
-      <section class="activity-section rationale-section">
-        <div class="activity-section-label">ניתוח הסוכן והחלטת המשך</div>
-        <p class="activity-rationale">${escapeHtml(bridgeSummary)}</p>
-      </section>
-      <section class="activity-section">
-        <div class="activity-section-label">מה נבדק</div>
-        <p class="activity-detail">${escapeHtml(detail)}</p>
-      </section>
-      <section class="activity-section result-section">
-        <div class="activity-section-label">מה התקבל</div>
-        <p class="activity-result">${escapeHtml(result)}</p>
-      </section>
-    </div>
-    ${hasStepData ? `
-      <div class="activity-step-actions">
-        <button type="button" class="step-visibility-btn layers-hidden" data-source-id="${escapeHtml(sourceId)}" title="הצג תוצאות" aria-label="הצג תוצאות" aria-pressed="false">
-          <span class="step-visibility-label">הצג תוצאות</span>
-        </button>
-        <button type="button" class="step-query-btn" title="הצג שאילתה">הצג שאילתה</button>
-        <button type="button" class="step-continue-btn" title="המשך מצעד זה">המשך מכאן</button>
-      </div>` : ""}`;
+    </details>`;
   if (hasStepData) {
     const visibilityBtn = item.querySelector(".step-visibility-btn");
     visibilityBtn.addEventListener("click", event => {
@@ -3767,21 +3940,30 @@ function setSuggestions(items) {
   suggestions.innerHTML = items.map(item => `<button type="button" data-prompt="${item}">${item}</button>`).join("");
 }
 
+function localizedRestoreOnlySummary(layerCount) {
+  return layerCount
+    ? activeLocaleText(
+        `${layerCount.toLocaleString(currentLocaleTag())} שכבות נוספו או הוצגו כתשובה.`,
+        `${layerCount.toLocaleString(currentLocaleTag())} layers were added or shown as the answer.`
+      )
+    : activeLocaleText("לא נבחרו נתונים להצגה.", "No data was selected for display.");
+}
+
 function eventText(event) {
   return `${event.event_summary} ${event.entity_name || event.entity_id || ""} ${event.location_name}`;
 }
 
 function answerHtml(text) {
   const normalized = String(text || "")
-    .replace(/(^|\n)(\s*מזהי\s+(?:ראיות|אירועים)\s*:)/m, "\n\n$2")
+    .replace(/(^|\n)(\s*(?:Evidence|Event)\s+IDs\s*:)/m, "\n\n$2")
     .trim();
   const escaped = escapeHtml(normalized);
   if (!escaped) return "<p></p>";
   return escaped.split(/\n{2,}/).map(block => {
     const trimmed = block.trim();
-    const evidenceMatch = trimmed.match(/^מזהי\s+(?:ראיות|אירועים)\s*:\s*(.+)$/s);
+    const evidenceMatch = trimmed.match(/^(?:Evidence|Event)\s+IDs\s*:\s*(.+)$/s);
     if (evidenceMatch) {
-      return `<details class="evidence-ids-toggle"><summary>מזהי ראיות</summary><p>${evidenceMatch[1].replace(/\n/g, "<br>")}</p></details>`;
+      return `<details class="evidence-ids-toggle"><summary>Evidence IDs</summary><p>${evidenceMatch[1].replace(/\n/g, "<br>")}</p></details>`;
     }
     const formatted = trimmed
       .replace(/^###?\s+(.+)$/gm, "<strong>$1</strong>")
@@ -3794,7 +3976,7 @@ function answerHtml(text) {
 
 function cleanAssistantAnswer(text) {
   return String(text || "")
-    .replace(/^\s*שלב חקירה\s*:.*(?:\r?\n|$)/gm, "")
+    .replace(/^\s*Investigation step\s*:.*(?:\r?\n|$)/gm, "")
     .trim();
 }
 
@@ -3805,17 +3987,17 @@ function inferRecommendedView(prompt, answer) {
     if (text.includes(term)) scores[view] += weight;
   });
 
-  scoreTerms("map", ["מפה", "מסלול", "ציר תנועה", "מיקום", "אזור", "מרחק", "מערבית", "מזרח", "כביש", "מעבר"], 2);
-  scoreTerms("timeline", ["רצף", "סדר הזמן", "ציר זמן", "לפני", "אחרי", "עיתוי", "בשעה", "דקות", "התחיל", "הסתיים"], 2);
-  scoreTerms("evidence", ["אירועים גולמיים", "רשומות", "מקורות", "ראיות", "ציטוט", "אימות", "בדוק", "מזהי ראיות"], 2);
+  scoreTerms("map", ["map", "route", "movement path", "location", "area", "distance", "west", "east", "road", "crossing"], 2);
+  scoreTerms("timeline", ["sequence", "time order", "timeline", "before", "after", "timing", "at", "minutes", "started", "ended"], 2);
+  scoreTerms("evidence", ["raw events", "records", "sources", "evidence", "quote", "verification", "check", "evidence ids"], 2);
 
   if (/\b\d{2}:\d{2}\b/.test(text)) scores.timeline += 2;
   if ((answer || "").match(EVENT_ID_PATTERN)?.length >= 6) scores.evidence += 1;
   const view = Object.entries(scores).sort((a, b) => b[1] - a[1])[0][0];
   const reasons = {
-    map: "המיקומים ומסלול התנועה במוקד התשובה",
-    timeline: "רצף האירועים והעיתוי במוקד התשובה",
-    evidence: "בדיקת הראיות והרשומות במוקד התשובה"
+    map: "Locations and movement route are central to the answer",
+    timeline: "Event sequence and timing are central to the answer",
+    evidence: "Evidence and records are central to the answer"
   };
   return { view, reason: reasons[view] };
 }
@@ -3845,7 +4027,7 @@ function renderActivitySteps(steps, sourceBase = null) {
       manageConversationScroll: false,
       stepData: step,
       sourceId: stepSourceId(sourceBase || state.lastResult || state.investigationId, number),
-      sourceLabel: `צעד ${number}: ${humanToolLabel(step.tool)}`
+      sourceLabel: `Step ${number}: ${humanToolLabel(step.tool)}`
     });
   });
   followConversationAfterUpdate(shouldFollow);
@@ -3896,10 +4078,10 @@ function canSaveResultToMemory(result, prompt) {
 }
 
 function formatSavedTime(value) {
-  if (!value) return "זמן שמירה לא ידוע";
+  if (!value) return activeLocaleText("זמן השמירה לא ידוע", "Save time unknown");
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return value;
-  return parsed.toLocaleString("he-IL", {
+  return parsed.toLocaleString(currentLocaleTag(), {
     dateStyle: "short",
     timeStyle: "short",
   });
@@ -3908,8 +4090,8 @@ function formatSavedTime(value) {
 async function saveResultQuestion(result, prompt, button) {
   if (!canSaveResult(result, prompt) || state.busy || button?.disabled) return;
   button.disabled = true;
-  button.textContent = "שומר...";
-  button.title = "שומר את תוצאת החקירה";
+  button.textContent = activeLocaleText("שומר...", "Saving...");
+  button.title = activeLocaleText("שומר את תוצאת החקירה", "Saving the investigation result");
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 15000);
   try {
@@ -3925,21 +4107,23 @@ async function saveResultQuestion(result, prompt, button) {
       }),
     });
     const payload = await response.json();
-    if (!response.ok) throw new Error(payload.error || "שמירת השאלה נכשלה");
+    if (!response.ok) throw new Error(payload.error || activeLocaleText("שמירת השאלה נכשלה", "Failed to save question"));
     result.saved_question_id = payload.id;
     if (state.lastResult === result) state.lastResult = result;
-    button.textContent = "נשמר";
-    button.title = "תוצאת החקירה נשמרה";
+    button.textContent = activeLocaleText("נשמר", "Saved");
+    button.title = activeLocaleText("תוצאת החקירה נשמרה", "Investigation result saved");
     if (!recordedModal.hidden) loadRecordedQuestions();
   } catch (error) {
-    const message = error.name === "AbortError" ? "שמירת השאלה נמשכה יותר מדי זמן. נסה שוב." : error.message;
-    button.textContent = "נכשל";
+    const message = error.name === "AbortError"
+      ? activeLocaleText("שמירת השאלה ארכה יותר מדי זמן. נסו שוב.", "Saving the question took too long. Try again.")
+      : error.message;
+    button.textContent = activeLocaleText("נכשל", "Failed");
     button.title = message;
     setTimeout(() => {
       if (!result.saved_question_id) {
         button.disabled = false;
-        button.textContent = "שמור הקלטה";
-        button.title = "שמור את הקלטת החקירה";
+        button.textContent = activeLocaleText("שמור הקלטה", "Save run");
+        button.title = activeLocaleText("שמור את ריצת החקירה", "Save the investigation run");
       }
     }, 2500);
   } finally {
@@ -3950,8 +4134,8 @@ async function saveResultQuestion(result, prompt, button) {
 async function saveResultToInvestigationMemory(result, prompt, button) {
   if (!canSaveResultToMemory(result, prompt) || state.busy || button?.disabled) return;
   button.disabled = true;
-  button.textContent = "שומר לזיכרון...";
-  button.title = "שומר את הממצא לזיכרון החקירה";
+  button.textContent = activeLocaleText("שומר לזיכרון...", "Saving to memory...");
+  button.title = activeLocaleText("שומר את הממצא לזיכרון החקירה", "Saving the finding to investigation memory");
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 15000);
   try {
@@ -3967,20 +4151,22 @@ async function saveResultToInvestigationMemory(result, prompt, button) {
       }),
     });
     const payload = await response.json();
-    if (!response.ok) throw new Error(payload.error || "שמירה לזיכרון החקירה נכשלה");
+    if (!response.ok) throw new Error(payload.error || activeLocaleText("שמירה לזיכרון החקירה נכשלה", "Failed to save to investigation memory"));
     result.investigation_memory_summary_id = payload.saved?.id || true;
     if (state.lastResult === result) state.lastResult = result;
-    button.textContent = "נשמר בזיכרון";
-    button.title = "הממצא נשמר לזיכרון החקירה";
+    button.textContent = activeLocaleText("נשמר בזיכרון", "Saved to memory");
+    button.title = activeLocaleText("הממצא נשמר בזיכרון החקירה", "Finding saved to investigation memory");
   } catch (error) {
-    const message = error.name === "AbortError" ? "שמירה לזיכרון נמשכה יותר מדי זמן. נסה שוב." : error.message;
-    button.textContent = "נכשל";
+    const message = error.name === "AbortError"
+      ? activeLocaleText("השמירה לזיכרון ארכה יותר מדי זמן. נסו שוב.", "Saving to memory took too long. Try again.")
+      : error.message;
+    button.textContent = activeLocaleText("נכשל", "Failed");
     button.title = message;
     setTimeout(() => {
       if (!result.investigation_memory_summary_id) {
         button.disabled = false;
-        button.textContent = "שמור לזיכרון";
-        button.title = "שמור את הממצא לזיכרון החקירה";
+        button.textContent = activeLocaleText("שמור לזיכרון", "Save to memory");
+        button.title = activeLocaleText("שמור את הממצא לזיכרון החקירה", "Save the finding to investigation memory");
       }
     }, 2500);
   } finally {
@@ -3993,11 +4179,11 @@ async function deleteSavedQuestion(savedId) {
   try {
     const response = await fetch(`/api/saved-question?id=${encodeURIComponent(savedId)}`, { method: "DELETE" });
     const payload = await response.json();
-    if (!response.ok) throw new Error(payload.error || "מחיקת השאלה נכשלה");
+    if (!response.ok) throw new Error(payload.error || activeLocaleText("מחיקת השאלה נכשלה", "Failed to delete question"));
     state.savedQuestions = state.savedQuestions.filter(item => item.id !== savedId);
     loadRecordedQuestions();
   } catch (error) {
-    recordedList.innerHTML = `<div class="activity-empty">מחיקת השאלה השמורה נכשלה: ${escapeHtml(error.message)}</div>`;
+    recordedList.innerHTML = `<div class="activity-empty">${activeLocaleText("מחיקת השאלה השמורה נכשלה", "Failed to delete saved question")}: ${escapeHtml(error.message)}</div>`;
   }
 }
 
@@ -4031,23 +4217,7 @@ function applyAgentResult(result, prompt, options = {}) {
   }
 
   if (options.restoreOnly) {
-    state.queryContext = buildFinalQueryContext(result, prompt);
-    const typedLayers = buildTypedResultLayers(result);
-    const requestedView = typedLayers[0]?.preferredView || result.recommended_view || "map";
-    const addedLayers = addResultLayers({
-      sourceId: finalSourceId(result),
-      sourceLabel: result.responding_agent === "moshe" ? "תשובת משה" : "תשובת הסוכן",
-      preferredView: requestedView,
-      layers: typedLayers
-    });
-    showResult(
-      "ממצאי הסוכן",
-      addedLayers.length
-        ? `נוספו או הוצגו ${addedLayers.length.toLocaleString("he-IL")} שכבות שנבחרו כתשובה.`
-        : "לא נבחרו נתונים להצגה."
-    );
-    activateView(requestedView, { reason: result.view_reason || "נתונים שנבחרו כתשובה לבקשת המשתמש" });
-    renderQueryInspector();
+    presentFinalAgentResult(result, prompt, { showSummary: true });
     return;
   }
   if (!options.keepRenderedSteps) renderActivitySteps(result.investigation_steps || [], result);
@@ -4055,29 +4225,30 @@ function applyAgentResult(result, prompt, options = {}) {
     const started = (result.events || []).filter(event => event.event === "tool.started");
     started.forEach((event, index) => {
       const tool = (event.tool || "MCP").replace(/^mcp_(?:serbia_events_poc|intelligence_events_poc)_/, "");
-      const input = event.preview ? `קלט שנשלח לכלי: ${event.preview}` : "Hermes לא החזיר את פרטי הקלט עבור פעולה זו.";
-      addActivity(tool, input, "הכלי הסתיים ללא שגיאה; פירוט התוצאה לא נכלל ביומן Hermes.", {
+      const input = event.preview ? `Input sent to the tool: ${event.preview}` : "Hermes did not return the input details for this action.";
+      addActivity(tool, input, "The tool completed without error; result details were not included in the Hermes log.", {
         stepNumber: index + 1,
-        observedClue: "Hermes דיווח שהסוכן בחר להפעיל כלי, אך לא החזיר רמז מפורט לשלב הזה.",
-        rationale: "הסוכן בחר בכלי הזה כדי להמשיך לצמצם את אי-הוודאות בחקירה.",
-        expectedValue: "לקבל ראיות נוספות או לאמת מועמד שכבר עלה.",
+        observedClue: "Hermes reported that the agent chose to run a tool, but did not return a detailed clue for this step.",
+        rationale: "The agent chose this tool to keep reducing uncertainty in the investigation.",
+        expectedValue: "Get more evidence or validate a candidate that already surfaced.",
         technical: { tool, preview: event.preview || null },
         sourceId: stepSourceId(result, index + 1),
-        sourceLabel: `צעד ${index + 1}: ${humanToolLabel(tool)}`
+        sourceLabel: `Step ${index + 1}: ${humanToolLabel(tool)}`
       });
     });
   }
   if (!options.keepRenderedSteps && !(result.investigation_steps || []).length && !(result.events || []).some(event => event.event === "tool.started")) {
-    addActivity("Hermes", `שאלת החקירה שנשלחה: ${prompt}`, `התקבלה תשובה בריצה ${result.run_id}, ללא יומן כלי מפורט.`);
+    addActivity("Hermes", `Investigation question sent: ${prompt}`, `A response was received in run ${result.run_id}, without a detailed tool log.`);
   }
 
   finalizeAssistantMessage(result.answer, { result, prompt });
+  presentFinalAgentResult(result, prompt);
   if (buildTypedResultLayers(result).some(layer => layer.kind === "attack_targets")) {
     void refreshOpenAttackTargetCatalogLayer();
   }
   updateResultVisibilityButtons();
   renderQueryInspector();
-  setSuggestions(["אילו הסברים תמימים יכולים להתאים לאותן ראיות?", "מה חסר כדי להעלות את רמת הביטחון?", "הצג את רצף האירועים לפי סדר הזמן"]);
+  setSuggestions(FOLLOWUP_SUGGESTIONS[currentLocale()]);
 }
 
 async function runSavedQuestion(savedId) {
@@ -4090,7 +4261,7 @@ async function runSavedQuestion(savedId) {
   try {
     const response = await fetch(`/api/saved-question?id=${encodeURIComponent(savedId)}`, { cache: "no-store" });
     const saved = await response.json();
-    if (!response.ok) throw new Error(saved.error || "טעינת השאלה השמורה נכשלה");
+    if (!response.ok) throw new Error(saved.error || activeLocaleText("טעינת השאלה השמורה נכשלה", "Failed to load saved question"));
     const result = {
       ...(saved.result || {}),
       saved_question_id: saved.id,
@@ -4112,8 +4283,8 @@ async function runSavedQuestion(savedId) {
       await replaySavedResult(result, prompt);
     }
   } catch (error) {
-    startAssistantResearchMessage("טעינת שאלה שמורה נכשלה.");
-    finalizeAssistantMessage(`<p>לא הצלחתי להציג את השאלה השמורה.</p><div class="answer-callout">${escapeHtml(error.message)}</div>`, { html: true });
+    startAssistantResearchMessage(activeLocaleText("טעינת השאלה השמורה נכשלה.", "Loading saved question failed."));
+    finalizeAssistantMessage(`<p>${activeLocaleText("לא הצלחתי להציג את השאלה השמורה.", "I couldn't display the saved question.")}</p><div class="answer-callout">${escapeHtml(error.message)}</div>`, { html: true });
   } finally {
     state.busy = false;
     sendButton.disabled = false;
@@ -4154,12 +4325,12 @@ function submitQueryLayerSelection() {
   );
   const selectedLayers = state.layers.filter(layer => checkedIds.has(layer.id));
   if (!selectedLayers.length) {
-    queryLayersError.textContent = "יש לבחור לפחות שכבה אחת.";
+    queryLayersError.textContent = activeLocaleText("בחר לפחות שכבה אחת.", "Choose at least one layer.");
     queryLayersError.hidden = false;
     return;
   }
   if (state.workstreamComposerMode && selectedLayers.length !== 1) {
-    queryLayersError.textContent = "יש לבחור שכבה אחת למעקב.";
+    queryLayersError.textContent = activeLocaleText("בחר שכבה אחת למעקב.", "Choose one layer for the workstream.");
     queryLayersError.hidden = false;
     return;
   }
@@ -4172,31 +4343,31 @@ function submitQueryLayerSelection() {
 }
 
 async function loadRecordedQuestions() {
-  recordedList.innerHTML = `<div class="activity-empty">טוען שאלות שמורות...</div>`;
+  recordedList.innerHTML = `<div class="activity-empty">${activeLocaleText("טוען שאלות שמורות...", "Loading saved questions...")}</div>`;
   try {
     const response = await fetch("/api/saved-questions", { cache: "no-store" });
     const payload = await response.json();
-    if (!response.ok) throw new Error(payload.error || "Saved questions unavailable");
+    if (!response.ok) throw new Error(payload.error || activeLocaleText("השאלות השמורות אינן זמינות", "Saved questions unavailable"));
     state.savedQuestions = payload.saved_questions || [];
     if (!state.savedQuestions.length) {
-      recordedList.innerHTML = `<div class="activity-empty">לא נמצאו שאלות שמורות.</div>`;
+      recordedList.innerHTML = `<div class="activity-empty">${activeLocaleText("לא נמצאו שאלות שמורות.", "No saved questions found.")}</div>`;
       return;
     }
     recordedList.innerHTML = state.savedQuestions.map(item => `
       <article class="recorded-question saved-question-card">
         <div class="saved-question-main">
-          <strong>${escapeHtml(item.title || item.question || "שאלה שמורה")}</strong>
+          <strong>${escapeHtml(item.title || item.question || activeLocaleText("שאלה שמורה", "Saved question"))}</strong>
           <p>${escapeHtml(item.question || "")}</p>
-          <span>${escapeHtml(formatSavedTime(item.saved_at_utc))} · ${item.recording_type === "workstream_message" ? "מעקב" : escapeHtml(VIEW_LABELS[item.recommended_view] || item.recommended_view || "תצוגה")} · ${Number(item.step_count || 0)} צעדים</span>
+          <span>${escapeHtml(formatSavedTime(item.saved_at_utc))} · ${item.recording_type === "workstream_message" ? activeLocaleText("מעקב", "Workstream") : escapeHtml(viewLabels()[item.recommended_view] || item.recommended_view || activeLocaleText("תצוגה", "View"))} · ${Number(item.step_count || 0)} ${activeLocaleText("צעדים", "steps")}</span>
         </div>
         <div class="saved-question-actions">
-          <button type="button" data-saved-id="${escapeHtml(item.id)}">פתח</button>
-          <button type="button" class="danger-button" data-saved-delete="${escapeHtml(item.id)}">מחק</button>
+          <button type="button" data-saved-id="${escapeHtml(item.id)}">${activeLocaleText("פתח", "Open")}</button>
+          <button type="button" class="danger-button" data-saved-delete="${escapeHtml(item.id)}">${activeLocaleText("מחק", "Delete")}</button>
         </div>
       </article>
     `).join("");
   } catch (error) {
-    recordedList.innerHTML = `<div class="activity-empty">טעינת השאלות השמורות נכשלה: ${escapeHtml(error.message)}</div>`;
+    recordedList.innerHTML = `<div class="activity-empty">${activeLocaleText("לא הצלחתי לטעון את השאלות השמורות", "Failed to load saved questions")}: ${escapeHtml(error.message)}</div>`;
   }
 }
 
@@ -4208,7 +4379,7 @@ async function runPrompt(prompt, options = {}) {
   const selectedLayers = selectedLayerContextForAgent();
   state.activeTeamMentions = teamMentionsForPrompt(addressedPrompt);
   const workstreamInstruction = workstreamCreationRequested
-    ? "המשתמש נמצא בזרימת יצירת מעקב. נהל שיחה טבעית: אם חסר מידע חיוני שאל שאלה קצרה; כאשר המטרה והאחריות ברורות, השתמש בכלי יצירת המעקב."
+    ? "The user is in workstream-creation flow. Conduct a natural conversation: if essential information is missing, ask a short question; once the objective and responsibility are clear, use the workstream creation tool."
     : "";
   const agentPrompt = promptForAgentWithSelectedLayers(
     [addressedPrompt, workstreamInstruction].filter(Boolean).join("\n\n"),
@@ -4253,7 +4424,8 @@ async function runPrompt(prompt, options = {}) {
         investigation_id: state.investigationId,
         investigation_state: investigationState,
         workstream_context: workstreamContextForChat(currentTurnMessageId),
-        workstream_creation_requested: workstreamCreationRequested
+        workstream_creation_requested: workstreamCreationRequested,
+        locale: currentLocale()
       })
     });
     progressTimer = setInterval(pollLiveSteps, 1800);
@@ -4267,7 +4439,6 @@ async function runPrompt(prompt, options = {}) {
     state.history.push({ role: "user", content: clean }, { role: "assistant", content: result.answer });
     const renderStarted = performance.now();
     applyAgentResult(result, clean);
-    await applyMemoryLayerActions(result);
     const renderEnded = performance.now();
     const clientPerformance = {
       total_ms: Number((renderEnded - clientStarted).toFixed(3)),
@@ -4283,10 +4454,9 @@ async function runPrompt(prompt, options = {}) {
       }).catch(() => {});
     }
   } catch (error) {
-    addActivity("connection_error", "לא ניתן היה להשלים ריצת Hermes.", error.message);
-    finalizeAssistantMessage(`<p>לא הצלחתי להשלים את ריצת הסוכן האמיתית.</p><div class="answer-callout">${escapeHtml(error.message)}</div>`, { html: true });
-    agentStatus.textContent = "Hermes אינו זמין";
-    agentStatus.className = "agent-error";
+    addActivity("connection_error", activeLocaleText("לא ניתן היה להשלים את ריצת Hermes.", "Unable to complete the Hermes run."), error.message);
+    finalizeAssistantMessage(`<p>${activeLocaleText("לא הצלחתי להשלים את ריצת הסוכן האמיתית.", "I couldn't complete the real agent run.")}</p><div class="answer-callout">${escapeHtml(error.message)}</div>`, { html: true });
+    updateSystemStatus("agent", "Hermes אינו זמין", "Hermes unavailable", "error");
   } finally {
     if (progressTimer) clearInterval(progressTimer);
     state.busy = false;
@@ -4303,8 +4473,8 @@ function showResult(title, subtitle) {
     const visibleLocationLayers = visibleLayers("map").filter(layer => layer.kind === "locations").reduce((sum, layer) => sum + itemsForLayerPresentation(layer).length, 0);
     const visibleTimeGroups = visibleLayers("timeline").filter(layer => layer.kind === "time_aggregation").reduce((sum, layer) => sum + itemsForLayerPresentation(layer).length, 0);
     resultCount.textContent = visibleEvents
-      ? `${visibleEvents} אירועים`
-      : (visibleTimeGroups ? `${visibleTimeGroups} נקודות זמן` : `${visibleLocationLayers} מיקומים`);
+      ? activeLocaleText(`${visibleEvents} אירועים`, `${visibleEvents} events`)
+      : (visibleTimeGroups ? activeLocaleText(`${visibleTimeGroups} נקודות זמן`, `${visibleTimeGroups} time points`) : activeLocaleText(`${visibleLocationLayers} מיקומים`, `${visibleLocationLayers} locations`));
   }
   renderAllViews();
 }
@@ -4319,7 +4489,7 @@ function renderAllViews() {
 
 function activateView(view, options = {}) {
   const requestedView = view === "evidence" ? "map" : view;
-  const safeView = VIEW_LABELS[requestedView] ? requestedView : "map";
+  const safeView = viewLabels()[requestedView] ? requestedView : "map";
   document.querySelectorAll(".view-tab").forEach(button => button.classList.toggle("active", button.dataset.view === safeView));
   document.querySelectorAll(".view-pane").forEach(pane => pane.classList.toggle("active", pane.id === `${safeView}View`));
   if (safeView === "map" && state.map) {
@@ -4330,7 +4500,7 @@ function activateView(view, options = {}) {
   }
   if (options.automatic) {
     viewRecommendation.hidden = false;
-    viewRecommendation.textContent = `הסוכן בחר להציג: ${VIEW_LABELS[safeView]} · ${options.reason}`;
+    viewRecommendation.textContent = activeLocaleText(`הסוכן בחר: ${viewLabels()[safeView]} · ${options.reason}`, `Agent selected: ${viewLabels()[safeView]} · ${options.reason}`);
   } else {
     viewRecommendation.hidden = true;
     viewRecommendation.textContent = "";
@@ -4348,7 +4518,7 @@ function setChatPanelCollapsed(collapsed) {
   state.chatPanelCollapsed = Boolean(collapsed);
   workspace.classList.toggle("chat-panel-collapsed", state.chatPanelCollapsed);
   if (chatPanelToggle) {
-    const label = state.chatPanelCollapsed ? "הצג שיחה" : "מזער שיחה";
+    const label = state.chatPanelCollapsed ? "Show chat" : "Collapse chat";
     chatPanelToggle.title = label;
     chatPanelToggle.setAttribute("aria-label", label);
     chatPanelToggle.setAttribute("aria-expanded", state.chatPanelCollapsed ? "false" : "true");
@@ -4416,6 +4586,8 @@ function initPanelResizers() {
 function clearMarkers() {
   state.markers.forEach(marker => marker.remove());
   state.markers = [];
+  state.focusedEventPopup?.remove();
+  state.focusedEventPopup = null;
 }
 
 function renderMap() {
@@ -4475,12 +4647,12 @@ function renderMap() {
     element.className = `map-marker`;
     element.style.setProperty("--layer-color", [...item.colors][0] || "#8ab4f8");
     element.setAttribute("role", "button");
-    element.setAttribute("aria-label", `${location.name}: ${item.count.toLocaleString("he-IL")} פריטים`);
-    element.innerHTML = `<span class="map-marker-dot"></span>${item.count > 1 ? `<span class="map-marker-count">${item.count.toLocaleString("he-IL")}</span>` : ""}`;
+    element.setAttribute("aria-label", activeLocaleText(`${location.name}: ${item.count.toLocaleString("he-IL")} פריטים`, `${location.name}: ${item.count.toLocaleString("en-US")} items`));
+    element.innerHTML = `<span class="map-marker-dot"></span>${item.count > 1 ? `<span class="map-marker-count">${item.count.toLocaleString(currentLocaleTag())}</span>` : ""}`;
     const popupHtml = `
-      <div class="map-popup" dir="rtl">
+      <div class="map-popup" dir="${currentLocale() === "en" ? "ltr" : "rtl"}">
         <strong>${escapeHtml(location.name)}</strong>
-        <span>${item.count.toLocaleString("he-IL")} פריטים</span>
+        <span>${escapeHtml(activeLocaleText(`${item.count.toLocaleString("he-IL")} פריטים`, `${item.count.toLocaleString("en-US")} items`))}</span>
         <em>${escapeHtml([...item.labels].join(" · "))}</em>
       </div>`;
     const popup = new maplibregl.Popup({ offset: 18, closeButton: true, closeOnClick: true }).setHTML(popupHtml);
@@ -4506,16 +4678,16 @@ function renderMap() {
       element.className = "map-marker attack-target-marker";
       element.style.setProperty("--layer-color", layer.color || "#ffb347");
       element.setAttribute("role", "button");
-      element.setAttribute("aria-label", `מועמד מטרה: ${target.title || target.target_id}, ${target.location_name || target.location_id}`);
+      element.setAttribute("aria-label", activeLocaleText(`מועמד מטרה: ${target.title || target.target_id}, ${target.location_name || target.location_id}`, `Target candidate: ${target.title || target.target_id}, ${target.location_name || target.location_id}`));
       element.innerHTML = '<span class="map-marker-dot"></span>';
-      const popupHtml = `<div class="map-popup target-map-popup" dir="rtl">
-        <strong>${escapeHtml(String(target.title || target.target_id || "מועמד מטרה"))}</strong>
-        <span>${escapeHtml(String(target.object_class || "-"))} · ${escapeHtml(String(target.entity_name || target.entity_id || "ללא ישות"))}</span>
-        <span>ביטחון ${escapeHtml(String(confidenceLabel(target.confidence)))} · כמות ${escapeHtml(String(targetQuantityLabel(target)))}</span>
+      const popupHtml = `<div class="map-popup target-map-popup" dir="${currentLocale() === "en" ? "ltr" : "rtl"}">
+        <strong>${escapeHtml(String(target.title || target.target_id || activeLocaleText("מועמד מטרה", "Target candidate")))}</strong>
+        <span>${escapeHtml(String(target.object_class || "-"))} · ${escapeHtml(String(target.entity_name || target.entity_id || activeLocaleText("ללא ישות", "No entity")))}</span>
+        <span>${escapeHtml(activeLocaleText("ביטחון", "Confidence"))} ${escapeHtml(String(confidenceLabel(target.confidence)))} · ${escapeHtml(activeLocaleText("כמות", "Quantity"))} ${escapeHtml(String(targetQuantityLabel(target)))}</span>
         <p>${escapeHtml(String(target.summary || ""))}</p>
-        <span class="target-raw-references"><b>אסמכתאות גולמיות:</b> ${(target.raw_data_references || []).length
+        <span class="target-raw-references"><b>${escapeHtml(activeLocaleText("אסמכתאות גולמיות:", "Raw references:"))}</b> ${(target.raw_data_references || []).length
           ? (target.raw_data_references || []).map(recordId => `<code dir="ltr">${escapeHtml(String(recordId || "-"))}</code>`).join(" · ")
-          : "לא נטענו אסמכתאות בתוצאה זו"}</span>
+          : escapeHtml(activeLocaleText("לא נטענו אסמכתאות בתוצאה זו", "No raw references were loaded in this result"))}</span>
       </div>`;
       const popup = new maplibregl.Popup({ offset: 20, closeButton: true, closeOnClick: true }).setHTML(popupHtml);
       const marker = new maplibregl.Marker({ element, anchor: "center" }).setLngLat([markerLon, markerLat]).setPopup(popup).addTo(state.map);
@@ -4526,6 +4698,81 @@ function renderMap() {
   if (!bounds.isEmpty()) state.map.fitBounds(bounds, { padding: 110, maxZoom: 10.2, duration: 450 });
 }
 
+function eventMapCoordinates(event = {}) {
+  const locationId = event.location_id || event.key;
+  const requestedName = String(event.location_name || event.name || event.label || "").trim().toLowerCase();
+  const canonical = LOCATIONS[locationId] || Object.values(LOCATIONS).find(location => (
+    requestedName && String(location.name || "").trim().toLowerCase() === requestedName
+  )) || null;
+  const lon = canonical?.lon ?? event.longitude ?? event.lon;
+  const lat = canonical?.lat ?? event.latitude ?? event.lat;
+  if (lon == null || lat == null || !Number.isFinite(Number(lon)) || !Number.isFinite(Number(lat))) return null;
+  return { lon: Number(lon), lat: Number(lat) };
+}
+
+function mapSelectionKey(layerId, kind, itemId) {
+  return `${String(layerId)}:${String(kind)}:${String(itemId)}`;
+}
+
+function isMapItemSelected(layerId, kind, itemId) {
+  return state.focusedMapSelection === mapSelectionKey(layerId, kind, itemId);
+}
+
+function mapItemId(item = {}, kind = "event") {
+  if (kind === "target") return String(item.target_id || item.id || "");
+  if (kind === "location") return String(item.location_id || item.key || item.id || "");
+  return String(item.record_id || item.event_id || item.id || "");
+}
+
+function mapActionButton(layerId, kind, itemId, item) {
+  const selected = isMapItemSelected(layerId, kind, itemId);
+  const available = Boolean(eventMapCoordinates(item));
+  const label = selected
+    ? activeLocaleText("בטל בחירה במפה", "Clear map selection")
+    : activeLocaleText("הצג במפה", "Show on map");
+  return `<button type="button" class="result-map-action ${selected ? "active" : ""}" data-result-map-kind="${escapeHtml(kind)}" data-result-map-item="${escapeHtml(itemId)}" data-result-map-layer="${escapeHtml(String(layerId))}" title="${escapeHtml(label)}" aria-label="${escapeHtml(label)}" aria-pressed="${selected ? "true" : "false"}" ${available ? "" : "disabled"}><span class="material-symbols-rounded" aria-hidden="true">${selected ? "location_off" : "location_on"}</span></button>`;
+}
+
+function mapItemPopupHtml(item, kind) {
+  if (kind === "target") return `<div class="map-popup target-map-popup" dir="${currentLocale() === "en" ? "ltr" : "rtl"}"><strong>${escapeHtml(String(item.title || item.target_id || activeLocaleText("מועמד מטרה", "Target candidate")))}</strong><span>${escapeHtml(String(item.object_class || "-"))} · ${escapeHtml(String(item.entity_name || item.entity_id || "-"))}</span><span>${escapeHtml(activeLocaleText("ביטחון", "Confidence"))} ${escapeHtml(String(confidenceLabel(item.confidence)))}</span><p>${escapeHtml(String(item.summary || ""))}</p></div>`;
+  if (kind === "location") return `<div class="map-popup" dir="${currentLocale() === "en" ? "ltr" : "rtl"}"><strong>${escapeHtml(String(item.location_name || item.name || item.label || item.location_id || item.key || "-"))}</strong><span dir="ltr">${escapeHtml(String(item.location_id || item.key || "-"))}</span><span>${escapeHtml(activeLocaleText("כמות", "Count"))}: ${Number(item.event_count || item.count || 0).toLocaleString(currentLocaleTag())}</span>${item.municipality ? `<em>${escapeHtml(String(item.municipality))}</em>` : ""}</div>`;
+  const recordId = String(item.record_id || item.event_id || "-");
+  return `<div class="map-popup event-map-popup" dir="${currentLocale() === "en" ? "ltr" : "rtl"}"><strong dir="ltr">${escapeHtml(recordId)}</strong><span dir="ltr">${escapeHtml(String(item.timestamp_utc || "-"))}</span><span>${escapeHtml(String(item.entity_name || item.entity_id || "-"))}</span><em>${escapeHtml(String(item.location_name || item.location_id || "-"))}</em><p>${escapeHtml(String(item.event_summary || ""))}</p></div>`;
+}
+
+function toggleMapItem(layerId, kind, itemId) {
+  const layer = state.layers.find(item => String(item.id) === String(layerId));
+  const selectedEvent = (layer?.items || []).find(item => mapItemId(item, kind) === String(itemId || ""));
+  const coordinates = eventMapCoordinates(selectedEvent);
+  if (!selectedEvent || !coordinates) return;
+  const selectionKey = mapSelectionKey(layerId, kind, itemId);
+  if (state.focusedMapSelection === selectionKey) {
+    state.focusedMapSelection = null;
+    state.focusedEventPopup?.remove();
+    state.focusedEventPopup = null;
+    renderEvidence();
+    return;
+  }
+  state.focusedEventPopup?.remove();
+  state.focusedEventPopup = null;
+  state.focusedMapSelection = selectionKey;
+  renderEvidence();
+
+  activateView("map");
+  setTimeout(() => {
+    if (!state.mapReady || !state.map) return;
+    state.map.easeTo({
+      center: [coordinates.lon, coordinates.lat],
+      zoom: Math.max(Number(state.map.getZoom?.() || 0), kind === "location" ? 12 : 13),
+      duration: 450
+    });
+    state.focusedEventPopup = new maplibregl.Popup({ offset: 20, closeButton: true, closeOnClick: false })
+      .setLngLat([coordinates.lon, coordinates.lat])
+      .setHTML(mapItemPopupHtml(selectedEvent, kind))
+      .addTo(state.map);
+  }, 0);
+}
+
 function renderTimeline() {
   const timeline = document.getElementById("timeline");
   const eventTimelineItems = visibleLayers("timeline")
@@ -4534,13 +4781,13 @@ function renderTimeline() {
   const aggregateTimelineItems = visibleLayers("timeline")
     .filter(layer => layer.kind === "time_aggregation")
     .flatMap(layer => itemsForLayerPresentation(layer).map(item => ({ type: "aggregation", layer, item, sort: item.sortKey })));
-  if (!eventTimelineItems.length && !aggregateTimelineItems.length) { timeline.className = "timeline empty-state"; timeline.textContent = "לא נבחרו שכבות עם ציר זמן להצגה."; return; }
+  if (!eventTimelineItems.length && !aggregateTimelineItems.length) { timeline.className = "timeline empty-state"; timeline.textContent = activeLocaleText("לא נבחרו שכבות עם ציר זמן להצגה.", "No timeline layers were selected for display."); return; }
   timeline.className = "timeline";
   const aggregationHtml = aggregateTimelineItems.map(({ layer, item }) => `
     <article class="timeline-item" style="${layerColorStyle(layer)}">
       <span class="timeline-dot"></span>
       <div class="timeline-time">${escapeHtml(item.timeLabel)}</div>
-      <div class="timeline-title">${escapeHtml(layer.label)} · ${item.count.toLocaleString("he-IL")} אירועים</div>
+      <div class="timeline-title">${escapeHtml(layer.label)} · ${escapeHtml(activeLocaleText(`${item.count.toLocaleString("he-IL")} אירועים`, `${item.count.toLocaleString("en-US")} events`))}</div>
       <div class="timeline-summary">${escapeHtml(item.summary)}</div>
     </article>`).join("");
   const eventHtml = eventTimelineItems.sort((a, b) => a.sort - b.sort).map(({ layer, event }) => `
@@ -4615,7 +4862,7 @@ function applyResultTableControls(layerId) {
   if (rows.length && !rows.some(row => !row.hidden)) {
     const noMatch = document.createElement("tr");
     noMatch.className = "result-table-no-match";
-    noMatch.innerHTML = `<td colspan="${head.querySelectorAll("th").length}" class="empty-cell">לא נמצאו תוצאות התואמות למסננים.</td>`;
+    noMatch.innerHTML = `<td colspan="${head.querySelectorAll("th").length}" class="empty-cell">No results match the filters.</td>`;
     body.appendChild(noMatch);
   }
 }
@@ -4625,28 +4872,29 @@ function enhanceResultsTable(layer) {
   if (!head || !layer) return;
   const control = resultTableControl(layer.id);
   [...head.querySelectorAll("th")].forEach((cell, column) => {
+    if (cell.dataset.resultActionColumn === "true") return;
     const label = normalizedTableCellText(cell.textContent);
     const activeSort = control.sortColumn === column;
     const filterValue = String(control.filters[column] || "");
     const filterOpen = control.openFilterColumn === column;
     const directionLabel = activeSort
-      ? (control.sortDirection === "asc" ? "ממוין בסדר עולה" : "ממוין בסדר יורד")
-      : "לא ממוין";
+      ? (control.sortDirection === "asc" ? activeLocaleText("ממויין בסדר עולה", "Sorted ascending") : activeLocaleText("ממויין בסדר יורד", "Sorted descending"))
+      : activeLocaleText("לא ממוין", "Not sorted");
     cell.setAttribute("aria-sort", activeSort ? (control.sortDirection === "asc" ? "ascending" : "descending") : "none");
     cell.innerHTML = `
       <div class="result-column-header">
-        <button type="button" class="result-column-sort" data-result-sort="${column}" data-result-layer="${escapeHtml(String(layer.id))}" title="מיון לפי ${escapeHtml(label)}. ${directionLabel}">
+        <button type="button" class="result-column-sort" data-result-sort="${column}" data-result-layer="${escapeHtml(String(layer.id))}" title="${escapeHtml(activeLocaleText(`מיין לפי ${label}. ${directionLabel}`, `Sort by ${label}. ${directionLabel}`))}">
           <span>${escapeHtml(label)}</span>
           <span class="material-symbols-rounded" aria-hidden="true">${activeSort ? (control.sortDirection === "asc" ? "arrow_upward" : "arrow_downward") : "unfold_more"}</span>
         </button>
-        <button type="button" class="result-column-filter-toggle ${filterValue ? "active" : ""}" data-result-filter-toggle="${column}" data-result-layer="${escapeHtml(String(layer.id))}" title="סינון לפי ${escapeHtml(label)}" aria-label="סינון לפי ${escapeHtml(label)}" aria-expanded="${filterOpen ? "true" : "false"}">
+        <button type="button" class="result-column-filter-toggle ${filterValue ? "active" : ""}" data-result-filter-toggle="${column}" data-result-layer="${escapeHtml(String(layer.id))}" title="${escapeHtml(activeLocaleText(`סנן לפי ${label}`, `Filter by ${label}`))}" aria-label="${escapeHtml(activeLocaleText(`סנן לפי ${label}`, `Filter by ${label}`))}" aria-expanded="${filterOpen ? "true" : "false"}">
           <span class="material-symbols-rounded" aria-hidden="true">filter_alt</span>
         </button>
       </div>
       ${filterOpen ? `
         <div class="result-column-filter-popover">
-          <input type="search" class="result-column-filter" data-result-filter="${column}" data-result-layer="${escapeHtml(String(layer.id))}" value="${escapeHtml(filterValue)}" placeholder="סינון ${escapeHtml(label)}" aria-label="סינון ${escapeHtml(label)}">
-          ${filterValue ? `<button type="button" class="result-column-filter-clear" data-result-filter-clear="${column}" data-result-layer="${escapeHtml(String(layer.id))}" title="נקה סינון" aria-label="נקה סינון"><span class="material-symbols-rounded" aria-hidden="true">close</span></button>` : ""}
+          <input type="search" class="result-column-filter" data-result-filter="${column}" data-result-layer="${escapeHtml(String(layer.id))}" value="${escapeHtml(filterValue)}" placeholder="${escapeHtml(activeLocaleText(`סנן ${label}`, `Filter ${label}`))}" aria-label="${escapeHtml(activeLocaleText(`סנן ${label}`, `Filter ${label}`))}">
+          ${filterValue ? `<button type="button" class="result-column-filter-clear" data-result-filter-clear="${column}" data-result-layer="${escapeHtml(String(layer.id))}" title="${escapeHtml(activeLocaleText("נקה מסנן", "Clear filter"))}" aria-label="${escapeHtml(activeLocaleText("נקה מסנן", "Clear filter"))}"><span class="material-symbols-rounded" aria-hidden="true">close</span></button>` : ""}
         </div>` : ""}`;
   });
   applyResultTableControls(layer.id);
@@ -4689,30 +4937,32 @@ function renderEvidence() {
   const minimizeButton = document.getElementById("rawEventsMinimize");
   if (minimizeButton) {
     minimizeButton.textContent = state.rawOverlayMinimized ? "□" : "−";
-    minimizeButton.title = state.rawOverlayMinimized ? "הגדל" : "מזער";
-    minimizeButton.setAttribute("aria-label", state.rawOverlayMinimized ? "הגדל טבלת תוצאות" : "מזער טבלת תוצאות");
+    minimizeButton.title = state.rawOverlayMinimized ? activeLocaleText("הרחב", "Expand") : activeLocaleText("מזער", "Minimize");
+    minimizeButton.setAttribute("aria-label", state.rawOverlayMinimized
+      ? activeLocaleText("הרחב טבלת תוצאות", "Expand results table")
+      : activeLocaleText("מזער טבלת תוצאות", "Minimize results table"));
   }
   tabs.innerHTML = tableLayers.map(layer => {
     const filteredCount = itemsForLayerPresentation(layer).length;
     const originalCount = (layer.items || []).length;
     const countLabel = layerHasAppliedFilters(layer)
-      ? `${filteredCount.toLocaleString("he-IL")}/${originalCount.toLocaleString("he-IL")}`
-      : originalCount.toLocaleString("he-IL");
+      ? `${filteredCount.toLocaleString(currentLocaleTag())}/${originalCount.toLocaleString(currentLocaleTag())}`
+      : originalCount.toLocaleString(currentLocaleTag());
     return `
     <button type="button" class="raw-source-tab ${layer.id === activeLayer?.id ? "active" : ""} ${layer.visible ? "" : "hidden-source"}" style="${layerColorStyle(layer)}" data-layer-id="${escapeHtml(layer.id)}" role="tab" aria-selected="${layer.id === activeLayer?.id}" title="${escapeHtml(layer.sourceLabel || layer.label)}">
       <span class="raw-source-color"></span>
       <span class="raw-source-name">${escapeHtml(layer.label)}</span>
       <strong>${countLabel}</strong>
-      <span class="raw-source-filter ${layer.filterPanelOpen ? "active" : ""} ${validAppliedFilters(layer).length ? "has-filters" : ""}" data-layer-filter="${escapeHtml(layer.id)}" title="פתח מסננים" aria-label="פתח מסננים" aria-pressed="${layer.filterPanelOpen ? "true" : "false"}">
+      <span class="raw-source-filter ${layer.filterPanelOpen ? "active" : ""} ${validAppliedFilters(layer).length ? "has-filters" : ""}" data-layer-filter="${escapeHtml(layer.id)}" title="${escapeHtml(activeLocaleText("פתח מסננים", "Open filters"))}" aria-label="${escapeHtml(activeLocaleText("פתח מסננים", "Open filters"))}" aria-pressed="${layer.filterPanelOpen ? "true" : "false"}">
         <span class="filter-funnel-icon" aria-hidden="true"></span>
       </span>
-      <span class="raw-source-memory ${layer.investigation_memory_layer_id ? "saved" : ""}" data-layer-memory="${escapeHtml(layer.id)}" title="${layer.investigation_memory_layer_id ? "השכבה נשמרה לזיכרון החקירה" : "שמור שכבה לזיכרון החקירה"}" aria-label="${layer.investigation_memory_layer_id ? "השכבה נשמרה לזיכרון החקירה" : "שמור שכבה לזיכרון החקירה"}" aria-pressed="${layer.investigation_memory_layer_id ? "true" : "false"}">
+      <span class="raw-source-memory ${layer.investigation_memory_layer_id ? "saved" : ""}" data-layer-memory="${escapeHtml(layer.id)}" title="${escapeHtml(layer.investigation_memory_layer_id ? activeLocaleText("השכבה נשמרה בזיכרון החקירה", "Layer saved to investigation memory") : activeLocaleText("שמור שכבה לזיכרון החקירה", "Save layer to investigation memory"))}" aria-label="${escapeHtml(layer.investigation_memory_layer_id ? activeLocaleText("השכבה נשמרה בזיכרון החקירה", "Layer saved to investigation memory") : activeLocaleText("שמור שכבה לזיכרון החקירה", "Save layer to investigation memory"))}" aria-pressed="${layer.investigation_memory_layer_id ? "true" : "false"}">
         <span class="memory-bookmark-icon" aria-hidden="true"></span>
       </span>
-        <span class="raw-source-eye" data-layer-visibility="${escapeHtml(layer.id)}" title="${layer.visible ? "הסתר שכבה" : "הצג שכבה"}" aria-label="${layer.visible ? "הסתר שכבה" : "הצג שכבה"}" aria-pressed="${layer.visible ? "true" : "false"}">
+        <span class="raw-source-eye" data-layer-visibility="${escapeHtml(layer.id)}" title="${escapeHtml(layer.visible ? activeLocaleText("הסתר שכבה", "Hide layer") : activeLocaleText("הצג שכבה", "Show layer"))}" aria-label="${escapeHtml(layer.visible ? activeLocaleText("הסתר שכבה", "Hide layer") : activeLocaleText("הצג שכבה", "Show layer"))}" aria-pressed="${layer.visible ? "true" : "false"}">
           <span class="visibility-eye-icon ${layer.visible ? "" : "off"}" aria-hidden="true"></span>
         </span>
-      <span class="raw-source-close" data-layer-close="${escapeHtml(layer.id)}" title="סגור שכבה" aria-label="סגור שכבה">×</span>
+      <span class="raw-source-close" data-layer-close="${escapeHtml(layer.id)}" title="${escapeHtml(activeLocaleText("סגור שכבה", "Close layer"))}" aria-label="${escapeHtml(activeLocaleText("סגור שכבה", "Close layer"))}">×</span>
     </button>`;
   }).join("");
 
@@ -4721,9 +4971,13 @@ function renderEvidence() {
   renderLayerFilterPanel(activeLayer);
   const activeItems = activeLayer.visible ? itemsForLayerPresentation(activeLayer) : [];
   if (activeLayer.kind === "attack_targets") {
-    head.innerHTML = "<tr><th>מטרה</th><th>סוג אובייקט</th><th>ישות</th><th>מיקום קנוני</th><th>ביטחון</th><th>כמות</th><th>תקציר</th><th>סוגי מקור</th><th>רשומות גולמיות</th></tr>";
-    body.innerHTML = activeItems.length ? activeItems.map(item => `
-      <tr class="attack-target-row">
+    head.innerHTML = `<tr><th class="result-map-action-column" data-result-action-column="true"></th><th>${escapeHtml(activeLocaleText("מטרה", "Target"))}</th><th>${escapeHtml(activeLocaleText("סוג אובייקט", "Object type"))}</th><th>${escapeHtml(activeLocaleText("ישות", "Entity"))}</th><th>${escapeHtml(activeLocaleText("מיקום קנוני", "Canonical location"))}</th><th>${escapeHtml(activeLocaleText("ביטחון", "Confidence"))}</th><th>${escapeHtml(activeLocaleText("כמות", "Quantity"))}</th><th>${escapeHtml(activeLocaleText("סיכום", "Summary"))}</th><th>${escapeHtml(activeLocaleText("סוגי מקור", "Source types"))}</th><th>${escapeHtml(activeLocaleText("רשומות גולמיות", "Raw records"))}</th></tr>`;
+    body.innerHTML = activeItems.length ? activeItems.map(item => {
+      const itemId = mapItemId(item, "target");
+      const selected = isMapItemSelected(activeLayer.id, "target", itemId);
+      return `
+      <tr class="attack-target-row ${selected ? "map-selected-row" : ""}">
+        <td class="result-map-action-cell">${mapActionButton(activeLayer.id, "target", itemId, item)}</td>
         <td><strong>${escapeHtml(String(item.title || item.target_id || "-"))}</strong><small dir="ltr">${escapeHtml(String(item.target_id || "-"))}</small></td>
         <td>${escapeHtml(String(item.object_class || "-"))}</td>
         <td>${escapeHtml(String(item.entity_name || item.entity_id || "-"))}</td>
@@ -4732,83 +4986,98 @@ function renderEvidence() {
         <td>${escapeHtml(String(targetQuantityLabel(item)))}</td>
         <td>${escapeHtml(String(item.summary || "-"))}</td>
         <td>${(item.source_types || []).length ? (item.source_types || []).map(sourceType => `<span class="target-source-type">${escapeHtml(String(sourceType))}</span>`).join("<br>") : "-"}</td>
-        <td><strong>${Number(item.evidence_count || (item.raw_data_references || []).length || 0).toLocaleString("he-IL")}</strong></td>
-      </tr>`).join("") : '<tr><td colspan="9" class="empty-cell">לא נמצאו מועמדי מטרות להצגה.</td></tr>';
+        <td><strong>${Number(item.evidence_count || (item.raw_data_references || []).length || 0).toLocaleString(currentLocaleTag())}</strong></td>
+      </tr>`;
+    }).join("") : `<tr><td colspan="10" class="empty-cell">${escapeHtml(activeLocaleText("לא נמצאו מועמדי מטרה להצגה.", "No target candidates found for display."))}</td></tr>`;
     enhanceResultsTable(activeLayer);
     return;
   }
   if (activeLayer.kind === "location_metadata") {
-    head.innerHTML = "<tr><th>מיקום</th><th>אירועים</th><th>רשות</th><th>סוג</th><th>דיוק</th><th>מזהה</th></tr>";
-    body.innerHTML = activeItems.length ? activeItems.map(item => `
-      <tr>
+    head.innerHTML = `<tr><th class="result-map-action-column" data-result-action-column="true"></th><th>${escapeHtml(activeLocaleText("מיקום", "Location"))}</th><th>${escapeHtml(activeLocaleText("אירועים", "Events"))}</th><th>${escapeHtml(activeLocaleText("רשות", "Municipality"))}</th><th>${escapeHtml(activeLocaleText("סוג", "Type"))}</th><th>${escapeHtml(activeLocaleText("דיוק", "Precision"))}</th><th>ID</th></tr>`;
+    body.innerHTML = activeItems.length ? activeItems.map(item => {
+      const itemId = mapItemId(item, "location");
+      const selected = isMapItemSelected(activeLayer.id, "location", itemId);
+      return `
+      <tr class="${selected ? "map-selected-row" : ""}">
+        <td class="result-map-action-cell">${mapActionButton(activeLayer.id, "location", itemId, item)}</td>
         <td>${escapeHtml(item.location_name || item.name || item.location_id || "-")}</td>
-        <td>${Number(item.event_count || item.count || 0).toLocaleString("he-IL")}</td>
+        <td>${Number(item.event_count || item.count || 0).toLocaleString(currentLocaleTag())}</td>
         <td>${escapeHtml(item.municipality || "-")}</td>
         <td>${escapeHtml(item.type || "-")}</td>
         <td>${escapeHtml(item.precision || "-")}</td>
         <td dir="ltr">${escapeHtml(item.location_id || "-")}</td>
-      </tr>`).join("") : '<tr><td colspan="6" class="empty-cell">השכבה מוסתרת או ריקה.</td></tr>';
+      </tr>`;
+    }).join("") : `<tr><td colspan="7" class="empty-cell">${escapeHtml(activeLocaleText("השכבה מוסתרת או ריקה.", "Layer is hidden or empty."))}</td></tr>`;
     enhanceResultsTable(activeLayer);
     return;
   }
   if (activeLayer.kind === "entity_metadata") {
-    head.innerHTML = "<tr><th>ישות</th><th>אירועים</th><th>סוג</th><th>ערכי actor</th><th>מוקדים מובילים</th><th>מזהה</th></tr>";
+    head.innerHTML = `<tr><th>${escapeHtml(activeLocaleText("ישות", "Entity"))}</th><th>${escapeHtml(activeLocaleText("אירועים", "Events"))}</th><th>${escapeHtml(activeLocaleText("סוג", "Type"))}</th><th>${escapeHtml(activeLocaleText("ערכי שחקן", "Actor values"))}</th><th>${escapeHtml(activeLocaleText("מוקדים מובילים", "Leading hotspots"))}</th><th>ID</th></tr>`;
     body.innerHTML = activeItems.length ? activeItems.map(item => {
       const aliases = (item.aliases || []).slice(0, 4).join(", ");
-      const topLocations = (item.top_locations || []).slice(0, 4).map(location => `${location.location_name || location.location_id} (${Number(location.count || 0).toLocaleString("he-IL")})`).join(", ");
+      const topLocations = (item.top_locations || []).slice(0, 4).map(location => `${location.location_name || location.location_id} (${Number(location.count || 0).toLocaleString("en-US")})`).join(", ");
       return `
       <tr>
         <td>${escapeHtml(item.canonical_name || item.entity_id || "-")}</td>
-        <td>${Number(item.event_count || item.count || 0).toLocaleString("he-IL")}</td>
+        <td>${Number(item.event_count || item.count || 0).toLocaleString("en-US")}</td>
         <td>${escapeHtml(item.entity_type || "-")}</td>
         <td>${escapeHtml(aliases || "-")}</td>
         <td>${escapeHtml(topLocations || "-")}</td>
         <td dir="ltr">${escapeHtml(item.entity_id || "-")}</td>
       </tr>`;
-    }).join("") : '<tr><td colspan="6" class="empty-cell">השכבה מוסתרת או ריקה.</td></tr>';
+    }).join("") : `<tr><td colspan="6" class="empty-cell">${escapeHtml(activeLocaleText("השכבה מוסתרת או ריקה.", "Layer is hidden or empty."))}</td></tr>`;
     enhanceResultsTable(activeLayer);
     return;
   }
   if (activeLayer.kind === "locations") {
-    head.innerHTML = "<tr><th>מיקום</th><th>כמות</th><th>מזהה</th><th>סוג שכבה</th></tr>";
-    body.innerHTML = activeItems.length ? activeItems.map(item => `
-      <tr>
+    head.innerHTML = `<tr><th class="result-map-action-column" data-result-action-column="true"></th><th>${escapeHtml(activeLocaleText("מיקום", "Location"))}</th><th>${escapeHtml(activeLocaleText("כמות", "Count"))}</th><th>ID</th><th>${escapeHtml(activeLocaleText("סוג שכבה", "Layer type"))}</th></tr>`;
+    body.innerHTML = activeItems.length ? activeItems.map(item => {
+      const itemId = mapItemId(item, "location");
+      const selected = isMapItemSelected(activeLayer.id, "location", itemId);
+      return `
+      <tr class="${selected ? "map-selected-row" : ""}">
+        <td class="result-map-action-cell">${mapActionButton(activeLayer.id, "location", itemId, item)}</td>
         <td>${escapeHtml(item.location_name || item.label || item.key || item.location_id || "-")}</td>
-        <td>${Number(item.count || 0).toLocaleString("he-IL")}</td>
+        <td>${Number(item.count || 0).toLocaleString(currentLocaleTag())}</td>
         <td dir="ltr">${escapeHtml(item.location_id || item.key || "-")}</td>
         <td>${escapeHtml(activeLayer.label)}</td>
-      </tr>`).join("") : '<tr><td colspan="4" class="empty-cell">השכבה מוסתרת או ריקה.</td></tr>';
+      </tr>`;
+    }).join("") : `<tr><td colspan="5" class="empty-cell">${escapeHtml(activeLocaleText("השכבה מוסתרת או ריקה.", "Layer is hidden or empty."))}</td></tr>`;
     enhanceResultsTable(activeLayer);
     return;
   }
   if (activeLayer.kind === "time_aggregation") {
-    head.innerHTML = "<tr><th>זמן</th><th>כמות</th><th>סוג קיבוץ</th><th>תקציר</th></tr>";
+    head.innerHTML = `<tr><th>${escapeHtml(activeLocaleText("זמן", "Time"))}</th><th>${escapeHtml(activeLocaleText("כמות", "Count"))}</th><th>${escapeHtml(activeLocaleText("סוג קיבוץ", "Grouping type"))}</th><th>${escapeHtml(activeLocaleText("סיכום", "Summary"))}</th></tr>`;
     body.innerHTML = activeItems.length ? activeItems.map(item => `
       <tr>
         <td>${escapeHtml(item.timeLabel || item.label || "-")}</td>
-        <td>${Number(item.count || 0).toLocaleString("he-IL")}</td>
-        <td>${escapeHtml(item.group_by === "hour" ? "שעה" : "תאריך")}</td>
+        <td>${Number(item.count || 0).toLocaleString(currentLocaleTag())}</td>
+        <td>${escapeHtml(item.group_by === "hour" ? activeLocaleText("שעה", "Hour") : activeLocaleText("תאריך", "Date"))}</td>
         <td>${escapeHtml(item.summary || "-")}</td>
-      </tr>`).join("") : '<tr><td colspan="4" class="empty-cell">השכבה מוסתרת או ריקה.</td></tr>';
+      </tr>`).join("") : `<tr><td colspan="4" class="empty-cell">${escapeHtml(activeLocaleText("השכבה מוסתרת או ריקה.", "Layer is hidden or empty."))}</td></tr>`;
     enhanceResultsTable(activeLayer);
     return;
   }
   if (activeLayer.kind === "group_aggregation") {
-    head.innerHTML = "<tr><th>קבוצה</th><th>כמות</th><th>סוג קיבוץ</th><th>אירוע ראשון</th><th>אירוע אחרון</th></tr>";
+    head.innerHTML = `<tr><th>${escapeHtml(activeLocaleText("קבוצה", "Group"))}</th><th>${escapeHtml(activeLocaleText("כמות", "Count"))}</th><th>${escapeHtml(activeLocaleText("סוג קיבוץ", "Grouping type"))}</th><th>${escapeHtml(activeLocaleText("אירוע ראשון", "First event"))}</th><th>${escapeHtml(activeLocaleText("אירוע אחרון", "Last event"))}</th></tr>`;
     body.innerHTML = activeItems.length ? activeItems.map(item => `
       <tr>
         <td>${escapeHtml(item.label || item.key || "-")}</td>
-        <td>${Number(item.count || 0).toLocaleString("he-IL")}</td>
+        <td>${Number(item.count || 0).toLocaleString(currentLocaleTag())}</td>
         <td>${escapeHtml(item.group_by || "-")}</td>
         <td dir="ltr">${escapeHtml(item.first_event_id || item.first_event_time || "-")}</td>
         <td dir="ltr">${escapeHtml(item.last_event_id || item.last_event_time || "-")}</td>
-      </tr>`).join("") : '<tr><td colspan="5" class="empty-cell">השכבה מוסתרת או ריקה.</td></tr>';
+      </tr>`).join("") : `<tr><td colspan="5" class="empty-cell">${escapeHtml(activeLocaleText("השכבה מוסתרת או ריקה.", "Layer is hidden or empty."))}</td></tr>`;
     enhanceResultsTable(activeLayer);
     return;
   }
-  head.innerHTML = "<tr><th>מזהה רשומה</th><th>זמן</th><th>אמינות</th><th>ודאות</th><th>גורם</th><th>מיקום</th><th>תקציר</th></tr>";
-  body.innerHTML = activeItems.length ? activeItems.map(event => `
-    <tr>
+  head.innerHTML = `<tr><th class="result-map-action-column" data-result-action-column="true" aria-label="${escapeHtml(activeLocaleText("פעולות", "Actions"))}"></th><th>${escapeHtml(activeLocaleText("מזהה רשומה", "Record ID"))}</th><th>${escapeHtml(activeLocaleText("זמן", "Time"))}</th><th>${escapeHtml(activeLocaleText("אמינות", "Reliability"))}</th><th>${escapeHtml(activeLocaleText("ודאות", "Certainty"))}</th><th>${escapeHtml(activeLocaleText("גורם", "Actor"))}</th><th>${escapeHtml(activeLocaleText("מיקום", "Location"))}</th><th>${escapeHtml(activeLocaleText("תקציר", "Summary"))}</th></tr>`;
+  body.innerHTML = activeItems.length ? activeItems.map(event => {
+    const eventId = String(event.record_id || event.event_id || "");
+    const selected = isMapItemSelected(activeLayer.id, "event", eventId);
+    return `
+    <tr class="${selected ? "map-selected-row" : ""}">
+      <td class="result-map-action-cell">${mapActionButton(activeLayer.id, "event", eventId, event)}</td>
       <td dir="ltr">${escapeHtml(event.record_id || event.event_id || "-")}</td>
       <td dir="ltr">${escapeHtml(event.timestamp_utc)}</td>
       <td>${escapeHtml(event.source_reliability_label || event.source_reliability || "-")}</td>
@@ -4816,7 +5085,8 @@ function renderEvidence() {
       <td>${escapeHtml(event.entity_name || event.entity_id || "-")}</td>
       <td>${escapeHtml(event.location_name || "-")}</td>
       <td>${escapeHtml(event.event_summary || "-")}</td>
-    </tr>`).join("") : '<tr><td colspan="7" class="empty-cell">השכבה מוסתרת או ריקה.</td></tr>';
+    </tr>`;
+  }).join("") : `<tr><td colspan="8" class="empty-cell">${escapeHtml(activeLocaleText("השכבה מוסתרת או ריקה.", "Layer is hidden or empty."))}</td></tr>`;
   enhanceResultsTable(activeLayer);
 }
 
@@ -4834,6 +5104,7 @@ function resetInvestigation(options = {}) {
   state.rawOverlayMinimized = false;
   state.rawOverlayHeight = 28;
   state.resultTableControls.clear();
+  state.focusedMapSelection = null;
   state.history = [];
   state.workstreamLoadToken += 1;
   state.workstreams = [];
@@ -4842,7 +5113,7 @@ function resetInvestigation(options = {}) {
   state.pendingMosheWorkstreamProposal = null;
   state.workstreamComposerMode = false;
   if (!options.keepInvestigation) {
-    const investigation = ensureInvestigationRecord(DEFAULT_INVESTIGATION_NAME);
+    const investigation = ensureInvestigationRecord(defaultInvestigationName());
     state.investigationId = investigation.id;
     state.investigationName = investigation.name;
     saveInvestigationRegistry();
@@ -4864,13 +5135,15 @@ function resetInvestigation(options = {}) {
   if (workstreamComposerMode) workstreamComposerMode.hidden = true;
   renderWorkstreamIndicator();
   closeQueryLayersModal();
-  conversation.innerHTML = '<article class="message assistant-message"><div class="message-label">סוכן חקירה</div><p>אפשר להתחיל בשאלה פתוחה. אשתמש בכלי החיפוש, הזמן והמפה כדי לבנות תשובה שניתן לבדוק מול האירועים הגולמיים.</p></article>';
+  conversation.innerHTML = `<article class="message assistant-message"><div class="message-label">${activeLocaleText("סוכן חקירה", "Investigation Agent")}</div><p>${activeLocaleText("אפשר להתחיל בשאלה פתוחה. אשתמש בכלי החיפוש, הזמן והמפה כדי לבנות תשובה שניתן לבדוק מול האירועים הגולמיים.", "You can start with an open question. I’ll use search, time, and map tools to build an answer you can verify against the raw events.")}</p></article>`;
   updatePromptPlaceholder();
-  if (resultTitle) resultTitle.textContent = "טרם בוצעה חקירה";
-  if (resultSubtitle) resultSubtitle.textContent = "תוצאות, המחשות וראיות יופיעו כאן לאחר השאלה הראשונה.";
-  if (resultCount) resultCount.textContent = "0 אירועים";
+  if (resultTitle) resultTitle.textContent = activeLocaleText("טרם בוצעה חקירה", "No investigation yet");
+  if (resultSubtitle) resultSubtitle.textContent = activeLocaleText("תוצאות, המחשות וראיות יופיעו כאן לאחר השאלה הראשונה.", "Results, visuals, and evidence will appear here after the first question.");
+  if (resultCount) resultCount.textContent = activeLocaleText("0 אירועים", "0 events");
   activateView("map");
-  setSuggestions(["אילו דיווחים על חסימות הופיעו ראשונים?", "האם הטענה על חציית גבול מגובה במקור אמין?", "איפה יש ריכוזי דיווחים מרכזיים?"]);
+  setSuggestions(currentLocale() === "en"
+    ? ["Which blockage reports appeared first?", "Is the border crossing claim supported by a reliable source?", "Where are the main reporting clusters?"]
+    : ["אילו דיווחים על חסימות הופיעו ראשונים?", "האם הטענה על חציית גבול מגובה במקור אמין?", "איפה יש ריכוזי דיווחים מרכזיים?"]);
   renderAllViews();
   renderLayerSelector();
   renderQueryLayersModal();
@@ -4893,6 +5166,11 @@ document.addEventListener("input", event => {
 });
 
 document.addEventListener("click", event => {
+  const resultMapEvent = event.target.closest(".result-map-action[data-result-map-item]");
+  if (resultMapEvent) {
+    toggleMapItem(resultMapEvent.dataset.resultMapLayer, resultMapEvent.dataset.resultMapKind, resultMapEvent.dataset.resultMapItem);
+    return;
+  }
   const columnFilterToggle = event.target.closest(".result-column-filter-toggle[data-result-filter-toggle]");
   if (columnFilterToggle) {
     const layerId = columnFilterToggle.dataset.resultLayer;
@@ -4974,18 +5252,18 @@ document.addEventListener("click", event => {
     const workstream = workstreamRecordingSnapshots.get(workstreamId)
       || state.workstreams.find(item => item.workstream_id === workstreamId);
     if (workstream) {
-      const prompt = `עדכון מעקב — ${workstream.title || "מעקב"}`;
+      const prompt = `${activeLocaleText("עדכון מעקב", "Workstream update")} — ${workstream.title || activeLocaleText("מעקב", "Workstream")}`;
       void (async () => {
         let presentation = null;
         if (workstreamHasPresentation(workstream)) {
           try {
             presentation = await fetchWorkstreamPresentation(workstreamId);
           } catch (error) {
-            saveWorkstream.textContent = "נכשל";
+            saveWorkstream.textContent = activeLocaleText("נכשל", "Failed");
             saveWorkstream.title = error.message;
             setTimeout(() => {
-              saveWorkstream.textContent = "שמור הקלטה";
-              saveWorkstream.title = "שמור את הקלטת המעקב";
+              saveWorkstream.textContent = activeLocaleText("שמור הקלטה", "Save recording");
+              saveWorkstream.title = activeLocaleText("שמור את הקלטת המעקב", "Save the workstream recording");
             }, 2500);
             return;
           }
@@ -5314,7 +5592,17 @@ promptOptionsButton.addEventListener("click", event => {
 workstreamRailToggle?.addEventListener("click", () => setWorkstreamRailCollapsed(!state.workstreamRailCollapsed));
 playbackNextButton?.addEventListener("click", advanceInvestigationPlayback);
 playbackResetButton?.addEventListener("click", resetInvestigationPlayback);
-intelligenceModeSelect?.addEventListener("change", changeIntelligenceMode);
+languageToggle?.addEventListener("change", () => {
+  state.locale = languageToggle.checked ? "en" : "he";
+  try {
+    localStorage.setItem(LOCALE_STORAGE_KEY, state.locale);
+  } catch (error) {
+    // Ignore localStorage failures and still apply the locale for this session.
+  }
+  const url = new URL(window.location.href);
+  url.searchParams.set("lang", state.locale);
+  window.location.assign(url.toString());
+});
 workstreamComposerCancel?.addEventListener("click", () => setWorkstreamComposerMode(false));
 selectedLayersButton.addEventListener("click", openQueryLayersModal);
 selectedLayersClear.addEventListener("click", event => {
@@ -5332,6 +5620,7 @@ recordedClose.addEventListener("click", closeRecordedModal);
 queryLayersClose.addEventListener("click", closeQueryLayersModal);
 queryLayersSubmit.addEventListener("click", submitQueryLayerSelection);
 renderMichlolTeam();
+applyLocaleUi();
 updatePromptPlaceholder();
 enableMentionHighlight(promptInput);
 enableMentionHighlight(stepInjectPrompt);
@@ -5350,8 +5639,7 @@ async function boot() {
   await loadInvestigationMemory({ restoreLayers: true });
   let runtimeStatus = null;
   try {
-    runtimeStatus = await fetch("/api/status", { cache: "no-store" }).then(response => response.json());
-    state.datasetVersion = runtimeStatus.dataset_version || "";
+    runtimeStatus = await fetch(buildLocaleApiUrl("/api/status"), { cache: "no-store" }).then(response => response.json());
     if (runtimeStatus.locations_url) {
       const runtimeLocations = await fetch(runtimeStatus.locations_url, { cache: "no-store" }).then(response => response.json());
       Object.entries(runtimeLocations).forEach(([locationId, location]) => {
@@ -5362,25 +5650,27 @@ async function boot() {
           lon: Number(location.longitude)
         };
       });
+      renderEvidence();
     }
     const datasetUrl = runtimeStatus.dataset_url || "./data/serbia_kosovo_events_projection.csv";
     const response = await fetch(datasetUrl, { cache: "no-store" });
     if (!response.ok) throw new Error("dataset unavailable");
     state.events = parseCsv(await response.text()).map(enrich);
     const versionLabel = runtimeStatus.dataset_version ? ` · ${runtimeStatus.dataset_version.toUpperCase()}` : "";
-    document.getElementById("datasetStatus").textContent = `${state.events.length.toLocaleString("he-IL")} אירועים זמינים במאגר${versionLabel}`;
-    document.querySelector(".status-dot").classList.add("ready");
+    updateSystemStatus("dataset",
+      `${state.events.length.toLocaleString("he-IL")} אירועים זמינים במאגר${versionLabel}`,
+      `${state.events.length.toLocaleString("en-US")} events available in the dataset${versionLabel}`,
+      "ready"
+    );
   } catch (error) {
-    document.getElementById("datasetStatus").textContent = "טעינת הנתונים נכשלה";
+    updateSystemStatus("dataset", "טעינת הנתונים נכשלה", "Failed to load data", "error");
   }
   try {
-    const status = runtimeStatus || await fetch("/api/status", { cache: "no-store" }).then(response => response.json());
+    const status = runtimeStatus || await fetch(buildLocaleApiUrl("/api/status"), { cache: "no-store" }).then(response => response.json());
     if (!status.configured) throw new Error("not configured");
-    agentStatus.textContent = "Hermes + MCP מחוברים";
-    agentStatus.className = "agent-live";
+    updateSystemStatus("agent", "Hermes + MCP מחוברים", "Hermes + MCP connected", "ready");
   } catch (error) {
-    agentStatus.textContent = "מצב הדגמה מקומי";
-    agentStatus.className = "agent-error";
+    updateSystemStatus("agent", "מצב הדגמה מקומי", "Local demo mode", "error");
   }
 }
 

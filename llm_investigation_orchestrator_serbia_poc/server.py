@@ -57,6 +57,7 @@ from workstream_artifacts import (
     list_artifacts,
     revise_artifact,
 )
+from generate_english_projection import translate_location_name, translate_plain, translate_recorded_text
 
 
 def bounded_prompt_cache_key(value: Any) -> str:
@@ -66,6 +67,40 @@ def bounded_prompt_cache_key(value: Any) -> str:
         return normalized
     digest = hashlib.sha256(normalized.encode("utf-8")).hexdigest()[:12]
     return f"{normalized[:51]}-{digest}"
+
+
+def normalize_locale(value: Any) -> str:
+    locale = str(value or "").strip().lower()
+    return locale if locale in {"he", "en"} else "he"
+
+
+RECORDED_EN_OVERRIDES = {
+    "q1_hotspots": {
+        "question": "Where are the main friction hotspots in North Kosovo, and what are the exact hotspots inside each area?",
+        "answer": "In the aggregate sample of 500 events, the strongest friction hotspots are concentrated in Zvečan and Zubin Potok, with a secondary hotspot in North Mitrovica. In Zvečan, the main points are LOC-102 Nearby village 82, LOC-053 General checkpoint 33, LOC-141 Gas station 121, LOC-093 Local junction 73, and LOC-090 Access route 70. In Zubin Potok, the main points are LOC-082 Gas station 62, LOC-144 General checkpoint 124, LOC-083 Gas station 63, and LOC-097 Health center 77. In North Mitrovica, the main point is LOC-066 Access route 46.\nEvidence IDs: Aggregate result without event IDs",
+        "view_reason": "The findings are primarily spatial.",
+    },
+    "q2_movement": {
+        "question": "Can we identify a pattern of force movement or increased presence over time and space?",
+        "answer": "Yes. In the 500 events reviewed, there is a clear concentration on September 14–16 (169, 198, 84), with a sharp decline before that and a moderate rise afterward, which suggests a wave of activity rather than a constant and uniform presence. Spatially, the concentration rests mainly on access routes, checkpoints, and gas stations: LOC-083/082, LOC-053/102, LOC-141, LOC-066, LOC-093, LOC-090, and LOC-144. This looks more like movement or deployment along access corridors than wide dispersion. In terms of hours, the peaks are 04:00–06:00 and also 08:00–12:00, so there is a tendency toward concentrated activity windows, but not an exclusively nocturnal pattern. This is still a sample of 500 events, so we can identify a strong pattern, but we cannot rule out additional sub-patterns without broader expansion.\n\nEvidence IDs: Aggregate result without event IDs",
+        "view_reason": "This requires reviewing the records and sources.",
+    },
+    "q3_stabilizer": {
+        "question": "What is the main international actor actually doing in practice: stabilizing the area, creating a buffer, or restricting freedom of action?",
+        "answer": "The evidence points mainly to a buffer-and-traffic-control role, more than to general stabilization alone. Repeatedly we see movements of security vehicles together with short blockages near access routes and checkpoints (REC-044036, REC-060497, REC-012810, REC-029956), followed by a pattern of increased patrols and guidance to stay away from friction points (REC-017527, REC-091744). In the next stage there are also calls to avoid large gatherings, which strengthens the deterrence and public-order-management component (REC-038312, REC-085058). In practice, KFOR appears to be an actor that creates a buffer and restricts local freedom of action around friction points, with a secondary stabilizing component. Some records are still not fully verified, so this is a strong but not absolute conclusion.\n\nEvidence IDs: REC-044036, REC-060497, REC-012810, REC-029956, REC-017527, REC-091744, REC-038312, REC-085058",
+        "view_reason": "The underlying records need to be reviewed directly.",
+    },
+    "q4_violence_noise": {
+        "question": "Do the reports about gunfire and explosions look like real events or like information noise?",
+        "answer": "Based on the sample, this looks more like mixed information noise than a clean series of verified incidents. Most of the records are marked disputed, false, or unverified, and many explicitly say there is no visual documentation or that a counter-version exists. At the same time, there are several anchors that appear more reliable and point to at least partly real auditory events in some locations, for example REC-009647, REC-055467, and REC-029151. The conclusion is therefore mixed, with more weight on noise around the reports than on full certainty.\n\nEvidence IDs: REC-030007, REC-009647, REC-055467, REC-029151, REC-051051, REC-053693, REC-070948, REC-064898, REC-049749, REC-035952",
+        "view_reason": "The raw sources need to be reviewed.",
+    },
+    "q5_assessment": {
+        "question": "Based on everything you found, does this look like localized enforcement or a broader escalation pattern in North Kosovo?",
+        "answer": "The cumulative assessment leans toward a broader escalation pattern rather than localized enforcement. The same actors, blockages, patrols, and calls to stay away from friction points recur across several hotspots and several days, and there is a close evidentiary bridge between REC-012810, REC-017527, REC-029956, and REC-038312. At the same time, a large share of the reports about gunfire and explosions remains unverified or contradictory, so the violent component itself is less stable than the movement, checkpoint, and deterrence component. The overall picture is therefore one of sustained and expanding friction management around access routes and checkpoints, not a single local enforcement action. The weak link is that there is no shared operational identifier that can be tracked across all of it, so this is a strong but not absolute conclusion.\n\nEvidence IDs: REC-012810, REC-017527, REC-029956, REC-038312, REC-044036, REC-060497, REC-091744, REC-085058, REC-009647, REC-055467",
+        "view_reason": "The evidence itself needs to be checked.",
+    },
+}
 
 try:
     import paramiko
@@ -79,10 +114,11 @@ TARGET_CATALOG_READER = Path(os.environ.get(
     "INTELLIGENCE_POC_TARGET_CATALOG_READER",
     "/opt/serbia-poc/mcp_server/target_catalog_reader.py",
 ))
-TARGET_BANK_PATH = Path(os.environ.get(
-    "INTELLIGENCE_POC_TARGET_BANK",
-    "/opt/serbia-poc/data/attack_targets/attack_targets.db",
-))
+TARGET_BANK_ROOT = Path("/opt/serbia-poc/data/attack_targets")
+TARGET_BANK_PATHS = {
+    "he": Path(os.environ.get("INTELLIGENCE_POC_TARGET_BANK_HE", str(TARGET_BANK_ROOT / "he" / "attack_targets.db"))),
+    "en": Path(os.environ.get("INTELLIGENCE_POC_TARGET_BANK_EN", str(TARGET_BANK_ROOT / "en" / "attack_targets.db"))),
+}
 CONFIG_PATH = ROOT / ".hermes-api.json"
 RECORDED_RUNS_PATH = ROOT / "test_runs" / "compact_demo_after_general_instructions_20260620T151848Z.json"
 DATASET_VERSION = os.environ.get("INTELLIGENCE_POC_DATASET_VERSION", "v2").strip().lower()
@@ -116,9 +152,10 @@ else:
 STATE_SUFFIX = Path(DATASET_VERSION) if DATASET_VERSION != "v1" else Path()
 PERFORMANCE_DIR = ROOT / "performance_logs" / STATE_SUFFIX
 RECORDED_RUNS_DIR = ROOT / "recorded_runs" / STATE_SUFFIX
+RECORDED_RUNS_DIR_EN = ROOT / "recorded_runs_en" / STATE_SUFFIX
 SAVED_QUESTIONS_DIR = ROOT / "saved_questions" / STATE_SUFFIX
 INVESTIGATIONS_DIR = ROOT / "investigations" / STATE_SUFFIX
-WORKSTREAMS_DIR = ROOT / "workstreams" / STATE_SUFFIX
+WORKSTREAMS_DIR = ROOT / "workstreams"
 SCENARIO_MANIFESTS_DIR = ROOT / "scenario_manifests"
 SCENARIO_RUNS_DIR = ROOT / "scenario_runs" / STATE_SUFFIX
 TERMINAL_STATUSES = {"completed", "failed", "cancelled"}
@@ -128,8 +165,11 @@ INVESTIGATION_ID_PATTERN = re.compile(r"^[A-Za-z0-9_.-]+$")
 WORKSTREAM_ID_PATTERN = re.compile(r"^ws_[A-Za-z0-9_.-]+$")
 WORKSTREAM_STATUSES = {"active", "paused", "completed", "archived"}
 PARTICIPANT_KINDS = {"human", "agent"}
+HEBREW_TEXT_PATTERN = re.compile(r"[\u0590-\u05ff]")
 ACTIVE_RUN_STARTED_AT = None
 ACTIVE_RUN_STARTED_AT_BY_AUDIT: dict[str, datetime] = {}
+_PLAYBACK_REEVALUATION_THREADS: dict[tuple[str, int], threading.Thread] = {}
+_PLAYBACK_REEVALUATION_THREADS_LOCK = threading.Lock()
 APP_BUILD = f"serbia-poc-{DATASET_VERSION}"
 REMOTE_AUDIT_PATH = "/opt/serbia-poc/mcp_audit.jsonl"
 HERMES_TOOL_PREFIX = "mcp_serbia_events_poc_"
@@ -139,31 +179,77 @@ try:
 except (OSError, json.JSONDecodeError):
     LOCATIONS = {}
 
+EVENTS_PATH_EN = EVENTS_PATH.with_name(EVENTS_PATH.stem + ".en" + EVENTS_PATH.suffix)
+LOCATIONS_PATH_EN = LOCATIONS_PATH.with_name(LOCATIONS_PATH.stem + ".en" + LOCATIONS_PATH.suffix)
+ENTITIES_PATH_EN = ENTITIES_PATH.with_name(ENTITIES_PATH.stem + ".en" + ENTITIES_PATH.suffix)
+DATASET_URL_EN = DATASET_URL.replace(".csv", ".en.csv")
+LOCATIONS_URL_EN = LOCATIONS_URL.replace(".json", ".en.json")
 
-def load_ui_events() -> list[dict[str, Any]]:
-    if not EVENTS_PATH.exists():
+
+def localized_dataset_paths(locale: str = "he") -> tuple[Path, Path, Path]:
+    locale = normalize_locale(locale)
+    if locale == "en" and EVENTS_PATH_EN.exists() and LOCATIONS_PATH_EN.exists() and ENTITIES_PATH_EN.exists():
+        return EVENTS_PATH_EN, LOCATIONS_PATH_EN, ENTITIES_PATH_EN
+    return EVENTS_PATH, LOCATIONS_PATH, ENTITIES_PATH
+
+
+def localized_dataset_urls(locale: str = "he") -> tuple[str, str]:
+    locale = normalize_locale(locale)
+    if locale == "en" and EVENTS_PATH_EN.exists() and LOCATIONS_PATH_EN.exists():
+        return DATASET_URL_EN, LOCATIONS_URL_EN
+    return DATASET_URL, LOCATIONS_URL
+
+
+def load_locations_db(locale: str = "he") -> dict[str, dict[str, Any]]:
+    _, locations_path, _ = localized_dataset_paths(locale)
+    try:
+        return json.loads(locations_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return dict(LOCATIONS)
+
+
+def localized_recorded_runs_dir(locale: str = "he") -> Path:
+    locale = normalize_locale(locale)
+    if locale == "en" and RECORDED_RUNS_DIR_EN.exists():
+        return RECORDED_RUNS_DIR_EN
+    return RECORDED_RUNS_DIR
+
+
+def load_ui_events(locale: str = "he") -> list[dict[str, Any]]:
+    events_path, _, _ = localized_dataset_paths(locale)
+    locale = normalize_locale(locale)
+    locations_db = load_locations_db(locale)
+    if not events_path.exists():
         return []
-    with EVENTS_PATH.open(encoding="utf-8-sig", newline="") as handle:
+    with events_path.open(encoding="utf-8-sig", newline="") as handle:
         events = list(csv.DictReader(handle))
     for event in events:
-        location = LOCATIONS.get(event.get("location_id") or "", {})
+        if locale == "en":
+            event["source_type"] = translate_plain(event.get("source_type", ""))
+            event["source_reliability"] = translate_plain(event.get("source_reliability", ""))
+            event["source_reliability_label"] = translate_plain(event.get("source_reliability_label", ""))
+            event["certainty_level"] = translate_plain(event.get("certainty_level", ""))
+            event["event_summary"] = translate_plain(event.get("event_summary", ""))
+        location = locations_db.get(event.get("location_id") or "", {})
         event["location_name"] = location.get("name", event.get("location_id") or "")
         event["location_type"] = location.get("type", "")
     return sorted(events, key=lambda item: str(item.get("timestamp_utc") or ""))
 
 
-def load_ui_entity_db() -> dict[str, dict[str, Any]]:
-    if not ENTITIES_PATH.exists():
+def load_ui_entity_db(locale: str = "he") -> dict[str, dict[str, Any]]:
+    _, _, entities_path = localized_dataset_paths(locale)
+    if not entities_path.exists():
         return {}
     try:
-        loaded = json.loads(ENTITIES_PATH.read_text(encoding="utf-8"))
+        loaded = json.loads(entities_path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
         return {}
     return {item["entity_id"]: item for item in loaded if item.get("entity_id")}
 
 
-def build_ui_entity_layers(events: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
-    entity_db = load_ui_entity_db()
+def build_ui_entity_layers(events: list[dict[str, Any]], locale: str = "he") -> dict[str, dict[str, Any]]:
+    entity_db = load_ui_entity_db(locale)
+    locations_db = load_locations_db(locale)
     entity_ids = sorted({event.get("entity_id", "") for event in events if event.get("entity_id")})
     presentations: dict[str, dict[str, Any]] = {}
     for entity_id in entity_ids:
@@ -171,7 +257,7 @@ def build_ui_entity_layers(events: list[dict[str, Any]]) -> dict[str, dict[str, 
         entity_events = [event for event in events if event.get("entity_id") == entity_id]
         top_locations = []
         for location_id, count in Counter(event.get("location_id") for event in entity_events if event.get("location_id")).most_common(12):
-            location = LOCATIONS.get(location_id, {})
+            location = locations_db.get(location_id, {})
             top_locations.append({
                 "location_id": location_id,
                 "location_name": location.get("name", location_id),
@@ -196,13 +282,14 @@ def build_ui_entity_layers(events: list[dict[str, Any]]) -> dict[str, dict[str, 
     return presentations
 
 
-def build_ui_location_layers(events: list[dict[str, Any]], entity_presentations: dict[str, dict[str, Any]]) -> dict[str, dict[str, Any]]:
+def build_ui_location_layers(events: list[dict[str, Any]], entity_presentations: dict[str, dict[str, Any]], locale: str = "he") -> dict[str, dict[str, Any]]:
+    locations_db = load_locations_db(locale)
     presentations: dict[str, dict[str, Any]] = {}
     events_by_location: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for event in events:
         if event.get("location_id"):
             events_by_location[event["location_id"]].append(event)
-    for location_id, location in LOCATIONS.items():
+    for location_id, location in locations_db.items():
         location_events = events_by_location.get(location_id, [])
         presentations[location_id] = {
             "location_id": location_id,
@@ -232,24 +319,58 @@ def build_ui_location_layers(events: list[dict[str, Any]], entity_presentations:
     return presentations
 
 
-def ui_layer_data() -> tuple[list[dict[str, Any]], dict[str, dict[str, Any]], dict[str, dict[str, Any]]]:
-    events = load_ui_events()
-    entities = build_ui_entity_layers(events)
-    locations = build_ui_location_layers(events, entities)
+def ui_layer_data(locale: str = "he") -> tuple[list[dict[str, Any]], dict[str, dict[str, Any]], dict[str, dict[str, Any]]]:
+    events = visible_ui_events(locale)
+    entities = build_ui_entity_layers(events, locale)
+    locations = build_ui_location_layers(events, entities, locale)
     for event in events:
         entity = entities.get(event.get("entity_id") or "", {})
         event["entity_name"] = entity.get("canonical_name") or event.get("entity_id") or ""
     return events, entities, locations
 
 
+def active_playback_timeframe() -> dict | None:
+    policy = load_playback_visibility(SCENARIO_RUNS_DIR) or {}
+    if not policy.get("active"):
+        return None
+    timeframe = policy.get("visible_timeframe")
+    if not isinstance(timeframe, dict):
+        return None
+    start = parse_utc(timeframe.get("from"))
+    end = parse_utc(timeframe.get("to"))
+    if start is None or end is None or start >= end:
+        return None
+    return {
+        "from": timeframe.get("from"),
+        "to": timeframe.get("to"),
+        "_from": start,
+        "_to": end,
+    }
+
+
+def visible_ui_events(locale: str = "he") -> list[dict[str, Any]]:
+    events = load_ui_events(locale)
+    timeframe = active_playback_timeframe()
+    if timeframe is None:
+        return events
+    visible: list[dict[str, Any]] = []
+    for event in events:
+        timestamp = parse_utc(event.get("timestamp_utc"))
+        if timestamp is not None and timeframe["_from"] <= timestamp < timeframe["_to"]:
+            visible.append(event)
+    return visible
+
+
 def load_persisted_attack_targets(
     entities: dict[str, dict[str, Any]], locations: dict[str, dict[str, Any]], limit: int = 500,
+    locale: str = "he",
 ) -> list[dict[str, Any]]:
-    if not TARGET_CATALOG_READER.is_file() or not TARGET_BANK_PATH.is_file():
+    target_bank_path = TARGET_BANK_PATHS[normalize_locale(locale)]
+    if not TARGET_CATALOG_READER.is_file() or not target_bank_path.is_file():
         return []
     try:
         completed = subprocess.run(
-            [sys.executable, str(TARGET_CATALOG_READER), "--db", str(TARGET_BANK_PATH), "--limit", str(limit)],
+            [sys.executable, str(TARGET_CATALOG_READER), "--db", str(target_bank_path), "--limit", str(limit)],
             capture_output=True, text=True, encoding="utf-8", timeout=8, check=True, shell=False,
         )
         rows = json.loads(completed.stdout).get("rows", [])
@@ -263,9 +384,11 @@ def load_persisted_attack_targets(
     return rows
 
 
-def list_ui_layers() -> list[dict[str, Any]]:
-    events, entities, locations = ui_layer_data()
-    targets = load_persisted_attack_targets(entities, locations)
+def list_ui_layers(locale: str = "he") -> list[dict[str, Any]]:
+    locale = normalize_locale(locale)
+    events, entities, locations = ui_layer_data(locale)
+    targets = load_persisted_attack_targets(entities, locations, locale=locale)
+    unknown_source = "Unknown source" if locale == "en" else "מקור לא ידוע"
     layers = [
         {
             "id": "entity-metadata:all",
@@ -292,7 +415,11 @@ def list_ui_layers() -> list[dict[str, Any]]:
         "count": len(targets),
         "capabilities": {"table": True, "map": True, "timeline": False},
     })
-    source_counts = Counter(event.get("source_type") or "מקור לא ידוע" for event in events)
+    if locale == "en":
+        layers[0]["label"] = "Entity layer"
+        layers[1]["label"] = "Location layer"
+        layers[-1]["label"] = "Target candidates"
+    source_counts = Counter(event.get("source_type") or unknown_source for event in events)
     for source_type, count in sorted(source_counts.items(), key=lambda item: (-item[1], item[0])):
         layers.append({
             "id": f"events:{source_type}",
@@ -306,9 +433,10 @@ def list_ui_layers() -> list[dict[str, Any]]:
     return layers
 
 
-def get_ui_layer_rows(layer_id: str) -> tuple[dict[str, Any], list[dict[str, Any]]] | None:
-    events, entities, locations = ui_layer_data()
-    layers = {layer["id"]: layer for layer in list_ui_layers()}
+def get_ui_layer_rows(layer_id: str, locale: str = "he") -> tuple[dict[str, Any], list[dict[str, Any]]] | None:
+    locale = normalize_locale(locale)
+    events, entities, locations = ui_layer_data(locale)
+    layers = {layer["id"]: layer for layer in list_ui_layers(locale)}
     layer = layers.get(layer_id)
     if not layer:
         return None
@@ -317,10 +445,11 @@ def get_ui_layer_rows(layer_id: str) -> tuple[dict[str, Any], list[dict[str, Any
     elif layer_id == "location-metadata:all":
         rows = sorted(locations.values(), key=lambda item: (-int(item.get("event_count") or 0), str(item.get("location_name") or "")))
     elif layer_id == ATTACK_TARGET_CATALOG_LAYER_ID:
-        rows = load_persisted_attack_targets(entities, locations)
+        rows = load_persisted_attack_targets(entities, locations, locale=locale)
     elif layer_id.startswith("events:"):
         source_type = layer.get("source_type") or layer_id.split(":", 1)[1]
-        rows = [event for event in events if (event.get("source_type") or "מקור לא ידוע") == source_type]
+        unknown_source = "Unknown source" if locale == "en" else "מקור לא ידוע"
+        rows = [event for event in events if (event.get("source_type") or unknown_source) == source_type]
     else:
         return None
     return layer, rows
@@ -425,6 +554,30 @@ RECORDED_TOOL_TEXT = {
     ),
 }
 
+RECORDED_TOOL_TEXT_EN = {
+    "classify_question_intent": ("Question intent classification", "The agent determines whether this is retrieval, map, timeline, or deeper investigation.", "A working path and display recommendation were set for the recorded run."),
+    "resolve_location": ("Location resolution", "The agent maps an area or place to LOC identifiers that can be shown and filtered.", "Relevant locations were found for the question."),
+    "resolve_entity": ("Entity resolution", "The agent consolidates names and aliases so relevant records are not missed.", "The resolved entity and aliases were used for follow-on search."),
+    "aggregate_events": ("Aggregation", "The agent counts events by place, time, source, or actor to find unusual concentrations.", "A distribution was returned that highlights hotspots or time windows."),
+    "search_events": ("Event search", "The agent searches the dataset by keywords, time, source, or location to gather evidence.", "Records supporting the recorded answer were found."),
+    "semantic_search_events": ("Semantic search", "The agent searches for meaningfully similar events even when wording differs from the record text.", "Semantic candidates with event IDs and match scores were found."),
+    "find_actor_history": ("Actor history", "The agent checks appearances of the same actor across time and geography.", "Additional appearances were found that strengthen or qualify the pattern."),
+    "get_objects": ("Object retrieval", "The agent fetches full objects from event, location, or entity layers before displaying or citing them.", "The objects were validated against the main identifiers."),
+    "trace_semantic_clues": ("Semantic clue tracing", "The agent looks for recurring phrasing such as gunfire, blockage, border crossing, rumor, or denial.", "Clues were found that explain the continuation or the noise in the data."),
+    "find_related_events": ("Evidence expansion", "The agent expands from anchor events by time, place, entity, and semantic content.", "Related candidates were found for further review."),
+    "explain_linkage": ("Evidence bridge check", "The agent checks whether the transition between two records rests on shared time, place, entity, or content.", "The bridge was assessed as strong, circumstantial, or missing."),
+    "challenge_hypothesis": ("Alternative check", "The agent looks for alternative explanations and gaps before drawing a strong conclusion.", "Alternatives and gaps were found and should be reflected in the answer."),
+    "plan_next_investigation_step": ("Direction control", "The agent checks whether there are still open clues before summarizing.", "A decision was made whether to continue expanding or summarize cautiously."),
+    "build_event_sequence": ("Sequence building", "The agent orders the evidence in time to understand how the situation unfolded.", "A chronological sequence was built for display."),
+}
+
+
+def recorded_tool_text(tool: str, locale: str = "he") -> tuple[str, str, str]:
+    locale = normalize_locale(locale)
+    if locale == "en":
+        return RECORDED_TOOL_TEXT_EN.get(tool) or ("Investigation step", "The agent advanced using the collected context.", "Output was produced and used in the answer.")
+    return RECORDED_TOOL_TEXT.get(tool) or ("פעולת חקירה", "הסוכן התקדם לפי ההקשר שנאסף.", "התקבל פלט ששימש את התשובה.")
+
 
 def elapsed_ms(started: float) -> float:
     return round((time.perf_counter() - started) * 1000, 3)
@@ -472,11 +625,12 @@ def update_performance_client(run_id: str, client_performance: dict) -> Path | N
     return path
 
 
-def load_full_recorded_runs() -> list[dict]:
-    if not RECORDED_RUNS_DIR.exists():
+def load_full_recorded_runs(locale: str = "he") -> list[dict]:
+    recorded_runs_dir = localized_recorded_runs_dir(locale)
+    if not recorded_runs_dir.exists():
         return []
     runs: list[dict] = []
-    for path in sorted(RECORDED_RUNS_DIR.glob("*.json")):
+    for path in sorted(recorded_runs_dir.glob("*.json")):
         try:
             payload = json.loads(path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError):
@@ -499,7 +653,8 @@ def load_recorded_results() -> list[dict]:
     return [item for item in payload.get("results") or [] if item.get("status") == 200 and item.get("answer")]
 
 
-def recorded_questions() -> list[dict]:
+def recorded_questions(locale: str = "he") -> list[dict]:
+    locale = normalize_locale(locale)
     demo_order = {
         "q1_hotspots": 1,
         "real_hotspots_20260621": 1,
@@ -511,9 +666,11 @@ def recorded_questions() -> list[dict]:
     questions = []
     seen_questions: set[str] = set()
     seen_ids: set[str] = set()
-    for item in load_full_recorded_runs():
+    for item in load_full_recorded_runs(locale):
         recorded_id = item.get("id")
         question = item.get("question")
+        if locale == "en":
+            question = RECORDED_EN_OVERRIDES.get(recorded_id, {}).get("question") or translate_recorded_text(question)
         result = item.get("result") or {}
         questions.append({
             "id": recorded_id,
@@ -532,6 +689,8 @@ def recorded_questions() -> list[dict]:
         if recorded_id and str(recorded_id).strip() in seen_ids:
             continue
         question = item.get("prompt")
+        if locale == "en":
+            question = RECORDED_EN_OVERRIDES.get(recorded_id, {}).get("question") or translate_recorded_text(question)
         if question and str(question).strip() in seen_questions:
             continue
         questions.append({
@@ -544,7 +703,8 @@ def recorded_questions() -> list[dict]:
     return sorted(questions, key=lambda item: (demo_order.get(str(item.get("id") or ""), 100), str(item.get("question") or "")))
 
 
-def recorded_map_locations(ids: list[str]) -> list[dict]:
+def recorded_map_locations(ids: list[str], locale: str = "he") -> list[dict]:
+    locale = normalize_locale(locale)
     locations = []
     for event_id in ids:
         if not str(event_id).startswith("LOC-"):
@@ -552,9 +712,12 @@ def recorded_map_locations(ids: list[str]) -> list[dict]:
         location = LOCATIONS.get(event_id)
         if not location:
             continue
+        location_name = location.get("name", event_id)
+        if locale == "en":
+            location_name = translate_location_name(location_name)
         locations.append({
             "location_id": event_id,
-            "location_name": location.get("name", event_id),
+            "location_name": location_name,
             "latitude": location.get("latitude"),
             "longitude": location.get("longitude"),
             "count": 1,
@@ -606,8 +769,8 @@ def synthesize_recorded_steps(item: dict) -> list[dict]:
     return steps
 
 
-def recorded_result(recorded_id: str) -> dict | None:
-    for item in load_full_recorded_runs():
+def recorded_result(recorded_id: str, locale: str = "he") -> dict | None:
+    for item in load_full_recorded_runs(locale):
         if item.get("id") != recorded_id:
             continue
         result = dict(item.get("result") or {})
@@ -649,8 +812,228 @@ def recorded_result(recorded_id: str) -> dict | None:
     return None
 
 
+def synthesize_recorded_steps_localized(item: dict, locale: str = "he") -> list[dict]:
+    locale = normalize_locale(locale)
+    if locale != "en":
+        return synthesize_recorded_steps(item)
+    sequence = item.get("tool_sequence") or []
+    ids = [str(value) for value in item.get("ids") or []]
+    map_locations = recorded_map_locations(ids, locale="en")
+    steps = []
+    for index, tool in enumerate(sequence, start=1):
+        action, bridge, result = recorded_tool_text(tool, locale="en")
+        if index == 1:
+            bridge = "The agent starts by classifying the question to decide whether this is retrieval, map, timeline, or deeper investigation."
+        elif index == len(sequence):
+            bridge = "At the final stage the agent connects the main findings into an answer that can be shown to the analyst."
+        step = {
+            "tool": tool,
+            "bridge_summary": bridge,
+            "observed_clue": "Recorded replay from a real agent output.",
+            "decision": bridge,
+            "expected_value": "Advance the investigation without waiting for a live model run.",
+            "rationale": bridge,
+            "action": action,
+            "result": result,
+            "technical": {
+                "tool": tool,
+                "arguments": {"recorded_replay": True, "source_run_id": item.get("run_id")},
+                "is_error": False,
+            },
+        }
+        if tool == "aggregate_events" and map_locations:
+            step["map_locations"] = map_locations
+        steps.append(step)
+    if not steps:
+        steps.append({
+            "tool": "recorded_replay",
+            "bridge_summary": "The system is showing a recorded answer from a real run.",
+            "observed_clue": "A recorded question was selected.",
+            "decision": "Show a pre-approved result for the demo.",
+            "expected_value": "A fast and consistent answer.",
+            "rationale": "A fast and consistent demo answer.",
+            "action": "Load recorded answer",
+            "result": "The answer was loaded from the local recorded-runs store.",
+            "technical": {"tool": "recorded_replay", "arguments": {"recorded_replay": True}, "is_error": False},
+        })
+    return steps
+
+
+def recorded_result_localized(recorded_id: str, locale: str = "he") -> dict | None:
+    locale = normalize_locale(locale)
+    result = recorded_result(recorded_id, locale=locale)
+    if result is None or locale != "en":
+        return result
+    localized = dict(result)
+    overrides = RECORDED_EN_OVERRIDES.get(recorded_id, {})
+    if localized.get("question"):
+        localized["question"] = overrides.get("question") or translate_recorded_text(localized.get("question"))
+    if localized.get("answer"):
+        localized["answer"] = overrides.get("answer") or translate_recorded_text(localized.get("answer"))
+    localized["view_reason"] = overrides.get("view_reason") or "Recorded run for demo"
+    source_run_id = localized.get("source_run_id")
+    matching_item = None
+    for item in load_full_recorded_runs(locale):
+        if item.get("id") == recorded_id:
+            matching_item = item
+            break
+    if matching_item is None:
+        for item in load_recorded_results():
+            if item.get("id") == recorded_id:
+                matching_item = item
+                break
+    if matching_item is not None:
+        localized["investigation_steps"] = synthesize_recorded_steps_localized(matching_item, locale="en")
+        if not localized.get("source_run_id"):
+            localized["source_run_id"] = matching_item.get("run_id") or source_run_id
+    return localized
+
+
 def utc_now_iso() -> str:
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+
+
+def render_investigation_state_localized(inv_state, locale: str = "he") -> str:
+    locale = normalize_locale(locale)
+    if locale != "en":
+        return HermesClient.render_investigation_state(inv_state)
+    if not inv_state:
+        return ""
+    lines = ["--- Current investigation state (do not repeat work that was already done) ---"]
+    turn = inv_state.get("turn", 0)
+    lines.append(f"Turn number: {turn}")
+
+    confirmed = inv_state.get("confirmed_event_ids") or []
+    if confirmed:
+        ids_str = ", ".join(confirmed[:40])
+        suffix = f" and {len(confirmed) - 40} more" if len(confirmed) > 40 else ""
+        lines.append(f"Confirmed events so far ({len(confirmed)}): {ids_str}{suffix}")
+
+    actors = inv_state.get("confirmed_actors") or []
+    if actors:
+        lines.append(f"Confirmed actors: {', '.join(actors)}")
+
+    entities = inv_state.get("entities_resolved") or {}
+    if entities:
+        entity_strs = [f"{eid}: {', '.join(aliases)}" for eid, aliases in entities.items()]
+        lines.append(f"Resolved entities: {'; '.join(entity_strs)}")
+
+    hypothesis = inv_state.get("current_hypothesis")
+    if hypothesis:
+        confidence = inv_state.get("confidence") or "not set"
+        lines.append(f"Active hypothesis: {hypothesis}")
+        lines.append(f"Current confidence: {confidence}")
+
+    gaps = inv_state.get("gaps") or []
+    if gaps:
+        lines.append(f"Known gaps: {'; '.join(gaps)}")
+
+    leads = inv_state.get("open_leads") or []
+    if leads:
+        lines.append(f"Open leads: {'; '.join(leads)}")
+
+    workstream = inv_state.get("active_workstream")
+    if isinstance(workstream, dict):
+        lines.append("Active workstream context for collaboration with the user:")
+        lines.append(json.dumps(workstream, ensure_ascii=False))
+        lines.append(
+            "This context is not write permission. A new proposal requires prepare_workstream_indication_proposal; "
+            "a pending proposal requires decide_workstream_indication_proposal."
+        )
+
+    selected_layers = inv_state.get("selected_layers") or []
+    if selected_layers:
+        lines.append("Layers selected in the UI before the current prompt:")
+        for layer in selected_layers[:8]:
+            if not isinstance(layer, dict):
+                continue
+            label = str(layer.get("label") or layer.get("id") or "Unnamed layer")
+            kind = str(layer.get("kind") or "unknown")
+            catalog_id = str(layer.get("catalog_layer_id") or "")
+            filtered_count = layer.get("filtered_count")
+            original_count = layer.get("original_count")
+            count_text = ""
+            if isinstance(filtered_count, int) and isinstance(original_count, int):
+                count_text = f"{filtered_count}/{original_count}" if filtered_count != original_count else str(original_count)
+            source_type = str(layer.get("source_type") or "").strip()
+            filters = layer.get("applied_filters") or []
+            filter_parts = []
+            if isinstance(filters, list):
+                for item in filters[:8]:
+                    if not isinstance(item, dict):
+                        continue
+                    field = str(item.get("field") or "").strip()
+                    value = str(item.get("value") or "").strip()
+                    if field and value:
+                        filter_parts.append(f"{field} contains {value}")
+            sample_ids = layer.get("sample_ids") or []
+            details = [f"label={label}", f"kind={kind}"]
+            if catalog_id:
+                details.append(f"catalog={catalog_id}")
+            if count_text:
+                details.append(f"count={count_text}")
+            if source_type:
+                details.append(f"source_type={source_type}")
+            if filter_parts:
+                details.append(f"filters={'; '.join(filter_parts)}")
+            if sample_ids:
+                details.append(f"sample_ids={', '.join(str(value) for value in sample_ids[:6])}")
+            lines.append("- " + " | ".join(details))
+    return "\n".join(lines)
+
+
+def build_english_agent_instructions(
+    classify_instruction: str,
+    responding_agent: str,
+    playback_authorized: bool,
+) -> str:
+    lines = [
+        "You are an investigation agent inside an experimental intelligence workspace for a North Kosovo / Serbia escalation scenario.",
+        "All user-facing content must be in English only. Keep raw identifiers, record IDs, and source titles exactly as they appear in the data.",
+        "Include locale=\"en\" in every MCP tool call. Target searches and writes must use only the English target bank.",
+        f"Use only MCP tools whose names start with {HERMES_TOOL_PREFIX} and only the data they return. Do not use shell, filesystem, web, system tools, or any other external capability.",
+        "Analytic viewpoint: Serbian military intelligence analyst. The dataset is biased toward open sources and synthetic Serbian ISR drone observations about rival forces and the surrounding environment.",
+        "Always distinguish observation, identification, inference, and uncertainty. Counts derived from video are estimates and require corroboration.",
+        classify_instruction.strip(),
+        "Default operating principle for intelligence questions is coverage-first and exhaustive retrieval within the allowed tool budget.",
+        "If a tool output is truncated, sampled, or partial, do not present it as complete. Continue narrowing/expanding, or explicitly state that coverage is partial.",
+        "For every tool call, include step_bridge as a short user-presentable bridge sentence explaining why this step follows from the previous result.",
+        "Do not expose chain-of-thought. Provide only short analytic rationale suitable for display.",
+        "If recommended_mode is retrieval: answer directly and briefly, without turning it into a hidden-pattern investigation unless the user explicitly asks for that.",
+        "If recommended_mode is investigation: expand iteratively, connect evidence across time, place, entity, and content, and stay within tool_budget when possible.",
+        "When investigating a specific record, location, actor, or claim: resolve the direct identifier first, expand with related events, test evidentiary bridges, build a sequence, and only then challenge the hypothesis.",
+        "Do not infer that temporal or spatial proximity alone proves a connection. Prefer explicit bridges such as shared identifier, entity, wording, movement, place continuity, or operational logic.",
+        "When the user asks for a pattern, hidden link, prior trigger, central component, or broader explanation, treat it as a true investigation request rather than a simple retrieval request.",
+        "Every central factual claim must cite visible record or location identifiers in parentheses such as (REC-025790) or (LOC-001).",
+        "Do not write a free-text line that starts with 'Evidence IDs:'. The UI builds the evidence presentation from evidence_layers.",
+        "When the user asks to present a saved layer, use only present_saved_memory_layers for that presentation; after it succeeds, do not call present_requested_results for the same request.",
+        "For all other requests, call present_requested_results exactly once before the final answer whenever there are concrete data objects or evidence layers worth presenting in the UI.",
+        "End with exactly one final line in the format 'Recommended view: VIEW | REASON'. VIEW must be one of map, timeline, or evidence. REASON must be short.",
+    ]
+    if responding_agent == MOSHE_AGENT_ID:
+        lines.extend([
+            "You are Moshe, the targets officer. The user addressed you explicitly via @Moshe.",
+            "You handle clarification, evidence collection, classification, fusion, source independence checks, duplicate checks, and target-candidate creation only when prepare_target_candidate returns persistence_eligible=true.",
+            "When the user provides a REC identifier, use search_target_candidates with record_id to find any existing target candidate that already contains that record.",
+            "Low-confidence findings may be reported to the user but must not be persisted.",
+            "Do not invent source_group values and do not bypass the fusion toolchain.",
+            "For workstream-related requests, write natural analyst-facing language rather than exposing internal command phrasing.",
+            "For target-backed workstreams, include every resolved TGT identifier explicitly in both the title and objective.",
+            "REC is an indication; TGT is only a possible target subject and is never itself evidence.",
+        ])
+        if playback_authorized:
+            lines.extend([
+                "Playback mode is authorized. Active workstreams and target-candidate updates are allowed during playback.",
+                "Update the active workstream from the newly ingested time slice, use the target bank for duplicate checks, and create or update a target candidate whenever prepare_target_candidate returns persistence_eligible=true.",
+                "Do not ask for extra approval during playback for these in-scope updates.",
+            ])
+        else:
+            lines.extend([
+                "Outside playback, use prepare_workstream_indication_proposal before any workstream persistence and do not self-approve the proposal.",
+                "Outside playback, do not create or update the target bank as part of ordinary workstream assessment flow.",
+            ])
+        lines.append("You have no permission to use shell, filesystem, SQL, reset, evaluator, or any system-state mutation tools.")
+    return "\n".join(lines)
 
 
 def saved_question_path(saved_id: str) -> Path:
@@ -1032,7 +1415,8 @@ def save_investigation_memory(request: dict) -> dict:
     return payload
 
 
-def list_investigation_memory_metadata() -> list[dict]:
+def list_investigation_memory_metadata(locale: str = "he") -> list[dict]:
+    locale = normalize_locale(locale)
     items_by_id: dict[str, dict] = {}
     if INVESTIGATIONS_DIR.exists():
         for path in sorted(INVESTIGATIONS_DIR.glob("*.json")):
@@ -1042,23 +1426,24 @@ def list_investigation_memory_metadata() -> list[dict]:
             except ValueError:
                 continue
             items_by_id[investigation_id] = investigation_memory_metadata(payload)
-    if WORKSTREAMS_DIR.exists():
-        for path in WORKSTREAMS_DIR.glob("ws_*.json"):
-            payload = load_workstream(path.stem)
-            investigation_id = str((payload or {}).get("investigation_id") or "").strip()
-            if not INVESTIGATION_ID_PATTERN.fullmatch(investigation_id):
-                continue
-            items_by_id.setdefault(investigation_id, {
-                "investigation_id": investigation_id,
-                "name": investigation_id,
-                "created_at_utc": (payload or {}).get("created_at_utc"),
-                "updated_at_utc": (payload or {}).get("updated_at_utc"),
-                "chat_summary_count": 0,
-                "layer_count": 0,
-            })
+    for path in iter_workstream_paths(locale):
+        payload = load_workstream(path.stem, locale)
+        investigation_id = str((payload or {}).get("investigation_id") or "").strip()
+        if not INVESTIGATION_ID_PATTERN.fullmatch(investigation_id):
+            continue
+        items_by_id.setdefault(investigation_id, {
+            "investigation_id": investigation_id,
+            "name": investigation_id,
+            "created_at_utc": (payload or {}).get("created_at_utc"),
+            "updated_at_utc": (payload or {}).get("updated_at_utc"),
+            "chat_summary_count": 0,
+            "layer_count": 0,
+        })
     if SCENARIO_RUNS_DIR.exists():
         for path in SCENARIO_RUNS_DIR.glob("run_*.json"):
             payload = load_scenario_run(SCENARIO_RUNS_DIR, path.stem)
+            if normalize_locale((payload or {}).get("locale")) != locale:
+                continue
             investigation_id = str((payload or {}).get("investigation_id") or "").strip()
             if not INVESTIGATION_ID_PATTERN.fullmatch(investigation_id):
                 continue
@@ -1091,11 +1476,35 @@ def register_investigation(request: dict) -> dict:
     return investigation_memory_metadata(save_investigation_memory(payload))
 
 
-def workstream_path(workstream_id: str) -> Path:
+def workstream_state_suffix() -> Path:
+    return Path(DATASET_VERSION.replace(".", "_")) if DATASET_VERSION != "v1" else Path("v1")
+
+
+def workstream_dir(locale: str = "he") -> Path:
+    return WORKSTREAMS_DIR / workstream_state_suffix() / normalize_locale(locale)
+
+
+def legacy_workstream_dirs(locale: str = "he") -> list[Path]:
+    locale = normalize_locale(locale)
+    if locale != "he":
+        return []
+    candidates = [
+        WORKSTREAMS_DIR / STATE_SUFFIX,
+        WORKSTREAMS_DIR,
+    ]
+    result: list[Path] = []
+    for candidate in candidates:
+        if candidate not in result:
+            result.append(candidate)
+    return result
+
+
+def workstream_path(workstream_id: str, locale: str = "he") -> Path:
     if not WORKSTREAM_ID_PATTERN.fullmatch(workstream_id or ""):
         raise ValueError("Invalid workstream id")
-    path = (WORKSTREAMS_DIR / f"{workstream_id}.json").resolve()
-    if WORKSTREAMS_DIR.resolve() not in path.parents:
+    directory = workstream_dir(locale)
+    path = (directory / f"{workstream_id}.json").resolve()
+    if directory.resolve() not in path.parents:
         raise ValueError("Invalid workstream path")
     return path
 
@@ -1108,12 +1517,42 @@ def normalize_workstream_text(value: Any, field: str, limit: int, required: bool
 
 
 def include_workstream_reference_ids(value: str, reference_ids: list[str], limit: int) -> str:
-    """Append missing canonical IDs while preserving the field's existing size contract."""
     missing = [reference_id for reference_id in reference_ids if reference_id not in value]
     if not missing:
         return value
     suffix = f" · {', '.join(missing)}"
     return f"{value[:max(0, limit - len(suffix))].rstrip()}{suffix}"[:limit]
+
+
+def reject_hebrew_text(value: str, field: str) -> None:
+    if value and HEBREW_TEXT_PATTERN.search(value):
+        raise ValueError(f"English workstream field contains Hebrew: {field}")
+
+
+def validate_english_workstream_payload(payload: dict) -> None:
+    if normalize_locale(payload.get("locale")) != "en":
+        return
+    fields = [
+        ("title", payload.get("title")),
+        ("objective", payload.get("objective")),
+    ]
+    for participant in payload.get("participants") or []:
+        if isinstance(participant, dict):
+            fields.append(("participant display_name", participant.get("display_name")))
+            fields.append(("participant role", participant.get("role")))
+    for assignment in payload.get("assignments") or []:
+        if isinstance(assignment, dict):
+            fields.append(("assignment responsibility", assignment.get("responsibility")))
+    for activity in payload.get("activity") or []:
+        if isinstance(activity, dict):
+            fields.append(("activity text", activity.get("text")))
+            fields.append(("activity summary", activity.get("summary")))
+    for request in payload.get("attention_requests") or []:
+        if isinstance(request, dict):
+            fields.append(("attention request text", request.get("text")))
+            fields.append(("attention request label", request.get("label")))
+    for field, value in fields:
+        reject_hebrew_text(str(value or ""), field)
 
 
 def normalize_participants(value: Any) -> list[dict]:
@@ -1172,8 +1611,9 @@ def normalize_assignments(value: Any, participant_ids: set[str]) -> list[dict]:
     return assignments
 
 
-def normalize_workstream_request(request: dict, existing: dict | None = None) -> dict:
+def normalize_workstream_request(request: dict, existing: dict | None = None, locale: str = "he") -> dict:
     existing = existing or {}
+    locale = normalize_locale(request.get("locale", existing.get("locale", locale)))
     investigation_id = str(request.get("investigation_id", existing.get("investigation_id") or "")).strip()
     if not INVESTIGATION_ID_PATTERN.fullmatch(investigation_id):
         raise ValueError("Invalid investigation id")
@@ -1201,7 +1641,8 @@ def normalize_workstream_request(request: dict, existing: dict | None = None) ->
             target_ids.append(target_id)
     if len(target_ids) > 100:
         raise ValueError("Too many target_ids")
-    return {
+    normalized = {
+        "locale": locale,
         "investigation_id": investigation_id,
         "title": title,
         "objective": objective,
@@ -1210,19 +1651,24 @@ def normalize_workstream_request(request: dict, existing: dict | None = None) ->
         "assignments": assignments,
         "target_ids": target_ids,
     }
+    validate_english_workstream_payload(normalized)
+    return normalized
 
 
 def write_workstream(payload: dict) -> dict:
-    WORKSTREAMS_DIR.mkdir(parents=True, exist_ok=True)
-    path = workstream_path(payload["workstream_id"])
+    payload["locale"] = normalize_locale(payload.get("locale"))
+    validate_english_workstream_payload(payload)
+    directory = workstream_dir(payload["locale"])
+    directory.mkdir(parents=True, exist_ok=True)
+    path = workstream_path(payload["workstream_id"], payload["locale"])
     tmp_path = path.with_suffix(".json.tmp")
     tmp_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
     tmp_path.replace(path)
     return payload
 
 
-def create_workstream(request: dict) -> dict:
-    normalized = normalize_workstream_request(request)
+def create_workstream(request: dict, locale: str = "he") -> dict:
+    normalized = normalize_workstream_request(request, locale=locale)
     now = utc_now_iso()
     workstream_id = f"ws_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}_{secrets.token_hex(4)}"
     return write_workstream({
@@ -1238,10 +1684,11 @@ def create_workstream(request: dict) -> dict:
     })
 
 
-def apply_workstream_creation(investigation_id: str, creation: Any) -> dict | None:
+def apply_workstream_creation(investigation_id: str, creation: Any, locale: str = "he") -> dict | None:
     """Persist a Moshe creation handoff after the dedicated chat mode authorized this turn."""
     if not isinstance(creation, dict):
         return None
+    locale = normalize_locale(locale)
     title = normalize_workstream_text(creation.get("title"), "title", 240, required=True)
     objective = normalize_workstream_text(creation.get("objective"), "objective", 4000, required=True)
     responsibility = normalize_workstream_text(
@@ -1251,9 +1698,11 @@ def apply_workstream_creation(investigation_id: str, creation: Any) -> dict | No
     if not isinstance(target_ids, list):
         raise ValueError("target_ids must be an array")
     target_ids = list(dict.fromkeys(
-        normalize_workstream_text(value, "target_id", 120, required=True)
+        normalize_workstream_text(value, "target_id", 160, required=True)
         for value in target_ids
     ))
+    if len(target_ids) > 100:
+        raise ValueError("Too many target_ids")
     title = include_workstream_reference_ids(title, target_ids, 240)
     objective = include_workstream_reference_ids(objective, target_ids, 4000)
     record_ids = creation.get("record_ids") or []
@@ -1265,7 +1714,11 @@ def apply_workstream_creation(investigation_id: str, creation: Any) -> dict | No
     ))
     if len(record_ids) > 100:
         raise ValueError("Too many record_ids")
+    if locale == "en":
+        for field, value in {"title": title, "objective": objective, "responsibility": responsibility}.items():
+            reject_hebrew_text(value, field)
     workstream = create_workstream({
+        "locale": locale,
         "investigation_id": investigation_id,
         "title": title,
         "objective": objective,
@@ -1274,14 +1727,14 @@ def apply_workstream_creation(investigation_id: str, creation: Any) -> dict | No
             {
                 "participant_id": "current-analyst",
                 "kind": "human",
-                "display_name": "אנליסט",
+                "display_name": "Analyst" if locale == "en" else "אנליסט",
                 "role": "owner",
             },
             {
                 "participant_id": "moshe-targets-officer",
                 "kind": "agent",
-                "display_name": "משה",
-                "role": "קצין מטרות",
+                "display_name": "Moshe" if locale == "en" else "משה",
+                "role": "Targets officer" if locale == "en" else "קצין מטרות",
             },
         ],
         "assignments": [{
@@ -1289,7 +1742,7 @@ def apply_workstream_creation(investigation_id: str, creation: Any) -> dict | No
             "owner_id": "moshe-targets-officer",
             "responsibility": responsibility,
         }],
-    })
+    }, locale=locale)
     if record_ids:
         now = utc_now_iso()
         create_artifact(
@@ -1316,9 +1769,9 @@ def apply_workstream_creation(investigation_id: str, creation: Any) -> dict | No
                     ],
                 },
             },
-            resolve_event=resolve_workstream_event,
+            resolve_event=resolve_workstream_event_for_locale(locale),
             resolve_target=lambda target_id: (
-                resolve_workstream_target(target_id)
+                resolve_workstream_target_for_locale(locale)(target_id)
                 or ({"target_id": target_id, "title": target_id} if target_id in target_ids else None)
             ),
             now=now,
@@ -1328,7 +1781,8 @@ def apply_workstream_creation(investigation_id: str, creation: Any) -> dict | No
     return workstream
 
 
-def workstream_created_answer(workstream: dict) -> str:
+def workstream_created_answer(workstream: dict, locale: str = "he") -> str:
+    locale = normalize_locale(locale)
     assignment = next(
         (
             item for item in workstream.get("assignments") or []
@@ -1337,6 +1791,15 @@ def workstream_created_answer(workstream: dict) -> str:
         None,
     )
     responsibility = str((assignment or {}).get("responsibility") or "").strip()
+    if locale == "en":
+        lines = [
+            "The workstream was opened and saved successfully.",
+            f"Title: {workstream.get('title') or 'Workstream'}",
+            f"Objective: {workstream.get('objective') or ''}",
+        ]
+        if responsibility:
+            lines.append(f"Moshe responsibility: {responsibility}")
+        return "\n".join(lines)
     lines = [
         "המעקב נפתח ונשמר בהצלחה.",
         f"כותרת: {workstream.get('title') or 'מעקב'}",
@@ -1347,22 +1810,41 @@ def workstream_created_answer(workstream: dict) -> str:
     return "\n".join(lines)
 
 
-def load_workstream(workstream_id: str) -> dict | None:
-    path = workstream_path(workstream_id)
-    if not path.exists():
-        return None
-    try:
-        payload = json.loads(path.read_text(encoding="utf-8-sig"))
-    except (OSError, json.JSONDecodeError):
-        return None
-    if not isinstance(payload, dict) or payload.get("workstream_id") != workstream_id:
-        return None
-    return payload
+def load_workstream(workstream_id: str, locale: str = "he") -> dict | None:
+    locale = normalize_locale(locale)
+    paths = [workstream_path(workstream_id, locale)] + [
+        directory / f"{workstream_id}.json" for directory in legacy_workstream_dirs(locale)
+    ]
+    for path in paths:
+        if not path.exists():
+            continue
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8-sig"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if not isinstance(payload, dict) or payload.get("workstream_id") != workstream_id:
+            continue
+        payload_locale = normalize_locale(payload.get("locale"))
+        if payload.get("locale") is None:
+            payload_locale = "he"
+        if payload_locale != locale:
+            continue
+        payload["locale"] = payload_locale
+        return payload
+    return None
 
 
 def workstream_metadata(payload: dict) -> dict:
+    latest_activity = next(
+        (
+            item for item in reversed(payload.get("activity") or [])
+            if isinstance(item, dict)
+        ),
+        None,
+    )
     return {
         "workstream_id": payload.get("workstream_id"),
+        "locale": normalize_locale(payload.get("locale")),
         "investigation_id": payload.get("investigation_id"),
         "title": payload.get("title"),
         "objective": payload.get("objective"),
@@ -1372,50 +1854,69 @@ def workstream_metadata(payload: dict) -> dict:
         "created_at_utc": payload.get("created_at_utc"),
         "updated_at_utc": payload.get("updated_at_utc"),
         "archived_at_utc": payload.get("archived_at_utc"),
+        "latest_activity_id": (latest_activity or {}).get("activity_id"),
+        "latest_activity_type": (latest_activity or {}).get("type"),
+        "latest_activity_at_utc": (latest_activity or {}).get("created_at_utc"),
     }
 
 
-def list_workstreams(investigation_id: str) -> list[dict]:
+def iter_workstream_paths(locale: str = "he") -> list[Path]:
+    locale = normalize_locale(locale)
+    directories = [workstream_dir(locale)] + legacy_workstream_dirs(locale)
+    paths: list[Path] = []
+    seen: set[Path] = set()
+    for directory in directories:
+        if not directory.exists():
+            continue
+        for path in sorted(directory.glob("ws_*.json")):
+            resolved = path.resolve()
+            if resolved not in seen:
+                paths.append(path)
+                seen.add(resolved)
+    return paths
+
+
+def list_workstreams(investigation_id: str, locale: str = "he") -> list[dict]:
+    locale = normalize_locale(locale)
     if not INVESTIGATION_ID_PATTERN.fullmatch(investigation_id or ""):
         raise ValueError("Invalid investigation id")
-    if not WORKSTREAMS_DIR.exists():
-        return []
     items: list[dict] = []
-    for path in WORKSTREAMS_DIR.glob("ws_*.json"):
-        payload = load_workstream(path.stem)
+    for path in iter_workstream_paths(locale):
+        payload = load_workstream(path.stem, locale)
         if payload and payload.get("investigation_id") == investigation_id:
             items.append(workstream_metadata(payload))
     return sorted(items, key=lambda item: str(item.get("updated_at_utc") or ""), reverse=True)
 
 
-def list_active_workstreams() -> list[dict]:
-    if not WORKSTREAMS_DIR.exists():
-        return []
+def list_active_workstreams(locale: str = "he") -> list[dict]:
+    locale = normalize_locale(locale)
     items: list[dict] = []
-    for path in WORKSTREAMS_DIR.glob("ws_*.json"):
-        payload = load_workstream(path.stem)
+    for path in iter_workstream_paths(locale):
+        payload = load_workstream(path.stem, locale)
         if payload and payload.get("status") == "active":
             items.append(workstream_metadata(payload))
     return sorted(items, key=lambda item: str(item.get("updated_at_utc") or ""), reverse=True)
 
 
-def list_workstreams_with_latest_fallback(investigation_id: str) -> dict:
-    exact = list_workstreams(investigation_id)
+def list_workstreams_with_latest_fallback(investigation_id: str, locale: str = "he") -> dict:
+    locale = normalize_locale(locale)
+    exact = list_workstreams(investigation_id, locale)
     if exact:
         return {
             "workstreams": exact,
             "canonical_investigation_id": investigation_id,
             "fallback_used": False,
         }
-    if not WORKSTREAMS_DIR.exists():
+    paths = iter_workstream_paths(locale)
+    if not paths:
         return {
             "workstreams": [],
             "canonical_investigation_id": investigation_id,
             "fallback_used": False,
         }
     groups: dict[str, list[dict]] = {}
-    for path in WORKSTREAMS_DIR.glob("ws_*.json"):
-        payload = load_workstream(path.stem)
+    for path in paths:
+        payload = load_workstream(path.stem, locale)
         canonical_id = str(payload.get("investigation_id") or "") if payload else ""
         if payload and INVESTIGATION_ID_PATTERN.fullmatch(canonical_id):
             groups.setdefault(canonical_id, []).append(workstream_metadata(payload))
@@ -1438,8 +1939,9 @@ def list_workstreams_with_latest_fallback(investigation_id: str) -> dict:
     }
 
 
-def update_workstream(workstream_id: str, request: dict) -> dict | None:
-    existing = load_workstream(workstream_id)
+def update_workstream(workstream_id: str, request: dict, locale: str = "he") -> dict | None:
+    locale = normalize_locale(locale)
+    existing = load_workstream(workstream_id, locale)
     if existing is None:
         return None
     if existing.get("status") == "archived":
@@ -1447,7 +1949,7 @@ def update_workstream(workstream_id: str, request: dict) -> dict | None:
     requested_investigation_id = request.get("investigation_id")
     if requested_investigation_id is not None and str(requested_investigation_id).strip() != existing.get("investigation_id"):
         raise ValueError("Workstream investigation cannot be changed")
-    normalized = normalize_workstream_request(request, existing)
+    normalized = normalize_workstream_request({**request, "locale": locale}, existing, locale=locale)
     payload = {
         **existing,
         **normalized,
@@ -1461,8 +1963,9 @@ def update_workstream(workstream_id: str, request: dict) -> dict | None:
     return write_workstream(payload)
 
 
-def archive_workstream(workstream_id: str) -> dict | None:
-    existing = load_workstream(workstream_id)
+def archive_workstream(workstream_id: str, locale: str = "he") -> dict | None:
+    locale = normalize_locale(locale)
+    existing = load_workstream(workstream_id, locale)
     if existing is None:
         return None
     if existing.get("status") == "archived":
@@ -1476,8 +1979,8 @@ def archive_workstream(workstream_id: str) -> dict | None:
     })
 
 
-def scenario_workstream_exists(workstream_id: str, investigation_id: str) -> bool:
-    workstream = load_workstream(workstream_id)
+def scenario_workstream_exists(workstream_id: str, investigation_id: str, locale: str = "he") -> bool:
+    workstream = load_workstream(workstream_id, locale)
     return bool(
         workstream
         and workstream.get("investigation_id") == investigation_id
@@ -1509,11 +2012,12 @@ def prepared_playback_manifest() -> dict | None:
     )
 
 
-def investigation_playback_status(investigation_id: str) -> dict:
+def investigation_playback_status(investigation_id: str, locale: str = "he") -> dict:
+    locale = normalize_locale(locale)
     if not INVESTIGATION_ID_PATTERN.fullmatch(investigation_id or ""):
         raise ValueError("Invalid investigation id")
     policy = load_playback_visibility(SCENARIO_RUNS_DIR) or {}
-    mode = policy.get("mode") if policy.get("mode") in {"historical", "real_time"} else "historical"
+    mode = "real_time"
     event_times = sorted(
         str(item.get("timestamp_utc") or "")
         for item in load_ui_events()
@@ -1527,8 +2031,11 @@ def investigation_playback_status(investigation_id: str) -> dict:
     }
     run = find_active_run(SCENARIO_RUNS_DIR)
     if run is not None:
+        ensure_current_playback_reevaluation(run)
+        run = load_scenario_run(SCENARIO_RUNS_DIR, run["run_id"]) or run
         return {
             "investigation_id": investigation_id,
+            "locale": locale,
             "mode": mode,
             "full_timeframe": full_timeframe,
             "run": run_with_next_stage(SCENARIO_MANIFESTS_DIR, run),
@@ -1537,6 +2044,7 @@ def investigation_playback_status(investigation_id: str) -> dict:
     if manifest is None:
         return {
             "investigation_id": investigation_id,
+            "locale": locale,
             "mode": mode,
             "full_timeframe": full_timeframe,
             "run": None,
@@ -1545,6 +2053,7 @@ def investigation_playback_status(investigation_id: str) -> dict:
     first = manifest["stages"][0]
     return {
         "investigation_id": investigation_id,
+        "locale": locale,
         "mode": mode,
         "full_timeframe": full_timeframe,
         "run": None,
@@ -1564,10 +2073,10 @@ def artifact_id(prefix: str) -> str:
     return f"{prefix}_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}_{secrets.token_hex(4)}"
 
 
-def resolve_workstream_event(layer_id: str, record_id: str) -> dict | None:
+def resolve_workstream_event(layer_id: str, record_id: str, locale: str = "he") -> dict | None:
     event = next(
         (
-            row for row in load_ui_events()
+            row for row in load_ui_events(locale)
             if (row.get("record_id") or row.get("event_id")) == record_id
         ),
         None,
@@ -1577,21 +2086,40 @@ def resolve_workstream_event(layer_id: str, record_id: str) -> dict | None:
     canonical = dict(event)
     canonical["record_id"] = event.get("record_id") or event.get("event_id")
     canonical["summary"] = event.get("summary") or event.get("event_summary") or ""
-    canonical["_canonical_layer_id"] = f"events:{event.get('source_type') or 'מקור לא ידוע'}"
+    canonical["_canonical_layer_id"] = f"events:{event.get('source_type') or ('Unknown source' if normalize_locale(locale) == 'en' else 'מקור לא ידוע')}"
     return canonical
 
 
-def resolve_workstream_target(target_id: str) -> dict | None:
-    result = get_ui_layer_rows(ATTACK_TARGET_CATALOG_LAYER_ID)
+def resolve_workstream_target(target_id: str, locale: str = "he") -> dict | None:
+    result = get_ui_layer_rows(ATTACK_TARGET_CATALOG_LAYER_ID, locale)
     if result is None:
         return None
     _, rows = result
     return next((row for row in rows if row.get("target_id") == target_id), None)
 
 
-def workstream_presentation(workstream_id: str) -> dict | None:
+def resolve_workstream_event_for_locale(locale: str):
+    def resolve(layer_id: str, record_id: str) -> dict | None:
+        try:
+            return resolve_workstream_event(layer_id, record_id, locale)
+        except TypeError:
+            return resolve_workstream_event(layer_id, record_id)
+    return resolve
+
+
+def resolve_workstream_target_for_locale(locale: str):
+    def resolve(target_id: str) -> dict | None:
+        try:
+            return resolve_workstream_target(target_id, locale)
+        except TypeError:
+            return resolve_workstream_target(target_id)
+    return resolve
+
+
+def workstream_presentation(workstream_id: str, locale: str = "he") -> dict | None:
     """Build standard map/table layers from the latest active workstream state."""
-    workstream = load_workstream(workstream_id)
+    locale = normalize_locale(locale)
+    workstream = load_workstream(workstream_id, locale)
     if workstream is None or workstream.get("status") != "active":
         return None
     policy = load_playback_visibility(SCENARIO_RUNS_DIR) or {}
@@ -1622,14 +2150,14 @@ def workstream_presentation(workstream_id: str) -> dict | None:
     ))
     events_by_id = {
         str(row.get("record_id") or row.get("event_id") or ""): row
-        for row in load_ui_events()
+        for row in load_ui_events(locale)
     }
     event_rows = [events_by_id[record_id] for record_id in record_ids if record_id in events_by_id]
     layers = []
     if event_rows:
         layers.append({
             "id": f"workstream:{workstream_id}:indications",
-            "label": "אינדיקציות גולמיות",
+            "label": "Raw indications" if locale == "en" else "אינדיקציות גולמיות",
             "kind": "events",
             "rows": event_rows,
             "capabilities": {"table": True, "map": True, "timeline": True},
@@ -1646,7 +2174,7 @@ def workstream_presentation(workstream_id: str) -> dict | None:
         if item.get("target_id")
     )
     target_ids = list(dict.fromkeys(value for value in target_ids if value))
-    target_result = get_ui_layer_rows(ATTACK_TARGET_CATALOG_LAYER_ID) if target_ids else None
+    target_result = get_ui_layer_rows(ATTACK_TARGET_CATALOG_LAYER_ID, locale) if target_ids else None
     target_rows = (
         [row for row in target_result[1] if row.get("target_id") in set(target_ids)]
         if target_result is not None else []
@@ -1660,7 +2188,7 @@ def workstream_presentation(workstream_id: str) -> dict | None:
     if target_rows:
         layers.append({
             "id": f"workstream:{workstream_id}:target",
-            "label": "מטרה",
+            "label": "Target" if locale == "en" else "מטרה",
             "kind": "attack_targets",
             "rows": target_rows,
             "capabilities": {"table": True, "map": True, "timeline": False},
@@ -1674,7 +2202,7 @@ def workstream_presentation(workstream_id: str) -> dict | None:
     }
 
 
-def playback_workstream_presentation(workstream_updates: list[dict]) -> list[dict]:
+def playback_workstream_presentation(workstream_updates: list[dict], locale: str = "he") -> list[dict]:
     """Snapshot the updated workstreams through the shared presentation contract."""
     updates = [
         item for item in workstream_updates
@@ -1683,7 +2211,10 @@ def playback_workstream_presentation(workstream_updates: list[dict]) -> list[dic
     layers = []
     for update in updates:
         try:
-            presentation = workstream_presentation(str(update["workstream_id"]))
+            try:
+                presentation = workstream_presentation(str(update["workstream_id"]), locale)
+            except TypeError:
+                presentation = workstream_presentation(str(update["workstream_id"]))
         except Exception:
             presentation = None
         if not presentation:
@@ -1692,17 +2223,18 @@ def playback_workstream_presentation(workstream_updates: list[dict]) -> list[dic
         for layer in presentation.get("requested_result_layers") or []:
             snapshot = dict(layer)
             if len(updates) > 1 and title:
-                snapshot["label"] = f"{title} · {layer.get('label') or 'תוצאות'}"
+                snapshot["label"] = f"{title} · {layer.get('label') or ('Results' if normalize_locale(locale) == 'en' else 'תוצאות')}"
             layers.append(snapshot)
     return layers
 
 
-def bounded_workstream_context(value: Any, investigation_id: str) -> dict | None:
+def bounded_workstream_context(value: Any, investigation_id: str, locale: str = "he") -> dict | None:
     """Load server-owned context; never trust browser-supplied artifact or participant data."""
     if not isinstance(value, dict):
         return None
+    locale = normalize_locale(locale)
     workstream_id = str(value.get("workstream_id") or "").strip()
-    workstream = load_workstream(workstream_id) if workstream_id else None
+    workstream = load_workstream(workstream_id, locale) if workstream_id else None
     if not workstream or workstream.get("investigation_id") != investigation_id or workstream.get("status") == "archived":
         return None
     artifacts = list_artifacts(workstream)
@@ -1716,6 +2248,7 @@ def bounded_workstream_context(value: Any, investigation_id: str) -> dict | None
         pending = None
     return {
         "workstream_id": workstream_id,
+        "locale": locale,
         "title": workstream.get("title"),
         "objective": workstream.get("objective"),
         "active_artifact": active_artifact,
@@ -1724,7 +2257,7 @@ def bounded_workstream_context(value: Any, investigation_id: str) -> dict | None
     }
 
 
-def apply_workstream_action(context: dict | None, action: Any) -> tuple[dict | None, dict | None]:
+def apply_workstream_action(context: dict | None, action: Any, locale: str = "he") -> tuple[dict | None, dict | None]:
     """Independently validate and apply a confirmed MCP handoff through the local service."""
     if not context or not isinstance(action, dict):
         return None, None
@@ -1740,9 +2273,10 @@ def apply_workstream_action(context: dict | None, action: Any) -> tuple[dict | N
         raise ValueError("Confirmation requires a distinct later user turn")
     if current_turn != context.get("current_turn_message_id"):
         raise ValueError("Confirmation turn does not match the current request")
-    workstream = load_workstream(context["workstream_id"])
+    workstream = load_workstream(context["workstream_id"], locale)
     if not workstream:
         raise ValueError("Workstream no longer exists")
+    validate_text = reject_hebrew_text if locale == "en" else None
     human = next((item for item in workstream.get("participants") or [] if item.get("kind") == "human"), None)
     if not human:
         raise ValueError("Workstream has no human participant")
@@ -1784,8 +2318,10 @@ def apply_workstream_action(context: dict | None, action: Any) -> tuple[dict | N
                 "artifact_type": "target_assessment_lead",
                 "actor": actor, "confirmation_turn": confirmation, "content": content,
             },
-            resolve_event=resolve_workstream_event, resolve_target=resolve_workstream_target,
+            resolve_event=resolve_workstream_event_for_locale(locale),
+            resolve_target=resolve_workstream_target_for_locale(locale),
             now=now, id_factory=artifact_id,
+            validate_text=validate_text,
         )
     else:
         artifact_value = context.get("active_artifact") or {}
@@ -1806,7 +2342,9 @@ def apply_workstream_action(context: dict | None, action: Any) -> tuple[dict | N
                 "expected_revision": revision, "action": proposal_action, "payload": payload,
                 "actor": actor, "confirmation_turn": confirmation,
             },
-            resolve_event=resolve_workstream_event, now=now, id_factory=artifact_id,
+            resolve_event=resolve_workstream_event_for_locale(locale),
+            now=now, id_factory=artifact_id,
+            validate_text=validate_text,
         )
     write_workstream(workstream)
     return artifact, None
@@ -2819,8 +3357,9 @@ class HermesClient:
                 continue
         return self.summarize_audit(audit_records)
 
-    def investigate(self, prompt, history, investigation_state=None, investigation_id=None, is_continuation=False, continuation_context=None, responding_agent="general", mission_run_id=None):
+    def investigate(self, prompt, history, investigation_state=None, investigation_id=None, is_continuation=False, continuation_context=None, responding_agent="general", mission_run_id=None, locale="he"):
         global ACTIVE_RUN_STARTED_AT
+        locale = normalize_locale(locale)
         overall_started = time.perf_counter()
         performance = {
             "gateway": {},
@@ -2854,8 +3393,13 @@ class HermesClient:
                 " אל תשלח לכלי שדות סיווג ידניים כמו model_intent; תן לכלי לבצע את הסיווג."
                 " התייחס לפלט הכלי כמסגרת העבודה: recommended_mode, tool_budget, allowed_tool_families, blocked_tool_families ו-recommended_view_hint.\n"
             )
+        response_language_instruction = (
+            "All user-facing content must be in English only. Keep identifiers, raw record IDs, and source titles exactly as they appear in the data.\n"
+            if locale == "en"
+            else "אתה סוכן חקירה למערכת מודיעינית ניסיונית על תרחיש הסלמה בצפון קוסובו/סרביה. השב בעברית בלבד.\n"
+        )
         instructions = (
-            "אתה סוכן חקירה למערכת מודיעינית ניסיונית על תרחיש הסלמה בצפון קוסובו/סרביה. השב בעברית בלבד.\n"
+            response_language_instruction +
             "נקודת המבט היא של אנליסט מודיעין בצבא סרביה. המאגר מבוסס בעיקר על מקורות גלויים ועל תצפיות וידאו מכטב״ם סרביות סינתטיות כלפי כוחות היריב והסביבה. "
             "הכיסוי חלקי ומוטה לאיסוף על היריב; היעדר דיווח על כוח סרבי אינו ראיה להיעדר פעילות סרבית. "
             "הפרד תמיד בין תצפית, זיהוי והסקה, והתייחס לספירת עצמים בווידאו כהערכה הדורשת הצלבה.\n"
@@ -3051,7 +3595,7 @@ class HermesClient:
                 "ביצירת מעקב חקור תחילה: פתור את כל מזהי TGT ו-REC לפני בקשת מידע. עבור כל TGT קרא ל-get_target_candidate כדי לטעון את פרטיו וראיותיו. "
                 "עבור כל REC קרא תחילה ל-search_target_candidates עם record_id, ואז ל-prepare_target_candidate עם הרשומה כעוגן כדי לגלות ראיות נוספות ולהכין הקשר למועמד חדש ללא שמירה כאשר אין מטרה קיימת מספקת. "
                 "הסק מהמידע המאומת כותרת, מטרת מעקב ואחריות פונקציונלית שלך; אל תבקש מהמשתמש שדות אלה רק משום שלא כתב אותם. "
-                "כאשר ניתן להסיק אותם בבטחה, קרא פעם אחת ל-prepare_workstream_creation, כלול את מזהי TGT בכותרת ובתיאור, העבר ב-target_ids את כל המטרות הקיימות שנמסרו או התגלו ונפתרו, העבר ב-record_ids את כל רשומות REC המאומתות שסיפק המשתמש, והשלם את יצירת המעקב באותו תור כך שהרשומות יישמרו כאינדיקציות בארטיפקט הראשוני. "
+                "כאשר ניתן להסיק אותם בבטחה, קרא פעם אחת ל-prepare_workstream_creation, כלול את כל מזהי TGT בכותרת ובתיאור, העבר ב-target_ids את כל המטרות הקיימות שנמסרו או התגלו ונפתרו, העבר ב-record_ids את כל רשומות REC המאומתות שסיפק המשתמש, והשלם את יצירת המעקב באותו תור כך שהרשומות יישמרו כאינדיקציות בארטיפקט הראשוני. "
                 "שאל לכל היותר שאלה אחת קצרה ורק לאחר החיפוש, אם מזהה לא נפתר, קיימות כמה כוונות שונות מהותית, או שהשלמת שדה תחייב המצאת עובדות. "
                 "אם רק חלק מהמזהים נפתרו, ציין את המזהים שלא נפתרו ושאל אם להמשיך עם היתר; אל תשמיט אותם בשקט. "
                 "כאשר המשתמש ביקש במפורש ליצור מעקב ולפחות מזהה אחד נפתר, היעדר חיזוק עצמאי, ביטחון נמוך או היעדר מטרה קיימת אינם סיבה לעצור: צור את המעקב ושמור את רשומות REC המאומתות כאינדיקציות הקשר בארטיפקט הראשוני. מגבלות הביטחון חלות על שמירת מטרה חדשה ולא על מעקב הראיות המבוקש. "
@@ -3070,7 +3614,17 @@ class HermesClient:
                 +
                 "אין לך הרשאה לכלי מערכת, filesystem, shell, SQL, מחיקה, reset, evaluator או שינוי סטטוס."
             )
-        state_block = self.render_investigation_state(investigation_state)
+        if locale == "en":
+            instructions = build_english_agent_instructions(
+                classify_instruction=classify_instruction,
+                responding_agent=responding_agent,
+                playback_authorized=bool(
+                    responding_agent == MOSHE_AGENT_ID
+                    and isinstance(investigation_state, dict)
+                    and isinstance(investigation_state.get("scenario_playback"), dict)
+                ),
+            )
+        state_block = render_investigation_state_localized(investigation_state, locale=locale)
         full_instructions = f"{instructions}\n\n{state_block}" if state_block else instructions
         safe_investigation_id = bounded_prompt_cache_key(investigation_id)
         session_id = safe_investigation_id or f"intelligence-orchestrator-{int(time.time() * 1000)}"
@@ -3093,8 +3647,14 @@ class HermesClient:
             performance["hermes"]["run_create_ms"] = elapsed_ms(create_started)
             run_id = created["run_id"]
             run_wait_started = time.perf_counter()
-            deadline = time.time() + 480
-            while time.time() < deadline:
+            configured_timeout = self.config.get("run_timeout_seconds")
+            if isinstance(configured_timeout, bool):
+                configured_timeout = None
+            if isinstance(configured_timeout, (int, float)) and configured_timeout > 0:
+                deadline = time.time() + float(configured_timeout)
+            else:
+                deadline = None
+            while deadline is None or time.time() < deadline:
                 poll_started = time.perf_counter()
                 status = session.request("GET", f"/v1/runs/{run_id}")
                 performance["hermes"]["poll_count"] += 1
@@ -3126,7 +3686,7 @@ class HermesClient:
                 ]
                 output_without_steps = any_step_line_pattern.sub("", output)
                 view_match = re.search(
-                    r"(?im)^\s*תצוגה מומלצת\s*:\s*(map|timeline|evidence)(?:\s*\|\s*(.+?))?\s*$",
+                    r"(?im)^\s*(?:תצוגה מומלצת|Recommended view)\s*:\s*(map|timeline|evidence)(?:\s*\|\s*(.+?))?\s*$",
                     output_without_steps,
                 )
                 recommended_view = view_match.group(1).lower() if view_match else None
@@ -3189,6 +3749,27 @@ class HermesClient:
                     (parsed for parsed in (parse_utc(record.get("timestamp_utc")) for record in audit_records) if parsed),
                     default=None,
                 )
+                if not clean_output.strip() and audit_records:
+                    last_record = audit_records[-1]
+                    last_tool = str(last_record.get("tool") or "tool")
+                    last_result = last_record.get("result") if isinstance(last_record.get("result"), dict) else {}
+                    if last_tool == "search_events":
+                        returned = last_result.get("returned", 0)
+                        total = last_result.get("total", returned)
+                        if returned:
+                            clean_output = f"Found {returned} matching records out of {total}."
+                        else:
+                            clean_output = "No matching records were found for the requested filters."
+                    elif last_tool == "get_objects":
+                        events_count = len(last_result.get("events") or [])
+                        if events_count:
+                            clean_output = f"Retrieved {events_count} requested record{'s' if events_count != 1 else ''}."
+                        else:
+                            clean_output = "No matching objects were found for the requested identifiers."
+                    elif last_record.get("is_error"):
+                        clean_output = f"The agent run completed, but the last tool step failed: {last_result.get('error') or last_tool}."
+                    else:
+                        clean_output = "The agent run completed, but Hermes did not return a final text answer. Review the displayed tool steps for the available result."
                 tool_total_ms = round(sum(tool_durations), 3)
                 performance["tools"] = {
                     "tool_call_count": len(audit_records),
@@ -3281,12 +3862,57 @@ class HermesClient:
                     requested_result_layers=requested_layers,
                     evidence_reference_layers=evidence_reference_layers)
             time.sleep(1)
-        raise TimeoutError("Hermes investigation exceeded 480 seconds")
+            timeout_text = (
+                f"{int(configured_timeout)} seconds"
+                if isinstance(configured_timeout, (int, float)) and configured_timeout > 0
+                else "the configured runtime limit"
+            )
+            raise TimeoutError(f"Hermes investigation exceeded {timeout_text}")
+
+
+def build_moshe_playback_prompt(
+    context: dict, run: dict, released_timeframe: dict, locale: str = "he"
+) -> str:
+    if normalize_locale(locale) == "en":
+        return (
+            "Advance one stage in the real-time scenario and update this active workstream: "
+            f"{context.get('title') or context['workstream_id']}. "
+            "Discover new evidence only from records whose timestamps fall inside the newly released window; "
+            "do not search for earlier or later records. Perform at most one exact event search in the new window. "
+            "Use the existing workstream artifact and target only as comparison context; do not rediscover their "
+            "historical evidence. Do not use semantic_search_events, aggregate_events, find_actor_history, or "
+            "find_related_events unless a newly found record cannot be resolved by its exact identifier. "
+            "If there are no new relevant records, report that the workstream is unchanged and finish without "
+            "expanding the search. After identifying relevant new evidence, assess only how it changes the "
+            "indications and target assessment and perform the necessary workstream actions. If the evidence "
+            "meets persistence policy, check duplicates and create or update a target candidate through the target "
+            "bank tools; no additional analyst approval is required during playback. "
+            f"New information window: {released_timeframe.get('from')} to {released_timeframe.get('to')}. "
+            f"The cumulative window {run['visible_timeframe'].get('from')} to "
+            f"{run['visible_timeframe'].get('to')} is comparison context only, not a source for discovering new evidence."
+        )
+    return (
+        "התקדם שלב אחד בתרחיש זמן אמת ועדכן את המעקב הפעיל הבא: "
+        f"{context.get('title') or context['workstream_id']}. "
+        "גלה ראיות חדשות אך ורק מתוך רשומות שחותמת הזמן שלהן נמצאת בחלון המידע החדש; "
+        "אל תחפש רשומות מוקדמות או מאוחרות יותר. בצע לכל היותר חיפוש אירועים מדויק אחד בחלון החדש. "
+        "השתמש בארטיפקט המעקב ובמטרה הקיימת רק כהקשר להשוואה, ואל תגלה מחדש את הראיות ההיסטוריות שלהם. "
+        "אל תפעיל semantic_search_events, aggregate_events, find_actor_history או find_related_events, "
+        "אלא אם נמצאה רשומה חדשה שלא ניתן לפתור בחיפוש ממוקד לפי המזהה שלה. "
+        "אם לא נמצאו רשומות חדשות ורלוונטיות, דווח שהמעקב לא השתנה וסיים ללא הרחבת חיפוש. "
+        "לאחר זיהוי ראיה חדשה ורלוונטית, בדוק כיצד היא משנה את האינדיקציות ואת הערכת המטרה ובצע רק "
+        "את פעולות המעקב הנדרשות. אם הראיות עומדות במדיניות הכשירות, בדוק כפילויות וצור או עדכן "
+        "מועמד מטרה באמצעות כלי בנק המטרות; אין צורך באישור אנליסט נוסף במהלך playback. "
+        f"חלון המידע החדש: {released_timeframe.get('from')} עד {released_timeframe.get('to')}. "
+        f"החלון המצטבר {run['visible_timeframe'].get('from')} עד {run['visible_timeframe'].get('to')} "
+        "ניתן להשוואת הקשר בלבד, לא לגילוי ראיות חדשות."
+    )
 
 
 def run_moshe_playback_reevaluation(run: dict, released_timeframe: dict) -> dict:
     """Run one playback-filtered Moshe assessment for a newly released window."""
     workstream_id = run.get("workstream_id")
+    locale = normalize_locale(run.get("locale"))
     workstream_contexts = []
     if workstream_id:
         workstream_contexts.append(bounded_workstream_context(
@@ -3295,15 +3921,17 @@ def run_moshe_playback_reevaluation(run: dict, released_timeframe: dict) -> dict
                 "current_turn_message_id": f"playback-revision-{run['revision']}",
             },
             run["investigation_id"],
+            locale,
         ))
     else:
-        for workstream in list_active_workstreams():
+        for workstream in list_active_workstreams(locale):
             workstream_contexts.append(bounded_workstream_context(
                 {
                     "workstream_id": workstream["workstream_id"],
                     "current_turn_message_id": f"playback-revision-{run['revision']}",
                 },
                 workstream["investigation_id"],
+                locale,
             ))
     scenario_playback = {
             "run_id": run["run_id"],
@@ -3314,15 +3942,8 @@ def run_moshe_playback_reevaluation(run: dict, released_timeframe: dict) -> dict
     config = load_agent_hermes_config(MOSHE_AGENT_ID)
 
     def assess(context: dict) -> dict:
-        prompt = (
-            "התקדם שלב אחד בתרחיש זמן אמת ועדכן את המעקב הפעיל הבא: "
-            f"{context.get('title') or context['workstream_id']}. "
-            "קלוט את פרוסת המידע החדשה, בדוק כיצד היא משנה את האינדיקציות ואת הערכת המטרה, "
-            "ובצע את פעולות המעקב הנדרשות. אם הראיות עומדות במדיניות הכשירות, בדוק כפילויות "
-            "וצור או עדכן מועמד מטרה באמצעות כלי בנק המטרות; אין צורך באישור אנליסט נוסף במהלך playback. "
-            "השתמש רק במידע הזמין כעת דרך כלי הראיות. "
-            f"חלון המידע החדש: {released_timeframe.get('from')} עד {released_timeframe.get('to')}. "
-            f"חלון מצטבר זמין: {run['visible_timeframe'].get('from')} עד {run['visible_timeframe'].get('to')}."
+        prompt = build_moshe_playback_prompt(
+            context, run, released_timeframe, locale
         )
         result = HermesClient(config).investigate(
             prompt,
@@ -3339,6 +3960,7 @@ def run_moshe_playback_reevaluation(run: dict, released_timeframe: dict) -> dict
             mission_run_id=(
                 f"{run['run_id']}:revision:{run['revision']}:{context['workstream_id']}"
             ),
+            locale=locale,
         )
         result["workstream_id"] = context["workstream_id"]
         return result
@@ -3364,7 +3986,8 @@ def persist_playback_workstream_assessment(
     workstream_id: str, result: dict, run: dict, released_timeframe: dict
 ) -> dict | None:
     """Revision the active workstream from an authorized playback assessment."""
-    workstream = load_workstream(workstream_id)
+    locale = normalize_locale(run.get("locale"))
+    workstream = load_workstream(workstream_id, locale)
     if not workstream or workstream.get("status") != "active":
         return None
     agent = next(
@@ -3376,10 +3999,13 @@ def persist_playback_workstream_assessment(
     answer = compact_text(result.get("answer"), 3000)
     event_ids = list(dict.fromkeys(
         str(value) for value in result.get("event_ids") or []
-        if isinstance(value, str) and resolve_workstream_event("", value) is not None
+        if isinstance(value, str) and resolve_workstream_event("", value, locale) is not None
     ))[:100]
     if not answer or not event_ids:
         raise ValueError("Playback assessment has no persistable evidence")
+    validate_text = reject_hebrew_text if locale == "en" else None
+    if validate_text:
+        validate_text(answer, "playback assessment answer")
     now = utc_now_iso()
     actor = {"participant_id": agent["participant_id"], "kind": "agent"}
     confirmation = {
@@ -3417,7 +4043,11 @@ def persist_playback_workstream_assessment(
                         {
                             "source_reference": {"kind": "event_record", "record_id": event_id},
                             "role": "supports",
-                            "relevance": "נכלל בהערכת משה בפרוסת זמן אמת",
+                            "relevance": (
+                                "Included in Moshe's real-time slice assessment"
+                                if locale == "en" else
+                                "נכלל בהערכת משה בפרוסת זמן אמת"
+                            ),
                             "annotation": answer,
                         }
                         for event_id in event_ids
@@ -3432,11 +4062,12 @@ def persist_playback_workstream_assessment(
                     "annotation": f"Playback revision {run['revision']}",
                 },
             },
-            resolve_event=resolve_workstream_event,
-            resolve_target=resolve_workstream_target,
+            resolve_event=resolve_workstream_event_for_locale(locale),
+            resolve_target=resolve_workstream_target_for_locale(locale),
             now=now,
             id_factory=artifact_id,
             require_human_actor=False,
+            validate_text=validate_text,
         )
     else:
         artifact = active_artifact
@@ -3457,16 +4088,21 @@ def persist_playback_workstream_assessment(
                     "payload": {"indication": {
                         "source_reference": {"kind": "event_record", "record_id": event_id},
                         "role": "supports",
-                        "relevance": "נוסף בהערכת משה בפרוסת זמן אמת",
+                        "relevance": (
+                            "Added in Moshe's real-time slice assessment"
+                            if locale == "en" else
+                            "נוסף בהערכת משה בפרוסת זמן אמת"
+                        ),
                         "annotation": answer,
                     }},
                     "actor": actor,
                     "confirmation_turn": confirmation,
                 },
-                resolve_event=resolve_workstream_event,
+                resolve_event=resolve_workstream_event_for_locale(locale),
                 now=now,
                 id_factory=artifact_id,
                 require_human_actor=False,
+                validate_text=validate_text,
             )
         artifact = revise_artifact(
             workstream,
@@ -3478,10 +4114,11 @@ def persist_playback_workstream_assessment(
                 "actor": actor,
                 "confirmation_turn": confirmation,
             },
-            resolve_event=resolve_workstream_event,
+            resolve_event=resolve_workstream_event_for_locale(locale),
             now=now,
             id_factory=artifact_id,
             require_human_actor=False,
+            validate_text=validate_text,
         )
     workstream.setdefault("activity", []).append({
         "activity_id": f"playback-{run['revision']}",
@@ -3501,10 +4138,78 @@ def persist_playback_workstream_assessment(
 
 def playback_has_active_workstreams(run: dict) -> bool:
     workstream_id = run.get("workstream_id")
+    locale = normalize_locale(run.get("locale"))
     if workstream_id:
-        workstream = load_workstream(workstream_id)
+        workstream = load_workstream(workstream_id, locale)
         return bool(workstream and workstream.get("status") == "active")
-    return bool(list_active_workstreams())
+    return bool(list_active_workstreams(locale))
+
+
+def current_playback_timeframe(run: dict) -> dict | None:
+    stage = run.get("current_stage") or {}
+    stage_from = str(stage.get("from") or "").strip()
+    stage_to = str(stage.get("to") or "").strip()
+    if not stage_from or not stage_to:
+        return None
+    return {
+        "from": stage_from,
+        "to": stage_to,
+        "from_inclusive": True,
+        "to_exclusive": True,
+    }
+
+
+def playback_reevaluation_worker_key(run_id: str, revision: int) -> tuple[str, int]:
+    return run_id, int(revision)
+
+
+def playback_reevaluation_running_in_process(run_id: str, revision: int) -> bool:
+    key = playback_reevaluation_worker_key(run_id, revision)
+    with _PLAYBACK_REEVALUATION_THREADS_LOCK:
+        worker = _PLAYBACK_REEVALUATION_THREADS.get(key)
+        if worker is not None and worker.is_alive():
+            return True
+        if worker is not None:
+            _PLAYBACK_REEVALUATION_THREADS.pop(key, None)
+        return False
+
+
+def empty_playback_assessment(run: dict, revision: int, message: str) -> dict:
+    return {
+        "run_id": f"{run['run_id']}:revision:{revision}",
+        "answer": compact_text(message, 20_000),
+        "responding_agent": MOSHE_AGENT_ID,
+        "event_ids": [],
+        "workstream_updates": [],
+        "requested_result_layers": [],
+    }
+
+
+def ensure_current_playback_reevaluation(run: dict) -> bool:
+    reevaluations = run.get("_reevaluations") or {}
+    revision = int(run.get("revision") or 0)
+    if revision < 1:
+        return False
+    current = reevaluations.get(str(revision))
+    if not isinstance(current, dict) or current.get("status") != "running":
+        return False
+    if not playback_has_active_workstreams(run):
+        finish_reevaluation(
+            SCENARIO_RUNS_DIR,
+            run["run_id"],
+            revision,
+            "completed",
+            assessment=empty_playback_assessment(
+                run,
+                revision,
+                "No active workstreams remained for this playback slice.",
+            ),
+        )
+        return False
+    released_timeframe = current_playback_timeframe(run)
+    if released_timeframe is None:
+        return False
+    return start_moshe_playback_reevaluation(run, released_timeframe, revision)
 
 
 def complete_moshe_playback_reevaluation(
@@ -3535,7 +4240,9 @@ def complete_moshe_playback_reevaluation(
                 if isinstance(value, str)
             ][:500],
             "workstream_updates": workstream_updates,
-            "requested_result_layers": playback_workstream_presentation(workstream_updates),
+            "requested_result_layers": playback_workstream_presentation(
+                workstream_updates, normalize_locale(run.get("locale"))
+            ),
         }
         finish_reevaluation(
             SCENARIO_RUNS_DIR,
@@ -3552,13 +4259,34 @@ def complete_moshe_playback_reevaluation(
 
 def start_moshe_playback_reevaluation(
     run: dict, released_timeframe: dict, revision: int
-) -> None:
-    threading.Thread(
-        target=complete_moshe_playback_reevaluation,
-        args=(dict(run), dict(released_timeframe), revision),
-        daemon=True,
-        name=f"moshe-playback-{run['run_id']}-{revision}",
-    ).start()
+) -> bool:
+    key = playback_reevaluation_worker_key(run["run_id"], revision)
+    with _PLAYBACK_REEVALUATION_THREADS_LOCK:
+        worker = _PLAYBACK_REEVALUATION_THREADS.get(key)
+        if worker is not None and worker.is_alive():
+            return False
+        if worker is not None:
+            _PLAYBACK_REEVALUATION_THREADS.pop(key, None)
+
+        def worker_target() -> None:
+            try:
+                complete_moshe_playback_reevaluation(
+                    dict(run), dict(released_timeframe), revision
+                )
+            finally:
+                with _PLAYBACK_REEVALUATION_THREADS_LOCK:
+                    current = _PLAYBACK_REEVALUATION_THREADS.get(key)
+                    if current is threading.current_thread():
+                        _PLAYBACK_REEVALUATION_THREADS.pop(key, None)
+
+        worker = threading.Thread(
+            target=worker_target,
+            daemon=True,
+            name=f"moshe-playback-{run['run_id']}-{revision}",
+        )
+        _PLAYBACK_REEVALUATION_THREADS[key] = worker
+    worker.start()
+    return True
 
 
 class Handler(SimpleHTTPRequestHandler):
@@ -3582,23 +4310,27 @@ class Handler(SimpleHTTPRequestHandler):
 
     def do_GET(self):
         path = urlparse(self.path)
+        query = parse_qs(path.query)
+        locale = normalize_locale((query.get("lang") or query.get("locale") or ["he"])[0])
         if path.path == "/api/status":
+            dataset_url, locations_url = localized_dataset_urls(locale)
             self.send_json(200, {
                 "mode": "hermes",
                 "configured": CONFIG_PATH.exists(),
                 "build": APP_BUILD,
+                "locale": locale,
                 "dataset_version": DATASET_VERSION,
-                "dataset_url": DATASET_URL,
-                "locations_url": LOCATIONS_URL,
-                "dataset_rows": len(load_ui_events()),
+                "dataset_url": dataset_url,
+                "locations_url": locations_url,
+                "dataset_rows": len(load_ui_events(locale)),
             })
             return
         if path.path == "/api/layers":
-            self.send_json(200, {"layers": list_ui_layers()})
+            self.send_json(200, {"layers": list_ui_layers(locale)})
             return
         if path.path.startswith("/api/layers/") and path.path.endswith("/rows"):
             layer_id = unquote(path.path[len("/api/layers/"):-len("/rows")])
-            result = get_ui_layer_rows(layer_id)
+            result = get_ui_layer_rows(layer_id, locale)
             if result is None:
                 self.send_json(404, {"error": "Layer not found"})
             else:
@@ -3609,7 +4341,6 @@ class Handler(SimpleHTTPRequestHandler):
             self.send_json(200, {"saved_questions": list_saved_question_metadata()})
             return
         if path.path == "/api/saved-question":
-            query = parse_qs(path.query)
             saved_id = (query.get("id") or [""])[0]
             result = load_saved_question(saved_id)
             if result is None:
@@ -3618,7 +4349,7 @@ class Handler(SimpleHTTPRequestHandler):
                 self.send_json(200, result)
             return
         if path.path == "/api/investigations":
-            self.send_json(200, {"investigations": list_investigation_memory_metadata()})
+            self.send_json(200, {"investigations": list_investigation_memory_metadata(locale)})
             return
         if path.path == "/api/investigation-memory":
             query = parse_qs(path.query)
@@ -3655,7 +4386,6 @@ class Handler(SimpleHTTPRequestHandler):
             return
         if path.path.startswith("/api/scenarios/"):
             scenario_id = unquote(path.path[len("/api/scenarios/"):])
-            query = parse_qs(path.query)
             version_text = (query.get("version") or [""])[0]
             try:
                 version = int(version_text) if version_text else None
@@ -3683,18 +4413,17 @@ class Handler(SimpleHTTPRequestHandler):
         if path.path == "/api/playback":
             investigation_id = (parse_qs(path.query).get("investigation_id") or [""])[0]
             try:
-                self.send_json(200, investigation_playback_status(investigation_id))
+                self.send_json(200, investigation_playback_status(investigation_id, locale))
             except ValueError as exc:
                 self.send_json(400, {"error": str(exc)})
             return
         if path.path == "/api/workstreams":
-            query = parse_qs(path.query)
             investigation_id = (query.get("investigation_id") or [""])[0]
             try:
                 if (query.get("fallback") or [""])[0] == "latest":
-                    self.send_json(200, list_workstreams_with_latest_fallback(investigation_id))
+                    self.send_json(200, list_workstreams_with_latest_fallback(investigation_id, locale))
                 else:
-                    self.send_json(200, {"workstreams": list_workstreams(investigation_id)})
+                    self.send_json(200, {"workstreams": list_workstreams(investigation_id, locale)})
             except ValueError as exc:
                 self.send_json(400, {"error": str(exc)})
             return
@@ -3705,7 +4434,7 @@ class Handler(SimpleHTTPRequestHandler):
                 self.send_error(405)
                 return
             try:
-                workstream = load_workstream(workstream_id)
+                workstream = load_workstream(workstream_id, locale)
             except ValueError as exc:
                 self.send_json(400, {"error": str(exc)})
                 return
@@ -3726,7 +4455,7 @@ class Handler(SimpleHTTPRequestHandler):
                 path.path[len("/api/workstreams/"):-len("/presentation")].rstrip("/")
             )
             try:
-                result = workstream_presentation(workstream_id)
+                result = workstream_presentation(workstream_id, locale)
             except ValueError as exc:
                 self.send_json(400, {"error": str(exc)})
                 return
@@ -3738,7 +4467,7 @@ class Handler(SimpleHTTPRequestHandler):
         if path.path.startswith("/api/workstreams/"):
             workstream_id = unquote(path.path[len("/api/workstreams/"):])
             try:
-                result = load_workstream(workstream_id)
+                result = load_workstream(workstream_id, locale)
             except ValueError as exc:
                 self.send_json(400, {"error": str(exc)})
                 return
@@ -3748,12 +4477,11 @@ class Handler(SimpleHTTPRequestHandler):
                 self.send_json(200, result)
             return
         if path.path == "/api/recorded-questions":
-            self.send_json(200, {"questions": recorded_questions(), "replay_delay_ms": 2000})
+            self.send_json(200, {"questions": recorded_questions(locale), "replay_delay_ms": 2000})
             return
         if path.path == "/api/recorded-run":
-            query = parse_qs(path.query)
             recorded_id = (query.get("id") or [""])[0]
-            result = recorded_result(recorded_id)
+            result = recorded_result_localized(recorded_id, locale=locale)
             if result is None:
                 self.send_json(404, {"error": "Recorded question not found"})
             else:
@@ -3797,74 +4525,57 @@ class Handler(SimpleHTTPRequestHandler):
                 request = json.loads(self.rfile.read(length).decode("utf-8-sig"))
                 if not isinstance(request, dict):
                     raise ValueError("Invalid playback mode payload")
+                locale = normalize_locale(request.get("locale"))
                 investigation_id = str(request.get("investigation_id") or "").strip()
-                mode = str(request.get("mode") or "").strip()
+                mode = "real_time"
                 reset = request.get("reset", False)
                 if not INVESTIGATION_ID_PATTERN.fullmatch(investigation_id):
                     raise ValueError("Invalid investigation id")
-                if mode not in {"historical", "real_time"}:
-                    raise ValueError("Invalid intelligence mode")
                 if not isinstance(reset, bool):
                     raise ValueError("Invalid playback reset flag")
-                if mode == "historical":
-                    if reset:
-                        run = find_active_run(SCENARIO_RUNS_DIR)
-                        if run is not None:
-                            transition_scenario_run(
-                                SCENARIO_MANIFESTS_DIR,
-                                SCENARIO_RUNS_DIR,
-                                run["run_id"],
-                                {
-                                    "expected_revision": int(run["revision"]),
-                                    "idempotency_key": (
-                                        f"app-refresh-reset-{investigation_id}-"
-                                        f"{int(time.time() * 1000)}"
-                                    ),
-                                },
-                                "reset",
-                            )
-                    write_historical_visibility(SCENARIO_RUNS_DIR)
-                else:
-                    run = find_active_run(SCENARIO_RUNS_DIR)
+                run = find_active_run(SCENARIO_RUNS_DIR)
+                if run is None:
+                    manifest = prepared_playback_manifest()
+                    if manifest is None:
+                        raise LookupError("Prepared scenario not found")
+                    run, _ = start_scenario_run(
+                        SCENARIO_MANIFESTS_DIR,
+                        SCENARIO_RUNS_DIR,
+                        {
+                            "scenario_id": manifest["scenario_id"],
+                            "version": manifest["version"],
+                            "investigation_id": investigation_id,
+                            "locale": locale,
+                            "idempotency_key": (
+                                f"mode-real-time-{investigation_id}-"
+                                f"{int(time.time() * 1000)}"
+                            ),
+                        },
+                        lambda workstream_id, investigation_id: scenario_workstream_exists(
+                            workstream_id, investigation_id, locale
+                        ),
+                    )
+                elif reset:
+                    run, _ = transition_scenario_run(
+                        SCENARIO_MANIFESTS_DIR,
+                        SCENARIO_RUNS_DIR,
+                        run["run_id"],
+                        {
+                            "expected_revision": int(run["revision"]),
+                            "idempotency_key": (
+                                f"app-refresh-reset-{investigation_id}-"
+                                f"{int(time.time() * 1000)}"
+                            ),
+                        },
+                        "reset",
+                    )
                     if run is None:
-                        manifest = prepared_playback_manifest()
-                        if manifest is None:
-                            raise LookupError("Prepared scenario not found")
-                        run, _ = start_scenario_run(
-                            SCENARIO_MANIFESTS_DIR,
-                            SCENARIO_RUNS_DIR,
-                            {
-                                "scenario_id": manifest["scenario_id"],
-                                "version": manifest["version"],
-                                "investigation_id": investigation_id,
-                                "idempotency_key": (
-                                    f"mode-real-time-{investigation_id}-"
-                                    f"{int(time.time() * 1000)}"
-                                ),
-                            },
-                            scenario_workstream_exists,
-                        )
-                    elif reset:
-                        run, _ = transition_scenario_run(
-                            SCENARIO_MANIFESTS_DIR,
-                            SCENARIO_RUNS_DIR,
-                            run["run_id"],
-                            {
-                                "expected_revision": int(run["revision"]),
-                                "idempotency_key": (
-                                    f"app-refresh-reset-{investigation_id}-"
-                                    f"{int(time.time() * 1000)}"
-                                ),
-                            },
-                            "reset",
-                        )
-                        if run is None:
-                            raise LookupError("Scenario run not found")
-                    current = load_scenario_run(SCENARIO_RUNS_DIR, run["run_id"])
-                    if current is None:
                         raise LookupError("Scenario run not found")
-                    write_playback_visibility(SCENARIO_RUNS_DIR, current)
-                self.send_json(200, investigation_playback_status(investigation_id))
+                current = load_scenario_run(SCENARIO_RUNS_DIR, run["run_id"])
+                if current is None:
+                    raise LookupError("Scenario run not found")
+                write_playback_visibility(SCENARIO_RUNS_DIR, current)
+                self.send_json(200, investigation_playback_status(investigation_id, locale))
             except PlaybackConflictError as exc:
                 self.send_json(409, {
                     "error": str(exc), "current_revision": exc.current_revision,
@@ -3885,12 +4596,11 @@ class Handler(SimpleHTTPRequestHandler):
                 request = json.loads(self.rfile.read(length).decode("utf-8-sig"))
                 if not isinstance(request, dict):
                     raise ValueError("Invalid playback payload")
+                locale = normalize_locale(request.get("locale"))
                 investigation_id = str(request.get("investigation_id") or "").strip()
                 if not INVESTIGATION_ID_PATTERN.fullmatch(investigation_id):
                     raise ValueError("Invalid investigation id")
                 policy = load_playback_visibility(SCENARIO_RUNS_DIR) or {}
-                if policy.get("mode") != "real_time" or not policy.get("active"):
-                    raise ValueError("Real-time intelligence mode is not active")
                 existing = None
                 policy_run_id = str(policy.get("run_id") or "").strip()
                 if policy_run_id:
@@ -3898,6 +4608,7 @@ class Handler(SimpleHTTPRequestHandler):
                 if existing is None:
                     existing = find_active_run(SCENARIO_RUNS_DIR)
                 claimed_revision = None
+                baseline_created = False
                 if existing is None:
                     manifest = prepared_playback_manifest()
                     if manifest is None:
@@ -3909,9 +4620,12 @@ class Handler(SimpleHTTPRequestHandler):
                             "scenario_id": manifest["scenario_id"],
                             "version": manifest["version"],
                             "investigation_id": investigation_id,
+                            "locale": locale,
                             "idempotency_key": request.get("idempotency_key"),
                         },
-                        scenario_workstream_exists,
+                        lambda workstream_id, investigation_id: scenario_workstream_exists(
+                            workstream_id, investigation_id, locale
+                        ),
                     )
                     released_timeframe = {
                         "from": run["current_stage"]["from"],
@@ -3920,6 +4634,7 @@ class Handler(SimpleHTTPRequestHandler):
                         "to_exclusive": True,
                     }
                     claimed_revision = int(run["revision"])
+                    baseline_created = True
                 elif (
                     existing.get("transition_history")
                     and existing["transition_history"][0].get("idempotency_key")
@@ -3941,6 +4656,7 @@ class Handler(SimpleHTTPRequestHandler):
                         "to_exclusive": True,
                     }
                     claimed_revision = 1
+                    baseline_created = True
                 else:
                     run, _ = transition_scenario_run(
                         SCENARIO_MANIFESTS_DIR,
@@ -3963,7 +4679,7 @@ class Handler(SimpleHTTPRequestHandler):
                     raise LookupError("Scenario run not found")
                 write_playback_visibility(SCENARIO_RUNS_DIR, current)
                 claimed = False
-                if playback_has_active_workstreams(run):
+                if not baseline_created and playback_has_active_workstreams(run):
                     _, claimed = claim_reevaluation(
                         SCENARIO_RUNS_DIR, run["run_id"], claimed_revision
                     )
@@ -3976,7 +4692,11 @@ class Handler(SimpleHTTPRequestHandler):
                     "run": run_with_next_stage(SCENARIO_MANIFESTS_DIR, current),
                     "released_timeframe": released_timeframe,
                     "moshe_triggered": claimed,
-                    "moshe_skipped_reason": None if claimed else "no_active_workstreams",
+                    "moshe_skipped_reason": (
+                        None if claimed
+                        else "initial_baseline" if baseline_created
+                        else "no_active_workstreams"
+                    ),
                 })
             except PlaybackConflictError as exc:
                 self.send_json(409, {
@@ -3996,11 +4716,14 @@ class Handler(SimpleHTTPRequestHandler):
                     self.send_json(413, {"error": "Scenario run payload too large"})
                     return
                 request = json.loads(self.rfile.read(length).decode("utf-8-sig"))
+                request["locale"] = normalize_locale(request.get("locale"))
                 result, created = start_scenario_run(
                     SCENARIO_MANIFESTS_DIR,
                     SCENARIO_RUNS_DIR,
                     request,
-                    scenario_workstream_exists,
+                    lambda workstream_id, investigation_id: scenario_workstream_exists(
+                        workstream_id, investigation_id, request["locale"]
+                    ),
                 )
                 current_policy = load_playback_visibility(SCENARIO_RUNS_DIR)
                 if (
@@ -4069,7 +4792,8 @@ class Handler(SimpleHTTPRequestHandler):
                 request = json.loads(self.rfile.read(length).decode("utf-8-sig"))
                 if not isinstance(request, dict):
                     raise ValueError("Invalid workstream payload")
-                self.send_json(201, create_workstream(request))
+                locale = normalize_locale(request.get("locale"))
+                self.send_json(201, create_workstream(request, locale))
             except ValueError as exc:
                 self.send_json(400, {"error": str(exc)})
             except Exception as exc:
@@ -4086,7 +4810,8 @@ class Handler(SimpleHTTPRequestHandler):
                 request = json.loads(self.rfile.read(length).decode("utf-8-sig"))
                 if not isinstance(request, dict):
                     raise ValueError("Invalid artifact payload")
-                workstream = load_workstream(workstream_id)
+                locale = normalize_locale(request.get("locale"))
+                workstream = load_workstream(workstream_id, locale)
                 if workstream is None:
                     self.send_json(404, {"error": "Workstream not found"})
                     return
@@ -4095,10 +4820,11 @@ class Handler(SimpleHTTPRequestHandler):
                     artifact = create_artifact(
                         workstream,
                         request,
-                        resolve_event=resolve_workstream_event,
-                        resolve_target=resolve_workstream_target,
+                        resolve_event=resolve_workstream_event_for_locale(locale),
+                        resolve_target=resolve_workstream_target_for_locale(locale),
                         now=now,
                         id_factory=artifact_id,
+                        validate_text=reject_hebrew_text if locale == "en" else None,
                     )
                     write_workstream(workstream)
                     self.send_json(201, artifact)
@@ -4108,9 +4834,10 @@ class Handler(SimpleHTTPRequestHandler):
                         workstream,
                         artifact_id_value,
                         request,
-                        resolve_event=resolve_workstream_event,
+                        resolve_event=resolve_workstream_event_for_locale(locale),
                         now=now,
                         id_factory=artifact_id,
+                        validate_text=reject_hebrew_text if locale == "en" else None,
                     )
                     write_workstream(workstream)
                     self.send_json(200, artifact)
@@ -4128,7 +4855,9 @@ class Handler(SimpleHTTPRequestHandler):
         if path.startswith("/api/workstreams/") and path.endswith("/archive"):
             workstream_id = unquote(path[len("/api/workstreams/"):-len("/archive")].rstrip("/"))
             try:
-                archived = archive_workstream(workstream_id)
+                query = parse_qs(urlparse(self.path).query)
+                locale = normalize_locale((query.get("lang") or query.get("locale") or ["he"])[0])
+                archived = archive_workstream(workstream_id, locale)
             except ValueError as exc:
                 self.send_json(400, {"error": str(exc)})
                 return
@@ -4201,13 +4930,14 @@ class Handler(SimpleHTTPRequestHandler):
             length = int(self.headers.get("Content-Length", "0"))
             request = json.loads(self.rfile.read(length).decode("utf-8"))
             prompt = str(request.get("prompt", "")).strip()
+            locale = normalize_locale(request.get("locale"))
             if not prompt:
                 self.send_json(400, {"error": "Missing prompt"})
                 return
             conversation_id = str(request.get("investigation_id") or "").strip()
             route = route_agent_request(request)
             workstream_context = bounded_workstream_context(
-                request.get("workstream_context"), conversation_id
+                request.get("workstream_context"), conversation_id, locale
             )
             investigation_state = request.get("investigation_state")
             if not isinstance(investigation_state, dict):
@@ -4224,6 +4954,7 @@ class Handler(SimpleHTTPRequestHandler):
                 continuation_context=request.get("continuation_context"),
                 responding_agent=route.responding_agent,
                 mission_run_id=route.mission_run_id,
+                locale=locale,
             )
             if (
                 request.get("workstream_creation_requested") is True
@@ -4231,16 +4962,16 @@ class Handler(SimpleHTTPRequestHandler):
             ):
                 try:
                     created = apply_workstream_creation(
-                        conversation_id, result.get("workstream_creation")
+                        conversation_id, result.get("workstream_creation"), locale
                     )
                     if created:
                         result["workstream_created"] = created
-                        result["answer"] = workstream_created_answer(created)
+                        result["answer"] = workstream_created_answer(created, locale=locale)
                 except ValueError as exc:
                     result["workstream_conflict"] = {"error": str(exc)}
             try:
                 artifact, conflict = apply_workstream_action(
-                    workstream_context, result.get("workstream_action")
+                    workstream_context, result.get("workstream_action"), locale
                 )
                 if artifact:
                     result["workstream_artifact"] = artifact
@@ -4257,7 +4988,10 @@ class Handler(SimpleHTTPRequestHandler):
             self.send_json(502, {"error": str(exc)})
 
     def do_PUT(self):
-        path = urlparse(self.path).path
+        parsed = urlparse(self.path)
+        path = parsed.path
+        query = parse_qs(parsed.query)
+        query_locale = normalize_locale((query.get("lang") or query.get("locale") or ["he"])[0])
         if path.startswith("/api/workstreams/"):
             workstream_id = unquote(path[len("/api/workstreams/"):])
             try:
@@ -4268,7 +5002,8 @@ class Handler(SimpleHTTPRequestHandler):
                 request = json.loads(self.rfile.read(length).decode("utf-8-sig"))
                 if not isinstance(request, dict):
                     raise ValueError("Invalid workstream payload")
-                updated = update_workstream(workstream_id, request)
+                locale = normalize_locale(request.get("locale") or query_locale)
+                updated = update_workstream(workstream_id, request, locale)
                 if updated is None:
                     self.send_json(404, {"error": "Workstream not found"})
                 else:
@@ -4320,3 +5055,4 @@ if __name__ == "__main__":
     server = ThreadingHTTPServer((host, port), Handler)
     print(f"POC server listening on http://{host}:{port}/", flush=True)
     server.serve_forever()
+    locale = normalize_locale(context.get("locale") if isinstance(context, dict) else locale)

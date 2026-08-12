@@ -319,3 +319,46 @@ curl -k -fsS https://151.145.93.180/ | grep -E 'styles.css\?v=|app.js\?v='
 curl -fsS http://127.0.0.1:8769/api/status
 curl -fsS http://127.0.0.1:8769/api/live-steps
 ```
+
+## English Localization Status — 2026-08-06
+
+The isolated English WIP is not just translating shell labels anymore. The current intended architecture is:
+
+- Hebrew remains the default mode and must remain untouched by English-specific fixes.
+- English-mode localization should come from backend/runtime behavior and projected assets, not client-side text substitutions.
+- Source-type labels and “What came back” investigation-step content are now being hardened in the backend response path for `lang=en`.
+
+Important implementation direction:
+
+- do not reintroduce frontend-only translation patches for investigation-step results or source types;
+- prefer fixing:
+  - server-side JSON payload localization;
+  - recorded-run localization;
+  - English dataset/projection generation where relevant.
+
+Current English WIP notes:
+
+- the temporary UI workaround for English source-type and step-result translation was removed again;
+- the backend `server.py` in this WIP now carries the intended English localization path for payload fields such as:
+  - `source_type`
+  - `source_types`
+  - `answer`
+  - `result`
+  - `action`
+  - `decision`
+  - `bridge_summary`
+- English recorded-run handling is intended to localize from canonical recorded runs at response time rather than trusting `recorded_runs_en` copies as the single source of truth.
+
+Deployment note:
+
+- this exact English WIP state was not deployed from the latest session because the VM SSH private key / real local `.hermes-api.json` was not available in the workspace.
+- before attempting deployment again, restore access to one of:
+  - the SSH private key used for `ubuntu@151.145.93.180`, or
+  - the real local `.hermes-api.json` that contains the key path and Hermes API settings.
+
+Validation checklist for the next English deploy:
+
+- English source types appear fully in English everywhere they are surfaced.
+- “What came back” step outputs are fully English in recorded and live flows.
+- Hebrew mode still behaves exactly as before.
+- language switch directionality remains correct when moving between Hebrew and English.

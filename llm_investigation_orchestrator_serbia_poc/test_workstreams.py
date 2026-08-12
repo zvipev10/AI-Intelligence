@@ -81,7 +81,7 @@ class WorkstreamApiTests(unittest.TestCase):
         self.assertIsNone(created["archived_at_utc"])
 
         workstream_id = created["workstream_id"]
-        stored_path = Path(self.temp_dir.name) / f"{workstream_id}.json"
+        stored_path = Path(self.temp_dir.name) / "v2" / "he" / f"{workstream_id}.json"
         self.assertTrue(stored_path.exists())
         self.assertFalse(stored_path.with_suffix(".json.tmp").exists())
 

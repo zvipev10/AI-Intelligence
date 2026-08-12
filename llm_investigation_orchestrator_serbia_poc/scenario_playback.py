@@ -278,7 +278,12 @@ def visible_timeframe(manifest: dict, stage_index: int) -> dict:
     }
 
 
-def validate_start_request(request: Any) -> tuple[str, int | None, str | None, str, str]:
+def normalize_locale(value: Any) -> str:
+    locale = str(value or "").strip().lower()
+    return locale if locale in {"he", "en"} else "he"
+
+
+def validate_start_request(request: Any) -> tuple[str, int | None, str | None, str, str, str]:
     if not isinstance(request, dict):
         raise ValueError("Invalid scenario run payload")
     scenario_id = compact_text(request.get("scenario_id"), 120)
@@ -296,7 +301,8 @@ def validate_start_request(request: Any) -> tuple[str, int | None, str | None, s
     if not INVESTIGATION_ID_PATTERN.fullmatch(investigation_id):
         raise ValueError("Invalid investigation id")
     idempotency_key = normalize_idempotency_key(request.get("idempotency_key"))
-    return scenario_id, version, workstream_id, investigation_id, idempotency_key
+    locale = normalize_locale(request.get("locale"))
+    return scenario_id, version, workstream_id, investigation_id, idempotency_key, locale
 
 
 def normalize_idempotency_key(value: Any) -> str:
@@ -312,7 +318,9 @@ def find_existing_run(
     version: int,
     workstream_id: str | None,
     investigation_id: str,
+    locale: str = "he",
 ) -> dict | None:
+    locale = normalize_locale(locale)
     if not directory.exists():
         return None
     matches: list[dict] = []
@@ -328,12 +336,14 @@ def find_existing_run(
                 else not payload.get("workstream_id")
                 and payload.get("investigation_id") == investigation_id
             )
+            and normalize_locale(payload.get("locale")) == locale
         ):
             matches.append(payload)
     return max(matches, key=lambda item: str(item.get("updated_at_utc") or ""), default=None)
 
 
-def find_investigation_run(directory: Path, investigation_id: str) -> dict | None:
+def find_investigation_run(directory: Path, investigation_id: str, locale: str = "he") -> dict | None:
+    locale = normalize_locale(locale)
     if not INVESTIGATION_ID_PATTERN.fullmatch(investigation_id or "") or not directory.exists():
         return None
     matches = []
@@ -343,6 +353,7 @@ def find_investigation_run(directory: Path, investigation_id: str) -> dict | Non
             payload
             and payload.get("investigation_id") == investigation_id
             and not payload.get("workstream_id")
+            and normalize_locale(payload.get("locale")) == locale
         ):
             matches.append(payload)
     return max(matches, key=lambda item: str(item.get("updated_at_utc") or ""), default=None)
@@ -436,7 +447,7 @@ def start_run(
     request: Any,
     workstream_validator: Callable[[str, str], bool],
 ) -> tuple[dict, bool]:
-    scenario_id, version, workstream_id, investigation_id, key = validate_start_request(request)
+    scenario_id, version, workstream_id, investigation_id, key, locale = validate_start_request(request)
     manifest = get_manifest(manifests_dir, scenario_id, version)
     if manifest is None:
         raise LookupError("Scenario not found")
@@ -444,7 +455,7 @@ def start_run(
         raise LookupError("Workstream not found for investigation")
     with _STATE_LOCK:
         existing = find_existing_run(
-            runs_dir, scenario_id, manifest["version"], workstream_id, investigation_id
+            runs_dir, scenario_id, manifest["version"], workstream_id, investigation_id, locale
         )
         if existing is not None:
             return public_run(existing), False
@@ -470,6 +481,7 @@ def start_run(
             "scope": dict(manifest["scope"]),
             "workstream_id": workstream_id,
             "investigation_id": investigation_id,
+            "locale": locale,
             "status": "active",
             "current_stage_index": 0,
             "current_stage": dict(first_stage),

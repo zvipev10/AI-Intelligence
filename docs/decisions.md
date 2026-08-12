@@ -259,3 +259,9 @@ Follow-ups:
 Consolidate the variants through a separately reviewed capability, and require
 future deployments to update the versioned snapshot and hashes in the same
 change.
+
+Update (2026-08-12):
+The variants were consolidated without deploying. The v162 files now live only
+in the canonical package root; `deployment/SHA256SUMS-v162.txt` retains their
+capture hashes. Future application changes and deployments use the package root
+instead of maintaining a second snapshot source tree.
