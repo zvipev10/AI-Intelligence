@@ -25,3 +25,5 @@ No further action is required for this approved slice.
 The welcome page now includes the existing composer visual treatment between the welcome message and investigation list. Submitting a non-empty prompt creates or reuses `חקירת טיוטה` / `Draft investigation`, opens its workspace, and runs the prompt. Production serves v164/v137; the deployed hashes match `SHA256SUMS-v164.txt`.
 
 The first two mocked similar investigations now show 2 and 3 participants. Production serves `app.js?v=165`; live Hebrew and English checks confirm `[2, 3, 6]` across the three mocked ribbons.
+
+Avatar rendering is aligned with those counts in production v166: the first two proposals show exactly 2 and 3 profile images. The third shows the five available profiles for its six-person count.

@@ -24,7 +24,7 @@ Complete for approved slice
 
 ## Latest change since previous review
 
-Deployed and production-verified the similar-investigation participant counts as UI v165/v137.
+Deployed and production-verified participant counts and avatar alignment as UI v166/v137.
 
 ## Current blockers
 

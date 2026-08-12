@@ -38,3 +38,9 @@ Production verification covered Hebrew RTL copy and placement, visible add/send 
 The first two mocked similar-investigation participant counts were changed from 8 and 12 to 2 and 3. Production now serves `app.js?v=165`; the deployed hashes match `deployment/SHA256SUMS-v165.txt`. Live Hebrew and English rendering both show participant counts `[2, 3, 6]` with no horizontal overflow.
 
 Backup: `/opt/serbia-poc-ui-backups/similar-participants-20260812T113027Z`.
+
+## Avatar alignment follow-up
+
+Mocked investigation avatars now render up to the displayed participant count. Production serves `app.js?v=166`; live verification confirms `2 avatars / 2 participants`, `3 avatars / 3 participants`, and `5 available avatars / 6 participants`. Deployed hashes match `deployment/SHA256SUMS-v166.txt`.
+
+Backup: `/opt/serbia-poc-ui-backups/participant-avatars-20260812T154358Z`.
