@@ -169,7 +169,6 @@ body.welcome-active .investigation-switcher { visibility: hidden; pointer-events
 .draft-create-form > label { color: var(--muted); font-size: 11px; font-weight: 850; }
 .draft-create-form > input { width: 100%; min-height: 40px; border: 1px solid rgba(146,170,205,.38); border-radius: 10px; background: #10141b; color: var(--ink); padding: 0 11px; font: inherit; }
 .draft-create-form > input:focus { border-color: var(--blue); outline: 2px solid rgba(88,166,255,.18); }
-.draft-create-participants { display: grid; justify-items: center; padding: 10px 0 4px; }
 .draft-create-error { color: var(--red); font-size: 12px; text-align: center; }
 .draft-create-error[hidden] { display: none; }
 .draft-create-actions { display: flex; justify-content: center; gap: 9px; margin-top: 4px; }

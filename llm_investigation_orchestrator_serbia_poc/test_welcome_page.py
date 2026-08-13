@@ -60,17 +60,18 @@ class WelcomePageContractTests(unittest.TestCase):
             ".prompt-form.welcome-prompt-form { width: min(720px, 100%); margin: -10px auto 42px; }",
             self.styles,
         )
-        self.assertIn('href="./styles.css?v=139"', self.index)
+        self.assertIn('href="./styles.css?v=140"', self.index)
 
     def test_draft_creation_modal_and_memory_save_gate(self):
         self.assertIn('id="draftCreateInvestigationButton"', self.index)
         self.assertIn('id="draftCreateModal"', self.index)
         self.assertIn('id="draftInvestigationName"', self.index)
-        self.assertIn('id="draftCreateParticipants"', self.index)
+        self.assertNotIn('id="draftCreateParticipants"', self.index)
         self.assertIn('function createInvestigationFromDraft()', self.app)
         self.assertIn('const duplicate = state.investigations.some', self.app)
         self.assertIn('id: state.investigationId, name,', self.app)
-        self.assertIn('draftCreateParticipants.innerHTML = welcomeParticipantsHtml();', self.app)
+        self.assertNotIn('draftCreateParticipants', self.app)
+        self.assertIn('src="./app.js?v=169"', self.index)
         self.assertEqual(self.app.count('if (state.draftSessionActive) {\n    openDraftCreateModal('), 2)
         self.assertIn('const pendingAction = state.pendingDraftMemoryAction;', self.app)
         self.assertIn('if (pendingAction) await pendingAction();', self.app)

@@ -37,6 +37,11 @@ investigations, adds the draft-to-investigation creation modal, and gates
 investigation-memory saves on creation. It advances the assets to
 `app.js?v=168` and `styles.css?v=139`.
 
+`SHA256SUMS-v170.txt` removes the participant presentation from the
+draft-to-investigation creation modal. Regular participants still appear in
+the investigation workspace after creation. It advances the assets to
+`app.js?v=169` and `styles.css?v=140`.
+
 Secrets, datasets, investigations, workstreams, scenario runs, recordings,
 caches, logs, and generated runtime state are intentionally excluded.
 

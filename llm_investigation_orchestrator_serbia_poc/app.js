@@ -398,7 +398,6 @@ const draftCreateInvestigationButton = document.getElementById("draftCreateInves
 const draftCreateModal = document.getElementById("draftCreateModal");
 const draftCreateForm = document.getElementById("draftCreateForm");
 const draftInvestigationName = document.getElementById("draftInvestigationName");
-const draftCreateParticipants = document.getElementById("draftCreateParticipants");
 const draftCreateError = document.getElementById("draftCreateError");
 const draftCreateCancel = document.getElementById("draftCreateCancel");
 const draftCreateSubmit = document.getElementById("draftCreateSubmit");
@@ -2111,7 +2110,6 @@ function renderDraftInvestigationUi() {
   const active = state.draftSessionActive && state.pageView === "workspace";
   investigationSwitcher.classList.toggle("draft-active", active);
   draftCreateInvestigationButton.hidden = !active;
-  if (draftCreateParticipants) draftCreateParticipants.innerHTML = welcomeParticipantsHtml();
 }
 
 function setPageView(view, options = {}) {
@@ -2163,7 +2161,6 @@ function openDraftCreateModal(pendingAction = null) {
   if (!state.draftSessionActive || !draftCreateModal) return;
   if (pendingAction && !state.pendingDraftMemoryAction) state.pendingDraftMemoryAction = pendingAction;
   showDraftCreateError();
-  draftCreateParticipants.innerHTML = welcomeParticipantsHtml();
   draftCreateModal.hidden = false;
   window.requestAnimationFrame(() => draftInvestigationName?.focus());
 }

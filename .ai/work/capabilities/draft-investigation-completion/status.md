@@ -6,24 +6,24 @@ Complete draft investigation creation (`draft-investigation-completion`)
 
 ## Current phase
 
-Phase 4 — checkpoint 001 review
+Phase 5 — accepted release
 
 ## Overall status
 
-Implemented; pending Product/UX/QA review
+Accepted; checkpoint 002 ready for deployment
 
 ## Who needs to act now
 
 | Role | Status | Required action | Due before |
 |---|---|---|---|
-| Product/UX | Pending review | Review `checkpoint-001.md` behavior | Deployment |
-| Development | Complete | Address review findings if any | Deployment |
-| QA | Pending review | Review automated/browser evidence | Deployment |
+| Product/UX | Accepted | Participant presentation removal explicitly requested | Complete |
+| Development | Complete | Deploy checkpoint 002 | Release |
+| QA | Complete | Full regression suite passed | Complete |
 | Architecture/Security | Not required | Reassess only if real invitations enter scope | Release |
 
 ## Latest change since previous review
 
-Implemented the approved lifecycle; 133 tests and local Edge interaction smoke pass.
+Removed the modal-only participant presentation while preserving regular participants after creation; 133 tests pass.
 
 ## Current blockers
 
@@ -31,11 +31,11 @@ None.
 
 ## Current risks
 
-Pending save continuation could double-submit if modal state is not single-use.
+No new material risk; participant rendering after creation remains on the existing regular-investigation path.
 
 ## Next expected artifact
 
-Product/UX/QA acceptance, then deployment decision.
+Deploy checkpoint 002 and merge to `main`.
 
 ## Parent issue
 
@@ -47,7 +47,7 @@ Local draft: `issues/parent-capability.md`.
 |---|---|---|---|---|
 | Product/UX checkpoint | Product/UX | Approve modal behavior | Complete | No |
 | Implementation | Development | Build draft conversion and save continuation | Complete | No |
-| Final QA | QA | Validate regression and acceptance criteria | Pending | Yes |
+| Final QA | QA | Validate regression and acceptance criteria | Complete | No |
 
 ## Artifact links
 
@@ -57,7 +57,7 @@ Local draft: `issues/parent-capability.md`.
 - QA review: `qa-review.md`
 - Decisions: `decisions.md`
 - Execution plan: `execution-plan.md`
-- Latest checkpoint: `checkpoint-001.md`
+- Latest checkpoint: `checkpoint-002.md`
 - Handoff: pending
 
 ## Gate checklist
