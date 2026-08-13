@@ -6,7 +6,7 @@
   <title>סביבת מודיעין</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="./vendor/maplibre-gl.css">
-  <link rel="stylesheet" href="./styles.css?v=140">
+  <link rel="stylesheet" href="./styles.css?v=141">
 </head>
 <body class="welcome-active">
   <a class="help-button" href="./help.html" target="_blank" rel="noopener" aria-label="פתח עזרה" data-i18n-aria-he="פתח עזרה" data-i18n-aria-en="Open help">?</a>
@@ -204,15 +204,13 @@
   </div>
 
   <div id="draftCreateModal" class="modal-backdrop draft-create-backdrop" hidden>
-    <section class="draft-create-modal" role="dialog" aria-modal="true" aria-labelledby="draftCreateTitle" aria-describedby="draftCreateDescription">
+    <section class="draft-create-modal" role="dialog" aria-modal="true" aria-labelledby="draftCreateTitle">
       <div class="welcome-action-icon"><span class="material-symbols-rounded" aria-hidden="true">group_add</span></div>
       <div class="draft-create-copy">
         <h2 id="draftCreateTitle" data-i18n-text-he="יצירת חקירה" data-i18n-text-en="Create investigation">יצירת חקירה</h2>
-        <p id="draftCreateDescription" data-i18n-text-he="תנו שם לחקירה. כל משתתפי המכלול הרגילים יתווספו אוטומטית." data-i18n-text-en="Name the investigation. All regular team participants will be added automatically.">תנו שם לחקירה. כל משתתפי המכלול הרגילים יתווספו אוטומטית.</p>
       </div>
       <form id="draftCreateForm" class="draft-create-form">
-        <label for="draftInvestigationName" data-i18n-text-he="שם החקירה" data-i18n-text-en="Investigation name">שם החקירה</label>
-        <input id="draftInvestigationName" type="text" maxlength="120" autocomplete="off" required data-i18n-placeholder-he="הזינו שם חקירה" data-i18n-placeholder-en="Enter an investigation name" placeholder="הזינו שם חקירה">
+        <input id="draftInvestigationName" type="text" maxlength="120" autocomplete="off" required aria-label="שם החקירה" data-i18n-aria-he="שם החקירה" data-i18n-aria-en="Investigation name" data-i18n-placeholder-he="הזינו שם חקירה" data-i18n-placeholder-en="Enter an investigation name" placeholder="הזינו שם חקירה">
         <div id="draftCreateError" class="draft-create-error" role="alert" hidden></div>
         <div class="draft-create-actions">
           <button id="draftCreateCancel" class="secondary-filter-action" type="button" data-i18n-text-he="ביטול" data-i18n-text-en="Cancel">ביטול</button>

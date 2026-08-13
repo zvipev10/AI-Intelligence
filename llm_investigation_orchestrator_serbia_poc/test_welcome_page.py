@@ -60,12 +60,18 @@ class WelcomePageContractTests(unittest.TestCase):
             ".prompt-form.welcome-prompt-form { width: min(720px, 100%); margin: -10px auto 42px; }",
             self.styles,
         )
-        self.assertIn('href="./styles.css?v=140"', self.index)
+        self.assertIn('href="./styles.css?v=141"', self.index)
 
     def test_draft_creation_modal_and_memory_save_gate(self):
         self.assertIn('id="draftCreateInvestigationButton"', self.index)
         self.assertIn('id="draftCreateModal"', self.index)
         self.assertIn('id="draftInvestigationName"', self.index)
+        modal_markup = self.index.split('id="draftCreateModal"', 1)[1].split('id="stepInjectModal"', 1)[0]
+        self.assertNotIn('id="draftCreateDescription"', modal_markup)
+        self.assertNotIn('<label for="draftInvestigationName"', modal_markup)
+        self.assertIn('data-i18n-aria-en="Investigation name"', modal_markup)
+        self.assertIn('.draft-create-actions button {', self.styles)
+        self.assertIn('grid-template-columns: repeat(2, minmax(0, 1fr))', self.styles)
         self.assertNotIn('id="draftCreateParticipants"', self.index)
         self.assertIn('function createInvestigationFromDraft()', self.app)
         self.assertIn('const duplicate = state.investigations.some', self.app)

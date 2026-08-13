@@ -42,6 +42,11 @@ draft-to-investigation creation modal. Regular participants still appear in
 the investigation workspace after creation. It advances the assets to
 `app.js?v=169` and `styles.css?v=140`.
 
+`SHA256SUMS-v171.txt` removes the explanatory text and visible field label
+from the creation modal while retaining an accessible input label. It also
+aligns and styles the modal actions consistently with the application's
+neutral and blue primary buttons, advancing `styles.css` to `v=141`.
+
 Secrets, datasets, investigations, workstreams, scenario runs, recordings,
 caches, logs, and generated runtime state are intentionally excluded.
 

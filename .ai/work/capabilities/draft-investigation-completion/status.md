@@ -23,7 +23,7 @@ Accepted; checkpoint 002 ready for deployment
 
 ## Latest change since previous review
 
-Removed the modal-only participant presentation while preserving regular participants after creation; 133 tests pass.
+Removed modal-only participant content and aligned the simplified modal actions with application button styling.
 
 ## Current blockers
 
@@ -35,7 +35,7 @@ No new material risk; participant rendering after creation remains on the existi
 
 ## Next expected artifact
 
-Deploy checkpoint 002 and merge to `main`.
+Validate and deploy checkpoint 003, then merge to `main`.
 
 ## Parent issue
 
@@ -57,7 +57,7 @@ Local draft: `issues/parent-capability.md`.
 - QA review: `qa-review.md`
 - Decisions: `decisions.md`
 - Execution plan: `execution-plan.md`
-- Latest checkpoint: `checkpoint-002.md`
+- Latest checkpoint: `checkpoint-003.md`
 - Handoff: pending
 
 ## Gate checklist
