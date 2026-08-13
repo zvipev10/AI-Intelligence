@@ -6,28 +6,28 @@ Complete draft investigation creation (`draft-investigation-completion`)
 
 ## Current phase
 
-Phase 2 — product/UX checkpoint
+Phase 3 — execution plan approved
 
 ## Overall status
 
-Pending human review
+Approved for implementation
 
 ## Who needs to act now
 
 | Role | Status | Required action | Due before |
 |---|---|---|---|
-| Product/UX | Pending | Approve participant interaction and duplicate-name behavior | Execution planning |
-| Development | Draft reviewed | Await product/UX checkpoint | Coding |
-| QA | Draft reviewed | Await product/UX checkpoint | Coding |
+| Product/UX | Approved | Review implementation checkpoint | Release |
+| Development | Ready | Implement `execution-plan.md` | Checkpoint 001 |
+| QA | Ready | Validate checkpoint 001 | Release |
 | Architecture/Security | Not required | Reassess only if real invitations enter scope | Release |
 
 ## Latest change since previous review
 
-Created the capability contract and draft technical/UX/QA reviews from current `main`.
+Approved ephemeral draft IDs, unique names, welcome-style participant display, and automatic regular participants after creation.
 
 ## Current blockers
 
-Human approval of the two product/UX choices in `capability-brief.md`.
+None.
 
 ## Current risks
 
@@ -35,7 +35,7 @@ Pending save continuation could double-submit if modal state is not single-use.
 
 ## Next expected artifact
 
-Approved reviews, then `execution-plan.md`.
+`checkpoint-001.md`.
 
 ## Parent issue
 
@@ -45,7 +45,7 @@ Local draft: `issues/parent-capability.md`.
 
 | Issue | Role | Purpose | Status | Blocking? |
 |---|---|---|---|---|
-| Product/UX checkpoint | Product/UX | Approve modal behavior | Pending | Yes |
+| Product/UX checkpoint | Product/UX | Approve modal behavior | Complete | No |
 | Implementation | Development | Build draft conversion and save continuation | Pending | Yes |
 | Final QA | QA | Validate regression and acceptance criteria | Pending | Yes |
 
@@ -55,7 +55,8 @@ Local draft: `issues/parent-capability.md`.
 - Developer review: `developer-review.md`
 - UX review: `ux-review.md`
 - QA review: `qa-review.md`
-- Execution plan: pending
+- Decisions: `decisions.md`
+- Execution plan: `execution-plan.md`
 - Handoff: pending
 
 ## Gate checklist

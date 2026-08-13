@@ -14,7 +14,7 @@ Local draft: `issues/parent-capability.md`
 
 ## Current status
 
-Pending product/UX checkpoint. See `status.md`.
+Approved for implementation. See `status.md`.
 
 ## User problem
 
@@ -30,17 +30,17 @@ Analysts who begin from the welcome-page draft composer.
 
 ## Proposed behavior
 
-- A draft opens the existing regular investigation workspace.
+- A draft opens the regular workspace using an ephemeral session ID without registering an investigation or loading investigation-owned state.
 - While the active investigation is a draft, the header replaces the investigation selector and participant panel with one bilingual `Create investigation` button.
-- The button opens a compact modal containing an investigation-name input and a fake participant invite/add interaction consistent with the welcome-page demo behavior.
+- The button opens a compact modal containing an investigation-name input and the welcome-page participant/avatar presentation.
 - Clicking save-to-memory for either a message/result or a layer opens the same modal when the active investigation is still a draft.
-- After successful creation, the draft becomes a normal investigation, normal header controls return, and a pending save action continues automatically.
+- After successful creation, the same draft ID becomes a normal investigation, all regular participants appear as they do today, normal header controls return, and a pending save action continues automatically.
 
 ## MVP scope
 
 - Front-end draft detection and header mode.
 - One reusable bilingual creation modal.
-- Fake participant selection only; no invitations, messages, or membership persistence.
+- Participant display only; no participant selection, invitations, messages, or new membership persistence.
 - Resume pending layer or result-memory saves after creation.
 - Preserve the existing draft chat, results, layers, and investigation identifier during conversion.
 
@@ -54,7 +54,7 @@ Analysts who begin from the welcome-page draft composer.
 
 - [ ] Starting from the welcome composer opens the regular workspace in draft mode.
 - [ ] Draft mode shows only `Create investigation` in place of the selector and participant panel.
-- [ ] The creation button opens a small accessible modal with name and fake participant controls.
+- [ ] The creation button opens a small accessible modal with a name input and welcome-style participant display.
 - [ ] Name is required; cancel leaves the draft unchanged.
 - [ ] Creating converts the active draft without losing current workspace state.
 - [ ] Message/result and layer save-to-memory actions open the same modal in draft mode.
@@ -78,7 +78,7 @@ Analysts who begin from the welcome-page draft composer.
 
 ## UX notes
 
-The participant interaction is explicitly demonstrative. The modal must say that no invitation is sent. Proposed selection is optional and uses the existing member avatars/names.
+The participant presentation reuses existing member avatars/count. There is no participant selection; all regular participants appear after creation.
 
 ## QA notes
 
@@ -86,21 +86,19 @@ Contract tests should verify markup, draft-mode branching, pending-action contin
 
 ## Risks
 
-- Ambiguous meaning of “fake like in welcome page”: the recommended interpretation is selectable fake member chips with explicit demo copy.
 - Automatically resuming save after creation must not double-submit.
 
 ## Open questions
 
-1. Should participants be selectable fake member chips (recommended), or should `Invite / add` only display the existing demo message?
-2. Should a duplicate name select/merge with the existing investigation, or require a unique name (recommended)?
+Resolved: display welcome-style participants without selection, add all regular participants after creation, and require a unique name.
 
 ## Missing inputs
 
-Human approval of the two recommended UX/product choices above.
+None.
 
 ## Required reviewers
 
-Product/UX approval; developer and QA recommendations are prepared as drafts.
+Product/UX approved; Development and QA execute and validate.
 
 ## Required child issues
 
@@ -116,4 +114,4 @@ Product/UX approval; developer and QA recommendations are prepared as drafts.
 
 ## Handoff to developer
 
-Implement only after the product/UX checkpoint approves participant behavior and duplicate-name handling.
+Implement the approved execution plan.
