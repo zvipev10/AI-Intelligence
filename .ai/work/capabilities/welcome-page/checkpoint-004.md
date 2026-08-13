@@ -19,4 +19,11 @@ Low. The selector targets only the welcome composer and does not change workspac
 - All 132 discovered POC tests pass.
 - JavaScript syntax and Git diff checks pass.
 - Local Edge geometry at 1440 px reports `left=360`, `right=1080`, and a center delta of `0`.
-- Production deployment and browser verification remain pending.
+- Production serves `styles.css?v=138`; deployed `index.html` and `styles.css` hashes match `SHA256SUMS-v168.txt`.
+- Production Edge geometry at 1440 px reports `left=360`, `right=1080`, and a center delta of `0`.
+- `serbia-poc-ui.service` remains active.
+
+## Deployment
+
+- Scoped deployment: `index.html` and `styles.css` only.
+- Rollback backup: `/opt/serbia-poc-ui-backups/welcome-chat-center-20260813T175451Z`.

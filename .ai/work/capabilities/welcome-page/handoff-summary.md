@@ -30,4 +30,4 @@ Avatar rendering is aligned with those counts in production v166: the first two 
 
 ## Welcome composer centering fix
 
-The v168 candidate makes the welcome-specific prompt-form rule more specific so the generic prompt-form margins cannot move the 720 px composer off-center. It advances the stylesheet to v138. All 132 POC tests pass, and local Edge geometry at a 1440 px viewport reports a center delta of zero. Production deployment remains pending.
+The v168 release makes the welcome-specific prompt-form rule more specific so the generic prompt-form margins cannot move the 720 px composer off-center. It advances the stylesheet to v138. All 132 POC tests pass, and local plus production Edge geometry at a 1440 px viewport reports a center delta of zero. Production hashes match `SHA256SUMS-v168.txt`, the service remains active, and the rollback backup is `/opt/serbia-poc-ui-backups/welcome-chat-center-20260813T175451Z`.

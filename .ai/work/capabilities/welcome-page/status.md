@@ -6,25 +6,25 @@ Investigation welcome page (`welcome-page`)
 
 ## Current phase
 
-Phase 5 — welcome composer centering fix validated locally
+Phase 5 — welcome composer centering fix deployed and verified
 
 ## Overall status
 
-Ready for deployment
+Complete
 
 ## Who needs to act now
 
 | Role | Status | Required action | Due before |
 |---|---|---|---|
 | Product | Complete | None for approved slice | — |
-| Development | Complete | Deploy and verify checkpoint 004 | Release |
+| Development | Complete | None | — |
 | UX | Complete | None for approved slice | — |
 | QA | Complete | None for approved slice | — |
 | Architecture/Security | Not required | Reassess only if persistence or permissions enter scope | Implementation |
 
 ## Latest change since previous review
 
-Corrected the welcome composer selector so centered auto margins override the later generic prompt-form margins; local browser geometry is exactly centered.
+Deployed the welcome composer centering fix as styles v138; production browser geometry is exactly centered and deployed hashes match the v168 manifest.
 
 ## Current blockers
 
@@ -37,7 +37,7 @@ None.
 
 ## Next expected artifact
 
-Production verification and final checkpoint 004 update.
+No further artifact required.
 
 ## Parent issue
 
