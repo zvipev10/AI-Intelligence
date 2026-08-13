@@ -27,3 +27,7 @@ The welcome page now includes the existing composer visual treatment between the
 The first two mocked similar investigations now show 2 and 3 participants. Production serves `app.js?v=165`; live Hebrew and English checks confirm `[2, 3, 6]` across the three mocked ribbons.
 
 Avatar rendering is aligned with those counts in production v166: the first two proposals show exactly 2 and 3 profile images. The third shows the five available profiles for its six-person count.
+
+## Welcome composer centering fix
+
+The v168 candidate makes the welcome-specific prompt-form rule more specific so the generic prompt-form margins cannot move the 720 px composer off-center. It advances the stylesheet to v138. All 132 POC tests pass, and local Edge geometry at a 1440 px viewport reports a center delta of zero. Production deployment remains pending.

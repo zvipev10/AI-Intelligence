@@ -48,6 +48,16 @@ class WelcomePageContractTests(unittest.TestCase):
         self.assertIn('welcomePromptOptionsButton?.addEventListener("click"', self.app)
         self.assertIn('.welcome-prompt-form', self.styles)
 
+    def test_welcome_prompt_overrides_generic_form_margins_to_stay_centered(self):
+        generic_form_rule = self.styles.index(".prompt-form {")
+        centered_welcome_rule = self.styles.index(".prompt-form.welcome-prompt-form {")
+        self.assertLess(centered_welcome_rule, generic_form_rule)
+        self.assertIn(
+            ".prompt-form.welcome-prompt-form { width: min(720px, 100%); margin: -10px auto 42px; }",
+            self.styles,
+        )
+        self.assertIn('href="./styles.css?v=138"', self.index)
+
     def test_welcome_uses_centered_content_without_blue_kickers_or_open_hint(self):
         welcome_markup = self.index.split('<main id="welcomePage"', 1)[1].split('</main>', 1)[0]
         self.assertNotIn('class="welcome-eyebrow"', welcome_markup)

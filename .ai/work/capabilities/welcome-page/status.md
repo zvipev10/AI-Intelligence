@@ -6,25 +6,25 @@ Investigation welcome page (`welcome-page`)
 
 ## Current phase
 
-Phase 5 — draft exploration composer deployed and verified
+Phase 5 — welcome composer centering fix validated locally
 
 ## Overall status
 
-Complete for approved slice
+Ready for deployment
 
 ## Who needs to act now
 
 | Role | Status | Required action | Due before |
 |---|---|---|---|
 | Product | Complete | None for approved slice | — |
-| Development | Complete | None for approved slice | — |
+| Development | Complete | Deploy and verify checkpoint 004 | Release |
 | UX | Complete | None for approved slice | — |
 | QA | Complete | None for approved slice | — |
 | Architecture/Security | Not required | Reassess only if persistence or permissions enter scope | Implementation |
 
 ## Latest change since previous review
 
-Deployed and production-verified participant counts and avatar alignment as UI v166/v137.
+Corrected the welcome composer selector so centered auto margins override the later generic prompt-form margins; local browser geometry is exactly centered.
 
 ## Current blockers
 
@@ -37,7 +37,7 @@ None.
 
 ## Next expected artifact
 
-No further artifact required for this slice.
+Production verification and final checkpoint 004 update.
 
 ## Parent issue
 
@@ -60,7 +60,7 @@ Remote issue not created. Draft: `issues/parent-capability.md`.
 - UX review: `ux-review.md`
 - QA review: `qa-review.md`
 - Execution plan: `execution-plan.md`
-- Latest checkpoint: `checkpoint-003.md`
+- Latest checkpoint: `checkpoint-004.md`
 - Handoff: `handoff-summary.md`
 
 ## Gate checklist

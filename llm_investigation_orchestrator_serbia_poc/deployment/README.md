@@ -28,6 +28,10 @@ after each newly released playback slice when saved investigation memory is
 non-empty. The update appears only in chat, never mutates workstreams, and
 advances the script to `app.js?v=167`.
 
+`SHA256SUMS-v168.txt` centers the welcome-page chat composer by ensuring its
+auto side margins override the generic prompt-form margins and advances the
+stylesheet to `styles.css?v=138`.
+
 Secrets, datasets, investigations, workstreams, scenario runs, recordings,
 caches, logs, and generated runtime state are intentionally excluded.
 
