@@ -6,24 +6,24 @@ Complete draft investigation creation (`draft-investigation-completion`)
 
 ## Current phase
 
-Phase 3 — execution plan approved
+Phase 4 — checkpoint 001 review
 
 ## Overall status
 
-Approved for implementation
+Implemented; pending Product/UX/QA review
 
 ## Who needs to act now
 
 | Role | Status | Required action | Due before |
 |---|---|---|---|
-| Product/UX | Approved | Review implementation checkpoint | Release |
-| Development | Ready | Implement `execution-plan.md` | Checkpoint 001 |
-| QA | Ready | Validate checkpoint 001 | Release |
+| Product/UX | Pending review | Review `checkpoint-001.md` behavior | Deployment |
+| Development | Complete | Address review findings if any | Deployment |
+| QA | Pending review | Review automated/browser evidence | Deployment |
 | Architecture/Security | Not required | Reassess only if real invitations enter scope | Release |
 
 ## Latest change since previous review
 
-Approved ephemeral draft IDs, unique names, welcome-style participant display, and automatic regular participants after creation.
+Implemented the approved lifecycle; 133 tests and local Edge interaction smoke pass.
 
 ## Current blockers
 
@@ -35,7 +35,7 @@ Pending save continuation could double-submit if modal state is not single-use.
 
 ## Next expected artifact
 
-`checkpoint-001.md`.
+Product/UX/QA acceptance, then deployment decision.
 
 ## Parent issue
 
@@ -46,7 +46,7 @@ Local draft: `issues/parent-capability.md`.
 | Issue | Role | Purpose | Status | Blocking? |
 |---|---|---|---|---|
 | Product/UX checkpoint | Product/UX | Approve modal behavior | Complete | No |
-| Implementation | Development | Build draft conversion and save continuation | Pending | Yes |
+| Implementation | Development | Build draft conversion and save continuation | Complete | No |
 | Final QA | QA | Validate regression and acceptance criteria | Pending | Yes |
 
 ## Artifact links
@@ -57,6 +57,7 @@ Local draft: `issues/parent-capability.md`.
 - QA review: `qa-review.md`
 - Decisions: `decisions.md`
 - Execution plan: `execution-plan.md`
+- Latest checkpoint: `checkpoint-001.md`
 - Handoff: pending
 
 ## Gate checklist

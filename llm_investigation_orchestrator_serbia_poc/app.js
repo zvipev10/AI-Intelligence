@@ -329,6 +329,8 @@ const state = {
   history: [],
   investigationId: createInvestigationId(),
   investigationName: defaultInvestigationName(INITIAL_LOCALE),
+  draftSessionActive: false,
+  pendingDraftMemoryAction: null,
   investigations: [],
   investigationMemory: null,
   investigationMemoryLoading: false,
@@ -391,6 +393,15 @@ const investigationInput = document.getElementById("investigationInput");
 const investigationAddButton = document.getElementById("investigationAddButton");
 const investigationList = document.getElementById("investigationList");
 const michlolTeam = document.getElementById("michlolTeam");
+const investigationSwitcher = document.querySelector(".investigation-switcher");
+const draftCreateInvestigationButton = document.getElementById("draftCreateInvestigationButton");
+const draftCreateModal = document.getElementById("draftCreateModal");
+const draftCreateForm = document.getElementById("draftCreateForm");
+const draftInvestigationName = document.getElementById("draftInvestigationName");
+const draftCreateParticipants = document.getElementById("draftCreateParticipants");
+const draftCreateError = document.getElementById("draftCreateError");
+const draftCreateCancel = document.getElementById("draftCreateCancel");
+const draftCreateSubmit = document.getElementById("draftCreateSubmit");
 const promptOptionsButton = document.getElementById("promptOptionsButton");
 const promptOptionsMenu = document.getElementById("promptOptionsMenu");
 const workstreamRail = document.getElementById("workstreamRail");
@@ -542,7 +553,7 @@ function renderMichlolTeam() {
 
 function renderPromptOptions() {
   const option = promptOptionsMenu?.querySelector('[data-prompt-option="workstream"]');
-  if (option) option.hidden = state.activeConversationMemberId !== MOSHE_MEMBER_ID;
+  if (option) option.hidden = state.draftSessionActive || state.activeConversationMemberId !== MOSHE_MEMBER_ID;
 }
 
 function activeConversationMember() {
@@ -643,6 +654,7 @@ function applyLocaleUi() {
   updatePromptPlaceholder();
   renderMichlolTeam();
   renderInvestigationSelector();
+  renderDraftInvestigationUi();
   renderWelcomePage();
   renderAllViews();
   if (!state.lastResult && !state.busy) setSuggestions(DEFAULT_SUGGESTIONS[currentLocale()]);
@@ -1799,6 +1811,10 @@ function canSaveLayerToMemory(layer) {
 }
 
 async function saveLayerToInvestigationMemory(layer, button) {
+  if (state.draftSessionActive) {
+    openDraftCreateModal(() => saveLayerToInvestigationMemory(layer, button));
+    return;
+  }
   if (!canSaveLayerToMemory(layer) || state.busy || button?.dataset.memorySaving === "true") return;
   button.dataset.memorySaving = "true";
   button.title = "Saving layer to investigation memory";
@@ -2090,12 +2106,21 @@ function renderWelcomePage() {
   similarInvestigationsList.innerHTML = SIMILAR_INVESTIGATIONS.map(similarInvestigationRibbonHtml).join("");
 }
 
+function renderDraftInvestigationUi() {
+  if (!investigationSwitcher || !draftCreateInvestigationButton) return;
+  const active = state.draftSessionActive && state.pageView === "workspace";
+  investigationSwitcher.classList.toggle("draft-active", active);
+  draftCreateInvestigationButton.hidden = !active;
+  if (draftCreateParticipants) draftCreateParticipants.innerHTML = welcomeParticipantsHtml();
+}
+
 function setPageView(view, options = {}) {
   state.pageView = view === "workspace" ? "workspace" : "welcome";
   const showingWelcome = state.pageView === "welcome";
   if (welcomePage) welcomePage.hidden = !showingWelcome;
   if (workspace) workspace.hidden = showingWelcome;
   document.body.classList.toggle("welcome-active", showingWelcome);
+  renderDraftInvestigationUi();
   if (showingWelcome) {
     renderWelcomePage();
     if (options.focus !== false) document.getElementById("welcomeTitle")?.focus?.();
@@ -2126,6 +2151,69 @@ function openWelcomeAction(action, investigationName) {
 
 function closeWelcomeAction() {
   if (welcomeActionModal) welcomeActionModal.hidden = true;
+}
+
+function showDraftCreateError(message = "") {
+  if (!draftCreateError) return;
+  draftCreateError.textContent = message;
+  draftCreateError.hidden = !message;
+}
+
+function openDraftCreateModal(pendingAction = null) {
+  if (!state.draftSessionActive || !draftCreateModal) return;
+  if (pendingAction && !state.pendingDraftMemoryAction) state.pendingDraftMemoryAction = pendingAction;
+  showDraftCreateError();
+  draftCreateParticipants.innerHTML = welcomeParticipantsHtml();
+  draftCreateModal.hidden = false;
+  window.requestAnimationFrame(() => draftInvestigationName?.focus());
+}
+
+function closeDraftCreateModal() {
+  if (!draftCreateModal || draftCreateSubmit?.disabled) return;
+  draftCreateModal.hidden = true;
+  state.pendingDraftMemoryAction = null;
+  showDraftCreateError();
+  draftCreateInvestigationButton?.focus();
+}
+
+async function createInvestigationFromDraft() {
+  if (!state.draftSessionActive || draftCreateSubmit?.disabled) return;
+  const name = normalizeInvestigationName(draftInvestigationName?.value);
+  if (!name) {
+    showDraftCreateError(activeLocaleText("יש להזין שם חקירה.", "Enter an investigation name."));
+    draftInvestigationName?.focus();
+    return;
+  }
+  const duplicate = state.investigations.some(item => investigationNameKey(item.name) === investigationNameKey(name));
+  if (duplicate) {
+    showDraftCreateError(activeLocaleText("שם החקירה כבר קיים.", "That investigation name already exists."));
+    draftInvestigationName?.focus();
+    return;
+  }
+  const investigation = { id: state.investigationId, name, created_at: new Date().toISOString() };
+  draftCreateSubmit.disabled = true;
+  draftCreateSubmit.textContent = activeLocaleText("יוצר...", "Creating...");
+  showDraftCreateError();
+  try {
+    await registerInvestigationRecord(investigation);
+    state.investigations.push(investigation);
+    state.investigationName = name;
+    state.draftSessionActive = false;
+    saveInvestigationRegistry();
+    draftCreateModal.hidden = true;
+    renderInvestigationSelector();
+    renderMichlolTeam();
+    renderDraftInvestigationUi();
+    renderWelcomePage();
+    const pendingAction = state.pendingDraftMemoryAction;
+    state.pendingDraftMemoryAction = null;
+    if (pendingAction) await pendingAction();
+  } catch (error) {
+    showDraftCreateError(error.message || activeLocaleText("יצירת החקירה נכשלה.", "Failed to create the investigation."));
+  } finally {
+    draftCreateSubmit.disabled = false;
+    draftCreateSubmit.textContent = activeLocaleText("צור חקירה", "Create investigation");
+  }
 }
 
 async function registerInvestigationRecord(investigation) {
@@ -2239,6 +2327,8 @@ function selectInvestigation(investigation, options = {}) {
   if (!investigation || state.busy) return;
   state.investigationId = investigation.id;
   state.investigationName = investigation.name;
+  state.draftSessionActive = false;
+  state.pendingDraftMemoryAction = null;
   state.investigationSelectorOpen = false;
   state.investigationSearchQuery = "";
   state.investigationMemoryLoadToken += 1;
@@ -2273,8 +2363,11 @@ function addOrSelectInvestigation() {
 function startDraftInvestigation(prompt) {
   const text = String(prompt || "").trim();
   if (!text || state.busy) return;
-  const investigation = ensureInvestigationRecord(activeLocaleText("חקירת טיוטה", "Draft investigation"));
-  selectInvestigation(investigation);
+  state.investigationId = createInvestigationId();
+  state.investigationName = "";
+  state.draftSessionActive = true;
+  state.pendingDraftMemoryAction = null;
+  resetInvestigation({ keepInvestigation: true });
   setPageView("workspace", { focus: false });
   runPrompt(text);
 }
@@ -4387,6 +4480,10 @@ async function saveResultQuestion(result, prompt, button) {
 }
 
 async function saveResultToInvestigationMemory(result, prompt, button) {
+  if (state.draftSessionActive) {
+    openDraftCreateModal(() => saveResultToInvestigationMemory(result, prompt, button));
+    return;
+  }
   if (!canSaveResultToMemory(result, prompt) || state.busy || button?.disabled) return;
   button.disabled = true;
   button.textContent = activeLocaleText("שומר לזיכרון...", "Saving to memory...");
@@ -5812,8 +5909,11 @@ welcomePromptInput?.addEventListener("keydown", event => {
 
 welcomePromptOptionsButton?.addEventListener("click", () => {
   if (state.busy) return;
-  const investigation = ensureInvestigationRecord(activeLocaleText("חקירת טיוטה", "Draft investigation"));
-  selectInvestigation(investigation);
+  state.investigationId = createInvestigationId();
+  state.investigationName = "";
+  state.draftSessionActive = true;
+  state.pendingDraftMemoryAction = null;
+  resetInvestigation({ keepInvestigation: true });
   setPageView("workspace", { focus: false });
   promptInput.value = welcomePromptInput?.value || "";
   syncMentionHighlight(promptInput);
@@ -5904,9 +6004,21 @@ welcomeActionClose?.addEventListener("click", closeWelcomeAction);
 welcomeActionModal?.addEventListener("click", event => {
   if (event.target === welcomeActionModal) closeWelcomeAction();
 });
+draftCreateInvestigationButton?.addEventListener("click", () => openDraftCreateModal());
+draftCreateCancel?.addEventListener("click", closeDraftCreateModal);
+draftCreateForm?.addEventListener("submit", event => {
+  event.preventDefault();
+  void createInvestigationFromDraft();
+});
+draftCreateModal?.addEventListener("click", event => {
+  if (event.target === draftCreateModal) closeDraftCreateModal();
+});
 document.addEventListener("keydown", event => {
   if (event.key === "Escape" && welcomeActionModal && !welcomeActionModal.hidden) {
     closeWelcomeAction();
+  }
+  if (event.key === "Escape" && draftCreateModal && !draftCreateModal.hidden) {
+    closeDraftCreateModal();
   }
 });
 workstreamComposerCancel?.addEventListener("click", () => setWorkstreamComposerMode(false));

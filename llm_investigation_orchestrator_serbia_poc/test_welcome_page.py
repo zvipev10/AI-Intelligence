@@ -42,7 +42,11 @@ class WelcomePageContractTests(unittest.TestCase):
         self.assertIn('data-i18n-placeholder-en="Start exploring in a draft investigation..."', welcome_markup)
         self.assertIn('id="welcomePromptOptionsButton"', welcome_markup)
         self.assertIn('function startDraftInvestigation(prompt)', self.app)
-        self.assertIn('activeLocaleText("חקירת טיוטה", "Draft investigation")', self.app)
+        self.assertIn('state.draftSessionActive = true;', self.app)
+        self.assertIn('state.investigationId = createInvestigationId();', self.app)
+        start_draft = self.app.split('function startDraftInvestigation(prompt)', 1)[1].split('\n}', 1)[0]
+        self.assertNotIn('ensureInvestigationRecord', start_draft)
+        self.assertNotIn('registerInvestigationRecord', start_draft)
         self.assertIn('setPageView("workspace", { focus: false });', self.app)
         self.assertIn('runPrompt(text);', self.app)
         self.assertIn('welcomePromptOptionsButton?.addEventListener("click"', self.app)
@@ -56,7 +60,20 @@ class WelcomePageContractTests(unittest.TestCase):
             ".prompt-form.welcome-prompt-form { width: min(720px, 100%); margin: -10px auto 42px; }",
             self.styles,
         )
-        self.assertIn('href="./styles.css?v=138"', self.index)
+        self.assertIn('href="./styles.css?v=139"', self.index)
+
+    def test_draft_creation_modal_and_memory_save_gate(self):
+        self.assertIn('id="draftCreateInvestigationButton"', self.index)
+        self.assertIn('id="draftCreateModal"', self.index)
+        self.assertIn('id="draftInvestigationName"', self.index)
+        self.assertIn('id="draftCreateParticipants"', self.index)
+        self.assertIn('function createInvestigationFromDraft()', self.app)
+        self.assertIn('const duplicate = state.investigations.some', self.app)
+        self.assertIn('id: state.investigationId, name,', self.app)
+        self.assertIn('draftCreateParticipants.innerHTML = welcomeParticipantsHtml();', self.app)
+        self.assertEqual(self.app.count('if (state.draftSessionActive) {\n    openDraftCreateModal('), 2)
+        self.assertIn('const pendingAction = state.pendingDraftMemoryAction;', self.app)
+        self.assertIn('if (pendingAction) await pendingAction();', self.app)
 
     def test_welcome_uses_centered_content_without_blue_kickers_or_open_hint(self):
         welcome_markup = self.index.split('<main id="welcomePage"', 1)[1].split('</main>', 1)[0]

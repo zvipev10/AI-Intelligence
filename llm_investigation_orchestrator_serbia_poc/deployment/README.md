@@ -32,6 +32,11 @@ advances the script to `app.js?v=167`.
 auto side margins override the generic prompt-form margins and advances the
 stylesheet to `styles.css?v=138`.
 
+`SHA256SUMS-v169.txt` separates ephemeral draft exploration from persisted
+investigations, adds the draft-to-investigation creation modal, and gates
+investigation-memory saves on creation. It advances the assets to
+`app.js?v=168` and `styles.css?v=139`.
+
 Secrets, datasets, investigations, workstreams, scenario runs, recordings,
 caches, logs, and generated runtime state are intentionally excluded.
 

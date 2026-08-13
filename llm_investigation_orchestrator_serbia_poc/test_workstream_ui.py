@@ -84,7 +84,7 @@ class WorkstreamUiTests(unittest.TestCase):
         self.assertIn("workstreamRail.hidden = !visible", self.app)
 
     def test_tracking_option_is_only_visible_for_moshe(self):
-        self.assertIn("option.hidden = state.activeConversationMemberId !== MOSHE_MEMBER_ID", self.app)
+        self.assertIn("option.hidden = state.draftSessionActive || state.activeConversationMemberId !== MOSHE_MEMBER_ID", self.app)
         self.assertIn("if (state.activeConversationMemberId !== MOSHE_MEMBER_ID) return;", self.app)
 
     def test_reopening_replaces_the_previous_copy(self):

@@ -8,7 +8,7 @@ ROOT = Path(__file__).resolve().parent
 
 class CanonicalSourceContractTests(unittest.TestCase):
     def test_canonical_files_match_the_current_source_manifest(self):
-        manifest = ROOT / "deployment" / "SHA256SUMS-v168.txt"
+        manifest = ROOT / "deployment" / "SHA256SUMS-v169.txt"
         for line in manifest.read_text(encoding="utf-8").splitlines():
             expected, name = line.split(None, 1)
             actual = hashlib.sha256((ROOT / name.strip()).read_bytes()).hexdigest()
@@ -17,11 +17,11 @@ class CanonicalSourceContractTests(unittest.TestCase):
     def test_no_duplicate_editable_production_tree_remains(self):
         self.assertFalse((ROOT / "deployment" / "vm-production-v162").exists())
 
-    def test_v168_bilingual_welcome_ui_contract_is_canonical(self):
+    def test_v169_bilingual_welcome_ui_contract_is_canonical(self):
         index = (ROOT / "index.html").read_text(encoding="utf-8")
         app = (ROOT / "app.js").read_text(encoding="utf-8")
-        self.assertIn('app.js?v=167', index)
-        self.assertIn('styles.css?v=138', index)
+        self.assertIn('app.js?v=168', index)
+        self.assertIn('styles.css?v=139', index)
         self.assertIn('id="languageToggle"', index)
         self.assertIn('id="welcomePage"', index)
         self.assertIn('id="welcomePromptForm"', index)
