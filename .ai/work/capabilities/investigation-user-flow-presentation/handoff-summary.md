@@ -23,4 +23,8 @@ The approved user-flow content has been implemented as a standalone HTML present
 
 ## Follow-up
 
+### Layout and navigation correction
+
+Reduced desktop section spacing and object-tile sizing so section 2's bottom callout fits at 1280 x 800. Added persistent Previous/Next controls with an Overview / current-step counter and disabled endpoints. Mobile content remains vertically scrollable. Verified section 2 visually, next/previous transitions between steps 2 and 3, mobile controls at 390 x 844, and byte-identical public deployment.
+
 Add concrete scenarios, screenshots, or recorded demonstrations only after separate content approval.
