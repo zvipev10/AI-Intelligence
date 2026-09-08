@@ -27,6 +27,10 @@ The approved user-flow content has been implemented as a standalone HTML present
 
 Removed the Participate card, Evaluation context panel, final five-stage cycle strip, and closing banner at the user's request. Rebalanced specialist cards into two columns and centered the shorter sections. The AI Intelligence brand now links to the overview on desktop and mobile. Verified sections 4, 7, and 9 visually, overview navigation, mobile layout, and final-step navigation.
 
+### Step 2 terminology
+
+Reframed collection exploration around intelligence raw data, insights, and knowledge. Removed the Report viewer, renamed Analytical object to Fusion object, and rebalanced the viewer row to four equal cards. Refined the overview decision label to “Explore or create a workstream.”
+
 ### Layout and navigation correction
 
 Reduced desktop section spacing and object-tile sizing so section 2's bottom callout fits at 1280 x 800. Added persistent Previous/Next controls with an Overview / current-step counter and disabled endpoints. Mobile content remains vertically scrollable. Verified section 2 visually, next/previous transitions between steps 2 and 3, mobile controls at 390 x 844, and byte-identical public deployment.
