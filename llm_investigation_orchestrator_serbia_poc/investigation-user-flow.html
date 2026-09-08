@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="AI Intelligence end-to-end investigation journey">
+  <title>AI Intelligence - Investigation Journey</title>
+  <style>
+    :root {
+      --ink:#162033; --muted:#5e697c; --navy:#101827; --navy-2:#1a2740;
+      --green:#69b678; --green-dark:#347348; --green-pale:#eaf5ec;
+      --blue:#4f82c4; --blue-pale:#eaf1fb; --amber:#d7923b; --amber-pale:#fff4e2;
+      --paper:#fff; --wash:#f4f7fa; --line:#d8e0e9; --shadow:0 18px 55px rgba(22,32,51,.12);
+    }
+    * { box-sizing:border-box; }
+    html { scroll-behavior:smooth; }
+    body { margin:0; color:var(--ink); background:var(--wash); font:16px/1.6 Inter,Segoe UI,Arial,sans-serif; }
+    a { color:inherit; }
+    .hero { min-height:88vh; display:grid; place-items:center; padding:64px 24px 54px; color:#fff; background:
+      radial-gradient(circle at 20% 18%,rgba(105,182,120,.24),transparent 30%),
+      radial-gradient(circle at 82% 72%,rgba(79,130,196,.2),transparent 34%),var(--navy); }
+    .hero-inner { width:min(1180px,100%); text-align:center; }
+    .eyebrow { margin:0 0 14px; color:#a7d9b0; font-size:.78rem; font-weight:800; letter-spacing:.16em; text-transform:uppercase; }
+    h1 { margin:0; font-size:clamp(3rem,7vw,6.3rem); line-height:.96; letter-spacing:-.055em; }
+    .hero-lead { max-width:820px; margin:24px auto 42px; color:#d8e2ef; font-size:clamp(1.05rem,2vw,1.35rem); }
+    .overview { padding:26px; border:1px solid rgba(255,255,255,.16); border-radius:22px; background:rgba(255,255,255,.06); box-shadow:var(--shadow); }
+    .overview-row { display:flex; align-items:center; justify-content:center; gap:8px; flex-wrap:wrap; }
+    .flow-node { min-width:126px; padding:12px 14px; border:1px solid rgba(255,255,255,.16); border-radius:12px; background:#1d2940; color:#eef4fb; font-size:.84rem; font-weight:700; }
+    .flow-node.branch { background:#23402e; border-color:#4d8e5a; }
+    .flow-node.alert { background:#4d361d; border-color:#a86c2b; }
+    .arrow { color:#82cb90; font-size:1.25rem; font-weight:900; }
+    .loop-note { margin:16px 0 0; color:#aebdd0; font-size:.86rem; }
+    .topnav { position:sticky; top:0; z-index:20; display:flex; align-items:center; gap:14px; padding:11px max(18px,calc((100vw - 1180px)/2)); color:#dce6f2; background:rgba(16,24,39,.96); box-shadow:0 3px 18px rgba(0,0,0,.15); backdrop-filter:blur(12px); }
+    .brand { flex:none; font-weight:800; }
+    .nav-scroller { display:flex; gap:5px; overflow:auto; scrollbar-width:none; }
+    .nav-scroller::-webkit-scrollbar { display:none; }
+    .nav-scroller a { flex:none; padding:7px 10px; border-radius:999px; color:#bfcbd9; text-decoration:none; font-size:.77rem; }
+    .nav-scroller a:hover,.nav-scroller a:focus-visible,.nav-scroller a.active { color:#fff; background:#2a3b35; outline:none; }
+    .progress { position:absolute; left:0; bottom:0; width:0; height:3px; background:var(--green); transition:width .15s linear; }
+    main { width:min(1180px,calc(100% - 36px)); margin:auto; }
+    .step { min-height:82vh; display:grid; align-content:center; padding:86px 0; border-bottom:1px solid var(--line); scroll-margin-top:58px; }
+    .step-head { display:grid; grid-template-columns:72px minmax(0,1fr); gap:20px; align-items:start; margin-bottom:34px; }
+    .step-number { display:grid; place-items:center; width:62px; height:62px; border-radius:18px; color:#fff; background:var(--navy); font-size:1.25rem; font-weight:900; box-shadow:0 10px 26px rgba(22,32,51,.18); }
+    .step h2 { margin:0 0 8px; font-size:clamp(2rem,4vw,3.4rem); line-height:1.08; letter-spacing:-.04em; }
+    .lead { max-width:880px; margin:0; color:var(--muted); font-size:1.12rem; }
+    .grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px; }
+    .grid.three { grid-template-columns:repeat(3,minmax(0,1fr)); }
+    .card { position:relative; padding:26px; border:1px solid var(--line); border-radius:18px; background:var(--paper); box-shadow:0 10px 34px rgba(22,32,51,.07); }
+    .card.accent { border-color:#add8b5; background:linear-gradient(145deg,#fff,var(--green-pale)); }
+    .card.blue { border-color:#bdd0e9; background:linear-gradient(145deg,#fff,var(--blue-pale)); }
+    .card.amber { border-color:#ecd0aa; background:linear-gradient(145deg,#fff,var(--amber-pale)); }
+    .card h3 { margin:0 0 10px; font-size:1.25rem; line-height:1.25; }
+    .card p { margin:0 0 14px; color:var(--muted); }
+    ul { margin:0; padding-left:21px; }
+    li+li { margin-top:6px; }
+    .tag { display:inline-flex; margin-bottom:13px; padding:5px 9px; border-radius:999px; color:var(--green-dark); background:#dff0e3; font-size:.72rem; font-weight:800; letter-spacing:.06em; text-transform:uppercase; }
+    .merge { display:flex; align-items:center; gap:16px; margin:25px 0 0; padding:18px 22px; border-radius:14px; color:#e5edf7; background:var(--navy); }
+    .merge-mark { color:#8bd397; font-size:1.8rem; }
+    .merge strong { display:block; color:#fff; }
+    .merge span { color:#c7d3e1; }
+    .object-strip { display:grid; grid-template-columns:repeat(5,1fr); gap:12px; margin-top:22px; }
+    .object { padding:19px 12px; border:1px solid var(--line); border-radius:14px; background:#fff; text-align:center; }
+    .object-icon { display:grid; place-items:center; width:44px; height:44px; margin:0 auto 10px; border-radius:13px; color:#fff; background:var(--navy-2); font-size:1.25rem; }
+    .object strong { display:block; font-size:.9rem; }
+    .object small { color:var(--muted); }
+    .branch-map { display:grid; grid-template-columns:1fr 76px 1fr; align-items:stretch; gap:12px; }
+    .branch-center { display:grid; place-items:center; color:var(--green-dark); font-size:2rem; font-weight:900; }
+    .role-line { display:grid; grid-template-columns:1fr auto 1fr; gap:14px; align-items:center; margin-bottom:20px; }
+    .role { padding:20px; border-radius:16px; background:#fff; border:1px solid var(--line); text-align:center; }
+    .role strong { display:block; font-size:1.05rem; }
+    .role span { color:var(--muted); font-size:.88rem; }
+    .versus { color:var(--green-dark); font-weight:900; }
+    .product-row { display:flex; gap:10px; flex-wrap:wrap; margin:18px 0 0; }
+    .product-row span { padding:8px 11px; border:1px solid #bfd7c4; border-radius:9px; background:#fff; font-size:.84rem; font-weight:700; }
+    .memory-model { display:grid; grid-template-columns:1fr 60px 1fr 60px 1fr; gap:10px; align-items:center; }
+    .memory-box { min-height:165px; display:grid; align-content:center; padding:22px; border:1px solid var(--line); border-radius:17px; background:#fff; text-align:center; }
+    .memory-box strong { display:block; margin-bottom:7px; font-size:1.08rem; }
+    .memory-box span { color:var(--muted); font-size:.9rem; }
+    .connector { color:var(--green-dark); font-size:1.8rem; text-align:center; font-weight:900; }
+    .split-update { display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-top:18px; }
+    .alert-box { display:grid; grid-template-columns:64px 1fr; gap:18px; align-items:start; margin-top:22px; padding:24px; border:1px solid #e0b87e; border-radius:18px; background:var(--amber-pale); }
+    .bell { display:grid; place-items:center; width:58px; height:58px; border-radius:17px; color:#fff; background:var(--amber); font-size:1.55rem; }
+    .alert-box h3 { margin:0 0 6px; }
+    .alert-box p { margin:0; color:#6d573b; }
+    .alert-states { display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; }
+    .alert-states span { padding:6px 9px; border-radius:8px; color:#684a24; background:#f8dfb9; font-size:.8rem; font-weight:700; }
+    .cycle { display:grid; grid-template-columns:repeat(5,1fr); gap:12px; margin-top:24px; }
+    .cycle div { position:relative; padding:18px 12px; border-radius:14px; color:#fff; background:var(--navy-2); text-align:center; font-weight:700; }
+    .cycle div:not(:last-child)::after { content:'→'; position:absolute; right:-19px; top:50%; z-index:2; color:var(--green-dark); transform:translateY(-50%); }
+    .closing { padding:90px 24px; color:#fff; background:var(--navy); text-align:center; }
+    .closing h2 { max-width:900px; margin:0 auto 18px; font-size:clamp(2.2rem,5vw,4.5rem); line-height:1.06; letter-spacing:-.045em; }
+    .closing p { max-width:790px; margin:auto; color:#c8d4e2; font-size:1.1rem; }
+    .closing a { display:inline-block; margin-top:28px; padding:11px 17px; border-radius:10px; color:#132019; background:#91d49d; text-decoration:none; font-weight:800; }
+    @media(max-width:850px) {
+      .hero { min-height:auto; }
+      .grid,.grid.three,.split-update { grid-template-columns:1fr; }
+      .object-strip { grid-template-columns:repeat(2,1fr); }
+      .branch-map { grid-template-columns:1fr; }
+      .branch-center { transform:rotate(90deg); }
+      .memory-model { grid-template-columns:1fr; }
+      .connector { transform:rotate(90deg); }
+      .cycle { grid-template-columns:1fr; }
+      .cycle div:not(:last-child)::after { content:'↓'; right:auto; top:auto; left:50%; bottom:-22px; transform:translateX(-50%); }
+    }
+    @media(max-width:560px) {
+      .step-head { grid-template-columns:1fr; }
+      .step-number { width:52px; height:52px; }
+      .object-strip { grid-template-columns:1fr; }
+      .role-line { grid-template-columns:1fr; }
+      .versus { text-align:center; }
+      .overview-row { flex-direction:column; }
+      .overview-row .flow-node { width:min(210px,100%); }
+      .overview-row .arrow { height:18px; font-size:0; line-height:18px; }
+      .overview-row .arrow::after { content:'↓'; font-size:1.1rem; }
+      .overview-row .arrow:last-child::after { content:'↺'; }
+    }
+    @media(prefers-reduced-motion:reduce) { html { scroll-behavior:auto; } .progress { transition:none; } }
+    @media print { .topnav { display:none; } .hero,.step { min-height:0; break-after:page; } .step { padding:42px 0; } }
+  </style>
+</head>
+<body>
+  <header class="hero" id="top">
+    <div class="hero-inner">
+      <p class="eyebrow">AI Intelligence · End-to-end user flow</p>
+      <h1>The investigation journey</h1>
+      <p class="hero-lead">A continuous process that connects exploration, specialist analysis, structured knowledge, investigation memory, focused monitoring, and meaningful updates.</p>
+      <div class="overview" aria-label="Investigation journey overview">
+        <div class="overview-row">
+          <div class="flow-node branch">Start new<br>or continue</div><span class="arrow">→</span>
+          <div class="flow-node">Explore &amp;<br>examine</div><span class="arrow">→</span>
+          <div class="flow-node branch">Explore freely<br>or assign</div><span class="arrow">→</span>
+          <div class="flow-node">Specialist<br>insights</div><span class="arrow">→</span>
+          <div class="flow-node">Knowledge &amp;<br>memory</div><span class="arrow">→</span>
+          <div class="flow-node alert">Update &amp;<br>alert</div><span class="arrow">↺</span>
+        </div>
+        <p class="loop-note">Each new insight can reopen exploration, refine a workstream, or create new knowledge.</p>
+      </div>
+    </div>
+  </header>
+
+  <nav class="topnav" aria-label="Presentation sections">
+    <span class="brand">AI Intelligence</span>
+    <div class="nav-scroller">
+      <a href="#enter">1 Enter</a><a href="#explore">2 Explore</a><a href="#develop">3 Develop</a>
+      <a href="#specialists">4 Specialists</a><a href="#knowledge">5 Knowledge</a><a href="#memory">6 Memory</a>
+      <a href="#new-intelligence">7 New intelligence</a><a href="#alert">8 Alert</a><a href="#continue">9 Continue</a>
+    </div>
+    <div class="progress" aria-hidden="true"></div>
+  </nav>
+
+  <main>
+    <section class="step" id="enter">
+      <div class="step-head"><div class="step-number">01</div><div><p class="eyebrow" style="color:var(--green-dark)">Two entry paths</p><h2>Start or continue an investigation</h2><p class="lead">The journey can begin with an open question or resume from an investigation that already contains accumulated context.</p></div></div>
+      <div class="grid">
+        <article class="card accent"><span class="tag">Start new</span><h3>Begin with a new investigative need</h3><p>A draft investigation creates a dedicated space in which the question can develop.</p><ul><li>Define the initial question or area of interest.</li><li>Begin exploring data immediately.</li><li>Add conversations, participants, layers, insights, knowledge, reports, and workstreams as the investigation develops.</li></ul></article>
+        <article class="card blue"><span class="tag">Continue existing</span><h3>Resume from accumulated context</h3><p>The user continues without rebuilding previous work.</p><ul><li>Reopen conversations, findings, layers, and filters.</li><li>Review participants, knowledge products, and active workstreams.</li><li>See recent updates and alerts before deciding what to do next.</li></ul></article>
+      </div>
+      <div class="merge"><span class="merge-mark">⇢</span><div><strong>Both paths lead to the same investigation workspace.</strong><span>The difference is whether the user begins with a question or with context already accumulated around it.</span></div></div>
+    </section>
+
+    <section class="step" id="explore">
+      <div class="step-head"><div class="step-number">02</div><div><p class="eyebrow" style="color:var(--green-dark)">From collections to evidence</p><h2>Explore and examine the information</h2><p class="lead">The user moves between broad patterns in data collections and close examination of individual intelligence objects.</p></div></div>
+      <div class="grid">
+        <article class="card"><h3>Explore collections</h3><ul><li>Browse, search, filter, and compare intelligence layers.</li><li>Inspect geographic and tabular patterns.</li><li>Attach complete layers or filtered subsets to the conversation.</li><li>Ask the personal assistant to identify relationships, contradictions, gaps, and potential next steps.</li></ul></article>
+        <article class="card"><h3>Examine individual objects</h3><ul><li>Open an item in a viewer designed for its type.</li><li>Review content, metadata, provenance, links, and connected evidence.</li><li>Navigate from the object to related entities, observations, reports, and analytical products.</li></ul></article>
+      </div>
+      <div class="object-strip" aria-label="Examples of specialized object viewers">
+        <div class="object"><span class="object-icon">▶</span><strong>Video</strong><small>Playback, detections, timeline</small></div>
+        <div class="object"><span class="object-icon">♪</span><strong>Audio</strong><small>Transcript, speakers, timestamps</small></div>
+        <div class="object"><span class="object-icon">◎</span><strong>Entity</strong><small>Form, links, relationships</small></div>
+        <div class="object"><span class="object-icon">≣</span><strong>Report</strong><small>Content, sources, references</small></div>
+        <div class="object"><span class="object-icon">⌖</span><strong>Analytical object</strong><small>Evidence, status, connections</small></div>
+      </div>
+      <div class="merge"><span class="merge-mark">↔</span><div><strong>Two complementary levels of investigation</strong><span>Layers reveal patterns across collections. Specialized viewers provide the depth needed to understand and validate an individual object.</span></div></div>
+    </section>
+
+    <section class="step" id="develop">
+      <div class="step-head"><div class="step-number">03</div><div><p class="eyebrow" style="color:var(--green-dark)">A deliberate choice</p><h2>Choose how to develop the investigation</h2><p class="lead">The user can continue open exploration, establish a persistent monitoring responsibility, or move naturally between both modes.</p></div></div>
+      <div class="branch-map">
+        <article class="card accent"><span class="tag">Path A</span><h3>Continue interactive exploration</h3><p>Use manual analysis and the personal assistant while the question is still evolving.</p><ul><li>Refine filters and compare evidence.</li><li>Inspect additional objects.</li><li>Ask follow-up questions and test alternative explanations.</li><li>Generate analytical layers and identify gaps.</li></ul></article>
+        <div class="branch-center" aria-hidden="true">⇄</div>
+        <article class="card blue"><span class="tag">Path B</span><h3>Establish a focused workstream</h3><p>Turn an indication, hypothesis, analytical object, or unresolved question into a persistent responsibility.</p><ul><li>Define what must be followed and why.</li><li>Attach the relevant evidence and context.</li><li>Assign responsible human or AI participants.</li><li>Define the developments that require attention.</li></ul></article>
+      </div>
+      <div class="merge"><span class="merge-mark">∞</span><div><strong>The paths reinforce each other.</strong><span>Exploration can produce a workstream. A workstream update can send the user back into broader exploration.</span></div></div>
+    </section>
+
+    <section class="step" id="specialists">
+      <div class="step-head"><div class="step-number">04</div><div><p class="eyebrow" style="color:var(--green-dark)">Focused analytical contribution</p><h2>Apply specialist analytical capabilities</h2><p class="lead">Specialist agents do more than answer questions: they use defined analytical skills to create domain-specific insights and investigation products.</p></div></div>
+      <div class="role-line">
+        <div class="role"><strong>Personal investigation assistant</strong><span>Supports broad exploration across the complete investigation and its accumulated memory.</span></div>
+        <div class="versus">distinct from</div>
+        <div class="role"><strong>Specialist analytical agents</strong><span>Apply focused expertise to particular problems, objects, and professional responsibilities.</span></div>
+      </div>
+      <div class="grid three">
+        <article class="card"><h3>Analyze</h3><p>Fuse multiple sources, evaluate indications and relationships, detect domain-relevant patterns, and identify information gaps.</p></article>
+        <article class="card"><h3>Produce</h3><p>Create specialized analytical insights, structured knowledge products, reports, and result layers appropriate to the agent’s domain.</p></article>
+        <article class="card"><h3>Participate</h3><p>Respond to direct questions, take responsibility in workstreams, reassess new information, and collaborate with human specialists.</p></article>
+      </div>
+    </section>
+
+    <section class="step" id="knowledge">
+      <div class="step-head"><div class="step-number">05</div><div><p class="eyebrow" style="color:var(--green-dark)">From understanding to product</p><h2>Create knowledge and reports</h2><p class="lead">Analytical understanding becomes durable and reusable when it is expressed as a structured investigation product.</p></div></div>
+      <div class="grid">
+        <article class="card accent"><h3>Multiple creation modes</h3><ul><li>Created manually by a user.</li><li>Created by a specialist agent.</li><li>Drafted by an agent and reviewed by a user.</li><li>Developed collaboratively by human and AI participants.</li><li>Produced through exploration or as part of a workstream.</li></ul></article>
+        <article class="card"><h3>Traceable structure</h3><ul><li>Fields appropriate to the product type.</li><li>Conclusions, confidence, status, and responsibility.</li><li>Supporting evidence, sources, and provenance.</li><li>Referenced records, layers, and related knowledge objects.</li><li>Review and revision history.</li></ul></article>
+      </div>
+      <div class="product-row" aria-label="Examples of investigation products"><span>Finding</span><span>Indication</span><span>Assessment</span><span>Knowledge entity</span><span>Report</span><span>Target</span><span>Relationship</span></div>
+      <div class="merge"><span class="merge-mark">◆</span><div><strong>Conversation develops understanding; knowledge creation gives it durable form.</strong><span>Specialist agents can create products whose structure reflects their particular analytical domain.</span></div></div>
+    </section>
+
+    <section class="step" id="memory">
+      <div class="step-head"><div class="step-number">06</div><div><p class="eyebrow" style="color:var(--green-dark)">Continuity over time</p><h2>Preserve the investigation context</h2><p class="lead">The investigation retains both explicit analytical products and the broader context required to continue reasoning about them.</p></div></div>
+      <div class="memory-model">
+        <div class="memory-box"><strong>Knowledge &amp; reports</strong><span>Explicit products that can be inspected, linked, revised, reviewed, and shared.</span></div>
+        <div class="connector">+</div>
+        <div class="memory-box"><strong>Investigation memory</strong><span>Findings, summaries, layers, filters, relevant records, decisions, and unresolved questions.</span></div>
+        <div class="connector">+</div>
+        <div class="memory-box"><strong>Workstreams</strong><span>Persistent responsibility for issues that must continue to be followed.</span></div>
+      </div>
+      <div class="merge"><span class="merge-mark">◉</span><div><strong>Together they form the investigation’s accumulated context.</strong><span>Later analysis can build on what the investigation has already learned instead of starting again.</span></div></div>
+    </section>
+
+    <section class="step" id="new-intelligence">
+      <div class="step-head"><div class="step-number">07</div><div><p class="eyebrow" style="color:var(--green-dark)">Context meets change</p><h2>Evaluate new intelligence</h2><p class="lead">New information is compared with what the investigation already knows and with the focused responsibilities it is actively monitoring.</p></div></div>
+      <article class="card blue"><h3>Evaluation context</h3><div class="grid three"><ul><li>Investigation memory</li><li>Existing findings</li><li>Known contradictions</li></ul><ul><li>Knowledge and reports</li><li>Analytical insights</li><li>Information gaps</li></ul><ul><li>Active hypotheses</li><li>Object relationships</li><li>Workstream objectives</li></ul></div></article>
+      <div class="split-update">
+        <article class="card accent"><span class="tag">Broad context</span><h3>General investigation update</h3><p>The personal assistant identifies meaningful developments, confirmations, contradictions, relationships, gaps, and possible next steps across the investigation.</p></article>
+        <article class="card amber"><span class="tag" style="color:#785019;background:#f8dfb9">Focused context</span><h3>Workstream reassessment</h3><p>The responsible participant evaluates the new information specifically against the workstream objective and its previous analytical state.</p></article>
+      </div>
+    </section>
+
+    <section class="step" id="alert">
+      <div class="step-head"><div class="step-number">08</div><div><p class="eyebrow" style="color:var(--green-dark)">Attention, not noise</p><h2>Create a workstream alert</h2><p class="lead">An alert is created when new information is relevant to a workstream and significant enough to require the user’s attention.</p></div></div>
+      <div class="alert-box"><div class="bell">!</div><div><h3>A meaningful development has occurred</h3><p>The alert explains which workstream is affected, what arrived, why it matters, what changed in the assessment, which evidence supports it, and what action is recommended.</p><div class="alert-states"><span>New relevant information</span><span>Assessment strengthened</span><span>Assessment weakened</span><span>Contradiction detected</span><span>Status changed</span><span>Human review required</span><span>Collection required</span></div></div></div>
+      <div class="grid" style="margin-top:18px">
+        <article class="card"><h3>Visible in context</h3><p>The alert is attached to the affected workstream and surfaced in the wider investigation experience, allowing the user to reach it without checking every workstream.</p></article>
+        <article class="card"><h3>Triggered by significance</h3><p>The existence of new data is not enough. An alert represents a meaningful development in relation to a defined monitoring objective.</p></article>
+      </div>
+    </section>
+
+    <section class="step" id="continue">
+      <div class="step-head"><div class="step-number">09</div><div><p class="eyebrow" style="color:var(--green-dark)">Close the loop</p><h2>Review, decide, and continue</h2><p class="lead">The user reviews what changed and decides how the new insight should affect the investigation.</p></div></div>
+      <div class="grid three">
+        <article class="card"><h3>Review</h3><ul><li>Open the affected object.</li><li>Inspect supporting evidence and layers.</li><li>Understand specialist reasoning.</li><li>Identify affected knowledge and reports.</li></ul></article>
+        <article class="card"><h3>Decide</h3><ul><li>Apply human judgment.</li><li>Acknowledge or resolve an alert.</li><li>Approve or revise a knowledge product.</li><li>Request deeper specialist analysis.</li></ul></article>
+        <article class="card"><h3>Continue</h3><ul><li>Resume exploration.</li><li>Refine an existing workstream.</li><li>Create a new workstream.</li><li>Preserve the new conclusion in memory.</li></ul></article>
+      </div>
+      <div class="cycle" aria-label="Continuous investigation cycle"><div>Explore</div><div>Analyze</div><div>Create knowledge</div><div>Monitor</div><div>Reassess</div></div>
+    </section>
+  </main>
+
+  <footer class="closing">
+    <h2>An investigation is a continuous learning cycle.</h2>
+    <p>Exploration creates understanding. Specialists add focused insight. Knowledge gives the insight durable form. Memory preserves context. Workstreams maintain responsibility. New intelligence begins the next cycle.</p>
+    <a href="#top">Return to the journey overview</a>
+  </footer>
+
+  <script>
+    const sections = [...document.querySelectorAll('.step')];
+    const links = [...document.querySelectorAll('.nav-scroller a')];
+    const progress = document.querySelector('.progress');
+    const update = () => {
+      const max = document.documentElement.scrollHeight - innerHeight;
+      progress.style.width = `${max > 0 ? (scrollY / max) * 100 : 0}%`;
+      let current = sections[0]?.id;
+      sections.forEach(section => { if (section.getBoundingClientRect().top <= 130) current = section.id; });
+      links.forEach(link => link.classList.toggle('active', link.hash === `#${current}`));
+    };
+    addEventListener('scroll', update, { passive:true });
+    addEventListener('resize', update);
+    update();
+  </script>
+</body>
+</html>
