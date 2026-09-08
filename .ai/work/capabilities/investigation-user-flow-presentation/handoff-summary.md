@@ -31,6 +31,10 @@ Removed the Participate card, Evaluation context panel, final five-stage cycle s
 
 Reframed collection exploration around intelligence raw data, insights, and knowledge. Removed the Report viewer, renamed Analytical object to Fusion object, and rebalanced the viewer row to four equal cards. Refined the overview decision label to “Explore or create a workstream.”
 
+### Eight-step journey
+
+Removed the flow diagram from the overview and removed step 9. The alert is now the final step. Its forward navigation returns to step 2, the investigation workspace, with a specific accessible label. Verified the overview, the 8 / 8 final state, and the return to step 2.
+
 ### Layout and navigation correction
 
 Reduced desktop section spacing and object-tile sizing so section 2's bottom callout fits at 1280 x 800. Added persistent Previous/Next controls with an Overview / current-step counter and disabled endpoints. Mobile content remains vertically scrollable. Verified section 2 visually, next/previous transitions between steps 2 and 3, mobile controls at 390 x 844, and byte-identical public deployment.
