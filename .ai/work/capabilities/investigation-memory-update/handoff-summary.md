@@ -35,3 +35,6 @@ All 125 locally runnable package tests pass. Production serves `app.js?v=170`, t
 service is healthy, and live API comparison confirms KFOR and NATO share the global
 run while only NATO receives the NATO-owned stored update. Rollback backup:
 `/opt/serbia-poc-ui-backups/v172-isolation-20260908T1915Z`.
+
+The corrective implementation and deployment record are merged into remote `main` at
+`fa7c596`.

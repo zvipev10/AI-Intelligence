@@ -6,7 +6,7 @@ Investigation memory update on time-slice progression
 
 ## Current phase
 
-Corrective checkpoint 002 — deployed and production-verified
+Corrective checkpoint 002 — complete
 
 ## Overall status
 
@@ -15,7 +15,7 @@ approved global playback timeframe remains unchanged.
 
 ## Who needs to act now
 
-Development should merge and push the reviewed correction to remote main.
+No further action is required for the corrective slice.
 
 ## Blockers
 
@@ -23,7 +23,7 @@ None.
 
 ## Next artifact
 
-Merged remote-main confirmation.
+None.
 
 ## Parent issue
 
@@ -42,3 +42,9 @@ Checkpoint 002 scopes persisted, serialized, resumed, and rendered investigation
 updates to their owning investigation while retaining the global playback timeframe.
 Production serves `app.js?v=170`; KFOR and NATO share the playback run while only the
 owning NATO investigation receives its stored update.
+
+## Corrective publication
+
+- Implementation commit: `657d62c`
+- Deployment record commit: `fa7c596`
+- Remote main: `fa7c596`
