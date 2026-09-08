@@ -22,3 +22,16 @@ Deployed the reviewed runtime files to production with runtime data, configurati
 ## Remaining risk
 
 The live agent response depends on the configured general Hermes provider. Provider failures are isolated and reported in chat without affecting Moshe processing or playback advancement.
+
+## Corrective release v172
+
+Fixed a cross-investigation isolation defect reported from KFOR and NATO screenshots.
+The playback clock remains global, but memory-update claims, serialization, worker
+resumption, browser rendering, and deduplication are now scoped to the update's owning
+investigation. Legacy revision-only records are read only when their stored owner
+matches the requested investigation.
+
+All 125 locally runnable package tests pass. Production serves `app.js?v=170`, the UI
+service is healthy, and live API comparison confirms KFOR and NATO share the global
+run while only NATO receives the NATO-owned stored update. Rollback backup:
+`/opt/serbia-poc-ui-backups/v172-isolation-20260908T1915Z`.

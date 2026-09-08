@@ -6,17 +6,16 @@ Investigation memory update on time-slice progression
 
 ## Current phase
 
-Corrective checkpoint 002 — ready for production deployment
+Corrective checkpoint 002 — deployed and production-verified
 
 ## Overall status
 
-Original capability is deployed. Cross-investigation update isolation is implemented
-and locally validated after a production defect report.
+Cross-investigation update isolation is deployed and verified in production while the
+approved global playback timeframe remains unchanged.
 
 ## Who needs to act now
 
-Development should deploy v172, verify two-investigation isolation, and merge the
-reviewed correction to remote main.
+Development should merge and push the reviewed correction to remote main.
 
 ## Blockers
 
@@ -24,7 +23,7 @@ None.
 
 ## Next artifact
 
-Production verification and updated handoff summary.
+Merged remote-main confirmation.
 
 ## Parent issue
 
@@ -41,3 +40,5 @@ Remote issue not created. Draft: `issues/parent-capability.md`.
 
 Checkpoint 002 scopes persisted, serialized, resumed, and rendered investigation
 updates to their owning investigation while retaining the global playback timeframe.
+Production serves `app.js?v=170`; KFOR and NATO share the playback run while only the
+owning NATO investigation receives its stored update.

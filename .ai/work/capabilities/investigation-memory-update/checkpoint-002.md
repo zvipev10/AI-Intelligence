@@ -2,7 +2,7 @@
 
 ## Status
 
-Implemented and validated locally; ready for targeted production deployment.
+Implemented, deployed, and production-verified.
 
 ## Defect
 
@@ -29,8 +29,8 @@ This exposed KFOR-specific saved-memory references inside unrelated investigatio
 - A persistence regression confirms two investigations can claim the same run revision
   without colliding.
 - JavaScript syntax, Python compilation, and Git whitespace checks pass.
-- Full discovery ran 126 tests: 124 passed; the manifest failure was resolved by the
-  v172 manifest, and `test_moshe_profile` could not import because local PyYAML is absent.
+- All 125 locally runnable package tests pass. `test_moshe_profile` remains excluded
+  because the bundled local Python runtime does not contain PyYAML.
 
 ## Release candidate
 
@@ -52,5 +52,15 @@ full-discovery runs.
 
 ### Recommendation
 
-Approve targeted deployment, production two-investigation verification, and merge to
-remote `main`.
+Approve merge to remote `main`.
+
+## Production verification
+
+- Deployed the four targeted runtime files to `/opt/serbia-poc-ui`.
+- Rollback backup: `/opt/serbia-poc-ui-backups/v172-isolation-20260908T1915Z`.
+- `serbia-poc-ui.service` is active and `/api/status` reports the configured Hermes
+  v2.1 runtime with 14,800 rows.
+- Public HTML serves `app.js?v=170`.
+- KFOR and NATO return the same approved global playback run ID.
+- KFOR returns no memory update; NATO alone returns the update whose stored owner is
+  the NATO investigation ID.
