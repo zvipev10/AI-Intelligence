@@ -31,7 +31,9 @@
     .arrow { color:#82cb90; font-size:1.25rem; font-weight:900; }
     .loop-note { margin:16px 0 0; color:#aebdd0; font-size:.86rem; }
     .topnav { position:sticky; top:0; z-index:20; display:flex; align-items:center; gap:14px; width:100%; min-width:0; padding:11px max(18px,calc((100vw - 1180px)/2)); color:#dce6f2; background:rgba(16,24,39,.96); box-shadow:0 3px 18px rgba(0,0,0,.15); backdrop-filter:blur(12px); }
-    .brand { flex:none; font-weight:800; }
+    .brand { flex:none; font-weight:800; text-decoration:none; border-radius:6px; }
+    .brand:hover { color:#a7d9b0; }
+    .brand:focus-visible { outline:2px solid var(--green); outline-offset:4px; }
     .nav-scroller { min-width:0; flex:1; display:flex; justify-content:space-between; gap:3px; overflow:hidden; scrollbar-width:none; }
     .nav-scroller::-webkit-scrollbar { display:none; }
     .nav-scroller a { min-width:0; flex:none; padding:7px 8px; border-radius:999px; color:#bfcbd9; text-decoration:none; font-size:.74rem; white-space:nowrap; }
@@ -84,16 +86,11 @@
     .alert-box p { margin:0; color:#6d573b; }
     .alert-states { display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; }
     .alert-states span { padding:6px 9px; border-radius:8px; color:#684a24; background:#f8dfb9; font-size:.8rem; font-weight:700; }
-    .cycle { display:grid; grid-template-columns:repeat(5,1fr); gap:12px; margin-top:24px; }
-    .cycle div { position:relative; padding:18px 12px; border-radius:14px; color:#fff; background:var(--navy-2); text-align:center; font-weight:700; }
-    .cycle div:not(:last-child)::after { content:'→'; position:absolute; right:-19px; top:50%; z-index:2; color:var(--green-dark); transform:translateY(-50%); }
-    .closing { padding:90px 24px; color:#fff; background:var(--navy); text-align:center; }
-    .closing h2 { max-width:900px; margin:0 auto 18px; font-size:clamp(2.2rem,5vw,4.5rem); line-height:1.06; letter-spacing:-.045em; }
-    .closing p { max-width:790px; margin:auto; color:#c8d4e2; font-size:1.1rem; }
-    .closing a { display:inline-block; margin-top:28px; padding:11px 17px; border-radius:10px; color:#132019; background:#91d49d; text-decoration:none; font-weight:800; }
+    #new-intelligence .split-update { margin-top:0; }
     @media(max-width:850px) {
-      .topnav { gap:0; padding:9px 12px; }
-      .brand { display:none; }
+      .topnav { gap:8px; padding:9px 12px; flex-wrap:wrap; }
+      .brand { display:block; width:100%; text-align:center; font-size:.85rem; }
+      .step { scroll-margin-top:86px; }
       .nav-scroller { gap:4px; }
       .nav-scroller a { flex:1; display:grid; place-items:center; width:auto; padding:7px 2px; font-size:0; }
       .nav-scroller a::after { content:attr(data-step); font-size:.75rem; }
@@ -104,8 +101,6 @@
       .branch-center { transform:rotate(90deg); }
       .memory-model { grid-template-columns:1fr; }
       .connector { transform:rotate(90deg); }
-      .cycle { grid-template-columns:1fr; }
-      .cycle div:not(:last-child)::after { content:'↓'; right:auto; top:auto; left:50%; bottom:-22px; transform:translateX(-50%); }
     }
     @media(max-width:560px) {
       .step-head { grid-template-columns:1fr; }
@@ -167,7 +162,7 @@
   </header>
 
   <nav class="topnav" aria-label="Presentation sections">
-    <span class="brand">AI Intelligence</span>
+    <a class="brand" href="#top" aria-label="AI Intelligence — Overview">AI Intelligence</a>
     <div class="nav-scroller">
       <a href="#enter" data-step="1" aria-label="Step 1: Enter">1 Enter</a><a href="#explore" data-step="2" aria-label="Step 2: Explore">2 Explore</a><a href="#develop" data-step="3" aria-label="Step 3: Develop">3 Develop</a>
       <a href="#specialists" data-step="4" aria-label="Step 4: Specialists">4 Specialists</a><a href="#knowledge" data-step="5" aria-label="Step 5: Knowledge">5 Knowledge</a><a href="#memory" data-step="6" aria-label="Step 6: Memory">6 Memory</a>
@@ -219,10 +214,9 @@
         <div class="versus">distinct from</div>
         <div class="role"><strong>Specialist analytical agents</strong><span>Apply focused expertise to particular problems, objects, and professional responsibilities.</span></div>
       </div>
-      <div class="grid three">
+      <div class="grid">
         <article class="card"><h3>Analyze</h3><p>Fuse multiple sources, evaluate indications and relationships, detect domain-relevant patterns, and identify information gaps.</p></article>
         <article class="card"><h3>Produce</h3><p>Create specialized analytical insights, structured knowledge products, reports, and result layers appropriate to the agent’s domain.</p></article>
-        <article class="card"><h3>Participate</h3><p>Respond to direct questions, take responsibility in workstreams, reassess new information, and collaborate with human specialists.</p></article>
       </div>
     </section>
 
@@ -250,7 +244,6 @@
 
     <section class="step" id="new-intelligence">
       <div class="step-head"><div class="step-number">07</div><div><p class="eyebrow" style="color:var(--green-dark)">Context meets change</p><h2>Evaluate new intelligence</h2><p class="lead">New information is compared with what the investigation already knows and with the focused responsibilities it is actively monitoring.</p></div></div>
-      <article class="card blue"><h3>Evaluation context</h3><div class="grid three"><ul><li>Investigation memory</li><li>Existing findings</li><li>Known contradictions</li></ul><ul><li>Knowledge and reports</li><li>Analytical insights</li><li>Information gaps</li></ul><ul><li>Active hypotheses</li><li>Object relationships</li><li>Workstream objectives</li></ul></div></article>
       <div class="split-update">
         <article class="card accent"><span class="tag">Broad context</span><h3>General investigation update</h3><p>The personal assistant identifies meaningful developments, confirmations, contradictions, relationships, gaps, and possible next steps across the investigation.</p></article>
         <article class="card amber"><span class="tag" style="color:#785019;background:#f8dfb9">Focused context</span><h3>Workstream reassessment</h3><p>The responsible participant evaluates the new information specifically against the workstream objective and its previous analytical state.</p></article>
@@ -273,15 +266,9 @@
         <article class="card"><h3>Decide</h3><ul><li>Apply human judgment.</li><li>Acknowledge or resolve an alert.</li><li>Approve or revise a knowledge product.</li><li>Request deeper specialist analysis.</li></ul></article>
         <article class="card"><h3>Continue</h3><ul><li>Resume exploration.</li><li>Refine an existing workstream.</li><li>Create a new workstream.</li><li>Preserve the new conclusion in memory.</li></ul></article>
       </div>
-      <div class="cycle" aria-label="Continuous investigation cycle"><div>Explore</div><div>Analyze</div><div>Create knowledge</div><div>Monitor</div><div>Reassess</div></div>
     </section>
   </main>
 
-  <footer class="closing">
-    <h2>An investigation is a continuous learning cycle.</h2>
-    <p>Exploration creates understanding. Specialists add focused insight. Knowledge gives the insight durable form. Memory preserves context. Workstreams maintain responsibility. New intelligence begins the next cycle.</p>
-    <a href="#top">Return to the journey overview</a>
-  </footer>
 
   <nav class="pager" aria-label="Previous and next presentation section">
     <button type="button" id="previousStep" aria-label="Previous section">← Previous</button>
@@ -300,7 +287,7 @@
     const update = () => {
       const max = document.documentElement.scrollHeight - innerHeight;
       progress.style.width = `${max > 0 ? (scrollY / max) * 100 : 0}%`;
-      let current = sections[0]?.id;
+      let current = 'top';
       sections.forEach(section => { if (section.getBoundingClientRect().top <= 130) current = section.id; });
       links.forEach(link => link.classList.toggle('active', link.hash === `#${current}`));
       activeIndex = 0;
