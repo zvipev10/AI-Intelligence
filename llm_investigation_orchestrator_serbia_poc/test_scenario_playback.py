@@ -442,8 +442,43 @@ class ScenarioPlaybackApiTests(unittest.TestCase):
             "A memory-grounded development",
             completed["run"]["memory_update"]["assessment"]["answer"],
         )
+        self.assertEqual(
+            investigation_id,
+            completed["run"]["memory_update"]["investigation_id"],
+        )
+        status, other_investigation = self.request(
+            "GET", "/api/playback?investigation_id=other-investigation"
+        )
+        self.assertEqual(200, status)
+        self.assertEqual(completed["run"]["run_id"], other_investigation["run"]["run_id"])
+        self.assertIsNone(other_investigation["run"]["memory_update"])
         moshe.assert_not_called()
         general.assert_called_once()
+
+    def test_memory_update_claims_are_scoped_by_investigation(self):
+        run = self.start()
+        _, claimed_a = scenario_playback.claim_memory_update(
+            self.runs_dir, run["run_id"], run["revision"], "investigation-a"
+        )
+        _, claimed_b = scenario_playback.claim_memory_update(
+            self.runs_dir, run["run_id"], run["revision"], "investigation-b"
+        )
+
+        self.assertTrue(claimed_a)
+        self.assertTrue(claimed_b)
+        stored = scenario_playback.load_run(self.runs_dir, run["run_id"])
+        self.assertEqual(
+            "investigation-a",
+            scenario_playback.memory_update_for_investigation(
+                stored, "investigation-a"
+            )["investigation_id"],
+        )
+        self.assertEqual(
+            "investigation-b",
+            scenario_playback.memory_update_for_investigation(
+                stored, "investigation-b"
+            )["investigation_id"],
+        )
 
     def test_general_memory_update_context_excludes_workstreams(self):
         memory = {

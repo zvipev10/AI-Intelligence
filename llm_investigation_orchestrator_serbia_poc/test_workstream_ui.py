@@ -150,6 +150,8 @@ class WorkstreamUiTests(unittest.TestCase):
         self.assertIn("handleInvestigationMemoryUpdate", self.app)
         self.assertIn("pollInvestigationMemoryUpdate", self.app)
         self.assertIn("update.assessment?.answer", self.app)
+        self.assertIn("update.investigation_id || update.assessment?.investigation_id", self.app)
+        self.assertIn('updateInvestigationId !== String(state.investigationId || "").trim()', self.app)
         self.assertIn('activeLocaleText("עדכון חקירה", "Investigation update")', self.app)
         self.assertIn("buildTypedResultLayers(result)", self.app)
         self.assertIn("toggleFinalAnswerVisibility(result, \"\", button)", self.app)

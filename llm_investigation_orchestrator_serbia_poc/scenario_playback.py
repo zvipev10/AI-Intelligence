@@ -370,13 +370,34 @@ def find_active_run(directory: Path) -> dict | None:
     return max(active, key=lambda item: str(item.get("updated_at_utc") or ""), default=None)
 
 
-def run_with_next_stage(manifests_dir: Path, payload: dict) -> dict:
+def memory_update_key(revision: int, investigation_id: str) -> str:
+    return f"{int(revision)}:{investigation_id}"
+
+
+def memory_update_for_investigation(
+    payload: dict, investigation_id: str
+) -> dict | None:
+    updates = payload.get("_memory_updates") or {}
+    revision = int(payload.get("revision") or 0)
+    current = updates.get(memory_update_key(revision, investigation_id))
+    if isinstance(current, dict):
+        return current
+    # Backward compatibility for runs written before updates were scoped in the key.
+    legacy = updates.get(str(revision))
+    if isinstance(legacy, dict) and legacy.get("investigation_id") == investigation_id:
+        return legacy
+    return None
+
+
+def run_with_next_stage(
+    manifests_dir: Path, payload: dict, investigation_id: str | None = None
+) -> dict:
     result = public_run(payload)
     reevaluations = payload.get("_reevaluations") or {}
     reevaluation = reevaluations.get(str(payload.get("revision")))
     result["reevaluation"] = dict(reevaluation) if isinstance(reevaluation, dict) else None
-    memory_updates = payload.get("_memory_updates") or {}
-    memory_update = memory_updates.get(str(payload.get("revision")))
+    requested_investigation_id = investigation_id or str(payload.get("investigation_id") or "")
+    memory_update = memory_update_for_investigation(payload, requested_investigation_id)
     result["memory_update"] = dict(memory_update) if isinstance(memory_update, dict) else None
     manifest = get_manifest(
         manifests_dir, payload.get("scenario_id") or "", payload.get("scenario_version")
@@ -453,7 +474,7 @@ def claim_memory_update(
         if payload is None:
             return None, False
         claims = payload.setdefault("_memory_updates", {})
-        key = str(revision)
+        key = memory_update_key(revision, investigation_id)
         existing = claims.get(key)
         if isinstance(existing, dict):
             return public_run(payload), False
@@ -470,6 +491,7 @@ def finish_memory_update(
     directory: Path,
     run_id: str,
     revision: int,
+    investigation_id: str,
     status: str,
     error: str | None = None,
     assessment: dict | None = None,
@@ -481,7 +503,9 @@ def finish_memory_update(
         if payload is None:
             return None
         claims = payload.setdefault("_memory_updates", {})
-        claim = claims.setdefault(str(revision), {})
+        claim = claims.setdefault(memory_update_key(revision, investigation_id), {
+            "investigation_id": investigation_id,
+        })
         claim.update({
             "status": status,
             "completed_at_utc": utc_now_iso(),

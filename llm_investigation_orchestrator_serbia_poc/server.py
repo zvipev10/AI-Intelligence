@@ -38,6 +38,7 @@ from scenario_playback import (
     claim_memory_update,
     claim_reevaluation,
     find_active_run,
+    memory_update_for_investigation,
     finish_memory_update,
     finish_reevaluation,
     get_manifest,
@@ -2036,14 +2037,14 @@ def investigation_playback_status(investigation_id: str, locale: str = "he") -> 
     run = find_active_run(SCENARIO_RUNS_DIR)
     if run is not None:
         ensure_current_playback_reevaluation(run)
-        ensure_current_memory_update(run)
+        ensure_current_memory_update(run, investigation_id)
         run = load_scenario_run(SCENARIO_RUNS_DIR, run["run_id"]) or run
         return {
             "investigation_id": investigation_id,
             "locale": locale,
             "mode": mode,
             "full_timeframe": full_timeframe,
-            "run": run_with_next_stage(SCENARIO_MANIFESTS_DIR, run),
+            "run": run_with_next_stage(SCENARIO_MANIFESTS_DIR, run, investigation_id),
         }
     manifest = prepared_playback_manifest()
     if manifest is None:
@@ -4385,11 +4386,13 @@ def complete_investigation_memory_update(
             run, investigation_id, memory_payload, released_timeframe
         )
         finish_memory_update(
-            SCENARIO_RUNS_DIR, run["run_id"], revision, "completed", assessment=assessment
+            SCENARIO_RUNS_DIR, run["run_id"], revision, investigation_id,
+            "completed", assessment=assessment
         )
     except Exception as exc:
         finish_memory_update(
-            SCENARIO_RUNS_DIR, run["run_id"], revision, "failed", str(exc)
+            SCENARIO_RUNS_DIR, run["run_id"], revision, investigation_id,
+            "failed", str(exc)
         )
 
 
@@ -4430,9 +4433,9 @@ def start_investigation_memory_update(
     return True
 
 
-def ensure_current_memory_update(run: dict) -> bool:
+def ensure_current_memory_update(run: dict, investigation_id: str) -> bool:
     revision = int(run.get("revision") or 0)
-    current = (run.get("_memory_updates") or {}).get(str(revision))
+    current = memory_update_for_investigation(run, investigation_id)
     if not isinstance(current, dict) or current.get("status") != "running":
         return False
     investigation_id = str(current.get("investigation_id") or "").strip()
@@ -4441,7 +4444,8 @@ def ensure_current_memory_update(run: dict) -> bool:
     memory_payload = load_investigation_memory(investigation_id)
     if not investigation_memory_has_content(memory_payload):
         finish_memory_update(
-            SCENARIO_RUNS_DIR, run["run_id"], revision, "failed", "Investigation memory is empty"
+            SCENARIO_RUNS_DIR, run["run_id"], revision, investigation_id,
+            "failed", "Investigation memory is empty"
         )
         return False
     released_timeframe = current_playback_timeframe(run)
@@ -4875,7 +4879,9 @@ class Handler(SimpleHTTPRequestHandler):
                         memory_update_skipped_reason = "empty_memory"
                 current = load_scenario_run(SCENARIO_RUNS_DIR, run["run_id"]) or run
                 self.send_json(200, {
-                    "run": run_with_next_stage(SCENARIO_MANIFESTS_DIR, current),
+                    "run": run_with_next_stage(
+                        SCENARIO_MANIFESTS_DIR, current, investigation_id
+                    ),
                     "released_timeframe": released_timeframe,
                     "moshe_triggered": claimed,
                     "moshe_skipped_reason": (

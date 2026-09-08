@@ -47,6 +47,11 @@ from the creation modal while retaining an accessible input label. It also
 aligns and styles the modal actions consistently with the application's
 neutral and blue primary buttons, advancing `styles.css` to `v=141`.
 
+`SHA256SUMS-v172.txt` scopes generated investigation-memory updates to their
+owning investigation while preserving the shared playback timeframe. It adds
+server-side response isolation, investigation-aware persisted keys, and a
+client-side ownership guard, advancing the script to `app.js?v=170`.
+
 Secrets, datasets, investigations, workstreams, scenario runs, recordings,
 caches, logs, and generated runtime state are intentionally excluded.
 

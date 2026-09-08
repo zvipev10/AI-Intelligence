@@ -22,6 +22,13 @@ Poll independently from Moshe, show localized processing/result/failure messages
 
 Run full tests and browser smoke checks, deploy targeted changed application files with rollback backup, verify production, merge and push `main`.
 
+## Corrective slice 5 — Cross-investigation isolation
+
+Keep the playback clock global while keying, serializing, resuming, and rendering
+memory updates by owning investigation. Add API, persistence, and client guards plus a
+two-investigation reload regression. Release as v172 after targeted production
+verification.
+
 ## Rollback
 
 Restore the prior application files. Scenario files tolerate the additional private `_memory_updates` field; no migration is required.

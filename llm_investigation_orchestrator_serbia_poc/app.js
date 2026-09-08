@@ -3117,7 +3117,10 @@ function appendMoshePlaybackAssessment(assessment = {}) {
 }
 
 function investigationMemoryUpdateKey(run = {}) {
-  return `${run.run_id || "playback"}:${run.revision || 0}:${state.investigationId || "investigation"}`;
+  const updateInvestigationId = run?.memory_update?.investigation_id
+    || run?.memory_update?.assessment?.investigation_id
+    || "investigation";
+  return `${run.run_id || "playback"}:${run.revision || 0}:${updateInvestigationId}`;
 }
 
 function investigationMemoryUpdateLabel() {
@@ -3136,6 +3139,10 @@ function removeMemoryUpdateProcessingMessage(key) {
 function handleInvestigationMemoryUpdate(run = {}) {
   const update = run?.memory_update;
   if (!update) return;
+  const updateInvestigationId = String(
+    update.investigation_id || update.assessment?.investigation_id || ""
+  ).trim();
+  if (!updateInvestigationId || updateInvestigationId !== String(state.investigationId || "").trim()) return;
   const key = investigationMemoryUpdateKey(run);
   const status = String(update.status || "");
   if (status === "running") {

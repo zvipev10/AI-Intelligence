@@ -6,15 +6,17 @@ Investigation memory update on time-slice progression
 
 ## Current phase
 
-Complete
+Corrective checkpoint 002 — ready for production deployment
 
 ## Overall status
 
-Deployed to production and merged to remote main
+Original capability is deployed. Cross-investigation update isolation is implemented
+and locally validated after a production defect report.
 
 ## Who needs to act now
 
-No further action is required for the approved slice.
+Development should deploy v172, verify two-investigation isolation, and merge the
+reviewed correction to remote main.
 
 ## Blockers
 
@@ -22,7 +24,7 @@ None.
 
 ## Next artifact
 
-None.
+Production verification and updated handoff summary.
 
 ## Parent issue
 
@@ -34,3 +36,8 @@ Remote issue not created. Draft: `issues/parent-capability.md`.
 - Production asset: `app.js?v=167`
 - Production backup: `/opt/serbia-poc-ui-backups/v167-20260812T161050Z`
 - Remote main: `5ebdfb8`
+
+## Latest corrective change
+
+Checkpoint 002 scopes persisted, serialized, resumed, and rendered investigation
+updates to their owning investigation while retaining the global playback timeframe.
