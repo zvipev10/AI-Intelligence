@@ -17,10 +17,10 @@ The approved user-flow content has been implemented as a standalone HTML present
 
 - Desktop layout inspected in the in-app browser.
 - Mobile layout inspected at 390 x 844.
+- Persistent navigation verified at 1024 px and 390 px without horizontal clipping or scrolling.
 - Navigation and the workstream-alert anchor verified.
 - The page uses no external dependencies.
 
 ## Follow-up
 
 Add concrete scenarios, screenshots, or recorded demonstrations only after separate content approval.
-

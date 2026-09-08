@@ -30,11 +30,11 @@
     .flow-node.alert { background:#4d361d; border-color:#a86c2b; }
     .arrow { color:#82cb90; font-size:1.25rem; font-weight:900; }
     .loop-note { margin:16px 0 0; color:#aebdd0; font-size:.86rem; }
-    .topnav { position:sticky; top:0; z-index:20; display:flex; align-items:center; gap:14px; padding:11px max(18px,calc((100vw - 1180px)/2)); color:#dce6f2; background:rgba(16,24,39,.96); box-shadow:0 3px 18px rgba(0,0,0,.15); backdrop-filter:blur(12px); }
+    .topnav { position:sticky; top:0; z-index:20; display:flex; align-items:center; gap:14px; width:100%; min-width:0; padding:11px max(18px,calc((100vw - 1180px)/2)); color:#dce6f2; background:rgba(16,24,39,.96); box-shadow:0 3px 18px rgba(0,0,0,.15); backdrop-filter:blur(12px); }
     .brand { flex:none; font-weight:800; }
-    .nav-scroller { display:flex; gap:5px; overflow:auto; scrollbar-width:none; }
+    .nav-scroller { min-width:0; flex:1; display:flex; justify-content:space-between; gap:3px; overflow:hidden; scrollbar-width:none; }
     .nav-scroller::-webkit-scrollbar { display:none; }
-    .nav-scroller a { flex:none; padding:7px 10px; border-radius:999px; color:#bfcbd9; text-decoration:none; font-size:.77rem; }
+    .nav-scroller a { min-width:0; flex:none; padding:7px 8px; border-radius:999px; color:#bfcbd9; text-decoration:none; font-size:.74rem; white-space:nowrap; }
     .nav-scroller a:hover,.nav-scroller a:focus-visible,.nav-scroller a.active { color:#fff; background:#2a3b35; outline:none; }
     .progress { position:absolute; left:0; bottom:0; width:0; height:3px; background:var(--green); transition:width .15s linear; }
     main { width:min(1180px,calc(100% - 36px)); margin:auto; }
@@ -92,6 +92,11 @@
     .closing p { max-width:790px; margin:auto; color:#c8d4e2; font-size:1.1rem; }
     .closing a { display:inline-block; margin-top:28px; padding:11px 17px; border-radius:10px; color:#132019; background:#91d49d; text-decoration:none; font-weight:800; }
     @media(max-width:850px) {
+      .topnav { gap:0; padding:9px 12px; }
+      .brand { display:none; }
+      .nav-scroller { gap:4px; }
+      .nav-scroller a { flex:1; display:grid; place-items:center; width:auto; padding:7px 2px; font-size:0; }
+      .nav-scroller a::after { content:attr(data-step); font-size:.75rem; }
       .hero { min-height:auto; }
       .grid,.grid.three,.split-update { grid-template-columns:1fr; }
       .object-strip { grid-template-columns:repeat(2,1fr); }
@@ -141,9 +146,9 @@
   <nav class="topnav" aria-label="Presentation sections">
     <span class="brand">AI Intelligence</span>
     <div class="nav-scroller">
-      <a href="#enter">1 Enter</a><a href="#explore">2 Explore</a><a href="#develop">3 Develop</a>
-      <a href="#specialists">4 Specialists</a><a href="#knowledge">5 Knowledge</a><a href="#memory">6 Memory</a>
-      <a href="#new-intelligence">7 New intelligence</a><a href="#alert">8 Alert</a><a href="#continue">9 Continue</a>
+      <a href="#enter" data-step="1" aria-label="Step 1: Enter">1 Enter</a><a href="#explore" data-step="2" aria-label="Step 2: Explore">2 Explore</a><a href="#develop" data-step="3" aria-label="Step 3: Develop">3 Develop</a>
+      <a href="#specialists" data-step="4" aria-label="Step 4: Specialists">4 Specialists</a><a href="#knowledge" data-step="5" aria-label="Step 5: Knowledge">5 Knowledge</a><a href="#memory" data-step="6" aria-label="Step 6: Memory">6 Memory</a>
+      <a href="#new-intelligence" data-step="7" aria-label="Step 7: New intelligence">7 New intelligence</a><a href="#alert" data-step="8" aria-label="Step 8: Alert">8 Alert</a><a href="#continue" data-step="9" aria-label="Step 9: Continue">9 Continue</a>
     </div>
     <div class="progress" aria-hidden="true"></div>
   </nav>
