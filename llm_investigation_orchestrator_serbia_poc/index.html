@@ -6,7 +6,7 @@
   <title>סביבת מודיעין</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="./vendor/maplibre-gl.css">
-  <link rel="stylesheet" href="./styles.css?v=141">
+  <link rel="stylesheet" href="./styles.css?v=142">
 </head>
 <body class="welcome-active">
   <a class="help-button" href="./help.html" target="_blank" rel="noopener" aria-label="פתח עזרה" data-i18n-aria-he="פתח עזרה" data-i18n-aria-en="Open help">?</a>
@@ -191,6 +191,16 @@
 
   </main>
 
+  <div id="objectViewer" class="object-viewer-backdrop" hidden>
+    <section class="object-viewer" role="dialog" aria-modal="true" aria-labelledby="objectViewerTitle">
+      <header class="object-viewer-header">
+        <div><span id="objectViewerKind" class="eyebrow"></span><h2 id="objectViewerTitle"></h2><code id="objectViewerId" dir="ltr"></code></div>
+        <button id="objectViewerClose" class="modal-close-button" type="button" aria-label="סגור" title="סגור">×</button>
+      </header>
+      <div id="objectViewerBody" class="object-viewer-body"></div>
+    </section>
+  </div>
+
   <div id="welcomeActionModal" class="modal-backdrop welcome-action-backdrop" hidden>
     <section class="welcome-action-modal" role="dialog" aria-modal="true" aria-labelledby="welcomeActionTitle" aria-describedby="welcomeActionDescription">
       <div class="welcome-action-icon"><span class="material-symbols-rounded" aria-hidden="true">group_add</span></div>
@@ -315,6 +325,6 @@
   </div>
 
   <script src="./vendor/maplibre-gl.js"></script>
-  <script src="./app.js?v=170"></script>
+  <script src="./app.js?v=171"></script>
 </body>
 </html>
