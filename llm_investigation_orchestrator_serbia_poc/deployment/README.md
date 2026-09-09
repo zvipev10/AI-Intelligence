@@ -52,6 +52,11 @@ owning investigation while preserving the shared playback timeframe. It adds
 server-side response isolation, investigation-aware persisted keys, and a
 client-side ownership guard, advancing the script to `app.js?v=170`.
 
+`SHA256SUMS-v173.txt` adds a shared single-object viewer for raw records and
+organizations, opened from result rows, ungrouped map markers, and explicit
+assistant references. It preserves text when media is unavailable and advances
+the assets to `app.js?v=171` and `styles.css?v=142`.
+
 Secrets, datasets, investigations, workstreams, scenario runs, recordings,
 caches, logs, and generated runtime state are intentionally excluded.
 

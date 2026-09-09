@@ -11,3 +11,5 @@ Parent #48 and review task #49 remain open. Publish these three capability artif
 Suggested durable updates after decisions are approved: describe the viewer workflow in `docs/product-context.md`, detail/media/assistant contracts in `docs/architecture.md`, and accepted interaction/media decisions in `docs/decisions.md`. No durable decision was invented or recorded as accepted in this phase.
 
 User clarification: open only for a single object. Removed the grouped-marker chooser from scope and acceptance criteria. Existing grouped-marker behavior is preserved. This clarification does not approve the remaining draft layout or delegate role-review decisions.
+
+The user subsequently approved the revised scope and explicitly delegated the complete implementation and approval flow. Record and organization viewers are implemented; targets remain excluded. The implementation uses visibility-scoped client layer rows, adds no endpoint or dependency, renders allowlisted media URLs when present, and preserves text with an unavailable state when absent. Automated acceptance: 58 tests plus JavaScript syntax and diff checks passed. See `checkpoint-001.md`.

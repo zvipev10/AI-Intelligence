@@ -4,22 +4,22 @@
 Record and knowledge entity viewers
 
 ## Current phase and overall status
-Phase 1 — capability initiation. Draft, pending human review. No product code changed.
+Phase 5 — final review. Implementation complete on the feature branch; automated acceptance checks pass.
 
 ## Who needs to act now
-Product/user reviews the brief; Development, UX, and QA provide review inputs before execution planning. No review has been marked approved or delegated.
+Product delegated end-to-end approvals. Final merge/release action remains.
 
 ## Latest change
-User clarified that the viewer opens only for a single object. Removed the proposed grouped-marker chooser; grouped markers retain existing behavior. The reusable panel remains a proposal, not an approved layout. Baseline: `main` commit `24a7527`.
+Implemented the approved record/organization viewer and passed 58 focused/regression tests. Targets remain excluded.
 
 ## Current blockers
-Required review gate before execution planning. Media availability and delivery contract need developer input before committing to playback implementation.
+None for code review. No playable media assets exist in the repository.
 
 ## Current risks
-No playable UAV URL verified; detail retrieval must preserve visibility and investigation isolation. Dedicated UAV sample parsing needs investigation.
+Visual browser QA and deployment have not been performed. Current media references without URLs render as unavailable.
 
 ## Next expected artifact
-Developer/UX/QA review artifacts after capability review. Execution plan only after readiness is approved or decisions explicitly delegated.
+Final PR acceptance and merge/release decision.
 
 ## Parent issue
 https://github.com/zvipev10/AI-Intelligence/issues/48 — open through final acceptance.
@@ -32,6 +32,7 @@ https://github.com/zvipev10/AI-Intelligence/issues/48 — open through final acc
 ## Artifact links
 - [Capability brief](capability-brief.md)
 - [Handoff](handoff-summary.md)
+- [Checkpoint 001](checkpoint-001.md)
 
 ## Publishing
 Branch: `capability/record-knowledge-viewers`. Shared through a documentation-only draft PR. Review and parent issues remain open.

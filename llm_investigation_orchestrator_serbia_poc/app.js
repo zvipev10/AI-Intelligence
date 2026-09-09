@@ -2758,6 +2758,7 @@ function appendMessage(role, html, options = {}) {
   article.className = `message ${role === "user" ? "user-message" : "assistant-message"}${options.className ? ` ${options.className}` : ""}`;
   if (options.memberId) article.dataset.conversationMemberId = options.memberId;
   article.innerHTML = `<div class="message-label">${escapeHtml(options.label || (role === "user" ? activeLocaleText("אנליסט", "Analyst") : assistantMessageLabel()))}</div>${html}`;
+  if (role !== "user") appendAssistantObjectLinks(article);
   conversation.appendChild(article);
   followConversationAfterUpdate(shouldFollow);
   return article;
@@ -3023,6 +3024,91 @@ async function fetchInvestigationPlayback() {
   }
   handleInvestigationMemoryUpdate(payload?.run);
   return payload;
+}
+
+let objectViewerReturnFocus = null;
+
+function viewerObjects() {
+  const objects = new Map();
+  state.layers.forEach(layer => {
+    if (layer.kind === "events") (layer.items || []).forEach(item => objects.set(`record:${item.record_id || item.event_id}`, item));
+    if (layer.kind === "entity_metadata") (layer.items || []).forEach(item => objects.set(`organization:${item.entity_id}`, item));
+  });
+  return objects;
+}
+
+function safeMediaUrl(value) {
+  const text = String(value || "").trim();
+  if (!text) return "";
+  try {
+    const url = new URL(text, window.location.href);
+    return ["http:", "https:"].includes(url.protocol) || (url.origin === window.location.origin && url.protocol === window.location.protocol) ? url.href : "";
+  } catch { return ""; }
+}
+
+function viewerMedia(item) {
+  const candidates = [
+    ["video", item.video_url || item.media?.video_url],
+    ["audio", item.audio_url || item.media?.audio_url],
+    ["image", item.image_url || item.media?.image_url]
+  ];
+  return candidates.map(([type, value]) => ({ type, url: safeMediaUrl(value) })).find(media => media.url) || null;
+}
+
+function viewerFields(item, kind) {
+  const hidden = new Set(["event_summary", "canonical_name", "media", "video_url", "audio_url", "image_url", "raw_data_references"]);
+  const preferred = kind === "record"
+    ? ["timestamp_utc", "source_type", "collection_family", "source_reliability_label", "certainty_level", "entity_name", "location_name", "observation_id", "mission_id", "video_segment_id"]
+    : ["entity_type", "aliases", "event_count", "top_locations", "top_sources"];
+  return preferred.filter(key => !hidden.has(key) && item[key] != null && item[key] !== "").map(key => [key, item[key]]);
+}
+
+function viewerValue(value) {
+  if (Array.isArray(value)) return value.map(item => typeof item === "object" ? (item.location_name || item.source_type || item.name || item.entity_id || JSON.stringify(item)) : item).join(", ");
+  if (value && typeof value === "object") return JSON.stringify(value);
+  return String(value);
+}
+
+function closeObjectViewer() {
+  const viewer = document.getElementById("objectViewer");
+  viewer.querySelectorAll("video,audio").forEach(media => { media.pause(); media.removeAttribute("src"); media.load(); });
+  viewer.hidden = true;
+  objectViewerReturnFocus?.focus?.();
+  objectViewerReturnFocus = null;
+}
+
+function openObjectViewer(kind, id, trigger = document.activeElement) {
+  if (!['record', 'organization'].includes(kind)) return false;
+  const item = viewerObjects().get(`${kind}:${id}`);
+  if (!item) return false;
+  objectViewerReturnFocus = trigger;
+  const viewer = document.getElementById("objectViewer");
+  const title = kind === "record" ? (item.event_summary || id) : (item.canonical_name || id);
+  document.getElementById("objectViewerKind").textContent = kind === "record" ? activeLocaleText("רשומה גולמית", "Raw record") : activeLocaleText("ארגון", "Organization");
+  document.getElementById("objectViewerTitle").textContent = title;
+  document.getElementById("objectViewerId").textContent = id;
+  const media = viewerMedia(item);
+  const mediaHtml = media ? `<div class="object-viewer-media">${media.type === "video" ? `<video controls preload="metadata" src="${escapeHtml(media.url)}"></video>` : media.type === "audio" ? `<audio controls preload="metadata" src="${escapeHtml(media.url)}"></audio>` : `<img src="${escapeHtml(media.url)}" alt="">`}</div>` : (item.collection_family === "airborne_isr_video_exploitation" || item.video_segment_id ? `<div class="object-viewer-media object-viewer-media-state">${escapeHtml(activeLocaleText("אין קובץ וידאו זמין לרשומה זו.", "No video file is available for this record."))}</div>` : "");
+  const fields = viewerFields(item, kind).map(([key,value]) => `<div class="object-viewer-field"><dt>${escapeHtml(key.replaceAll("_", " "))}</dt><dd>${escapeHtml(viewerValue(value))}</dd></div>`).join("");
+  document.getElementById("objectViewerBody").innerHTML = `${mediaHtml}${kind === "record" ? `<p class="object-viewer-summary">${escapeHtml(item.event_summary || "-")}</p>` : ""}<dl class="object-viewer-fields">${fields}</dl>`;
+  viewer.hidden = false;
+  document.getElementById("objectViewerClose").focus();
+  return true;
+}
+
+function appendAssistantObjectLinks(article) {
+  const text = article.textContent || "";
+  const ids = [...new Set(text.match(/\b(?:REC-(?:V2-)?\d{6}|ENT-[A-Z0-9-]+)\b/g) || [])];
+  const available = ids.map(id => [id.startsWith("REC-") ? "record" : "organization", id]).filter(([kind,id]) => viewerObjects().has(`${kind}:${id}`));
+  if (!available.length) return;
+  const links = document.createElement("div"); links.className = "assistant-object-links";
+  links.innerHTML = available.map(([kind,id]) => `<button type="button" class="object-viewer-open" data-viewer-kind="${kind}" data-viewer-id="${escapeHtml(id)}">${escapeHtml(activeLocaleText("פתח", "Open"))} ${escapeHtml(id)}</button>`).join("");
+  article.appendChild(links);
+}
+
+function refreshAssistantObjectLinks() {
+  conversation.querySelectorAll(".assistant-object-links").forEach(element => element.remove());
+  conversation.querySelectorAll(".assistant-message").forEach(article => appendAssistantObjectLinks(article));
 }
 
 async function initializeStagedPlayback({ reset = false } = {}) {
@@ -4599,6 +4685,7 @@ function applyAgentResult(result, prompt, options = {}) {
 
   finalizeAssistantMessage(result.answer, { result, prompt });
   presentFinalAgentResult(result, prompt);
+  refreshAssistantObjectLinks();
   if (buildTypedResultLayers(result).some(layer => layer.kind === "attack_targets")) {
     void refreshOpenAttackTargetCatalogLayer();
   }
@@ -4950,13 +5037,15 @@ function renderMap() {
   if (!state.mapReady) return;
   clearMarkers();
   const byLocation = new Map();
-  const addLocationCount = (locationId, count, label, aggregateLocation = null, color = null) => {
+  const addLocationCount = (locationId, count, label, aggregateLocation = null, color = null, viewerRef = null) => {
     if (!locationId) return;
-    const existing = byLocation.get(locationId) || { location_id: locationId, count: 0, labels: new Set(), colors: new Set(), aggregateLocation };
+    const existing = byLocation.get(locationId) || { location_id: locationId, count: 0, labels: new Set(), colors: new Set(), viewerRefs: new Map(), viewerEligible: true, aggregateLocation };
     existing.count += Number(count || 0);
     existing.labels.add(label);
     if (color) existing.colors.add(color);
     if (aggregateLocation) existing.aggregateLocation = aggregateLocation;
+    if (viewerRef?.id) existing.viewerRefs.set(`${viewerRef.kind}:${viewerRef.id}`, viewerRef);
+    else existing.viewerEligible = false;
     byLocation.set(locationId, existing);
   };
   visibleLayers("map").forEach(layer => {
@@ -4964,7 +5053,10 @@ function renderMap() {
     if (layer.kind === "events") {
       const counts = {};
       items.forEach(event => { counts[event.location_id] = (counts[event.location_id] || 0) + 1; });
-      Object.entries(counts).forEach(([locationId, count]) => addLocationCount(locationId, count, layer.label, null, layer.color));
+      Object.entries(counts).forEach(([locationId, count]) => {
+        const matching = items.filter(event => event.location_id === locationId);
+        addLocationCount(locationId, count, layer.label, null, layer.color, matching.length === 1 ? { kind: "record", id: matching[0].record_id || matching[0].event_id } : null);
+      });
     } else if (layer.kind === "locations") {
       items.forEach(item => addLocationCount(item.location_id, item.count || 1, layer.label, item, layer.color));
     } else if (layer.kind === "location_metadata") {
@@ -4983,7 +5075,8 @@ function renderMap() {
               longitude: location.longitude,
               count: location.count
             },
-            layer.color
+            layer.color,
+            { kind: "organization", id: entity.entity_id }
           );
         });
       });
@@ -5005,6 +5098,12 @@ function renderMap() {
     element.setAttribute("role", "button");
     element.setAttribute("aria-label", activeLocaleText(`${location.name}: ${item.count.toLocaleString("he-IL")} פריטים`, `${location.name}: ${item.count.toLocaleString("en-US")} items`));
     element.innerHTML = `<span class="map-marker-dot"></span>${item.count > 1 ? `<span class="map-marker-count">${item.count.toLocaleString(currentLocaleTag())}</span>` : ""}`;
+    const viewerRefs = [...item.viewerRefs.values()];
+    if (viewerRefs.length === 1 && item.viewerEligible) {
+      element.dataset.viewerKind = viewerRefs[0].kind;
+      element.dataset.viewerId = viewerRefs[0].id;
+      element.setAttribute("aria-haspopup", "dialog");
+    }
     const popupHtml = `
       <div class="map-popup" dir="${currentLocale() === "en" ? "ltr" : "rtl"}">
         <strong>${escapeHtml(location.name)}</strong>
@@ -5374,7 +5473,7 @@ function renderEvidence() {
       const topLocations = (item.top_locations || []).slice(0, 4).map(location => `${location.location_name || location.location_id} (${Number(location.count || 0).toLocaleString("en-US")})`).join(", ");
       return `
       <tr>
-        <td>${escapeHtml(item.canonical_name || item.entity_id || "-")}</td>
+        <td><button type="button" class="object-viewer-open" data-viewer-kind="organization" data-viewer-id="${escapeHtml(item.entity_id || "")}">${escapeHtml(item.canonical_name || item.entity_id || "-")}</button></td>
         <td>${Number(item.event_count || item.count || 0).toLocaleString("en-US")}</td>
         <td>${escapeHtml(item.entity_type || "-")}</td>
         <td>${escapeHtml(aliases || "-")}</td>
@@ -5434,7 +5533,7 @@ function renderEvidence() {
     return `
     <tr class="${selected ? "map-selected-row" : ""}">
       <td class="result-map-action-cell">${mapActionButton(activeLayer.id, "event", eventId, event)}</td>
-      <td dir="ltr">${escapeHtml(event.record_id || event.event_id || "-")}</td>
+      <td dir="ltr"><button type="button" class="object-viewer-open" data-viewer-kind="record" data-viewer-id="${escapeHtml(eventId)}">${escapeHtml(event.record_id || event.event_id || "-")}</button></td>
       <td dir="ltr">${escapeHtml(event.timestamp_utc)}</td>
       <td>${escapeHtml(event.source_reliability_label || event.source_reliability || "-")}</td>
       <td>${escapeHtml(event.certainty_level || "-")}</td>
@@ -5447,6 +5546,7 @@ function renderEvidence() {
 }
 
 function resetInvestigation(options = {}) {
+  closeObjectViewer();
   state.current = [];
   state.stage = 0;
   state.aggregateLocations = [];
@@ -5523,6 +5623,16 @@ document.addEventListener("input", event => {
 });
 
 document.addEventListener("click", event => {
+  const viewerTrigger = event.target.closest("[data-viewer-kind][data-viewer-id]");
+  if (viewerTrigger) {
+    event.preventDefault();
+    openObjectViewer(viewerTrigger.dataset.viewerKind, viewerTrigger.dataset.viewerId, viewerTrigger);
+    return;
+  }
+  if (event.target.closest("#objectViewerClose") || event.target.id === "objectViewer") {
+    closeObjectViewer();
+    return;
+  }
   const resultMapEvent = event.target.closest(".result-map-action[data-result-map-item]");
   if (resultMapEvent) {
     toggleMapItem(resultMapEvent.dataset.resultMapLayer, resultMapEvent.dataset.resultMapKind, resultMapEvent.dataset.resultMapItem);
@@ -6018,6 +6128,11 @@ draftCreateModal?.addEventListener("click", event => {
   if (event.target === draftCreateModal) closeDraftCreateModal();
 });
 document.addEventListener("keydown", event => {
+  if (event.key === "Escape" && !document.getElementById("objectViewer").hidden) {
+    event.preventDefault();
+    closeObjectViewer();
+    return;
+  }
   if (event.key === "Escape" && welcomeActionModal && !welcomeActionModal.hidden) {
     closeWelcomeAction();
   }
