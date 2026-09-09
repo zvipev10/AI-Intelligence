@@ -25,11 +25,11 @@ Enable analysts to inspect existing source material and entity details consisten
 - Keep text fields and add presentations appropriate to the source, including video playback for UAV data.
 
 ## Proposed behavior — recommendations awaiting review
-Use a shared details panel with a heading, canonical ID, item type, relevant details, and a close control. Keep the map, table, filters, and conversation context intact. One item is active at a time.
+Use one reusable details panel, opened by map, grid, or assistant for a single identified object, with a heading, canonical ID, item type, relevant details, and a close control. Keep the map, table, filters, and conversation context intact. One item is active at a time.
 
 Entry points:
 - Grid: clicking the item name/ID or row opens its details; embedded map and other action controls retain their existing behavior. Provide a keyboard-accessible open action.
-- Map: a single-item marker opens that item. A marker grouping multiple records or entities first offers a labelled item chooser; do not guess which item the user meant.
+- Map: a single-object marker opens that object. Grouped markers retain their existing behavior and do not open the viewer. No grouped-marker item chooser is required (explicit user clarification).
 - General assistant: an explicit request to open a resolved record, organization, or target opens the same panel through a validated typed reference. Ambiguous requests ask the user to choose. Ordinary mention of an item does not repeatedly open the panel. A referenced item need not already be in the displayed grid, but it must be available under the current visibility rules.
 - Changing investigations closes the panel and invalidates pending loads from the previous investigation. Closing restores focus to the originating control.
 
@@ -56,7 +56,7 @@ Editing records/entities, changing target generation or assessments, new collect
 
 ## Acceptance criteria
 1. The same canonical record, organization, or target opened from map, grid, or assistant shows consistent detail content.
-2. Grouped map markers allow selection of the intended item, including organizations associated with multiple locations.
+2. The viewer opens only for one identified object. Grouped markers do not open it or introduce an item chooser; existing grouped-marker behavior is preserved.
 3. Raw-record text remains readable with or without media. A UAV record with a supported accessible video asset plays with standard controls; missing and failed media have explicit states.
 4. Organizations and targets have distinguishable detail layouts and existing references can resolve to the relevant viewer.
 5. Assistant actions validate item type and canonical ID; unresolved, unavailable, and ambiguous references never show a different item.
@@ -81,7 +81,7 @@ Playable UAV asset location and access method are unverified. An explicit media 
 ## Required reviewers and questions
 - Product: accept the shared details-panel proposal, scope, and missing-media behavior.
 - Development: inventory actual media and source families, map organization identity, choose canonical detail retrieval and assistant action contracts, and identify a representative playable fixture.
-- UX: review grouped marker selection, grid affordances, panel/back behavior, Hebrew/English layouts, and accessibility.
+- UX: review single-object opening, grid affordances, panel/back behavior, Hebrew/English layouts, and accessibility.
 - QA: cover three item types across all three entry points, media success/failure, stale responses, visibility boundaries, and existing map/grid behavior.
 - Architecture/security input: review media delivery and existing access/visibility enforcement if a new retrieval path is necessary.
 
@@ -95,3 +95,4 @@ D. Implement and review assistant opening and available source renderers, includ
 E. Validate regressions, accessibility, and visibility; obtain release acceptance.
 
 These are proposed checkpoints, not an approved execution plan.
+

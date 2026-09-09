@@ -10,13 +10,13 @@ Phase 1 — capability initiation. Draft, pending human review. No product code 
 Product/user reviews the brief; Development, UX, and QA provide review inputs before execution planning. No review has been marked approved or delegated.
 
 ## Latest change
-Created the source-grounded brief on 2026-09-09 from `main` commit `24a7527`.
+User clarified that the viewer opens only for a single object. Removed the proposed grouped-marker chooser; grouped markers retain existing behavior. The reusable panel remains a proposal, not an approved layout. Baseline: `main` commit `24a7527`.
 
 ## Current blockers
 Required review gate before execution planning. Media availability and delivery contract need developer input before committing to playback implementation.
 
 ## Current risks
-No playable UAV URL verified; grouped markers need disambiguation; detail retrieval must preserve visibility and investigation isolation. Dedicated UAV sample parsing needs investigation.
+No playable UAV URL verified; detail retrieval must preserve visibility and investigation isolation. Dedicated UAV sample parsing needs investigation.
 
 ## Next expected artifact
 Developer/UX/QA review artifacts after capability review. Execution plan only after readiness is approved or decisions explicitly delegated.
@@ -35,3 +35,4 @@ https://github.com/zvipev10/AI-Intelligence/issues/48 — open through final acc
 
 ## Publishing
 Branch: `capability/record-knowledge-viewers`. Shared through a documentation-only draft PR. Review and parent issues remain open.
+

@@ -9,3 +9,5 @@ Next action: user/product reviews the concrete proposal; required role inputs pr
 Parent #48 and review task #49 remain open. Publish these three capability artifacts on `capability/record-knowledge-viewers` and a draft PR. No unrelated files belong to this change.
 
 Suggested durable updates after decisions are approved: describe the viewer workflow in `docs/product-context.md`, detail/media/assistant contracts in `docs/architecture.md`, and accepted interaction/media decisions in `docs/decisions.md`. No durable decision was invented or recorded as accepted in this phase.
+
+User clarification: open only for a single object. Removed the grouped-marker chooser from scope and acceptance criteria. Existing grouped-marker behavior is preserved. This clarification does not approve the remaining draft layout or delegate role-review decisions.
