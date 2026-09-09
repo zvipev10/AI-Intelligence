@@ -4,22 +4,22 @@
 Record and knowledge entity viewers
 
 ## Current phase and overall status
-Phase 5 — final review. Implementation complete on the feature branch; automated acceptance checks pass.
+Phase 6 — complete. Implementation is deployed and smoke-validated.
 
 ## Who needs to act now
-Product delegated end-to-end approvals. Final merge/release action remains.
+No role action required. Product delegated end-to-end approvals and explicitly requested VM deployment.
 
 ## Latest change
-Implemented the approved record/organization viewer and passed 58 focused/regression tests. Targets remain excluded.
+Deployed the approved record/organization viewer to the VM; services and public asset checks pass. Targets remain excluded.
 
 ## Current blockers
-None for code review. No playable media assets exist in the repository.
+None.
 
 ## Current risks
-Visual browser QA and deployment have not been performed. Current media references without URLs render as unavailable.
+Hands-on browser acceptance was not requested. Current media references without URLs render as unavailable.
 
 ## Next expected artifact
-Final PR acceptance and merge/release decision.
+Merge PR #50 and close parent #48 after repository integration.
 
 ## Parent issue
 https://github.com/zvipev10/AI-Intelligence/issues/48 — open through final acceptance.
