@@ -35,4 +35,3 @@ https://github.com/zvipev10/AI-Intelligence/issues/48 — open through final acc
 
 ## Publishing
 Branch: `capability/record-knowledge-viewers`. Shared through a documentation-only draft PR. Review and parent issues remain open.
-

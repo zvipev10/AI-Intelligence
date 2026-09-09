@@ -95,4 +95,3 @@ D. Implement and review assistant opening and available source renderers, includ
 E. Validate regressions, accessibility, and visibility; obtain release acceptance.
 
 These are proposed checkpoints, not an approved execution plan.
-
