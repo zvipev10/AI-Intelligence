@@ -1,19 +1,19 @@
 # Capability Status
 
 ## Current phase
-Phase 4 complete — implementation and internal QA ready for release.
+Phase 6 — deployed, awaiting repository merge completion.
 
 ## Overall status
-In progress.
+Accepted under delegated authority; production smoke checks passed.
 
 ## Who acts now
-Release and deployment under user-delegated end-to-end authority.
+Repository merge and issue closure.
 
 ## Blockers
 None.
 
 ## Next artifact
-Final QA and `handoff-summary.md`.
+Merge PR #53 and close parent #51.
 
 ## Issues
 - Parent: https://github.com/zvipev10/AI-Intelligence/issues/51
@@ -21,4 +21,4 @@ Final QA and `handoff-summary.md`.
 - Draft PR: https://github.com/zvipev10/AI-Intelligence/pull/53
 
 ## Latest change
-Implemented the symbol profile, entity presence assessments, UAV observations, evidence links, confidence treatment, legend, tests, and v174 release manifest. See `checkpoint-001.md`.
+Deployed v174 to `/opt/serbia-poc-ui`; public HTTP, asset, API, and service checks passed. Rollback is `/home/ubuntu/deploy-backups/mil-std-2525-20260910T230410Z`. See `handoff-summary.md`.
