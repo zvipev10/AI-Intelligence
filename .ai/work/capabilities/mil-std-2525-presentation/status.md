@@ -1,16 +1,16 @@
 # Capability Status
 
 ## Current phase
-Corrective checkpoint 002 — implementation complete, pending publication and deployment.
+Corrective checkpoint 002 — implementation published, pending PR review and deployment.
 
 ## Overall status
 The map legend has been removed at the user's direction. MIL-STD symbols, evidence details, and object-viewer behavior are unchanged.
 
 ## Who acts now
-Development should publish and deploy the focused corrective slice.
+Development should open/review the PR, merge it, and deploy the focused corrective slice.
 
 ## Blockers
-Publish the implementation branch and deploy the updated static assets.
+Open the PR from `codex/remove-map-legend`, then merge and deploy the updated static assets.
 
 ## Next artifact
 None.
@@ -25,3 +25,8 @@ PR #53 merged to `main` as `9e5b17e6995b40340919523bb05b87b281ff2d60`. v174 is d
 
 ## Corrective change
 At the user's direction, the collapsible map legend and its dedicated CSS were removed. The stylesheet asset version advances to `styles.css?v=144`; symbol rendering and traceability remain in scope and unchanged.
+
+## Corrective publication
+- Branch: `codex/remove-map-legend`
+- Commit: `fa6e4f9`
+- PR creation URL: `https://github.com/zvipev10/AI-Intelligence/pull/new/codex/remove-map-legend`

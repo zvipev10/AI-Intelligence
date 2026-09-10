@@ -18,5 +18,9 @@ MIL-STD symbol selection and rendering, accessible marker labels, confidence and
 - `test_welcome_page.py`
 - JavaScript syntax check
 
+## Publication
+- Branch: `codex/remove-map-legend`
+- Implementation commit: `fa6e4f9`
+
 ## Remaining work
-Publish the branch, review, merge, and deploy the updated static assets.
+Open/review the PR, merge it, and deploy the updated static assets.
