@@ -1,23 +1,24 @@
 # Capability Status
 
 ## Current phase
-Phase 3 complete — approved plan ready for controlled execution.
+Phase 4 complete — implementation and internal QA ready for release.
 
 ## Overall status
 In progress.
 
 ## Who acts now
-Development implementation under user-delegated end-to-end authority.
+Release and deployment under user-delegated end-to-end authority.
 
 ## Blockers
 None.
 
 ## Next artifact
-`checkpoint-001.md`
+Final QA and `handoff-summary.md`.
 
 ## Issues
-Remote parent and child issue links will be added after publication.
+- Parent: https://github.com/zvipev10/AI-Intelligence/issues/51
+- Implementation: https://github.com/zvipev10/AI-Intelligence/issues/52
+- Draft PR: https://github.com/zvipev10/AI-Intelligence/pull/53
 
 ## Latest change
-Recorded approved scope, reviews, confidence semantics, verified counts, execution slices, and rollback plan.
-
+Implemented the symbol profile, entity presence assessments, UAV observations, evidence links, confidence treatment, legend, tests, and v174 release manifest. See `checkpoint-001.md`.

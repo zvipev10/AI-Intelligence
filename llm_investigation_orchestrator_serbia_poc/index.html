@@ -6,7 +6,7 @@
   <title>סביבת מודיעין</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="./vendor/maplibre-gl.css">
-  <link rel="stylesheet" href="./styles.css?v=142">
+  <link rel="stylesheet" href="./styles.css?v=143">
 </head>
 <body class="welcome-active">
   <a class="help-button" href="./help.html" target="_blank" rel="noopener" aria-label="פתח עזרה" data-i18n-aria-he="פתח עזרה" data-i18n-aria-en="Open help">?</a>
@@ -165,6 +165,16 @@
       <div class="view-stack">
         <section id="mapView" class="view-pane active">
           <div id="map" class="map-canvas"></div>
+          <details id="milStdLegend" class="milstd-legend">
+            <summary><span class="milstd-legend-mark" aria-hidden="true"></span><span data-i18n-text-he="MIL-STD-2525 — מקרא" data-i18n-text-en="MIL-STD-2525 legend">MIL-STD-2525 — מקרא</span></summary>
+            <div class="milstd-legend-body">
+              <strong>MIL-STD-2525E Change 1</strong>
+              <span><i class="milstd-mini friendly" aria-hidden="true"></i><span data-i18n-text-he="נוכחות ארגון ידידותי" data-i18n-text-en="Friendly organization presence">נוכחות ארגון ידידותי</span></span>
+              <span><i class="milstd-mini neutral" aria-hidden="true"></i><span data-i18n-text-he="נוכחות ארגון ניטרלי" data-i18n-text-en="Neutral organization presence">נוכחות ארגון ניטרלי</span></span>
+              <span><i class="milstd-mini unknown" aria-hidden="true"></i><span data-i18n-text-he="אובייקט שנצפה; שיוך לא נקבע" data-i18n-text-en="Observed object; affiliation undetermined">אובייקט שנצפה; שיוך לא נקבע</span></span>
+              <small data-i18n-text-he="מדווח = טענה חלשה · מוערך = נתמך בראיות" data-i18n-text-en="Reported = weak claim · Assessed = evidence-supported">מדווח = טענה חלשה · מוערך = נתמך בראיות</small>
+            </div>
+          </details>
         </section>
         <section id="timelineView" class="view-pane"><div id="timeline" class="timeline empty-state" data-i18n-text-he="לא נבחרו אירועים להצגה." data-i18n-text-en="No events were selected for display.">לא נבחרו אירועים להצגה.</div></section>
         <section id="rawEventsOverlay" class="raw-events-overlay" aria-label="אירועים גולמיים" data-i18n-aria-he="אירועים גולמיים" data-i18n-aria-en="Raw events" hidden>
@@ -325,6 +335,6 @@
   </div>
 
   <script src="./vendor/maplibre-gl.js"></script>
-  <script src="./app.js?v=171"></script>
+  <script src="./app.js?v=172"></script>
 </body>
 </html>

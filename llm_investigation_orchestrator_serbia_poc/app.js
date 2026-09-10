@@ -159,6 +159,114 @@
 const PRIMARY_IDS = new Set([]);
 const EVENT_ID_PATTERN = /\b(?:REC-(?:V2-)?\d{6}|LOC-(?:V2-)?\d{3})\b/g;
 
+const MIL_STD_VERSION = "MIL-STD-2525E Change 1";
+const MIL_STD_ORGANIZATIONS = Object.freeze({
+  "ENT-SAF-2BRIGADE": { affiliation: "friendly", icon: "II" },
+  "ENT-SAF-21-INF": { affiliation: "friendly", icon: "●" },
+  "ENT-SAF-22-INF": { affiliation: "friendly", icon: "●" },
+  "ENT-SAF-27-MECH": { affiliation: "friendly", icon: "↗" },
+  "ENT-SAF-28-MECH": { affiliation: "friendly", icon: "↗" },
+  "ENT-SAF-210-ENG": { affiliation: "friendly", icon: "E" },
+  "ENT-SAF-3BRIGADE": { affiliation: "friendly", icon: "II" },
+  "ENT-KFOR-RCE": { affiliation: "neutral", icon: "HQ" },
+  "ENT-KFOR-KTRBN": { affiliation: "neutral", icon: "●" },
+  "ENT-KFOR-MSU": { affiliation: "neutral", icon: "●" },
+  "ENT-KFOR-AVIATION": { affiliation: "neutral", icon: "✈" },
+  "ENT-NATO-RESERVE": { affiliation: "neutral", icon: "●" }
+});
+const MIL_STD_UAV_OBJECTS = Object.freeze({
+  "רכב משוריין": { code: "armored-vehicle", icon: "▰", he: "רכב משוריין", en: "Armored vehicle" },
+  "Armored vehicle": { code: "armored-vehicle", icon: "▰", he: "רכב משוריין", en: "Armored vehicle" },
+  "משאית לוגיסטית": { code: "logistics-truck", icon: "▱", he: "משאית לוגיסטית", en: "Logistics truck" },
+  "Logistics truck": { code: "logistics-truck", icon: "▱", he: "משאית לוגיסטית", en: "Logistics truck" },
+  "שיירת כלי רכב": { code: "vehicle-convoy", icon: "•••", he: "שיירת כלי רכב", en: "Vehicle convoy" },
+  "Vehicle convoy": { code: "vehicle-convoy", icon: "•••", he: "שיירת כלי רכב", en: "Vehicle convoy" },
+  "מסוק": { code: "helicopter", icon: "⌁", he: "מסוק", en: "Helicopter" },
+  "Helicopter": { code: "helicopter", icon: "⌁", he: "מסוק", en: "Helicopter" }
+});
+
+function milStdConfidence(value) {
+  const normalized = String(value || "").trim().toLowerCase();
+  if (["גבוהה", "high", "confirmed"].includes(normalized)) return "high";
+  if (["בינונית", "medium", "likely"].includes(normalized)) return "medium";
+  return "low";
+}
+
+function milStdClaimLabel(status) {
+  if (status === "observed") return activeLocaleText("נצפה", "Observed");
+  if (status === "assessed") return activeLocaleText("מוערך", "Assessed");
+  return activeLocaleText("מדווח", "Reported");
+}
+
+function milStdOrganizationDescriptors(layer) {
+  return (itemsForLayerPresentation(layer) || []).flatMap(entity => {
+    const mapping = MIL_STD_ORGANIZATIONS[entity.entity_id];
+    if (!mapping) return [];
+    return (entity.top_locations || []).filter(location => location.presence_claim !== false).map(location => ({
+      kind: "organization",
+      id: entity.entity_id,
+      name: entity.canonical_name || entity.entity_id,
+      locationId: location.location_id,
+      longitude: location.longitude,
+      latitude: location.latitude,
+      count: Number(location.presence_evidence_count || location.count || 0),
+      evidenceIds: location.evidence_record_ids || [],
+      latestTimestamp: location.latest_timestamp_utc || "",
+      status: location.assessment_status || "reported",
+      confidence: milStdConfidence(location.confidence || entity.confidence),
+      affiliation: mapping.affiliation,
+      icon: mapping.icon,
+      symbolCode: `organization:${entity.entity_id}`
+    }));
+  });
+}
+
+function milStdObservationDescriptor(event) {
+  if (event.collection_family !== "airborne_isr_video_exploitation") return null;
+  const mapping = MIL_STD_UAV_OBJECTS[event.object_class || event.observed_object_class];
+  if (!mapping || !event.location_id) return null;
+  return {
+    kind: "record",
+    id: event.record_id || event.event_id,
+    name: activeLocaleText(mapping.he, mapping.en),
+    locationId: event.location_id,
+    count: Number(event.estimated_object_count || 1),
+    evidenceIds: [event.record_id || event.event_id].filter(Boolean),
+    latestTimestamp: event.timestamp_utc || "",
+    status: "observed",
+    confidence: milStdConfidence(event.identification_confidence || event.certainty_level),
+    affiliation: "unknown",
+    icon: mapping.icon,
+    symbolCode: `observation:${mapping.code}`
+  };
+}
+
+function milStdMarkerElement(descriptor) {
+  const element = document.createElement("button");
+  element.type = "button";
+  element.className = `milstd-marker ${descriptor.affiliation} confidence-${descriptor.confidence} status-${descriptor.status}`;
+  element.dataset.viewerKind = descriptor.kind;
+  element.dataset.viewerId = descriptor.id;
+  element.setAttribute("aria-haspopup", "dialog");
+  element.setAttribute("aria-label", `${descriptor.name}, ${milStdClaimLabel(descriptor.status)}, ${descriptor.count} ${activeLocaleText("רשומות", "records")}`);
+  element.innerHTML = `<span class="milstd-frame"><span class="milstd-icon" aria-hidden="true">${escapeHtml(descriptor.icon)}</span></span><span class="milstd-status">${escapeHtml(milStdClaimLabel(descriptor.status))}</span>${descriptor.count > 1 ? `<span class="milstd-count">${descriptor.count.toLocaleString(currentLocaleTag())}</span>` : ""}`;
+  return element;
+}
+
+function milStdPopupHtml(descriptor, locationName) {
+  const evidence = descriptor.evidenceIds.length
+    ? descriptor.evidenceIds.slice(0, 5).map(id => `<code dir="ltr">${escapeHtml(id)}</code>`).join(" · ")
+    : escapeHtml(activeLocaleText("מזהי הראיות זמינים במציג הישות", "Evidence IDs are available in the entity viewer"));
+  return `<div class="map-popup milstd-popup" dir="${currentLocale() === "en" ? "ltr" : "rtl"}">
+    <span class="milstd-version">${MIL_STD_VERSION}</span>
+    <strong>${escapeHtml(descriptor.name)}</strong>
+    <span>${escapeHtml(milStdClaimLabel(descriptor.status))} · ${escapeHtml(locationName)} · ${escapeHtml(descriptor.confidence)}</span>
+    ${descriptor.latestTimestamp ? `<time dir="ltr">${escapeHtml(descriptor.latestTimestamp)}</time>` : ""}
+    <span><b>${escapeHtml(activeLocaleText("ראיות", "Evidence"))}:</b> ${evidence}</span>
+    <button type="button" class="object-viewer-open" data-viewer-kind="${descriptor.kind}" data-viewer-id="${escapeHtml(descriptor.id)}">${escapeHtml(activeLocaleText("פתח פרטים", "Open details"))}</button>
+  </div>`;
+}
+
 function createInvestigationId() {
   const random = crypto?.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
   return `investigation-${random}`;
@@ -3069,6 +3177,20 @@ function viewerValue(value) {
   return String(value);
 }
 
+function organizationEvidenceHtml(item) {
+  const available = viewerObjects();
+  const locations = (item.top_locations || []).filter(location => (location.evidence_record_ids || []).length);
+  if (!locations.length) return "";
+  const rows = locations.map(location => {
+    const ids = (location.evidence_record_ids || []).slice(0, 8);
+    const links = ids.map(id => available.has(`record:${id}`)
+      ? `<button type="button" class="object-viewer-open" data-viewer-kind="record" data-viewer-id="${escapeHtml(id)}">${escapeHtml(id)}</button>`
+      : `<code dir="ltr">${escapeHtml(id)}</code>`).join(" ");
+    return `<li><strong>${escapeHtml(location.location_name || location.location_id || "-")}</strong><span>${escapeHtml(milStdClaimLabel(location.assessment_status || "reported"))} · ${Number(location.presence_evidence_count || location.count || ids.length).toLocaleString(currentLocaleTag())} ${escapeHtml(activeLocaleText("רשומות", "records"))}</span><div class="object-viewer-evidence-links">${links}</div></li>`;
+  }).join("");
+  return `<section class="object-viewer-evidence"><h3>${escapeHtml(activeLocaleText("ראיות לפי נוכחות במיקום", "Evidence by location presence"))}</h3><ul>${rows}</ul></section>`;
+}
+
 function closeObjectViewer() {
   const viewer = document.getElementById("objectViewer");
   viewer.querySelectorAll("video,audio").forEach(media => { media.pause(); media.removeAttribute("src"); media.load(); });
@@ -3090,7 +3212,7 @@ function openObjectViewer(kind, id, trigger = document.activeElement) {
   const media = viewerMedia(item);
   const mediaHtml = media ? `<div class="object-viewer-media">${media.type === "video" ? `<video controls preload="metadata" src="${escapeHtml(media.url)}"></video>` : media.type === "audio" ? `<audio controls preload="metadata" src="${escapeHtml(media.url)}"></audio>` : `<img src="${escapeHtml(media.url)}" alt="">`}</div>` : (item.collection_family === "airborne_isr_video_exploitation" || item.video_segment_id ? `<div class="object-viewer-media object-viewer-media-state">${escapeHtml(activeLocaleText("אין קובץ וידאו זמין לרשומה זו.", "No video file is available for this record."))}</div>` : "");
   const fields = viewerFields(item, kind).map(([key,value]) => `<div class="object-viewer-field"><dt>${escapeHtml(key.replaceAll("_", " "))}</dt><dd>${escapeHtml(viewerValue(value))}</dd></div>`).join("");
-  document.getElementById("objectViewerBody").innerHTML = `${mediaHtml}${kind === "record" ? `<p class="object-viewer-summary">${escapeHtml(item.event_summary || "-")}</p>` : ""}<dl class="object-viewer-fields">${fields}</dl>`;
+  document.getElementById("objectViewerBody").innerHTML = `${mediaHtml}${kind === "record" ? `<p class="object-viewer-summary">${escapeHtml(item.event_summary || "-")}</p>` : ""}<dl class="object-viewer-fields">${fields}</dl>${kind === "organization" ? organizationEvidenceHtml(item) : ""}`;
   viewer.hidden = false;
   document.getElementById("objectViewerClose").focus();
   return true;
@@ -5037,6 +5159,7 @@ function renderMap() {
   if (!state.mapReady) return;
   clearMarkers();
   const byLocation = new Map();
+  const milStdDescriptors = [];
   const addLocationCount = (locationId, count, label, aggregateLocation = null, color = null, viewerRef = null) => {
     if (!locationId) return;
     const existing = byLocation.get(locationId) || { location_id: locationId, count: 0, labels: new Set(), colors: new Set(), viewerRefs: new Map(), viewerEligible: true, aggregateLocation };
@@ -5051,10 +5174,17 @@ function renderMap() {
   visibleLayers("map").forEach(layer => {
     const items = itemsForLayerPresentation(layer);
     if (layer.kind === "events") {
+      const observations = new Set();
+      items.forEach(event => {
+        const descriptor = milStdObservationDescriptor(event);
+        if (!descriptor) return;
+        observations.add(event);
+        milStdDescriptors.push(descriptor);
+      });
       const counts = {};
-      items.forEach(event => { counts[event.location_id] = (counts[event.location_id] || 0) + 1; });
+      items.filter(event => !observations.has(event)).forEach(event => { counts[event.location_id] = (counts[event.location_id] || 0) + 1; });
       Object.entries(counts).forEach(([locationId, count]) => {
-        const matching = items.filter(event => event.location_id === locationId);
+        const matching = items.filter(event => !observations.has(event) && event.location_id === locationId);
         addLocationCount(locationId, count, layer.label, null, layer.color, matching.length === 1 ? { kind: "record", id: matching[0].record_id || matching[0].event_id } : null);
       });
     } else if (layer.kind === "locations") {
@@ -5062,23 +5192,16 @@ function renderMap() {
     } else if (layer.kind === "location_metadata") {
       items.forEach(item => addLocationCount(item.location_id, item.event_count || item.count || 1, item.location_name || layer.label, item, layer.color));
     } else if (layer.kind === "entity_metadata") {
-      items.forEach(entity => {
-        (entity.top_locations || []).forEach(location => {
-          addLocationCount(
-            location.location_id,
-            location.count || 1,
-            entity.canonical_name || entity.entity_id || layer.label,
-            {
-              location_id: location.location_id,
-              location_name: location.location_name,
-              latitude: location.latitude,
-              longitude: location.longitude,
-              count: location.count
-            },
-            layer.color,
-            { kind: "organization", id: entity.entity_id }
-          );
-        });
+      milStdDescriptors.push(...milStdOrganizationDescriptors(layer));
+      items.filter(entity => !MIL_STD_ORGANIZATIONS[entity.entity_id]).forEach(entity => {
+        (entity.top_locations || []).forEach(location => addLocationCount(
+          location.location_id,
+          location.count || 1,
+          entity.canonical_name || entity.entity_id || layer.label,
+          location,
+          layer.color,
+          { kind: "organization", id: entity.entity_id }
+        ));
       });
     }
   });
@@ -5114,6 +5237,27 @@ function renderMap() {
     const marker = new maplibregl.Marker({ element, anchor: "center" }).setLngLat([location.lon, location.lat]).setPopup(popup).addTo(state.map);
     state.markers.push(marker);
     bounds.extend([location.lon, location.lat]);
+  });
+  const milStdLocationIndexes = new Map();
+  milStdDescriptors.forEach(descriptor => {
+    const location = LOCATIONS[descriptor.locationId] || (
+      descriptor.latitude != null && descriptor.longitude != null
+        ? { name: descriptor.locationId, lon: descriptor.longitude, lat: descriptor.latitude }
+        : null
+    );
+    if (!location) return;
+    const index = milStdLocationIndexes.get(descriptor.locationId) || 0;
+    milStdLocationIndexes.set(descriptor.locationId, index + 1);
+    const angle = index * 2.399963;
+    const ring = Math.floor(index / 8) + 1;
+    const radius = index ? 0.00115 * ring : 0;
+    const lon = Number(location.lon) + Math.cos(angle) * radius;
+    const lat = Number(location.lat) + Math.sin(angle) * radius;
+    const element = milStdMarkerElement(descriptor);
+    const popup = new maplibregl.Popup({ offset: 28, closeButton: true, closeOnClick: true }).setHTML(milStdPopupHtml(descriptor, location.name || descriptor.locationId));
+    const marker = new maplibregl.Marker({ element, anchor: "center" }).setLngLat([lon, lat]).setPopup(popup).addTo(state.map);
+    state.markers.push(marker);
+    bounds.extend([lon, lat]);
   });
   const targetLocationIndexes = new Map();
   visibleLayers("map").filter(layer => layer.kind === "attack_targets").forEach(layer => {

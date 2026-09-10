@@ -252,6 +252,17 @@ def load_ui_entity_db(locale: str = "he") -> dict[str, dict[str, Any]]:
     return {item["entity_id"]: item for item in loaded if item.get("entity_id")}
 
 
+PRESENCE_CLAIM_TERMS = (
+    "נוכחות", "תנועה", "פעילות", "היערכות", "פריסה", "תגבור",
+    "presence", "movement", "activity", "deployment", "operating", "reinforcement",
+)
+
+
+def event_supports_presence(event: dict[str, Any]) -> bool:
+    summary = str(event.get("event_summary") or "").casefold()
+    return bool(event.get("location_id")) and any(term in summary for term in PRESENCE_CLAIM_TERMS)
+
+
 def build_ui_entity_layers(events: list[dict[str, Any]], locale: str = "he") -> dict[str, dict[str, Any]]:
     entity_db = load_ui_entity_db(locale)
     locations_db = load_locations_db(locale)
@@ -263,6 +274,13 @@ def build_ui_entity_layers(events: list[dict[str, Any]], locale: str = "he") -> 
         top_locations = []
         for location_id, count in Counter(event.get("location_id") for event in entity_events if event.get("location_id")).most_common(12):
             location = locations_db.get(location_id, {})
+            location_events = [event for event in entity_events if event.get("location_id") == location_id]
+            presence_events = [event for event in location_events if event_supports_presence(event)]
+            high_support = any(
+                str(event.get("certainty_level") or "").casefold() in {"גבוהה", "high"}
+                or str(event.get("source_reliability_label") or "").casefold() == "confirmed"
+                for event in presence_events
+            )
             top_locations.append({
                 "location_id": location_id,
                 "location_name": location.get("name", location_id),
@@ -270,6 +288,12 @@ def build_ui_entity_layers(events: list[dict[str, Any]], locale: str = "he") -> 
                 "latitude": location.get("latitude"),
                 "longitude": location.get("longitude"),
                 "count": count,
+                "presence_claim": bool(presence_events),
+                "presence_evidence_count": len(presence_events),
+                "assessment_status": "assessed" if high_support or len(presence_events) > 1 else "reported",
+                "confidence": "high" if high_support else ("medium" if len(presence_events) > 1 else "low"),
+                "latest_timestamp_utc": max((str(event.get("timestamp_utc") or "") for event in presence_events), default=""),
+                "evidence_record_ids": [event.get("record_id") or event.get("event_id") for event in presence_events[:25]],
             })
         presentations[entity_id] = {
             "entity_id": entity_id,
