@@ -8,7 +8,7 @@ MIL-STD-2525E Change 1 presentation is implemented, tested, and deployed to the 
 - Supported UAV records render as armored vehicle, logistics truck, convoy, or helicopter observation symbols with unknown affiliation.
 - Symbols expose claim state, confidence, time, evidence count/IDs, and open the existing single-object viewer.
 - Organization details list presence evidence by location. Mention-only entity/location associations do not create presence symbols.
-- The bilingual legend describes affiliation and claim-state semantics.
+- The map legend was removed in corrective checkpoint 002 at the user's direction; symbol semantics remain available through accessible marker labels and evidence details.
 
 ## Data results
 - Full dataset: 12 selected organizations, 4,293 connected evidence records.
@@ -30,4 +30,7 @@ MIL-STD-2525E Change 1 presentation is implemented, tested, and deployed to the 
 
 ## Limitations and follow-up
 This demo uses a curated HTML/CSS presentation profile. It does not claim external conformance certification, persisted object correlation, or a confirmed asset inventory. A future operational version should validate formal SIDCs and renderer output against the standard and introduce persisted assessment identity/deduplication.
+
+## Corrective checkpoint 002
+The unnecessary collapsible map legend and its dedicated styles were removed. The change does not alter MIL-STD symbol selection, rendering, confidence, evidence, or viewer behavior. The stylesheet reference advances to `styles.css?v=144`.
 
