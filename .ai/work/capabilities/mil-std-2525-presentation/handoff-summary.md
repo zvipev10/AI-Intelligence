@@ -34,3 +34,5 @@ This demo uses a curated HTML/CSS presentation profile. It does not claim extern
 ## Corrective checkpoint 002
 The unnecessary collapsible map legend and its dedicated styles were removed. The change does not alter MIL-STD symbol selection, rendering, confidence, evidence, or viewer behavior. The stylesheet reference advances to `styles.css?v=144`.
 
+The correction is merged into `main` at `1122051` and deployed to production. The UI service is healthy, the public site serves the v144 stylesheet without legend markup or CSS, and the rollback backup is `/home/ubuntu/deploy-backups/remove-map-legend-1122051`.
+
