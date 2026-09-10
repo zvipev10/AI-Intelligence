@@ -63,6 +63,10 @@ remain linked to their raw evidence and use explicit reported, assessed, and
 observed states. It advances the assets to `app.js?v=172` and
 `styles.css?v=143`.
 
+`SHA256SUMS-v175.txt` removes the map legend while preserving MIL-STD symbol
+rendering, traceability, and object-viewer behavior. It advances the stylesheet
+to `styles.css?v=144`.
+
 Secrets, datasets, investigations, workstreams, scenario runs, recordings,
 caches, logs, and generated runtime state are intentionally excluded.
 

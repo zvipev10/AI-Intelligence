@@ -11,10 +11,9 @@ SERVER = (ROOT / "server.py").read_text(encoding="utf-8")
 
 
 class MilStdPresentationContractTests(unittest.TestCase):
-    def test_versioned_legend_is_present(self):
-        self.assertIn('id="milStdLegend"', HTML)
-        self.assertIn("MIL-STD-2525E Change 1", HTML)
-        self.assertIn('data-i18n-text-en="MIL-STD-2525 legend"', HTML)
+    def test_map_legend_is_absent(self):
+        self.assertNotIn('id="milStdLegend"', HTML)
+        self.assertNotIn('class="milstd-legend"', HTML)
 
     def test_registry_contains_twelve_organizations(self):
         registry = APP.split("const MIL_STD_ORGANIZATIONS", 1)[1].split("});", 1)[0]

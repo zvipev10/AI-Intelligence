@@ -60,7 +60,7 @@ class WelcomePageContractTests(unittest.TestCase):
             ".prompt-form.welcome-prompt-form { width: min(720px, 100%); margin: -10px auto 42px; }",
             self.styles,
         )
-        self.assertIn('href="./styles.css?v=143"', self.index)
+        self.assertIn('href="./styles.css?v=144"', self.index)
 
     def test_draft_creation_modal_and_memory_save_gate(self):
         self.assertIn('id="draftCreateInvestigationButton"', self.index)
