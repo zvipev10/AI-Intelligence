@@ -56,3 +56,19 @@ UX contract:
 - The timeframe remains visible.
 - The Next button remains available while there is a next slice.
 - The UI must not reintroduce a historical-vs-real-time mode selector without a new product/architecture decision.
+
+MIL-STD presentation contract:
+
+- The canonical entity layer adds location-level `presence_claim`,
+  `presence_evidence_count`, `assessment_status`, `confidence`,
+  `latest_timestamp_utc`, and bounded `evidence_record_ids` fields.
+- The client maps the approved 12 organization IDs and four UAV object classes
+  through a versioned `MIL_STD_*` registry.
+- Organization presences and UAV observations are presentation descriptors;
+  raw records remain the provenance source and storage unit.
+- Affiliation is independent from confidence. Reported claims use a separate
+  uncertainty indicator and label; the affiliation frame retains its meaning.
+- UAV entity association does not establish ownership, so initial UAV symbols
+  use unknown affiliation.
+- This demo profile does not perform persistent object correlation or claim
+  external conformance certification.

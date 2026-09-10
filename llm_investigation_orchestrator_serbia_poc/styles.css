@@ -504,6 +504,42 @@ textarea.mention-source::placeholder { color: var(--muted) !important; }
 .map-marker:hover { transform: scale(1.12); }
 .map-marker-dot { position: absolute; inset: 0; border-radius: inherit; background: var(--layer-color, #4f6f91); }
 .map-marker-count { position: absolute; right: 10px; top: -12px; min-width: 18px; height: 18px; padding: 0 4px; display: inline-grid; place-items: center; border: 1px solid rgba(255,255,255,.82); border-radius: 999px; background: rgba(24,29,38,.98); color: var(--ink); font-size: 9px; font-weight: 900; line-height: 1; }
+.milstd-legend { position: absolute; z-index: 3; inset-inline-end: 12px; top: 12px; width: min(250px, calc(100% - 72px)); border: 1px solid rgba(142,163,192,.5); border-radius: 8px; background: rgba(20,26,34,.94); color: var(--ink); box-shadow: 0 8px 24px rgba(0,0,0,.3); font-size: 11px; }
+.milstd-legend summary { padding: 8px 10px; display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: 800; list-style: none; }
+.milstd-legend summary::-webkit-details-marker { display: none; }
+.milstd-legend-mark { width: 17px; height: 12px; border: 2px solid #80caff; background: rgba(128,202,255,.16); }
+.milstd-legend-body { padding: 0 10px 10px; display: grid; gap: 7px; border-top: 1px solid rgba(142,163,192,.28); }
+.milstd-legend-body > strong { padding-top: 8px; font-size: 10px; color: var(--muted); }
+.milstd-legend-body > span { display: flex; align-items: center; gap: 8px; }
+.milstd-legend-body small { color: var(--muted); line-height: 1.4; }
+.milstd-mini { width: 17px; height: 12px; display: inline-block; border: 2px solid currentColor; background: color-mix(in srgb, currentColor 18%, transparent); }
+.milstd-mini.friendly { color: #80caff; }
+.milstd-mini.neutral { color: #7fe09a; }
+.milstd-mini.unknown { color: #ffd166; transform: rotate(45deg); }
+.milstd-marker { position: relative; width: 42px; height: 42px; padding: 0; border: 0; background: transparent; color: #ffd166; cursor: pointer; overflow: visible; filter: drop-shadow(0 2px 4px rgba(0,0,0,.65)); }
+.milstd-marker:hover, .milstd-marker:focus-visible { z-index: 4; transform: scale(1.12); outline: none; }
+.milstd-frame { position: absolute; inset: 8px 3px; display: grid; place-items: center; border: 3px solid currentColor; background: rgba(20,26,34,.9); }
+.milstd-marker.friendly { color: #80caff; }
+.milstd-marker.neutral { color: #7fe09a; }
+.milstd-marker.unknown { color: #ffd166; }
+.milstd-marker.unknown .milstd-frame { inset: 7px; transform: rotate(45deg); }
+.milstd-marker.unknown .milstd-icon { transform: rotate(-45deg); }
+.milstd-marker.status-reported::before { content: ""; position: absolute; inset: 1px; border: 1px dashed currentColor; border-radius: 50%; opacity: .8; }
+.milstd-marker.confidence-low::after { content: "?"; position: absolute; inset-inline-start: -2px; top: -2px; width: 14px; height: 14px; display: grid; place-items: center; border: 1px solid currentColor; border-radius: 50%; background: #171d25; color: currentColor; font-size: 9px; font-weight: 900; }
+.milstd-icon { color: currentColor; font-family: Arial, sans-serif; font-size: 11px; font-weight: 900; line-height: 1; }
+.milstd-status { position: absolute; top: 34px; left: 50%; padding: 1px 3px; border-radius: 2px; background: rgba(17,22,29,.92); color: #fff; font-size: 7px; font-weight: 800; line-height: 1.1; white-space: nowrap; transform: translateX(-50%); }
+.milstd-count { position: absolute; inset-inline-end: -7px; top: -5px; min-width: 17px; height: 17px; padding: 0 3px; display: grid; place-items: center; border: 1px solid #fff; border-radius: 9px; background: #171d25; color: #fff; font-size: 8px; font-weight: 900; }
+.milstd-popup { min-width: 230px; }
+.milstd-popup .milstd-version { color: var(--muted); font-size: 9px; font-weight: 800; letter-spacing: .04em; }
+.milstd-popup time { color: var(--muted); font-size: 10px; }
+.milstd-popup .object-viewer-open { margin-top: 4px; align-self: flex-start; }
+.object-viewer-evidence { margin-top: 18px; }
+.object-viewer-evidence h3 { margin: 0 0 10px; font-size: 14px; }
+.object-viewer-evidence ul { margin: 0; padding: 0; display: grid; gap: 8px; list-style: none; }
+.object-viewer-evidence li { padding: 9px; display: grid; gap: 4px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel-2); }
+.object-viewer-evidence li > span { color: var(--muted); font-size: 11px; }
+.object-viewer-evidence-links { display: flex; flex-wrap: wrap; gap: 5px; }
+.object-viewer-evidence-links code { padding: 3px 5px; color: var(--muted); font-size: 10px; }
 .attack-target-marker { width: 22px; height: 22px; border-radius: 5px; transform: rotate(45deg); box-shadow: 0 2px 12px rgba(0,0,0,.55), 0 0 0 5px rgba(255,179,71,.18); }
 .attack-target-marker:hover { transform: rotate(45deg) scale(1.14); }
 .target-map-popup p { margin: 5px 0 0; max-width: 260px; }

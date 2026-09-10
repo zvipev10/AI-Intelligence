@@ -294,3 +294,35 @@ silent, and the general-agent result is conversational output only.
 Follow-ups:
 Monitor provider latency and consider a shared status stream if polling volume
 becomes material.
+
+### 2026-09-10 — Separate evidence records from MIL-STD map objects
+
+Decision:
+Render MIL-STD-2525 presentation from typed assessed-presence and observation
+descriptors rather than converting every connected raw record into a symbol.
+Organization/location presences require explicit activity language; mention-only
+records remain evidence. Structured UAV observations use unknown affiliation
+unless affiliation is independently established.
+
+Context:
+Twelve organization entities connect to 4,293 records, while 1,509 UAV records
+match four initially supported object classes. These counts overlap and do not
+represent confirmed unique real-world objects.
+
+Rationale:
+The separation preserves provenance, avoids implying ownership, and prevents
+raw evidence volume from being interpreted as an object inventory.
+
+Alternatives considered:
+- Render every entity-linked report as a separate organization symbol.
+- Assign UAV object affiliation from the record's associated entity.
+- Use confidence styling that changes the standard affiliation frame.
+
+Impact:
+The map shows grouped organization presences and individual supported UAV
+observations. Each descriptor retains evidence IDs, time, claim state, and
+confidence independently from affiliation.
+
+Follow-ups:
+Add persisted correlation and formal SIDC renderer validation if the demo grows
+into an operational product.

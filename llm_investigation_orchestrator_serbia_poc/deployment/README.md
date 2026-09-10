@@ -57,6 +57,12 @@ organizations, opened from result rows, ungrouped map markers, and explicit
 assistant references. It preserves text when media is unavailable and advances
 the assets to `app.js?v=171` and `styles.css?v=142`.
 
+`SHA256SUMS-v174.txt` adds MIL-STD-2525E Change 1 presentation for 12
+organization candidates and four structured UAV observation classes. Symbols
+remain linked to their raw evidence and use explicit reported, assessed, and
+observed states. It advances the assets to `app.js?v=172` and
+`styles.css?v=143`.
+
 Secrets, datasets, investigations, workstreams, scenario runs, recordings,
 caches, logs, and generated runtime state are intentionally excluded.
 
