@@ -8,7 +8,7 @@ ROOT = Path(__file__).resolve().parent
 
 class CanonicalSourceContractTests(unittest.TestCase):
     def test_canonical_files_match_the_current_source_manifest(self):
-        manifest = ROOT / "deployment" / "SHA256SUMS-v182.txt"
+        manifest = ROOT / "deployment" / "SHA256SUMS-v183.txt"
         for line in manifest.read_text(encoding="utf-8").splitlines():
             expected, name = line.split(None, 1)
             actual = hashlib.sha256((ROOT / name.strip()).read_bytes()).hexdigest()

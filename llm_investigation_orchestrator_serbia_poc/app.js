@@ -3205,18 +3205,72 @@ function viewerMediaHtml(item) {
 
   const mission = item.mission_id || activeLocaleText("משימה לא מזוהה", "Unidentified mission");
   const segment = item.video_segment_id || activeLocaleText("מקטע לא מזוהה", "Unidentified segment");
-  const state = mediaElement
-    ? mediaElement
-    : `<div class="object-viewer-media-state"><span class="material-symbols-rounded" aria-hidden="true">videocam_off</span><strong>${escapeHtml(activeLocaleText("הווידאו הגולמי אינו מחובר", "Raw video is not connected"))}</strong><span>${escapeHtml(activeLocaleText("פרטי התצפית עדיין זמינים ברשומה.", "The observation details remain available in the record."))}</span></div>`;
   return `<section class="object-viewer-source-media" aria-labelledby="objectViewerMediaTitle">
     <div class="object-viewer-section-heading">
-      <div><span class="eyebrow">${escapeHtml(activeLocaleText("חומר מקור", "Source material"))}</span><h3 id="objectViewerMediaTitle">${escapeHtml(activeLocaleText("וידאו גולמי מכטב״ם", "Raw UAV video"))}</h3></div>
-      <span class="object-viewer-live-badge"><i></i>${escapeHtml(activeLocaleText("מקור וידאו", "Video source"))}</span>
+      <div><span class="eyebrow">${escapeHtml(activeLocaleText("הדמיית חומר מקור", "Source simulation"))}</span><h3 id="objectViewerMediaTitle">${escapeHtml(activeLocaleText("זרם וידאו מכטב״ם", "UAV video stream"))}</h3></div>
+      <span class="object-viewer-live-badge"><i></i>${escapeHtml(activeLocaleText("סימולציה", "Simulation"))}</span>
     </div>
-    <div class="object-viewer-media">${state}</div>
+    <div class="object-viewer-media object-viewer-simulated-media"><canvas id="objectViewerUavCanvas" width="720" height="405" role="img" aria-label="${escapeHtml(activeLocaleText("הדמיית וידאו אווירי בתנועה", "Animated aerial-video simulation"))}"></canvas><span class="uav-simulation-label">SIMULATED ISR</span></div>
     <div class="object-viewer-media-context"><span><b>${escapeHtml(activeLocaleText("משימה", "Mission"))}</b><code dir="ltr">${escapeHtml(mission)}</code></span><span><b>${escapeHtml(activeLocaleText("מקטע", "Segment"))}</b><code dir="ltr">${escapeHtml(segment)}</code></span></div>
-    <p>${escapeHtml(activeLocaleText("הווידאו שייך למשימת האיסוף; הרשומה היא תצפית אנליטית שנגזרה ממנו. לכן אותו חומר מקור עשוי ללוות כמה רשומות.", "The video belongs to the collection mission; this record is an analytical observation derived from it. The same source footage may therefore support several records."))}</p>
+    <p>${escapeHtml(activeLocaleText("הדמיה חזותית משותפת למשימת האיסוף, ואינה תיעוד מבצעי אמיתי. הרשומה היא תצפית אנליטית שנגזרה ממקור הווידאו.", "A visual simulation shared by the collection mission; this is not authentic operational footage. The record is an analytical observation derived from the video source."))}</p>
   </section>`;
+}
+
+let objectViewerUavAnimation = 0;
+
+function stopSimulatedUavStream() {
+  if (objectViewerUavAnimation) cancelAnimationFrame(objectViewerUavAnimation);
+  objectViewerUavAnimation = 0;
+}
+
+function startSimulatedUavStream(item) {
+  stopSimulatedUavStream();
+  const canvas = document.getElementById("objectViewerUavCanvas");
+  if (!canvas) return;
+  const context = canvas.getContext("2d");
+  if (!context) return;
+  const seedText = String(item.mission_id || "UAV-MISSION");
+  const seed = [...seedText].reduce((value, character) => (value * 31 + character.charCodeAt(0)) >>> 0, 2166136261);
+  const startedAt = performance.now();
+  const draw = now => {
+    const time = (now - startedAt) / 1000;
+    const width = canvas.width;
+    const height = canvas.height;
+    context.fillStyle = "#65705c";
+    context.fillRect(0, 0, width, height);
+    for (let index = 0; index < 34; index += 1) {
+      const x = (seed * (index + 3) % width + Math.sin(time * .08 + index) * 16 + width) % width;
+      const y = (seed * (index + 11) % height + Math.cos(time * .06 + index) * 12 + height) % height;
+      const radius = 18 + (seed + index * 19) % 56;
+      context.fillStyle = index % 3 ? "rgba(43,54,39,.2)" : "rgba(174,164,126,.16)";
+      context.beginPath(); context.arc(x, y, radius, 0, Math.PI * 2); context.fill();
+    }
+    context.strokeStyle = "rgba(201,193,154,.46)";
+    context.lineWidth = 10;
+    context.beginPath(); context.moveTo(-20, height * .72); context.bezierCurveTo(width * .24, height * .4, width * .62, height * .84, width + 20, height * .3); context.stroke();
+    context.strokeStyle = "rgba(55,62,51,.72)";
+    context.lineWidth = 2;
+    context.stroke();
+    for (let index = 0; index < 4; index += 1) {
+      const progress = (time * (13 + index * 2) + index * 142 + seed % 97) % (width + 100) - 50;
+      const y = height * .66 - Math.sin((progress / width) * Math.PI * 1.7) * height * .17 + index * 7;
+      context.save(); context.translate(progress, y); context.rotate(-.18 + Math.sin(time * .2) * .08); context.fillStyle = "#20251f"; context.fillRect(-13, -6, 26, 12); context.strokeStyle = "rgba(235,238,216,.75)"; context.lineWidth = 1; context.strokeRect(-16, -9, 32, 18); context.restore();
+    }
+    context.strokeStyle = "rgba(230,236,218,.82)";
+    context.lineWidth = 1;
+    context.beginPath(); context.arc(width / 2, height / 2, 38, 0, Math.PI * 2); context.moveTo(width / 2 - 62, height / 2); context.lineTo(width / 2 - 14, height / 2); context.moveTo(width / 2 + 14, height / 2); context.lineTo(width / 2 + 62, height / 2); context.moveTo(width / 2, height / 2 - 62); context.lineTo(width / 2, height / 2 - 14); context.moveTo(width / 2, height / 2 + 14); context.lineTo(width / 2, height / 2 + 62); context.stroke();
+    context.fillStyle = "rgba(235,240,220,.9)";
+    context.font = "18px monospace";
+    context.textAlign = "left";
+    context.fillText(`ALT  ${Math.round(1780 + Math.sin(time * .3) * 12)} M`, 18, 29);
+    context.fillText(`SPD  ${Math.round(84 + Math.cos(time * .25) * 3)} KT`, 18, 54);
+    context.textAlign = "right";
+    context.fillText(new Date(Date.now()).toISOString().slice(11, 19) + "Z", width - 18, 29);
+    context.fillStyle = "rgba(8,12,8,.08)";
+    for (let y = 0; y < height; y += 4) context.fillRect(0, y, width, 1);
+    objectViewerUavAnimation = requestAnimationFrame(draw);
+  };
+  objectViewerUavAnimation = requestAnimationFrame(draw);
 }
 
 function viewerFields(item, kind) {
@@ -3270,6 +3324,7 @@ function organizationEvidenceHtml(item) {
 
 function closeObjectViewer() {
   const viewer = document.getElementById("objectViewer");
+  stopSimulatedUavStream();
   viewer.querySelectorAll("video,audio").forEach(media => { media.pause(); media.removeAttribute("src"); media.load(); });
   viewer.hidden = true;
   objectViewerReturnFocus?.focus?.();
@@ -3282,7 +3337,9 @@ function openObjectViewer(kind, id, trigger = document.activeElement) {
   if (!item) return false;
   objectViewerReturnFocus = trigger;
   const viewer = document.getElementById("objectViewer");
-  const title = kind === "record" ? (item.event_summary || id) : (item.canonical_name || id);
+  const title = kind === "record"
+    ? (isUavVideoRecord(item) ? activeLocaleText("תצפית וידאו מכטב״ם", "UAV video observation") : (item.source_type || activeLocaleText("רשומת מקור", "Source record")))
+    : (item.canonical_name || id);
   document.getElementById("objectViewerKind").textContent = kind === "record" ? activeLocaleText("רשומה גולמית", "Raw record") : activeLocaleText("ארגון", "Organization");
   document.getElementById("objectViewerTitle").textContent = title;
   document.getElementById("objectViewerId").textContent = id;
@@ -3290,6 +3347,7 @@ function openObjectViewer(kind, id, trigger = document.activeElement) {
   const fields = viewerFields(item, kind).map(([key,value]) => `<div class="object-viewer-field"><dt>${escapeHtml(viewerFieldLabel(key))}</dt><dd>${escapeHtml(viewerValue(value))}</dd></div>`).join("");
   document.getElementById("objectViewerBody").innerHTML = `${mediaHtml}${kind === "record" ? `<p class="object-viewer-summary">${escapeHtml(item.event_summary || "-")}</p>` : ""}<dl class="object-viewer-fields">${fields}</dl>${kind === "organization" ? organizationEvidenceHtml(item) : ""}`;
   viewer.hidden = false;
+  if (kind === "record" && isUavVideoRecord(item)) startSimulatedUavStream(item);
   document.getElementById("objectViewerClose").focus();
   return true;
 }

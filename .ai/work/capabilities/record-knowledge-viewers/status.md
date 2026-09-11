@@ -4,13 +4,13 @@
 Record and knowledge entity viewers
 
 ## Current phase and overall status
-Phase 6 — side-viewer refinement merged, deployed, and smoke-validated.
+Phase 5 — duplicate-content fix and simulated UAV stream implemented; merge and deployment in progress.
 
 ## Who needs to act now
-No role action is required. Hands-on product/UX acceptance is an optional follow-up.
+Codex is completing the explicitly requested merge, deployment, and production validation.
 
 ## Latest change
-The centered modal is now a Hebrew-left/English-right edge drawer. UAV records include a source-level raw-video section that can be shared across records from the same mission.
+The event summary appears only once. Every UAV record now starts a clearly labelled, mission-level simulated aerial stream when opened.
 
 ## Current blockers
 None. No playable UAV asset exists in the repository, so the designed disconnected state is expected.
@@ -19,7 +19,7 @@ None. No playable UAV asset exists in the repository, so the designed disconnect
 Hands-on browser acceptance was not requested. Current media references without URLs render as unavailable.
 
 ## Next expected artifact
-None required. See the completed deployment record in `checkpoint-002.md`.
+Production acceptance and deployment details in `checkpoint-003.md`.
 
 ## Parent issue
 https://github.com/zvipev10/AI-Intelligence/issues/48 — open through final acceptance.

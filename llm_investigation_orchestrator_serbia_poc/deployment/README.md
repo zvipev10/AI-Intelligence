@@ -100,6 +100,11 @@ locale-aware edge drawer and adds a source-level UAV raw-video section. This
 release is deployed to `/opt/serbia-poc-ui`; its rollback backup is
 `/home/ubuntu/deploy-backups/viewer-side-drawer-4688544`.
 
+`SHA256SUMS-v183.txt` records the viewer follow-up and advances the assets to `app.js?v=180` and
+`styles.css?v=149`. It removes the duplicated event narrative from the drawer
+header and adds a clearly labelled, automatically playing simulated UAV
+mission stream.
+
 Secrets, datasets, investigations, workstreams, scenario runs, recordings,
 caches, logs, and generated runtime state are intentionally excluded.
 

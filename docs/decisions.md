@@ -387,3 +387,22 @@ catalog layer before result presentation completes.
 
 Follow-ups:
 Consider locale-independent catalog IDs if source-type keys change.
+### 2026-09-11 — Simulated UAV media is mission-level and explicitly labelled
+
+Decision:
+When genuine UAV media is unavailable, the raw-record viewer presents an automatically playing procedural aerial-stream simulation. It is shared conceptually at mission level, restarts for each UAV record opening, and is visibly identified as simulated rather than operational footage.
+
+Context:
+UAV records have mission and segment metadata but no playable video assets. The raw viewer still needs a useful media presentation without implying that synthetic imagery is evidence unique to a record.
+
+Rationale:
+A deterministic mission-level simulation demonstrates the intended video workflow, preserves the logical relationship between source material and derived observations, and prevents fabricated imagery from being mistaken for authentic evidence.
+
+Alternatives considered:
+A disconnected placeholder, unrelated third-party stock footage, or a unique fabricated clip per record.
+
+Impact:
+The client renders and manages a lightweight canvas animation only while a UAV viewer is open. No media files, network requests, data-model changes, or backend services are added.
+
+Follow-ups:
+Replace the simulation with access-controlled genuine mission media if such assets and a delivery contract become available.
