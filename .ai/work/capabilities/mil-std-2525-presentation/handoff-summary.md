@@ -39,3 +39,5 @@ The correction is merged into `main` at `1122051` and deployed to production. Th
 ## Corrective checkpoint 003
 At the user's direction, the four KFOR entities and the NATO reserve entity are classified as hostile rather than neutral for map presentation. Hostile organizations use a red diamond frame. Serbian Armed Forces remain friendly; UAV observations remain affiliation-unknown.
 
+The correction is merged into remote `main` at `803b212` and deployed as v176. Production serves `app.js?v=173` and `styles.css?v=145`; all five hostile mappings and the red diamond-frame style were verified through the public HTTPS assets. The UI service and v2.1 API are healthy. Rollback is `/home/ubuntu/deploy-backups/kfor-nato-hostile-803b212`.
+

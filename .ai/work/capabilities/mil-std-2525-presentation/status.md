@@ -1,19 +1,25 @@
 # Capability Status
 
 ## Current phase
-Corrective checkpoint 003 — implementation in progress.
+Corrective checkpoint 003 — complete.
 
 ## Overall status
-KFOR- and NATO-related organization entities are being corrected from neutral to hostile symbology at the user's direction.
+KFOR- and NATO-related organization entities render with hostile symbology. The correction is merged, deployed, and production-verified.
 
 ## Who acts now
-Development is implementing, validating, merging, and deploying the correction under the user's explicit authorization.
+No role action required.
 
 ## Blockers
-Complete validation, merge to remote `main`, deploy v176, and record production verification.
+None.
 
 ## Corrective checkpoint 003
 The four KFOR organization entities and the NATO reserve entity now use hostile affiliation. The presentation uses a red diamond frame; Serbian Armed Forces remain friendly and UAV observations remain unknown.
+
+## Corrective checkpoint 003 publication
+- Implementation commit on `main`: `803b212`
+- Production assets: `app.js?v=173`, `styles.css?v=145`
+- Production backup: `/home/ubuntu/deploy-backups/kfor-nato-hostile-803b212`
+- Manifest: `deployment/SHA256SUMS-v176.txt`
 
 ## Next artifact
 None.
