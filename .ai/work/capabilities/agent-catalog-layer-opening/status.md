@@ -1,19 +1,19 @@
 # Capability Status
 
 ## Current phase
-Implementation complete; release verification next.
+Complete.
 
 ## Overall status
-Implemented and locally verified.
+Implemented, pushed, deployed, and verified in production.
 
 ## Who acts now
-Release, production smoke test, and handoff.
+None.
 
 ## Blockers
 None.
 
 ## Next artifact
-Production handoff.
+`handoff.md`
 
 ## Issues
 - Parent: `issues/parent-capability.md`

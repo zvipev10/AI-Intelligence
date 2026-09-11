@@ -72,3 +72,11 @@ MIL-STD presentation contract:
   use unknown affiliation.
 - This demo profile does not perform persistent object correlation or claim
   external conformance certification.
+
+Agent-to-UI catalog action contract:
+
+- Direct unfiltered opening uses MCP `open_catalog_layers` with an exact ID from the injected localized catalog.
+- The gateway extracts the latest successful action and validates it against `list_ui_layers(locale)`.
+- The result exposes `catalog_layer_actions` and `catalog_layer_action_errors`.
+- The browser awaits `openCatalogLayer`, activates the layer, selects a supported view, and redraws.
+- Filtered requests remain search plus `present_requested_results`; saved layers remain `present_saved_memory_layers`.

@@ -360,3 +360,30 @@ more symbol elements, but only for the twelve curated organizations.
 Follow-ups:
 Monitor marker density and consider clustering or source-layer symbol controls
 if the expanded presentation becomes visually crowded.
+
+### 2026-09-11 — Separate catalog opening from search and saved layers
+
+Decision:
+Use `open_catalog_layers` for direct, unfiltered requests to open existing UI
+catalog layers. Validate exact localized IDs in the gateway and await execution
+in the browser.
+
+Context:
+“Open the Telegram layer” was incorrectly routed as a saved-memory request with
+the label `טלגרם`, which was not a valid saved-layer ID.
+
+Rationale:
+Opening a known layer is a UI action, not a data search. Filtered subsets remain
+search results, and user-saved layers retain their separate memory contract.
+
+Alternatives considered:
+- Expand `search_events` to encode whole-layer opening.
+- Resolve labels fuzzily in the browser.
+- Continue overloading saved-memory presentation.
+
+Impact:
+Invalid IDs are explicit failures, and successful actions load and activate the
+catalog layer before result presentation completes.
+
+Follow-ups:
+Consider locale-independent catalog IDs if source-type keys change.
