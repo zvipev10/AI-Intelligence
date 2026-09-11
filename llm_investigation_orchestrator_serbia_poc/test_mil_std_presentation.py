@@ -61,6 +61,11 @@ class MilStdPresentationContractTests(unittest.TestCase):
         self.assertIn("state.focusedEventMarker = new maplibregl.Marker", focus_path)
         self.assertIn("focused-map-selection-marker", CSS)
 
+    def test_military_markers_preserve_maplibre_absolute_positioning(self):
+        marker_rule = CSS.split(".milstd-marker {", 1)[1].split("}", 1)[0]
+        self.assertIn("position: absolute", marker_rule)
+        self.assertNotIn("position: relative", marker_rule)
+
     def test_claim_state_and_confidence_do_not_change_affiliation(self):
         self.assertIn("function milStdConfidence", APP)
         self.assertIn("status-reported", CSS)

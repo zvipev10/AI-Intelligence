@@ -84,6 +84,10 @@ toggle. It advances the script to `app.js?v=175`.
 MIL-STD UAV symbol together with its popup. It advances the assets to
 `app.js?v=176` and `styles.css?v=146`.
 
+`SHA256SUMS-v180.txt` restores MapLibre's absolute positioning contract for
+MIL-STD marker elements. Filtered and focused UAV symbols now remain inside
+the map viewport. It advances the stylesheet to `styles.css?v=147`.
+
 Secrets, datasets, investigations, workstreams, scenario runs, recordings,
 caches, logs, and generated runtime state are intentionally excluded.
 
