@@ -312,6 +312,18 @@ def memory_layer_actions_from_audit(audit_records: Any) -> list[dict[str, Any]]:
     return []
 
 
+def catalog_layer_actions_from_audit(audit_records: Any) -> list[dict[str, Any]]:
+    """Return the latest successful structured catalog-layer presentation actions."""
+    for record in reversed(audit_records if isinstance(audit_records, list) else []):
+        if record.get("tool") != "open_catalog_layers" or record.get("is_error"):
+            continue
+        result = record.get("result") if isinstance(record.get("result"), dict) else {}
+        actions = result.get("catalog_layer_actions")
+        if isinstance(actions, list):
+            return [item for item in actions if isinstance(item, dict)]
+    return []
+
+
 def build_agent_result(
     payload: dict[str, Any],
     *,

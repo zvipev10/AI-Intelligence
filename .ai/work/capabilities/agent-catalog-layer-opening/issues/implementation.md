@@ -1,6 +1,5 @@
 # Implementation, QA, and release
 
-Owner: development/QA. Implement the structured catalog action, validate it at
-all boundaries, deploy UI and MCP components, and prove the Hebrew Telegram flow
-in production. Blocks parent completion until the checkpoint and handoff pass.
-
+Owner: development/QA. The structured action, locale-catalog validation, awaited
+browser execution, explicit error presentation, agent routing rules, and regression
+tests are complete. Release and the Hebrew Telegram production proof remain.

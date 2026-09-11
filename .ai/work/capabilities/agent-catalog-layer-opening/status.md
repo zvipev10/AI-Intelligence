@@ -1,21 +1,20 @@
 # Capability Status
 
 ## Current phase
-Execution planning complete; implementation next.
+Implementation complete; release verification next.
 
 ## Overall status
-Approved and unblocked.
+Implemented and locally verified.
 
 ## Who acts now
-Development, followed by QA and release.
+Release, production smoke test, and handoff.
 
 ## Blockers
 None.
 
 ## Next artifact
-`checkpoint-001.md`
+Production handoff.
 
 ## Issues
 - Parent: `issues/parent-capability.md`
 - Implementation/QA/release: `issues/implementation.md`
-

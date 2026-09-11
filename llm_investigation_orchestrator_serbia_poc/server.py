@@ -22,6 +22,7 @@ from urllib.parse import parse_qs, unquote, urlparse
 
 from agent_result_pipeline import (
     build_agent_result,
+    catalog_layer_actions_from_audit,
     evidence_reference_layers_from_audit,
     memory_layer_actions_from_audit,
     normalize_aggregate_groups,
@@ -482,6 +483,30 @@ def get_ui_layer_rows(layer_id: str, locale: str = "he") -> tuple[dict[str, Any]
     else:
         return None
     return layer, rows
+
+
+def catalog_layer_prompt_context(locale: str) -> str:
+    heading = "Available UI catalog layers (use the exact ID):" if normalize_locale(locale) == "en" else "שכבות קטלוג זמינות בממשק (השתמש במזהה המדויק):"
+    return heading + "\n" + "\n".join(
+        f"- {layer['label']} => {layer['id']}" for layer in list_ui_layers(locale)
+    )
+
+
+def validate_catalog_layer_actions(actions: Any, locale: str) -> tuple[list[dict[str, Any]], list[dict[str, str]]]:
+    catalog = {item["id"]: item for item in list_ui_layers(locale)}
+    valid, errors = [], []
+    for action in actions if isinstance(actions, list) else []:
+        layer_id = str(action.get("catalog_layer_id") or "").strip() if isinstance(action, dict) else ""
+        if layer_id not in catalog:
+            errors.append({"catalog_layer_id": layer_id, "error": "unknown_catalog_layer_id"})
+            continue
+        valid.append({
+            "action": "open",
+            "catalog_layer_id": layer_id,
+            "label": catalog[layer_id]["label"],
+            "view": action.get("view") if action.get("view") in {"map", "timeline", "evidence"} else "map",
+        })
+    return valid, errors
 
 
 def load_hermes_config() -> dict:
@@ -1036,6 +1061,8 @@ def build_english_agent_instructions(
         "Every central factual claim must cite visible record or location identifiers in parentheses such as (REC-025790) or (LOC-001).",
         "Do not write a free-text line that starts with 'Evidence IDs:'. The UI builds the evidence presentation from evidence_layers.",
         "When the user asks to present a saved layer, use only present_saved_memory_layers for that presentation; after it succeeds, do not call present_requested_results for the same request.",
+        "When the user directly asks to open a whole named UI catalog layer without filters, call open_catalog_layers with the exact ID from the catalog list below. Do not search first and do not use present_saved_memory_layers.",
+        "When the request includes filters, analysis, counts, matching records, or a subset, use retrieval tools and present_requested_results instead of open_catalog_layers.",
         "For all other requests, call present_requested_results exactly once before the final answer whenever there are concrete data objects or evidence layers worth presenting in the UI.",
         "End with exactly one final line in the format 'Recommended view: VIEW | REASON'. VIEW must be one of map, timeline, or evidence. REASON must be short.",
     ]
@@ -3601,6 +3628,8 @@ class HermesClient:
             "אין להשתמש בכלי מערכת, קבצים, רשת או shell, ואין לבקש אישור לכלים."
             " מאגר המטרות תומך באיתור ישיר לפי מזהה רשומה גולמית באמצעות search_target_candidates עם record_id."
             " הכלי זמין למשה בלבד; הסוכן הכללי אינו טוען שביצע חיפוש כזה ואינו מנתב למשה ללא אזכור מפורש של @משה."
+            " כאשר המשתמש מבקש לפתוח שכבת קטלוג שלמה בשם וללא מסננים, השתמש ב-open_catalog_layers עם המזהה המדויק מרשימת הקטלוג שבהוראות; אל תחפש תחילה ואל תשתמש ב-present_saved_memory_layers."
+            " כאשר הבקשה כוללת מסננים, ניתוח, ספירה, רשומות תואמות או תת-קבוצה, השתמש בכלי השליפה וב-present_requested_results במקום open_catalog_layers."
             " כאשר המשתמש מבקש להציג שכבה שמורה, השתמש רק ב-present_saved_memory_layers להצגת השכבה; לאחר הצלחתו אל תקרא ל-present_requested_results עבור אותה בקשה."
             " בכל בקשה אחרת, לפני התשובה הסופית, כאשר קיימים נתונים מבוקשים להצגה או ראיות מהותיות לניווט, חובה לקרוא פעם אחת ל-present_requested_results."
             " בשדה layers בחר רק את הרשומות שעונות ישירות למה שהמשתמש ביקש; שכבה אחת כברירת מחדל וכמה רק אם התבקשו כמה סוגי תוצאה."
@@ -3655,6 +3684,8 @@ class HermesClient:
                 ),
             )
         state_block = render_investigation_state_localized(investigation_state, locale=locale)
+        catalog_context = catalog_layer_prompt_context(locale)
+        instructions = f"{instructions}\n\n{catalog_context}"
         full_instructions = f"{instructions}\n\n{state_block}" if state_block else instructions
         safe_investigation_id = bounded_prompt_cache_key(investigation_id)
         session_id = safe_investigation_id or f"intelligence-orchestrator-{int(time.time() * 1000)}"
@@ -3875,6 +3906,9 @@ class HermesClient:
                                 "action": "clarify",
                                 "candidate_memory_layer_ids": candidates,
                             })
+                catalog_layer_actions, catalog_layer_action_errors = validate_catalog_layer_actions(
+                    catalog_layer_actions_from_audit(audit_records), locale
+                )
                 return build_agent_result({
                     "run_id": run_id,
                     "answer": clean_output,
@@ -3887,6 +3921,8 @@ class HermesClient:
                     "usage": status.get("usage", {}),
                     "performance_log": performance_log_path.name,
                     "memory_layer_actions": memory_layer_actions,
+                    "catalog_layer_actions": catalog_layer_actions,
+                    "catalog_layer_action_errors": catalog_layer_action_errors,
                     **collaboration,
                 }, responding_agent=responding_agent, session_id=session_id, mission_run_id=mission_run_id,
                     requested_result_layers=requested_layers,

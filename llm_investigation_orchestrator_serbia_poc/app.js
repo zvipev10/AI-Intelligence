@@ -3853,7 +3853,7 @@ function finalizeAssistantMessage(answer, options = {}) {
 
 function showFinalAnswerResult(result, prompt) {
   if (!result) return;
-  applyAgentResult(result, prompt, { keepRenderedSteps: true, restoreOnly: true });
+  void applyAgentResult(result, prompt, { keepRenderedSteps: true, restoreOnly: true });
 }
 
 function toggleFinalAnswerVisibility(result, prompt, btn) {
@@ -3953,9 +3953,27 @@ function resolveFinalResultView(result = {}, layers = []) {
   return "map";
 }
 
-function presentFinalAgentResult(result, prompt, options = {}) {
+async function executeCatalogLayerActions(result = {}) {
+  const errors = Array.isArray(result.catalog_layer_action_errors) ? [...result.catalog_layer_action_errors] : [];
+  const opened = [];
+  for (const action of Array.isArray(result.catalog_layer_actions) ? result.catalog_layer_actions : []) {
+    if (action?.action !== "open" || !action.catalog_layer_id) continue;
+    const layer = await openCatalogLayer(action.catalog_layer_id, { silent: true });
+    if (layer) opened.push(layer);
+    else errors.push({ catalog_layer_id: action.catalog_layer_id, error: state.layerCatalogError || "catalog_layer_open_failed" });
+  }
+  if (errors.length) {
+    const detail = errors.map(item => `${item.catalog_layer_id || "?"}: ${item.error}`).join("; ");
+    showResult(activeLocaleText("פתיחת שכבה נכשלה", "Layer opening failed"), detail);
+  }
+  return opened;
+}
+
+async function presentFinalAgentResult(result, prompt, options = {}) {
   const typedLayers = buildTypedResultLayers(result);
-  const requestedView = resolveFinalResultView(result, typedLayers);
+  const openedCatalogLayers = await executeCatalogLayerActions(result);
+  const actionView = (result.catalog_layer_actions || []).find(item => ["map", "timeline"].includes(item?.view))?.view;
+  const requestedView = actionView || resolveFinalResultView(result, [...typedLayers, ...openedCatalogLayers]);
   state.queryContext = buildFinalQueryContext(result, prompt);
   const addedLayers = addResultLayers({
     sourceId: finalSourceId(result),
@@ -4264,7 +4282,7 @@ async function submitStepInject() {
     // Merge prior steps with new steps so the full chain is in state
     const newSteps = result.investigation_steps || [];
     result.investigation_steps = [...priorSteps, ...newSteps];
-    applyAgentResult(result, continuationPrompt, { keepRenderedSteps: true });
+    await applyAgentResult(result, continuationPrompt, { keepRenderedSteps: true });
   } catch (error) {
     addActivity("connection_error", "Unable to complete the investigation continuation.", error.message);
     finalizeAssistantMessage(`<p>I couldn't complete the investigation continuation.</p><div class="answer-callout">${escapeHtml(error.message)}</div>`, { html: true });
@@ -4627,7 +4645,7 @@ const SAVED_REPLAY_STEP_DELAY_MS = 2000;
 async function replaySavedResult(result, prompt) {
   const steps = visibleActivitySteps(result.investigation_steps || []);
   if (!steps.length) {
-    applyAgentResult(result, prompt);
+    await applyAgentResult(result, prompt);
     return;
   }
   startAssistantResearchMessage();
@@ -4636,7 +4654,7 @@ async function replaySavedResult(result, prompt) {
     renderActivitySteps(steps.slice(0, index + 1), result);
   }
   await sleep(SAVED_REPLAY_STEP_DELAY_MS);
-  applyAgentResult(result, prompt, { keepRenderedSteps: true });
+  await applyAgentResult(result, prompt, { keepRenderedSteps: true });
 }
 
 function canSaveResult(result, prompt) {
@@ -4776,7 +4794,7 @@ async function deleteSavedQuestion(savedId) {
   }
 }
 
-function applyAgentResult(result, prompt, options = {}) {
+async function applyAgentResult(result, prompt, options = {}) {
   result.answer = cleanAssistantAnswer(result.answer);
   // Save last result so the step-view return button can restore it
   if (!options.restoreOnly) {
@@ -4806,7 +4824,7 @@ function applyAgentResult(result, prompt, options = {}) {
   }
 
   if (options.restoreOnly) {
-    presentFinalAgentResult(result, prompt, { showSummary: true });
+    await presentFinalAgentResult(result, prompt, { showSummary: true });
     return;
   }
   if (!options.keepRenderedSteps) renderActivitySteps(result.investigation_steps || [], result);
@@ -4831,7 +4849,7 @@ function applyAgentResult(result, prompt, options = {}) {
   }
 
   finalizeAssistantMessage(result.answer, { result, prompt });
-  presentFinalAgentResult(result, prompt);
+  await presentFinalAgentResult(result, prompt);
   refreshAssistantObjectLinks();
   if (buildTypedResultLayers(result).some(layer => layer.kind === "attack_targets")) {
     void refreshOpenAttackTargetCatalogLayer();
@@ -5028,7 +5046,7 @@ async function runPrompt(prompt, options = {}) {
     result.answer = cleanAssistantAnswer(result.answer);
     state.history.push({ role: "user", content: clean }, { role: "assistant", content: result.answer });
     const renderStarted = performance.now();
-    applyAgentResult(result, clean);
+    await applyAgentResult(result, clean);
     const renderEnded = performance.now();
     const clientPerformance = {
       total_ms: Number((renderEnded - clientStarted).toFixed(3)),

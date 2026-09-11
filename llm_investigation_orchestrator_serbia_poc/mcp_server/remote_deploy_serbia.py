@@ -29,6 +29,7 @@ LOCAL_CONFIG = LOCAL_ROOT / ".hermes-api.json"
 TOOLS = [
     "present_requested_results",
     "present_saved_memory_layers",
+    "open_catalog_layers",
     "classify_question_intent",
     "plan_next_investigation_step",
     "search_events",

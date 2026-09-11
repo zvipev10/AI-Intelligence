@@ -2699,6 +2699,24 @@ def present_saved_memory_layers(arguments: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def open_catalog_layers(arguments: dict[str, Any]) -> dict[str, Any]:
+    catalog_layer_ids = list(dict.fromkeys(
+        str(value).strip() for value in arguments.get("catalog_layer_ids") or [] if str(value).strip()
+    ))
+    if not catalog_layer_ids:
+        raise ValueError("at least one catalog_layer_id is required")
+    view = str(arguments.get("view") or "map").strip()
+    if view not in {"map", "timeline", "evidence"}:
+        raise ValueError(f"unsupported catalog view: {view}")
+    return {
+        "catalog_layer_actions": [
+            {"action": "open", "catalog_layer_id": layer_id, "view": view}
+            for layer_id in catalog_layer_ids
+        ],
+        "status": "ready",
+    }
+
+
 def validate_target_references(candidate: dict[str, Any], evidence: list[dict[str, Any]] | None = None) -> None:
     location_id = str(candidate.get("location_id") or "").strip()
     if location_id not in LOCATIONS:
@@ -3180,6 +3198,26 @@ TOOLS = [
         "annotations": {"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": False},
     },
     {
+        "name": "open_catalog_layers",
+        "title": "Open existing catalog layers",
+        "description": "Open one or more existing UI catalog layers by exact catalog ID. Use only for a direct request to open a whole named catalog layer without filters. Do not use for filtered retrieval or saved investigation-memory layers.",
+        "inputSchema": with_step_bridge({
+            "type": "object",
+            "properties": {
+                "catalog_layer_ids": {
+                    "type": "array",
+                    "items": {"type": "string", "minLength": 1},
+                    "minItems": 1,
+                    "maxItems": 5,
+                },
+                "view": {"type": "string", "enum": ["map", "timeline", "evidence"]},
+            },
+            "required": ["catalog_layer_ids", "view"],
+            "additionalProperties": False,
+        }),
+        "annotations": {"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": False},
+    },
+    {
         "name": "prepare_target_candidate",
         "title": "Prepare a fused target candidate",
         "description": "Starting from visible seed evidence, retrieves and ranks nearby independent public corroboration, selects the strongest evidence pair, groups sources, reconciles quantity, builds compact evidence snapshots, and reports whether medium/high-confidence persistence is allowed. Returns pair scores, reasons, alternatives, and an ambiguity margin. It does not save anything.",
@@ -3589,6 +3627,7 @@ TOOL_HANDLERS = {
     "decide_workstream_indication_proposal": decide_workstream_indication_proposal,
     "present_requested_results": present_requested_results,
     "present_saved_memory_layers": present_saved_memory_layers,
+    "open_catalog_layers": open_catalog_layers,
     "prepare_target_candidate": prepare_target_candidate,
     "find_duplicate_target_candidates": find_duplicate_target_candidates,
     "search_target_candidates": search_target_candidates,
@@ -3704,4 +3743,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
