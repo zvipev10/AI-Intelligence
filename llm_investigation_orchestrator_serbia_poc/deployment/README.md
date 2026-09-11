@@ -88,6 +88,11 @@ MIL-STD UAV symbol together with its popup. It advances the assets to
 MIL-STD marker elements. Filtered and focused UAV symbols now remain inside
 the map viewport. It advances the stylesheet to `styles.css?v=147`.
 
+`SHA256SUMS-v181.txt` extends organization symbology to raw records in every
+event-source layer when `entity_id` has an explicit organization mapping.
+Supported UAV observations retain object-class precedence; unmapped records
+remain regular markers. It advances the script to `app.js?v=177`.
+
 Secrets, datasets, investigations, workstreams, scenario runs, recordings,
 caches, logs, and generated runtime state are intentionally excluded.
 

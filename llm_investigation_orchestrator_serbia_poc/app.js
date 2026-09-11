@@ -242,6 +242,29 @@ function milStdObservationDescriptor(event) {
   };
 }
 
+function milStdEntityEventDescriptor(event) {
+  const mapping = MIL_STD_ORGANIZATIONS[event.entity_id];
+  if (!mapping || !event.location_id) return null;
+  return {
+    kind: "record",
+    id: event.record_id || event.event_id,
+    name: event.entity_name || event.entity_id,
+    locationId: event.location_id,
+    count: 1,
+    evidenceIds: [event.record_id || event.event_id].filter(Boolean),
+    latestTimestamp: event.timestamp_utc || "",
+    status: "reported",
+    confidence: milStdConfidence(event.certainty_level),
+    affiliation: mapping.affiliation,
+    icon: mapping.icon,
+    symbolCode: `organization-report:${event.entity_id}`
+  };
+}
+
+function milStdEventDescriptor(event) {
+  return milStdObservationDescriptor(event) || milStdEntityEventDescriptor(event);
+}
+
 function milStdMarkerElement(descriptor) {
   const element = document.createElement("button");
   element.type = "button";
@@ -5180,7 +5203,7 @@ function renderMap() {
     if (layer.kind === "events") {
       const observations = new Set();
       items.forEach(event => {
-        const descriptor = milStdObservationDescriptor(event);
+        const descriptor = milStdEventDescriptor(event);
         if (!descriptor) return;
         observations.add(event);
         milStdDescriptors.push(descriptor);
@@ -5373,7 +5396,7 @@ function toggleMapItem(layerId, kind, itemId) {
       zoom: Math.max(Number(state.map.getZoom?.() || 0), kind === "location" ? 12 : 13),
       duration: 450
     });
-    const descriptor = kind === "event" ? milStdObservationDescriptor(selectedEvent) : null;
+    const descriptor = kind === "event" ? milStdEventDescriptor(selectedEvent) : null;
     const markerElement = descriptor ? milStdMarkerElement(descriptor) : document.createElement("div");
     if (!descriptor) {
       markerElement.className = "map-marker focused-map-marker";
