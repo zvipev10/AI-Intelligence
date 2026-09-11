@@ -14,6 +14,7 @@ The map currently presents records as generic dots. Analysts need standard milit
 - Present 12 organization candidates from the 28-entity catalog.
 - Derive organization map presences from location-bearing records, grouped by entity and location, and label them as assessed or reported rather than treating every report as a separate organization.
 - Present structured UAV observations for armored vehicles, logistics trucks, vehicle convoys, and helicopters.
+- Present any other location-bearing raw event with an explicitly mapped organization `entity_id` using that organization's affiliation and icon, labeled as a reported source record.
 - Keep every symbol traceable to supporting raw record IDs and open the existing single-object details viewer from a symbol.
 - Show confidence through an explicit assessment label, source/evidence count, time, and uncertainty/evaluation information; do not overload affiliation color or frame shape.
 - Weak location-bearing claims may appear as `REPORTED`; mere mentions remain viewer evidence only.
@@ -30,7 +31,7 @@ The map currently presents records as generic dots. Analysts need standard milit
 Client-side assessed-presence and UAV-observation symbol descriptors derived from currently visible layers; a curated, versioned symbol mapping registry; accessible legend; symbol popups; links into the existing record/organization viewer; focused tests and deployment documentation.
 
 ## Non-goals
-Claiming formal certification, reconstructing command hierarchy or ownership, entity resolution across observations, changing the source dataset, and converting every public report into a symbol.
+Claiming formal certification, reconstructing command hierarchy or ownership, entity resolution across observations, changing the source dataset, and converting reports for unmapped entities into symbols.
 
 ## Acceptance criteria
 1. The map distinguishes organization presences from UAV observations with MIL-STD-compatible framed symbols and a visible legend/version label.

@@ -1,10 +1,10 @@
 # Capability Status
 
 ## Current phase
-Corrective checkpoint 007 — complete.
+Corrective checkpoint 008 — complete.
 
 ## Overall status
-The MIL-STD marker positioning fix is merged, deployed, and production-verified.
+Cross-source raw-record entity symbology is merged, deployed, and production-verified.
 
 ## Who acts now
 No role action required.
@@ -36,6 +36,14 @@ receive their coordinates and render symbols without a manual layer toggle.
 - Production backup: `/home/ubuntu/deploy-backups/milstd-marker-position-ed5614c`
 - Manifest: `deployment/SHA256SUMS-v180.txt`
 - Exact filtered and focused marker geometry passed in the production browser.
+
+## Corrective checkpoint 008 publication
+- Implementation commit on `main`: `1c755a5`
+- Production assets: `app.js?v=177`, `styles.css?v=147`
+- Production backup: `/home/ubuntu/deploy-backups/cross-source-symbology-1c755a5`
+- Manifest: `deployment/SHA256SUMS-v181.txt`
+- International-news record `REC-V2-000104` renders as a focused hostile NATO
+  symbol with raw-record traceability in the production browser.
 
 ## Corrective checkpoint 004
 Supported UAV observations inherit affiliation from the existing organization registry through `event.entity_id`. Unmapped entity IDs continue to render as unknown, preserving the fail-safe fallback.

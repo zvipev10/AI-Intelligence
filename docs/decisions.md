@@ -326,3 +326,37 @@ confidence independently from affiliation.
 Follow-ups:
 Add persisted correlation and formal SIDC renderer validation if the demo grows
 into an operational product.
+
+### 2026-09-11 — Apply curated organization symbology across raw event layers
+
+Decision:
+When a location-bearing raw event has an `entity_id` in the curated organization
+registry, present the event with that organization's affiliation and icon in any
+event-source layer. Label the claim `Reported` and keep the symbol linked to the
+raw record. A supported UAV observation retains its more specific object-class
+symbol; an unmapped event remains a regular marker.
+
+Context:
+The initial MIL-STD MVP rendered organization symbols only as grouped Entity
+layer presences and rendered per-record symbols only for supported UAV objects.
+This made the same explicitly mapped NATO or Serbian entity appear as a symbol
+in one layer and a generic marker in another.
+
+Rationale:
+One explicit entity mapping should have consistent visual semantics across raw
+source layers, while claim-state labeling and raw-record viewer identity avoid
+presenting a source report as a confirmed organization inventory.
+
+Alternatives considered:
+- Keep non-UAV raw records generic.
+- Render only grouped organization presences in the Entity layer.
+- Replace supported UAV object symbols with organization symbols.
+
+Impact:
+Telegram, news, social-media, and other event layers can now contain both
+organization symbols and regular markers. Large unfiltered layers may render
+more symbol elements, but only for the twelve curated organizations.
+
+Follow-ups:
+Monitor marker density and consider clustering or source-layer symbol controls
+if the expanded presentation becomes visually crowded.

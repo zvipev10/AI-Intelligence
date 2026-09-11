@@ -77,3 +77,17 @@ red hostile marker inside the map both before and after Show on map, with the
 focused popup open. Rollback is
 `/home/ubuntu/deploy-backups/milstd-marker-position-ed5614c`.
 
+## Corrective checkpoint 008
+At the user's direction, raw records from every event-source layer now use
+organization symbology when their `entity_id` has an explicit curated mapping.
+Supported UAV observations retain object-class precedence and unmapped events
+remain regular markers. Entity-derived raw-record symbols are labeled
+`Reported` and open their source record.
+
+The implementation is merged into remote `main` at `1c755a5` and deployed as
+`app.js?v=177` / `styles.css?v=147`. Production browser acceptance filtered the
+International news channel to `REC-V2-000104` and confirmed a red hostile NATO
+symbol inside the map before and after focus, with one popup and raw-record
+viewer identity preserved. Rollback is
+`/home/ubuntu/deploy-backups/cross-source-symbology-1c755a5`.
+
