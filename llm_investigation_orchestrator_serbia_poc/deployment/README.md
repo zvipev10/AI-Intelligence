@@ -71,6 +71,10 @@ to `styles.css?v=144`.
 reserve entity from neutral to hostile symbology. It adds the hostile red
 diamond frame and advances the assets to `app.js?v=173` and `styles.css?v=145`.
 
+`SHA256SUMS-v177.txt` fixes UAV affiliation propagation. Supported UAV
+observations inherit affiliation only from an explicitly mapped `entity_id`;
+unmapped observations remain unknown. It advances the script to `app.js?v=174`.
+
 Secrets, datasets, investigations, workstreams, scenario runs, recordings,
 caches, logs, and generated runtime state are intentionally excluded.
 

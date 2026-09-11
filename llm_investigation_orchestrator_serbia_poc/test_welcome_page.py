@@ -77,7 +77,7 @@ class WelcomePageContractTests(unittest.TestCase):
         self.assertIn('const duplicate = state.investigations.some', self.app)
         self.assertIn('id: state.investigationId, name,', self.app)
         self.assertNotIn('draftCreateParticipants', self.app)
-        self.assertIn('src="./app.js?v=173"', self.index)
+        self.assertIn('src="./app.js?v=174"', self.index)
         self.assertEqual(self.app.count('if (state.draftSessionActive) {\n    openDraftCreateModal('), 2)
         self.assertIn('const pendingAction = state.pendingDraftMemoryAction;', self.app)
         self.assertIn('if (pendingAction) await pendingAction();', self.app)

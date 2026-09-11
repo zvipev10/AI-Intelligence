@@ -225,6 +225,7 @@ function milStdObservationDescriptor(event) {
   if (event.collection_family !== "airborne_isr_video_exploitation") return null;
   const mapping = MIL_STD_UAV_OBJECTS[event.object_class || event.observed_object_class];
   if (!mapping || !event.location_id) return null;
+  const entityAffiliation = MIL_STD_ORGANIZATIONS[event.entity_id]?.affiliation || "unknown";
   return {
     kind: "record",
     id: event.record_id || event.event_id,
@@ -235,7 +236,7 @@ function milStdObservationDescriptor(event) {
     latestTimestamp: event.timestamp_utc || "",
     status: "observed",
     confidence: milStdConfidence(event.identification_confidence || event.certainty_level),
-    affiliation: "unknown",
+    affiliation: entityAffiliation,
     icon: mapping.icon,
     symbolCode: `observation:${mapping.code}`
   };

@@ -41,3 +41,6 @@ At the user's direction, the four KFOR entities and the NATO reserve entity are 
 
 The correction is merged into remote `main` at `803b212` and deployed as v176. Production serves `app.js?v=173` and `styles.css?v=145`; all five hostile mappings and the red diamond-frame style were verified through the public HTTPS assets. The UI service and v2.1 API are healthy. Rollback is `/home/ubuntu/deploy-backups/kfor-nato-hostile-803b212`.
 
+## Corrective checkpoint 004
+The UAV descriptor no longer forces every observation to unknown affiliation. Supported observations inherit affiliation only when `event.entity_id` exists in the explicit organization registry; otherwise they remain unknown. This makes the 508 supported KFOR/NATO-associated UAV observations eligible for hostile red symbology without broadly inferring affiliation for unmapped actors.
+

@@ -1,16 +1,19 @@
 # Capability Status
 
 ## Current phase
-Corrective checkpoint 003 — complete.
+Corrective checkpoint 004 — implementation in progress.
 
 ## Overall status
-KFOR- and NATO-related organization entities render with hostile symbology. The correction is merged, deployed, and production-verified.
+The UAV-layer affiliation propagation bug is being corrected so observations tied to explicitly mapped hostile entities render as hostile rather than always unknown.
 
 ## Who acts now
-No role action required.
+Development is implementing, validating, merging, and deploying the correction under the user's explicit authorization.
 
 ## Blockers
 None.
+
+## Corrective checkpoint 004
+Supported UAV observations inherit affiliation from the existing organization registry through `event.entity_id`. Unmapped entity IDs continue to render as unknown, preserving the fail-safe fallback.
 
 ## Corrective checkpoint 003
 The four KFOR organization entities and the NATO reserve entity now use hostile affiliation. The presentation uses a red diamond frame; Serbian Armed Forces remain friendly and UAV observations remain unknown.
@@ -22,7 +25,7 @@ The four KFOR organization entities and the NATO reserve entity now use hostile 
 - Manifest: `deployment/SHA256SUMS-v176.txt`
 
 ## Next artifact
-None.
+Complete validation, merge to remote `main`, deploy v177, and record production verification.
 
 ## Issues
 - Parent: https://github.com/zvipev10/AI-Intelligence/issues/51

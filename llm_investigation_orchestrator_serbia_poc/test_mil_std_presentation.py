@@ -40,7 +40,8 @@ class MilStdPresentationContractTests(unittest.TestCase):
         for code in ("armored-vehicle", "logistics-truck", "vehicle-convoy", "helicopter"):
             self.assertIn(f'code: "{code}"', registry)
         self.assertIn('event.collection_family !== "airborne_isr_video_exploitation"', APP)
-        self.assertIn('affiliation: "unknown"', APP)
+        self.assertIn('MIL_STD_ORGANIZATIONS[event.entity_id]?.affiliation || "unknown"', APP)
+        self.assertIn('affiliation: entityAffiliation', APP)
 
     def test_claim_state_and_confidence_do_not_change_affiliation(self):
         self.assertIn("function milStdConfidence", APP)
