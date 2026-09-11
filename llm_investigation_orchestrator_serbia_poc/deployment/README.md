@@ -96,7 +96,9 @@ remain regular markers. It advances the script to `app.js?v=177`.
 `SHA256SUMS-v182.txt` records the viewer refinement release candidate and
 advances the assets to `app.js?v=179` and
 `styles.css?v=148`. It replaces the centered record/organization modal with a
-locale-aware edge drawer and adds a source-level UAV raw-video section.
+locale-aware edge drawer and adds a source-level UAV raw-video section. This
+release is deployed to `/opt/serbia-poc-ui`; its rollback backup is
+`/home/ubuntu/deploy-backups/viewer-side-drawer-4688544`.
 
 Secrets, datasets, investigations, workstreams, scenario runs, recordings,
 caches, logs, and generated runtime state are intentionally excluded.

@@ -1,7 +1,7 @@
 # Checkpoint 002 — Locale-aware side viewer and UAV source media
 
 ## Status and recommendation
-Implementation complete. Ready for browser acceptance and deployment review.
+Complete, merged, deployed, and smoke-validated.
 
 ## Delivered
 - Replaced the large centered viewer with a compact full-height edge drawer.
@@ -20,7 +20,16 @@ Implementation complete. Ready for browser acceptance and deployment review.
 - Focused Python tests could not run because no Python executable is available on this host.
 - Browser QA was attempted, but the available browser automation surface blocks localhost and no Playwright runtime is installed in this checkout.
 
+## Publication and deployment
+- Merged and pushed to remote `main` at `4688544` (feature commit `ae1ff94`).
+- Release manifest: `deployment/SHA256SUMS-v182.txt`.
+- Production target: `/opt/serbia-poc-ui` on `151.145.93.180`.
+- Rollback backup: `/home/ubuntu/deploy-backups/viewer-side-drawer-4688544`.
+- Deployed `app.js`, `index.html`, and `styles.css` hashes match v182.
+- Public HTTP serves `app.js?v=179` and `styles.css?v=148`.
+- UI, general Hermes, and Moshe Hermes services are active; the status API reports V2.1 with 14,800 rows.
+
 ## Risks and remaining work
 - The repository still contains no genuine UAV video asset or URL, so current UAV records render the new source-video section in its explicit disconnected state.
-- Hands-on browser acceptance remains recommended before deployment.
+- Hands-on browser acceptance remains recommended as a non-blocking follow-up.
 
