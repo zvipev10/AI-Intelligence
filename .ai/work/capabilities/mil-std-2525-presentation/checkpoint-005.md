@@ -19,5 +19,10 @@ appear.
 - Existing focused and application regression tests pass.
 
 ## Publication
-Pending commit, direct push to `main`, deployment as v178, and production
-verification under the user's explicit instruction.
+- Implementation commit on remote `main`: `2e05abf`
+- Production assets: `app.js?v=175`, `styles.css?v=145`
+- Production backup: `/home/ubuntu/deploy-backups/uav-map-redraw-2e05abf`
+- Manifest: `deployment/SHA256SUMS-v178.txt`
+- Public API: v2.1, 14,800 rows; the exact observation is present.
+- Cold-load browser acceptance: 1,487 military markers and 501 hostile markers
+  rendered from the restored UAV layer without a manual visibility toggle.

@@ -49,6 +49,12 @@ The fix is merged into remote `main` at `a5038a7` and deployed as v177. Producti
 ## Corrective checkpoint 005
 Restored UAV layers could render before V2.1 location coordinates were loaded;
 the later hydration refreshed only the evidence table. The hydration path now
-redraws all views, and the script advances to `app.js?v=175`. Publication and
-production verification are pending.
+redraws all views, and the script advances to `app.js?v=175`.
+
+The fix is merged into remote `main` at `2e05abf` and deployed as v178.
+Production serves `app.js?v=175` and `styles.css?v=145`; the v2.1 API reports
+14,800 records and returns `OBS-UAV-V2-00246`. A cold browser load restored the
+UAV layer and rendered 1,487 military markers, including 501 hostile markers,
+without a manual visibility toggle. Rollback is
+`/home/ubuntu/deploy-backups/uav-map-redraw-2e05abf`.
 

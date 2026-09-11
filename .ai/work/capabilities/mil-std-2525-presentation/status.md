@@ -1,13 +1,13 @@
 # Capability Status
 
 ## Current phase
-Corrective checkpoint 005 — release in progress.
+Corrective checkpoint 005 — complete.
 
 ## Overall status
-The UAV restored-layer location-hydration fix is implemented and validated locally; publication and production verification are in progress.
+The UAV restored-layer location-hydration fix is merged, deployed, and production-verified.
 
 ## Who acts now
-Development/QA: publish and verify corrective checkpoint 005.
+No role action required.
 
 ## Blockers
 None.
@@ -15,6 +15,13 @@ None.
 ## Corrective checkpoint 005
 Runtime V2.1 location hydration now redraws all views, so restored UAV layers
 receive their coordinates and render symbols without a manual layer toggle.
+
+## Corrective checkpoint 005 publication
+- Implementation commit on `main`: `2e05abf`
+- Production assets: `app.js?v=175`, `styles.css?v=145`
+- Production backup: `/home/ubuntu/deploy-backups/uav-map-redraw-2e05abf`
+- Manifest: `deployment/SHA256SUMS-v178.txt`
+- Cold-load acceptance: 1,487 military markers, including 501 hostile markers.
 
 ## Corrective checkpoint 004
 Supported UAV observations inherit affiliation from the existing organization registry through `event.entity_id`. Unmapped entity IDs continue to render as unknown, preserving the fail-safe fallback.
