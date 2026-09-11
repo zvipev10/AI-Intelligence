@@ -35,12 +35,22 @@ class ObjectViewerContractTests(unittest.TestCase):
         self.assertIn('<video controls preload="metadata"', self.app)
         self.assertIn('<audio controls preload="metadata"', self.app)
         self.assertNotIn('<video autoplay', self.app)
-        self.assertIn('No video file is available for this record.', self.app)
+        self.assertIn('Raw video is not connected', self.app)
         self.assertIn("function safeMediaUrl", self.app)
 
-    def test_dialog_has_responsive_styles(self):
+    def test_uav_media_is_presented_as_shared_source_material(self):
+        self.assertIn('Raw UAV video', self.app)
+        self.assertIn('The same source footage may therefore support several records.', self.app)
+        self.assertIn('item.mission_id', self.app)
+        self.assertIn('item.video_segment_id', self.app)
+        self.assertIn('function viewerFieldLabel', self.app)
+
+    def test_dialog_is_a_locale_aware_edge_drawer(self):
         self.assertIn(".object-viewer-backdrop", self.styles)
         self.assertIn(".object-viewer-fields", self.styles)
+        self.assertIn("margin-inline-start: auto", self.styles)
+        self.assertIn('[dir="rtl"] .object-viewer', self.styles)
+        self.assertIn("height: 100dvh", self.styles)
 
 
 if __name__ == "__main__":

@@ -93,6 +93,11 @@ event-source layer when `entity_id` has an explicit organization mapping.
 Supported UAV observations retain object-class precedence; unmapped records
 remain regular markers. It advances the script to `app.js?v=177`.
 
+The next local viewer refinement advances the assets to `app.js?v=179` and
+`styles.css?v=148`. It replaces the centered record/organization modal with a
+locale-aware edge drawer and adds a source-level UAV raw-video section. It has
+not yet been deployed or assigned a deployment checksum manifest.
+
 Secrets, datasets, investigations, workstreams, scenario runs, recordings,
 caches, logs, and generated runtime state are intentionally excluded.
 

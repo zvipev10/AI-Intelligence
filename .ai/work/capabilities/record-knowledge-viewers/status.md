@@ -4,22 +4,22 @@
 Record and knowledge entity viewers
 
 ## Current phase and overall status
-Phase 6 — complete. Implementation is deployed and smoke-validated.
+Phase 5 — side-viewer refinement implemented locally; browser acceptance and deployment review remain.
 
 ## Who needs to act now
-No role action required. Product delegated end-to-end approvals and explicitly requested VM deployment.
+Product/UX should accept the locale-aware drawer refinement before deployment.
 
 ## Latest change
-Deployed the approved record/organization viewer to the VM; services and public asset checks pass. Targets remain excluded.
+The centered modal is now a Hebrew-left/English-right edge drawer. UAV records include a source-level raw-video section that can be shared across records from the same mission.
 
 ## Current blockers
-None.
+No playable UAV asset exists in the repository. Local browser automation is unavailable, so visual acceptance is still manual.
 
 ## Current risks
 Hands-on browser acceptance was not requested. Current media references without URLs render as unavailable.
 
 ## Next expected artifact
-Merge PR #50 and close parent #48 after repository integration.
+Product/UX acceptance, then deployment checkpoint. See `checkpoint-002.md`.
 
 ## Parent issue
 https://github.com/zvipev10/AI-Intelligence/issues/48 — open through final acceptance.

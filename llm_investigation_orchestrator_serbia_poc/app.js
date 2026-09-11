@@ -3188,12 +3188,64 @@ function viewerMedia(item) {
   return candidates.map(([type, value]) => ({ type, url: safeMediaUrl(value) })).find(media => media.url) || null;
 }
 
+function isUavVideoRecord(item) {
+  return item.collection_family === "airborne_isr_video_exploitation" || Boolean(item.video_segment_id);
+}
+
+function viewerMediaHtml(item) {
+  const media = viewerMedia(item);
+  const mediaElement = media?.type === "video"
+    ? `<video controls preload="metadata" src="${escapeHtml(media.url)}"></video>`
+    : media?.type === "audio"
+      ? `<audio controls preload="metadata" src="${escapeHtml(media.url)}"></audio>`
+      : media?.type === "image"
+        ? `<img src="${escapeHtml(media.url)}" alt="">`
+        : "";
+  if (!isUavVideoRecord(item)) return mediaElement ? `<div class="object-viewer-media">${mediaElement}</div>` : "";
+
+  const mission = item.mission_id || activeLocaleText("משימה לא מזוהה", "Unidentified mission");
+  const segment = item.video_segment_id || activeLocaleText("מקטע לא מזוהה", "Unidentified segment");
+  const state = mediaElement
+    ? mediaElement
+    : `<div class="object-viewer-media-state"><span class="material-symbols-rounded" aria-hidden="true">videocam_off</span><strong>${escapeHtml(activeLocaleText("הווידאו הגולמי אינו מחובר", "Raw video is not connected"))}</strong><span>${escapeHtml(activeLocaleText("פרטי התצפית עדיין זמינים ברשומה.", "The observation details remain available in the record."))}</span></div>`;
+  return `<section class="object-viewer-source-media" aria-labelledby="objectViewerMediaTitle">
+    <div class="object-viewer-section-heading">
+      <div><span class="eyebrow">${escapeHtml(activeLocaleText("חומר מקור", "Source material"))}</span><h3 id="objectViewerMediaTitle">${escapeHtml(activeLocaleText("וידאו גולמי מכטב״ם", "Raw UAV video"))}</h3></div>
+      <span class="object-viewer-live-badge"><i></i>${escapeHtml(activeLocaleText("מקור וידאו", "Video source"))}</span>
+    </div>
+    <div class="object-viewer-media">${state}</div>
+    <div class="object-viewer-media-context"><span><b>${escapeHtml(activeLocaleText("משימה", "Mission"))}</b><code dir="ltr">${escapeHtml(mission)}</code></span><span><b>${escapeHtml(activeLocaleText("מקטע", "Segment"))}</b><code dir="ltr">${escapeHtml(segment)}</code></span></div>
+    <p>${escapeHtml(activeLocaleText("הווידאו שייך למשימת האיסוף; הרשומה היא תצפית אנליטית שנגזרה ממנו. לכן אותו חומר מקור עשוי ללוות כמה רשומות.", "The video belongs to the collection mission; this record is an analytical observation derived from it. The same source footage may therefore support several records."))}</p>
+  </section>`;
+}
+
 function viewerFields(item, kind) {
   const hidden = new Set(["event_summary", "canonical_name", "media", "video_url", "audio_url", "image_url", "raw_data_references"]);
   const preferred = kind === "record"
     ? ["timestamp_utc", "source_type", "collection_family", "source_reliability_label", "certainty_level", "entity_name", "location_name", "observation_id", "mission_id", "video_segment_id"]
     : ["entity_type", "aliases", "event_count", "top_locations", "top_sources"];
   return preferred.filter(key => !hidden.has(key) && item[key] != null && item[key] !== "").map(key => [key, item[key]]);
+}
+
+function viewerFieldLabel(key) {
+  const labels = {
+    timestamp_utc: ["זמן", "Time"],
+    source_type: ["סוג מקור", "Source type"],
+    collection_family: ["משפחת איסוף", "Collection family"],
+    source_reliability_label: ["אמינות מקור", "Source reliability"],
+    certainty_level: ["רמת ודאות", "Confidence"],
+    entity_name: ["גורם", "Entity"],
+    location_name: ["מיקום", "Location"],
+    observation_id: ["מזהה תצפית", "Observation ID"],
+    mission_id: ["מזהה משימה", "Mission ID"],
+    video_segment_id: ["מזהה מקטע", "Segment ID"],
+    entity_type: ["סוג ארגון", "Organization type"],
+    aliases: ["שמות נוספים", "Aliases"],
+    event_count: ["מספר רשומות", "Record count"],
+    top_locations: ["מיקומים מובילים", "Top locations"],
+    top_sources: ["מקורות מובילים", "Top sources"]
+  };
+  return labels[key] ? activeLocaleText(...labels[key]) : key.replaceAll("_", " ");
 }
 
 function viewerValue(value) {
@@ -3234,9 +3286,8 @@ function openObjectViewer(kind, id, trigger = document.activeElement) {
   document.getElementById("objectViewerKind").textContent = kind === "record" ? activeLocaleText("רשומה גולמית", "Raw record") : activeLocaleText("ארגון", "Organization");
   document.getElementById("objectViewerTitle").textContent = title;
   document.getElementById("objectViewerId").textContent = id;
-  const media = viewerMedia(item);
-  const mediaHtml = media ? `<div class="object-viewer-media">${media.type === "video" ? `<video controls preload="metadata" src="${escapeHtml(media.url)}"></video>` : media.type === "audio" ? `<audio controls preload="metadata" src="${escapeHtml(media.url)}"></audio>` : `<img src="${escapeHtml(media.url)}" alt="">`}</div>` : (item.collection_family === "airborne_isr_video_exploitation" || item.video_segment_id ? `<div class="object-viewer-media object-viewer-media-state">${escapeHtml(activeLocaleText("אין קובץ וידאו זמין לרשומה זו.", "No video file is available for this record."))}</div>` : "");
-  const fields = viewerFields(item, kind).map(([key,value]) => `<div class="object-viewer-field"><dt>${escapeHtml(key.replaceAll("_", " "))}</dt><dd>${escapeHtml(viewerValue(value))}</dd></div>`).join("");
+  const mediaHtml = viewerMediaHtml(item);
+  const fields = viewerFields(item, kind).map(([key,value]) => `<div class="object-viewer-field"><dt>${escapeHtml(viewerFieldLabel(key))}</dt><dd>${escapeHtml(viewerValue(value))}</dd></div>`).join("");
   document.getElementById("objectViewerBody").innerHTML = `${mediaHtml}${kind === "record" ? `<p class="object-viewer-summary">${escapeHtml(item.event_summary || "-")}</p>` : ""}<dl class="object-viewer-fields">${fields}</dl>${kind === "organization" ? organizationEvidenceHtml(item) : ""}`;
   viewer.hidden = false;
   document.getElementById("objectViewerClose").focus();
