@@ -1,10 +1,10 @@
 # Capability Status
 
 ## Current phase
-Corrective checkpoint 005 — complete.
+Corrective checkpoint 007 — complete.
 
 ## Overall status
-The UAV restored-layer location-hydration fix is merged, deployed, and production-verified.
+The MIL-STD marker positioning fix is merged, deployed, and production-verified.
 
 ## Who acts now
 No role action required.
@@ -29,6 +29,13 @@ receive their coordinates and render symbols without a manual layer toggle.
 - Production backup: `/home/ubuntu/deploy-backups/focused-uav-marker-0a9afa2`
 - Manifest: `deployment/SHA256SUMS-v179.txt`
 - The row-level Show on map path now creates the selected UAV's MIL-STD marker.
+
+## Corrective checkpoint 007 publication
+- Implementation commit on `main`: `ed5614c`
+- Production assets: `app.js?v=176`, `styles.css?v=147`
+- Production backup: `/home/ubuntu/deploy-backups/milstd-marker-position-ed5614c`
+- Manifest: `deployment/SHA256SUMS-v180.txt`
+- Exact filtered and focused marker geometry passed in the production browser.
 
 ## Corrective checkpoint 004
 Supported UAV observations inherit affiliation from the existing organization registry through `event.entity_id`. Unmapped entity IDs continue to render as unknown, preserving the fail-safe fallback.

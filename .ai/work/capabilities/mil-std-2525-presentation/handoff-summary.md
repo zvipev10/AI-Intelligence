@@ -65,3 +65,15 @@ the popup instead of displaying the popup alone. The change is merged at
 verification passed. Rollback is
 `/home/ubuntu/deploy-backups/focused-uav-marker-0a9afa2`.
 
+## Corrective checkpoint 007
+MIL-STD marker CSS had overridden MapLibre's absolute positioning with relative
+positioning, causing correctly classified markers to render outside the map.
+The rule now preserves absolute positioning and the stylesheet advances to
+`styles.css?v=147`.
+
+The fix is merged into remote `main` at `ed5614c` and deployed to production.
+Exact browser acceptance for `OBS-UAV-V2-00246` confirms one filtered row and a
+red hostile marker inside the map both before and after Show on map, with the
+focused popup open. Rollback is
+`/home/ubuntu/deploy-backups/milstd-marker-position-ed5614c`.
+
