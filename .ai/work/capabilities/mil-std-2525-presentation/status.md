@@ -1,13 +1,13 @@
 # Capability Status
 
 ## Current phase
-Corrective checkpoint 004 — implementation in progress.
+Corrective checkpoint 004 — complete.
 
 ## Overall status
-The UAV-layer affiliation propagation bug is being corrected so observations tied to explicitly mapped hostile entities render as hostile rather than always unknown.
+The UAV-layer affiliation propagation bug is fixed, merged, deployed, and production-verified.
 
 ## Who acts now
-Development is implementing, validating, merging, and deploying the correction under the user's explicit authorization.
+No role action required.
 
 ## Blockers
 None.
@@ -25,7 +25,13 @@ The four KFOR organization entities and the NATO reserve entity now use hostile 
 - Manifest: `deployment/SHA256SUMS-v176.txt`
 
 ## Next artifact
-Complete validation, merge to remote `main`, deploy v177, and record production verification.
+None.
+
+## Corrective checkpoint 004 publication
+- Implementation commit on `main`: `a5038a7`
+- Production assets: `app.js?v=174`, `styles.css?v=145`
+- Production backup: `/home/ubuntu/deploy-backups/uav-affiliation-a5038a7`
+- Manifest: `deployment/SHA256SUMS-v177.txt`
 
 ## Issues
 - Parent: https://github.com/zvipev10/AI-Intelligence/issues/51

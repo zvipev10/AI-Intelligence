@@ -17,3 +17,15 @@ Object class, confidence, claim state, location, evidence traceability, and view
 
 ## Release plan
 Validate, push directly to remote `main` under the user's explicit instruction, back up current production assets, deploy v177, and verify the public script and service.
+
+## Release outcome
+- Pushed to remote `main` at `a5038a7`.
+- Deployed `app.js` and `index.html` to `/opt/serbia-poc-ui`.
+- Rollback backup: `/home/ubuntu/deploy-backups/uav-affiliation-a5038a7`.
+- Deployed hashes match `deployment/SHA256SUMS-v177.txt`.
+- Production serves `app.js?v=174` and `styles.css?v=145`.
+- The public script contains explicit entity-affiliation propagation, unknown fallback, and all five hostile mappings.
+- `serbia-poc-ui.service` is active; `/api/status` reports the 14,800-row v2.1 dataset.
+
+## Remaining work
+None.

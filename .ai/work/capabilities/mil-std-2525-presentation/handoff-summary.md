@@ -44,3 +44,5 @@ The correction is merged into remote `main` at `803b212` and deployed as v176. P
 ## Corrective checkpoint 004
 The UAV descriptor no longer forces every observation to unknown affiliation. Supported observations inherit affiliation only when `event.entity_id` exists in the explicit organization registry; otherwise they remain unknown. This makes the 508 supported KFOR/NATO-associated UAV observations eligible for hostile red symbology without broadly inferring affiliation for unmapped actors.
 
+The fix is merged into remote `main` at `a5038a7` and deployed as v177. Production serves `app.js?v=174` and `styles.css?v=145`; public verification confirms the mapped-affiliation path, unknown fallback, and five hostile KFOR/NATO mappings. The service and v2.1 API are healthy. Rollback is `/home/ubuntu/deploy-backups/uav-affiliation-a5038a7`.
+
