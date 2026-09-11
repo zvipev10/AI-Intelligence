@@ -58,3 +58,10 @@ UAV layer and rendered 1,487 military markers, including 501 hostile markers,
 without a manual visibility toggle. Rollback is
 `/home/ubuntu/deploy-backups/uav-map-redraw-2e05abf`.
 
+## Corrective checkpoint 006
+The row-level Show on map action now renders a focused MIL-STD UAV marker with
+the popup instead of displaying the popup alone. The change is merged at
+`0a9afa2` and deployed as `app.js?v=176` / `styles.css?v=146`. Public asset
+verification passed. Rollback is
+`/home/ubuntu/deploy-backups/focused-uav-marker-0a9afa2`.
+

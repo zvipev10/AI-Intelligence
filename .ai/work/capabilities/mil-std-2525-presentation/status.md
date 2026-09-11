@@ -23,6 +23,13 @@ receive their coordinates and render symbols without a manual layer toggle.
 - Manifest: `deployment/SHA256SUMS-v178.txt`
 - Cold-load acceptance: 1,487 military markers, including 501 hostile markers.
 
+## Corrective checkpoint 006 publication
+- Implementation commit on `main`: `0a9afa2`
+- Production assets: `app.js?v=176`, `styles.css?v=146`
+- Production backup: `/home/ubuntu/deploy-backups/focused-uav-marker-0a9afa2`
+- Manifest: `deployment/SHA256SUMS-v179.txt`
+- The row-level Show on map path now creates the selected UAV's MIL-STD marker.
+
 ## Corrective checkpoint 004
 Supported UAV observations inherit affiliation from the existing organization registry through `event.entity_id`. Unmapped entity IDs continue to render as unknown, preserving the fail-safe fallback.
 
