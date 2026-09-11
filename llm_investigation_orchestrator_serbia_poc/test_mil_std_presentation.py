@@ -43,6 +43,15 @@ class MilStdPresentationContractTests(unittest.TestCase):
         self.assertIn('MIL_STD_ORGANIZATIONS[event.entity_id]?.affiliation || "unknown"', APP)
         self.assertIn('affiliation: entityAffiliation', APP)
 
+    def test_runtime_location_hydration_redraws_restored_map_layers(self):
+        boot = APP.split("async function boot()", 1)[1]
+        location_hydration = boot.split("if (runtimeStatus.locations_url)", 1)[1].split(
+            "const datasetUrl", 1
+        )[0]
+        self.assertIn("Object.entries(runtimeLocations)", location_hydration)
+        self.assertIn("renderAllViews();", location_hydration)
+        self.assertNotIn("renderEvidence();", location_hydration)
+
     def test_claim_state_and_confidence_do_not_change_affiliation(self):
         self.assertIn("function milStdConfidence", APP)
         self.assertIn("status-reported", CSS)

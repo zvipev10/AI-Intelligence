@@ -75,6 +75,11 @@ diamond frame and advances the assets to `app.js?v=173` and `styles.css?v=145`.
 observations inherit affiliation only from an explicitly mapped `entity_id`;
 unmapped observations remain unknown. It advances the script to `app.js?v=174`.
 
+`SHA256SUMS-v178.txt` fixes restored UAV layers rendering before the runtime
+V2.1 location catalogue is hydrated. Location hydration now redraws every
+view, making the already-loaded UAV symbology visible without a manual layer
+toggle. It advances the script to `app.js?v=175`.
+
 Secrets, datasets, investigations, workstreams, scenario runs, recordings,
 caches, logs, and generated runtime state are intentionally excluded.
 

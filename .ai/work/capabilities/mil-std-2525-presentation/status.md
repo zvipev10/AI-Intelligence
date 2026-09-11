@@ -1,16 +1,20 @@
 # Capability Status
 
 ## Current phase
-Corrective checkpoint 004 — complete.
+Corrective checkpoint 005 — release in progress.
 
 ## Overall status
-The UAV-layer affiliation propagation bug is fixed, merged, deployed, and production-verified.
+The UAV restored-layer location-hydration fix is implemented and validated locally; publication and production verification are in progress.
 
 ## Who acts now
-No role action required.
+Development/QA: publish and verify corrective checkpoint 005.
 
 ## Blockers
 None.
+
+## Corrective checkpoint 005
+Runtime V2.1 location hydration now redraws all views, so restored UAV layers
+receive their coordinates and render symbols without a manual layer toggle.
 
 ## Corrective checkpoint 004
 Supported UAV observations inherit affiliation from the existing organization registry through `event.entity_id`. Unmapped entity IDs continue to render as unknown, preserving the fail-safe fallback.

@@ -46,3 +46,9 @@ The UAV descriptor no longer forces every observation to unknown affiliation. Su
 
 The fix is merged into remote `main` at `a5038a7` and deployed as v177. Production serves `app.js?v=174` and `styles.css?v=145`; public verification confirms the mapped-affiliation path, unknown fallback, and five hostile KFOR/NATO mappings. The service and v2.1 API are healthy. Rollback is `/home/ubuntu/deploy-backups/uav-affiliation-a5038a7`.
 
+## Corrective checkpoint 005
+Restored UAV layers could render before V2.1 location coordinates were loaded;
+the later hydration refreshed only the evidence table. The hydration path now
+redraws all views, and the script advances to `app.js?v=175`. Publication and
+production verification are pending.
+

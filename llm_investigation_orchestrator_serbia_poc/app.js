@@ -6334,7 +6334,7 @@ async function boot() {
           lon: Number(location.longitude)
         };
       });
-      renderEvidence();
+      renderAllViews();
     }
     const datasetUrl = runtimeStatus.dataset_url || "./data/serbia_kosovo_events_projection.csv";
     const response = await fetch(datasetUrl, { cache: "no-store" });
