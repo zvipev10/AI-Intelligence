@@ -21,6 +21,20 @@ class MilStdPresentationContractTests(unittest.TestCase):
         self.assertEqual(12, len(entity_ids))
         self.assertEqual(7, len([item for item in entity_ids if item.startswith("ENT-SAF-")]))
 
+    def test_kfor_and_nato_organizations_are_hostile(self):
+        registry = APP.split("const MIL_STD_ORGANIZATIONS", 1)[1].split("});", 1)[0]
+        for entity_id in (
+            "ENT-KFOR-RCE",
+            "ENT-KFOR-KTRBN",
+            "ENT-KFOR-MSU",
+            "ENT-KFOR-AVIATION",
+            "ENT-NATO-RESERVE",
+        ):
+            self.assertIn(f'"{entity_id}": {{ affiliation: "hostile"', registry)
+        self.assertNotIn('affiliation: "neutral"', registry)
+        self.assertIn(".milstd-marker.hostile", CSS)
+        self.assertIn(".milstd-marker.hostile .milstd-frame", CSS)
+
     def test_four_uav_classes_have_bilingual_mappings(self):
         registry = APP.split("const MIL_STD_UAV_OBJECTS", 1)[1].split("});", 1)[0]
         for code in ("armored-vehicle", "logistics-truck", "vehicle-convoy", "helicopter"):

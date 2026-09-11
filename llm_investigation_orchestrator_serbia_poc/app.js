@@ -168,11 +168,11 @@ const MIL_STD_ORGANIZATIONS = Object.freeze({
   "ENT-SAF-28-MECH": { affiliation: "friendly", icon: "↗" },
   "ENT-SAF-210-ENG": { affiliation: "friendly", icon: "E" },
   "ENT-SAF-3BRIGADE": { affiliation: "friendly", icon: "II" },
-  "ENT-KFOR-RCE": { affiliation: "neutral", icon: "HQ" },
-  "ENT-KFOR-KTRBN": { affiliation: "neutral", icon: "●" },
-  "ENT-KFOR-MSU": { affiliation: "neutral", icon: "●" },
-  "ENT-KFOR-AVIATION": { affiliation: "neutral", icon: "✈" },
-  "ENT-NATO-RESERVE": { affiliation: "neutral", icon: "●" }
+  "ENT-KFOR-RCE": { affiliation: "hostile", icon: "HQ" },
+  "ENT-KFOR-KTRBN": { affiliation: "hostile", icon: "●" },
+  "ENT-KFOR-MSU": { affiliation: "hostile", icon: "●" },
+  "ENT-KFOR-AVIATION": { affiliation: "hostile", icon: "✈" },
+  "ENT-NATO-RESERVE": { affiliation: "hostile", icon: "●" }
 });
 const MIL_STD_UAV_OBJECTS = Object.freeze({
   "רכב משוריין": { code: "armored-vehicle", icon: "▰", he: "רכב משוריין", en: "Armored vehicle" },

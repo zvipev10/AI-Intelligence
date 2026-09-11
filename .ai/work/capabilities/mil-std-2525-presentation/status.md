@@ -1,16 +1,19 @@
 # Capability Status
 
 ## Current phase
-Corrective checkpoint 002 — complete.
+Corrective checkpoint 003 — implementation in progress.
 
 ## Overall status
-The map legend removal is merged, deployed, and production-verified. MIL-STD symbols, evidence details, and object-viewer behavior are unchanged.
+KFOR- and NATO-related organization entities are being corrected from neutral to hostile symbology at the user's direction.
 
 ## Who acts now
-No role action required.
+Development is implementing, validating, merging, and deploying the correction under the user's explicit authorization.
 
 ## Blockers
-None.
+Complete validation, merge to remote `main`, deploy v176, and record production verification.
+
+## Corrective checkpoint 003
+The four KFOR organization entities and the NATO reserve entity now use hostile affiliation. The presentation uses a red diamond frame; Serbian Armed Forces remain friendly and UAV observations remain unknown.
 
 ## Next artifact
 None.

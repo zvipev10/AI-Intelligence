@@ -67,6 +67,10 @@ observed states. It advances the assets to `app.js?v=172` and
 rendering, traceability, and object-viewer behavior. It advances the stylesheet
 to `styles.css?v=144`.
 
+`SHA256SUMS-v176.txt` changes the four KFOR organization entities and the NATO
+reserve entity from neutral to hostile symbology. It adds the hostile red
+diamond frame and advances the assets to `app.js?v=173` and `styles.css?v=145`.
+
 Secrets, datasets, investigations, workstreams, scenario runs, recordings,
 caches, logs, and generated runtime state are intentionally excluded.
 

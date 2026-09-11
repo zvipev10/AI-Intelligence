@@ -509,6 +509,9 @@ textarea.mention-source::placeholder { color: var(--muted) !important; }
 .milstd-frame { position: absolute; inset: 8px 3px; display: grid; place-items: center; border: 3px solid currentColor; background: rgba(20,26,34,.9); }
 .milstd-marker.friendly { color: #80caff; }
 .milstd-marker.neutral { color: #7fe09a; }
+.milstd-marker.hostile { color: #ff6b6b; }
+.milstd-marker.hostile .milstd-frame { inset: 7px; transform: rotate(45deg); }
+.milstd-marker.hostile .milstd-icon { transform: rotate(-45deg); }
 .milstd-marker.unknown { color: #ffd166; }
 .milstd-marker.unknown .milstd-frame { inset: 7px; transform: rotate(45deg); }
 .milstd-marker.unknown .milstd-icon { transform: rotate(-45deg); }

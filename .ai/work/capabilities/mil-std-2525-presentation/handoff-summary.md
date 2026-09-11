@@ -36,3 +36,6 @@ The unnecessary collapsible map legend and its dedicated styles were removed. Th
 
 The correction is merged into `main` at `1122051` and deployed to production. The UI service is healthy, the public site serves the v144 stylesheet without legend markup or CSS, and the rollback backup is `/home/ubuntu/deploy-backups/remove-map-legend-1122051`.
 
+## Corrective checkpoint 003
+At the user's direction, the four KFOR entities and the NATO reserve entity are classified as hostile rather than neutral for map presentation. Hostile organizations use a red diamond frame. Serbian Armed Forces remain friendly; UAV observations remain affiliation-unknown.
+
