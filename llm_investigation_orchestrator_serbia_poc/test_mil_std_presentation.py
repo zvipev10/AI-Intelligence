@@ -52,6 +52,15 @@ class MilStdPresentationContractTests(unittest.TestCase):
         self.assertIn("renderAllViews();", location_hydration)
         self.assertNotIn("renderEvidence();", location_hydration)
 
+    def test_show_on_map_renders_the_selected_uav_symbol(self):
+        focus_path = APP.split("function toggleMapItem", 1)[1].split(
+            "function renderTimeline", 1
+        )[0]
+        self.assertIn("milStdObservationDescriptor(selectedEvent)", focus_path)
+        self.assertIn("milStdMarkerElement(descriptor)", focus_path)
+        self.assertIn("state.focusedEventMarker = new maplibregl.Marker", focus_path)
+        self.assertIn("focused-map-selection-marker", CSS)
+
     def test_claim_state_and_confidence_do_not_change_affiliation(self):
         self.assertIn("function milStdConfidence", APP)
         self.assertIn("status-reported", CSS)

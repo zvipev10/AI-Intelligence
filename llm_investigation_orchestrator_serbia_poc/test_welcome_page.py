@@ -60,7 +60,7 @@ class WelcomePageContractTests(unittest.TestCase):
             ".prompt-form.welcome-prompt-form { width: min(720px, 100%); margin: -10px auto 42px; }",
             self.styles,
         )
-        self.assertIn('href="./styles.css?v=145"', self.index)
+        self.assertIn('href="./styles.css?v=146"', self.index)
 
     def test_draft_creation_modal_and_memory_save_gate(self):
         self.assertIn('id="draftCreateInvestigationButton"', self.index)
@@ -77,7 +77,7 @@ class WelcomePageContractTests(unittest.TestCase):
         self.assertIn('const duplicate = state.investigations.some', self.app)
         self.assertIn('id: state.investigationId, name,', self.app)
         self.assertNotIn('draftCreateParticipants', self.app)
-        self.assertIn('src="./app.js?v=175"', self.index)
+        self.assertIn('src="./app.js?v=176"', self.index)
         self.assertEqual(self.app.count('if (state.draftSessionActive) {\n    openDraftCreateModal('), 2)
         self.assertIn('const pendingAction = state.pendingDraftMemoryAction;', self.app)
         self.assertIn('if (pendingAction) await pendingAction();', self.app)

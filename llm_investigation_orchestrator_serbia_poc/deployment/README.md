@@ -80,6 +80,10 @@ V2.1 location catalogue is hydrated. Location hydration now redraws every
 view, making the already-loaded UAV symbology visible without a manual layer
 toggle. It advances the script to `app.js?v=175`.
 
+`SHA256SUMS-v179.txt` makes the row-level Show on map action render a focused
+MIL-STD UAV symbol together with its popup. It advances the assets to
+`app.js?v=176` and `styles.css?v=146`.
+
 Secrets, datasets, investigations, workstreams, scenario runs, recordings,
 caches, logs, and generated runtime state are intentionally excluded.
 

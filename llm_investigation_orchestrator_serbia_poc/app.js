@@ -434,6 +434,7 @@ const state = {
   mapReady: false,
   markers: [],
   focusedEventPopup: null,
+  focusedEventMarker: null,
   focusedMapSelection: null,
   history: [],
   investigationId: createInvestigationId(),
@@ -5152,6 +5153,8 @@ function initPanelResizers() {
 function clearMarkers() {
   state.markers.forEach(marker => marker.remove());
   state.markers = [];
+  state.focusedEventMarker?.remove();
+  state.focusedEventMarker = null;
   state.focusedEventPopup?.remove();
   state.focusedEventPopup = null;
 }
@@ -5348,11 +5351,15 @@ function toggleMapItem(layerId, kind, itemId) {
   const selectionKey = mapSelectionKey(layerId, kind, itemId);
   if (state.focusedMapSelection === selectionKey) {
     state.focusedMapSelection = null;
+    state.focusedEventMarker?.remove();
+    state.focusedEventMarker = null;
     state.focusedEventPopup?.remove();
     state.focusedEventPopup = null;
     renderEvidence();
     return;
   }
+  state.focusedEventMarker?.remove();
+  state.focusedEventMarker = null;
   state.focusedEventPopup?.remove();
   state.focusedEventPopup = null;
   state.focusedMapSelection = selectionKey;
@@ -5366,7 +5373,18 @@ function toggleMapItem(layerId, kind, itemId) {
       zoom: Math.max(Number(state.map.getZoom?.() || 0), kind === "location" ? 12 : 13),
       duration: 450
     });
-    state.focusedEventPopup = new maplibregl.Popup({ offset: 20, closeButton: true, closeOnClick: false })
+    const descriptor = kind === "event" ? milStdObservationDescriptor(selectedEvent) : null;
+    const markerElement = descriptor ? milStdMarkerElement(descriptor) : document.createElement("div");
+    if (!descriptor) {
+      markerElement.className = "map-marker focused-map-marker";
+      markerElement.style.setProperty("--layer-color", layer?.color || "#8ab4f8");
+      markerElement.innerHTML = '<span class="map-marker-dot"></span>';
+    }
+    markerElement.classList.add("focused-map-selection-marker");
+    state.focusedEventMarker = new maplibregl.Marker({ element: markerElement, anchor: "center" })
+      .setLngLat([coordinates.lon, coordinates.lat])
+      .addTo(state.map);
+    state.focusedEventPopup = new maplibregl.Popup({ offset: 32, closeButton: true, closeOnClick: false })
       .setLngLat([coordinates.lon, coordinates.lat])
       .setHTML(mapItemPopupHtml(selectedEvent, kind))
       .addTo(state.map);
