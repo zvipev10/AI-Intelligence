@@ -4,10 +4,10 @@
 Record and knowledge entity viewers
 
 ## Current phase and overall status
-Phase 5 — duplicate-content fix and simulated UAV stream implemented; merge and deployment in progress.
+Phase 6 — duplicate-content fix and simulated UAV stream merged, deployed, and smoke-validated.
 
 ## Who needs to act now
-Codex is completing the explicitly requested merge, deployment, and production validation.
+No role action is required. Hands-on visual acceptance is an optional follow-up.
 
 ## Latest change
 The event summary appears only once. Every UAV record now starts a clearly labelled, mission-level simulated aerial stream when opened.
@@ -19,7 +19,7 @@ None. No playable UAV asset exists in the repository, so the designed disconnect
 Hands-on browser acceptance was not requested. Current media references without URLs render as unavailable.
 
 ## Next expected artifact
-Production acceptance and deployment details in `checkpoint-003.md`.
+None required. See the completed production record in `checkpoint-003.md`.
 
 ## Parent issue
 https://github.com/zvipev10/AI-Intelligence/issues/48 — open through final acceptance.
@@ -35,4 +35,4 @@ https://github.com/zvipev10/AI-Intelligence/issues/48 — open through final acc
 - [Checkpoint 001](checkpoint-001.md)
 
 ## Publishing
-Viewer refinement is on remote `main` at `4688544`. Production serves `app.js?v=179` and `styles.css?v=148`; rollback is `/home/ubuntu/deploy-backups/viewer-side-drawer-4688544`. Parent and review issues remain open pending repository administration.
+Latest viewer release is on remote `main` at `85c9538`. Production serves `app.js?v=180` and `styles.css?v=149`; rollback is `/home/ubuntu/deploy-backups/uav-stream-85c9538`. Parent and review issues remain open pending repository administration.

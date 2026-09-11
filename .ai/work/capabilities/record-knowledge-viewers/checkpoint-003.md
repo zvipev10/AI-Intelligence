@@ -1,7 +1,7 @@
 # Checkpoint 003 — Deduplicated record viewer and simulated UAV stream
 
 ## Status and recommendation
-Implementation complete. Ready for merge and deployment under the user's explicit end-to-end instruction.
+Complete, merged, deployed, and smoke-validated.
 
 ## Delivered
 - Removed the duplicated record narrative from the viewer header. The full event summary now appears once in the readable body card.
@@ -20,3 +20,13 @@ Implementation complete. Ready for merge and deployment under the user's explici
 ## Files
 `app.js`, `styles.css`, `index.html`, `test_object_viewer.py`, release provenance, and capability handoff artifacts.
 
+## Publication and deployment
+- Merged and pushed to remote `main` at `85c9538`.
+- Release manifest: `deployment/SHA256SUMS-v183.txt`.
+- Production target: `/opt/serbia-poc-ui` on `151.145.93.180`.
+- Rollback backup: `/home/ubuntu/deploy-backups/uav-stream-85c9538`.
+- Deployed asset hashes match v183.
+- Public HTTP serves `app.js?v=180` and `styles.css?v=149`.
+- Public asset inspection confirms the simulated-stream initializer and `SIMULATED ISR` disclosure.
+- The obsolete event-summary title expression is absent from production.
+- UI, general Hermes, and Moshe Hermes services are active; the status API reports V2.1 with 14,800 rows.
