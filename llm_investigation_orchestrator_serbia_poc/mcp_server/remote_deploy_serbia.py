@@ -21,7 +21,7 @@ REMOTE_CONFIG = "/home/ubuntu/.hermes/config.yaml"
 HERMES_SERVICE = "hermes-gateway.service"
 API_PORT = 8642
 SERVER_NAME = "serbia-events-poc"
-TOOLSET_NAME = "mcp-serbia-events-poc"
+TOOLSET_NAME = SERVER_NAME
 HERMES = "/home/ubuntu/.hermes/hermes-agent/venv/bin/hermes"
 LOCAL_ROOT = Path(__file__).resolve().parent.parent
 LOCAL_CONFIG = LOCAL_ROOT / ".hermes-api.json"
@@ -186,8 +186,16 @@ api.update({{
 api.setdefault("model_name", "gpt-5.4-mini")
 
 toolsets = data.setdefault("platform_toolsets", {{}})
-current = list(toolsets.get("api_server") or [])
-for item in ["mcp-intelligence-events-poc", settings["toolset_name"]]:
+legacy_names = {{
+    "mcp-intelligence-events-poc": "intelligence-events-poc",
+    "mcp-serbia-events-poc": "serbia-events-poc",
+}}
+current = []
+for item in toolsets.get("api_server") or []:
+    item = legacy_names.get(item, item)
+    if item not in current:
+        current.append(item)
+for item in ["intelligence-events-poc", settings["toolset_name"]]:
     if item not in current:
         current.append(item)
 toolsets["api_server"] = current

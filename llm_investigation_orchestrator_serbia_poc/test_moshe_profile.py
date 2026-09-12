@@ -48,7 +48,7 @@ class MosheProfileTests(unittest.TestCase):
     def test_profile_is_restricted_and_isolated(self):
         config = restricted_config(self.source_config())
         self.assertEqual(config["platforms"]["api_server"]["port"], MOSHE_PORT)
-        self.assertEqual(config["platform_toolsets"]["api_server"], ["mcp-serbia-events-poc"])
+        self.assertEqual(config["platform_toolsets"]["api_server"], ["serbia-events-poc"])
         self.assertEqual(set(config["mcp_servers"]), {"serbia-events-poc"})
         serbia = config["mcp_servers"]["serbia-events-poc"]
         self.assertEqual(serbia["tools"]["include"], MOSHE_TOOLS)

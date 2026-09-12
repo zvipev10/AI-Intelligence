@@ -38,7 +38,7 @@ class GeneralPersistentProfileTests(unittest.TestCase):
         result = configured_profile(source)
         self.assertEqual(result["platforms"]["api_server"]["port"], GENERAL_PERSISTENT_PORT)
         self.assertEqual(set(result["platforms"]), {"api_server"})
-        self.assertEqual(result["platform_toolsets"], {"api_server": ["mcp-serbia-events-poc"]})
+        self.assertEqual(result["platform_toolsets"], {"api_server": ["serbia-events-poc"]})
         self.assertEqual(
             result["mcp_servers"]["serbia-events-poc"]["env"]["INTELLIGENCE_POC_AUDIT"],
             GENERAL_PERSISTENT_AUDIT_PATH,

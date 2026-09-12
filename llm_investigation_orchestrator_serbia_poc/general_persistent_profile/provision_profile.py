@@ -25,8 +25,6 @@ def configured_profile(config: dict[str, Any]) -> dict[str, Any]:
     api = dict(platforms.get("api_server") or {})
     api.update({"enabled": True, "host": "127.0.0.1", "port": GENERAL_PERSISTENT_PORT})
     result["platforms"] = {"api_server": api}
-    toolsets = dict(result.get("platform_toolsets") or {})
-    result["platform_toolsets"] = {"api_server": list(toolsets.get("api_server") or [])}
     servers = dict(result.get("mcp_servers") or {})
     serbia = dict(servers.get("serbia-events-poc") or {})
     if not serbia:
@@ -36,6 +34,7 @@ def configured_profile(config: dict[str, Any]) -> dict[str, Any]:
     serbia["env"] = environment
     servers["serbia-events-poc"] = serbia
     result["mcp_servers"] = servers
+    result["platform_toolsets"] = {"api_server": list(servers)}
     return result
 
 

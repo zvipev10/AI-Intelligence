@@ -39,7 +39,7 @@ def restricted_config(config: dict[str, Any]) -> dict[str, Any]:
     api = dict(platforms.get("api_server") or {})
     api.update({"enabled": True, "host": "127.0.0.1", "port": MOSHE_PORT})
     result["platforms"] = {"api_server": api}
-    result["platform_toolsets"] = {"api_server": ["mcp-serbia-events-poc"]}
+    result["platform_toolsets"] = {"api_server": ["serbia-events-poc"]}
 
     servers = result.get("mcp_servers") or {}
     serbia = dict(servers.get("serbia-events-poc") or {})
@@ -65,6 +65,8 @@ def validate_restricted_config(config: dict[str, Any]) -> None:
     servers = config.get("mcp_servers") or {}
     if set(servers) != {"serbia-events-poc"}:
         raise ValueError("Moshe profile may expose only serbia-events-poc")
+    if config.get("platform_toolsets", {}).get("api_server") != ["serbia-events-poc"]:
+        raise ValueError("Moshe API toolsets must reference the configured MCP server name")
     included = servers["serbia-events-poc"]["tools"]["include"]
     if included != MOSHE_TOOLS or len(included) != len(set(included)):
         raise ValueError("Moshe tool allowlist does not match the approved contract")
