@@ -78,6 +78,15 @@ def normalize_locale(value: Any) -> str:
     return locale if locale in {"he", "en"} else "he"
 
 
+INSTRUCTION_MODE_INLINE = "inline"
+INSTRUCTION_MODE_PERSISTENT = "persistent"
+
+
+def normalize_instruction_mode(value: Any) -> str:
+    mode = str(value or "").strip().lower()
+    return mode if mode in {INSTRUCTION_MODE_INLINE, INSTRUCTION_MODE_PERSISTENT} else INSTRUCTION_MODE_INLINE
+
+
 RECORDED_EN_OVERRIDES = {
     "q1_hotspots": {
         "question": "Where are the main friction hotspots in North Kosovo, and what are the exact hotspots inside each area?",
@@ -3423,6 +3432,7 @@ class HermesClient:
             "hermes": {"poll_count": 0, "status_request_total_ms": 0},
             "tools": {},
         }
+        instruction_mode = normalize_instruction_mode(self.config.get("instruction_mode"))
         audit_path = self.config.get("audit_path") or REMOTE_AUDIT_PATH
         original_classification = {}
         if isinstance(continuation_context, dict):
@@ -3687,6 +3697,24 @@ class HermesClient:
         catalog_context = catalog_layer_prompt_context(locale)
         instructions = f"{instructions}\n\n{catalog_context}"
         full_instructions = f"{instructions}\n\n{state_block}" if state_block else instructions
+        if instruction_mode == INSTRUCTION_MODE_PERSISTENT:
+            language_reminder = (
+                "Respond in English only; preserve identifiers and source titles verbatim."
+                if locale == "en" else
+                "השב בעברית בלבד; שמור מזהים וכותרות מקור כפי שהם."
+            )
+            dynamic_parts = [language_reminder, classify_instruction.strip(), catalog_context]
+            if state_block:
+                dynamic_parts.append(state_block)
+            full_instructions = "\n\n".join(part for part in dynamic_parts if part)
+        encoded_instructions = full_instructions.encode("utf-8")
+        performance["instructions"] = {
+            "mode": instruction_mode,
+            "characters": len(full_instructions),
+            "bytes": len(encoded_instructions),
+            "sha256": hashlib.sha256(encoded_instructions).hexdigest(),
+            "stable_profile_required": instruction_mode == INSTRUCTION_MODE_PERSISTENT,
+        }
         safe_investigation_id = bounded_prompt_cache_key(investigation_id)
         session_id = safe_investigation_id or f"intelligence-orchestrator-{int(time.time() * 1000)}"
         session_started = time.perf_counter()
@@ -3698,12 +3726,18 @@ class HermesClient:
             ACTIVE_RUN_STARTED_AT = datetime.now(timezone.utc)
             ACTIVE_RUN_STARTED_AT_BY_AUDIT[audit_path] = ACTIVE_RUN_STARTED_AT
             create_started = time.perf_counter()
-            created = session.request("POST", "/v1/runs", {
+            run_payload = {
                 "input": prompt,
                 "instructions": full_instructions,
                 "conversation_history": history[-10:],
                 "session_id": session_id,
-            })
+            }
+            encoded_payload = json.dumps(run_payload, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+            performance["request"] = {
+                "bytes": len(encoded_payload),
+                "history_messages": len(run_payload["conversation_history"]),
+            }
+            created = session.request("POST", "/v1/runs", run_payload)
             created_at = datetime.now(timezone.utc)
             performance["hermes"]["run_create_ms"] = elapsed_ms(create_started)
             run_id = created["run_id"]
@@ -3920,6 +3954,12 @@ class HermesClient:
                     "events": events,
                     "usage": status.get("usage", {}),
                     "performance_log": performance_log_path.name,
+                    "instruction_experiment": {
+                        "mode": instruction_mode,
+                        "instruction_characters": performance["instructions"]["characters"],
+                        "instruction_bytes": performance["instructions"]["bytes"],
+                        "request_bytes": performance["request"]["bytes"],
+                    },
                     "memory_layer_actions": memory_layer_actions,
                     "catalog_layer_actions": catalog_layer_actions,
                     "catalog_layer_action_errors": catalog_layer_action_errors,
@@ -5198,7 +5238,14 @@ class Handler(SimpleHTTPRequestHandler):
                 investigation_state = {}
             if workstream_context:
                 investigation_state = {**investigation_state, "active_workstream": workstream_context}
-            config = load_agent_hermes_config(route.responding_agent)
+            instruction_mode = normalize_instruction_mode(request.get("instruction_mode"))
+            config_agent_id = (
+                "general_persistent"
+                if route.responding_agent == "general" and instruction_mode == INSTRUCTION_MODE_PERSISTENT
+                else route.responding_agent
+            )
+            config = load_agent_hermes_config(config_agent_id)
+            config["instruction_mode"] = instruction_mode
             result = HermesClient(config).investigate(
                 prompt,
                 request.get("history") or [],

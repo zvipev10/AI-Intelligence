@@ -108,6 +108,16 @@ def upload_ui(client: paramiko.SSHClient, api_key: str) -> None:
             "remote_host": "127.0.0.1",
             "remote_port": 8642,
             "api_key": api_key,
+            "agents": {
+                "moshe": {
+                    "remote_port": 8643,
+                    "audit_path": "/opt/serbia-poc/mcp_audit_moshe.jsonl",
+                },
+                "general_persistent": {
+                    "remote_port": 8644,
+                    "audit_path": "/opt/serbia-poc/mcp_audit_general_persistent.jsonl",
+                },
+            },
         }
         config_tmp = LOCAL_ROOT / ".hermes-api.remote.tmp.json"
         try:

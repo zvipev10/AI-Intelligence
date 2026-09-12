@@ -5,6 +5,10 @@
   "api_key": "replace-with-shared-secret",
   "audit_path": "/opt/serbia-poc/mcp_audit.jsonl",
   "agents": {
+    "general_persistent": {
+      "remote_port": 8644,
+      "audit_path": "/opt/serbia-poc/mcp_audit_general_persistent.jsonl"
+    },
     "moshe": {
       "remote_port": 8643,
       "audit_path": "/opt/serbia-poc/mcp_audit_moshe.jsonl"
