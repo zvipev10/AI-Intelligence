@@ -7,6 +7,7 @@ import server
 from agent_routing import AgentRouteRegistry
 from moshe_profile.provision_profile import (
     MOSHE_AUDIT_PATH,
+    MOSHE_MCP_SERVER_NAME,
     MOSHE_PORT,
     MOSHE_TOOLS,
     PLAYBACK_VISIBILITY_PATH,
@@ -47,10 +48,13 @@ class MosheProfileTests(unittest.TestCase):
 
     def test_profile_is_restricted_and_isolated(self):
         config = restricted_config(self.source_config())
-        self.assertEqual(config["platforms"]["api_server"]["port"], MOSHE_PORT)
-        self.assertEqual(config["platform_toolsets"]["api_server"], ["serbia-events-poc"])
-        self.assertEqual(set(config["mcp_servers"]), {"serbia-events-poc"})
-        serbia = config["mcp_servers"]["serbia-events-poc"]
+        self.assertEqual(config["platforms"], {
+            "api_server": {"enabled": False},
+            "whatsapp": {"enabled": False},
+        })
+        self.assertEqual(config["platform_toolsets"]["api_server"], [MOSHE_MCP_SERVER_NAME])
+        self.assertEqual(set(config["mcp_servers"]), {MOSHE_MCP_SERVER_NAME})
+        serbia = config["mcp_servers"][MOSHE_MCP_SERVER_NAME]
         self.assertEqual(serbia["tools"]["include"], MOSHE_TOOLS)
         self.assertEqual(serbia["env"]["INTELLIGENCE_POC_AUDIT"], MOSHE_AUDIT_PATH)
         self.assertEqual(
@@ -97,18 +101,20 @@ class MosheProfileTests(unittest.TestCase):
     def test_backend_merges_only_selected_agent_endpoint(self):
         base = {
             "remote_host": "127.0.0.1", "remote_port": 8642, "api_key": "secret",
-            "audit_path": "/general/audit", "agents": {"moshe": {"remote_port": 8643, "audit_path": MOSHE_AUDIT_PATH}},
+            "audit_path": "/general/audit", "agents": {"moshe": {"remote_port": 8642, "api_path_prefix": "/p/moshe", "api_key": "moshe-secret", "audit_path": MOSHE_AUDIT_PATH}},
         }
         with patch.object(server, "load_hermes_config", return_value=base):
             general = server.load_agent_hermes_config("general")
             moshe = server.load_agent_hermes_config("moshe")
         self.assertEqual(general["remote_port"], 8642)
         self.assertEqual(general["audit_path"], "/general/audit")
-        self.assertEqual(moshe["remote_port"], 8643)
+        self.assertEqual(moshe["remote_port"], 8642)
+        self.assertEqual(moshe["api_path_prefix"], "/p/moshe")
+        self.assertEqual(moshe["api_key"], "moshe-secret")
         self.assertEqual(moshe["audit_path"], MOSHE_AUDIT_PATH)
         self.assertNotIn("agents", moshe)
 
-    def test_service_uses_named_profile_and_resource_guard(self):
+    def test_legacy_service_is_retained_only_as_rollback_artifact(self):
         unit = (ROOT / "moshe_profile" / "hermes-moshe-gateway.service").read_text(encoding="utf-8")
         self.assertIn("bin/hermes gateway run", unit)
         self.assertIn('Environment="HERMES_HOME=/home/ubuntu/.hermes/profiles/moshe"', unit)
@@ -116,6 +122,13 @@ class MosheProfileTests(unittest.TestCase):
         self.assertIn('Environment="HERMES_PARALLEL_TOOL_CALLS=false"', unit)
         self.assertIn("MemoryHigh=400M", unit)
         self.assertIn("MemoryMax=600M", unit)
+
+    def test_api_paths_are_scoped_to_moshe_profile(self):
+        self.assertEqual(server.hermes_api_path({}, "/v1/runs"), "/v1/runs")
+        self.assertEqual(
+            server.hermes_api_path({"api_path_prefix": "/p/moshe"}, "/v1/runs"),
+            "/p/moshe/v1/runs",
+        )
 
     def test_codex_transport_patch_honors_profile_parallelism_flag(self):
         from tempfile import TemporaryDirectory

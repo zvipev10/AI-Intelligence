@@ -11,6 +11,7 @@ import yaml
 
 
 MOSHE_PORT = 8643
+MOSHE_MCP_SERVER_NAME = "serbia-events-poc-moshe"
 MOSHE_AUDIT_PATH = "/opt/serbia-poc/mcp_audit_moshe.jsonl"
 MOSHE_DB_PATH = "/opt/serbia-poc/data/attack_targets/attack_targets.db"
 MOSHE_BACKUP_PATH = "/opt/serbia-poc/backups/attack_targets"
@@ -35,14 +36,17 @@ MESSAGING_ENV_PREFIXES = (
 
 def restricted_config(config: dict[str, Any]) -> dict[str, Any]:
     result = dict(config)
-    platforms = dict(result.get("platforms") or {})
-    api = dict(platforms.get("api_server") or {})
-    api.update({"enabled": True, "host": "127.0.0.1", "port": MOSHE_PORT})
-    result["platforms"] = {"api_server": api}
-    result["platform_toolsets"] = {"api_server": ["serbia-events-poc"]}
+    # The default multiplex gateway owns every port-binding platform. The
+    # explicit false prevents Moshe's API_SERVER_KEY from auto-enabling a
+    # second listener while keeping that key available for /p/moshe auth.
+    result["platforms"] = {
+        "api_server": {"enabled": False},
+        "whatsapp": {"enabled": False},
+    }
+    result["platform_toolsets"] = {"api_server": [MOSHE_MCP_SERVER_NAME]}
 
     servers = result.get("mcp_servers") or {}
-    serbia = dict(servers.get("serbia-events-poc") or {})
+    serbia = dict(servers.get(MOSHE_MCP_SERVER_NAME) or servers.get("serbia-events-poc") or {})
     if not serbia:
         raise ValueError("source profile is missing serbia-events-poc")
     environment = dict(serbia.get("env") or {})
@@ -56,18 +60,21 @@ def restricted_config(config: dict[str, Any]) -> dict[str, Any]:
     tools = dict(serbia.get("tools") or {})
     tools.update({"include": list(MOSHE_TOOLS), "prompts": False, "resources": False})
     serbia["tools"] = tools
-    result["mcp_servers"] = {"serbia-events-poc": serbia}
+    result["mcp_servers"] = {MOSHE_MCP_SERVER_NAME: serbia}
     validate_restricted_config(result)
     return result
 
 
 def validate_restricted_config(config: dict[str, Any]) -> None:
+    expected_platforms = {"api_server": {"enabled": False}, "whatsapp": {"enabled": False}}
+    if config.get("platforms") != expected_platforms:
+        raise ValueError("Moshe multiplex profile may only declare disabled shared adapters")
     servers = config.get("mcp_servers") or {}
-    if set(servers) != {"serbia-events-poc"}:
-        raise ValueError("Moshe profile may expose only serbia-events-poc")
-    if config.get("platform_toolsets", {}).get("api_server") != ["serbia-events-poc"]:
+    if set(servers) != {MOSHE_MCP_SERVER_NAME}:
+        raise ValueError(f"Moshe profile may expose only {MOSHE_MCP_SERVER_NAME}")
+    if config.get("platform_toolsets", {}).get("api_server") != [MOSHE_MCP_SERVER_NAME]:
         raise ValueError("Moshe API toolsets must reference the configured MCP server name")
-    included = servers["serbia-events-poc"]["tools"]["include"]
+    included = servers[MOSHE_MCP_SERVER_NAME]["tools"]["include"]
     if included != MOSHE_TOOLS or len(included) != len(set(included)):
         raise ValueError("Moshe tool allowlist does not match the approved contract")
     forbidden = [tool for tool in included if any(fragment in tool.casefold() for fragment in FORBIDDEN_TOOL_FRAGMENTS)]

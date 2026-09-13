@@ -12,12 +12,16 @@ from pathlib import Path
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", required=True, type=Path)
+    parser.add_argument("--api-key", required=True)
     args = parser.parse_args()
     path = args.config.resolve()
     config = json.loads(path.read_text(encoding="utf-8-sig"))
     agents = dict(config.get("agents") or {})
     agents["moshe"] = {
-        "remote_port": 8643,
+        "remote_port": int(config.get("remote_port") or 8642),
+        "api_key": args.api_key,
+        "api_path_prefix": "/p/moshe",
+        "mcp_tool_prefix": "mcp_serbia_events_poc_moshe_",
         "audit_path": "/opt/serbia-poc/mcp_audit_moshe.jsonl",
     }
     config["agents"] = agents

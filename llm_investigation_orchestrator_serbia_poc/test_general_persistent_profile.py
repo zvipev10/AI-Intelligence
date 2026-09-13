@@ -86,14 +86,19 @@ class GeneralPersistentProfileTests(unittest.TestCase):
         with TemporaryDirectory() as directory:
             path = Path(directory) / ".hermes-api.json"
             path.write_text(
-                json.dumps({"api_key": "secret", "agents": {"moshe": {"remote_port": 8643}}}),
+                json.dumps({"api_key": "secret", "agents": {"moshe": {
+                    "remote_port": 8642,
+                    "api_key": "moshe-secret",
+                    "api_path_prefix": "/p/moshe",
+                }}}),
                 encoding="utf-8",
             )
             with patch("sys.argv", ["configure_ui_gateway.py", "--config", str(path)]):
                 self.assertEqual(configure_ui_gateway(), 0)
             result = json.loads(path.read_text(encoding="utf-8"))
         self.assertEqual(result["api_key"], "secret")
-        self.assertEqual(result["agents"]["moshe"]["remote_port"], 8643)
+        self.assertEqual(result["agents"]["moshe"]["remote_port"], 8642)
+        self.assertEqual(result["agents"]["moshe"]["api_path_prefix"], "/p/moshe")
         self.assertEqual(result["agents"]["general_persistent"]["remote_port"], 8644)
 
 

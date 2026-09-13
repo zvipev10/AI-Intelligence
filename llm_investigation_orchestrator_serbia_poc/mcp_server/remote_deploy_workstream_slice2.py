@@ -20,7 +20,7 @@ REMOTE_PROFILE_ROOT = "/opt/serbia-poc/moshe_profile"
 REMOTE_BACKUP_ROOT = "/opt/serbia-poc-ui-backups"
 MOSHE_HOME = "/home/ubuntu/.hermes/profiles/moshe"
 UI_SERVICE = "serbia-poc-ui.service"
-MOSHE_SERVICE = "hermes-moshe-gateway.service"
+HERMES_SERVICE = "hermes-gateway.service"
 UI_FILES = ("server.py", "index.html", "app.js", "styles.css", "agent_result_pipeline.py", "workstream_artifacts.py")
 
 
@@ -63,14 +63,14 @@ def deploy(client) -> tuple[str, dict]:
         f"&& sudo -n install -o {USER} -g {USER} -m 0644 {staging_q}/profile/SOUL.md {profile_q}/SOUL.md "
         f"&& /usr/bin/python3 {profile_q}/provision_profile.py --profile-dir {MOSHE_HOME} --soul {profile_q}/SOUL.md "
         f"&& rm -rf {staging_q} "
-        f"&& sudo -n systemctl restart {MOSHE_SERVICE} "
+        f"&& sudo -n systemctl restart {HERMES_SERVICE} "
         f"&& sudo -n systemctl restart {UI_SERVICE}",
         timeout=120,
     )
     time.sleep(5)
     checks = {
         "ui_service": f"sudo -n systemctl is-active {UI_SERVICE}",
-        "moshe_service": f"sudo -n systemctl is-active {MOSHE_SERVICE}",
+        "hermes_service": f"sudo -n systemctl is-active {HERMES_SERVICE}",
         "status": "curl -fsS http://127.0.0.1:8769/api/status",
         "public": (
             f"curl -k -LfsS https://{HOST}/ | grep -q 'data-prompt-option=\"workstream\"' "
@@ -85,7 +85,7 @@ def deploy(client) -> tuple[str, dict]:
         "server_contract": f"grep -q 'apply_workstream_action' {root_q}/server.py && test -f {root_q}/workstream_artifacts.py && echo present",
         "mcp_tools": f"grep -q 'prepare_workstream_creation' {mcp_q}/server.py && grep -q 'prepare_workstream_indication_proposal' {mcp_q}/server.py && grep -q 'decide_workstream_indication_proposal' {mcp_q}/server.py && echo present",
         "moshe_tools": f"grep -q 'prepare_workstream_creation' {MOSHE_HOME}/config.yaml && grep -q 'prepare_workstream_indication_proposal' {MOSHE_HOME}/config.yaml && grep -q 'decide_workstream_indication_proposal' {MOSHE_HOME}/config.yaml && echo present",
-        "logs": f"journalctl -u {UI_SERVICE} -u {MOSHE_SERVICE} -n 50 --no-pager",
+        "logs": f"journalctl -u {UI_SERVICE} -u {HERMES_SERVICE} -n 50 --no-pager",
     }
     result, failed = {}, False
     for name, command in checks.items():

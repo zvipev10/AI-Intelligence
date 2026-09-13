@@ -94,7 +94,21 @@ def upload_dir(sftp: paramiko.SFTPClient, local_dir: Path, remote_dir: str) -> N
         upload_file(sftp, local, str(PurePosixPath(remote_dir) / relative))
 
 
-def upload_ui(client: paramiko.SSHClient, api_key: str) -> None:
+def read_remote_moshe_api_key(client: paramiko.SSHClient) -> str | None:
+    """Read the existing profile credential so routine UI deploys preserve it."""
+    sftp = client.open_sftp()
+    try:
+        with sftp.open(f"{REMOTE_UI_ROOT}/.hermes-api.json", "r") as handle:
+            raw = handle.read()
+            config = json.loads(raw.decode("utf-8") if isinstance(raw, bytes) else raw)
+    except (OSError, ValueError, AttributeError):
+        return None
+    finally:
+        sftp.close()
+    return str((((config.get("agents") or {}).get("moshe") or {}).get("api_key") or "")).strip() or None
+
+
+def upload_ui(client: paramiko.SSHClient, api_key: str, moshe_api_key: str) -> None:
     staging = f"/tmp/serbia-poc-ui-{int(time.time())}"
     run(client, f"rm -rf {shlex.quote(staging)} && mkdir -p {shlex.quote(staging)}")
     sftp = client.open_sftp()
@@ -110,7 +124,10 @@ def upload_ui(client: paramiko.SSHClient, api_key: str) -> None:
             "api_key": api_key,
             "agents": {
                 "moshe": {
-                    "remote_port": 8643,
+                    "remote_port": 8642,
+                    "api_key": moshe_api_key,
+                    "api_path_prefix": "/p/moshe",
+                    "mcp_tool_prefix": "mcp_serbia_events_poc_moshe_",
                     "audit_path": "/opt/serbia-poc/mcp_audit_moshe.jsonl",
                 },
                 "general_persistent": {
@@ -201,16 +218,22 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--key", required=True, type=Path)
     parser.add_argument("--api-key", default=None)
+    parser.add_argument("--moshe-api-key", default=None)
     args = parser.parse_args()
 
-    if args.api_key:
-        api_key = args.api_key
-    else:
-        api_key = json.loads(LOCAL_HERMES_CONFIG.read_text(encoding="utf-8"))["api_key"]
+    local_config = json.loads(LOCAL_HERMES_CONFIG.read_text(encoding="utf-8"))
+    api_key = args.api_key or local_config["api_key"]
 
     client = connect(args.key.resolve())
     try:
-        upload_ui(client, api_key)
+        moshe_api_key = (
+            args.moshe_api_key
+            or ((local_config.get("agents") or {}).get("moshe") or {}).get("api_key")
+            or read_remote_moshe_api_key(client)
+        )
+        if not moshe_api_key:
+            parser.error("--moshe-api-key is required for the first multiplexed deployment")
+        upload_ui(client, api_key, moshe_api_key)
         install_service(client)
         verification = verify(client)
     finally:

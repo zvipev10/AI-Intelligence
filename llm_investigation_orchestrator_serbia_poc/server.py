@@ -535,6 +535,15 @@ def load_agent_hermes_config(agent_id: str) -> dict:
     return merged
 
 
+def hermes_api_path(config: dict, path: str) -> str:
+    """Return an API path scoped to a multiplexed Hermes profile when configured."""
+    normalized_path = "/" + str(path or "").lstrip("/")
+    prefix = str(config.get("api_path_prefix") or "").strip()
+    if not prefix:
+        return normalized_path
+    return "/" + prefix.strip("/") + normalized_path
+
+
 def route_agent_request(request: dict[str, Any]):
     """Route from the unmodified current user message, never enriched prompt/history text."""
     routing_prompt = str(request.get("routing_prompt") or request.get("prompt") or "").strip()
@@ -1049,12 +1058,13 @@ def build_english_agent_instructions(
     classify_instruction: str,
     responding_agent: str,
     playback_authorized: bool,
+    tool_prefix: str = HERMES_TOOL_PREFIX,
 ) -> str:
     lines = [
         "You are an investigation agent inside an experimental intelligence workspace for a North Kosovo / Serbia escalation scenario.",
         "All user-facing content must be in English only. Keep raw identifiers, record IDs, and source titles exactly as they appear in the data.",
         "Include locale=\"en\" in every MCP tool call. Target searches and writes must use only the English target bank.",
-        f"Use only MCP tools whose names start with {HERMES_TOOL_PREFIX} and only the data they return. Do not use shell, filesystem, web, system tools, or any other external capability.",
+        f"Use only MCP tools whose names start with {tool_prefix} and only the data they return. Do not use shell, filesystem, web, system tools, or any other external capability.",
         "Analytic viewpoint: Serbian military intelligence analyst. The dataset is biased toward open sources and synthetic Serbian ISR drone observations about rival forces and the surrounding environment.",
         "Always distinguish observation, identification, inference, and uncertainty. Counts derived from video are estimates and require corroboration.",
         classify_instruction.strip(),
@@ -2601,7 +2611,7 @@ class HermesSession:
         if encoded is not None:
             headers["Content-Type"] = "application/json; charset=utf-8"
         try:
-            connection.request(method, path, body=encoded, headers=headers)
+            connection.request(method, hermes_api_path(self.config, path), body=encoded, headers=headers)
             response = connection.getresponse()
             raw = response.read().decode("utf-8", errors="replace")
             if response.status >= 400:
@@ -2672,7 +2682,7 @@ class HermesClient:
             }
             if encoded is not None:
                 headers["Content-Type"] = "application/json; charset=utf-8"
-            connection.request(method, path, body=encoded, headers=headers)
+            connection.request(method, hermes_api_path(self.config, path), body=encoded, headers=headers)
             response = connection.getresponse()
             raw = response.read().decode("utf-8", errors="replace")
             if response.status >= 400:
@@ -3433,6 +3443,7 @@ class HermesClient:
             "tools": {},
         }
         instruction_mode = normalize_instruction_mode(self.config.get("instruction_mode"))
+        tool_prefix = str(self.config.get("mcp_tool_prefix") or HERMES_TOOL_PREFIX)
         audit_path = self.config.get("audit_path") or REMOTE_AUDIT_PATH
         original_classification = {}
         if isinstance(continuation_context, dict):
@@ -3470,7 +3481,7 @@ class HermesClient:
             "נקודת המבט היא של אנליסט מודיעין בצבא סרביה. המאגר מבוסס בעיקר על מקורות גלויים ועל תצפיות וידאו מכטב״ם סרביות סינתטיות כלפי כוחות היריב והסביבה. "
             "הכיסוי חלקי ומוטה לאיסוף על היריב; היעדר דיווח על כוח סרבי אינו ראיה להיעדר פעילות סרבית. "
             "הפרד תמיד בין תצפית, זיהוי והסקה, והתייחס לספירת עצמים בווידאו כהערכה הדורשת הצלבה.\n"
-            f"השתמש אך ורק בכלי MCP ששמם מתחיל ב-{HERMES_TOOL_PREFIX} ובנתונים שהם מחזירים.\n"
+            f"השתמש אך ורק בכלי MCP ששמם מתחיל ב-{tool_prefix} ובנתונים שהם מחזירים.\n"
             + classify_instruction +
             "עקרון כיסוי מחייב: ברירת המחדל בכל שאלת מודיעין היא Coverage / exhaustive mode."
             " אל תסתפק בדוגמאות מייצגות כאשר הכלים יכולים להחזיר את כלל התוצאות בתחום המוגדר."
@@ -3692,6 +3703,7 @@ class HermesClient:
                     and isinstance(investigation_state, dict)
                     and isinstance(investigation_state.get("scenario_playback"), dict)
                 ),
+                tool_prefix=tool_prefix,
             )
         state_block = render_investigation_state_localized(investigation_state, locale=locale)
         catalog_context = catalog_layer_prompt_context(locale)
