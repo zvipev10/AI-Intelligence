@@ -130,10 +130,6 @@ def upload_ui(client: paramiko.SSHClient, api_key: str, moshe_api_key: str) -> N
                     "mcp_tool_prefix": "mcp_serbia_events_poc_moshe_",
                     "audit_path": "/opt/serbia-poc/mcp_audit_moshe.jsonl",
                 },
-                "general_persistent": {
-                    "remote_port": 8644,
-                    "audit_path": "/opt/serbia-poc/mcp_audit_general_persistent.jsonl",
-                },
             },
         }
         config_tmp = LOCAL_ROOT / ".hermes-api.remote.tmp.json"

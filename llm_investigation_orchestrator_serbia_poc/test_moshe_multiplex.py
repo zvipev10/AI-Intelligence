@@ -22,7 +22,7 @@ class MosheMultiplexTests(unittest.TestCase):
         self.assertIn("HERMES_PARALLEL_TOOL_CALLS=false", result)
 
     def test_ui_routes_moshe_to_shared_listener_prefix(self):
-        result = configure_ui({"remote_port": 8642, "agents": {"general_persistent": {"remote_port": 8644}}}, "moshe-secret")
+        result = configure_ui({"remote_port": 8642, "agents": {}}, "moshe-secret")
         self.assertEqual(result["agents"]["moshe"], {
             "remote_port": 8642,
             "api_key": "moshe-secret",
@@ -30,7 +30,6 @@ class MosheMultiplexTests(unittest.TestCase):
             "mcp_tool_prefix": "mcp_serbia_events_poc_moshe_",
             "audit_path": "/opt/serbia-poc/mcp_audit_moshe.jsonl",
         })
-        self.assertEqual(result["agents"]["general_persistent"]["remote_port"], 8644)
 
 
 if __name__ == "__main__":
