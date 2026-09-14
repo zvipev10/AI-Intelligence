@@ -2,7 +2,7 @@
 
 ## Completed
 
-Created a capability brief, role reviews, decisions, status dashboard, and eight-slice implementation plan for moving the application to I360-backed data.
+Created a capability brief, role reviews, decisions, status dashboard, and two-part implementation plan. Part 1 delivers the non-chat analyst application on I360. Part 2 adds chat-based investigation through an application-owned controller and I360 `llm/chat`.
 
 ## Scope decision
 
@@ -10,7 +10,7 @@ Workstream and scenario playback are excluded. The plan preserves the current fr
 
 ## Next action
 
-Architecture/security and product review the plan, then Development runs Slice 0 using an authenticated ordinary-user I360 test environment. No product implementation should begin before that verification checkpoint.
+Architecture/security and product review the split, then Development runs P1.0 using an authenticated ordinary-user I360 test environment. Part 1 can proceed and ship without the agent work; Part 2 may start after the Part 1 domain services are stable.
 
 ## Key handoff inputs needed
 

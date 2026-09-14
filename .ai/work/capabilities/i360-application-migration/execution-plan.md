@@ -1,140 +1,173 @@
-# Execution plan: I360 application migration
+# Execution plan: I360 application migration in two releases
 
 ## Plan status
 
-Draft — ready for human architecture/product review before coding.
+Draft — split into independently reviewable and releasable parts.
 
 ## Goal
 
-Convert the application's non-Workstream, non-playback data access and investigation functions to operate over authorized I360 data, preserving the current frontend and application behavior.
+First deliver the application on I360 without chat-based investigation or agents. Then add the agent experience using I360-backed tools and evaluate I360 `llm/chat` as the inference layer that replaces Hermes.
 
-## Prerequisite review gate
+## Scope boundary
 
-| Artifact | Status |
-|---|---|
-| Product brief | Ready for planning; user supplied scope |
-| Developer review | Ready with live-validation gates |
-| UX review | Ready; degraded-state copy needs acceptance |
-| QA review | Ready; cases need live field samples |
-| Architecture/security | Required before credentials or writes |
+```text
+Part 1: Analyst application
+Browser -> Application API -> I360
 
-## Implementation principles
+Part 2: Agent investigation
+Browser chat -> Application agent controller -> I360 llm/chat
+                                      └──────> I360-backed domain tools
+```
 
-- The browser continues to call the application server.
-- I360 credentials never enter browser code.
-- Domain tools consume normalized records through one provider interface.
-- Every I360 response propagates warnings, capability limitations, and coverage metadata.
-- Local and I360 providers coexist behind configuration until cutover.
-- No slice modifies or depends on Workstream or playback.
+Part 1 must operate, be testable, and be releasable without Hermes, an agent controller, MCP tool selection, or chat-based investigation. Part 2 depends on the stable provider and application services delivered by Part 1.
 
-## Slice 0 — Authenticated discovery and contract fixture
+Workstream and scenario playback remain outside both parts.
 
-**Goal:** Turn public documentation assumptions into verified environment facts.
+## Shared prerequisite gate
 
-**Changes:** Add a read-only probe/diagnostic command and redacted contract fixtures. Verify authentication, base URL, health dependencies, item/entity schemas, search modes, geo, embeddings, media delivery, warnings, paging, and permission behavior with ordinary users.
+Before implementation, verify the target I360 environment with ordinary-user identities: authentication, permission behavior, item/entity schemas, field mappings, search capabilities, warnings, paging, geo, embeddings, media access, and representative records. Record the result in `checkpoint-001.md`.
 
-**Exit criteria:** Approved field/capability matrix; representative IDs; no secrets in fixtures or logs; blockers classified as platform, data, or application work.
+# Part 1 — I360 application without chat investigation or agents
 
-**Risk/reviewer:** High; architecture/security and platform owner. Stop after slice.
+## Part 1 outcome
 
-## Slice 1 — Provider boundary and canonical mapping
+An analyst can use the application directly to discover and inspect authorized I360 data:
 
-**Goal:** Decouple investigation behavior from local storage.
+- text and semantic search;
+- source, entity, time, and geographic filtering;
+- map, timeline, list, and catalog views;
+- item details, original/translated text, transcripts/OCR, and media;
+- entity and location exploration;
+- verified aggregations;
+- saved investigations, questions, layers, and analyst notes;
+- target-candidate search, creation, update, duplicate checks, and evidence attachment;
+- English and Hebrew UI, permission errors, partial-result warnings, and diagnostics.
 
-**Changes:** Define typed provider operations for search, semantic search, get, aggregate, context, entity/place resolution, and media. Implement the local provider by moving existing access behind the interface. Define canonical ID, time, source, reliability, certainty, location, entity, text, media, warning, and coverage fields. Add configuration and fail-closed startup validation.
+Chat entry points and automated investigative conclusions are disabled or absent in Part 1. Users search, filter, inspect, and save through explicit controls.
 
-**Exit criteria:** Current local behavior passes through the provider; mapping contract is documented and tested.
+## Part 1 acceptance criteria
 
-**Risk/reviewer:** Medium; development/architecture. Stop after slice.
+1. An ordinary user sees only authorized I360 records across every data path.
+2. Search results consistently drive map, timeline, list, catalog, and object-view selections.
+3. Every displayed record retains a stable I360 source reference and provenance.
+4. Missing capabilities and incomplete results are distinguishable from no matches.
+5. Saved state and target candidates reopen with valid evidence references and approved visibility.
+6. Representative English and Hebrew behavior passes.
+7. The release starts and functions with Hermes and agent chat disabled.
+8. Provider rollback is proven before I360 becomes the default.
 
-## Slice 2 — Read-only I360 provider
+## Part 1 slices
 
-**Goal:** Supply canonical evidence from I360.
+### P1.0 — Authenticated estate discovery
 
-**Changes:** Implement authenticated client transport, timeout/retry policy, pagination, warning handling, items search/get/aggregate/context, entity/place lookup, media URL/stream handling, and capability discovery. Normalize responses through Slice 1 mappings.
+Add a read-only diagnostic and redacted fixtures. Produce the approved capability, field, permission, and identifier matrix.
 
-**Exit criteria:** Contract tests pass; live samples cover text, semantic, geo, entity, original text, transcript/OCR, and media; denied records remain inaccessible.
+**Gate:** Architecture/Security and platform owner. Stop after slice.
 
-**Risk/reviewer:** High; architecture/security, development, QA. Stop after slice.
+### P1.1 — Provider boundary and canonical mapping
 
-## Slice 3 — Core MCP evidence tools
+Define provider operations for search, semantic search, item detail, aggregation, context, entity/place lookup, and media. Put current local reads behind `LocalDataProvider`; define canonical IDs, time, source, reliability, certainty, location, entity, text, media, warnings, and coverage.
 
-**Goal:** Move foundational tools to the provider.
+**Gate:** Development/Architecture. Existing local behavior must pass through the new boundary.
 
-**Changes:** Convert `search_events`, `semantic_search_events`, `get_objects`, `resolve_location`, `resolve_entity`, and `aggregate_events`. Preserve current output schemas and add explicit provider warnings and coverage. Use bounded application-side aggregation only where I360 semantics do not match.
+### P1.2 — Read-only I360 provider
 
-**Exit criteria:** Tool contract tests and differential cases pass; incomplete search is never reported as exhaustive.
+Implement server-side authentication, transport, timeouts, safe retries, pagination, capability discovery, warning propagation, and normalized I360 operations. Add recorded-response contract tests and live ordinary-user permission tests.
 
-**Risk/reviewer:** Medium; development/QA/product. Stop after slice.
+**Gate:** Architecture/Security/QA. Denied records must remain inaccessible through every tested path.
 
-## Slice 4 — Investigation reasoning tools
+### P1.3 — Non-chat application services
 
-**Goal:** Run the current analytical logic over I360 candidates.
+Route layer catalogs, layer rows, searches, filters, aggregates, object details, entity/location lookup, and media through the provider. This slice creates reusable domain services that Part 2 can later invoke.
 
-**Changes:** Convert event-reference resolution, actor history, identifier and semantic-clue tracing, related-event ranking, location-claim comparison, hypothesis challenge, linkage explanation, and sequence building. Keep deterministic scoring and evidence-bound LLM prompts. Ensure every citation resolves through the provider.
+**Gate:** Development/QA/Product. Search and aggregate coverage semantics must be explicit.
 
-**Exit criteria:** Representative investigation scenarios produce grounded chains, alternatives, gaps, and resolvable citations in both locales.
+### P1.4 — Frontend conversion
 
-**Risk/reviewer:** High; product analyst, development, QA. Stop after slice.
+Connect search controls, map, timeline, list, catalog, and object viewer to I360-backed services. Add authentication-expired, unavailable, denied, unsupported, partial, and stale-record states. Disable chat-based investigation in the Part 1 runtime configuration.
 
-## Slice 5 — Application API and frontend integration
+**Gate:** UX/Product/Security/QA. Complete the search-to-inspection flow in both locales.
 
-**Goal:** Make existing screens use I360-backed data without a redesign.
+### P1.5 — Application state and target candidates
 
-**Changes:** Route layers, layer rows, object detail, map/timeline records, and investigation query results through provider-backed services. Add authentication, unavailable/partial/denied states, capability-aware controls, and observability. Keep catalog layer IDs and selection contracts stable where possible.
+Choose the approved persistence boundary for investigations, saved questions/layers/notes, and targets. If records move to I360, define entity types, actor visibility, soft deletion, evidence relationships, and conflict behavior. Otherwise retain current repositories temporarily while using I360 item IDs.
 
-**Exit criteria:** Search-to-map/list/timeline-to-object-view flow passes; media and bilingual behavior pass; UI distinguishes no matches from incomplete retrieval.
+**Gate:** Product/Architecture/Security/QA. Multi-user visibility, save/reopen, stale evidence, duplicate targets, and concurrent writes must pass.
 
-**Risk/reviewer:** High; UX/product/security/QA. Stop after slice.
+### P1.6 — Part 1 acceptance and cutover
 
-## Slice 6 — Investigation state and saved artifacts
+Run functional, permission, bilingual, representative-volume, failure, and rollback tests. Make I360 the default data provider only after acceptance. Do not remove local stores in this slice.
 
-**Goal:** Preserve investigation continuity with I360 evidence references.
+**Gate:** Product/Operations/Security/QA. This is the release decision for Part 1.
 
-**Changes:** Finalize storage choice for investigation metadata, memory, saved questions, and saved layers. If moved to I360, create reviewed entity types, actors, soft-deletion and concurrency behavior; otherwise formalize the temporary current-store boundary. Validate stale or denied evidence references.
+# Part 2 — Chat-based investigation and agents
 
-**Exit criteria:** Two users pass own/shared/denied scenarios; save/reopen and conflict tests pass; rollback path is proven.
+## Part 2 outcome
 
-**Risk/reviewer:** High; architecture/security/product. Stop after slice.
+Restore conversational investigation on top of Part 1. An application-owned agent controller uses I360 `llm/chat` for inference, executes approved domain tools, preserves state, streams progress, and produces the existing answer and presentation contracts. Hermes can then be retired if parity is demonstrated.
 
-## Slice 7 — Target candidates
+## Part 2 acceptance criteria
 
-**Goal:** Preserve target search, creation, update, duplicate detection, and evidence attachment over I360 evidence.
+1. General and Moshe routing, instructions, and session boundaries match approved behavior.
+2. The controller performs bounded, validated multi-step tool loops over Part 1 services.
+3. Answers cite authorized I360 items and every citation resolves for the current user.
+4. Tool activity, progress, cancellation, timeout, retry, and failure states are visible and auditable.
+5. Investigation memory and saved chat results reopen without an opaque provider session.
+6. Evidence prompt injection cannot select unauthorized tools or override controller policy.
+7. Representative investigations meet accepted quality, coverage, latency, and cost thresholds relative to Hermes.
+8. Hermes remains selectable until rollback and parity acceptance are complete.
 
-**Changes:** Keep `TargetBank` behind a repository first, then implement the approved persistence choice. Map evidence IDs to I360 items, define target ownership and visibility, preserve provenance and duplicate rules, and handle removal/update conflicts.
+## Part 2 slices
 
-**Exit criteria:** Existing target tests plus multi-user, stale-reference, duplicate, and concurrent-update cases pass.
+### P2.0 — `llm/chat` capability proof
 
-**Risk/reviewer:** High; product, architecture/security, QA. Stop after slice.
+Verify models, structured JSON-schema output, streaming, context limits, cancellation, quotas, latency, identity propagation, and failure responses. Test multi-turn structured decisions without executing tools.
 
-## Slice 8 — Cutover and fallback
+**Gate:** Architecture/Security/QA. Stop if reliable structured next-action output is unavailable.
 
-**Goal:** Make I360 the default provider safely.
+### P2.1 — Agent controller foundation
 
-**Changes:** Run acceptance and representative-volume tests; compare result quality and coverage; document operations; switch configuration by environment; retain a time-bounded rollback mechanism; remove local data dependencies only in a separately reviewed cleanup.
+Implement server-side conversation/run state, agent profiles, prompt construction, tool allowlists, argument validation, budgets, iteration limits, timeouts, cancellation, audit records, and final-answer assembly. Treat model output as untrusted input.
 
-**Exit criteria:** Acceptance criteria pass, known gaps are accepted, operational owner and rollback are documented, and no migration acceptance depends on Workstream or playback.
+**Gate:** Architecture/Security/Development. No production tools are enabled yet.
 
-**Risk/reviewer:** High; product, operations, security, QA. Stop before production switch.
+### P2.2 — I360-backed agent tools
 
-## Likely affected areas
+Expose Part 1 services as validated tools for search, semantic search, object retrieval, entity/location/reference resolution, aggregation, history, tracing, related events, claim comparison, hypothesis challenge, linkage, sequence building, and presentation. Preserve existing deterministic reasoning.
 
-- `llm_investigation_orchestrator_serbia_poc/mcp_server/server.py`
-- new provider/client/mapping modules under `llm_investigation_orchestrator_serbia_poc/mcp_server/`
-- `llm_investigation_orchestrator_serbia_poc/server.py`
-- `llm_investigation_orchestrator_serbia_poc/app.js`
-- configuration examples and deployment documentation
-- provider, MCP, API, security, UI, and target tests
+**Gate:** Development/QA/Product analyst. Tool contract and adversarial-input tests must pass.
+
+### P2.3 — Multi-step investigation loop
+
+Let the controller request a tool, execute it, append a bounded result, and call `llm/chat` again until completion or budget exhaustion. Add context compaction without losing citations, warnings, or authorization boundaries.
+
+**Gate:** Product analyst/Security/QA. Grounding, stopping, coverage, and citation behavior must pass.
+
+### P2.4 — Chat UI, live steps, and memory
+
+Connect the existing chat to the new run lifecycle. Restore streaming, live steps, cancellation, saved results, presentation actions, and investigation memory. Do not depend on provider-managed memory unless its isolation and durability are proven.
+
+**Gate:** UX/Product/Security/QA. Both locales and interrupted/reopened sessions must pass.
+
+### P2.5 — Hermes parity and agent cutover
+
+Run the same scenarios through Hermes and the I360-backed controller. Compare tool choice, evidence coverage, citations, conclusions, latency, failures, and cost. Accept explicit differences, switch the default agent provider, monitor, and retain a time-bounded Hermes rollback.
+
+**Gate:** Product/Operations/Security/QA. Stop before disabling Hermes.
+
+## Dependency and release decision
+
+Part 1 does not depend on Part 2 and can be released alone. Part 2 depends on Part 1's provider, canonical model, services, identity propagation, and permission tests. Part 2 development may begin after P1.3 is stable; its production cutover should follow Part 1 acceptance.
 
 ## Stop conditions
 
-- Required evidence is not ingested or lacks stable identifiers.
-- Access rules allow a user to retrieve denied records by any path.
-- Search warnings or caps cannot be surfaced reliably.
-- Mutable I360 records lack an accepted concurrency strategy.
-- Required original text, locations, entity links, or media cannot be recovered.
-- A slice requires Workstream or playback changes; re-scope separately.
+- Required evidence is absent or lacks stable identifiers.
+- Any I360 path exposes records outside the user's authorization.
+- Warnings, caps, or incomplete coverage cannot be represented safely.
+- Mutable records lack an accepted visibility or concurrency design.
+- `llm/chat` cannot reliably produce schema-constrained next actions.
+- The controller cannot enforce tool allowlists, budgets, citation grounding, or cancellation.
 
 ## Rollback
 
-Keep provider selection configuration and the local implementation until I360 cutover is accepted. Writes must not be dual-written without a reviewed reconciliation design. Roll back by restoring the previous provider configuration; schema cleanup or data deletion requires a separate plan.
+Part 1 retains provider selection between local and I360 until accepted. Part 2 retains agent-provider selection between Hermes and the new I360-backed controller until parity is accepted. Avoid dual writes unless a reconciliation design is separately reviewed.

@@ -21,4 +21,12 @@ Impact: No Workstream or playback UI, API, tool, artifact, persistence, or reeva
 - I360 authentication and token-exchange model.
 - Canonical field and identifier mapping.
 - Whether investigation state and target candidates move to I360 in the first release or remain behind current repositories temporarily.
-- Whether I360 LLM replaces any current inference path in a later capability.
+- Which I360 model/configuration meets the Part 2 quality, latency, and cost acceptance thresholds.
+
+## 2026-09-14 — Split data application and agent migration
+
+Decision: Deliver the migration in two parts. Part 1 contains all non-chat application capabilities and is independently releasable. Part 2 adds an application-owned agent controller using I360 `llm/chat` and the Part 1 domain services.
+
+Rationale: Data access and analyst workflows provide value without unverified agent-runtime behavior. The split isolates inference and orchestration risk and permits separate rollback of the data provider and agent provider.
+
+Impact: Part 1 must operate without Hermes. Part 2 cannot bypass Part 1 authorization or canonical data contracts.

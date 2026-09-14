@@ -11,6 +11,8 @@ Ready for planning. Detailed test cases should be finalized after live field map
 - Live integration tests using ordinary users with own, shared, and denied records.
 - Existing non-Workstream regression suite for frontend contracts, routing, presentation, object viewer, targets, and MCP reasoning.
 - Focused browser tests for map/list/timeline selection and degraded states.
+- A Part 1 startup and acceptance run with Hermes unavailable.
+- In Part 2, differential investigation scenarios comparing Hermes with the I360 `llm/chat` controller.
 
 ## Required cases
 

@@ -13,12 +13,12 @@ Move non-Workstream, non-playback application data access and investigation capa
 
 ## Child tasks to create
 
-1. Verify authenticated I360 estate and field mapping.
-2. Add provider boundary and local implementation.
-3. Implement read-only I360 provider.
-4. Convert core MCP evidence tools.
-5. Convert reasoning tools.
-6. Integrate application API and frontend states.
-7. Decide and implement investigation persistence boundary.
-8. Migrate target candidates.
-9. Run cutover acceptance and operational handoff.
+1. Part 1: verify the authenticated I360 estate and field mapping.
+2. Part 1: add provider boundary and local implementation.
+3. Part 1: implement the read-only I360 provider.
+4. Part 1: integrate non-chat application services and frontend.
+5. Part 1: decide persistence, migrate targets, and complete cutover.
+6. Part 2: prove I360 `llm/chat` agent prerequisites.
+7. Part 2: implement the agent controller and tools.
+8. Part 2: integrate chat, live steps, memory, and presentation actions.
+9. Part 2: run Hermes parity and agent cutover.

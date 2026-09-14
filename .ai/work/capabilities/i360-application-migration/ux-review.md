@@ -2,7 +2,7 @@
 
 ## Review status
 
-Ready for planning. The first release preserves the current non-Workstream UI; final copy and degraded-state behavior require human UX acceptance.
+Ready for planning. Part 1 preserves the data exploration UI and disables chat investigation. Part 2 restores chat, live progress, cancellation, saved answers, and agent failure states. Final copy and degraded-state behavior require human UX acceptance.
 
 ## Preserved flows
 

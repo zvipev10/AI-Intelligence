@@ -20,7 +20,7 @@ Draft — pending human architecture/product review before implementation.
 
 ## Latest change
 
-Created a full migration plan. Workstream and playback are explicitly excluded.
+Split the migration into an independently releasable non-agent application and a later I360 `llm/chat` agent release. Workstream and playback remain excluded.
 
 ## Current blockers
 
@@ -36,7 +36,7 @@ Created a full migration plan. Workstream and playback are explicitly excluded.
 
 ## Next expected artifact
 
-`checkpoint-001.md` containing Slice 0 capability and field verification results.
+`checkpoint-001.md` containing shared I360 capability, field, identity, and permission verification results for Part 1.
 
 ## Issue status
 

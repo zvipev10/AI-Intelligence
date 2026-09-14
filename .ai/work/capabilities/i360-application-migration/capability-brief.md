@@ -10,7 +10,7 @@ The application reads evidence, locations, entities, semantic indexes, and targe
 
 ## Goal
 
-Run the existing investigation experience on I360 data while preserving the current map, timeline, catalog, object viewer, chat, investigation tools, and target-candidate workflows.
+Deliver the migration in two releases: first the analyst application on I360 without chat-based investigation or agents, then the conversational agent experience using I360-backed tools and I360 `llm/chat` inference.
 
 ## Users and expected behavior
 
@@ -18,7 +18,8 @@ Analysts should be able to:
 
 - search and browse authorized I360 items using text, semantic, temporal, geographic, source, and entity constraints;
 - open source details and media with stable citations;
-- use the current investigation tools over the same authorized I360 population;
+- use search, maps, timelines, catalogs, object/media views, saved state, and target candidates without an agent;
+- later use chat-based investigation over the same authorized I360 population;
 - save and reopen investigations, memory, layers, questions, and target candidates where the approved I360 model supports them;
 - see explicit degraded states when an I360 capability is unavailable or a query is incomplete.
 
@@ -28,7 +29,8 @@ Analysts should be able to:
 - A provider interface with local and I360 implementations during migration.
 - Canonical mapping between I360 items/entities and current event, location, entity, layer, and object-view contracts.
 - Evidence search, retrieval, aggregation, context, media, and entity lookup.
-- Existing reasoning tools operating over the I360 provider.
+- An independently releasable non-chat application using the I360 provider.
+- A later application-owned agent controller using I360 `llm/chat` and I360-backed domain tools.
 - Investigation state, saved questions/layers/memory, and target candidates after their I360 schemas and access rules are approved.
 - Frontend integration through the existing application API.
 - English and Hebrew behavior, permissions, observability, fallback, and controlled cutover.
@@ -37,7 +39,7 @@ Analysts should be able to:
 
 - Workstream UI, APIs, MCP tools, artifacts, persistence, notifications, or migration.
 - Scenario playback, Next/reset behavior, or playback-driven reevaluation.
-- Replacing Hermes, General, or Moshe with I360 Agentic Studio.
+- Replacing Hermes through I360 Agentic Studio; the planned replacement uses an application-owned controller and `llm/chat`.
 - Building an ingestion pipeline through the high-level API.
 - Unrelated frontend redesign.
 
@@ -47,12 +49,13 @@ Existing Workstream code may remain in the repository, but no implementation sli
 
 1. An ordinary user sees only I360 items and entities they are authorized to access.
 2. Search, map, timeline, catalog, object viewer, and media access use I360-backed records and preserve stable source references.
-3. Current non-Workstream investigation tools return evidence-grounded results over I360 and expose incomplete or degraded retrieval.
+3. Part 1 functions with Hermes and chat-based investigation disabled.
 4. Saved investigation state and target candidates can be reopened with intact evidence references, or remain on the current store behind an explicitly approved temporary boundary.
 5. English and Hebrew queries and displayed source text pass representative acceptance samples.
 6. The application can switch between local and I360 providers by configuration until cutover is accepted.
 7. I360 outages, expired authentication, missing embeddings, unsupported geo operations, and partial results produce actionable UI/API states.
-8. Workstream and playback are absent from migration acceptance and do not block release.
+8. Part 2 produces evidence-grounded, auditable agent results over I360 and can fall back to Hermes until parity is accepted.
+9. Workstream and playback are absent from migration acceptance and do not block release.
 
 ## Assumptions
 

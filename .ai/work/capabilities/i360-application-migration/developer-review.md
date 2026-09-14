@@ -6,7 +6,7 @@ Ready for planning with explicit validation gates. AI-authored technical review 
 
 ## Feasibility
 
-Feasible through an application-side provider boundary. Direct browser-to-I360 integration is not recommended because it would duplicate identity, normalization, warning handling, and domain logic across the frontend.
+Feasible in two releases through an application-side provider boundary. The non-agent application can ship first. A later application-owned controller can use I360 `llm/chat` for inference and the first release's services as tools.
 
 ## Recommended architecture
 
@@ -29,7 +29,7 @@ The provider returns the application's canonical event/entity/location structure
 - `get_objects`: item detail, entity detail, context, and media references.
 - `aggregate_events`: I360 aggregate where semantics match; bounded application aggregation otherwise.
 - location/entity resolution: place and entity search with canonical mapping.
-- LLM sampling: retain the current host path initially; I360 LLM is optional and separately configurable.
+- Agent inference: excluded from Part 1; Part 2 validates I360 `llm/chat` and retains Hermes as a fallback until parity acceptance.
 
 ### Retrieval replaced, reasoning retained
 
