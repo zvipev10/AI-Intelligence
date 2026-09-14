@@ -43,7 +43,7 @@ An analyst can use the application directly to discover and inspect authorized I
 - target-candidate search, creation, update, duplicate checks, and evidence attachment;
 - English and Hebrew UI, permission errors, partial-result warnings, and diagnostics.
 
-Chat entry points and automated investigative conclusions are disabled or absent in Part 1. Users search, filter, inspect, and save through explicit controls.
+Chat entry points and automated investigative conclusions are disabled or absent in Part 1. The current chat composer is not reused as a search field. Users search through a dedicated I360 evidence-search control that creates a normal result layer, then filter, inspect, and save that layer through the existing workspace.
 
 ## Part 1 acceptance criteria
 
@@ -84,7 +84,7 @@ Route layer catalogs, layer rows, searches, filters, aggregates, object details,
 
 ### P1.4 — Frontend conversion
 
-Connect search controls, map, timeline, list, catalog, and object viewer to I360-backed services. Add authentication-expired, unavailable, denied, unsupported, partial, and stale-record states. Disable chat-based investigation in the Part 1 runtime configuration.
+Add a dedicated I360 evidence-search control outside the chat panel. It includes a text/semantic mode, query text, and available time, geography, source, and entity filters. Submitting creates a result layer using the existing layer/map/timeline/table model. Connect the catalog and object viewer to I360-backed services; add authentication-expired, unavailable, denied, unsupported, partial, and stale-record states. Disable chat-based investigation in the Part 1 runtime configuration.
 
 **Gate:** UX/Product/Security/QA. Complete the search-to-inspection flow in both locales.
 

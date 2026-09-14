@@ -13,6 +13,12 @@ Ready for planning. Part 1 preserves the data exploration UI and disables chat i
 - save questions/layers and revisit investigation context;
 - create and inspect target candidates.
 
+## Part 1 search interaction
+
+The current application has no global evidence-search field. `promptInput` is an investigation-agent composer; `investigationInput` selects investigations; `layerSelectorSearch` finds catalog layers; table and layer filters only narrow records already loaded.
+
+Part 1 adds a dedicated I360 evidence-search control outside the chat panel. It provides query text, text/semantic mode, and supported structured filters. A submission creates a standard result layer so the existing map, timeline, table, filtering, object-view, and save interactions can be reused. The chat panel remains disabled until Part 2 rather than changing meaning between releases.
+
 ## Required new states
 
 - authentication expired or I360 unavailable;

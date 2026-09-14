@@ -30,3 +30,11 @@ Decision: Deliver the migration in two parts. Part 1 contains all non-chat appli
 Rationale: Data access and analyst workflows provide value without unverified agent-runtime behavior. The split isolates inference and orchestration risk and permits separate rollback of the data provider and agent provider.
 
 Impact: Part 1 must operate without Hermes. Part 2 cannot bypass Part 1 authorization or canonical data contracts.
+
+## 2026-09-14 — Use a dedicated evidence-search control in Part 1
+
+Decision: Do not repurpose the chat composer as the Part 1 search field. Add a dedicated I360 search control that materializes results as a normal application layer.
+
+Rationale: The current composer represents an investigation question and implies an agent-generated answer. A direct search has different modes, filters, result semantics, warnings, and completion behavior. Creating a result layer reuses the application's established map, timeline, table, object-view, filtering, and saving interactions.
+
+Impact: Part 1 can disable chat without losing data discovery. Part 2 restores the composer with its original conversational meaning and may use selected Part 1 layers as agent context.

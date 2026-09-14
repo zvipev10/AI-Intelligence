@@ -20,7 +20,7 @@ Draft — pending human architecture/product review before implementation.
 
 ## Latest change
 
-Split the migration into an independently releasable non-agent application and a later I360 `llm/chat` agent release. Workstream and playback remain excluded.
+Split the migration into an independently releasable non-agent application and a later I360 `llm/chat` agent release. Clarified that Part 1 adds a dedicated evidence-search control and does not repurpose the chat composer. Workstream and playback remain excluded.
 
 ## Current blockers
 
