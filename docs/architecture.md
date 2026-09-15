@@ -93,6 +93,10 @@ Evidence contract:
   catalog artifact for Hebrew and English. The layer catalog advertises it as
   `evidence:all`; presentation remains demand-driven and requires no live
   semantic search or fusion.
+- All raw rows are processed, but the catalog does not duplicate every
+  unstructured public report as a symbol. It contains UAV observations, exact
+  structured public extractions, and validated fused evidence; other reports
+  remain accessible through their raw source layers.
 - Deployment-time fusion groups records only by canonical location, entity,
   structured object class, and a six-hour bucket. Public reports join a
   structured group only through an exact known object-class term, and fused

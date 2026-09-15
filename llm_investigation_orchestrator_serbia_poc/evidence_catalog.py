@@ -81,6 +81,11 @@ def build_catalog(events: list[dict[str, Any]], *, dataset_version: str, locale:
     known_classes = _known_object_classes(events)
     structured = [_structured_event(row, known_classes) for row in events]
     projected = [project_event(row) for row in structured]
+    catalog_projected = [
+        evidence for evidence, source in zip(projected, structured)
+        if source.get("collection_family") == "airborne_isr_video_exploitation"
+        or source.get("object_class_resolution") == "exact-known-term"
+    ]
     groups: dict[tuple[str, str, str, str], list[dict[str, Any]]] = defaultdict(list)
     for row in structured:
         location = str(row.get("location_id") or "").strip()
@@ -103,7 +108,7 @@ def build_catalog(events: list[dict[str, Any]], *, dataset_version: str, locale:
         else:
             rejected += 1
 
-    rows = [_localized_evidence(row, locale) for row in projected + fused]
+    rows = [_localized_evidence(row, locale) for row in catalog_projected + fused]
     source_ids = sorted(str(row.get("event_id") or row.get("record_id") or "") for row in events)
     return {
         "schema_version": CATALOG_SCHEMA_VERSION,
@@ -114,6 +119,7 @@ def build_catalog(events: list[dict[str, Any]], *, dataset_version: str, locale:
         "counts": {
             "source_records": len(events),
             "projected": len(projected),
+            "cataloged_observations_and_structured_reports": len(catalog_projected),
             "fused": len(fused),
             "rejected_fusion_groups": rejected,
             "total": len(rows),

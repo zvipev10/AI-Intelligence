@@ -7,6 +7,7 @@ None after retaining catalog-specific UAV independence instead of changing share
 - Focused catalog/UI/routing suite: 50 passed.
 - Full MCP suite: 60 passed, 1 intentional skip.
 - Full-dataset bilingual build succeeded with reproducible identifiers.
+- Oversized all-projection presentation was rejected after production measurement; final catalog is 4,165 rows instead of 15,098.
 - JavaScript syntax and diff checks passed.
 
 ## Recommendation

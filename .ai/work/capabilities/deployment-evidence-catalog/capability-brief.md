@@ -7,7 +7,7 @@ Precompute a versioned evidence catalog from the fixed demo dataset during UI de
 The evidence layer is part of the layer catalog. It does not open automatically and does not imply that every item is fused or verified.
 
 ## Semantics
-- Every canonical raw record projects to one `reported` or `observed` evidence row with a `REC-*` provenance reference.
+- Every canonical raw record is processed and can be projected to `reported` or `observed`. The catalog presents UAV observations, exact structured public extractions, and validated fusion; unstructured public reports remain in raw layers instead of becoming duplicate symbols.
 - Deterministic fusion is attempted only within a canonical location, entity, structured object class, and six-hour bucket.
 - Public reports may join a structured group only when they contain an exact known object-class term.
 - A fused row requires at least two independent supporting source groups and medium/high confidence.

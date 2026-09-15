@@ -41,7 +41,8 @@ class EvidenceCatalogTests(unittest.TestCase):
         ]
         catalog = build_catalog(rows, dataset_version="v2.1")
         self.assertEqual(catalog["counts"]["fused"], 0)
-        self.assertEqual([row["evidence_status"] for row in catalog["rows"]], ["observed", "reported"])
+        self.assertEqual(catalog["counts"]["projected"], 2)
+        self.assertEqual([row["evidence_status"] for row in catalog["rows"]], ["observed"])
 
     def test_build_is_reproducible(self):
         rows = [event("REC-1", "01", "UAV-1"), event("REC-2", "02", "UAV-2")]
