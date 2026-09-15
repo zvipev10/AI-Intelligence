@@ -15,8 +15,11 @@ MOSHE_MCP_SERVER_NAME = "serbia-events-poc-moshe"
 MOSHE_AUDIT_PATH = "/opt/serbia-poc/mcp_audit_moshe.jsonl"
 MOSHE_DB_PATH = "/opt/serbia-poc/data/attack_targets/attack_targets.db"
 MOSHE_BACKUP_PATH = "/opt/serbia-poc/backups/attack_targets"
+EVIDENCE_STORE_PATH = "/opt/serbia-poc/data/evidence/evidence.db"
 PLAYBACK_VISIBILITY_PATH = "/opt/serbia-poc-ui/scenario_runs/v2.1/active_visibility.json"
 MOSHE_TOOLS = [
+    "prepare_evidence", "prepare_fused_evidence", "persist_fused_evidence", "get_evidence",
+    "search_evidence", "trace_evidence_provenance",
     "present_requested_results", "classify_question_intent", "plan_next_investigation_step", "search_events",
     "semantic_search_events", "get_objects", "resolve_location", "resolve_event_reference",
     "find_actor_history", "aggregate_events", "explain_linkage", "build_event_sequence",
@@ -54,6 +57,7 @@ def restricted_config(config: dict[str, Any]) -> dict[str, Any]:
         "INTELLIGENCE_POC_AUDIT": MOSHE_AUDIT_PATH,
         "INTELLIGENCE_POC_TARGET_BANK": MOSHE_DB_PATH,
         "INTELLIGENCE_POC_TARGET_BACKUPS": MOSHE_BACKUP_PATH,
+        "INTELLIGENCE_POC_EVIDENCE_STORE": EVIDENCE_STORE_PATH,
         "INTELLIGENCE_POC_PLAYBACK_VISIBILITY": PLAYBACK_VISIBILITY_PATH,
     })
     serbia["env"] = environment

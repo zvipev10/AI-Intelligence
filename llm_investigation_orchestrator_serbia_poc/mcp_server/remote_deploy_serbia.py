@@ -18,6 +18,7 @@ HOST = "151.145.93.180"
 USER = "ubuntu"
 REMOTE_ROOT = "/opt/serbia-poc"
 REMOTE_CONFIG = "/home/ubuntu/.hermes/config.yaml"
+MOSHE_HOME = "/home/ubuntu/.hermes/profiles/moshe"
 HERMES_SERVICE = "hermes-gateway.service"
 API_PORT = 8642
 SERVER_NAME = "serbia-events-poc"
@@ -27,6 +28,12 @@ LOCAL_ROOT = Path(__file__).resolve().parent.parent
 LOCAL_CONFIG = LOCAL_ROOT / ".hermes-api.json"
 
 TOOLS = [
+    "prepare_evidence",
+    "prepare_fused_evidence",
+    "persist_fused_evidence",
+    "get_evidence",
+    "search_evidence",
+    "trace_evidence_provenance",
     "present_requested_results",
     "present_saved_memory_layers",
     "open_catalog_layers",
@@ -79,7 +86,7 @@ def run(client: paramiko.SSHClient, command: str, timeout: int = 60, check: bool
 
 def upload_files(client: paramiko.SSHClient) -> str:
     staging = f"/tmp/serbia-poc-{int(time.time())}"
-    run(client, f"mkdir -p {shlex.quote(staging)}/mcp_server {shlex.quote(staging)}/data/serbian_intelligence_v2")
+    run(client, f"mkdir -p {shlex.quote(staging)}/mcp_server {shlex.quote(staging)}/moshe_profile {shlex.quote(staging)}/data/serbian_intelligence_v2")
     files = {
         LOCAL_ROOT / "mcp_server" / "server.py": f"{staging}/mcp_server/server.py",
         LOCAL_ROOT / "mcp_server" / "semantic_index.py": f"{staging}/mcp_server/semantic_index.py",
@@ -87,6 +94,10 @@ def upload_files(client: paramiko.SSHClient) -> str:
         LOCAL_ROOT / "mcp_server" / "benchmark_tools.py": f"{staging}/mcp_server/benchmark_tools.py",
         LOCAL_ROOT / "mcp_server" / "target_bank.py": f"{staging}/mcp_server/target_bank.py",
         LOCAL_ROOT / "mcp_server" / "target_bank_admin.py": f"{staging}/mcp_server/target_bank_admin.py",
+        LOCAL_ROOT / "mcp_server" / "fusion_tools.py": f"{staging}/mcp_server/fusion_tools.py",
+        LOCAL_ROOT / "mcp_server" / "evidence_store.py": f"{staging}/mcp_server/evidence_store.py",
+        LOCAL_ROOT / "moshe_profile" / "provision_profile.py": f"{staging}/moshe_profile/provision_profile.py",
+        LOCAL_ROOT / "moshe_profile" / "SOUL.md": f"{staging}/moshe_profile/SOUL.md",
         LOCAL_ROOT / "data" / "serbia_kosovo_events_projection.csv": f"{staging}/data/serbia_kosovo_events_projection.csv",
         LOCAL_ROOT / "data" / "serbia_kosovo_locations.json": f"{staging}/data/serbia_kosovo_locations.json",
         LOCAL_ROOT / "data" / "serbia_kosovo_entities.json": f"{staging}/data/serbia_kosovo_entities.json",
@@ -108,13 +119,16 @@ def install_files(client: paramiko.SSHClient, staging: str) -> None:
     staging_q = shlex.quote(staging)
     command = (
         f"sudo -n install -d -o {USER} -g {USER} -m 0755 {root}/mcp_server {root}/data {root}/data/serbian_intelligence_v2 "
-        f"&& sudo -n install -d -o {USER} -g {USER} -m 0700 {root}/data/attack_targets {root}/backups/attack_targets "
+        f"&& sudo -n install -d -o {USER} -g {USER} -m 0700 {root}/data/attack_targets {root}/data/evidence {root}/backups/attack_targets "
         f"&& sudo -n install -o {USER} -g {USER} -m 0755 {staging_q}/mcp_server/server.py {root}/mcp_server/server.py "
         f"&& sudo -n install -o {USER} -g {USER} -m 0755 {staging_q}/mcp_server/semantic_index.py {root}/mcp_server/semantic_index.py "
         f"&& sudo -n install -o {USER} -g {USER} -m 0755 {staging_q}/mcp_server/smoke_client.py {root}/mcp_server/smoke_client.py "
         f"&& sudo -n install -o {USER} -g {USER} -m 0755 {staging_q}/mcp_server/benchmark_tools.py {root}/mcp_server/benchmark_tools.py "
         f"&& sudo -n install -o {USER} -g {USER} -m 0644 {staging_q}/mcp_server/target_bank.py {root}/mcp_server/target_bank.py "
         f"&& sudo -n install -o {USER} -g {USER} -m 0755 {staging_q}/mcp_server/target_bank_admin.py {root}/mcp_server/target_bank_admin.py "
+        f"&& sudo -n install -o {USER} -g {USER} -m 0644 {staging_q}/mcp_server/fusion_tools.py {root}/mcp_server/fusion_tools.py "
+        f"&& sudo -n install -o {USER} -g {USER} -m 0644 {staging_q}/mcp_server/evidence_store.py {root}/mcp_server/evidence_store.py "
+        f"&& /usr/bin/python3 {staging_q}/moshe_profile/provision_profile.py --profile-dir {MOSHE_HOME} --soul {staging_q}/moshe_profile/SOUL.md "
         f"&& sudo -n install -o {USER} -g {USER} -m 0644 {staging_q}/data/serbia_kosovo_events_projection.csv {root}/data/serbia_kosovo_events_projection.csv "
         f"&& sudo -n install -o {USER} -g {USER} -m 0644 {staging_q}/data/serbia_kosovo_locations.json {root}/data/serbia_kosovo_locations.json "
         f"&& sudo -n install -o {USER} -g {USER} -m 0644 {staging_q}/data/serbia_kosovo_entities.json {root}/data/serbia_kosovo_entities.json "
@@ -161,6 +175,7 @@ servers[settings["server_name"]] = {{
         "INTELLIGENCE_POC_AUDIT": f"{{settings['remote_root']}}/mcp_audit.jsonl",
         "INTELLIGENCE_POC_TARGET_BANK": f"{{settings['remote_root']}}/data/attack_targets/attack_targets.db",
         "INTELLIGENCE_POC_TARGET_BACKUPS": f"{{settings['remote_root']}}/backups/attack_targets",
+        "INTELLIGENCE_POC_EVIDENCE_STORE": f"{{settings['remote_root']}}/data/evidence/evidence.db",
         "INTELLIGENCE_POC_PLAYBACK_VISIBILITY": "/opt/serbia-poc-ui/scenario_runs/v2.1/active_visibility.json",
     }},
     "timeout": 30,
@@ -190,6 +205,13 @@ legacy_names = {{
     "mcp-intelligence-events-poc": "intelligence-events-poc",
     "mcp-serbia-events-poc": "serbia-events-poc",
 }}
+
+moshe_config_path = Path({str(Path(MOSHE_HOME) / 'config.yaml')!r})
+if moshe_config_path.exists():
+    moshe_config = yaml.safe_load(moshe_config_path.read_text()) or {{}}
+    moshe_server = (moshe_config.get("mcp_servers") or {{}}).get("serbia-events-poc-moshe")
+    if moshe_server:
+        servers["serbia-events-poc-moshe"] = moshe_server
 current = []
 for item in toolsets.get("api_server") or []:
     item = legacy_names.get(item, item)

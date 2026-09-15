@@ -73,6 +73,23 @@ MIL-STD presentation contract:
 - This demo profile does not perform persistent object correlation or claim
   external conformance certification.
 
+Evidence contract:
+
+- A raw `REC-*` record remains immutable provenance. It can be projected on
+  demand into a normalized `reported` or `observed` `EVD-*` object without
+  creating a second stored copy of every raw record.
+- Neutral fusion creates a stable `EVD-FUSED-*` identity from its sorted source
+  records and preserves both supporting and contradicting evidence links.
+- Fused evidence may be persisted only after deterministic validation: one
+  canonical subject, location, and structured object class, plus at least two
+  independent supporting source groups and the existing temporal/confidence
+  fusion checks.
+- Evidence and raw layers remain demand-driven. Evidence uses the existing
+  map, table, timeline, and object-viewer presentation paths; it does not imply
+  target status or an enemy assessment.
+- Target preparation delegates its neutral correlation work to the evidence
+  fusion path, then applies Moshe's separate target-authorization boundary.
+
 Agent-to-UI catalog action contract:
 
 - Direct unfiltered opening uses MCP `open_catalog_layers` with an exact ID from the injected localized catalog.

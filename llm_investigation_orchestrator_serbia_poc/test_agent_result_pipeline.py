@@ -94,6 +94,10 @@ class AgentResultPipelineTests(unittest.TestCase):
         layers = normalize_typed_layers([{"kind": "attack_targets", "rows": [{"target_id": "TGT-1"}]}])
         self.assertEqual(layers[0]["kind"], "attack_targets")
 
+    def test_evidence_is_a_shared_typed_layer(self):
+        layers = normalize_typed_layers([{"kind": "evidence", "rows": [{"evidence_id": "EVD-REC-1"}]}])
+        self.assertEqual(layers[0]["kind"], "evidence")
+
     def test_only_last_explicit_requested_result_selection_becomes_final_layers(self):
         records = [
             {"tool": "search_events", "result": {"event_ids": ["REC-SUPPORT"]}},

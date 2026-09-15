@@ -17,11 +17,13 @@ from pathlib import Path
 from typing import Any
 
 try:
+    from evidence_store import EvidenceStore, prepare_fused_object, project_event, projected_evidence_id
     from fusion_tools import discover_corroborating_evidence, find_duplicate_candidates, prepare_candidate
     from semantic_index import SemanticEventIndex
     from target_bank import TargetBank
 except ImportError:  # pragma: no cover - package-style execution fallback
     sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from evidence_store import EvidenceStore, prepare_fused_object, project_event, projected_evidence_id
     from fusion_tools import discover_corroborating_evidence, find_duplicate_candidates, prepare_candidate
     from semantic_index import SemanticEventIndex
     from target_bank import TargetBank
@@ -29,7 +31,7 @@ except ImportError:  # pragma: no cover - package-style execution fallback
 
 PROTOCOL_VERSION = "2025-06-18"
 SERVER_NAME = "serbia-events-poc"
-SERVER_VERSION = "0.3.0"
+SERVER_VERSION = "0.4.0"
 DEFAULT_LIMIT = 2000
 MAX_LIMIT = 2000
 MIN_COVERAGE_LIMIT = 2000
@@ -2514,6 +2516,7 @@ def with_step_bridge(schema: dict[str, Any]) -> dict[str, Any]:
 
 
 TARGET_BANK = TargetBank()
+EVIDENCE_STORE = EvidenceStore()
 
 
 def _prior_successful_audit_records() -> list[dict[str, Any]]:
@@ -2612,6 +2615,19 @@ def _materialize_presentation_layers(
             rows = [TARGET_BANK.get_candidate(row_id) for row_id in row_ids]
             result_kind = "attack_targets"
             capabilities = {"table": True, "map": True, "timeline": False}
+        elif kind == "evidence":
+            rows = []
+            missing = []
+            for row_id in row_ids:
+                evidence = resolve_evidence(row_id)
+                if evidence is None:
+                    missing.append(row_id)
+                else:
+                    rows.append(evidence)
+            if missing:
+                raise ValueError(f"unknown evidence IDs: {', '.join(missing)}")
+            result_kind = "evidence"
+            capabilities = {"table": True, "map": True, "timeline": True}
         elif kind == "aggregate_groups":
             group_by = str(selection.get("group_by") or "").strip()
             if not group_by:
@@ -2840,9 +2856,25 @@ def _fusion_events(event_ids: list[str]) -> list[dict[str, Any]]:
     return [public_event(visible_event(event_id)) for event_id in event_ids]
 
 
-def prepare_target_candidate(arguments: dict[str, Any]) -> dict[str, Any]:
-    """Discover corroboration and build a deterministic save-ready assessment without persisting it."""
+def resolve_evidence(evidence_id: str) -> dict[str, Any] | None:
+    """Resolve an on-demand projected observation or a persisted fused object."""
+    evidence_id = str(evidence_id or "").strip()
+    if evidence_id.startswith("EVD-REC-"):
+        event = visible_event(evidence_id[4:])
+        return project_event(public_event(event)) if event is not None else None
+    return EVIDENCE_STORE.get(evidence_id)
+
+
+def prepare_evidence(arguments: dict[str, Any]) -> dict[str, Any]:
+    rows = _fusion_events(arguments.get("event_ids") or [])
+    evidence = [project_event(row) for row in rows]
+    return {"evidence": evidence, "returned": len(evidence), "persisted": False}
+
+
+def _prepare_neutral_fusion(arguments: dict[str, Any]) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     seeds = _fusion_events(arguments.get("event_ids") or [])
+    selected = seeds
+    discovery = None
     if arguments.get("discover_corroboration", True):
         anchor = next((item for item in seeds if item.get("collection_family") == "airborne_isr_video_exploitation"), seeds[0])
         corpus = [
@@ -2852,12 +2884,56 @@ def prepare_target_candidate(arguments: dict[str, Any]) -> dict[str, Any]:
         ]
         discovery = discover_corroborating_evidence(seeds, corpus)
         selected = _fusion_events(discovery["selected_event_ids"])
-        assessment = prepare_candidate(selected, arguments.get("confidence") or "")
+    fusion = prepare_candidate(selected, arguments.get("confidence") or "")
+    if discovery is not None:
         if discovery["ambiguous"]:
-            assessment["persistence_eligible"] = False
-            assessment["persistence_block_reasons"].append("corroborating evidence pair is ambiguous; report only")
-        return {**assessment, "discovery": discovery}
-    return prepare_candidate(seeds, arguments.get("confidence") or "")
+            fusion["persistence_eligible"] = False
+            fusion["persistence_block_reasons"].append("corroborating evidence pair is ambiguous; report only")
+        fusion["discovery"] = discovery
+    return fusion, selected
+
+
+def prepare_fused_evidence(arguments: dict[str, Any]) -> dict[str, Any]:
+    fusion, selected = _prepare_neutral_fusion(arguments)
+    return {"evidence": prepare_fused_object(selected, fusion), "fusion": fusion, "persisted": False}
+
+
+def persist_fused_evidence(arguments: dict[str, Any]) -> dict[str, Any]:
+    fusion, selected = _prepare_neutral_fusion(arguments)
+    candidate = prepare_fused_object(selected, fusion)
+    EVIDENCE_STORE.initialize()
+    return {"evidence": EVIDENCE_STORE.put_fused(candidate), "persisted": True}
+
+
+def get_evidence(arguments: dict[str, Any]) -> dict[str, Any]:
+    return {"evidence": resolve_evidence(arguments.get("evidence_id"))}
+
+
+def search_evidence(arguments: dict[str, Any]) -> dict[str, Any]:
+    rows = EVIDENCE_STORE.search(arguments)
+    return {"evidence": rows, "returned": len(rows)}
+
+
+def trace_evidence_provenance(arguments: dict[str, Any]) -> dict[str, Any]:
+    evidence = resolve_evidence(arguments.get("evidence_id"))
+    if evidence is None:
+        raise ValueError("unknown evidence_id")
+    records = [
+        public_event(event)
+        for record_id in evidence.get("source_record_ids") or []
+        if (event := visible_event(record_id)) is not None
+    ]
+    return {
+        "evidence": evidence,
+        "source_records": records,
+        "source_record_ids": evidence.get("source_record_ids") or [],
+    }
+
+
+def prepare_target_candidate(arguments: dict[str, Any]) -> dict[str, Any]:
+    """Discover corroboration and build a deterministic save-ready assessment without persisting it."""
+    fusion, selected = _prepare_neutral_fusion(arguments)
+    return {**fusion, "prepared_evidence": prepare_fused_object(selected, fusion)}
 
 
 WORKSTREAM_ACTIONS = {
@@ -3048,6 +3124,75 @@ TARGET_EVIDENCE_SCHEMA = {
 
 TOOLS = [
     {
+        "name": "prepare_evidence",
+        "title": "Project source records into evidence",
+        "description": "Deterministically project canonical REC records into neutral reported or observed evidence objects. Projection is read-only and on demand; raw records remain immutable.",
+        "inputSchema": with_step_bridge({
+            "type": "object",
+            "properties": {"event_ids": {"type": "array", "items": {"type": "string"}, "minItems": 1, "maxItems": MAX_LIMIT}},
+            "required": ["event_ids"], "additionalProperties": False,
+        }),
+        "annotations": {"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": False},
+    },
+    {
+        "name": "prepare_fused_evidence",
+        "title": "Prepare neutral fused evidence",
+        "description": "Discover corroboration and prepare one neutral fused evidence object with source grouping, quantity reconciliation, provenance, ambiguity, and persistence eligibility. Does not persist.",
+        "inputSchema": with_step_bridge({
+            "type": "object",
+            "properties": {
+                "event_ids": {"type": "array", "items": {"type": "string"}, "minItems": 1, "maxItems": MAX_LIMIT},
+                "confidence": {"type": "string", "enum": ["low", "medium", "high"]},
+                "discover_corroboration": {"type": "boolean"},
+            },
+            "required": ["event_ids", "confidence"], "additionalProperties": False,
+        }),
+        "annotations": {"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": False},
+    },
+    {
+        "name": "persist_fused_evidence",
+        "title": "Persist validated fused evidence",
+        "description": "Persist a deterministic fused evidence object only when neutral fusion validation permits it. Repeating the same source set is idempotent.",
+        "inputSchema": with_step_bridge({
+            "type": "object",
+            "properties": {
+                "event_ids": {"type": "array", "items": {"type": "string"}, "minItems": 1, "maxItems": MAX_LIMIT},
+                "confidence": {"type": "string", "enum": ["medium", "high"]},
+                "discover_corroboration": {"type": "boolean"},
+            },
+            "required": ["event_ids", "confidence"], "additionalProperties": False,
+        }),
+        "annotations": {"readOnlyHint": False, "destructiveHint": False, "idempotentHint": True, "openWorldHint": False},
+    },
+    {
+        "name": "get_evidence",
+        "title": "Get an evidence object",
+        "description": "Resolve a projected observation/report or a persisted fused evidence object by EVD identifier.",
+        "inputSchema": with_step_bridge({"type": "object", "properties": {"evidence_id": {"type": "string"}}, "required": ["evidence_id"], "additionalProperties": False}),
+        "annotations": {"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": False},
+    },
+    {
+        "name": "search_evidence",
+        "title": "Search persisted fused evidence",
+        "description": "Search the neutral evidence repository. Observation/report evidence remains available through deterministic EVD-REC projection.",
+        "inputSchema": with_step_bridge({
+            "type": "object",
+            "properties": {
+                "location_id": {"type": "string"}, "entity_id": {"type": "string"},
+                "evidence_status": {"type": "string", "enum": ["fused"]},
+                "limit": {"type": "integer", "minimum": 1, "maximum": 500},
+            }, "additionalProperties": False,
+        }),
+        "annotations": {"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": False},
+    },
+    {
+        "name": "trace_evidence_provenance",
+        "title": "Trace evidence provenance",
+        "description": "Return an evidence object and its immutable canonical REC source records.",
+        "inputSchema": with_step_bridge({"type": "object", "properties": {"evidence_id": {"type": "string"}}, "required": ["evidence_id"], "additionalProperties": False}),
+        "annotations": {"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": False},
+    },
+    {
         "name": "prepare_workstream_creation",
         "title": "Prepare a workstream for creation",
         "description": "Use only in the dedicated workstream-creation conversation after resolving every supplied TGT/REC identifier and deriving title, objective, and Moshe's responsibility from verified target/evidence context. Include every resolved TGT identifier explicitly in both title and objective. Pass every verified supplied REC in record_ids so the app stores it in the initial artifact. Low confidence, missing corroboration, or no existing target does not block an explicitly requested workstream; those limits block target persistence only. Do not ask the user for fields that can be inferred. Ask at most one focused question only after lookup when a blocking ambiguity remains. The app server persists the returned handoff immediately; there is no separate approval step.",
@@ -3146,7 +3291,7 @@ TOOLS = [
                     "items": {
                         "type": "object",
                         "properties": {
-                            "kind": {"type": "string", "enum": ["events", "locations", "entities", "attack_targets", "aggregate_groups"]},
+                            "kind": {"type": "string", "enum": ["events", "evidence", "locations", "entities", "attack_targets", "aggregate_groups"]},
                             "ids": {"type": "array", "items": {"type": "string", "minLength": 1}, "minItems": 1, "maxItems": MAX_LIMIT},
                             "label": {"type": "string", "minLength": 1, "maxLength": 120},
                             "view": {"type": "string", "enum": ["map", "timeline", "evidence"]},
@@ -3162,7 +3307,7 @@ TOOLS = [
                     "items": {
                         "type": "object",
                         "properties": {
-                            "kind": {"type": "string", "enum": ["events", "locations", "entities", "attack_targets", "aggregate_groups"]},
+                            "kind": {"type": "string", "enum": ["events", "evidence", "locations", "entities", "attack_targets", "aggregate_groups"]},
                             "ids": {"type": "array", "items": {"type": "string", "minLength": 1}, "minItems": 1, "maxItems": MAX_LIMIT},
                             "label": {"type": "string", "minLength": 1, "maxLength": 120},
                             "view": {"type": "string", "enum": ["map", "timeline"]},
@@ -3622,6 +3767,12 @@ TOOLS = [
 ]
 
 TOOL_HANDLERS = {
+    "prepare_evidence": prepare_evidence,
+    "prepare_fused_evidence": prepare_fused_evidence,
+    "persist_fused_evidence": persist_fused_evidence,
+    "get_evidence": get_evidence,
+    "search_evidence": search_evidence,
+    "trace_evidence_provenance": trace_evidence_provenance,
     "prepare_workstream_creation": prepare_workstream_creation,
     "prepare_workstream_indication_proposal": prepare_workstream_indication_proposal,
     "decide_workstream_indication_proposal": decide_workstream_indication_proposal,

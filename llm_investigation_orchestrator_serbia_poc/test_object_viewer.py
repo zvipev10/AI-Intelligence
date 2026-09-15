@@ -18,8 +18,9 @@ class ObjectViewerContractTests(unittest.TestCase):
         self.assertIn('aria-modal="true"', self.index)
         self.assertIn('aria-labelledby="objectViewerTitle"', self.index)
 
-    def test_only_records_and_organizations_are_supported(self):
-        self.assertIn("if (!['record', 'organization'].includes(kind)) return false;", self.app)
+    def test_records_organizations_and_evidence_are_supported(self):
+        self.assertIn("if (!['record', 'organization', 'evidence'].includes(kind)) return false;", self.app)
+        self.assertIn('data-viewer-kind="evidence"', self.app)
         self.assertNotIn('data-viewer-kind="target"', self.app)
 
     def test_grid_and_assistant_open_controls_exist(self):
