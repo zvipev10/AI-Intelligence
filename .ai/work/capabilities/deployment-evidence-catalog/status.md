@@ -1,16 +1,16 @@
 # Capability Status — Deployment Evidence Catalog
 
 ## Phase
-Deployment
+Complete
 
 ## Status
-Implementation and local QA complete; deployment pending.
+Implemented, tested, deployed, and production-verified.
 
 ## Owner
-Release.
+No active owner; ready for user testing.
 
 ## Blockers
 None.
 
 ## Next artifact
-Production smoke verification and `handoff-summary.md`.
+None. Future work may add server-side pagination or map clustering if needed.
