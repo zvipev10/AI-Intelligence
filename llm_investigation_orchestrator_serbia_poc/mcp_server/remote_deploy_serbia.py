@@ -128,7 +128,7 @@ def install_files(client: paramiko.SSHClient, staging: str) -> None:
         f"&& sudo -n install -o {USER} -g {USER} -m 0755 {staging_q}/mcp_server/target_bank_admin.py {root}/mcp_server/target_bank_admin.py "
         f"&& sudo -n install -o {USER} -g {USER} -m 0644 {staging_q}/mcp_server/fusion_tools.py {root}/mcp_server/fusion_tools.py "
         f"&& sudo -n install -o {USER} -g {USER} -m 0644 {staging_q}/mcp_server/evidence_store.py {root}/mcp_server/evidence_store.py "
-        f"&& /usr/bin/python3 {staging_q}/moshe_profile/provision_profile.py --profile-dir {MOSHE_HOME} --soul {staging_q}/moshe_profile/SOUL.md "
+        f"&& sudo -n /usr/bin/python3 {staging_q}/moshe_profile/provision_profile.py --profile-dir {MOSHE_HOME} --soul {staging_q}/moshe_profile/SOUL.md "
         f"&& sudo -n install -o {USER} -g {USER} -m 0644 {staging_q}/data/serbia_kosovo_events_projection.csv {root}/data/serbia_kosovo_events_projection.csv "
         f"&& sudo -n install -o {USER} -g {USER} -m 0644 {staging_q}/data/serbia_kosovo_locations.json {root}/data/serbia_kosovo_locations.json "
         f"&& sudo -n install -o {USER} -g {USER} -m 0644 {staging_q}/data/serbia_kosovo_entities.json {root}/data/serbia_kosovo_entities.json "
