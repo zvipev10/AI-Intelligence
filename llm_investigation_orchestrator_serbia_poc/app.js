@@ -5670,7 +5670,7 @@ function renderTimeline() {
   const eventHtml = eventTimelineItems.sort((a, b) => a.sort - b.sort).map(({ layer, event }) => `
     <article class="timeline-item" style="${layerColorStyle(layer)}">
       <span class="timeline-dot"></span>
-      <div class="timeline-time">${escapeHtml(event.timestamp_utc.replace("T", " ").replace("Z", ""))}</div>
+      <div class="timeline-time">${escapeHtml(String(event.timestamp_utc || "").replace("T", " ").replace("Z", ""))}</div>
       <div class="timeline-title">${escapeHtml(layer.label)} · ${escapeHtml(event.location_name)}</div>
       <div class="timeline-summary">${escapeHtml(event.event_summary)}</div>
     </article>`).join("");
