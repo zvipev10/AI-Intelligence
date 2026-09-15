@@ -112,6 +112,16 @@ def read_remote_ui_config(client: paramiko.SSHClient) -> dict:
     return config
 
 
+def read_remote_gateway_api_key(client: paramiko.SSHClient) -> str | None:
+    """Resolve the credential owned by the active gateway configuration."""
+    _, out, _ = run(
+        client,
+        "/usr/bin/python3 -c \"import yaml; d=yaml.safe_load(open('/home/ubuntu/.hermes/config.yaml')) or {}; print((((d.get('platforms') or {}).get('api_server') or {}).get('key') or ''))\"",
+        timeout=20,
+    )
+    return out.strip() or None
+
+
 def upload_ui(client: paramiko.SSHClient, api_key: str, moshe_api_key: str) -> None:
     staging = f"/tmp/serbia-poc-ui-{int(time.time())}"
     run(client, f"rm -rf {shlex.quote(staging)} && mkdir -p {shlex.quote(staging)}")
@@ -226,7 +236,7 @@ def main() -> int:
     client = connect(args.key.resolve())
     try:
         remote_config = read_remote_ui_config(client)
-        api_key = args.api_key or local_config.get("api_key") or remote_config.get("api_key")
+        api_key = args.api_key or read_remote_gateway_api_key(client) or local_config.get("api_key") or remote_config.get("api_key")
         if not api_key:
             parser.error("--api-key is required when no existing UI credential is available")
         moshe_api_key = (
