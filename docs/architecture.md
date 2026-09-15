@@ -64,7 +64,8 @@ MIL-STD presentation contract:
   `latest_timestamp_utc`, and bounded `evidence_record_ids` fields.
 - The client maps the approved 12 organization IDs and four UAV object classes
   through a versioned `MIL_STD_*` registry.
-- Organization presences and UAV observations are presentation descriptors;
+- Organization presences and normalized evidence observations/fusions are
+  presentation descriptors; raw event layers use neutral location markers and
   raw records remain the provenance source and storage unit.
 - Affiliation is independent from confidence. Reported claims use a separate
   uncertainty indicator and label; the affiliation frame retains its meaning.
@@ -101,9 +102,13 @@ Evidence contract:
   structured object class, and a six-hour bucket. Public reports join a
   structured group only through an exact known object-class term, and fused
   rows still require two independent source groups.
-- The layer manifest supplies catalog counts without loading the roughly 12 MB
+- The layer manifest supplies catalog counts without loading the roughly 4 MB
   row artifact. Rows are loaded only when the evidence layer is opened and are
   filtered by the active playback timeframe.
+- Evidence map rendering coalesces equivalent location/symbol/affiliation
+  descriptors and renders at most 400 evidence symbols at once. This bound
+  affects only the map; the full catalog remains available in table, timeline,
+  viewer, and provenance paths.
 
 Agent-to-UI catalog action contract:
 

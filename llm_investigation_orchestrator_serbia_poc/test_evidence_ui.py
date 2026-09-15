@@ -19,7 +19,12 @@ class EvidenceUiTests(unittest.TestCase):
         self.assertIn('activeLayer.kind === "evidence"', self.app)
 
     def test_frontend_asset_version_is_bumped(self):
-        self.assertIn('app.js?v=182', self.index)
+        self.assertIn('app.js?v=183', self.index)
+
+    def test_evidence_symbology_is_bounded_before_map_rendering(self):
+        self.assertIn("function coalesceEvidenceDescriptors", self.app)
+        self.assertIn("coalesceEvidenceDescriptors(milStdDescriptors)", self.app)
+        self.assertIn("maximum = 400", self.app)
 
     def test_evidence_is_a_catalog_family(self):
         self.assertIn('evidence: "Evidence"', self.app)

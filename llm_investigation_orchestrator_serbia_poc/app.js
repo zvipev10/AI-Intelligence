@@ -287,13 +287,44 @@ function milStdEvidenceDescriptor(evidence) {
   };
 }
 
+function coalesceEvidenceDescriptors(descriptors, maximum = 400) {
+  const confidenceRank = { low: 1, medium: 2, high: 3 };
+  const groups = new Map();
+  const passthrough = [];
+  descriptors.forEach(descriptor => {
+    if (descriptor.kind !== "evidence") {
+      passthrough.push(descriptor);
+      return;
+    }
+    const key = [descriptor.locationId, descriptor.symbolCode, descriptor.icon, descriptor.affiliation].join("|");
+    const current = groups.get(key);
+    if (!current) {
+      groups.set(key, { ...descriptor, evidenceIds: [...descriptor.evidenceIds], groupedObjects: 1 });
+      return;
+    }
+    current.count += Number(descriptor.count || 0);
+    current.groupedObjects += 1;
+    current.viewerEligible = false;
+    current.evidenceIds = [...new Set([...current.evidenceIds, ...descriptor.evidenceIds])].slice(0, 25);
+    if (descriptor.status === "assessed") current.status = "assessed";
+    if ((confidenceRank[descriptor.confidence] || 0) > (confidenceRank[current.confidence] || 0)) current.confidence = descriptor.confidence;
+    if (String(descriptor.latestTimestamp || "") > String(current.latestTimestamp || "")) current.latestTimestamp = descriptor.latestTimestamp;
+  });
+  const evidence = [...groups.values()]
+    .sort((left, right) => Number(right.status === "assessed") - Number(left.status === "assessed") || Number(right.count || 0) - Number(left.count || 0))
+    .slice(0, maximum);
+  return [...passthrough, ...evidence];
+}
+
 function milStdMarkerElement(descriptor) {
   const element = document.createElement("button");
   element.type = "button";
   element.className = `milstd-marker ${descriptor.affiliation} confidence-${descriptor.confidence} status-${descriptor.status}`;
-  element.dataset.viewerKind = descriptor.kind;
-  element.dataset.viewerId = descriptor.id;
-  element.setAttribute("aria-haspopup", "dialog");
+  if (descriptor.viewerEligible !== false) {
+    element.dataset.viewerKind = descriptor.kind;
+    element.dataset.viewerId = descriptor.id;
+    element.setAttribute("aria-haspopup", "dialog");
+  }
   element.setAttribute("aria-label", `${descriptor.name}, ${milStdClaimLabel(descriptor.status)}, ${descriptor.count} ${activeLocaleText("רשומות", "records")}`);
   element.innerHTML = `<span class="milstd-frame"><span class="milstd-icon" aria-hidden="true">${escapeHtml(descriptor.icon)}</span></span><span class="milstd-status">${escapeHtml(milStdClaimLabel(descriptor.status))}</span>${descriptor.count > 1 ? `<span class="milstd-count">${descriptor.count.toLocaleString(currentLocaleTag())}</span>` : ""}`;
   return element;
@@ -309,7 +340,7 @@ function milStdPopupHtml(descriptor, locationName) {
     <span>${escapeHtml(milStdClaimLabel(descriptor.status))} · ${escapeHtml(locationName)} · ${escapeHtml(descriptor.confidence)}</span>
     ${descriptor.latestTimestamp ? `<time dir="ltr">${escapeHtml(descriptor.latestTimestamp)}</time>` : ""}
     <span><b>${escapeHtml(activeLocaleText("ראיות", "Evidence"))}:</b> ${evidence}</span>
-    <button type="button" class="object-viewer-open" data-viewer-kind="${descriptor.kind}" data-viewer-id="${escapeHtml(descriptor.id)}">${escapeHtml(activeLocaleText("פתח פרטים", "Open details"))}</button>
+    ${descriptor.viewerEligible === false ? "" : `<button type="button" class="object-viewer-open" data-viewer-kind="${descriptor.kind}" data-viewer-id="${escapeHtml(descriptor.id)}">${escapeHtml(activeLocaleText("פתח פרטים", "Open details"))}</button>`}
   </div>`;
 }
 
@@ -5390,18 +5421,16 @@ function renderMap() {
   visibleLayers("map").forEach(layer => {
     const items = itemsForLayerPresentation(layer);
     if (layer.kind === "events") {
-      const observations = new Set();
+      const grouped = new Map();
       items.forEach(event => {
-        const descriptor = milStdEventDescriptor(event);
-        if (!descriptor) return;
-        observations.add(event);
-        milStdDescriptors.push(descriptor);
+        if (!event.location_id) return;
+        const current = grouped.get(event.location_id) || { count: 0, first: null };
+        current.count += 1;
+        current.first ||= event;
+        grouped.set(event.location_id, current);
       });
-      const counts = {};
-      items.filter(event => !observations.has(event)).forEach(event => { counts[event.location_id] = (counts[event.location_id] || 0) + 1; });
-      Object.entries(counts).forEach(([locationId, count]) => {
-        const matching = items.filter(event => !observations.has(event) && event.location_id === locationId);
-        addLocationCount(locationId, count, layer.label, null, layer.color, matching.length === 1 ? { kind: "record", id: matching[0].record_id || matching[0].event_id } : null);
+      grouped.forEach((group, locationId) => {
+        addLocationCount(locationId, group.count, layer.label, null, layer.color, group.count === 1 ? { kind: "record", id: group.first.record_id || group.first.event_id } : null);
       });
     } else if (layer.kind === "locations") {
       items.forEach(item => addLocationCount(item.location_id, item.count || 1, layer.label, item, layer.color));
@@ -5460,7 +5489,7 @@ function renderMap() {
     bounds.extend([location.lon, location.lat]);
   });
   const milStdLocationIndexes = new Map();
-  milStdDescriptors.forEach(descriptor => {
+  coalesceEvidenceDescriptors(milStdDescriptors).forEach(descriptor => {
     const location = LOCATIONS[descriptor.locationId] || (
       descriptor.latitude != null && descriptor.longitude != null
         ? { name: descriptor.locationId, lon: descriptor.longitude, lat: descriptor.latitude }
@@ -5592,7 +5621,7 @@ function toggleMapItem(layerId, kind, itemId) {
       zoom: Math.max(Number(state.map.getZoom?.() || 0), kind === "location" ? 12 : 13),
       duration: 450
     });
-    const descriptor = kind === "event" ? milStdEventDescriptor(selectedEvent) : kind === "evidence" ? milStdEvidenceDescriptor(selectedEvent) : null;
+    const descriptor = kind === "evidence" ? milStdEvidenceDescriptor(selectedEvent) : null;
     const markerElement = descriptor ? milStdMarkerElement(descriptor) : document.createElement("div");
     if (!descriptor) {
       markerElement.className = "map-marker focused-map-marker";

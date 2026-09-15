@@ -1,13 +1,13 @@
 # Capability Status — Deployment Evidence Catalog
 
 ## Phase
-Complete
+Corrective deployment
 
 ## Status
-Implemented, tested, deployed, and production-verified.
+Catalog deployed; bounded rendering and raw-layer symbology correction tested locally and pending production verification.
 
 ## Owner
-No active owner; ready for user testing.
+Release and QA.
 
 ## Blockers
 None.

@@ -52,27 +52,22 @@ class MilStdPresentationContractTests(unittest.TestCase):
         self.assertIn("renderAllViews();", location_hydration)
         self.assertNotIn("renderEvidence();", location_hydration)
 
-    def test_show_on_map_renders_the_selected_uav_symbol(self):
+    def test_show_on_map_keeps_raw_records_neutral(self):
         focus_path = APP.split("function toggleMapItem", 1)[1].split(
             "function renderTimeline", 1
         )[0]
-        self.assertIn("milStdEventDescriptor(selectedEvent)", focus_path)
+        self.assertNotIn("milStdEventDescriptor(selectedEvent)", focus_path)
+        self.assertIn('kind === "evidence" ? milStdEvidenceDescriptor(selectedEvent) : null', focus_path)
         self.assertIn("milStdMarkerElement(descriptor)", focus_path)
         self.assertIn("state.focusedEventMarker = new maplibregl.Marker", focus_path)
         self.assertIn("focused-map-selection-marker", CSS)
 
-    def test_mapped_entities_use_symbology_in_every_raw_event_layer(self):
-        entity_event = APP.split("function milStdEntityEventDescriptor", 1)[1].split(
-            "function milStdEventDescriptor", 1
-        )[0]
-        event_dispatch = APP.split("function milStdEventDescriptor", 1)[1].split(
-            "function milStdMarkerElement", 1
-        )[0]
-        self.assertIn("MIL_STD_ORGANIZATIONS[event.entity_id]", entity_event)
-        self.assertIn('status: "reported"', entity_event)
-        self.assertIn('symbolCode: `organization-report:${event.entity_id}`', entity_event)
-        self.assertNotIn("collection_family", entity_event)
-        self.assertIn("milStdObservationDescriptor(event) || milStdEntityEventDescriptor(event)", event_dispatch)
+    def test_raw_event_layers_use_neutral_location_markers(self):
+        map_path = APP.split("function renderMap()", 1)[1].split("function eventMapCoordinates", 1)[0]
+        event_branch = map_path.split('if (layer.kind === "events")', 1)[1].split('} else if (layer.kind === "locations")', 1)[0]
+        self.assertIn("addLocationCount", event_branch)
+        self.assertNotIn("milStdEventDescriptor", event_branch)
+        self.assertNotIn("milStdDescriptors.push", event_branch)
 
     def test_military_markers_preserve_maplibre_absolute_positioning(self):
         marker_rule = CSS.split(".milstd-marker {", 1)[1].split("}", 1)[0]
