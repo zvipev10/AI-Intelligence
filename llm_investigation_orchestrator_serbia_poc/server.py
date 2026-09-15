@@ -114,6 +114,7 @@ except ImportError:
 
 ROOT = Path(__file__).resolve().parent
 ATTACK_TARGET_CATALOG_LAYER_ID = "attack-targets:all"
+EVIDENCE_CATALOG_LAYER_ID = "evidence:all"
 TARGET_CATALOG_READER = Path(os.environ.get(
     "INTELLIGENCE_POC_TARGET_CATALOG_READER",
     "/opt/serbia-poc/mcp_server/target_catalog_reader.py",
@@ -162,6 +163,7 @@ INVESTIGATIONS_DIR = ROOT / "investigations" / STATE_SUFFIX
 WORKSTREAMS_DIR = ROOT / "workstreams"
 SCENARIO_MANIFESTS_DIR = ROOT / "scenario_manifests"
 SCENARIO_RUNS_DIR = ROOT / "scenario_runs" / STATE_SUFFIX
+EVIDENCE_CATALOG_DIR = ROOT / "data" / "evidence_catalog" / DATASET_VERSION
 TERMINAL_STATUSES = {"completed", "failed", "cancelled"}
 EVENT_ID_PATTERN = re.compile(r"\b(?:REC-(?:V2-)?\d{6}|LOC-(?:V2-)?\d{3})\b")
 SAVED_QUESTION_ID_PATTERN = re.compile(r"^[A-Za-z0-9_.-]+$")
@@ -391,6 +393,40 @@ def visible_ui_events(locale: str = "he") -> list[dict[str, Any]]:
     return visible
 
 
+_EVIDENCE_CATALOG_CACHE: dict[str, list[dict[str, Any]]] = {}
+
+
+def load_evidence_catalog(locale: str = "he") -> list[dict[str, Any]]:
+    locale = normalize_locale(locale)
+    if locale not in _EVIDENCE_CATALOG_CACHE:
+        path = EVIDENCE_CATALOG_DIR / f"{locale}.json"
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+            rows = payload.get("rows") if payload.get("dataset_version") == DATASET_VERSION else []
+            _EVIDENCE_CATALOG_CACHE[locale] = rows if isinstance(rows, list) else []
+        except (OSError, json.JSONDecodeError):
+            _EVIDENCE_CATALOG_CACHE[locale] = []
+    rows = _EVIDENCE_CATALOG_CACHE[locale]
+    timeframe = active_playback_timeframe()
+    if timeframe is None:
+        return rows
+    return [
+        row for row in rows
+        if (timestamp := parse_utc(row.get("valid_from"))) is not None
+        and timeframe["_from"] <= timestamp < timeframe["_to"]
+    ]
+
+
+def evidence_catalog_count(locale: str = "he") -> int:
+    try:
+        manifest = json.loads((EVIDENCE_CATALOG_DIR / "manifest.json").read_text(encoding="utf-8"))
+        if manifest.get("dataset_version") != DATASET_VERSION:
+            return 0
+        return int(((manifest.get("counts") or {}).get(normalize_locale(locale)) or {}).get("total") or 0)
+    except (OSError, ValueError, TypeError, json.JSONDecodeError):
+        return 0
+
+
 def load_persisted_attack_targets(
     entities: dict[str, dict[str, Any]], locations: dict[str, dict[str, Any]], limit: int = 500,
     locale: str = "he",
@@ -418,6 +454,7 @@ def list_ui_layers(locale: str = "he") -> list[dict[str, Any]]:
     locale = normalize_locale(locale)
     events, entities, locations = ui_layer_data(locale)
     targets = load_persisted_attack_targets(entities, locations, locale=locale)
+    evidence_count = evidence_catalog_count(locale)
     unknown_source = "Unknown source" if locale == "en" else "מקור לא ידוע"
     layers = [
         {
@@ -445,10 +482,19 @@ def list_ui_layers(locale: str = "he") -> list[dict[str, Any]]:
         "count": len(targets),
         "capabilities": {"table": True, "map": True, "timeline": False},
     })
+    layers.append({
+        "id": EVIDENCE_CATALOG_LAYER_ID,
+        "label": "שכבת ראיות",
+        "family": "evidence",
+        "kind": "evidence",
+        "count": evidence_count,
+        "capabilities": {"table": True, "map": True, "timeline": True},
+    })
     if locale == "en":
         layers[0]["label"] = "Entity layer"
         layers[1]["label"] = "Location layer"
-        layers[-1]["label"] = "Target candidates"
+        layers[-2]["label"] = "Target candidates"
+        layers[-1]["label"] = "Evidence layer"
     source_counts = Counter(event.get("source_type") or unknown_source for event in events)
     for source_type, count in sorted(source_counts.items(), key=lambda item: (-item[1], item[0])):
         layers.append({
@@ -476,6 +522,8 @@ def get_ui_layer_rows(layer_id: str, locale: str = "he") -> tuple[dict[str, Any]
         rows = sorted(locations.values(), key=lambda item: (-int(item.get("event_count") or 0), str(item.get("location_name") or "")))
     elif layer_id == ATTACK_TARGET_CATALOG_LAYER_ID:
         rows = load_persisted_attack_targets(entities, locations, locale=locale)
+    elif layer_id == EVIDENCE_CATALOG_LAYER_ID:
+        rows = load_evidence_catalog(locale)
     elif layer_id.startswith("events:"):
         source_type = layer.get("source_type") or layer_id.split(":", 1)[1]
         unknown_source = "Unknown source" if locale == "en" else "מקור לא ידוע"

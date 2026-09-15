@@ -6,7 +6,9 @@ from __future__ import annotations
 import argparse
 import json
 import shlex
+import subprocess
 import sys
+import tempfile
 import time
 from pathlib import Path, PurePosixPath
 
@@ -28,6 +30,9 @@ FILES = [
     "scenario_playback.py",
     "workstream_artifacts.py",
     "generate_english_projection.py",
+    "evidence_catalog.py",
+    "mcp_server/evidence_store.py",
+    "mcp_server/fusion_tools.py",
     "index.html",
     "app.js",
     "styles.css",
@@ -125,12 +130,21 @@ def read_remote_gateway_api_key(client: paramiko.SSHClient) -> str | None:
 def upload_ui(client: paramiko.SSHClient, api_key: str, moshe_api_key: str) -> None:
     staging = f"/tmp/serbia-poc-ui-{int(time.time())}"
     run(client, f"rm -rf {shlex.quote(staging)} && mkdir -p {shlex.quote(staging)}")
+    catalog_temp = tempfile.TemporaryDirectory(prefix="serbia-evidence-catalog-")
+    catalog_dir = Path(catalog_temp.name)
+    subprocess.run([
+        sys.executable, str(LOCAL_ROOT / "evidence_catalog.py"),
+        "--events", str(LOCAL_ROOT / "data" / "serbian_intelligence_v2_1" / "serbia_kosovo_events_projection_v2_1.csv"),
+        "--output-dir", str(catalog_dir), "--dataset-version", "v2.1",
+    ], check=True, timeout=180)
     sftp = client.open_sftp()
     try:
         for name in FILES:
             upload_file(sftp, LOCAL_ROOT / name, str(PurePosixPath(staging) / name))
         for name in DIRS:
             upload_dir(sftp, LOCAL_ROOT / name, str(PurePosixPath(staging) / name))
+        for name in ("he.json", "en.json", "manifest.json"):
+            upload_file(sftp, catalog_dir / name, f"{staging}/data/evidence_catalog/v2.1/{name}")
         remote_config = {
             "transport": "direct",
             "remote_host": "127.0.0.1",
@@ -155,6 +169,7 @@ def upload_ui(client: paramiko.SSHClient, api_key: str, moshe_api_key: str) -> N
                 config_tmp.unlink()
     finally:
         sftp.close()
+        catalog_temp.cleanup()
     root_q = shlex.quote(REMOTE_UI_ROOT)
     staging_q = shlex.quote(staging)
     run(

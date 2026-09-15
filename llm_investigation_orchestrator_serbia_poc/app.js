@@ -660,8 +660,8 @@ const LAYER_COLORS = [
 
 function layerFamilyLabels() {
   return currentLocale() === "en"
-    ? { entities: "Entities", locations: "Locations", events: "Events by source_type", targets: "Targets" }
-    : { entities: "ישויות", locations: "מיקומים", events: "אירועים לפי source_type", targets: "מטרות" };
+    ? { entities: "Entities", locations: "Locations", events: "Events by source_type", targets: "Targets", evidence: "Evidence" }
+    : { entities: "ישויות", locations: "מיקומים", events: "אירועים לפי source_type", targets: "מטרות", evidence: "ראיות" };
 }
 
 const ATTACK_TARGET_CATALOG_LAYER_ID = "attack-targets:all";
