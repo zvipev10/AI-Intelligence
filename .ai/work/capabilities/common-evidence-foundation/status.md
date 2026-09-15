@@ -1,19 +1,19 @@
 # Capability Status — Common Evidence Foundation
 
 ## Current phase
-Production recovery required
+Complete
 
 ## Overall status
-Implementation, local QA, and repository push complete; production acceptance blocked by an unresponsive VM after the legacy live benchmark.
+Implemented, tested, deployed, and production-verified.
 
 ## Who acts now
-Operations: restore VM responsiveness, verify the MCP gateway, deploy the UI, and run production smoke tests.
+No active owner; capability is ready for user testing.
 
 ## Blockers
-Production host `151.145.93.180` accepts TCP connections intermittently but SSH banner exchange and HTTP health requests time out after the deployment benchmark saturated the 1 GB VM.
+None.
 
 ## Next artifact
-`qa-review.md` after production recovery and verification.
+Talia assessment planning remains outside this completed scope.
 
 ## Scope boundary
 Talia and enemy assessments remain a later capability.
@@ -22,3 +22,6 @@ Talia and enemy assessments remain a later capability.
 - `capability-brief.md`
 - `execution-plan.md`
 - `checkpoint-001.md`
+- `deployment-incident.md`
+- `qa-review.md`
+- `handoff-summary.md`

@@ -24,6 +24,10 @@ LOCAL_HERMES_CONFIG = LOCAL_ROOT / ".hermes-api.json"
 FILES = [
     "server.py",
     "agent_result_pipeline.py",
+    "agent_routing.py",
+    "scenario_playback.py",
+    "workstream_artifacts.py",
+    "generate_english_projection.py",
     "index.html",
     "app.js",
     "styles.css",
@@ -94,18 +98,18 @@ def upload_dir(sftp: paramiko.SFTPClient, local_dir: Path, remote_dir: str) -> N
         upload_file(sftp, local, str(PurePosixPath(remote_dir) / relative))
 
 
-def read_remote_moshe_api_key(client: paramiko.SSHClient) -> str | None:
-    """Read the existing profile credential so routine UI deploys preserve it."""
+def read_remote_ui_config(client: paramiko.SSHClient) -> dict:
+    """Read existing UI credentials so interrupted deploys can recover safely."""
     sftp = client.open_sftp()
     try:
         with sftp.open(f"{REMOTE_UI_ROOT}/.hermes-api.json", "r") as handle:
             raw = handle.read()
             config = json.loads(raw.decode("utf-8") if isinstance(raw, bytes) else raw)
     except (OSError, ValueError, AttributeError):
-        return None
+        return {}
     finally:
         sftp.close()
-    return str((((config.get("agents") or {}).get("moshe") or {}).get("api_key") or "")).strip() or None
+    return config
 
 
 def upload_ui(client: paramiko.SSHClient, api_key: str, moshe_api_key: str) -> None:
@@ -217,15 +221,18 @@ def main() -> int:
     parser.add_argument("--moshe-api-key", default=None)
     args = parser.parse_args()
 
-    local_config = json.loads(LOCAL_HERMES_CONFIG.read_text(encoding="utf-8"))
-    api_key = args.api_key or local_config["api_key"]
+    local_config = json.loads(LOCAL_HERMES_CONFIG.read_text(encoding="utf-8")) if LOCAL_HERMES_CONFIG.exists() else {}
 
     client = connect(args.key.resolve())
     try:
+        remote_config = read_remote_ui_config(client)
+        api_key = args.api_key or local_config.get("api_key") or remote_config.get("api_key")
+        if not api_key:
+            parser.error("--api-key is required when no existing UI credential is available")
         moshe_api_key = (
             args.moshe_api_key
             or ((local_config.get("agents") or {}).get("moshe") or {}).get("api_key")
-            or read_remote_moshe_api_key(client)
+            or ((remote_config.get("agents") or {}).get("moshe") or {}).get("api_key")
         )
         if not moshe_api_key:
             parser.error("--moshe-api-key is required for the first multiplexed deployment")

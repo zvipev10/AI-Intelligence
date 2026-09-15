@@ -8,6 +8,13 @@
 - Subsequent SSH banner exchanges and HTTP health requests timed out, consistent with VM resource saturation.
 - The UI release was intentionally not deployed while backend health was unknown.
 
+## Resolution
+- The VM was rebooted/recovered and returned to normal load.
+- Both `hermes-gateway.service` and `serbia-poc-ui.service` are active.
+- The complete UI package was deployed after correcting missing module packaging.
+- Public `/api/status` and English UI requests return HTTP 200.
+- The heavy live-model benchmark was not rerun.
+
 ## Recovery sequence
 1. Restore VM responsiveness through the hosting console if it does not recover naturally.
 2. Check and stop any orphaned `benchmark_tools.py` process.
