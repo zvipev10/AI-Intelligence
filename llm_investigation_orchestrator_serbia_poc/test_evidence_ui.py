@@ -19,7 +19,10 @@ class EvidenceUiTests(unittest.TestCase):
         self.assertIn('activeLayer.kind === "evidence"', self.app)
 
     def test_frontend_asset_version_is_bumped(self):
-        self.assertIn('app.js?v=185', self.index)
+        self.assertIn('app.js?v=186', self.index)
+
+    def test_html_escaping_tolerates_missing_catalog_fields(self):
+        self.assertIn('String(value ?? "").replace', self.app)
 
     def test_evidence_symbology_is_bounded_before_map_rendering(self):
         self.assertIn("function coalesceEvidenceDescriptors", self.app)
