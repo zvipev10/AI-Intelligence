@@ -14,3 +14,10 @@
 ## QA
 - Focused evidence/MIL-STD/viewer/catalog suite: 32 passed.
 - JavaScript syntax and diff checks passed.
+
+## Production follow-up — 2026-09-16
+- Fixed the remaining `undefined is not an object (evaluating 'value.replace')` failure by making the shared HTML escaping boundary tolerate null and undefined optional fields.
+- Added focused regression coverage and advanced the UI asset to `app.js?v=186`.
+- Twenty-five focused evidence, MIL-STD, and catalog tests pass; JavaScript syntax and catalog behavioral checks pass.
+- Deployed commit `a630c67` with rollback backup `/home/ubuntu/deploy-backups/null-safe-render-a630c67`.
+- UI and Hermes services are active; deployed `app.js` and `index.html` hashes match the commit exactly.
