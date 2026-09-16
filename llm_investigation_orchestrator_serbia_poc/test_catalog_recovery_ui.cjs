@@ -2,18 +2,21 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const assert = require('node:assert/strict');
 const source = fs.readFileSync(`${__dirname}/app.js`, 'utf8');
-const names = ['openCatalogLayer', 'buildCatalogLayer', 'executeCatalogLayerActions', 'presentFinalAgentResult', 'reloadOpenCatalogLayers'];
+const names = ['openCatalogLayer', 'buildCatalogLayer', 'toggleFinalAnswerVisibility', 'executeCatalogLayerActions', 'presentFinalAgentResult', 'reloadOpenCatalogLayers'];
 const context = {
   URL, console, Date, Set,
   state: { layerCatalog: [{ id: 'events:UAV', label: 'UAV', kind: 'events', capabilities: { table: true, map: true } }], layers: [], openingLayerIds: new Set() },
   window: { location: { href: 'http://localhost/' } },
-  urls: [], notices: [], fail: false,
+  urls: [], notices: [], fail: false, showCalls: 0,
   buildLocaleApiUrl: path => path,
+  sanitizeLayerKey: value => String(value),
   activeLocaleText: (he, en) => en,
   renderAllViews() {}, renderLayerSelector() {}, renderQueryLayersModal() {}, renderQueryInspector() {}, ensureActiveLayer() {}, activateView() {},
   buildTypedResultLayers: () => [], buildFinalQueryContext: () => ({}), finalSourceId: () => 'final', resolveFinalResultView: () => 'map',
   localizedRestoreOnlySummary: () => 'summary', applySavedFiltersToLayer() {},
+  updateSourceVisibilityBtn() {},
 };
+context.showFinalAnswerResult = () => { context.showCalls += 1; };
 context.showResult = (...args) => context.notices.push(args);
 context.addResultLayers = ({ layers }) => { context.state.layers.push(...layers); return layers; };
 context.fetch = async url => {
@@ -35,6 +38,12 @@ for (const name of names) {
   await context.presentFinalAgentResult(result, 'show filtered layer', { showSummary: true });
   assert.equal(context.state.layers.length, 1);
   assert.equal(context.state.layers[0].items.length, 1);
+  assert.equal([...context.state.layers[0].presentationSourceIds].join(','), 'final');
+  context.toggleFinalAnswerVisibility(result, 'show filtered layer', { dataset: { sourceId: 'final' } });
+  assert.equal(context.state.layers[0].visible, false, 'result button hides its catalog layer');
+  context.toggleFinalAnswerVisibility(result, 'show filtered layer', { dataset: { sourceId: 'final' } });
+  assert.equal(context.showCalls, 1, 'result button restores its hidden catalog layer');
+  context.state.layers[0].visible = true;
   assert.equal(context.notices.at(-1)[0], 'Layer opened');
   assert.match(context.urls[0], /filters=/);
   assert.deepEqual(JSON.parse(new URL(context.urls[0]).searchParams.get('filters')), action.filters);

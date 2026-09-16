@@ -2192,6 +2192,11 @@ function ensureInvestigationRecord(name) {
   return created;
 }
 
+function hasCatalogLayerActions(result = {}) {
+  return (result.catalog_layer_actions || []).some(action =>
+    action?.action === "open" && action.catalog_layer_id);
+}
+
 const SIMILAR_INVESTIGATIONS = [
   {
     id: "regional-infrastructure",
@@ -4019,7 +4024,8 @@ function finalizeAssistantMessage(answer, options = {}) {
     const actions = document.createElement("div");
     actions.className = "final-answer-actions";
     const finalId = finalSourceId(options.result);
-    const hasRequestedResults = buildTypedResultLayers(options.result).length > 0;
+    const hasRequestedResults = buildTypedResultLayers(options.result).length > 0
+      || hasCatalogLayerActions(options.result);
     actions.innerHTML = `
       ${hasRequestedResults ? `<button type="button" class="final-answer-show-btn layers-hidden" data-source-id="${escapeHtml(finalId)}" title="${escapeHtml(activeLocaleText("הצג תוצאות", "Show results"))}" aria-label="${escapeHtml(activeLocaleText("הצג תוצאות", "Show results"))}" aria-pressed="false">
         <span class="final-answer-show-label">${escapeHtml(activeLocaleText("הצג תוצאות", "Show results"))}</span>
@@ -4067,7 +4073,8 @@ function showFinalAnswerResult(result, prompt) {
 
 function toggleFinalAnswerVisibility(result, prompt, btn) {
   const sourceId = sanitizeLayerKey(btn?.dataset.sourceId || finalSourceId(result));
-  const sourceLayers = state.layers.filter(layer => layer.sourceId === sourceId);
+  const sourceLayers = state.layers.filter(layer =>
+    layer.sourceId === sourceId || (layer.presentationSourceIds || []).includes(sourceId));
   const anyVisible = sourceLayers.some(layer => layer.visible);
   if (!sourceLayers.length || !anyVisible) {
     showFinalAnswerResult(result, prompt);
@@ -4174,8 +4181,13 @@ async function executeCatalogLayerActions(result = {}) {
   for (const action of Array.isArray(result.catalog_layer_actions) ? result.catalog_layer_actions : []) {
     if (action?.action !== "open" || !action.catalog_layer_id) continue;
     const layer = await openCatalogLayer(action.catalog_layer_id, { silent: true, filters: action.filters });
-    if (layer) opened.push(layer);
-    else errors.push({ catalog_layer_id: action.catalog_layer_id, error: state.layerCatalogError || "catalog_layer_open_failed" });
+    if (layer) {
+      const presentationSourceId = sanitizeLayerKey(finalSourceId(result));
+      layer.presentationSourceIds = [...new Set([...(layer.presentationSourceIds || []), presentationSourceId])];
+      opened.push(layer);
+    } else {
+      errors.push({ catalog_layer_id: action.catalog_layer_id, error: state.layerCatalogError || "catalog_layer_open_failed" });
+    }
   }
   result.catalog_layer_outcomes = {
     opened: opened.map(layer => ({ catalog_layer_id: layer.catalogLayerId, label: layer.label, count: layer.items.length })),
@@ -4633,7 +4645,8 @@ function showStepResult(step) {
 
 function updateSourceVisibilityBtn(btn) {
   const sourceId = btn.dataset.sourceId;
-  const sourceLayers = state.layers.filter(layer => layer.sourceId === sourceId);
+  const sourceLayers = state.layers.filter(layer =>
+    layer.sourceId === sourceId || (layer.presentationSourceIds || []).includes(sourceId));
   const anyVisible = sourceLayers.some(layer => layer.visible);
   btn.classList.toggle("layers-hidden", !anyVisible);
   const icon = btn.querySelector(".visibility-eye-icon");
