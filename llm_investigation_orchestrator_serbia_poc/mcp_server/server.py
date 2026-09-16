@@ -11,6 +11,8 @@ import os
 import re
 import sys
 import time
+from urllib.request import urlopen
+from urllib.parse import urlencode
 from collections import Counter, defaultdict
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -18,12 +20,14 @@ from typing import Any
 
 try:
     from evidence_store import EvidenceStore, prepare_fused_object, project_event, projected_evidence_id
+    from catalog_layers import resolve_layer, validate_filters
     from fusion_tools import discover_corroborating_evidence, find_duplicate_candidates, prepare_candidate
     from semantic_index import SemanticEventIndex
     from target_bank import TargetBank
 except ImportError:  # pragma: no cover - package-style execution fallback
     sys.path.insert(0, str(Path(__file__).resolve().parent))
     from evidence_store import EvidenceStore, prepare_fused_object, project_event, projected_evidence_id
+    from catalog_layers import resolve_layer, validate_filters
     from fusion_tools import discover_corroborating_evidence, find_duplicate_candidates, prepare_candidate
     from semantic_index import SemanticEventIndex
     from target_bank import TargetBank
@@ -2715,22 +2719,53 @@ def present_saved_memory_layers(arguments: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def load_ui_catalog(locale="he"):
+    # The UI owns the canonical catalog; the MCP evidence store may use different labels.
+    base = os.environ.get("INTELLIGENCE_POC_UI_URL", "http://127.0.0.1:8769").rstrip("/")
+    with urlopen(base + "/api/layers?" + urlencode({"locale": locale}), timeout=5) as response:
+        catalog = json.load(response)["layers"]
+    if not isinstance(catalog, list) or not catalog or any(not isinstance(item, dict) or not item.get("id") for item in catalog):
+        raise ValueError("invalid UI catalog")
+    return catalog
+
+
 def open_catalog_layers(arguments: dict[str, Any]) -> dict[str, Any]:
-    catalog_layer_ids = list(dict.fromkeys(
-        str(value).strip() for value in arguments.get("catalog_layer_ids") or [] if str(value).strip()
-    ))
-    if not catalog_layer_ids:
-        raise ValueError("at least one catalog_layer_id is required")
-    view = str(arguments.get("view") or "map").strip()
+    ids = arguments.get("catalog_layer_ids")
+    if not isinstance(ids, list) or not ids or len(ids) > 5 or any(not isinstance(i, str) or not i.strip() for i in ids):
+        raise ValueError("at least one catalog_layer_id is required (maximum five)")
+    view = arguments.get("view", "map")
     if view not in {"map", "timeline", "evidence"}:
         raise ValueError(f"unsupported catalog view: {view}")
-    return {
-        "catalog_layer_actions": [
-            {"action": "open", "catalog_layer_id": layer_id, "view": view}
-            for layer_id in catalog_layer_ids
-        ],
-        "status": "ready",
-    }
+    locale = arguments.get("locale", "he")
+    if locale not in {"he", "en"}:
+        raise ValueError("unsupported catalog locale")
+    filters = validate_filters(arguments.get("filters"))
+    try:
+        catalog = load_ui_catalog(locale)
+    except Exception:
+        return {"status": "catalog_unavailable", "catalog_layer_actions": [],
+                "message": "Cannot validate the live catalog. No layer was queued or opened; report the failure and retry later."}
+    actions, resolutions, problems = [], [], []
+    for requested in dict.fromkeys(i.strip() for i in ids):
+        resolution = resolve_layer(requested, catalog)
+        if resolution["status"] != "resolved":
+            problems.append(resolution)
+            continue
+        layer = resolution["layer"]
+        if filters and layer.get("kind") != "events":
+            raise ValueError("catalog filters are supported only for raw event layers")
+        action = {"action": "open", "catalog_layer_id": layer["id"], "view": view}
+        if filters:
+            action["filters"] = filters
+        if action not in actions:
+            actions.append(action)
+        if requested != layer["id"]:
+            resolutions.append({"requested_id": requested, "catalog_layer_id": layer["id"], "match": resolution["match"]})
+    if problems:
+        return {"status": "clarification_required", "catalog_layer_actions": [], "problems": problems,
+                "message": "Do not guess or claim success. Ask the analyst to choose a catalog candidate, or clarify an unknown name; then retry using its exact ID and the same filters."}
+    return {"status": "pending_ui", "catalog_layer_actions": actions, "resolutions": resolutions,
+            "message": "Canonical layer actions validated and queued for the UI. This is not confirmation that the browser opened them. Preserve these filters; the UI reports loading success or failure."}
 
 
 def validate_target_references(candidate: dict[str, Any], evidence: list[dict[str, Any]] | None = None) -> None:
@@ -3345,7 +3380,7 @@ TOOLS = [
     {
         "name": "open_catalog_layers",
         "title": "Open existing catalog layers",
-        "description": "Open one or more existing UI catalog layers by exact catalog ID. Use only for a direct request to open a whole named catalog layer without filters. Do not use for filtered retrieval or saved investigation-memory layers.",
+        "description": "Open existing UI catalog layers. Resolve minor naming mistakes against the live catalog; ambiguous names require analyst clarification. Carry forward all conversation constraints using filters for raw event layers. Use event_ids for other retrieval constraints. Never drop a filter to open a whole layer. Set the UI locale. A pending_ui result is queued, not proof of opening. Do not use for saved investigation-memory layers.",
         "inputSchema": with_step_bridge({
             "type": "object",
             "properties": {
@@ -3356,6 +3391,16 @@ TOOLS = [
                     "maxItems": 5,
                 },
                 "view": {"type": "string", "enum": ["map", "timeline", "evidence"]},
+                "locale": {"type": "string", "enum": ["he", "en"]},
+                "filters": {
+                    "type": "object",
+                    "properties": {
+                        "location_ids": {"type": "array", "items": {"type": "string"}, "minItems": 1, "maxItems": 2000},
+                        "entity_ids": {"type": "array", "items": {"type": "string"}, "minItems": 1, "maxItems": 2000},
+                        "event_ids": {"type": "array", "items": {"type": "string"}, "minItems": 1, "maxItems": 2000},
+                        "start_time": {"type": "string"}, "end_time": {"type": "string"}
+                    }, "additionalProperties": False
+                },
             },
             "required": ["catalog_layer_ids", "view"],
             "additionalProperties": False,

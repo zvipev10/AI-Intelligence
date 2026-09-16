@@ -1,5 +1,6 @@
 import importlib.util
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 
 from agent_result_pipeline import catalog_layer_actions_from_audit
@@ -22,7 +23,8 @@ class CatalogLayerActionTests(unittest.TestCase):
         cls.mcp = load_module("catalog_mcp", ROOT / "mcp_server" / "server.py")
 
     def test_mcp_builds_deterministic_open_action(self):
-        result = self.mcp.open_catalog_layers({
+        with patch.object(self.mcp, "load_ui_catalog", return_value=self.gateway.list_ui_layers("he")):
+            result = self.mcp.open_catalog_layers({
             "catalog_layer_ids": ["events:טלגרם"],
             "view": "map",
         })
@@ -39,10 +41,10 @@ class CatalogLayerActionTests(unittest.TestCase):
     def test_gateway_accepts_real_layer_and_rejects_unknown_id(self):
         actions, errors = self.gateway.validate_catalog_layer_actions([
             {"action": "open", "catalog_layer_id": "events:טלגרם", "view": "map"},
-            {"action": "open", "catalog_layer_id": "טלגרם", "view": "map"},
+            {"action": "open", "catalog_layer_id": "not-a-real-layer", "view": "map"},
         ], "he")
-        self.assertEqual([item["catalog_layer_id"] for item in actions], ["events:טלגרם"])
-        self.assertEqual(errors, [{"catalog_layer_id": "טלגרם", "error": "unknown_catalog_layer_id"}])
+        self.assertEqual(actions, [])
+        self.assertEqual(errors, [{"catalog_layer_id": "not-a-real-layer", "error": "unknown_catalog_layer_id", "candidates": []}])
 
     def test_pipeline_uses_latest_successful_catalog_action(self):
         audit = [

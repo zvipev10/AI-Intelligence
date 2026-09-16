@@ -33,6 +33,7 @@ from agent_result_pipeline import (
     normalize_workstream_collaboration,
     requested_result_layers_from_audit,
 )
+from mcp_server.catalog_layers import resolve_layer, validate_filters, filter_rows
 from agent_routing import AgentRouteRegistry, MOSHE_AGENT_ID
 from scenario_playback import (
     PlaybackConflictError,
@@ -509,7 +510,7 @@ def list_ui_layers(locale: str = "he") -> list[dict[str, Any]]:
     return layers
 
 
-def get_ui_layer_rows(layer_id: str, locale: str = "he") -> tuple[dict[str, Any], list[dict[str, Any]]] | None:
+def get_ui_layer_rows(layer_id: str, locale: str = "he", filters=None) -> tuple[dict[str, Any], list[dict[str, Any]]] | None:
     locale = normalize_locale(locale)
     events, entities, locations = ui_layer_data(locale)
     layers = {layer["id"]: layer for layer in list_ui_layers(locale)}
@@ -530,6 +531,12 @@ def get_ui_layer_rows(layer_id: str, locale: str = "he") -> tuple[dict[str, Any]
         rows = [event for event in events if (event.get("source_type") or unknown_source) == source_type]
     else:
         return None
+    scope = validate_filters(filters)
+    if scope:
+        if layer.get("kind") != "events":
+            raise ValueError("catalog filters are supported only for raw event layers")
+        rows = filter_rows(rows, scope)
+        layer = {**layer, "count": len(rows), "catalog_filters": scope}
     return layer, rows
 
 
@@ -540,21 +547,31 @@ def catalog_layer_prompt_context(locale: str) -> str:
     )
 
 
-def validate_catalog_layer_actions(actions: Any, locale: str) -> tuple[list[dict[str, Any]], list[dict[str, str]]]:
-    catalog = {item["id"]: item for item in list_ui_layers(locale)}
+def validate_catalog_layer_actions(actions: Any, locale: str) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    catalog = list_ui_layers(locale)
     valid, errors = [], []
     for action in actions if isinstance(actions, list) else []:
         layer_id = str(action.get("catalog_layer_id") or "").strip() if isinstance(action, dict) else ""
-        if layer_id not in catalog:
-            errors.append({"catalog_layer_id": layer_id, "error": "unknown_catalog_layer_id"})
+        resolution = resolve_layer(layer_id, catalog)
+        if resolution["status"] != "resolved":
+            errors.append({"catalog_layer_id": layer_id, "error": "ambiguous_catalog_layer" if resolution["status"] == "ambiguous" else "unknown_catalog_layer_id",
+                           "candidates": resolution["candidates"]})
             continue
-        valid.append({
-            "action": "open",
-            "catalog_layer_id": layer_id,
-            "label": catalog[layer_id]["label"],
-            "view": action.get("view") if action.get("view") in {"map", "timeline", "evidence"} else "map",
-        })
-    return valid, errors
+        layer = resolution["layer"]
+        try:
+            filters = validate_filters(action.get("filters"))
+            if filters and layer.get("kind") != "events":
+                raise ValueError("catalog filters require a raw event layer")
+        except (ValueError, TypeError) as exc:
+            errors.append({"catalog_layer_id": layer_id, "error": str(exc)})
+            continue
+        normalized = {"action": "open", "catalog_layer_id": layer["id"], "label": layer["label"],
+                      "view": action.get("view") if action.get("view") in {"map", "timeline", "evidence"} else "map"}
+        if filters:
+            normalized["filters"] = filters
+        if normalized not in valid:
+            valid.append(normalized)
+    return ([] if errors else valid), errors
 
 
 def load_hermes_config() -> dict:
@@ -1121,7 +1138,7 @@ def build_english_agent_instructions(
         "Use prepare_evidence for neutral reported/observed objects and prepare_fused_evidence for correlation. Persist fused evidence only when it is explicitly needed and the tool validates persistence_eligible=true; raw REC records remain immutable.",
         "When the user asks to present a saved layer, use only present_saved_memory_layers for that presentation; after it succeeds, do not call present_requested_results for the same request.",
         "When the user directly asks to open a whole named UI catalog layer without filters, call open_catalog_layers with the exact ID from the catalog list below. Do not search first and do not use present_saved_memory_layers.",
-        "When the request includes filters, analysis, counts, matching records, or a subset, use retrieval tools and present_requested_results instead of open_catalog_layers.",
+        "For a named raw catalog layer with location/entity/time constraints, call open_catalog_layers with filters and the current locale. Carry forward prior conversation filters, including on follow-up requests. For other constraints retrieve records and pass their event_ids as filters, or use present_requested_results. Never replace a filtered request with the entire catalog. A pending_ui status means queued, not opened; do not claim browser success. On clarification_required ask the analyst to choose among candidates; never guess.",
         "For all other requests, call present_requested_results exactly once before the final answer whenever there are concrete data objects or evidence layers worth presenting in the UI.",
         "End with exactly one final line in the format 'Recommended view: VIEW | REASON'. VIEW must be one of map, timeline, or evidence. REASON must be short.",
     ]
@@ -1354,6 +1371,7 @@ def create_layer_memory(request: dict) -> dict:
         "label": label,
         "layer_kind": kind,
         "catalog_layer_id": compact_text(layer.get("catalog_layer_id") or layer.get("catalogLayerId"), 240),
+        "catalog_filters": validate_filters(layer.get("catalog_filters")),
         "data_id": compact_text(layer.get("data_id") or layer.get("dataId"), 240),
         "source_id": compact_text(layer.get("source_id") or layer.get("sourceId"), 240),
         "source_label": compact_text(layer.get("source_label") or layer.get("sourceLabel"), 240),
@@ -3367,6 +3385,8 @@ class HermesClient:
                 parts = [f"- {label}", f"kind={kind}"]
                 if catalog_id:
                     parts.append(f"catalog_layer_id={catalog_id}")
+                    if layer.get("catalog_filters"):
+                        parts.append("catalog_filters=" + json.dumps(layer["catalog_filters"], ensure_ascii=False))
                 if source_type:
                     parts.append(f"source_type={source_type}")
                 if count_text:
@@ -3690,7 +3710,7 @@ class HermesClient:
             " מאגר המטרות תומך באיתור ישיר לפי מזהה רשומה גולמית באמצעות search_target_candidates עם record_id."
             " הכלי זמין למשה בלבד; הסוכן הכללי אינו טוען שביצע חיפוש כזה ואינו מנתב למשה ללא אזכור מפורש של @משה."
             " כאשר המשתמש מבקש לפתוח שכבת קטלוג שלמה בשם וללא מסננים, השתמש ב-open_catalog_layers עם המזהה המדויק מרשימת הקטלוג שבהוראות; אל תחפש תחילה ואל תשתמש ב-present_saved_memory_layers."
-            " כאשר הבקשה כוללת מסננים, ניתוח, ספירה, רשומות תואמות או תת-קבוצה, השתמש בכלי השליפה וב-present_requested_results במקום open_catalog_layers."
+            " לפתיחת שכבת גלם עם מסננים השתמש ב-open_catalog_layers עם filters ו-locale. שמור מסננים מההקשר הקודם. למסננים אחרים השתמש בשליפה והעבר event_ids. אין להחליף תת-קבוצה בשכבה שלמה. pending_ui אינו אישור פתיחה; במקרה של עמימות בקש הבהרה."
             " כאשר המשתמש מבקש להציג שכבה שמורה, השתמש רק ב-present_saved_memory_layers להצגת השכבה; לאחר הצלחתו אל תקרא ל-present_requested_results עבור אותה בקשה."
             " בכל בקשה אחרת, לפני התשובה הסופית, כאשר קיימים נתונים מבוקשים להצגה או ראיות מהותיות לניווט, חובה לקרוא פעם אחת ל-present_requested_results."
             " בשדה layers בחר רק את הרשומות שעונות ישירות למה שהמשתמש ביקש; שכבה אחת כברירת מחדל וכמה רק אם התבקשו כמה סוגי תוצאה."
@@ -3746,7 +3766,14 @@ class HermesClient:
                 tool_prefix=tool_prefix,
             )
         state_block = render_investigation_state_localized(investigation_state, locale=locale)
-        catalog_context = catalog_layer_prompt_context(locale)
+        catalog_context = catalog_layer_prompt_context(locale) + (
+            "\nCatalog recovery: use open_catalog_layers for named raw layers, supplying locale and all "
+            "location_ids/entity_ids/start_time/end_time filters from the current and prior request. "
+            "For other constraints supply the retrieved event_ids or use present_requested_results. "
+            "Never drop scope. A minor unambiguous name typo is resolved automatically. "
+            "If clarification_required, ask the analyst to select a candidate. "
+            "pending_ui only queues the action; do not state that a layer has opened. The UI confirms loading."
+        )
         instructions = f"{instructions}\n\n{catalog_context}"
         full_instructions = f"{instructions}\n\n{state_block}" if state_block else instructions
         encoded_instructions = full_instructions.encode("utf-8")
@@ -4631,7 +4658,12 @@ class Handler(SimpleHTTPRequestHandler):
             return
         if path.path.startswith("/api/layers/") and path.path.endswith("/rows"):
             layer_id = unquote(path.path[len("/api/layers/"):-len("/rows")])
-            result = get_ui_layer_rows(layer_id, locale)
+            try:
+                filters = json.loads((query.get("filters") or ["{}"]) [0])
+                result = get_ui_layer_rows(layer_id, locale, filters)
+            except (ValueError, TypeError) as exc:
+                self.send_json(400, {"error": str(exc)})
+                return
             if result is None:
                 self.send_json(404, {"error": "Layer not found"})
             else:
