@@ -24,6 +24,7 @@ try:
     from fusion_tools import discover_corroborating_evidence, find_duplicate_candidates, prepare_candidate
     from semantic_index import SemanticEventIndex
     from target_bank import TargetBank
+    from assessment_store import AssessmentStore
 except ImportError:  # pragma: no cover - package-style execution fallback
     sys.path.insert(0, str(Path(__file__).resolve().parent))
     from evidence_store import EvidenceStore, prepare_fused_object, project_event, projected_evidence_id
@@ -31,6 +32,7 @@ except ImportError:  # pragma: no cover - package-style execution fallback
     from fusion_tools import discover_corroborating_evidence, find_duplicate_candidates, prepare_candidate
     from semantic_index import SemanticEventIndex
     from target_bank import TargetBank
+    from assessment_store import AssessmentStore
 
 
 PROTOCOL_VERSION = "2025-06-18"
@@ -2521,6 +2523,7 @@ def with_step_bridge(schema: dict[str, Any]) -> dict[str, Any]:
 
 TARGET_BANK = TargetBank()
 EVIDENCE_STORE = EvidenceStore()
+ASSESSMENT_STORE = AssessmentStore()
 
 
 def _prior_successful_audit_records() -> list[dict[str, Any]]:
@@ -2632,6 +2635,13 @@ def _materialize_presentation_layers(
                 raise ValueError(f"unknown evidence IDs: {', '.join(missing)}")
             result_kind = "evidence"
             capabilities = {"table": True, "map": True, "timeline": True}
+        elif kind == "assessments":
+            rows = [ASSESSMENT_STORE.get(row_id) for row_id in row_ids]
+            missing = [row_id for row_id, row in zip(row_ids, rows) if row is None]
+            if missing:
+                raise ValueError(f"unknown assessment IDs: {', '.join(missing)}")
+            result_kind = "assessments"
+            capabilities = {"table": True, "map": True, "timeline": False}
         elif kind == "aggregate_groups":
             group_by = str(selection.get("group_by") or "").strip()
             if not group_by:
@@ -2965,6 +2975,57 @@ def trace_evidence_provenance(arguments: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _validate_assessment_evidence(payload: dict[str, Any]) -> None:
+    ids = list(payload.get("evidence_ids") or [])
+    for judgment in payload.get("key_judgments") or []:
+        ids.extend(judgment.get("evidence_ids") or [])
+    for overlay in payload.get("overlays") or []:
+        ids.extend(overlay.get("supporting_evidence_ids") or [])
+    missing = sorted({str(value) for value in ids if resolve_evidence(str(value)) is None})
+    if missing:
+        raise ValueError(f"unknown evidence IDs: {', '.join(missing)}")
+
+
+def create_enemy_assessment(arguments: dict[str, Any]) -> dict[str, Any]:
+    payload = arguments.get("assessment") or arguments
+    _validate_assessment_evidence(payload)
+    return {"assessment": ASSESSMENT_STORE.create(payload, created_by="talia")}
+
+
+def update_enemy_assessment(arguments: dict[str, Any]) -> dict[str, Any]:
+    payload = arguments.get("changes") or {}
+    current = ASSESSMENT_STORE.get(str(arguments.get("assessment_id") or ""))
+    if current is None:
+        raise ValueError("unknown assessment_id")
+    _validate_assessment_evidence({**current, **payload})
+    return {"assessment": ASSESSMENT_STORE.update(current["assessment_id"], payload, int(arguments.get("expected_revision") or 0))}
+
+
+def get_enemy_assessment(arguments: dict[str, Any]) -> dict[str, Any]:
+    assessment = ASSESSMENT_STORE.get(str(arguments.get("assessment_id") or ""))
+    if assessment is None:
+        raise ValueError("unknown assessment_id")
+    return {"assessment": assessment}
+
+
+def search_enemy_assessments(arguments: dict[str, Any]) -> dict[str, Any]:
+    rows = ASSESSMENT_STORE.search(arguments.get("status"), arguments.get("query"), arguments.get("limit") or 100)
+    return {"assessments": rows, "returned": len(rows)}
+
+
+def attach_assessment_evidence(arguments: dict[str, Any]) -> dict[str, Any]:
+    assessment = ASSESSMENT_STORE.get(str(arguments.get("assessment_id") or ""))
+    if assessment is None:
+        raise ValueError("unknown assessment_id")
+    ids = list(dict.fromkeys([*(assessment.get("evidence_ids") or []), *(arguments.get("evidence_ids") or [])]))
+    _validate_assessment_evidence({"evidence_ids": ids})
+    return {"assessment": ASSESSMENT_STORE.update(assessment["assessment_id"], {"evidence_ids": ids}, int(arguments.get("expected_revision") or 0))}
+
+
+def supersede_enemy_assessment(arguments: dict[str, Any]) -> dict[str, Any]:
+    return {"assessment": ASSESSMENT_STORE.supersede(str(arguments.get("assessment_id") or ""), int(arguments.get("expected_revision") or 0))}
+
+
 def prepare_target_candidate(arguments: dict[str, Any]) -> dict[str, Any]:
     """Discover corroboration and build a deterministic save-ready assessment without persisting it."""
     fusion, selected = _prepare_neutral_fusion(arguments)
@@ -3157,6 +3218,46 @@ TARGET_EVIDENCE_SCHEMA = {
 }
 
 
+ASSESSMENT_INPUT_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "title": {"type": "string", "minLength": 1, "maxLength": 200},
+        "status": {"type": "string", "enum": ["draft", "current", "superseded", "closed"]},
+        "scope": {"type": "object", "properties": {
+            "location_ids": {"type": "array", "items": {"type": "string"}, "maxItems": 50},
+            "entity_ids": {"type": "array", "items": {"type": "string"}, "maxItems": 50},
+            "valid_from": {"type": "string"}, "valid_to": {"type": "string"},
+        }, "additionalProperties": False},
+        "key_judgments": {"type": "array", "minItems": 1, "maxItems": 20, "items": {
+            "type": "object", "properties": {
+                "judgment": {"type": "string", "minLength": 1, "maxLength": 2000},
+                "confidence": {"type": "string", "enum": ["low", "medium", "high"]},
+                "evidence_ids": {"type": "array", "items": {"type": "string", "pattern": "^EVD-"}, "maxItems": 100},
+            }, "required": ["judgment", "confidence", "evidence_ids"], "additionalProperties": False,
+        }},
+        "alternatives": {"type": "array", "items": {"type": "string"}, "maxItems": 20},
+        "contradictions": {"type": "array", "items": {"type": "string"}, "maxItems": 50},
+        "intelligence_gaps": {"type": "array", "items": {"type": "string"}, "maxItems": 50},
+        "indicators": {"type": "array", "items": {"type": "string"}, "maxItems": 50},
+        "evidence_ids": {"type": "array", "items": {"type": "string", "pattern": "^EVD-"}, "maxItems": 100},
+        "overlays": {"type": "array", "maxItems": 20, "items": {
+            "type": "object", "properties": {
+                "overlay_id": {"type": "string"},
+                "type": {"type": "string", "enum": ["point", "assessed_area", "route_axis", "confidence_envelope"]},
+                "meaning": {"type": "string", "minLength": 1, "maxLength": 500},
+                "confidence": {"type": "string", "enum": ["low", "medium", "high"]},
+                "valid_from": {"type": "string"}, "valid_to": {"type": "string"},
+                "supporting_evidence_ids": {"type": "array", "items": {"type": "string", "pattern": "^EVD-"}, "maxItems": 100},
+                "geometry": {"type": "object", "properties": {"type": {"type": "string", "enum": ["Point", "LineString", "Polygon"]}, "coordinates": {"type": "array"}}, "required": ["type", "coordinates"], "additionalProperties": False},
+            }, "required": ["type", "meaning", "confidence", "supporting_evidence_ids", "geometry"], "additionalProperties": False,
+        }},
+        "summary": {"type": "string", "minLength": 1, "maxLength": 4000},
+    },
+    "required": ["title", "key_judgments", "summary"],
+    "additionalProperties": False,
+}
+
+
 TOOLS = [
     {
         "name": "prepare_evidence",
@@ -3314,6 +3415,43 @@ TOOLS = [
         "annotations": {"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": False},
     },
     {
+        "name": "create_enemy_assessment",
+        "title": "Create a Talia enemy assessment",
+        "description": "Create a durable, revisioned enemy assessment from validated Evidence IDs. Analytical overlays are bounded and validated; this never creates targets.",
+        "inputSchema": with_step_bridge({"type": "object", "properties": {"assessment": ASSESSMENT_INPUT_SCHEMA}, "required": ["assessment"], "additionalProperties": False}),
+        "annotations": {"readOnlyHint": False, "destructiveHint": False, "idempotentHint": True, "openWorldHint": False},
+    },
+    {
+        "name": "update_enemy_assessment", "title": "Revise an enemy assessment",
+        "description": "Create a new assessment revision using an expected current revision.",
+        "inputSchema": with_step_bridge({"type": "object", "properties": {"assessment_id": {"type": "string"}, "expected_revision": {"type": "integer", "minimum": 1}, "changes": {**ASSESSMENT_INPUT_SCHEMA, "required": []}}, "required": ["assessment_id", "expected_revision", "changes"], "additionalProperties": False}),
+        "annotations": {"readOnlyHint": False, "destructiveHint": False, "idempotentHint": True, "openWorldHint": False},
+    },
+    {
+        "name": "get_enemy_assessment", "title": "Get an enemy assessment",
+        "description": "Retrieve one assessment by ASM identifier.",
+        "inputSchema": with_step_bridge({"type": "object", "properties": {"assessment_id": {"type": "string"}}, "required": ["assessment_id"], "additionalProperties": False}),
+        "annotations": {"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": False},
+    },
+    {
+        "name": "search_enemy_assessments", "title": "Search enemy assessments",
+        "description": "Search durable assessments by status or title.",
+        "inputSchema": with_step_bridge({"type": "object", "properties": {"status": {"type": "string", "enum": ["draft", "current", "superseded", "closed"]}, "query": {"type": "string"}, "limit": {"type": "integer", "minimum": 1, "maximum": 500}}, "additionalProperties": False}),
+        "annotations": {"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": False},
+    },
+    {
+        "name": "attach_assessment_evidence", "title": "Attach evidence to an assessment",
+        "description": "Attach validated Evidence IDs as a new assessment revision.",
+        "inputSchema": with_step_bridge({"type": "object", "properties": {"assessment_id": {"type": "string"}, "expected_revision": {"type": "integer", "minimum": 1}, "evidence_ids": {"type": "array", "items": {"type": "string", "pattern": "^EVD-"}, "minItems": 1, "maxItems": 100}}, "required": ["assessment_id", "expected_revision", "evidence_ids"], "additionalProperties": False}),
+        "annotations": {"readOnlyHint": False, "destructiveHint": False, "idempotentHint": True, "openWorldHint": False},
+    },
+    {
+        "name": "supersede_enemy_assessment", "title": "Supersede an enemy assessment",
+        "description": "Mark an assessment superseded through a new revision; history remains immutable.",
+        "inputSchema": with_step_bridge({"type": "object", "properties": {"assessment_id": {"type": "string"}, "expected_revision": {"type": "integer", "minimum": 1}}, "required": ["assessment_id", "expected_revision"], "additionalProperties": False}),
+        "annotations": {"readOnlyHint": False, "destructiveHint": False, "idempotentHint": True, "openWorldHint": False},
+    },
+    {
         "name": "present_requested_results",
         "title": "Present only the requested results",
         "description": "Final presentation-selection tool. Call once after analysis when requested results or materially relevant evidence references exist. Put only data directly requested by the user in layers. Put only canonical records that materially support the final conclusion in evidence_layers, grouped into meaningful map/timeline layers. Never include intermediate searches, rejected candidates, duplicate checks, or unrelated tool output. Canonical IDs are validated, and aggregate IDs must come from an earlier aggregate_events result in this run.",
@@ -3326,7 +3464,7 @@ TOOLS = [
                     "items": {
                         "type": "object",
                         "properties": {
-                            "kind": {"type": "string", "enum": ["events", "evidence", "locations", "entities", "attack_targets", "aggregate_groups"]},
+                            "kind": {"type": "string", "enum": ["events", "evidence", "assessments", "locations", "entities", "attack_targets", "aggregate_groups"]},
                             "ids": {"type": "array", "items": {"type": "string", "minLength": 1}, "minItems": 1, "maxItems": MAX_LIMIT},
                             "label": {"type": "string", "minLength": 1, "maxLength": 120},
                             "view": {"type": "string", "enum": ["map", "timeline", "evidence"]},
@@ -3818,6 +3956,12 @@ TOOL_HANDLERS = {
     "get_evidence": get_evidence,
     "search_evidence": search_evidence,
     "trace_evidence_provenance": trace_evidence_provenance,
+    "create_enemy_assessment": create_enemy_assessment,
+    "update_enemy_assessment": update_enemy_assessment,
+    "get_enemy_assessment": get_enemy_assessment,
+    "search_enemy_assessments": search_enemy_assessments,
+    "attach_assessment_evidence": attach_assessment_evidence,
+    "supersede_enemy_assessment": supersede_enemy_assessment,
     "prepare_workstream_creation": prepare_workstream_creation,
     "prepare_workstream_indication_proposal": prepare_workstream_indication_proposal,
     "decide_workstream_indication_proposal": decide_workstream_indication_proposal,

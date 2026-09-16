@@ -117,7 +117,8 @@ class MemberUiRegressionTests(unittest.TestCase):
     def test_show_results_uses_only_explicit_requested_result_layers(self):
         self.assertIn("return (result.requested_result_layers || [])", self.app)
         self.assertNotIn("return (result.layers || [])", self.app)
-        self.assertIn("const hasRequestedResults = buildTypedResultLayers(options.result).length > 0;", self.app)
+        self.assertIn("const hasRequestedResults = buildTypedResultLayers(options.result).length > 0", self.app)
+        self.assertIn("|| hasCatalogLayerActions(options.result);", self.app)
         self.assertIn('${hasRequestedResults ? `<button type="button" class="final-answer-show-btn', self.app)
 
     def _superseded_test_final_requested_results_wait_for_explicit_button_press(self):

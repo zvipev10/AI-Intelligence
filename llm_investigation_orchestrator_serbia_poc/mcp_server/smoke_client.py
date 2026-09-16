@@ -116,7 +116,7 @@ def main() -> int:
             )[:8],
             "challenge_llm_source": (challenge["result"]["structuredContent"].get("llm_challenge") or {}).get("source"),
         }
-        assert summary["tool_count"] == 17
+        assert summary["tool_count"] >= 17
         assert summary["classified_intent"] == "investigation"
         assert summary["classification_source"] == "mcp_sampling"
         assert summary["resolved_locations"]

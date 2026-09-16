@@ -128,7 +128,7 @@ def read_remote_gateway_api_key(client: paramiko.SSHClient) -> str | None:
     return out.strip() or None
 
 
-def upload_ui(client: paramiko.SSHClient, api_key: str, moshe_api_key: str) -> None:
+def upload_ui(client: paramiko.SSHClient, api_key: str, moshe_api_key: str, talia_api_key: str) -> None:
     staging = f"/tmp/serbia-poc-ui-{int(time.time())}"
     run(client, f"rm -rf {shlex.quote(staging)} && mkdir -p {shlex.quote(staging)}")
     catalog_temp = tempfile.TemporaryDirectory(prefix="serbia-evidence-catalog-")
@@ -158,6 +158,13 @@ def upload_ui(client: paramiko.SSHClient, api_key: str, moshe_api_key: str) -> N
                     "api_path_prefix": "/p/moshe",
                     "mcp_tool_prefix": "mcp_serbia_events_poc_moshe_",
                     "audit_path": "/opt/serbia-poc/mcp_audit_moshe.jsonl",
+                },
+                "talia": {
+                    "remote_port": 8642,
+                    "api_key": talia_api_key,
+                    "api_path_prefix": "/p/talia",
+                    "mcp_tool_prefix": "mcp_serbia_events_poc_talia_",
+                    "audit_path": "/opt/serbia-poc/mcp_audit_talia.jsonl",
                 },
             },
         }
@@ -245,6 +252,7 @@ def main() -> int:
     parser.add_argument("--key", required=True, type=Path)
     parser.add_argument("--api-key", default=None)
     parser.add_argument("--moshe-api-key", default=None)
+    parser.add_argument("--talia-api-key", default=None)
     args = parser.parse_args()
 
     local_config = json.loads(LOCAL_HERMES_CONFIG.read_text(encoding="utf-8")) if LOCAL_HERMES_CONFIG.exists() else {}
@@ -262,7 +270,13 @@ def main() -> int:
         )
         if not moshe_api_key:
             parser.error("--moshe-api-key is required for the first multiplexed deployment")
-        upload_ui(client, api_key, moshe_api_key)
+        talia_api_key = (
+            args.talia_api_key
+            or ((local_config.get("agents") or {}).get("talia") or {}).get("api_key")
+            or ((remote_config.get("agents") or {}).get("talia") or {}).get("api_key")
+            or api_key
+        )
+        upload_ui(client, api_key, moshe_api_key, talia_api_key)
         install_service(client)
         verification = verify(client)
     finally:

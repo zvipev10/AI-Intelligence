@@ -19,6 +19,7 @@ USER = "ubuntu"
 REMOTE_ROOT = "/opt/serbia-poc"
 REMOTE_CONFIG = "/home/ubuntu/.hermes/config.yaml"
 MOSHE_HOME = "/home/ubuntu/.hermes/profiles/moshe"
+TALIA_HOME = "/home/ubuntu/.hermes/profiles/talia"
 HERMES_SERVICE = "hermes-gateway.service"
 API_PORT = 8642
 SERVER_NAME = "serbia-events-poc"
@@ -86,7 +87,7 @@ def run(client: paramiko.SSHClient, command: str, timeout: int = 60, check: bool
 
 def upload_files(client: paramiko.SSHClient) -> str:
     staging = f"/tmp/serbia-poc-{int(time.time())}"
-    run(client, f"mkdir -p {shlex.quote(staging)}/mcp_server {shlex.quote(staging)}/moshe_profile {shlex.quote(staging)}/data/serbian_intelligence_v2")
+    run(client, f"mkdir -p {shlex.quote(staging)}/mcp_server {shlex.quote(staging)}/moshe_profile {shlex.quote(staging)}/talia_profile {shlex.quote(staging)}/data/serbian_intelligence_v2")
     files = {
         LOCAL_ROOT / "mcp_server" / "catalog_layers.py": f"{staging}/mcp_server/catalog_layers.py",
         LOCAL_ROOT / "mcp_server" / "server.py": f"{staging}/mcp_server/server.py",
@@ -97,8 +98,11 @@ def upload_files(client: paramiko.SSHClient) -> str:
         LOCAL_ROOT / "mcp_server" / "target_bank_admin.py": f"{staging}/mcp_server/target_bank_admin.py",
         LOCAL_ROOT / "mcp_server" / "fusion_tools.py": f"{staging}/mcp_server/fusion_tools.py",
         LOCAL_ROOT / "mcp_server" / "evidence_store.py": f"{staging}/mcp_server/evidence_store.py",
+        LOCAL_ROOT / "mcp_server" / "assessment_store.py": f"{staging}/mcp_server/assessment_store.py",
         LOCAL_ROOT / "moshe_profile" / "provision_profile.py": f"{staging}/moshe_profile/provision_profile.py",
         LOCAL_ROOT / "moshe_profile" / "SOUL.md": f"{staging}/moshe_profile/SOUL.md",
+        LOCAL_ROOT / "talia_profile" / "provision_profile.py": f"{staging}/talia_profile/provision_profile.py",
+        LOCAL_ROOT / "talia_profile" / "SOUL.md": f"{staging}/talia_profile/SOUL.md",
         LOCAL_ROOT / "data" / "serbia_kosovo_events_projection.csv": f"{staging}/data/serbia_kosovo_events_projection.csv",
         LOCAL_ROOT / "data" / "serbia_kosovo_locations.json": f"{staging}/data/serbia_kosovo_locations.json",
         LOCAL_ROOT / "data" / "serbia_kosovo_entities.json": f"{staging}/data/serbia_kosovo_entities.json",
@@ -120,7 +124,7 @@ def install_files(client: paramiko.SSHClient, staging: str) -> None:
     staging_q = shlex.quote(staging)
     command = (
         f"sudo -n install -d -o {USER} -g {USER} -m 0755 {root}/mcp_server {root}/data {root}/data/serbian_intelligence_v2 "
-        f"&& sudo -n install -d -o {USER} -g {USER} -m 0700 {root}/data/attack_targets {root}/data/evidence {root}/backups/attack_targets "
+        f"&& sudo -n install -d -o {USER} -g {USER} -m 0700 {root}/data/attack_targets {root}/data/evidence {root}/data/assessments {root}/backups/attack_targets "
         f"&& sudo -n install -o {USER} -g {USER} -m 0644 {staging_q}/mcp_server/catalog_layers.py {root}/mcp_server/catalog_layers.py "
         f"&& sudo -n install -o {USER} -g {USER} -m 0755 {staging_q}/mcp_server/server.py {root}/mcp_server/server.py "
         f"&& sudo -n install -o {USER} -g {USER} -m 0755 {staging_q}/mcp_server/semantic_index.py {root}/mcp_server/semantic_index.py "
@@ -130,7 +134,10 @@ def install_files(client: paramiko.SSHClient, staging: str) -> None:
         f"&& sudo -n install -o {USER} -g {USER} -m 0755 {staging_q}/mcp_server/target_bank_admin.py {root}/mcp_server/target_bank_admin.py "
         f"&& sudo -n install -o {USER} -g {USER} -m 0644 {staging_q}/mcp_server/fusion_tools.py {root}/mcp_server/fusion_tools.py "
         f"&& sudo -n install -o {USER} -g {USER} -m 0644 {staging_q}/mcp_server/evidence_store.py {root}/mcp_server/evidence_store.py "
+        f"&& sudo -n install -o {USER} -g {USER} -m 0644 {staging_q}/mcp_server/assessment_store.py {root}/mcp_server/assessment_store.py "
+        f"&& if [ ! -f {TALIA_HOME}/config.yaml ]; then sudo -n install -d -o {USER} -g {USER} -m 0700 {TALIA_HOME} && sudo -n cp {REMOTE_CONFIG} {TALIA_HOME}/config.yaml && sudo -n chown {USER}:{USER} {TALIA_HOME}/config.yaml; fi "
         f"&& sudo -n /usr/bin/python3 {staging_q}/moshe_profile/provision_profile.py --profile-dir {MOSHE_HOME} --soul {staging_q}/moshe_profile/SOUL.md "
+        f"&& sudo -n /usr/bin/python3 {staging_q}/talia_profile/provision_profile.py --profile-dir {TALIA_HOME} --soul {staging_q}/talia_profile/SOUL.md "
         f"&& sudo -n install -o {USER} -g {USER} -m 0644 {staging_q}/data/serbia_kosovo_events_projection.csv {root}/data/serbia_kosovo_events_projection.csv "
         f"&& sudo -n install -o {USER} -g {USER} -m 0644 {staging_q}/data/serbia_kosovo_locations.json {root}/data/serbia_kosovo_locations.json "
         f"&& sudo -n install -o {USER} -g {USER} -m 0644 {staging_q}/data/serbia_kosovo_entities.json {root}/data/serbia_kosovo_entities.json "
@@ -178,6 +185,7 @@ servers[settings["server_name"]] = {{
         "INTELLIGENCE_POC_TARGET_BANK": f"{{settings['remote_root']}}/data/attack_targets/attack_targets.db",
         "INTELLIGENCE_POC_TARGET_BACKUPS": f"{{settings['remote_root']}}/backups/attack_targets",
         "INTELLIGENCE_POC_EVIDENCE_STORE": f"{{settings['remote_root']}}/data/evidence/evidence.db",
+        "INTELLIGENCE_POC_ASSESSMENT_STORE": f"{{settings['remote_root']}}/data/assessments/assessments.db",
         "INTELLIGENCE_POC_PLAYBACK_VISIBILITY": "/opt/serbia-poc-ui/scenario_runs/v2.1/active_visibility.json",
     }},
     "timeout": 30,
@@ -214,6 +222,19 @@ if moshe_config_path.exists():
     moshe_server = (moshe_config.get("mcp_servers") or {{}}).get("serbia-events-poc-moshe")
     if moshe_server:
         servers["serbia-events-poc-moshe"] = moshe_server
+talia_config_path = Path({str(Path(TALIA_HOME) / 'config.yaml')!r})
+if talia_config_path.exists():
+    talia_config = yaml.safe_load(talia_config_path.read_text()) or {{}}
+    talia_server = (talia_config.get("mcp_servers") or {{}}).get("serbia-events-poc-talia")
+    if talia_server:
+        servers["serbia-events-poc-talia"] = talia_server
+gateway = data.setdefault("gateway", {{}})
+gateway["multiplex_profiles"] = True
+allowlist = list(gateway.get("multiplex_profile_allowlist") or [])
+for profile in ["moshe", "talia"]:
+    if profile not in allowlist:
+        allowlist.append(profile)
+gateway["multiplex_profile_allowlist"] = allowlist
 current = []
 for item in toolsets.get("api_server") or []:
     item = legacy_names.get(item, item)

@@ -534,6 +534,8 @@ textarea.mention-source::placeholder { color: var(--muted) !important; }
 .object-viewer-evidence-links code { padding: 3px 5px; color: var(--muted); font-size: 10px; }
 .attack-target-marker { width: 22px; height: 22px; border-radius: 5px; transform: rotate(45deg); box-shadow: 0 2px 12px rgba(0,0,0,.55), 0 0 0 5px rgba(255,179,71,.18); }
 .attack-target-marker:hover { transform: rotate(45deg) scale(1.14); }
+.assessment-point-marker { width: 24px; height: 24px; border: 3px solid var(--assessment-color, #ff8a65); border-radius: 50%; background: rgba(12,18,28,.76); box-shadow: 0 0 0 6px color-mix(in srgb, var(--assessment-color, #ff8a65) 24%, transparent), 0 2px 12px rgba(0,0,0,.55); cursor: pointer; }
+.assessment-point-marker::after { content: "A"; display: grid; place-items: center; height: 100%; color: #fff; font: 700 10px/1 system-ui; }
 .target-map-popup p { margin: 5px 0 0; max-width: 260px; }
 .target-raw-references { margin-top: 6px; padding-top: 6px; border-top: 1px solid rgba(27,31,41,.18); max-width: 300px; overflow-wrap: anywhere; }
 .target-raw-references code { font-size: 10px; }

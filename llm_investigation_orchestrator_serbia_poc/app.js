@@ -350,9 +350,10 @@ function createInvestigationId() {
 }
 
 function liveStepsUrl(currentPrompt) {
-  return /(^|[^\p{L}\p{N}_])@(משה|Moshe)(?![\p{L}\p{N}_])/iu.test(String(currentPrompt || ""))
-    ? "/api/live-steps?agent=moshe"
-    : "/api/live-steps?agent=general";
+  const prompt = String(currentPrompt || "");
+  if (/(^|[^\p{L}\p{N}_])@(משה|Moshe)(?![\p{L}\p{N}_])/iu.test(prompt)) return "/api/live-steps?agent=moshe";
+  if (/(^|[^\p{L}\p{N}_])@(טליה|Talia)(?![\p{L}\p{N}_])/iu.test(prompt)) return "/api/live-steps?agent=talia";
+  return "/api/live-steps?agent=general";
 }
 
 const LOCALE_STORAGE_KEY = "serbia-poc-locale-v1";
@@ -376,7 +377,7 @@ const MICHLOL_MEMBERS = {
   ],
   en: [
     { id: "moshe-targets-officer", displayName: "Moshe", roleLabel: "Targets Officer", memberType: "user", avatar: "./assets/michlol/moshe.png", initial: "M" },
-    { id: "talia-tama-officer", displayName: "Talia", roleLabel: "Terrain Officer", memberType: "user", avatar: "./assets/michlol/talia.png", initial: "T" },
+    { id: "talia-tama-officer", displayName: "Talia", roleLabel: "Enemy Assessment Officer", memberType: "user", avatar: "./assets/michlol/talia.png", initial: "T" },
     { id: "naama-field-officer", displayName: "Naama", roleLabel: "Field Officer", memberType: "user", avatar: "./assets/michlol/naama.png", initial: "N" },
     { id: "gadi-collection-officer", displayName: "Gadi", roleLabel: "Collection Officer", memberType: "user", avatar: "./assets/michlol/gadi.png", initial: "G" },
     { id: "yahli-processing-officer", displayName: "Yahli", roleLabel: "Processing Officer", memberType: "user", avatar: "./assets/michlol/yahli.png", initial: "Y" }
@@ -388,6 +389,7 @@ const MICHLOL_MEMBER_WELCOME = {
   en: "I’m connected to this conversation now. Send me the next task or question, and in the next step we’ll connect a dedicated agent for this team member here."
 };
 const MOSHE_MEMBER_ID = "moshe-targets-officer";
+const TALIA_MEMBER_ID = "talia-tama-officer";
 const WORKSTREAM_SEEN_STORAGE_KEY = "serbia-poc-workstream-seen-v2";
 const MOSHE_MESSAGE_LABEL = {
   he: "משה - קצין מטרות",
@@ -396,6 +398,11 @@ const MOSHE_MESSAGE_LABEL = {
 const MOSHE_WELCOME = {
   he: "אני משה, קצין המטרות. אפשר לשאול אותי על אינדיקציות ומטרות, או לפתוח מעקב חדש.",
   en: "I’m Moshe, the targets officer. You can ask me about indications and targets, or open a new workstream."
+};
+const TALIA_MESSAGE_LABEL = { he: "טליה - קצינת הערכת אויב", en: "Talia - Enemy Assessment Officer" };
+const TALIA_WELCOME = {
+  he: "אני טליה, קצינת הערכת האויב. אוכל לבנות ולעדכן הערכות מבוססות ראיות ולהציג את הגרפיקה האנליטית שלהן.",
+  en: "I’m Talia, the enemy-assessment officer. I can create and revise evidence-backed assessments and present their analytic overlays."
 };
 const DEFAULT_SUGGESTIONS = {
   he: [
@@ -509,6 +516,7 @@ const state = {
   map: null,
   mapReady: false,
   markers: [],
+  assessmentMapArtifacts: [],
   focusedEventPopup: null,
   focusedEventMarker: null,
   focusedMapSelection: null,
@@ -759,22 +767,26 @@ function updatePromptPlaceholder() {
 
 function memberMessageLabel(member) {
   if (member.id === MOSHE_MEMBER_ID) return MOSHE_MESSAGE_LABEL[currentLocale()];
+  if (member.id === TALIA_MEMBER_ID) return TALIA_MESSAGE_LABEL[currentLocale()];
   return `${member.displayName} · ${member.roleLabel}`;
 }
 
 function assistantMessageLabel() {
   const member = activeConversationMember();
   if (state.activeTeamMentions.some(mention => mention.id === MOSHE_MEMBER_ID)) return MOSHE_MESSAGE_LABEL[currentLocale()];
+  if (state.activeTeamMentions.some(mention => mention.id === TALIA_MEMBER_ID)) return TALIA_MESSAGE_LABEL[currentLocale()];
   return member ? memberMessageLabel(member) : activeLocaleText("סוכן חקירה", "Investigation Agent");
 }
 
 function resultMessageLabel(result = {}) {
-  return result.responding_agent === "moshe" ? MOSHE_MESSAGE_LABEL[currentLocale()] : assistantMessageLabel();
+  if (result.responding_agent === "moshe") return MOSHE_MESSAGE_LABEL[currentLocale()];
+  if (result.responding_agent === "talia") return TALIA_MESSAGE_LABEL[currentLocale()];
+  return assistantMessageLabel();
 }
 
 function appendMemberWelcomeMessage(member) {
   conversation.querySelectorAll(".member-welcome-message").forEach(message => message.remove());
-  const welcome = member.id === MOSHE_MEMBER_ID ? MOSHE_WELCOME[currentLocale()] : MICHLOL_MEMBER_WELCOME[currentLocale()];
+  const welcome = member.id === MOSHE_MEMBER_ID ? MOSHE_WELCOME[currentLocale()] : member.id === TALIA_MEMBER_ID ? TALIA_WELCOME[currentLocale()] : MICHLOL_MEMBER_WELCOME[currentLocale()];
   return appendMessage("assistant", `<p>${escapeHtml(welcome)}</p>`, {
     label: memberMessageLabel(member),
     className: "member-welcome-message",
@@ -1470,6 +1482,7 @@ function evidenceLayerIdentifiers(layer) {
     entity_metadata: ["entity_id"],
     attack_targets: ["target_id"],
     evidence: ["evidence_id"],
+    assessments: ["assessment_id"],
     time_aggregation: ["key", "sortKey", "label"],
     group_aggregation: ["key", "label"]
   };
@@ -3244,6 +3257,7 @@ function viewerObjects() {
   state.layers.forEach(layer => {
     if (layer.kind === "events") (layer.items || []).forEach(item => objects.set(`record:${item.record_id || item.event_id}`, item));
     if (layer.kind === "evidence") (layer.items || []).forEach(item => objects.set(`evidence:${item.evidence_id}`, item));
+    if (layer.kind === "assessments") (layer.items || []).forEach(item => objects.set(`assessment:${item.assessment_id}`, item));
     if (layer.kind === "entity_metadata") (layer.items || []).forEach(item => objects.set(`organization:${item.entity_id}`, item));
   });
   return objects;
@@ -3358,6 +3372,8 @@ function viewerFields(item, kind) {
     ? ["timestamp_utc", "source_type", "collection_family", "source_reliability_label", "certainty_level", "entity_name", "location_name", "observation_id", "mission_id", "video_segment_id"]
     : kind === "evidence"
       ? ["evidence_status", "claim_type", "confidence", "object_class", "subject_entity_ids", "location_ids", "valid_from", "valid_to", "source_groups", "source_record_ids", "quantity", "movement", "created_by_processor"]
+    : kind === "assessment"
+      ? ["status", "confidence", "scope", "key_judgments", "alternatives", "contradictions", "intelligence_gaps", "indicators", "evidence_ids", "overlays", "revision", "updated_at"]
     : ["entity_type", "aliases", "event_count", "top_locations", "top_sources"];
   return preferred.filter(key => !hidden.has(key) && item[key] != null && item[key] !== "").map(key => [key, item[key]]);
 }
@@ -3392,6 +3408,17 @@ function viewerFieldLabel(key) {
     quantity: ["כמות", "Quantity"],
     movement: ["תנועה", "Movement"],
     created_by_processor: ["מעבד", "Processor"]
+    ,status: ["מצב", "Status"]
+    ,scope: ["תחום", "Scope"]
+    ,key_judgments: ["שיפוטים מרכזיים", "Key judgments"]
+    ,alternatives: ["חלופות", "Alternatives"]
+    ,contradictions: ["סתירות", "Contradictions"]
+    ,intelligence_gaps: ["פערי מודיעין", "Intelligence gaps"]
+    ,indicators: ["אינדיקטורים לשינוי", "Change indicators"]
+    ,evidence_ids: ["ראיות תומכות", "Supporting evidence"]
+    ,overlays: ["גרפיקה אנליטית", "Analytic overlays"]
+    ,revision: ["גרסה", "Revision"]
+    ,updated_at: ["עודכן", "Updated"]
   };
   return labels[key] ? activeLocaleText(...labels[key]) : key.replaceAll("_", " ");
 }
@@ -3426,6 +3453,16 @@ function evidenceProvenanceHtml(item) {
   return `<section class="object-viewer-evidence"><h3>${escapeHtml(activeLocaleText("מקור וייחוס", "Provenance"))}</h3><div class="object-viewer-evidence-links">${links}</div></section>`;
 }
 
+function assessmentEvidenceHtml(item) {
+  const available = viewerObjects();
+  const ids = item.evidence_ids || [];
+  if (!ids.length) return "";
+  const links = ids.map(id => available.has(`evidence:${id}`)
+    ? `<button type="button" class="object-viewer-open" data-viewer-kind="evidence" data-viewer-id="${escapeHtml(id)}">${escapeHtml(id)}</button>`
+    : `<code dir="ltr">${escapeHtml(id)}</code>`).join(" ");
+  return `<section class="object-viewer-evidence"><h3>${escapeHtml(activeLocaleText("ראיות תומכות", "Supporting evidence"))}</h3><div class="object-viewer-evidence-links">${links}</div></section>`;
+}
+
 function closeObjectViewer() {
   const viewer = document.getElementById("objectViewer");
   stopSimulatedUavStream();
@@ -3436,7 +3473,7 @@ function closeObjectViewer() {
 }
 
 function openObjectViewer(kind, id, trigger = document.activeElement) {
-  if (!['record', 'organization', 'evidence'].includes(kind)) return false;
+  if (!['record', 'organization', 'evidence', 'assessment'].includes(kind)) return false;
   const item = viewerObjects().get(`${kind}:${id}`);
   if (!item) return false;
   objectViewerReturnFocus = trigger;
@@ -3444,13 +3481,14 @@ function openObjectViewer(kind, id, trigger = document.activeElement) {
   const title = kind === "record"
     ? (isUavVideoRecord(item) ? activeLocaleText("תצפית וידאו מכטב״ם", "UAV video observation") : (item.source_type || activeLocaleText("רשומת מקור", "Source record")))
     : kind === "evidence" ? (item.object_class || item.claim_type || id)
+    : kind === "assessment" ? (item.title || id)
     : (item.canonical_name || id);
-  document.getElementById("objectViewerKind").textContent = kind === "record" ? activeLocaleText("רשומה גולמית", "Raw record") : kind === "evidence" ? activeLocaleText("אובייקט ראיה", "Evidence object") : activeLocaleText("ארגון", "Organization");
+  document.getElementById("objectViewerKind").textContent = kind === "record" ? activeLocaleText("רשומה גולמית", "Raw record") : kind === "evidence" ? activeLocaleText("אובייקט ראיה", "Evidence object") : kind === "assessment" ? activeLocaleText("הערכת אויב", "Enemy assessment") : activeLocaleText("ארגון", "Organization");
   document.getElementById("objectViewerTitle").textContent = title;
   document.getElementById("objectViewerId").textContent = id;
   const mediaHtml = viewerMediaHtml(item);
   const fields = viewerFields(item, kind).map(([key,value]) => `<div class="object-viewer-field"><dt>${escapeHtml(viewerFieldLabel(key))}</dt><dd>${escapeHtml(viewerValue(value))}</dd></div>`).join("");
-  document.getElementById("objectViewerBody").innerHTML = `${mediaHtml}${["record", "evidence"].includes(kind) ? `<p class="object-viewer-summary">${escapeHtml(item.event_summary || item.summary || "-")}</p>` : ""}<dl class="object-viewer-fields">${fields}</dl>${kind === "organization" ? organizationEvidenceHtml(item) : kind === "evidence" ? evidenceProvenanceHtml(item) : ""}`;
+  document.getElementById("objectViewerBody").innerHTML = `${mediaHtml}${["record", "evidence", "assessment"].includes(kind) ? `<p class="object-viewer-summary">${escapeHtml(item.event_summary || item.summary || "-")}</p>` : ""}<dl class="object-viewer-fields">${fields}</dl>${kind === "organization" ? organizationEvidenceHtml(item) : kind === "evidence" ? evidenceProvenanceHtml(item) : kind === "assessment" ? assessmentEvidenceHtml(item) : ""}`;
   viewer.hidden = false;
   if (kind === "record" && isUavVideoRecord(item)) startSimulatedUavStream(item);
   document.getElementById("objectViewerClose").focus();
@@ -4204,7 +4242,11 @@ async function presentFinalAgentResult(result, prompt, options = {}) {
   state.queryContext = buildFinalQueryContext(result, prompt);
   const addedLayers = addResultLayers({
     sourceId: finalSourceId(result),
-    sourceLabel: result.responding_agent === "moshe" ? activeLocaleText("תשובת משה", "Moshe response") : activeLocaleText("תשובת הסוכן", "Agent response"),
+    sourceLabel: result.responding_agent === "moshe"
+      ? activeLocaleText("תשובת משה", "Moshe response")
+      : result.responding_agent === "talia"
+        ? activeLocaleText("תשובת טליה", "Talia response")
+        : activeLocaleText("תשובת הסוכן", "Agent response"),
     preferredView: requestedView,
     layers: typedLayers
   });
@@ -5429,6 +5471,11 @@ function initPanelResizers() {
 }
 
 function clearMarkers() {
+  (state.assessmentMapArtifacts || []).slice().reverse().forEach(({ layerId, sourceId }) => {
+    if (layerId && state.map.getLayer(layerId)) state.map.removeLayer(layerId);
+    if (sourceId && state.map.getSource(sourceId)) state.map.removeSource(sourceId);
+  });
+  state.assessmentMapArtifacts = [];
   state.markers.forEach(marker => marker.remove());
   state.markers = [];
   state.focusedEventMarker?.remove();
@@ -5442,6 +5489,7 @@ function renderMap() {
   clearMarkers();
   const byLocation = new Map();
   const milStdDescriptors = [];
+  const bounds = new maplibregl.LngLatBounds();
   const addLocationCount = (locationId, count, label, aggregateLocation = null, color = null, viewerRef = null) => {
     if (!locationId) return;
     const existing = byLocation.get(locationId) || { location_id: locationId, count: 0, labels: new Set(), colors: new Set(), viewerRefs: new Map(), viewerEligible: true, aggregateLocation };
@@ -5488,9 +5536,38 @@ function renderMap() {
         const descriptor = milStdEvidenceDescriptor(item);
         if (descriptor) milStdDescriptors.push(descriptor);
       });
+    } else if (layer.kind === "assessments") {
+      items.forEach(assessment => (assessment.overlays || []).forEach((overlay, index) => {
+        const geometry = overlay?.geometry;
+        if (!geometry || !["Point", "LineString", "Polygon"].includes(geometry.type)) return;
+        const color = overlay.confidence === "high" ? "#ef5350" : overlay.confidence === "low" ? "#fbc02d" : "#ff8a65";
+        if (geometry.type === "Point") {
+          const [lon, lat] = geometry.coordinates || [];
+          if (!Number.isFinite(Number(lon)) || !Number.isFinite(Number(lat))) return;
+          const element = document.createElement("div");
+          element.className = "assessment-point-marker";
+          element.style.setProperty("--assessment-color", color);
+          element.setAttribute("aria-label", `${assessment.title || assessment.assessment_id}: ${overlay.meaning || overlay.type}`);
+          const popup = new maplibregl.Popup({ offset: 18 }).setHTML(`<div class="map-popup"><strong>${escapeHtml(assessment.title || assessment.assessment_id)}</strong><span>${escapeHtml(overlay.meaning || overlay.type)}</span><em>${escapeHtml(confidenceLabel(overlay.confidence || assessment.confidence))}</em></div>`);
+          state.markers.push(new maplibregl.Marker({ element }).setLngLat([Number(lon), Number(lat)]).setPopup(popup).addTo(state.map));
+          bounds.extend([Number(lon), Number(lat)]);
+          return;
+        }
+        const base = sanitizeLayerKey(`assessment-${assessment.assessment_id}-${index}`);
+        const sourceId = `${base}-source`;
+        const layerId = `${base}-layer`;
+        if (state.map.getLayer(layerId)) state.map.removeLayer(layerId);
+        if (state.map.getSource(sourceId)) state.map.removeSource(sourceId);
+        state.map.addSource(sourceId, { type: "geojson", data: { type: "Feature", properties: {}, geometry } });
+        state.map.addLayer(geometry.type === "Polygon"
+          ? { id: layerId, type: "fill", source: sourceId, paint: { "fill-color": color, "fill-opacity": 0.22, "fill-outline-color": color } }
+          : { id: layerId, type: "line", source: sourceId, paint: { "line-color": color, "line-width": 4, "line-dasharray": [2, 1] } });
+        state.assessmentMapArtifacts.push({ layerId, sourceId });
+        const coordinates = geometry.type === "Polygon" ? geometry.coordinates.flat(2) : geometry.coordinates.flat(1);
+        for (let i = 0; i < coordinates.length; i += 2) bounds.extend([Number(coordinates[i]), Number(coordinates[i + 1])]);
+      }));
     }
   });
-  const bounds = new maplibregl.LngLatBounds();
   byLocation.forEach(item => {
     const locationId = item.location_id;
     const aggregateLocation = item.aggregateLocation;
@@ -5882,6 +5959,12 @@ function renderEvidence() {
   ensureLayerFilterState(activeLayer);
   renderLayerFilterPanel(activeLayer);
   const activeItems = activeLayer.visible ? itemsForLayerPresentation(activeLayer) : [];
+  if (activeLayer.kind === "assessments") {
+    head.innerHTML = `<tr><th>${escapeHtml(activeLocaleText("הערכה", "Assessment"))}</th><th>${escapeHtml(activeLocaleText("מצב", "Status"))}</th><th>${escapeHtml(activeLocaleText("ביטחון", "Confidence"))}</th><th>${escapeHtml(activeLocaleText("שיפוטים מרכזיים", "Key judgments"))}</th><th>${escapeHtml(activeLocaleText("ראיות", "Evidence"))}</th><th>${escapeHtml(activeLocaleText("גרפיקה", "Overlays"))}</th><th>${escapeHtml(activeLocaleText("גרסה", "Revision"))}</th></tr>`;
+    body.innerHTML = activeItems.length ? activeItems.map(item => `<tr><td><button type="button" class="object-viewer-open" data-viewer-kind="assessment" data-viewer-id="${escapeHtml(item.assessment_id || "")}">${escapeHtml(item.title || item.assessment_id || "-")}</button><small dir="ltr">${escapeHtml(item.assessment_id || "-")}</small></td><td>${escapeHtml(item.status || "-")}</td><td>${escapeHtml(confidenceLabel(item.confidence))}</td><td>${escapeHtml((item.key_judgments || []).map(entry => entry.judgment || entry).slice(0, 3).join(" · ") || item.summary || "-")}</td><td>${Number((item.evidence_ids || []).length).toLocaleString(currentLocaleTag())}</td><td>${Number((item.overlays || []).length).toLocaleString(currentLocaleTag())}</td><td>${Number(item.revision || 1).toLocaleString(currentLocaleTag())}</td></tr>`).join("") : `<tr><td colspan="7" class="empty-cell">${escapeHtml(activeLocaleText("לא נמצאו הערכות להצגה.", "No assessments found."))}</td></tr>`;
+    enhanceResultsTable(activeLayer);
+    return;
+  }
   if (activeLayer.kind === "evidence") {
     head.innerHTML = `<tr><th class="result-map-action-column"></th><th>${escapeHtml(activeLocaleText("ראיה", "Evidence"))}</th><th>${escapeHtml(activeLocaleText("מצב", "Status"))}</th><th>${escapeHtml(activeLocaleText("טענה", "Claim"))}</th><th>${escapeHtml(activeLocaleText("ישות", "Entity"))}</th><th>${escapeHtml(activeLocaleText("מיקום", "Location"))}</th><th>${escapeHtml(activeLocaleText("ביטחון", "Confidence"))}</th><th>${escapeHtml(activeLocaleText("רשומות מקור", "Source records"))}</th></tr>`;
     body.innerHTML = activeItems.length ? activeItems.map(item => {

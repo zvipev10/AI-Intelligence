@@ -1,4 +1,4 @@
-"""Thread-safe agent routing and Moshe mission continuity for shared chat requests."""
+"""Thread-safe specialist routing and mission continuity for shared chat requests."""
 
 from __future__ import annotations
 
@@ -10,8 +10,10 @@ from dataclasses import dataclass
 
 
 MOSHE_AGENT_ID = "moshe"
+TALIA_AGENT_ID = "talia"
 GENERAL_AGENT_ID = "general"
 MOSHE_MENTION = re.compile(r"(?<![\w\u0590-\u05ff])@(משה|Moshe)(?![\w\u0590-\u05ff])", re.IGNORECASE)
+TALIA_MENTION = re.compile(r"(?<![\w\u0590-\u05ff])@(טליה|Talia)(?![\w\u0590-\u05ff])", re.IGNORECASE)
 
 
 @dataclass(frozen=True)
@@ -36,6 +38,11 @@ def mentions_moshe(message: str) -> bool:
     return bool(MOSHE_MENTION.search(str(message or "")))
 
 
+def mentions_talia(message: str) -> bool:
+    """Route only an exact current-message mention; history is never inspected."""
+    return bool(TALIA_MENTION.search(str(message or "")))
+
+
 class AgentRouteRegistry:
     def __init__(self) -> None:
         self._routes: dict[str, _ConversationRoute] = {}
@@ -49,25 +56,30 @@ class AgentRouteRegistry:
         return normalized
 
     @staticmethod
-    def _new_mission_id(conversation_id: str) -> str:
+    def _new_mission_id(conversation_id: str, agent_id: str) -> str:
         conversation_hash = hashlib.sha256(conversation_id.encode("utf-8")).hexdigest()[:16]
-        return f"moshe-{conversation_hash}-{secrets.token_hex(6)}"
+        return f"{agent_id}-{conversation_hash}-{secrets.token_hex(6)}"
 
     def route(self, conversation_id: str, current_message: str) -> RouteDecision:
         key = self._conversation_id(conversation_id)
         with self._lock:
             current = self._routes.setdefault(key, _ConversationRoute())
-            if mentions_moshe(current_message):
-                started = current.last_agent != MOSHE_AGENT_ID or not current.mission_run_id
+            requested_agent = (
+                MOSHE_AGENT_ID if mentions_moshe(current_message)
+                else TALIA_AGENT_ID if mentions_talia(current_message)
+                else GENERAL_AGENT_ID
+            )
+            if requested_agent != GENERAL_AGENT_ID:
+                started = current.last_agent != requested_agent or not current.mission_run_id
                 if started:
-                    current.mission_run_id = self._new_mission_id(key)
+                    current.mission_run_id = self._new_mission_id(key, requested_agent)
                     current.hermes_session_id = None
-                current.last_agent = MOSHE_AGENT_ID
+                current.last_agent = requested_agent
                 return RouteDecision(
-                    MOSHE_AGENT_ID, key, current.mission_run_id, current.hermes_session_id,
+                    requested_agent, key, current.mission_run_id, current.hermes_session_id,
                     mission_started=started, mission_closed=False,
                 )
-            closed = current.last_agent == MOSHE_AGENT_ID and bool(current.mission_run_id)
+            closed = current.last_agent != GENERAL_AGENT_ID and bool(current.mission_run_id)
             current.last_agent = GENERAL_AGENT_ID
             current.mission_run_id = None
             current.hermes_session_id = None
@@ -83,8 +95,8 @@ class AgentRouteRegistry:
             raise ValueError("hermes_session_id is required")
         with self._lock:
             current = self._routes.get(key)
-            if current is None or current.last_agent != MOSHE_AGENT_ID or current.mission_run_id != mission_run_id:
-                raise ValueError("Moshe mission is no longer active")
+            if current is None or current.last_agent == GENERAL_AGENT_ID or current.mission_run_id != mission_run_id:
+                raise ValueError("Specialist mission is no longer active")
             current.hermes_session_id = session
 
     def clear(self, conversation_id: str) -> None:

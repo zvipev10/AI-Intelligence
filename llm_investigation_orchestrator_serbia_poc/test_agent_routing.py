@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import patch
 
-from agent_routing import AgentRouteRegistry, GENERAL_AGENT_ID, MOSHE_AGENT_ID, mentions_moshe
+from agent_routing import AgentRouteRegistry, GENERAL_AGENT_ID, MOSHE_AGENT_ID, TALIA_AGENT_ID, mentions_moshe, mentions_talia
 
 
 class AgentRoutingTests(unittest.TestCase):
@@ -33,6 +33,15 @@ class AgentRoutingTests(unittest.TestCase):
         registry = AgentRouteRegistry()
         decision = registry.route("chat-1", "המשך בבקשה")
         self.assertEqual(decision.responding_agent, GENERAL_AGENT_ID)
+
+    def test_exact_talia_mention_routes_to_isolated_mission(self):
+        self.assertTrue(mentions_talia("@טליה צרי הערכה"))
+        self.assertTrue(mentions_talia("please ask @Talia"))
+        self.assertFalse(mentions_talia("טליה צרי הערכה"))
+        registry = AgentRouteRegistry()
+        decision = registry.route("chat-t", "@טליה צרי הערכה")
+        self.assertEqual(TALIA_AGENT_ID, decision.responding_agent)
+        self.assertRegex(decision.mission_run_id, r"^talia-[0-9a-f]{16}-[0-9a-f]{12}$")
 
     def test_conversations_are_isolated(self):
         registry = AgentRouteRegistry()

@@ -34,7 +34,7 @@ from agent_result_pipeline import (
     requested_result_layers_from_audit,
 )
 from mcp_server.catalog_layers import resolve_layer, validate_filters, filter_rows
-from agent_routing import AgentRouteRegistry, MOSHE_AGENT_ID
+from agent_routing import AgentRouteRegistry, MOSHE_AGENT_ID, TALIA_AGENT_ID
 from scenario_playback import (
     PlaybackConflictError,
     claim_memory_update,
@@ -605,7 +605,7 @@ def route_agent_request(request: dict[str, Any]):
     routing_prompt = str(request.get("routing_prompt") or request.get("prompt") or "").strip()
     conversation_id = str(request.get("investigation_id") or "").strip()
     route = AGENT_ROUTES.route(conversation_id, routing_prompt)
-    if route.responding_agent == MOSHE_AGENT_ID and route.hermes_session_id is None:
+    if route.responding_agent in {MOSHE_AGENT_ID, TALIA_AGENT_ID} and route.hermes_session_id is None:
         AGENT_ROUTES.bind_hermes_session(conversation_id, route.mission_run_id, route.mission_run_id)
     return route
 
@@ -1166,6 +1166,16 @@ def build_english_agent_instructions(
                 "Outside playback, do not create or update the target bank as part of ordinary workstream assessment flow.",
             ])
         lines.append("You have no permission to use shell, filesystem, SQL, reset, evaluator, or any system-state mutation tools.")
+    elif responding_agent == TALIA_AGENT_ID:
+        lines.extend([
+            "You are Talia, the enemy-assessment officer. The user addressed you explicitly via @Talia.",
+            "Build durable enemy assessments only from canonical EVD evidence. Never treat an assessment as evidence and never create or update target candidates.",
+            "State key judgments, alternatives, contradictions, intelligence gaps, confidence, and indicators that would change the assessment.",
+            "Use create_enemy_assessment for a new assessment, update_enemy_assessment with expected_revision for a revision, attach_assessment_evidence for corroboration, and supersede_enemy_assessment when replaced.",
+            "Assessment overlays express analytic meaning: assessed areas, routes or axes, confidence envelopes, and assessed points. They are not observed unit symbols and must cite supporting EVD identifiers.",
+            "When presenting an assessment, put it in layers with kind=assessments and put its supporting evidence separately in evidence_layers.",
+            "You have no permission to use target-bank, workstream, shell, filesystem, SQL, reset, evaluator, or system-state mutation tools beyond the assessment tools.",
+        ])
     return "\n".join(lines)
 
 
@@ -3754,6 +3764,17 @@ class HermesClient:
                 +
                 "אין לך הרשאה לכלי מערכת, filesystem, shell, SQL, מחיקה, reset, evaluator או שינוי סטטוס."
             )
+        elif responding_agent == TALIA_AGENT_ID:
+            instructions += (
+                "\n\nאת טליה, קצינת הערכת האויב. המשתמש פנה אלייך במפורש באמצעות @טליה. "
+                "צרי הערכות אויב מתמשכות רק על בסיס ראיות קנוניות מסוג EVD. הערכה אינה ראיה, ואין לך הרשאה ליצור או לעדכן מטרות או מעקבים. "
+                "בכל הערכה צייני שיפוטים מרכזיים, חלופות, סתירות, פערי מודיעין, ביטחון ואינדיקטורים שישנו את ההערכה. "
+                "השתמשי ב-create_enemy_assessment להערכה חדשה, ב-update_enemy_assessment עם expected_revision לעדכון, "
+                "ב-attach_assessment_evidence לצירוף ראיות וב-supersede_enemy_assessment להחלפה. "
+                "גרפיקת הערכה מתארת משמעות אנליטית — אזור מוערך, ציר/נתיב, מעטפת ביטחון או נקודה מוערכת — ואינה סמל של תצפית על יחידה. "
+                "כל גרפיקה חייבת לצטט מזהי EVD תומכים. להצגה, שימי את ההערכה ב-layers עם kind=assessments ואת הראיות התומכות בנפרד ב-evidence_layers. "
+                "אין לך הרשאה לכלי מטרות, מעקבים, shell, filesystem, SQL, מחיקה, reset או evaluator."
+            )
         if locale == "en":
             instructions = build_english_agent_instructions(
                 classify_instruction=classify_instruction,
@@ -4823,7 +4844,7 @@ class Handler(SimpleHTTPRequestHandler):
         if path.path == "/api/live-steps":
             try:
                 requested_agent = (parse_qs(path.query).get("agent") or ["general"])[0]
-                agent_id = MOSHE_AGENT_ID if requested_agent == MOSHE_AGENT_ID else "general"
+                agent_id = requested_agent if requested_agent in {MOSHE_AGENT_ID, TALIA_AGENT_ID} else "general"
                 config = load_agent_hermes_config(agent_id)
                 steps = HermesClient(config).read_live_steps()
                 self.send_json(200, {"investigation_steps": steps})
@@ -5309,7 +5330,7 @@ class Handler(SimpleHTTPRequestHandler):
                 prompt,
                 request.get("history") or [],
                 investigation_state=investigation_state or None,
-                investigation_id=route.mission_run_id if route.responding_agent == MOSHE_AGENT_ID else conversation_id,
+                investigation_id=route.mission_run_id if route.responding_agent in {MOSHE_AGENT_ID, TALIA_AGENT_ID} else conversation_id,
                 is_continuation=bool(request.get("is_continuation")) and not route.mission_started,
                 continuation_context=request.get("continuation_context"),
                 responding_agent=route.responding_agent,

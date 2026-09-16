@@ -20,8 +20,8 @@ class CanonicalSourceContractTests(unittest.TestCase):
     def test_v181_bilingual_welcome_ui_contract_is_canonical(self):
         index = (ROOT / "index.html").read_text(encoding="utf-8")
         app = (ROOT / "app.js").read_text(encoding="utf-8")
-        self.assertIn('app.js?v=178', index)
-        self.assertIn('styles.css?v=147', index)
+        self.assertIn('app.js?v=188', index)
+        self.assertIn('styles.css?v=150', index)
         self.assertIn('id="languageToggle"', index)
         self.assertIn('id="welcomePage"', index)
         self.assertIn('id="welcomePromptForm"', index)
