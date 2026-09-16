@@ -15,3 +15,6 @@ PR #58 is merged into `main` as `e634682`. The targeted VM deployment is complet
 
 ## Suggested documentation
 Keep recovery behavior and release evidence in this capability workspace. No architecture or product-context rewrite is needed. Add live verification and rollback location here after release.
+
+## Result-control follow-up
+Commit `7984cd6` is deployed as `app.js?v=187`. Final answers driven by catalog actions now render and control the same Show/Hide Results button as typed result layers, including exact filtered catalog scopes. Rollback: `/home/ubuntu/deploy-backups/catalog-result-controls-7984cd6`. Automated and production source verification passed; final visual acceptance remains pending because no browser surface was available.
