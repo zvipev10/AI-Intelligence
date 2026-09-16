@@ -1,4 +1,10 @@
 import unittest
+import json
+import threading
+from http.server import ThreadingHTTPServer
+from urllib.request import urlopen
+from urllib.parse import quote, urlencode
+from urllib.error import HTTPError
 from unittest.mock import patch
 
 from mcp_server.catalog_layers import resolve_layer, validate_filters, filter_rows
@@ -13,6 +19,7 @@ class CatalogRecoveryTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.mcp = load_module('recovery_mcp', ROOT / 'mcp_server/server.py')
+        cls.gateway = load_module('recovery_gateway', ROOT / 'server.py')
 
     def test_incident_hebrew_final_letter_and_quotes(self):
         for name in ['events:וידאו מכטב"ם', 'וידאו מכטב״ם', '  וידאו מכטב"מ  ']:
@@ -63,6 +70,35 @@ class CatalogRecoveryTests(unittest.TestCase):
         filters = {'location_ids': ['LOC-1'], 'entity_ids': ['ENT-1'], 'event_ids': ['1', '2', '3', '4'],
                    'start_time': '2026-09-16T10:00:00Z', 'end_time': '2026-09-16T12:00:00Z'}
         self.assertEqual([r['event_id'] for r in filter_rows(rows, filters)], ['1'])
+
+    def test_tool_gateway_and_http_preserve_scope(self):
+        scope = {'location_ids': ['LOC-1', 'LOC-3']}
+        rows = [{'event_id': str(i), 'location_id': loc, 'source_type': UAV['label']}
+                for i, loc in enumerate(['LOC-1', 'LOC-2', 'LOC-3'])]
+        with patch.object(self.mcp, 'load_ui_catalog', return_value=CATALOG), \
+             patch.object(self.gateway, 'list_ui_layers', return_value=CATALOG), \
+             patch.object(self.gateway, 'ui_layer_data', return_value=(rows, {}, {})):
+            action = self.mcp.open_catalog_layers({'catalog_layer_ids': ['events:וידאו מכטב"ם'],
+                                                  'view': 'map', 'filters': scope})['catalog_layer_actions']
+            accepted, errors = self.gateway.validate_catalog_layer_actions(action, 'he')
+            self.assertEqual(errors, [])
+            self.assertEqual(accepted[0]['filters'], scope)
+            httpd = ThreadingHTTPServer(('127.0.0.1', 0), self.gateway.Handler)
+            thread = threading.Thread(target=httpd.serve_forever, daemon=True)
+            thread.start()
+            try:
+                url = f'http://127.0.0.1:{httpd.server_port}/api/layers/{quote(UAV["id"], safe="")}/rows?'
+                with urlopen(url + urlencode({'filters': json.dumps(scope)})) as response:
+                    data = json.load(response)
+                self.assertEqual([r['location_id'] for r in data['rows']], ['LOC-1', 'LOC-3'])
+                self.assertEqual(data['layer']['catalog_filters'], scope)
+                with self.assertRaises(HTTPError) as error:
+                    urlopen(url + urlencode({'filters': '{"unsupported": true}'}))
+                self.assertEqual(error.exception.code, 400)
+            finally:
+                httpd.shutdown()
+                httpd.server_close()
+                thread.join()
 
 
 if __name__ == '__main__':

@@ -1,12 +1,8 @@
 # Capability status
 
-Phase: approved recovery implementation.
-Owner: development and QA.
-User authorization: “Okay, so let's fix it accordingly.”
-Scope: unambiguous naming recovery, ambiguity handling, filter preservation, truthful UI status.
-Blockers: none.
-Next artifact: checkpoint-002.md after resolver tests.
-Parent issue: see recovery issue created for 2026-09-16.
-Child tasks: resolver/tool; filter/UI integration; regression/release validation.
-Plan: recovery-plan.md.
-Latest change: reproduced unknown_catalog_layer_id against deployed validator.
+Phase: repository integration; VM release pending.
+Owner: development/release.
+Parent #56; child implementation/QA/release #57; PR #58.
+User requested merging into the latest remote branch. Excluding this task branch, origin/main (0eaf3e7) has the latest commit; integrate there.
+Validation: 185 Python tests, 180 pass; five pre-existing failures reproduced on unchanged main. All 14 catalog Python tests and Node behavioral tests pass; JS syntax and diff checks pass.
+No VM files changed. Next step: deploy the merged fix with backups and verify the real browser request. Parent and release child remain open until live acceptance.

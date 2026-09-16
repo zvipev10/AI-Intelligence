@@ -88,6 +88,7 @@ def upload_files(client: paramiko.SSHClient) -> str:
     staging = f"/tmp/serbia-poc-{int(time.time())}"
     run(client, f"mkdir -p {shlex.quote(staging)}/mcp_server {shlex.quote(staging)}/moshe_profile {shlex.quote(staging)}/data/serbian_intelligence_v2")
     files = {
+        LOCAL_ROOT / "mcp_server" / "catalog_layers.py": f"{staging}/mcp_server/catalog_layers.py",
         LOCAL_ROOT / "mcp_server" / "server.py": f"{staging}/mcp_server/server.py",
         LOCAL_ROOT / "mcp_server" / "semantic_index.py": f"{staging}/mcp_server/semantic_index.py",
         LOCAL_ROOT / "mcp_server" / "smoke_client.py": f"{staging}/mcp_server/smoke_client.py",
@@ -120,6 +121,7 @@ def install_files(client: paramiko.SSHClient, staging: str) -> None:
     command = (
         f"sudo -n install -d -o {USER} -g {USER} -m 0755 {root}/mcp_server {root}/data {root}/data/serbian_intelligence_v2 "
         f"&& sudo -n install -d -o {USER} -g {USER} -m 0700 {root}/data/attack_targets {root}/data/evidence {root}/backups/attack_targets "
+        f"&& sudo -n install -o {USER} -g {USER} -m 0644 {staging_q}/mcp_server/catalog_layers.py {root}/mcp_server/catalog_layers.py "
         f"&& sudo -n install -o {USER} -g {USER} -m 0755 {staging_q}/mcp_server/server.py {root}/mcp_server/server.py "
         f"&& sudo -n install -o {USER} -g {USER} -m 0755 {staging_q}/mcp_server/semantic_index.py {root}/mcp_server/semantic_index.py "
         f"&& sudo -n install -o {USER} -g {USER} -m 0755 {staging_q}/mcp_server/smoke_client.py {root}/mcp_server/smoke_client.py "

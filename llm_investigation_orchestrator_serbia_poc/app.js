@@ -1421,7 +1421,8 @@ function buildCatalogLayer(layer, rows = []) {
     visible: true,
     items,
     capabilities: layer.capabilities || { table: true, map: false, timeline: false },
-    catalogLayerId: layer.id
+    catalogLayerId: layer.id,
+    catalogFilters: layer.catalog_filters || {}
   };
 }
 
@@ -1818,6 +1819,7 @@ function selectedLayerContextForAgent() {
         label: layer.label,
         kind: layer.kind,
         catalog_layer_id: layer.catalogLayerId || layer.dataId || "",
+        catalog_filters: layer.catalogFilters || {},
         source_type: sourceType,
         original_count: (layer.items || []).length,
         filtered_count: filteredItems.length,
@@ -1857,6 +1859,7 @@ function normalizeSavedMemoryForAgent(memory = currentSavedMemory()) {
     label: item.label || "",
     layer_kind: item.layer_kind || item.kind || "",
     catalog_layer_id: item.catalog_layer_id || "",
+    catalog_filters: item.catalog_filters || {},
     data_id: item.data_id || "",
     source_id: item.source_id || "",
     source_label: item.source_label || "",
@@ -1981,6 +1984,7 @@ function layerMemoryPayload(layer) {
     label: layer.label,
     kind: layer.kind,
     catalog_layer_id: layer.catalogLayerId || "",
+    catalog_filters: layer.catalogFilters || {},
     data_id: layer.dataId || "",
     source_id: layer.sourceId || "",
     source_label: layer.sourceLabel || "",
@@ -2088,7 +2092,7 @@ function selectedLayerContextText(layers) {
       : "";
     const ids = layer.sample_ids.length ? `, sample_ids=${layer.sample_ids.join(", ")}` : "";
     const more = layer.filtered_count > layer.sample_ids.length ? `, sample_ids_are_partial=true` : "";
-    lines.push(`- ${layer.label} (${layer.kind}, ${layer.catalog_layer_id || "no-catalog-id"}): ${count} records${source}${filters}${ids}${more}`);
+    lines.push(`- ${layer.label} (${layer.kind}, ${layer.catalog_layer_id || "no-catalog-id"}): ${count} records${source}${filters}${layer.catalog_filters && Object.keys(layer.catalog_filters).length ? ` scope=${JSON.stringify(layer.catalog_filters)}` : ""}${ids}${more}`);
   });
   return lines.join("\n");
 }
@@ -2814,8 +2818,11 @@ async function loadLayerCatalog() {
 
 async function openCatalogLayer(layerId, options = {}) {
   const layer = state.layerCatalog.find(item => item.id === layerId);
+  const filters = options.filters || options.savedLayer?.catalog_filters || {};
+  const scopeKey = JSON.stringify(Object.fromEntries(Object.keys(filters).sort().map(key =>
+    [key, Array.isArray(filters[key]) ? [...filters[key]].sort() : filters[key]])));
   if (!layer || state.openingLayerIds.has(layerId)) return null;
-  const existing = state.layers.find(item => item.catalogLayerId === layerId);
+  const existing = state.layers.find(item => item.catalogLayerId === layerId && (item.catalogScopeKey || "{}") === scopeKey);
   if (existing) {
     existing.visible = true;
     state.activeLayerId = existing.id;
@@ -2835,18 +2842,26 @@ async function openCatalogLayer(layerId, options = {}) {
     renderLayerSelector();
     renderQueryLayersModal();
   try {
-    const response = await fetch(buildLocaleApiUrl(`/api/layers/${encodeURIComponent(layerId)}/rows`), { cache: "no-store" });
+    const url = new URL(buildLocaleApiUrl(`/api/layers/${encodeURIComponent(layerId)}/rows`), window.location.href);
+    if (scopeKey !== "{}") url.searchParams.set("filters", scopeKey);
+    const response = await fetch(url.toString(), { cache: "no-store" });
     const payload = await response.json();
     if (!response.ok) throw new Error(payload.error || activeLocaleText("טעינת נתוני השכבה נכשלה", "Failed to load layer data"));
     const openedLayer = buildCatalogLayer(payload.layer || layer, payload.rows || []);
+    openedLayer.catalogFilters = filters;
+    openedLayer.catalogScopeKey = scopeKey;
+    if (scopeKey !== "{}") {
+      openedLayer.dataId = `${layerId}:${scopeKey}`;
+      openedLayer.label += activeLocaleText(" · מסונן", " · filtered");
+    }
     const added = addResultLayers({
-      sourceId: `catalog:${layerId}`,
+      sourceId: `catalog:${layerId}:${scopeKey}`,
       sourceLabel: openedLayer.label,
       preferredView: openedLayer.capabilities.map ? "map" : (openedLayer.capabilities.timeline ? "timeline" : "evidence"),
       layers: [openedLayer]
     });
-    const restoredLayer = added.find(item => item.catalogLayerId === layerId)
-      || state.layers.find(item => item.catalogLayerId === layerId)
+    const restoredLayer = added.find(item => item.catalogLayerId === layerId && item.catalogScopeKey === scopeKey)
+      || state.layers.find(item => item.catalogLayerId === layerId && item.catalogScopeKey === scopeKey)
       || null;
     if (restoredLayer && options.savedLayer) applySavedFiltersToLayer(restoredLayer, options.savedLayer);
     state.rawOverlayMinimized = false;
@@ -2860,6 +2875,7 @@ async function openCatalogLayer(layerId, options = {}) {
     );
     return restoredLayer;
   } catch (error) {
+    console.error(`Failed to open catalog layer ${layerId}: ${error?.stack || error}`);
     state.layerCatalogError = error.message || "טעינת נתוני השכבה נכשלה";
     return null;
   } finally {
@@ -3151,20 +3167,17 @@ function formatPlaybackTime(value) {
 }
 
 async function reloadOpenCatalogLayers() {
-  const catalogLayerIds = [...new Set(
-    state.layers.map(layer => layer.catalogLayerId).filter(Boolean)
-  )];
-  if (!catalogLayerIds.length) return;
-  for (const layerId of catalogLayerIds) {
-    const existingLayers = state.layers.filter(layer => layer.catalogLayerId === layerId);
-    const wasVisible = existingLayers.some(layer => layer.visible);
-    const savedFilters = existingLayers[0] ? {
-      draftFilters: existingLayers[0].draftFilters,
-      appliedFilters: existingLayers[0].appliedFilters,
-    } : null;
-    state.layers = state.layers.filter(layer => layer.catalogLayerId !== layerId);
-    const restored = await openCatalogLayer(layerId, { silent: true, savedLayer: savedFilters });
-    if (restored) restored.visible = wasVisible;
+  const existingLayers = state.layers.filter(layer => layer.catalogLayerId);
+  if (!existingLayers.length) return;
+  state.layers = state.layers.filter(layer => !layer.catalogLayerId);
+  for (const previous of existingLayers) {
+    const savedFilters = {
+      draftFilters: previous.draftFilters,
+      appliedFilters: previous.appliedFilters,
+      catalog_filters: previous.catalogFilters || {},
+    };
+    const restored = await openCatalogLayer(previous.catalogLayerId, { silent: true, savedLayer: savedFilters });
+    if (restored) restored.visible = previous.visible;
   }
   ensureActiveLayer();
   renderAllViews();
@@ -4160,14 +4173,14 @@ async function executeCatalogLayerActions(result = {}) {
   const opened = [];
   for (const action of Array.isArray(result.catalog_layer_actions) ? result.catalog_layer_actions : []) {
     if (action?.action !== "open" || !action.catalog_layer_id) continue;
-    const layer = await openCatalogLayer(action.catalog_layer_id, { silent: true });
+    const layer = await openCatalogLayer(action.catalog_layer_id, { silent: true, filters: action.filters });
     if (layer) opened.push(layer);
     else errors.push({ catalog_layer_id: action.catalog_layer_id, error: state.layerCatalogError || "catalog_layer_open_failed" });
   }
-  if (errors.length) {
-    const detail = errors.map(item => `${item.catalog_layer_id || "?"}: ${item.error}`).join("; ");
-    showResult(activeLocaleText("פתיחת שכבה נכשלה", "Layer opening failed"), detail);
-  }
+  result.catalog_layer_outcomes = {
+    opened: opened.map(layer => ({ catalog_layer_id: layer.catalogLayerId, label: layer.label, count: layer.items.length })),
+    errors
+  };
   return opened;
 }
 
@@ -4195,6 +4208,15 @@ async function presentFinalAgentResult(result, prompt, options = {}) {
   });
   renderAllViews();
   renderQueryInspector();
+  const outcomes = result.catalog_layer_outcomes;
+  if (outcomes?.errors.length) {
+    showResult(activeLocaleText("פתיחת שכבה נכשלה", "Layer opening failed"), outcomes.errors.map(item =>
+      `${item.catalog_layer_id || "?"}: ${item.error}${item.candidates?.length ? " — " + item.candidates.map(c => c.label).join(", ") : ""}`).join("; "));
+  } else if (outcomes?.opened.length) {
+    showResult(activeLocaleText("שכבה נפתחה", "Layer opened"), outcomes.opened.map(item =>
+      `${item.label}: ${item.count.toLocaleString()} ${activeLocaleText("רשומות נטענו", "records loaded")}`).join("; "));
+  }
+
   return addedLayers;
 }
 

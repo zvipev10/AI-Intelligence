@@ -25,6 +25,7 @@ LOCAL_HERMES_CONFIG = LOCAL_ROOT / ".hermes-api.json"
 
 FILES = [
     "server.py",
+    "mcp_server/catalog_layers.py",
     "agent_result_pipeline.py",
     "agent_routing.py",
     "scenario_playback.py",
