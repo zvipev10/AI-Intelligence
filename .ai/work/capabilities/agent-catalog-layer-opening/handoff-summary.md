@@ -8,10 +8,10 @@ UI server.py, app.js, index.html; mcp_server/catalog_layers.py and server.py; bo
 
 ## Checks and risks
 185 Python tests: 180 passed, five historical asset/manifest assertions fail identically on origin/main. See checkpoint-003.md. All 14 catalog-focused tests pass, including real HTTP scope checks. Node tests verify scope identity, refresh/save restore, and success/failure notices. node --check and git diff --check pass.
-Conservative matching asks for clarification when multiple candidates are close. Geography must be supplied as explicit canonical location IDs from the conversation; the resolver does not invent geographic scope. Actual agent/browser production verification remains pending.
+Conservative matching asks for clarification when multiple candidates are close. Geography must be supplied as explicit canonical location IDs from the conversation; the resolver does not invent geographic scope. Production service, catalog endpoint, asset-version, and source-hash verification passed. Actual agent/browser interaction verification remains pending because no browser surface was available after deployment.
 
 ## Publishing and next step
-PR #58 targets main at the user's request. Parent #56 and child #57 remain open for deployment acceptance. No VM deployment occurred before the user redirected work to the merge. Deploy only affected source files with backups; do not run the destructive full deployment helper for this hotfix. Shared module must be present under both UI and MCP mcp_server directories before restart.
+PR #58 is merged into `main` as `e634682`. The targeted VM deployment is complete; rollback files are under `/home/ubuntu/deploy-backups/catalog-reconcile-e634682`. The shared module is installed under both UI and MCP `mcp_server` directories. Parent #56 and child #57 remain open for interactive acceptance.
 
 ## Suggested documentation
 Keep recovery behavior and release evidence in this capability workspace. No architecture or product-context rewrite is needed. Add live verification and rollback location here after release.
