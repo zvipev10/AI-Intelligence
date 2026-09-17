@@ -48,6 +48,11 @@ class TaliaProfileTests(unittest.TestCase):
         self.assertIn('activeLayer.kind === "assessments"', app)
         self.assertIn('layer.kind === "assessments"', app)
 
+    def test_shared_result_pipeline_preserves_assessment_layers(self):
+        from agent_result_pipeline import normalize_typed_layers
+        layers = normalize_typed_layers([{"kind": "assessments", "rows": [{"assessment_id": "ASM-1"}]}])
+        self.assertEqual("assessments", layers[0]["kind"])
+
 
 if __name__ == "__main__":
     unittest.main()

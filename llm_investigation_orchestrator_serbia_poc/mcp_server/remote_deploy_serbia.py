@@ -228,6 +228,13 @@ if talia_config_path.exists():
     talia_server = (talia_config.get("mcp_servers") or {{}}).get("serbia-events-poc-talia")
     if talia_server:
         servers["serbia-events-poc-talia"] = talia_server
+talia_env_path = Path({str(Path(TALIA_HOME) / '.env')!r})
+retained_env = []
+if talia_env_path.exists():
+    retained_env = [line for line in talia_env_path.read_text().splitlines() if not line.startswith("API_SERVER_KEY=")]
+retained_env.extend([f"API_SERVER_KEY={{settings['api_key']}}", "HERMES_PARALLEL_TOOL_CALLS=false"])
+talia_env_path.write_text("\\n".join(dict.fromkeys(retained_env)) + "\\n")
+talia_env_path.chmod(0o600)
 gateway = data.setdefault("gateway", {{}})
 gateway["multiplex_profiles"] = True
 allowlist = list(gateway.get("multiplex_profile_allowlist") or [])

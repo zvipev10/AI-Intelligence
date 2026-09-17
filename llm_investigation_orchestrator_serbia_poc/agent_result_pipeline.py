@@ -8,7 +8,7 @@ from typing import Any
 DEFAULT_AGENT_ID = "general"
 SUPPORTED_LAYER_KINDS = frozenset({
     "events", "locations", "location_metadata", "entity_metadata",
-    "time_aggregation", "group_aggregation", "attack_targets", "evidence",
+    "time_aggregation", "group_aggregation", "attack_targets", "evidence", "assessments",
 })
 TARGET_RESULT_TOOLS = frozenset({
     "search_target_candidates", "get_target_candidate", "create_target_candidate",

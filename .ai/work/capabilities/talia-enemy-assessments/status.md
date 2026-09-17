@@ -1,10 +1,10 @@
 # Capability Status — Talia Enemy Assessments
 
-Phase: implementation validation.
-Overall: slices 1–3 implemented on `codex/talia-enemy-assessments`; deployment validation remains.
+Phase: complete.
+Overall: steps 1–5 implemented and deployed from `codex/talia-enemy-assessments`.
 Owner: Development.
-Blockers: none. PyYAML is absent from the bundled Windows test runtime, so profile tests are run with an import-compatible test shim; production Python already provides PyYAML.
-Next artifact: checkpoint 002 — deployed end-to-end assessment and rollback evidence.
+Blockers: none. PyYAML is absent from the bundled Windows test runtime, so profile tests are run with an import-compatible test shim; production Python provides PyYAML.
+Next artifact: user acceptance testing and merge decision.
 
 ## Slices
 | Slice | State |
@@ -12,4 +12,4 @@ Next artifact: checkpoint 002 — deployed end-to-end assessment and rollback ev
 | Assessment contract/store/tools | Complete locally |
 | Hermes profile and routing | Complete locally |
 | Assessment UX and overlays | Complete locally |
-| End-to-end validation/deployment | In progress |
+| End-to-end validation/deployment | Complete |
