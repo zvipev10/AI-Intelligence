@@ -5275,6 +5275,7 @@ async function runPrompt(prompt, options = {}) {
   const investigationState = investigationStateForPrompt(selectedLayers);
   const currentTurnMessageId = globalThis.crypto?.randomUUID?.()
     || `turn_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+  const clientRequestId = `request_${globalThis.crypto?.randomUUID?.() || `${Date.now()}_${Math.random().toString(16).slice(2)}`}`;
   const clientStarted = performance.now();
   let firstLiveStepAt = null;
   appendMessage("user", `<p>${highlightedPromptHtml(clean)}</p>`);
@@ -5300,6 +5301,41 @@ async function runPrompt(prompt, options = {}) {
       // Live progress is best-effort; the final investigation response still drives completion.
     }
   };
+  const recoverInvestigationResult = async () => {
+    const deadline = Date.now() + 3 * 60 * 1000;
+    let notFoundCount = 0;
+    while (Date.now() < deadline) {
+      if (document.hidden) {
+        await new Promise(resolve => {
+          const onVisible = () => {
+            if (document.hidden) return;
+            document.removeEventListener("visibilitychange", onVisible);
+            resolve();
+          };
+          document.addEventListener("visibilitychange", onVisible);
+        });
+      }
+      try {
+        const recovered = await fetch(`/api/investigate-result?id=${encodeURIComponent(clientRequestId)}`, { cache: "no-store" });
+        if (recovered.ok) return await recovered.json();
+        if (recovered.status === 404 && notFoundCount++ < 2) {
+          await new Promise(resolve => setTimeout(resolve, 1200));
+          continue;
+        }
+        if (recovered.status !== 202) {
+          const failure = await recovered.json().catch(() => ({}));
+          const terminalError = new Error(failure.error || `Recovery failed (${recovered.status})`);
+          terminalError.recoveryTerminal = true;
+          throw terminalError;
+        }
+      } catch (error) {
+        if (error.recoveryTerminal) throw error;
+        if (Date.now() >= deadline) throw error;
+      }
+      await new Promise(resolve => setTimeout(resolve, 1800));
+    }
+    throw new Error(activeLocaleText("פג הזמן לשחזור ריצת הסוכן.", "Timed out while recovering the agent run."));
+  };
   try {
     const investigationRequest = fetch("/api/investigate", {
       method: "POST",
@@ -5312,15 +5348,24 @@ async function runPrompt(prompt, options = {}) {
         investigation_state: investigationState,
         workstream_context: workstreamContextForChat(currentTurnMessageId),
         workstream_creation_requested: workstreamCreationRequested,
+        client_request_id: clientRequestId,
         locale: currentLocale()
       })
     });
     progressTimer = setInterval(pollLiveSteps, 1800);
     setTimeout(pollLiveSteps, 900);
-    const response = await investigationRequest;
-    const responseReceivedAt = performance.now();
-    const result = await response.json();
-    if (!response.ok) throw new Error(result.error || "Hermes request failed");
+    let result;
+    let responseReceivedAt;
+    try {
+      const response = await investigationRequest;
+      responseReceivedAt = performance.now();
+      result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Hermes request failed");
+    } catch (requestError) {
+      addActivity("connection_recovery", activeLocaleText("החיבור הופסק; מתחבר מחדש לריצה הקיימת.", "Connection interrupted; reconnecting to the existing run."));
+      result = await recoverInvestigationResult();
+      responseReceivedAt = performance.now();
+    }
     applyWorkstreamChatResult(result);
     result.answer = cleanAssistantAnswer(result.answer);
     state.history.push({ role: "user", content: clean }, { role: "assistant", content: result.answer });

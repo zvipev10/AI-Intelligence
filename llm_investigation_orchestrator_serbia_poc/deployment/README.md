@@ -109,4 +109,9 @@ backup is `/home/ubuntu/deploy-backups/uav-stream-85c9538`.
 Secrets, datasets, investigations, workstreams, scenario runs, recordings,
 caches, logs, and generated runtime state are intentionally excluded.
 
+`SHA256SUMS-v184.txt` records the mobile agent-run recovery release candidate.
+It advances the script to `app.js?v=190`, assigns a stable client request ID
+to each investigation, retains results for reconnection, and recovers the same
+server-side run when a backgrounded mobile browser drops its HTTP response.
+
 No production files or services were changed during capture or consolidation.

@@ -179,10 +179,42 @@ _PLAYBACK_REEVALUATION_THREADS: dict[tuple[str, int], threading.Thread] = {}
 _PLAYBACK_REEVALUATION_THREADS_LOCK = threading.Lock()
 _MEMORY_UPDATE_THREADS: dict[tuple[str, int], threading.Thread] = {}
 _MEMORY_UPDATE_THREADS_LOCK = threading.Lock()
+_INVESTIGATION_RESULTS: dict[str, dict[str, Any]] = {}
+_INVESTIGATION_RESULTS_LOCK = threading.Lock()
+INVESTIGATION_RESULT_TTL_SECONDS = 30 * 60
 APP_BUILD = f"serbia-poc-{DATASET_VERSION}"
 REMOTE_AUDIT_PATH = "/opt/serbia-poc/mcp_audit.jsonl"
 HERMES_TOOL_PREFIX = "mcp_serbia_events_poc_"
 AGENT_ROUTES = AgentRouteRegistry()
+
+
+def _prune_investigation_results(now: float | None = None) -> None:
+    cutoff = (now or time.time()) - INVESTIGATION_RESULT_TTL_SECONDS
+    stale = [key for key, value in _INVESTIGATION_RESULTS.items() if float(value.get("updated_at") or 0) < cutoff]
+    for key in stale:
+        _INVESTIGATION_RESULTS.pop(key, None)
+
+
+def set_investigation_result(request_id: str, status: str, result: dict[str, Any] | None = None, error: str | None = None) -> None:
+    request_id = str(request_id or "").strip()
+    if not request_id or not INVESTIGATION_ID_PATTERN.fullmatch(request_id):
+        return
+    with _INVESTIGATION_RESULTS_LOCK:
+        _prune_investigation_results()
+        _INVESTIGATION_RESULTS[request_id] = {
+            "request_id": request_id, "status": status, "result": result,
+            "error": error, "updated_at": time.time(),
+        }
+
+
+def get_investigation_result(request_id: str) -> dict[str, Any] | None:
+    request_id = str(request_id or "").strip()
+    if not request_id or not INVESTIGATION_ID_PATTERN.fullmatch(request_id):
+        return None
+    with _INVESTIGATION_RESULTS_LOCK:
+        _prune_investigation_results()
+        value = _INVESTIGATION_RESULTS.get(request_id)
+        return dict(value) if value else None
 try:
     LOCATIONS = json.loads(LOCATIONS_PATH.read_text(encoding="utf-8"))
 except (OSError, json.JSONDecodeError):
@@ -4655,7 +4687,12 @@ class Handler(SimpleHTTPRequestHandler):
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(payload)))
         self.end_headers()
-        self.wfile.write(payload)
+        try:
+            self.wfile.write(payload)
+        except (BrokenPipeError, ConnectionResetError):
+            # A backgrounded mobile browser may discard its connection after
+            # completion. The result remains recoverable by client request ID.
+            return
 
     def do_GET(self):
         path = urlparse(self.path)
@@ -4850,6 +4887,18 @@ class Handler(SimpleHTTPRequestHandler):
                 self.send_json(200, {"investigation_steps": steps})
             except Exception as exc:
                 self.send_json(502, {"error": str(exc)})
+            return
+        if path.path == "/api/investigate-result":
+            request_id = (query.get("id") or [""])[0]
+            recovered = get_investigation_result(request_id)
+            if recovered is None:
+                self.send_json(404, {"error": "Investigation request not found"})
+            elif recovered["status"] == "running":
+                self.send_json(202, {"request_id": request_id, "status": "running"})
+            elif recovered["status"] == "failed":
+                self.send_json(502, {"request_id": request_id, "status": "failed", "error": recovered.get("error")})
+            else:
+                self.send_json(200, recovered["result"])
             return
         super().do_GET()
 
@@ -5307,14 +5356,20 @@ class Handler(SimpleHTTPRequestHandler):
         if path != "/api/investigate":
             self.send_error(404)
             return
+        request_id = ""
         try:
             length = int(self.headers.get("Content-Length", "0"))
             request = json.loads(self.rfile.read(length).decode("utf-8"))
+            request_id = str(request.get("client_request_id") or "").strip()
+            if request_id and not INVESTIGATION_ID_PATTERN.fullmatch(request_id):
+                self.send_json(400, {"error": "Invalid client_request_id"})
+                return
             prompt = str(request.get("prompt", "")).strip()
             locale = normalize_locale(request.get("locale"))
             if not prompt:
                 self.send_json(400, {"error": "Missing prompt"})
                 return
+            set_investigation_result(request_id, "running")
             conversation_id = str(request.get("investigation_id") or "").strip()
             route = route_agent_request(request)
             workstream_context = bounded_workstream_context(
@@ -5364,8 +5419,10 @@ class Handler(SimpleHTTPRequestHandler):
                 }
             except (ValueError, LookupError) as exc:
                 result["workstream_conflict"] = {"error": str(exc)}
+            set_investigation_result(request_id, "completed", result=result)
             self.send_json(200, result)
         except Exception as exc:
+            set_investigation_result(request_id, "failed", error=str(exc))
             self.send_json(502, {"error": str(exc)})
 
     def do_PUT(self):
