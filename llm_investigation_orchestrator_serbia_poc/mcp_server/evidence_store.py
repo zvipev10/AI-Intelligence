@@ -11,6 +11,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable
 
+try:
+    from evidence_semantics import normalize_evidence_event
+except ImportError:  # pragma: no cover - package-style execution fallback
+    from .evidence_semantics import normalize_evidence_event
+
 
 UAV_FAMILY = "airborne_isr_video_exploitation"
 VALID_STATUSES = frozenset({"reported", "observed", "fused"})
@@ -37,6 +42,7 @@ def projected_evidence_id(record_id: str) -> str:
 
 def project_event(event: dict[str, Any]) -> dict[str, Any]:
     """Project one immutable source record into a normalized evidence object."""
+    event = normalize_evidence_event(event)
     record_id = _text(event.get("event_id") or event.get("record_id"))
     if not record_id.startswith("REC-"):
         raise ValueError("evidence projection requires a canonical REC record")
@@ -56,6 +62,7 @@ def project_event(event: dict[str, Any]) -> dict[str, Any]:
         "claim_type": claim_type,
         "subject_entity_ids": [_text(event.get("entity_id"))] if _text(event.get("entity_id")) else [],
         "object_class": object_class,
+        "object_class_resolution": event.get("object_class_resolution"),
         "location_ids": [_text(event.get("location_id"))] if _text(event.get("location_id")) else [],
         "valid_from": _text(event.get("timestamp_utc")) or None,
         "valid_to": _text(event.get("timestamp_utc")) or None,
@@ -144,9 +151,39 @@ def prepare_fused_object(events: Iterable[dict[str, Any]], fusion: dict[str, Any
 
 
 class EvidenceStore:
-    def __init__(self, db_path: Path | None = None):
+    def __init__(self, db_path: Path | None = None, catalog_path: Path | None = None):
         default = Path(__file__).resolve().parent.parent / "data" / "evidence" / "evidence.db"
         self.db_path = Path(db_path or os.environ.get("INTELLIGENCE_POC_EVIDENCE_STORE", default))
+        configured_catalog = os.environ.get("INTELLIGENCE_POC_EVIDENCE_CATALOG")
+        self.catalog_path = Path(catalog_path or configured_catalog) if (catalog_path or configured_catalog) else None
+        self._catalog_by_id: dict[str, dict[str, Any]] | None = None
+
+    def _catalog(self) -> dict[str, dict[str, Any]]:
+        if self._catalog_by_id is not None:
+            return self._catalog_by_id
+        rows: list[dict[str, Any]] = []
+        if self.catalog_path and self.catalog_path.is_file():
+            try:
+                payload = json.loads(self.catalog_path.read_text(encoding="utf-8"))
+                rows = payload.get("rows") if isinstance(payload.get("rows"), list) else []
+            except (OSError, json.JSONDecodeError):
+                rows = []
+        self._catalog_by_id = {
+            str(row.get("evidence_id")): row
+            for row in rows
+            if row.get("evidence_id") and row.get("evidence_status") == "fused"
+        }
+        return self._catalog_by_id
+
+    def _stored_rows(self) -> list[dict[str, Any]]:
+        if not self.db_path.is_file():
+            return []
+        try:
+            with closing(sqlite3.connect(self.db_path, timeout=15)) as connection:
+                rows = connection.execute("SELECT payload_json FROM evidence_objects").fetchall()
+        except sqlite3.OperationalError:
+            return []
+        return [json.loads(row[0]) for row in rows]
 
     def initialize(self) -> None:
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
@@ -197,23 +234,30 @@ class EvidenceStore:
         return stored
 
     def get(self, evidence_id: str) -> dict[str, Any] | None:
-        self.initialize()
-        with closing(sqlite3.connect(self.db_path, timeout=15)) as connection:
-            row = connection.execute("SELECT payload_json FROM evidence_objects WHERE evidence_id = ?", (evidence_id,)).fetchone()
-        return json.loads(row[0]) if row else None
+        if self.db_path.is_file():
+            try:
+                with closing(sqlite3.connect(self.db_path, timeout=15)) as connection:
+                    row = connection.execute("SELECT payload_json FROM evidence_objects WHERE evidence_id = ?", (evidence_id,)).fetchone()
+                if row:
+                    return json.loads(row[0])
+            except sqlite3.OperationalError:
+                pass
+        return self._catalog().get(evidence_id)
 
     def search(self, filters: dict[str, Any]) -> list[dict[str, Any]]:
-        self.initialize()
-        clauses, values = [], []
-        for field, column in (("location_id", "location_id"), ("entity_id", "entity_id"), ("evidence_status", "evidence_status")):
-            if _text(filters.get(field)):
-                clauses.append(f"{column} = ?")
-                values.append(_text(filters[field]))
         limit = min(max(int(filters.get("limit") or 100), 1), 500)
-        where = " WHERE " + " AND ".join(clauses) if clauses else ""
-        with closing(sqlite3.connect(self.db_path, timeout=15)) as connection:
-            rows = connection.execute(
-                f"SELECT payload_json FROM evidence_objects{where} ORDER BY valid_from DESC, evidence_id LIMIT ?",
-                (*values, limit),
-            ).fetchall()
-        return [json.loads(row[0]) for row in rows]
+        combined = {**self._catalog(), **{row["evidence_id"]: row for row in self._stored_rows()}}
+
+        def matches(row: dict[str, Any]) -> bool:
+            return all(
+                not _text(filters.get(field)) or _text(value) == _text(filters[field])
+                for field, value in (
+                    ("location_id", (row.get("location_ids") or [None])[0]),
+                    ("entity_id", (row.get("subject_entity_ids") or [None])[0]),
+                    ("evidence_status", row.get("evidence_status")),
+                )
+            )
+
+        rows = [row for row in combined.values() if matches(row)]
+        rows.sort(key=lambda row: (_text(row.get("valid_from")), _text(row.get("evidence_id"))), reverse=True)
+        return rows[:limit]

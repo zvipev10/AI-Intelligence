@@ -16,6 +16,8 @@ MOSHE_AUDIT_PATH = "/opt/serbia-poc/mcp_audit_moshe.jsonl"
 MOSHE_DB_PATH = "/opt/serbia-poc/data/attack_targets/attack_targets.db"
 MOSHE_BACKUP_PATH = "/opt/serbia-poc/backups/attack_targets"
 EVIDENCE_STORE_PATH = "/opt/serbia-poc/data/evidence/evidence.db"
+EVIDENCE_CATALOG_PATH = "/opt/serbia-poc-ui/data/evidence_catalog/v2.1/he.json"
+V21_DATA_ROOT = "/opt/serbia-poc/data/serbian_intelligence_v2_1"
 PLAYBACK_VISIBILITY_PATH = "/opt/serbia-poc-ui/scenario_runs/v2.1/active_visibility.json"
 MOSHE_TOOLS = [
     "prepare_evidence", "prepare_fused_evidence", "persist_fused_evidence", "get_evidence",
@@ -54,10 +56,16 @@ def restricted_config(config: dict[str, Any]) -> dict[str, Any]:
         raise ValueError("source profile is missing serbia-events-poc")
     environment = dict(serbia.get("env") or {})
     environment.update({
+        "INTELLIGENCE_POC_DATASET_VERSION": "v2.1",
+        "INTELLIGENCE_POC_DATA": f"{V21_DATA_ROOT}/serbia_kosovo_events_projection_v2_1.csv",
+        "INTELLIGENCE_POC_LOCATIONS": f"{V21_DATA_ROOT}/serbia_kosovo_locations_v2_1.json",
+        "INTELLIGENCE_POC_ENTITIES": f"{V21_DATA_ROOT}/serbia_kosovo_entities_v2_1.json",
+        "INTELLIGENCE_POC_SEMANTIC_INDEX": "/opt/serbia-poc/data/semantic_index/v2.1",
         "INTELLIGENCE_POC_AUDIT": MOSHE_AUDIT_PATH,
         "INTELLIGENCE_POC_TARGET_BANK": MOSHE_DB_PATH,
         "INTELLIGENCE_POC_TARGET_BACKUPS": MOSHE_BACKUP_PATH,
         "INTELLIGENCE_POC_EVIDENCE_STORE": EVIDENCE_STORE_PATH,
+        "INTELLIGENCE_POC_EVIDENCE_CATALOG": EVIDENCE_CATALOG_PATH,
         "INTELLIGENCE_POC_PLAYBACK_VISIBILITY": PLAYBACK_VISIBILITY_PATH,
     })
     serbia["env"] = environment

@@ -1,15 +1,34 @@
+import json
 import tempfile
 import unittest
 from pathlib import Path
 
 import server
 from evidence_store import EvidenceStore, prepare_fused_object, project_event
+from evidence_semantics import normalize_evidence_event
 
 
 IBAR_EVIDENCE = ["REC-V2-006594", "REC-V2-011917", "REC-V2-010002"]
 
 
 class EvidenceFoundationTests(unittest.TestCase):
+    def test_prepare_evidence_reuses_shared_semantic_object_concepts(self):
+        cases = {
+            "תושבים דיווחו על רכב כבד ממוגן באזור": "רכב משוריין",
+            "נראו כלים שביצעו הכשרת שטח": "עבודות הנדסיות",
+            "נראה כלי טיס סובב כנף": "מסוק",
+        }
+        for summary, expected in cases.items():
+            with self.subTest(summary=summary):
+                normalized = normalize_evidence_event({"event_summary": summary})
+                self.assertEqual(normalized["object_class"], expected)
+                self.assertEqual(normalized["object_class_resolution"]["method"], "shared_semantic_concept")
+
+    def test_structured_object_class_remains_authoritative(self):
+        normalized = normalize_evidence_event({"object_class": "מסוק", "event_summary": "רכב כבד ממוגן"})
+        self.assertEqual(normalized["object_class"], "מסוק")
+        self.assertEqual(normalized["object_class_resolution"]["method"], "structured_source")
+
     def test_uav_and_public_records_project_without_persistence(self):
         uav = project_event(server.public_event(server.EVENTS_BY_ID["REC-V2-006594"]))
         public = project_event(server.public_event(server.EVENTS_BY_ID["REC-V2-011917"]))
@@ -81,6 +100,42 @@ class EvidenceFoundationTests(unittest.TestCase):
         }]})["evidence_reference_layers"][0]
         self.assertEqual(layer["rows"][0]["evidence_status"], "observed")
         self.assertFalse(layer["rows"][0]["persisted"])
+
+    def test_catalog_fused_evidence_is_available_without_sqlite_materialization(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            catalog_path = root / "he.json"
+            evidence = {
+                "evidence_id": "EVD-FUSED-CATALOG",
+                "evidence_status": "fused",
+                "confidence": "medium",
+                "location_ids": ["LOC-V2-010"],
+                "subject_entity_ids": ["ENT-KSF"],
+                "source_record_ids": ["REC-V2-1", "REC-V2-2"],
+                "valid_from": "2026-09-16T09:00:00Z",
+            }
+            catalog_path.write_text(json.dumps({"rows": [evidence]}), encoding="utf-8")
+            store = EvidenceStore(root / "missing.db", catalog_path=catalog_path)
+            self.assertEqual(store.get(evidence["evidence_id"]), evidence)
+            self.assertEqual(store.search({"entity_id": "ENT-KSF"}), [evidence])
+            self.assertFalse((root / "missing.db").exists())
+
+    def test_three_ibar_object_chains_prepare_as_separate_fused_evidence(self):
+        chains = {
+            "רכב משוריין": ["REC-V2-008274", "REC-V2-014170", "REC-V2-012466"],
+            "מסוק": ["REC-V2-004792", "REC-V2-008463", "REC-V2-011590"],
+            "עבודות הנדסיות": ["REC-V2-006374", "REC-V2-012738", "REC-V2-014708"],
+        }
+        for expected_class, event_ids in chains.items():
+            with self.subTest(object_class=expected_class):
+                prepared = server.prepare_fused_evidence({
+                    "event_ids": event_ids,
+                    "confidence": "medium",
+                    "discover_corroboration": False,
+                })["evidence"]
+                self.assertTrue(prepared["persistence_eligible"])
+                self.assertEqual(prepared["object_class"], expected_class)
+                self.assertEqual(prepared["source_record_ids"], sorted(event_ids))
 
     def test_contradicting_source_remains_explicit(self):
         rows = [

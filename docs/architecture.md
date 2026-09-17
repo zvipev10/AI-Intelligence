@@ -93,15 +93,19 @@ Evidence contract:
 - For the fixed v2.1 demo dataset, UI deployment builds a versioned evidence
   catalog artifact for Hebrew and English. The layer catalog advertises it as
   `evidence:all`; presentation remains demand-driven and requires no live
-  semantic search or fusion.
+  semantic search or fusion. The Hebrew catalog is also the read seed of the
+  MCP evidence repository, while SQLite is its writable overlay, so Talia and
+  the UI resolve the same deterministic fused evidence IDs.
 - All raw rows are processed, but the catalog does not duplicate every
   unstructured public report as a symbol. It contains UAV observations, exact
   structured public extractions, and validated fused evidence; other reports
   remain accessible through their raw source layers.
-- Deployment-time fusion groups records only by canonical location, entity,
-  structured object class, and a six-hour bucket. Public reports join a
-  structured group only through an exact known object-class term, and fused
-  rows still require two independent source groups.
+- Evidence preparation preserves structured object classes and resolves a
+  missing class through the same semantic concept vocabulary used by semantic
+  event retrieval. Deployment-time fusion applies this normalization and
+  groups records by canonical location, entity, normalized object class, and
+  an eight-hour rolling window. Fused rows still require the existing source
+  grouping and persistence checks.
 - The layer manifest supplies catalog counts without loading the roughly 4 MB
   row artifact. Rows are loaded only when the evidence layer is opened and are
   filtered by the active playback timeframe.

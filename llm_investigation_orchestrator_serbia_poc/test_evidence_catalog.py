@@ -30,9 +30,25 @@ class EvidenceCatalogTests(unittest.TestCase):
         fused = next(row for row in catalog["rows"] if row["evidence_status"] == "fused")
         self.assertEqual(fused["source_record_ids"], ["REC-1", "REC-2"])
 
-    def test_different_time_buckets_are_not_fused(self):
+    def test_records_outside_rolling_window_are_not_fused(self):
         rows = [event("REC-1", "01", "UAV-1"), event("REC-2", "08", "UAV-2")]
+        self.assertEqual(build_catalog(rows, dataset_version="v2.1")["counts"]["fused"], 1)
+        rows = [event("REC-1", "01", "UAV-1"), event("REC-2", "10", "UAV-2")]
         self.assertEqual(build_catalog(rows, dataset_version="v2.1")["counts"]["fused"], 0)
+
+    def test_rolling_window_crosses_fixed_clock_boundary(self):
+        rows = [event("REC-1", "07", "UAV-1"), event("REC-2", "13", "UAV-2")]
+        self.assertEqual(build_catalog(rows, dataset_version="v2.1")["counts"]["fused"], 1)
+
+    def test_semantic_concepts_structure_public_paraphrases(self):
+        rows = [
+            event("REC-1", "09", "UAV-1", object_class="רכב משוריין"),
+            event("REC-2", "10", "", source="public", object_class="", summary="נראה רכב כבד ממוגן באזור"),
+        ]
+        catalog = build_catalog(rows, dataset_version="v2.1")
+        fused = [row for row in catalog["rows"] if row["evidence_status"] == "fused"]
+        self.assertEqual(len(fused), 1)
+        self.assertEqual(fused[0]["object_class"], "רכב משוריין")
 
     def test_unstructured_public_report_remains_reported(self):
         rows = [

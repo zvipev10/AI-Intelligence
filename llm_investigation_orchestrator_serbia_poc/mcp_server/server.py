@@ -20,6 +20,7 @@ from typing import Any
 
 try:
     from evidence_store import EvidenceStore, prepare_fused_object, project_event, projected_evidence_id
+    from evidence_semantics import normalize_evidence_event
     from catalog_layers import resolve_layer, validate_filters
     from fusion_tools import discover_corroborating_evidence, find_duplicate_candidates, prepare_candidate
     from semantic_index import SemanticEventIndex
@@ -28,6 +29,7 @@ try:
 except ImportError:  # pragma: no cover - package-style execution fallback
     sys.path.insert(0, str(Path(__file__).resolve().parent))
     from evidence_store import EvidenceStore, prepare_fused_object, project_event, projected_evidence_id
+    from evidence_semantics import normalize_evidence_event
     from catalog_layers import resolve_layer, validate_filters
     from fusion_tools import discover_corroborating_evidence, find_duplicate_candidates, prepare_candidate
     from semantic_index import SemanticEventIndex
@@ -68,6 +70,10 @@ LOCATIONS_PATH = Path(os.environ.get("INTELLIGENCE_POC_LOCATIONS", DEFAULT_LOCAT
 ENTITIES_PATH = Path(os.environ.get("INTELLIGENCE_POC_ENTITIES", DEFAULT_ENTITIES_PATH))
 SEMANTIC_INDEX_DIR = Path(os.environ.get("INTELLIGENCE_POC_SEMANTIC_INDEX", BASE_DIR / "data" / "semantic_index" / DATASET_VERSION))
 SEMANTIC_BACKEND = os.environ.get("INTELLIGENCE_POC_SEMANTIC_BACKEND", "hybrid_embedding")
+EVIDENCE_CATALOG_PATH = Path(os.environ.get(
+    "INTELLIGENCE_POC_EVIDENCE_CATALOG",
+    BASE_DIR / "data" / "evidence_catalog" / DATASET_VERSION / "he.json",
+))
 AUDIT_PATH = Path(os.environ.get("INTELLIGENCE_POC_AUDIT", BASE_DIR / "mcp_audit.jsonl"))
 PLAYBACK_VISIBILITY_PATH = Path(os.environ.get(
     "INTELLIGENCE_POC_PLAYBACK_VISIBILITY",
@@ -2522,7 +2528,7 @@ def with_step_bridge(schema: dict[str, Any]) -> dict[str, Any]:
 
 
 TARGET_BANK = TargetBank()
-EVIDENCE_STORE = EvidenceStore()
+EVIDENCE_STORE = EvidenceStore(catalog_path=EVIDENCE_CATALOG_PATH)
 ASSESSMENT_STORE = AssessmentStore()
 
 
@@ -2898,7 +2904,7 @@ def _fusion_events(event_ids: list[str]) -> list[dict[str, Any]]:
     unknown = [event_id for event_id in event_ids if visible_event(event_id) is None]
     if unknown:
         raise ValueError(f"unknown event_id: {unknown[0]}")
-    return [public_event(visible_event(event_id)) for event_id in event_ids]
+    return [normalize_evidence_event(public_event(visible_event(event_id))) for event_id in event_ids]
 
 
 def resolve_evidence(evidence_id: str) -> dict[str, Any] | None:
@@ -2931,9 +2937,6 @@ def _prepare_neutral_fusion(arguments: dict[str, Any]) -> tuple[dict[str, Any], 
         selected = _fusion_events(discovery["selected_event_ids"])
     fusion = prepare_candidate(selected, arguments.get("confidence") or "")
     if discovery is not None:
-        if discovery["ambiguous"]:
-            fusion["persistence_eligible"] = False
-            fusion["persistence_block_reasons"].append("corroborating evidence pair is ambiguous; report only")
         fusion["discovery"] = discovery
     return fusion, selected
 
@@ -3262,7 +3265,7 @@ TOOLS = [
     {
         "name": "prepare_evidence",
         "title": "Project source records into evidence",
-        "description": "Deterministically project canonical REC records into neutral reported or observed evidence objects. Projection is read-only and on demand; raw records remain immutable.",
+        "description": "Deterministically project canonical REC records into neutral reported or observed evidence objects. Missing object classes are normalized with the shared semantic concept vocabulary. Projection is read-only and on demand; raw records remain immutable.",
         "inputSchema": with_step_bridge({
             "type": "object",
             "properties": {"event_ids": {"type": "array", "items": {"type": "string"}, "minItems": 1, "maxItems": MAX_LIMIT}},
@@ -3273,7 +3276,7 @@ TOOLS = [
     {
         "name": "prepare_fused_evidence",
         "title": "Prepare neutral fused evidence",
-        "description": "Discover corroboration and prepare one neutral fused evidence object with source grouping, quantity reconciliation, provenance, ambiguity, and persistence eligibility. Does not persist.",
+        "description": "Normalize source records with the shared semantic vocabulary, discover corroboration in a rolling time window, and prepare one neutral fused evidence object with source grouping, quantity reconciliation, provenance, and persistence eligibility. Does not persist.",
         "inputSchema": with_step_bridge({
             "type": "object",
             "properties": {
@@ -3303,14 +3306,14 @@ TOOLS = [
     {
         "name": "get_evidence",
         "title": "Get an evidence object",
-        "description": "Resolve a projected observation/report or a persisted fused evidence object by EVD identifier.",
+        "description": "Resolve a projected observation/report, a deployment-catalog fused object, or a persisted fused evidence object by EVD identifier.",
         "inputSchema": with_step_bridge({"type": "object", "properties": {"evidence_id": {"type": "string"}}, "required": ["evidence_id"], "additionalProperties": False}),
         "annotations": {"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": False},
     },
     {
         "name": "search_evidence",
-        "title": "Search persisted fused evidence",
-        "description": "Search the neutral evidence repository. Observation/report evidence remains available through deterministic EVD-REC projection.",
+        "title": "Search fused evidence",
+        "description": "Search the shared neutral evidence repository, including deployment-catalog and subsequently persisted fused objects. Observation/report evidence remains available through deterministic EVD-REC projection.",
         "inputSchema": with_step_bridge({
             "type": "object",
             "properties": {

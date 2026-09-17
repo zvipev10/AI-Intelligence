@@ -13,31 +13,28 @@ from typing import Any, Iterable
 
 from generate_english_projection import translate_plain
 from mcp_server.evidence_store import prepare_fused_object, project_event
+from mcp_server.evidence_semantics import normalize_evidence_event
 from mcp_server.fusion_tools import build_evidence_snapshots, group_independent_sources, reconcile_quantity
 
 
-CATALOG_SCHEMA_VERSION = "evidence-catalog-v1"
-FUSION_WINDOW_HOURS = 6
+CATALOG_SCHEMA_VERSION = "evidence-catalog-v2"
+FUSION_WINDOW_HOURS = 8
 
 
-def _timestamp_bucket(value: str, hours: int = FUSION_WINDOW_HOURS) -> str:
-    parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
-    bucket_hour = (parsed.hour // hours) * hours
-    return parsed.replace(hour=bucket_hour, minute=0, second=0, microsecond=0).isoformat().replace("+00:00", "Z")
+def _time(value: str) -> datetime:
+    return datetime.fromisoformat(str(value).replace("Z", "+00:00"))
 
 
-def _known_object_classes(events: Iterable[dict[str, Any]]) -> list[str]:
-    return sorted({str(row.get("object_class") or "").strip() for row in events if row.get("object_class")}, key=len, reverse=True)
-
-
-def _structured_event(event: dict[str, Any], known_classes: list[str]) -> dict[str, Any]:
-    if event.get("object_class"):
-        return dict(event)
-    summary = str(event.get("event_summary") or "").casefold()
-    matches = [name for name in known_classes if name.casefold() in summary]
-    if len(matches) != 1:
-        return dict(event)
-    return {**event, "object_class": matches[0], "object_class_resolution": "exact-known-term"}
+def _rolling_groups(rows: list[dict[str, Any]], hours: int = FUSION_WINDOW_HOURS) -> list[list[dict[str, Any]]]:
+    """Partition compatible rows without fixed wall-clock bucket boundaries."""
+    ordered = sorted(rows, key=lambda row: (_time(row["timestamp_utc"]), str(row.get("event_id") or "")))
+    groups: list[list[dict[str, Any]]] = []
+    for row in ordered:
+        if not groups or (_time(row["timestamp_utc"]) - _time(groups[-1][0]["timestamp_utc"])).total_seconds() > hours * 3600:
+            groups.append([row])
+        else:
+            groups[-1].append(row)
+    return groups
 
 
 def _localized_evidence(row: dict[str, Any], locale: str) -> dict[str, Any]:
@@ -78,35 +75,34 @@ def _batch_fusion(rows: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 def build_catalog(events: list[dict[str, Any]], *, dataset_version: str, locale: str = "he") -> dict[str, Any]:
-    known_classes = _known_object_classes(events)
-    structured = [_structured_event(row, known_classes) for row in events]
+    structured = [normalize_evidence_event(row) for row in events]
     projected = [project_event(row) for row in structured]
     catalog_projected = [
         evidence for evidence, source in zip(projected, structured)
         if source.get("collection_family") == "airborne_isr_video_exploitation"
-        or source.get("object_class_resolution") == "exact-known-term"
+        or (source.get("object_class_resolution") or {}).get("method") == "shared_semantic_concept"
     ]
-    groups: dict[tuple[str, str, str, str], list[dict[str, Any]]] = defaultdict(list)
+    groups: dict[tuple[str, str, str], list[dict[str, Any]]] = defaultdict(list)
     for row in structured:
         location = str(row.get("location_id") or "").strip()
         entity = str(row.get("entity_id") or "").strip()
         object_class = str(row.get("object_class") or "").strip()
         timestamp = str(row.get("timestamp_utc") or "").strip()
         if location and entity and object_class and timestamp:
-            groups[(location, entity, object_class, _timestamp_bucket(timestamp))].append(row)
+            groups[(location, entity, object_class)].append(row)
 
     fused, rejected = [], 0
     for key in sorted(groups):
-        rows = groups[key]
-        if len(rows) < 2:
-            continue
-        fusion = _batch_fusion(rows)
-        candidate = prepare_fused_object(rows, fusion)
-        if candidate["persistence_eligible"]:
-            candidate["cataloged"] = True
-            fused.append(candidate)
-        else:
-            rejected += 1
+        for rows in _rolling_groups(groups[key]):
+            if len(rows) < 2:
+                continue
+            fusion = _batch_fusion(rows)
+            candidate = prepare_fused_object(rows, fusion)
+            if candidate["persistence_eligible"]:
+                candidate["cataloged"] = True
+                fused.append(candidate)
+            else:
+                rejected += 1
 
     rows = [_localized_evidence(row, locale) for row in catalog_projected + fused]
     source_ids = sorted(str(row.get("event_id") or row.get("record_id") or "") for row in events)
@@ -115,7 +111,7 @@ def build_catalog(events: list[dict[str, Any]], *, dataset_version: str, locale:
         "dataset_version": dataset_version,
         "locale": locale,
         "source_fingerprint": hashlib.sha256("\n".join(source_ids).encode("utf-8")).hexdigest(),
-        "build_parameters": {"fusion_window_hours": FUSION_WINDOW_HOURS, "object_class_resolution": "exact-known-term"},
+        "build_parameters": {"fusion_window_hours": FUSION_WINDOW_HOURS, "object_class_resolution": "shared-semantic-concepts", "temporal_grouping": "rolling-window"},
         "counts": {
             "source_records": len(events),
             "projected": len(projected),
