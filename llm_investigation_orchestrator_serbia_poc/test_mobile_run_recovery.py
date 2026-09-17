@@ -37,7 +37,13 @@ class MobileRunRecoveryTests(unittest.TestCase):
         self.assertIn("client_request_id: clientRequestId", app)
         self.assertIn("/api/investigate-result?id=", app)
         self.assertIn('document.addEventListener("visibilitychange", onVisible)', app)
-        self.assertIn("app.js?v=190", index)
+        self.assertIn('document.addEventListener("visibilitychange", recoverWhenVisible)', app)
+        self.assertIn('window.addEventListener("pageshow", recoverWhenVisible)', app)
+        self.assertIn("Promise.race([directResult, resumedResult])", app)
+        self.assertIn("if (!recoveryPromise)", app)
+        self.assertIn('document.removeEventListener("visibilitychange", recoverWhenVisible)', app)
+        self.assertIn('window.removeEventListener("pageshow", recoverWhenVisible)', app)
+        self.assertIn("app.js?v=191", index)
 
 
 if __name__ == "__main__":

@@ -5286,6 +5286,14 @@ async function runPrompt(prompt, options = {}) {
   suggestions.innerHTML = "";
   let liveStepCount = 0;
   let progressTimer = null;
+  let recoveryPromise = null;
+  let resolveResumeRecovery;
+  const resumeRecoverySignal = new Promise(resolve => { resolveResumeRecovery = resolve; });
+  const recoverWhenVisible = () => {
+    if (!document.hidden) resolveResumeRecovery();
+  };
+  document.addEventListener("visibilitychange", recoverWhenVisible);
+  window.addEventListener("pageshow", recoverWhenVisible);
   const pollLiveSteps = async () => {
     try {
       const response = await fetch(liveStepsUrl(addressedPrompt), { cache: "no-store" });
@@ -5336,6 +5344,13 @@ async function runPrompt(prompt, options = {}) {
     }
     throw new Error(activeLocaleText("פג הזמן לשחזור ריצת הסוכן.", "Timed out while recovering the agent run."));
   };
+  const recoverExistingRun = () => {
+    if (!recoveryPromise) {
+      addActivity("connection_recovery", activeLocaleText("מתחבר מחדש לריצה הקיימת.", "Reconnecting to the existing run."));
+      recoveryPromise = recoverInvestigationResult();
+    }
+    return recoveryPromise;
+  };
   try {
     const investigationRequest = fetch("/api/investigate", {
       method: "POST",
@@ -5354,18 +5369,23 @@ async function runPrompt(prompt, options = {}) {
     });
     progressTimer = setInterval(pollLiveSteps, 1800);
     setTimeout(pollLiveSteps, 900);
-    let result;
-    let responseReceivedAt;
-    try {
-      const response = await investigationRequest;
-      responseReceivedAt = performance.now();
-      result = await response.json();
-      if (!response.ok) throw new Error(result.error || "Hermes request failed");
-    } catch (requestError) {
-      addActivity("connection_recovery", activeLocaleText("החיבור הופסק; מתחבר מחדש לריצה הקיימת.", "Connection interrupted; reconnecting to the existing run."));
-      result = await recoverInvestigationResult();
-      responseReceivedAt = performance.now();
-    }
+    const directResult = (async () => {
+      try {
+        const response = await investigationRequest;
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || "Hermes request failed");
+        return { result, responseReceivedAt: performance.now() };
+      } catch (requestError) {
+        return { result: await recoverExistingRun(), responseReceivedAt: performance.now() };
+      }
+    })();
+    const resumedResult = resumeRecoverySignal.then(async () => ({
+      result: await recoverExistingRun(),
+      responseReceivedAt: performance.now()
+    }));
+    const completedRequest = await Promise.race([directResult, resumedResult]);
+    const result = completedRequest.result;
+    const responseReceivedAt = completedRequest.responseReceivedAt;
     applyWorkstreamChatResult(result);
     result.answer = cleanAssistantAnswer(result.answer);
     state.history.push({ role: "user", content: clean }, { role: "assistant", content: result.answer });
@@ -5390,6 +5410,8 @@ async function runPrompt(prompt, options = {}) {
     finalizeAssistantMessage(`<p>${activeLocaleText("לא הצלחתי להשלים את ריצת הסוכן האמיתית.", "I couldn't complete the real agent run.")}</p><div class="answer-callout">${escapeHtml(error.message)}</div>`, { html: true });
     updateSystemStatus("agent", "Hermes אינו זמין", "Hermes unavailable", "error");
   } finally {
+    document.removeEventListener("visibilitychange", recoverWhenVisible);
+    window.removeEventListener("pageshow", recoverWhenVisible);
     if (progressTimer) clearInterval(progressTimer);
     state.busy = false;
     sendButton.disabled = false;
