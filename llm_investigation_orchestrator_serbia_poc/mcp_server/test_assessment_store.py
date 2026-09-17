@@ -52,6 +52,12 @@ class AssessmentStoreTests(unittest.TestCase):
         self.assertEqual(first["assessment_id"], second["assessment_id"])
         self.assertEqual(1, second["revision"])
 
+    def test_overlay_without_supporting_evidence_fails_closed(self):
+        invalid = sample()
+        invalid["overlays"][0]["supporting_evidence_ids"] = []
+        with self.assertRaisesRegex(ValueError, "requires supporting_evidence_ids"):
+            self.store.create(invalid)
+
 
 class AssessmentToolContractTests(unittest.TestCase):
     def test_tool_create_and_present_materialize_assessment_layer(self):

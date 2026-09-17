@@ -3247,7 +3247,7 @@ ASSESSMENT_INPUT_SCHEMA = {
                 "meaning": {"type": "string", "minLength": 1, "maxLength": 500},
                 "confidence": {"type": "string", "enum": ["low", "medium", "high"]},
                 "valid_from": {"type": "string"}, "valid_to": {"type": "string"},
-                "supporting_evidence_ids": {"type": "array", "items": {"type": "string", "pattern": "^EVD-"}, "maxItems": 100},
+                "supporting_evidence_ids": {"type": "array", "items": {"type": "string", "pattern": "^EVD-"}, "minItems": 1, "maxItems": 100},
                 "geometry": {"type": "object", "properties": {"type": {"type": "string", "enum": ["Point", "LineString", "Polygon"]}, "coordinates": {"type": "array"}}, "required": ["type", "coordinates"], "additionalProperties": False},
             }, "required": ["type", "meaning", "confidence", "supporting_evidence_ids", "geometry"], "additionalProperties": False,
         }},
@@ -3417,7 +3417,7 @@ TOOLS = [
     {
         "name": "create_enemy_assessment",
         "title": "Create a Talia enemy assessment",
-        "description": "Create a durable, revisioned enemy assessment from validated Evidence IDs. Analytical overlays are bounded and validated; this never creates targets.",
+        "description": "Create a durable, revisioned enemy assessment from validated Evidence IDs. Choose overlays semantically: a point for an assessed activity location; an assessed_area only for evidence-supported boundaries; a route_axis only for a coherent path supported by distinct geographic points or defensible origin/destination; and a confidence_envelope only for spatial uncertainty. Conflicting textual movement directions at one canonical location must not become a route or arbitrary rectangle. Every overlay requires supporting Evidence IDs. This never creates targets.",
         "inputSchema": with_step_bridge({"type": "object", "properties": {"assessment": ASSESSMENT_INPUT_SCHEMA}, "required": ["assessment"], "additionalProperties": False}),
         "annotations": {"readOnlyHint": False, "destructiveHint": False, "idempotentHint": True, "openWorldHint": False},
     },

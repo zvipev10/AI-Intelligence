@@ -38,7 +38,7 @@ class TaliaProfileTests(unittest.TestCase):
 
     def test_soul_preserves_evidence_assessment_target_boundary(self):
         soul = (ROOT / "talia_profile" / "SOUL.md").read_text(encoding="utf-8")
-        for marker in ("EVD-*", "ASM-*", "אינה ראיה", "kind=assessments", "אל תיצרי או תעדכני מטרות"):
+        for marker in ("EVD-*", "ASM-*", "אינה ראיה", "kind=assessments", "אל תיצרי או תעדכני מטרות", "route_axis", "לעולם אל תחליפי חוסר ודאות במלבן שרירותי"):
             self.assertIn(marker, soul)
 
     def test_frontend_exposes_talia_routing_and_assessment_presentation(self):
@@ -47,6 +47,8 @@ class TaliaProfileTests(unittest.TestCase):
         self.assertIn('result.responding_agent === "talia"', app)
         self.assertIn('activeLayer.kind === "assessments"', app)
         self.assertIn('layer.kind === "assessments"', app)
+        self.assertIn('className = "assessment-route-arrow"', app)
+        self.assertIn('type === "confidence_envelope"', app)
 
     def test_shared_result_pipeline_preserves_assessment_layers(self):
         from agent_result_pipeline import normalize_typed_layers

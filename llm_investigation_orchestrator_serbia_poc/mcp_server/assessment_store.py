@@ -109,6 +109,8 @@ def normalize_assessment(payload: dict[str, Any], assessment_id: str | None = No
         if confidence not in CONFIDENCE:
             raise ValueError(f"overlay {index} has invalid confidence")
         ids = _strings(overlay.get("supporting_evidence_ids"), "supporting_evidence_ids")
+        if not ids:
+            raise ValueError(f"overlay {index} requires supporting_evidence_ids")
         evidence_ids.extend(ids)
         normalized_overlays.append({
             "overlay_id": _text(overlay.get("overlay_id") or f"OVL-{index}", "overlay_id", 80, True),

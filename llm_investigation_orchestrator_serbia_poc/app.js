@@ -5540,7 +5540,9 @@ function renderMap() {
       items.forEach(assessment => (assessment.overlays || []).forEach((overlay, index) => {
         const geometry = overlay?.geometry;
         if (!geometry || !["Point", "LineString", "Polygon"].includes(geometry.type)) return;
-        const color = overlay.confidence === "high" ? "#ef5350" : overlay.confidence === "low" ? "#fbc02d" : "#ff8a65";
+        const type = String(overlay.type || "");
+        const color = type === "route_axis" ? "#42a5f5" : type === "confidence_envelope" ? "#ab7df6" : "#ffb74d";
+        const confidenceOpacity = overlay.confidence === "high" ? 1 : overlay.confidence === "low" ? 0.58 : 0.8;
         if (geometry.type === "Point") {
           const [lon, lat] = geometry.coordinates || [];
           if (!Number.isFinite(Number(lon)) || !Number.isFinite(Number(lat))) return;
@@ -5559,10 +5561,48 @@ function renderMap() {
         if (state.map.getLayer(layerId)) state.map.removeLayer(layerId);
         if (state.map.getSource(sourceId)) state.map.removeSource(sourceId);
         state.map.addSource(sourceId, { type: "geojson", data: { type: "Feature", properties: {}, geometry } });
-        state.map.addLayer(geometry.type === "Polygon"
-          ? { id: layerId, type: "fill", source: sourceId, paint: { "fill-color": color, "fill-opacity": 0.22, "fill-outline-color": color } }
-          : { id: layerId, type: "line", source: sourceId, paint: { "line-color": color, "line-width": 4, "line-dasharray": [2, 1] } });
-        state.assessmentMapArtifacts.push({ layerId, sourceId });
+        if (geometry.type === "Polygon") {
+          const outlineLayerId = `${base}-outline`;
+          const isEnvelope = type === "confidence_envelope";
+          state.map.addLayer({
+            id: layerId,
+            type: "fill",
+            source: sourceId,
+            paint: { "fill-color": color, "fill-opacity": (isEnvelope ? 0.045 : 0.075) * confidenceOpacity },
+          });
+          state.map.addLayer({
+            id: outlineLayerId,
+            type: "line",
+            source: sourceId,
+            paint: {
+              "line-color": color,
+              "line-opacity": confidenceOpacity,
+              "line-width": isEnvelope ? 2 : 2.5,
+              "line-dasharray": isEnvelope ? [1, 2] : [4, 2],
+            },
+          });
+          state.assessmentMapArtifacts.push({ layerId, sourceId }, { layerId: outlineLayerId });
+        } else {
+          state.map.addLayer({
+            id: layerId,
+            type: "line",
+            source: sourceId,
+            paint: { "line-color": color, "line-opacity": confidenceOpacity, "line-width": 4 },
+          });
+          state.assessmentMapArtifacts.push({ layerId, sourceId });
+          const route = geometry.coordinates || [];
+          const end = route.at(-1);
+          const previous = route.at(-2);
+          if (Array.isArray(end) && Array.isArray(previous)) {
+            const bearing = Math.atan2(Number(end[0]) - Number(previous[0]), Number(end[1]) - Number(previous[1])) * 180 / Math.PI;
+            const arrow = document.createElement("div");
+            arrow.className = "assessment-route-arrow";
+            arrow.style.setProperty("--assessment-bearing", `${bearing}deg`);
+            arrow.setAttribute("aria-label", `${assessment.title || assessment.assessment_id}: ${overlay.meaning || overlay.type}`);
+            const popup = new maplibregl.Popup({ offset: 18 }).setHTML(`<div class="map-popup"><strong>${escapeHtml(assessment.title || assessment.assessment_id)}</strong><span>${escapeHtml(overlay.meaning || overlay.type)}</span><em>${escapeHtml(confidenceLabel(overlay.confidence || assessment.confidence))}</em></div>`);
+            state.markers.push(new maplibregl.Marker({ element: arrow, anchor: "center" }).setLngLat([Number(end[0]), Number(end[1])]).setPopup(popup).addTo(state.map));
+          }
+        }
         const coordinates = geometry.type === "Polygon" ? geometry.coordinates.flat(2) : geometry.coordinates.flat(1);
         for (let i = 0; i < coordinates.length; i += 2) bounds.extend([Number(coordinates[i]), Number(coordinates[i + 1])]);
       }));
