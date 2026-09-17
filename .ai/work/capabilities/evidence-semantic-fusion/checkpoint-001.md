@@ -2,7 +2,7 @@
 
 ## Status
 
-Implementation is complete locally and committed on `codex/evidence-semantic-fusion`. It has not been pushed, merged, or deployed because publishing to the external remote requires explicit user authorization.
+Implementation is complete, pushed, merged into remote `main`, deployed to the production VM, and verified through Talia's deployed environment.
 
 ## Implemented
 
@@ -40,4 +40,13 @@ None found in the scoped evidence behavior.
 
 ### Recommendation
 
-Continue to commit/push and then deploy both the UI catalog rebuild and MCP/profile changes together.
+Capability accepted technically. Continue with a Talia demonstration assessment over the three verified Ibar Bridge evidence IDs.
+
+## Deployment verification
+
+- Evidence implementation baseline: `9e6cef1` on remote `main`.
+- Catalog schema: `evidence-catalog-v2`; 5,283 rows and 783 fused objects.
+- UI and Hermes gateway services are active.
+- General, Moshe, and Talia use dataset `v2.1` and the shared catalog path.
+- Talia retrieved all three expected fused IDs and semantically normalized the three representative public records.
+- Gateway credentials were preserved. The pre-sync gateway configuration backup is `/home/ubuntu/.hermes/config.yaml.before-evidence-profile-sync-1789668252`.

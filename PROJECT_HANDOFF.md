@@ -1,12 +1,12 @@
 # AI Intelligence Project Handoff
 
-Last updated: 2026-08-06
+Last updated: 2026-09-17
 
-This is the primary handoff for continuing the AI Intelligence project in another assistant/chat. It reflects the integrated Serbia POC on `main`, including investigation memory, the `מכלול` team interaction foundation, V2.1 fusion evidence, specialized Moshe routing and mission continuity, the persisted attack-target catalog, and the existing additive result-layer investigation experience.
+This is the primary handoff for continuing the AI Intelligence project in another assistant/chat. It reflects the deployed Serbia POC on remote `main`, including evidence implementation baseline `9e6cef1`, investigation memory, scenario playback, bilingual UI behavior, mobile run recovery, multiplexed General/Moshe/Talia routing, the V2.1 Evidence Layer, Moshe target workflows, Talia enemy assessments, and additive result-layer presentation.
 
 ## One-Line Summary
 
-The active project is the Serbia/North Kosovo intelligence-analysis POC: a Hebrew analyst UI backed by General and Moshe Hermes runtimes plus MCP tools over the 14,800-record V2.1 synthetic intelligence dataset. The UI combines investigation memory, scenario playback, and team-directed prompts with additive event, location, entity, aggregation, and attack-target layers rendered according to their map/timeline/table capabilities.
+The active project is the Serbia/North Kosovo intelligence-analysis POC: a bilingual analyst UI backed by a multiplexed Hermes gateway and isolated General, Moshe, and Talia profiles over the 14,800-record V2.1 synthetic dataset. It supports raw data exploitation, semantic retrieval, fused evidence, target candidates, enemy assessments, MIL-STD-oriented evidence symbols, assessment graphics, investigation memory, scenario playback, and additive map/timeline/table layers.
 
 ## Repository And Current State
 
@@ -16,8 +16,8 @@ Repository:
 
 Current branch:
 
-- The working repository used for deployment recovery on 2026-08-06 is on `main`.
-- PR #22 merged `codex/moshe-attack-targets` into `main` on 2026-07-21.
+- Evidence implementation baseline `9e6cef1` is merged into remote `main`; later documentation-only commits may follow it.
+- The local working checkout may remain on `codex/evidence-semantic-fusion`; fetch and inspect before switching.
 - The older branch references in this handoff are historical only; do not assume they reflect the current checked-out branch.
 - Always fetch before continuing and verify the current head with `git log -1 --oneline`.
 
@@ -31,10 +31,74 @@ Current local working tree expectation:
 - `main` should be aligned with `origin/main`; do not assume the current working branch or tree is clean.
 - Do not continue from stale local files if `git fetch origin` shows the active remote branch ahead.
 - Identify and preserve unrelated dirty files before staging, switching branches, or deploying.
-- As of 2026-08-06, the local workspace may still contain an unrelated dirty file: `moshe_profile/provision_profile.py`.
+- As of 2026-09-17, the local workspace contains unrelated, preserved mobile-recovery/deployment changes in `.ai/work/capabilities/mobile-agent-run-recovery/checkpoint-001.md`, `llm_investigation_orchestrator_serbia_poc/server.py`, and `llm_investigation_orchestrator_serbia_poc/deployment/SHA256SUMS-v184.txt`.
 - An isolated English WIP sibling workspace exists outside the restored repo; do not stage or deploy it accidentally from the main repo.
 
-## Latest Update: English Localization Hardening In Isolated WIP
+## Latest Update: Semantic Evidence Fusion And Talia Consumption
+
+Date: 2026-09-17
+
+The evidence preparation and fusion path was upgraded and deployed end to end.
+
+Implemented behavior:
+
+- `prepare_evidence` preserves structured object classes and resolves missing classes through the existing semantic concept vocabulary used by semantic retrieval.
+- `prepare_fused_evidence` consumes those normalized records and retains the existing source-grouping and binary persistence rules.
+- The extra ambiguity persistence block was removed as requested; no new provisional evidence status was added.
+- Deployment catalog fusion now uses an eight-hour bounded rolling window rather than fixed wall-clock buckets.
+- The Evidence Layer remains precomputed for demo responsiveness, but its fused objects are now a read seed of the MCP evidence repository. SQLite remains the writable overlay for later persisted evidence.
+- `get_evidence`, `search_evidence`, assessment validation, provenance tracing, the UI Evidence Layer, and Talia now resolve the same deterministic fused IDs.
+- Talia's profile now searches existing fused evidence first, creates missing evidence through the existing tools, and keeps different phenomena in separate evidence objects before assessing their operational relationship.
+- General, Moshe, and Talia MCP environments are aligned to dataset V2.1 and the shared Hebrew evidence catalog.
+
+Production deployment:
+
+- Remote `main`: `9e6cef1`
+- UI catalog schema: `evidence-catalog-v2`
+- Catalog counts: 14,800 source records, 4,500 cataloged observations/structured reports, 783 fused objects, 5,283 total rows.
+- `serbia-poc-ui.service`: active.
+- `hermes-gateway.service`: active.
+- Gateway API key was preserved during deployment; no key rotation was performed.
+- A backup was created before synchronizing multiplex profile entries: `/home/ubuntu/.hermes/config.yaml.before-evidence-profile-sync-1789668252`.
+
+Verified Ibar Bridge evidence:
+
+- Armored vehicles: `EVD-FUSED-CE661784179B3B88BCB9`
+- Helicopter activity: `EVD-FUSED-FDF2C6DAD2CC106E7BD2`
+- Engineering activity: `EVD-FUSED-C1E6F848E654359BD98C`
+
+The helicopter object includes the additional compatible UAV record `REC-V2-007693` within the rolling window. This is retained transparently in provenance.
+
+Production verification through Talia's deployed environment confirmed:
+
+- active dataset `v2.1`;
+- all three fused IDs are returned by `search_evidence` for `ENT-KSF` at `LOC-V2-010`;
+- semantic preparation resolves `REC-V2-014170` as `רכב משוריין`, `REC-V2-008463` as `מסוק`, and `REC-V2-012738` as `עבודות הנדסיות`;
+- the multiplex gateway remains active after configuration synchronization.
+
+Authoritative capability artifacts:
+
+- `.ai/work/capabilities/evidence-semantic-fusion/status.md`
+- `.ai/work/capabilities/evidence-semantic-fusion/checkpoint-001.md`
+- `.ai/work/capabilities/evidence-semantic-fusion/handoff-summary.md`
+
+## Recent Capabilities Since The Previous Project Handoff
+
+The August handoff predates several deployed capabilities. Current `main` also includes:
+
+- a precomputed, demand-opened Evidence Layer with bounded map rendering;
+- raw-layer neutral presentation instead of treating every raw record as a military symbol;
+- UAV raw-record video simulation in the entity viewer;
+- Talia's durable enemy-assessment tools and assessment graphics;
+- corrected movement/route-axis visualization constraints;
+- result controls for catalog-backed answers and supporting evidence layers;
+- null-safe result rendering;
+- mobile recovery of agent runs after the browser loses focus;
+- Moshe consolidation into the multiplexed main Hermes gateway and removal of General Persistent.
+
+Sections below this point are historical and may describe superseded runtime states.
+
+## Historical Update: English Localization Hardening In Isolated WIP
 
 Date: 2026-08-06
 

@@ -4,4 +4,4 @@ The existing evidence tools now share semantic object-class resolution with the 
 
 Unrelated dirty mobile-recovery files were intentionally not modified or staged.
 
-Publishing status: committed locally on `codex/evidence-semantic-fusion`; push was not authorized, and no deployment was attempted.
+Publishing status: pushed, merged into remote `main`, deployed, and production-verified on 2026-09-17.
