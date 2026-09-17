@@ -2,7 +2,7 @@
 
 ## Status
 
-Implementation is complete locally. It has not been committed, pushed, merged, or deployed.
+Implementation is complete locally and committed on `codex/evidence-semantic-fusion`. It has not been pushed, merged, or deployed because publishing to the external remote requires explicit user authorization.
 
 ## Implemented
 
