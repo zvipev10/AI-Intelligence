@@ -19,3 +19,9 @@ Assessment `ASM-DA2072FD0ACCCFDF` combined reports with mutually inconsistent mo
 - Assessment-store unit suite: 5 tests passed, including rejection of an unsupported overlay.
 - `app.js` syntax check: passed.
 - Full local Talia profile suite is blocked in the bundled Windows Python because PyYAML is absent; production Python includes it.
+
+## Deployment
+
+Deployed to the Serbia demo VM from commit `2a3c3f5`. Rollback files are stored at `/home/ubuntu/deploy-backups/talia-spatial-2a3c3f5`. Both `serbia-poc-ui.service` and `hermes-gateway.service` were active after restart; the live page serves `app.js?v=189` and `styles.css?v=151`.
+
+The affected saved result `ASM-DA2072FD0ACCCFDF` was revised from revision 1 to revision 2. Its unsupported rectangular area is replaced by a low-confidence assessed point at the shared canonical location, explicitly noting that contradictory directions do not support a movement axis. Revision 1 remains in immutable assessment history.
