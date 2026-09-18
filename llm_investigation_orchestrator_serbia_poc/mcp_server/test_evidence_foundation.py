@@ -13,8 +13,11 @@ IBAR_EVIDENCE = ["REC-V2-006594", "REC-V2-011917", "REC-V2-010002"]
 
 class EvidenceFoundationTests(unittest.TestCase):
     def test_specific_location_name_beats_broad_municipality_alias(self):
-        result = server.resolve_location({"query": "ציר תגבור פרישטינה–מיטרוביצה"})
+        result = server.resolve_location({"query": "ציר פרישטינה–מיטרוביצה"})
         self.assertEqual(result["location_ids"], ["LOC-V2-013"])
+
+        hyphenated = server.resolve_location({"query": "ציר פרישטינה-מיטרוביצה"})
+        self.assertEqual(hyphenated["location_ids"], ["LOC-V2-013"])
 
         approaches = server.resolve_location({"query": "גישות צפוניות לצפון מיטרוביצה"})
         self.assertEqual(approaches["location_ids"], ["LOC-V2-009"])
