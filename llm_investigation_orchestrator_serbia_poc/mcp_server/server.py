@@ -2989,9 +2989,33 @@ def _validate_assessment_evidence(payload: dict[str, Any]) -> None:
         raise ValueError(f"unknown evidence IDs: {', '.join(missing)}")
 
 
+def _assessment_with_common_evidence_entities(payload: dict[str, Any]) -> dict[str, Any]:
+    """Preserve a shared evidence subject when the agent omits scope.entity_ids."""
+    scope = dict(payload.get("scope") or {})
+    if scope.get("entity_ids"):
+        return payload
+    evidence_rows = [
+        resolve_evidence(str(evidence_id))
+        for evidence_id in payload.get("evidence_ids") or []
+    ]
+    subject_sets = [
+        {str(entity_id) for entity_id in (row.get("subject_entity_ids") or []) if str(entity_id)}
+        for row in evidence_rows
+        if row is not None
+    ]
+    if not subject_sets or len(subject_sets) != len(payload.get("evidence_ids") or []) or any(not values for values in subject_sets):
+        return payload
+    common_entities = sorted(set.intersection(*subject_sets))
+    if not common_entities:
+        return payload
+    scope["entity_ids"] = common_entities
+    return {**payload, "scope": scope}
+
+
 def create_enemy_assessment(arguments: dict[str, Any]) -> dict[str, Any]:
     payload = arguments.get("assessment") or arguments
     _validate_assessment_evidence(payload)
+    payload = _assessment_with_common_evidence_entities(payload)
     return {"assessment": ASSESSMENT_STORE.create(payload, created_by="talia")}
 
 

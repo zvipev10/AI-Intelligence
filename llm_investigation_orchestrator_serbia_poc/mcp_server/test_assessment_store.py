@@ -72,5 +72,46 @@ class AssessmentToolContractTests(unittest.TestCase):
         self.assertTrue(layer["capabilities"]["map"])
         self.assertEqual(created["assessment_id"], layer["rows"][0]["assessment_id"])
 
+    def test_create_infers_entity_shared_by_all_supporting_evidence(self):
+        from . import server
+        evidence = {
+            "EVD-FUSED-1": {"evidence_id": "EVD-FUSED-1", "subject_entity_ids": ["ENT-KSF"]},
+            "EVD-FUSED-2": {"evidence_id": "EVD-FUSED-2", "subject_entity_ids": ["ENT-KSF"]},
+            "EVD-FUSED-3": {"evidence_id": "EVD-FUSED-3", "subject_entity_ids": ["ENT-KSF"]},
+        }
+        payload = sample()
+        payload["scope"]["entity_ids"] = []
+        payload["evidence_ids"] = list(evidence)
+        payload["key_judgments"] = [{
+            "judgment": "Combined activity", "confidence": "medium",
+            "evidence_ids": list(evidence),
+        }]
+        payload["overlays"][0]["supporting_evidence_ids"] = list(evidence)
+        with tempfile.TemporaryDirectory() as directory, patch.object(
+            server, "ASSESSMENT_STORE", AssessmentStore(Path(directory) / "assessments.db")
+        ), patch.object(server, "resolve_evidence", side_effect=lambda evidence_id: evidence.get(evidence_id)):
+            created = server.create_enemy_assessment({"assessment": payload})["assessment"]
+        self.assertEqual(["ENT-KSF"], created["scope"]["entity_ids"])
+
+    def test_create_does_not_infer_entity_when_supporting_evidence_differs(self):
+        from . import server
+        evidence = {
+            "EVD-FUSED-1": {"evidence_id": "EVD-FUSED-1", "subject_entity_ids": ["ENT-KSF"]},
+            "EVD-FUSED-2": {"evidence_id": "EVD-FUSED-2", "subject_entity_ids": ["ENT-KFOR"]},
+        }
+        payload = sample()
+        payload["scope"]["entity_ids"] = []
+        payload["evidence_ids"] = list(evidence)
+        payload["key_judgments"] = [{
+            "judgment": "Mixed activity", "confidence": "low",
+            "evidence_ids": list(evidence),
+        }]
+        payload["overlays"][0]["supporting_evidence_ids"] = list(evidence)
+        with tempfile.TemporaryDirectory() as directory, patch.object(
+            server, "ASSESSMENT_STORE", AssessmentStore(Path(directory) / "assessments.db")
+        ), patch.object(server, "resolve_evidence", side_effect=lambda evidence_id: evidence.get(evidence_id)):
+            created = server.create_enemy_assessment({"assessment": payload})["assessment"]
+        self.assertEqual([], created["scope"]["entity_ids"])
+
 
 if __name__ == "__main__": unittest.main()
