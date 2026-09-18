@@ -48,10 +48,14 @@ class MobileRunRecoveryTests(unittest.TestCase):
         self.assertIn("if (!recoveryPromise)", app)
         self.assertIn('document.removeEventListener("visibilitychange", recoverWhenVisible)', app)
         self.assertIn('window.removeEventListener("pageshow", recoverWhenVisible)', app)
-        self.assertIn("app.js?v=192", index)
+        self.assertIn("app.js?v=193", index)
 
     def test_live_step_refresh_preserves_expanded_step(self):
         app = (ROOT / "app.js").read_text(encoding="utf-8")
+        self.assertIn("const canAppendLiveSteps = !sourceBase && existingItems.length <= visibleSteps.length;", app)
+        self.assertIn("const firstStepIndex = canAppendLiveSteps ? existingItems.length : 0;", app)
+        self.assertIn('if (!canAppendLiveSteps) state.activeActivityList.innerHTML = "";', app)
+        self.assertIn("visibleSteps.slice(firstStepIndex).forEach", app)
         self.assertIn("const expandedStepNumbers = new Set(", app)
         self.assertIn('querySelectorAll(".activity-item > details[open]")', app)
         self.assertIn("if (expandedStepNumbers.has(stepNumber))", app)

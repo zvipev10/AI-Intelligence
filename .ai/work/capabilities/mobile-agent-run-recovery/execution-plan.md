@@ -15,10 +15,9 @@ The user explicitly requested implementation, deployment, push, and merge. Produ
 
 - Add a short grace period after `visibilitychange`/`pageshow`; recover only if the direct request remains unsettled.
 - Keep recovery operational status out of the numbered research-step list.
-- Snapshot expanded step numbers before rebuilding live steps and restore them afterward.
+- Append only newly arrived live-step nodes so existing disclosures are untouched; retain expanded-step restoration for required full rebuilds.
 - Bump the frontend asset version and update contract tests and canonical hashes.
 
 ## Risk and rollback
 
 Low-risk, frontend-only behavior change. Roll back the single release commit if mobile recovery regresses.
-
