@@ -40,10 +40,22 @@ class MobileRunRecoveryTests(unittest.TestCase):
         self.assertIn('document.addEventListener("visibilitychange", recoverWhenVisible)', app)
         self.assertIn('window.addEventListener("pageshow", recoverWhenVisible)', app)
         self.assertIn("Promise.race([directResult, resumedResult])", app)
+        self.assertIn("if (document.hidden || directRequestSettled || resumeRecoveryTimer) return;", app)
+        self.assertIn("if (!directRequestSettled) resolveResumeRecovery();", app)
+        self.assertIn("directRequestSettled = true;", app)
+        self.assertIn("if (resumeRecoveryTimer) clearTimeout(resumeRecoveryTimer);", app)
+        self.assertNotIn('addActivity("connection_recovery"', app)
         self.assertIn("if (!recoveryPromise)", app)
         self.assertIn('document.removeEventListener("visibilitychange", recoverWhenVisible)', app)
         self.assertIn('window.removeEventListener("pageshow", recoverWhenVisible)', app)
-        self.assertIn("app.js?v=191", index)
+        self.assertIn("app.js?v=192", index)
+
+    def test_live_step_refresh_preserves_expanded_step(self):
+        app = (ROOT / "app.js").read_text(encoding="utf-8")
+        self.assertIn("const expandedStepNumbers = new Set(", app)
+        self.assertIn('querySelectorAll(".activity-item > details[open]")', app)
+        self.assertIn("if (expandedStepNumbers.has(stepNumber))", app)
+        self.assertIn('setAttribute("open", "")', app)
 
 
 if __name__ == "__main__":
