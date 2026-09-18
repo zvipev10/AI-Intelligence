@@ -4896,6 +4896,11 @@ function visibleActivitySteps(steps) {
 function renderActivitySteps(steps, sourceBase = null) {
   const shouldFollow = conversationIsNearBottom();
   ensureAssistantResearchMessage();
+  const expandedStepNumbers = new Set(
+    [...state.activeActivityList.querySelectorAll(".activity-item > details[open]")]
+      .map(details => details.closest(".activity-item")?.querySelector(".activity-step-number")?.textContent)
+      .filter(Boolean)
+  );
   state.activeActivityList.innerHTML = "";
   visibleActivitySteps(steps).forEach((step, index) => {
     const explanation = step.model_explanation || {};
@@ -4911,6 +4916,10 @@ function renderActivitySteps(steps, sourceBase = null) {
       sourceId: stepSourceId(sourceBase || state.lastResult || state.investigationId, number),
       sourceLabel: `Step ${number}: ${humanToolLabel(step.tool)}`
     });
+  });
+  state.activeActivityList.querySelectorAll(".activity-item").forEach(item => {
+    const stepNumber = item.querySelector(".activity-step-number")?.textContent;
+    if (expandedStepNumbers.has(stepNumber)) item.querySelector("details")?.setAttribute("open", "");
   });
   followConversationAfterUpdate(shouldFollow);
 }
@@ -5287,10 +5296,16 @@ async function runPrompt(prompt, options = {}) {
   let liveStepCount = 0;
   let progressTimer = null;
   let recoveryPromise = null;
+  let resumeRecoveryTimer = null;
+  let directRequestSettled = false;
   let resolveResumeRecovery;
   const resumeRecoverySignal = new Promise(resolve => { resolveResumeRecovery = resolve; });
   const recoverWhenVisible = () => {
-    if (!document.hidden) resolveResumeRecovery();
+    if (document.hidden || directRequestSettled || resumeRecoveryTimer) return;
+    resumeRecoveryTimer = setTimeout(() => {
+      resumeRecoveryTimer = null;
+      if (!directRequestSettled) resolveResumeRecovery();
+    }, 2500);
   };
   document.addEventListener("visibilitychange", recoverWhenVisible);
   window.addEventListener("pageshow", recoverWhenVisible);
@@ -5346,7 +5361,6 @@ async function runPrompt(prompt, options = {}) {
   };
   const recoverExistingRun = () => {
     if (!recoveryPromise) {
-      addActivity("connection_recovery", activeLocaleText("מתחבר מחדש לריצה הקיימת.", "Reconnecting to the existing run."));
       recoveryPromise = recoverInvestigationResult();
     }
     return recoveryPromise;
@@ -5374,8 +5388,10 @@ async function runPrompt(prompt, options = {}) {
         const response = await investigationRequest;
         const result = await response.json();
         if (!response.ok) throw new Error(result.error || "Hermes request failed");
+        directRequestSettled = true;
         return { result, responseReceivedAt: performance.now() };
       } catch (requestError) {
+        directRequestSettled = true;
         return { result: await recoverExistingRun(), responseReceivedAt: performance.now() };
       }
     })();
@@ -5412,6 +5428,7 @@ async function runPrompt(prompt, options = {}) {
   } finally {
     document.removeEventListener("visibilitychange", recoverWhenVisible);
     window.removeEventListener("pageshow", recoverWhenVisible);
+    if (resumeRecoveryTimer) clearTimeout(resumeRecoveryTimer);
     if (progressTimer) clearInterval(progressTimer);
     state.busy = false;
     sendButton.disabled = false;
