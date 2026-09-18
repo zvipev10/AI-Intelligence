@@ -48,7 +48,8 @@ class MobileRunRecoveryTests(unittest.TestCase):
         self.assertIn("if (!recoveryPromise)", app)
         self.assertIn('document.removeEventListener("visibilitychange", recoverWhenVisible)', app)
         self.assertIn('window.removeEventListener("pageshow", recoverWhenVisible)', app)
-        self.assertIn("app.js?v=193", index)
+        self.assertIn("app.js?v=194", index)
+        self.assertNotIn('addActivity("Hermes"', app)
 
     def test_live_step_refresh_preserves_expanded_step(self):
         app = (ROOT / "app.js").read_text(encoding="utf-8")
