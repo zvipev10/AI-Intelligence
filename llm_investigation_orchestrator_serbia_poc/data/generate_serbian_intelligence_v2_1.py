@@ -21,6 +21,7 @@ SEED = 20260718
 POSITIVE_CHAINS = 300
 HARD_NEGATIVES = 100
 MAX_PUBLIC_DELTA_SECONDS = 8 * 60 * 60
+MOVEMENT_SCENARIO_ID = "MOV-IBAR-01"
 
 RAW_CSV = "north_kosovo_serbian_intelligence_v2_14800.csv"
 RAW_JSONL = "north_kosovo_serbian_intelligence_v2_14800.jsonl"
@@ -75,6 +76,39 @@ OBJECT_TERMS = {
     "עבודות הנדסיות": ["פעילות הנדסית", "כלים שביצעו הכשרת שטח", "עבודות עפר והקמת מיגון"],
 }
 
+MOVEMENT_LOCATIONS = [
+    {
+        "location_id": "LOC-V2-013",
+        "place_name": "ציר תגבור פרישטינה–מיטרוביצה",
+        "region": "מרכז קוסובו",
+        "municipality": "ווצ׳יטרן",
+        "locality": "ציר צפוני",
+        "timestamp": "2026-09-17T06:30:00Z",
+        "direction": "צפון-מערב לעבר צפון מיטרוביצה",
+        "count": 16,
+    },
+    {
+        "location_id": "LOC-V2-009",
+        "place_name": "גישות צפוניות לצפון מיטרוביצה",
+        "region": "צפון קוסובו",
+        "municipality": "צפון מיטרוביצה",
+        "locality": "צפון מיטרוביצה",
+        "timestamp": "2026-09-17T07:20:00Z",
+        "direction": "לעבר מרחב גשר איבר",
+        "count": 15,
+    },
+    {
+        "location_id": "LOC-V2-010",
+        "place_name": "מרחב גשר איבר",
+        "region": "צפון קוסובו",
+        "municipality": "צפון מיטרוביצה",
+        "locality": "גשר איבר",
+        "timestamp": "2026-09-17T08:10:00Z",
+        "direction": "כניסה למרחב גשר איבר",
+        "count": 15,
+    },
+]
+
 
 def sha256(path: Path) -> str:
     digest = hashlib.sha256()
@@ -105,6 +139,199 @@ def write_jsonl(path: Path, rows: list[dict]) -> None:
 
 def parse_time(value: str) -> datetime:
     return datetime.fromisoformat(value.replace("Z", "+00:00")).astimezone(timezone.utc)
+
+
+def movement_demo_rows(raw_fields: list[str], projection_fields: list[str], label_fields: list[str]) -> tuple[list[dict], list[dict], list[dict], list[dict]]:
+    """Build a force-pattern movement chain without asserting exact convoy identity."""
+    raw_rows: list[dict] = []
+    projection_rows: list[dict] = []
+    label_rows: list[dict] = []
+    uav_rows: list[dict] = []
+    record_number = 14_801
+    source_types = ("חדשות מקומיות", "הודעת דובר")
+    public_offsets = (10, 20)
+    for point_index, point in enumerate(MOVEMENT_LOCATIONS, 1):
+        observed_at = parse_time(point["timestamp"])
+        mission_id = f"UAV-MSN-MOV-{point_index:03d}"
+        observation_id = f"OBS-UAV-MOV-{point_index:03d}"
+        video_segment_id = f"VID-MOV-{point_index:03d}"
+        record_id = f"REC-V2-{record_number:06d}"
+        record_number += 1
+        observation_text = (
+            f"בקטע וידאו מכטב״ם תרחישי זוהתה שיירת כלי רכב של KSF במרחב {point['place_name']}. "
+            f"הוערכו כ-{point['count']} כלי רכב, בתנועה {point['direction']}. "
+            "הזיהוי תומך בדפוס תנועת כוח אזורי אך אינו מזהה בוודאות שיירה מסוימת."
+        )
+        raw = {field: "" for field in raw_fields}
+        raw.update({
+            "record_id": record_id,
+            "timestamp": point["timestamp"],
+            "source_type": "חיל האוויר הסרבי - ניצול וידאו מכטב״ם",
+            "language": "עברית",
+            "country": "קוסובו",
+            "region": point["region"],
+            "municipality": point["municipality"],
+            "locality": point["locality"],
+            "place_name": point["place_name"],
+            "location_id": point["location_id"],
+            "location_precision": "coarse_area",
+            "location_confidence": "גבוהה",
+            "claimed_location": f"{point['municipality']}, {point['place_name']}",
+            "ground_truth_location": f"{point['municipality']}, {point['place_name']}",
+            "actor_mentioned": "KSF",
+            "observed_actor": "KSF",
+            "event_id": "EVT-MOV-IBAR-001",
+            "event_name": "דפוס תנועת כוח KSF לעבר מרחב גשר איבר",
+            "information_type": "תצפית על תנועת כוחות",
+            "military_signal_type": "תצפית על תנועת כוחות",
+            "text": observation_text,
+            "relevance_label": "5",
+            "reliability_label": "confirmed",
+            "claim_strength": "חזקה",
+            "certainty_level": "גבוהה",
+            "is_duplicate": "false",
+            "is_rumor": "false",
+            "is_disinformation": "false",
+            "is_civilian_related": "false",
+            "is_military_related": "true",
+            "media_claimed": "true",
+            "media_verified": "true",
+            "possible_misidentification": "false",
+            "ground_truth_status": "נכון",
+            "same_event_cluster": MOVEMENT_SCENARIO_ID,
+            "analyst_question": "האם רצף התצפיות תומך בתנועת כוח לעבר גשר איבר?",
+            "collection_family": "airborne_isr_video_exploitation",
+            "collection_platform": "synthetic_serbian_uav",
+            "observation_id": observation_id,
+            "mission_id": mission_id,
+            "video_segment_id": video_segment_id,
+            "observed_object_class": "שיירת כלי רכב",
+            "estimated_object_count": str(point["count"]),
+            "movement_status": "בתנועה",
+            "movement_direction": point["direction"],
+            "geolocation_confidence": "גבוהה",
+            "identification_confidence": "בינונית",
+            "analyst_assessment": "תואם דפוס תנועת כוח אזורי; אין זיהוי ודאי של אותה שיירה.",
+        })
+        raw_rows.append(raw)
+        projection = {field: "" for field in projection_fields}
+        projection.update({
+            "event_id": record_id,
+            "timestamp_utc": point["timestamp"],
+            "source_type": raw["source_type"],
+            "source_reliability": "confirmed",
+            "source_reliability_label": "confirmed",
+            "certainty_level": "גבוהה",
+            "entity_id": "ENT-KSF",
+            "location_id": point["location_id"],
+            "event_summary": observation_text,
+            "collection_family": raw["collection_family"],
+            "observation_id": observation_id,
+            "mission_id": mission_id,
+            "object_class": "שיירת כלי רכב",
+            "estimated_object_count": str(point["count"]),
+            "movement_status": "בתנועה",
+            "movement_direction": point["direction"],
+            "geolocation_confidence": "גבוהה",
+            "identification_confidence": "בינונית",
+        })
+        projection_rows.append(projection)
+        uav_rows.append({
+            "analyst_assessment": raw["analyst_assessment"],
+            "entity_id": "ENT-KSF",
+            "estimated_object_count": point["count"],
+            "geolocation_confidence": "גבוהה",
+            "identification_confidence": "בינונית",
+            "location_id": point["location_id"],
+            "media_type": "synthetic_uav_video_exploitation",
+            "mission_id": mission_id,
+            "movement_direction": point["direction"],
+            "movement_status": "בתנועה",
+            "object_class": "שיירת כלי רכב",
+            "observation_id": observation_id,
+            "observation_summary": observation_text,
+            "observed_at_utc": point["timestamp"],
+            "processed_at_utc": observed_at.replace(minute=observed_at.minute + 5).isoformat().replace("+00:00", "Z"),
+            "record_id": record_id,
+            "scenario_event_id": "EVT-MOV-IBAR-001",
+            "source_type": raw["source_type"],
+            "synthetic": True,
+            "video_segment_id": video_segment_id,
+        })
+        label = {field: "" for field in label_fields}
+        label.update({
+            "event_id": record_id,
+            "record_id": record_id,
+            "source_type": raw["source_type"],
+            "scenario_event_id": raw["event_id"],
+            "event_name": raw["event_name"],
+            "same_event_cluster": MOVEMENT_SCENARIO_ID,
+            "information_type": raw["information_type"],
+            "military_signal_type": raw["military_signal_type"],
+            "relevance_label": "5",
+            "source_reliability_label": "confirmed",
+            "claim_strength": "חזקה",
+            "certainty_level": "גבוהה",
+            "is_duplicate": "false",
+            "is_rumor": "false",
+            "is_disinformation": "false",
+            "is_civilian_related": "false",
+            "is_military_related": "true",
+            "media_claimed": "true",
+            "media_verified": "true",
+            "possible_misidentification": "false",
+            "ground_truth_status": "נכון",
+            "claimed_location": raw["claimed_location"],
+            "ground_truth_location": raw["ground_truth_location"],
+            "analyst_question": raw["analyst_question"],
+            "country": "קוסובו",
+            "region": point["region"],
+            "municipality": point["municipality"],
+            "locality": point["locality"],
+            "place_name": point["place_name"],
+            "location_precision": "coarse_area",
+            "location_confidence": "גבוהה",
+        })
+        label_rows.append(label)
+
+        for source_index, (source_type, minute_offset) in enumerate(zip(source_types, public_offsets), 1):
+            public_id = f"REC-V2-{record_number:06d}"
+            record_number += 1
+            public_time = observed_at.replace(minute=observed_at.minute + minute_offset).isoformat().replace("+00:00", "Z")
+            public_text = (
+                f"{source_type} מדווח על שיירת KSF המונה כ-{point['count'] + source_index - 1} כלי רכב "
+                f"במרחב {point['place_name']}, בתנועה {point['direction']}. "
+                "הדיווח תומך בדפוס התקדמות כוח, אך אינו מזהה שיירה מסוימת באופן רציף."
+            )
+            public_raw = {field: "" for field in raw_fields}
+            public_raw.update({**raw, "record_id": public_id, "timestamp": public_time, "source_type": source_type,
+                               "text": public_text, "collection_family": "public_source",
+                               "collection_platform": source_type, "observation_id": "", "mission_id": "",
+                               "video_segment_id": "", "observed_object_class": "", "estimated_object_count": "",
+                               "movement_status": "", "movement_direction": "", "geolocation_confidence": "",
+                               "identification_confidence": "", "analyst_assessment": "", "certainty_level": "בינונית",
+                               "reliability_label": "likely", "media_verified": "false"})
+            raw_rows.append(public_raw)
+            public_projection = {field: "" for field in projection_fields}
+            public_projection.update({
+                "event_id": public_id,
+                "timestamp_utc": public_time,
+                "source_type": source_type,
+                "source_reliability": "likely",
+                "source_reliability_label": "likely",
+                "certainty_level": "בינונית",
+                "entity_id": "ENT-KSF",
+                "location_id": point["location_id"],
+                "event_summary": public_text,
+                "collection_family": "public_source",
+            })
+            projection_rows.append(public_projection)
+            public_label = {field: "" for field in label_fields}
+            public_label.update({**label, "event_id": public_id, "record_id": public_id, "source_type": source_type,
+                                 "source_reliability_label": "likely", "certainty_level": "בינונית",
+                                 "media_verified": "false"})
+            label_rows.append(public_label)
+    return raw_rows, projection_rows, label_rows, uav_rows
 
 
 def public_confirmation_text(row: dict, object_class: str, count: int, variant: int) -> str:
@@ -280,6 +507,13 @@ def main() -> int:
     if len(hard_negative_rows) < HARD_NEGATIVES:
         raise RuntimeError(f"Only {len(hard_negative_rows)} hard negatives could be created")
 
+    movement_rows, movement_projections, movement_labels, movement_uav = movement_demo_rows(
+        raw_fields, projection_fields, label_fields
+    )
+    rows.extend(movement_rows)
+    projections.extend(movement_projections)
+    labels.extend(movement_labels)
+
     for label in labels:
         for field in TRUTH_FIELDS:
             label.setdefault(field, "")
@@ -290,7 +524,9 @@ def main() -> int:
     write_csv(OUTPUT_DIR / OUTPUT_NAMES[PROJECTION_CSV], projection_fields, projections)
     write_csv(OUTPUT_DIR / OUTPUT_NAMES[LABELS_CSV], [*label_fields, *TRUTH_FIELDS], labels)
     write_jsonl(OUTPUT_DIR / "fusion_target_truth_v2_1.jsonl", truth_rows)
-    for source_name in (UAV_JSONL, ENTITIES_JSON, LOCATIONS_JSON):
+    existing_uav = [json.loads(line) for line in (SOURCE_DIR / UAV_JSONL).read_text(encoding="utf-8").splitlines() if line.strip()]
+    write_jsonl(OUTPUT_DIR / OUTPUT_NAMES[UAV_JSONL], [*existing_uav, *movement_uav])
+    for source_name in (ENTITIES_JSON, LOCATIONS_JSON):
         shutil.copyfile(SOURCE_DIR / source_name, OUTPUT_DIR / OUTPUT_NAMES[source_name])
 
     source_hashes_after = {path.name: sha256(path) for path in source_files}
@@ -306,9 +542,10 @@ def main() -> int:
         "hard_negative_records": len(hard_negative_rows),
         "object_counts": dict(Counter(row["object_class"] for row in truth_rows)),
         "checks": {
-            "target_rows": len(rows) == 14_800,
+            "target_rows": len(rows) == 14_809,
             "unique_record_ids": len({row["record_id"] for row in rows}) == len(rows),
-            "uav_count_preserved": sum(row["collection_family"] == "airborne_isr_video_exploitation" for row in rows) == 3_800,
+            "uav_count_preserved": sum(row["collection_family"] == "airborne_isr_video_exploitation" for row in rows) == 3_803,
+            "movement_demo_records": len(movement_rows) == 9 and len(movement_uav) == 3,
             "positive_chain_target": len(truth_rows) >= POSITIVE_CHAINS,
             "hard_negative_target": len(hard_negative_rows) >= HARD_NEGATIVES,
             "v2_inputs_unchanged": source_hashes_before == source_hashes_after,

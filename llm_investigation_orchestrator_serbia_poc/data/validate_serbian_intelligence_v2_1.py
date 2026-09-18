@@ -78,15 +78,28 @@ def main() -> int:
     sys.path.insert(0, str(ROOT.parent / "mcp_server"))
     from semantic_index import dense_features
 
-    assert len(rows) == 14_800
+    assert len(rows) == 14_809
     assert len(row_by_id) == len(rows)
     assert len(projections) == len(rows)
     assert len(labels) == len(rows)
-    assert len(uav) == 3_800
+    assert len(uav) == 3_803
     assert len(truth) == 300
     assert len({item["fusion_truth_id"] for item in truth}) == len(truth)
-    assert sum(row["collection_family"] == "public_source" for row in rows) == 11_000
-    assert sum(row["collection_family"] == "airborne_isr_video_exploitation" for row in rows) == 3_800
+    assert sum(row["collection_family"] == "public_source" for row in rows) == 11_006
+    assert sum(row["collection_family"] == "airborne_isr_video_exploitation" for row in rows) == 3_803
+
+    movement_rows = [row for row in rows if row.get("same_event_cluster") == "MOV-IBAR-01"]
+    movement_uav = [row for row in movement_rows if row["collection_family"] == "airborne_isr_video_exploitation"]
+    movement_public = [row for row in movement_rows if row["collection_family"] == "public_source"]
+    assert len(movement_rows) == 9
+    assert len(movement_uav) == 3
+    assert len(movement_public) == 6
+    assert [row["location_id"] for row in movement_uav] == ["LOC-V2-013", "LOC-V2-009", "LOC-V2-010"]
+    assert [row["timestamp"] for row in movement_uav] == sorted(row["timestamp"] for row in movement_uav)
+    assert all(row["actor_mentioned"] == "KSF" for row in movement_rows)
+    assert all(row["observed_object_class"] == "שיירת כלי רכב" for row in movement_uav)
+    assert all(row["movement_status"] == "בתנועה" for row in movement_uav)
+    assert all("אינו מזהה" in row["text"] or "אינה מזהה" in row["text"] for row in movement_rows)
 
     truth_field_names = {
         "fusion_truth_id",
@@ -167,6 +180,7 @@ def main() -> int:
     summary = {
         "rows": len(rows),
         "uav_rows": len(uav),
+        "movement_demo_rows": len(movement_rows),
         "positive_chains": len(truth),
         "positive_evidence_records": len(evidence_ids),
         "hard_negatives": len(negatives),
