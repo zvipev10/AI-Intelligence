@@ -8,6 +8,8 @@ Prevent false Hermes steps after app resume and keep analyst-expanded live steps
 
 Returning to the app waits briefly for the original request. Recovery starts only if that request remains unsettled, and recovery status is not represented as a research step. Live polling appends only newly arrived step elements, so existing disclosures and their open state are not recreated; full result rebuilds still restore expanded state as a fallback.
 
+If a completed or recovered result contains neither structured investigation steps nor tool-start events, the UI now shows the answer with an empty research-detail state instead of inventing a numbered Hermes step.
+
 ## Files changed
 
 - `llm_investigation_orchestrator_serbia_poc/app.js`

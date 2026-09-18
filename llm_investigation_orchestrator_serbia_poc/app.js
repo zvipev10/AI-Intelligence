@@ -5138,10 +5138,6 @@ async function applyAgentResult(result, prompt, options = {}) {
       });
     });
   }
-  if (!options.keepRenderedSteps && !(result.investigation_steps || []).length && !(result.events || []).some(event => event.event === "tool.started")) {
-    addActivity("Hermes", `Investigation question sent: ${prompt}`, `A response was received in run ${result.run_id}, without a detailed tool log.`);
-  }
-
   finalizeAssistantMessage(result.answer, { result, prompt });
   await presentFinalAgentResult(result, prompt);
   refreshAssistantObjectLinks();
