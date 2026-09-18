@@ -31,4 +31,13 @@
 
 ## Review
 
-No blocking local findings. Deployment and a real Talia run remain required before final acceptance.
+No blocking findings.
+
+## Deployment acceptance
+
+- Deployed the regenerated V2.1 dataset and evidence catalog to the application server.
+- Restarted `hermes-gateway.service` and `serbia-poc-ui.service`; both returned active.
+- `/api/status` reported dataset version V2.1 with 14,809 rows.
+- A natural Hebrew request to Talia, without record IDs or a prescribed conclusion, created `ASM-AE7F2CFFC5AA3F2C`.
+- The assessment contains a medium-confidence `route_axis` from LOC-V2-013 to LOC-V2-010, supported by `EVD-FUSED-07DEA71F88095F86200B` and `EVD-FUSED-087F28DD62B6E4E1DCFE`.
+- The assessment correctly warns that this is force-pattern movement and does not establish continuous identity of the same convoy.
