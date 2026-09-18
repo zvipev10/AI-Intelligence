@@ -12,6 +12,32 @@ IBAR_EVIDENCE = ["REC-V2-006594", "REC-V2-011917", "REC-V2-010002"]
 
 
 class EvidenceFoundationTests(unittest.TestCase):
+    def test_specific_location_name_beats_broad_municipality_alias(self):
+        result = server.resolve_location({"query": "ציר תגבור פרישטינה–מיטרוביצה"})
+        self.assertEqual(result["location_ids"], ["LOC-V2-013"])
+
+        approaches = server.resolve_location({"query": "גישות צפוניות לצפון מיטרוביצה"})
+        self.assertEqual(approaches["location_ids"], ["LOC-V2-009"])
+
+    def test_search_evidence_defaults_to_fused_objects(self):
+        class SearchStub:
+            def __init__(self):
+                self.filters = None
+
+            def search(self, filters):
+                self.filters = filters
+                return [{"evidence_id": "EVD-FUSED-TEST", "evidence_status": "fused"}]
+
+        previous = server.EVIDENCE_STORE
+        stub = SearchStub()
+        server.EVIDENCE_STORE = stub
+        try:
+            result = server.search_evidence({"location_id": "LOC-V2-013", "limit": 100})
+            self.assertEqual(stub.filters["evidence_status"], "fused")
+            self.assertEqual(result["evidence"][0]["evidence_status"], "fused")
+        finally:
+            server.EVIDENCE_STORE = previous
+
     def test_prepare_evidence_reuses_shared_semantic_object_concepts(self):
         cases = {
             "תושבים דיווחו על רכב כבד ממוגן באזור": "רכב משוריין",

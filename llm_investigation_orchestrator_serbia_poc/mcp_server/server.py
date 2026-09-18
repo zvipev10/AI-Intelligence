@@ -296,12 +296,22 @@ def match_location_term(term: str) -> list[str]:
     folded = _fold(term)
     if not folded:
         return []
-    exact_alias = AREA_ALIASES.get(term)
-    if exact_alias:
-        return list(exact_alias)
+    # Prefer an exact canonical place name over a broad alias contained in it.
+    # For example, "ציר תגבור פרישטינה–מיטרוביצה" must resolve to the
+    # corridor itself, not every place covered by the shorter "פרישטינה"
+    # municipality alias.
+    exact_locations = [
+        location_id for location_id, location in LOCATIONS.items()
+        if folded == _fold(location.get("name"))
+    ]
+    if exact_locations:
+        return exact_locations
+    for alias, location_ids in AREA_ALIASES.items():
+        if folded == _fold(alias):
+            return list(location_ids)
     for alias, location_ids in AREA_ALIASES.items():
         alias_folded = _fold(alias)
-        if folded == alias_folded or folded in alias_folded or alias_folded in folded:
+        if folded in alias_folded or alias_folded in folded:
             return list(location_ids)
 
     matched: list[str] = []
@@ -2958,7 +2968,13 @@ def get_evidence(arguments: dict[str, Any]) -> dict[str, Any]:
 
 
 def search_evidence(arguments: dict[str, Any]) -> dict[str, Any]:
-    rows = EVIDENCE_STORE.search(arguments)
+    # This tool is deliberately the fused-evidence search surface. Its schema
+    # only permits the `fused` status, so omission must mean fused rather than
+    # silently mixing thousands of projected EVD-REC observations into a
+    # bounded result. The previous behaviour made Talia's assessment depend on
+    # model/tool-call sampling and could hide the canonical fused objects.
+    filters = {**arguments, "evidence_status": arguments.get("evidence_status") or "fused"}
+    rows = EVIDENCE_STORE.search(filters)
     return {"evidence": rows, "returned": len(rows)}
 
 
