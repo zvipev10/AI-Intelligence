@@ -6,7 +6,7 @@ Prevent false Hermes steps after app resume and keep analyst-expanded live steps
 
 ## Final behavior
 
-Returning to the app waits briefly for the original request. Recovery starts only if that request remains unsettled, and recovery status is not represented as a research step. Live step refreshes restore the analyst's expanded disclosure state.
+Returning to the app waits briefly for the original request. Recovery starts only if that request remains unsettled, and recovery status is not represented as a research step. Live polling appends only newly arrived step elements, so existing disclosures and their open state are not recreated; full result rebuilds still restore expanded state as a fallback.
 
 ## Files changed
 
@@ -21,7 +21,7 @@ Returning to the app waits briefly for the original request. Recovery starts onl
 - Preserve existing request-ID recovery.
 - Use a 2.5-second resume grace period.
 - Treat recovery as transport behavior, not an agent research step.
-- Preserve disclosure state by visible step number during append-only live polling.
+- Append new live-step DOM nodes without rebuilding existing steps; preserve disclosure state by visible step number only for required full rebuilds.
 
 ## Known limitations
 
@@ -30,4 +30,3 @@ Expanded state is preserved within the current response only; reopening a saved 
 ## Release note
 
 Fixed mobile/desktop resume behavior for active agent runs and prevented open research steps from collapsing when new live steps arrive.
-

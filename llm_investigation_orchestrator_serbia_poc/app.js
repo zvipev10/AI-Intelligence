@@ -4896,15 +4896,19 @@ function visibleActivitySteps(steps) {
 function renderActivitySteps(steps, sourceBase = null) {
   const shouldFollow = conversationIsNearBottom();
   ensureAssistantResearchMessage();
+  const visibleSteps = visibleActivitySteps(steps);
+  const existingItems = [...state.activeActivityList.querySelectorAll(":scope > .activity-item")];
+  const canAppendLiveSteps = !sourceBase && existingItems.length <= visibleSteps.length;
   const expandedStepNumbers = new Set(
     [...state.activeActivityList.querySelectorAll(".activity-item > details[open]")]
       .map(details => details.closest(".activity-item")?.querySelector(".activity-step-number")?.textContent)
       .filter(Boolean)
   );
-  state.activeActivityList.innerHTML = "";
-  visibleActivitySteps(steps).forEach((step, index) => {
+  const firstStepIndex = canAppendLiveSteps ? existingItems.length : 0;
+  if (!canAppendLiveSteps) state.activeActivityList.innerHTML = "";
+  visibleSteps.slice(firstStepIndex).forEach((step, offset) => {
     const explanation = step.model_explanation || {};
-    const number = index + 1;
+    const number = firstStepIndex + offset + 1;
     addActivity(step.tool, step.action, step.result, {
       stepNumber: number,
       bridgeSummary: explanation.bridge_summary || step.bridge_summary,
@@ -4917,10 +4921,12 @@ function renderActivitySteps(steps, sourceBase = null) {
       sourceLabel: `Step ${number}: ${humanToolLabel(step.tool)}`
     });
   });
-  state.activeActivityList.querySelectorAll(".activity-item").forEach(item => {
-    const stepNumber = item.querySelector(".activity-step-number")?.textContent;
-    if (expandedStepNumbers.has(stepNumber)) item.querySelector("details")?.setAttribute("open", "");
-  });
+  if (!canAppendLiveSteps) {
+    state.activeActivityList.querySelectorAll(".activity-item").forEach(item => {
+      const stepNumber = item.querySelector(".activity-step-number")?.textContent;
+      if (expandedStepNumbers.has(stepNumber)) item.querySelector("details")?.setAttribute("open", "");
+    });
+  }
   followConversationAfterUpdate(shouldFollow);
 }
 
