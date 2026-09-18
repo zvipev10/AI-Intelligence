@@ -87,6 +87,7 @@ LOCATIONS = json.loads(LOCATIONS_PATH.read_text(encoding="utf-8")) if LOCATIONS_
 AREA_ALIASES = {
     "ציר פרישטינה–מיטרוביצה": ["LOC-V2-013"] if "LOC-V2-013" in LOCATIONS else [],
     "ציר פרישטינה-מיטרוביצה": ["LOC-V2-013"] if "LOC-V2-013" in LOCATIONS else [],
+    "הגישות הצפוניות לצפון מיטרוביצה": ["LOC-V2-009"] if "LOC-V2-009" in LOCATIONS else [],
     "צפון קוסובו": [location_id for location_id, item in LOCATIONS.items() if item.get("region") == "צפון קוסובו"],
     "צפון מיטרוביצה": [location_id for location_id, item in LOCATIONS.items() if item.get("municipality") == "צפון מיטרוביצה"],
     "זבצ׳אן": [location_id for location_id, item in LOCATIONS.items() if item.get("municipality") == "זבצ׳אן"],

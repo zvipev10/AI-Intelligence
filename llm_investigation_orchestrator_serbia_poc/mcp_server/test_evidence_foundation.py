@@ -19,7 +19,7 @@ class EvidenceFoundationTests(unittest.TestCase):
         hyphenated = server.resolve_location({"query": "ציר פרישטינה-מיטרוביצה"})
         self.assertEqual(hyphenated["location_ids"], ["LOC-V2-013"])
 
-        approaches = server.resolve_location({"query": "גישות צפוניות לצפון מיטרוביצה"})
+        approaches = server.resolve_location({"query": "הגישות הצפוניות לצפון מיטרוביצה"})
         self.assertEqual(approaches["location_ids"], ["LOC-V2-009"])
 
     def test_search_evidence_defaults_to_fused_objects(self):
