@@ -10,9 +10,12 @@ Returning to the app waits briefly for the original request. Recovery starts onl
 
 If a completed or recovered result contains neither structured investigation steps nor tool-start events, the UI now shows the answer with an empty research-detail state instead of inventing a numbered Hermes step.
 
+Live progress requests now include the current `client_request_id`. The server uses the request's own start timestamp and routed agent, preventing steps from a previous saved or completed message from flashing in a new response. Blank direct or recovered results are no longer accepted as successful response cards.
+
 ## Files changed
 
 - `llm_investigation_orchestrator_serbia_poc/app.js`
+- `llm_investigation_orchestrator_serbia_poc/server.py`
 - `llm_investigation_orchestrator_serbia_poc/index.html`
 - `llm_investigation_orchestrator_serbia_poc/test_mobile_run_recovery.py`
 - frontend asset-version contract tests and source manifest
@@ -24,6 +27,8 @@ If a completed or recovered result contains neither structured investigation ste
 - Use a 2.5-second resume grace period.
 - Treat recovery as transport behavior, not an agent research step.
 - Append new live-step DOM nodes without rebuilding existing steps; preserve disclosure state by visible step number only for required full rebuilds.
+- Bind live progress to the current request rather than a process-global agent audit window.
+- Require usable answer text before finalizing a direct or recovered response.
 
 ## Known limitations
 
