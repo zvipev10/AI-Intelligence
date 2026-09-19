@@ -6,31 +6,31 @@ Playback deployment recovery
 
 ## Current phase
 
-Controlled execution, explicitly authorized by the user.
+Final handoff.
 
 ## Overall status
 
-In progress.
+Complete; production recovery verified.
 
 ## Who needs to act now
 
 | Role | Status | Required action | Due before |
 |---|---|---|---|
-| Development | Authorized | Implement and deploy the contained repair | Production verification |
-| QA | Authorized by user request | Run focused local and production checks | Completion |
-| Architecture/Security | Reviewed in diagnosis | Preserve mutable state; make dataset configuration explicit | Deployment |
+| Development | Complete | Recovery implementation and deployment completed | Complete |
+| QA | Complete | Focused local and production checks passed | Complete |
+| Architecture/Security | Complete | Mutable state is preserved by future deployments | Complete |
 
 ## Current blockers
 
-None known; live validation will determine whether historical runtime state needs restoration from backup.
+None.
 
 ## Current risks
 
-The live server may have already lost state. The repair prevents further loss but cannot recreate state absent from the backup.
+Historical server-owned state may have been lost before this recovery. The repair prevents future deployment loss but cannot recreate state absent from a backup.
 
 ## Next expected artifact
 
-Checkpoint 001 with deployment and verification evidence.
+`handoff-summary.md`.
 
 ## Artifact links
 
