@@ -46,8 +46,17 @@ DIRS = [
     "vendor",
     "data",
     "recorded_runs",
-    "saved_questions",
+    "scenario_manifests",
 ]
+
+# These are created or updated by investigators and agents on the VM.  They
+# must never be part of a UI deployment payload or deleted while deploying.
+PERSISTENT_RUNTIME_PATHS = (
+    "scenario_runs",
+    "workstreams",
+    "investigations",
+    "saved_questions",
+)
 
 
 def connect(key_path: Path) -> paramiko.SSHClient:
@@ -180,9 +189,13 @@ def upload_ui(client: paramiko.SSHClient, api_key: str, moshe_api_key: str, tali
         catalog_temp.cleanup()
     root_q = shlex.quote(REMOTE_UI_ROOT)
     staging_q = shlex.quote(staging)
+    backup_root = f"/opt/serbia-poc-ui-backups/playback-recovery-{int(time.time())}"
+    backup_q = shlex.quote(backup_root)
     run(
         client,
-        f"sudo -n rm -rf {root_q} "
+        f"if [ -d {root_q} ]; then "
+        f"sudo -n install -d -o {USER} -g {USER} -m 0755 /opt/serbia-poc-ui-backups "
+        f"&& sudo -n cp -a {root_q} {backup_q}; fi "
         f"&& sudo -n install -d -o {USER} -g {USER} -m 0755 {root_q} "
         f"&& sudo -n cp -a {staging_q}/. {root_q}/ "
         f"&& sudo -n chown -R {USER}:{USER} {root_q} "
@@ -207,6 +220,7 @@ RestartSec=3
 Environment=PYTHONUNBUFFERED=1
 Environment=PYTHONIOENCODING=utf-8
 Environment=POC_UI_HOST=0.0.0.0
+Environment=INTELLIGENCE_POC_DATASET_VERSION=v2.1
 
 [Install]
 WantedBy=multi-user.target

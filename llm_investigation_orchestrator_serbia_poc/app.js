@@ -558,6 +558,7 @@ const state = {
   workstreamSeen: {},
   workstreamRailCollapsed: false,
   investigationPlayback: null,
+  playbackLoadError: "",
   playbackPollToken: 0,
   memoryUpdatePollToken: 0,
   renderedMemoryUpdateKeys: new Set(),
@@ -3120,8 +3121,9 @@ async function loadWorkstreams() {
     if (token !== state.workstreamLoadToken || investigationId !== state.investigationId) return [];
     state.workstreams = Array.isArray(payload.workstreams) ? payload.workstreams : [];
     renderWorkstreamIndicator();
-    void fetchInvestigationPlayback().catch(() => {
+    void fetchInvestigationPlayback().catch(error => {
       state.investigationPlayback = null;
+      state.playbackLoadError = error?.message || activeLocaleText("טעינת מצב הניגון נכשלה", "Failed to load playback state");
       renderInvestigationPlayback();
     });
     return state.workstreams;
@@ -3217,13 +3219,14 @@ function renderInvestigationPlayback() {
   const next = playbackNextStage(state.investigationPlayback);
   const reevaluation = playback?.run?.reevaluation;
   const processing = reevaluation?.status === "running";
+  const playbackError = state.playbackLoadError;
   if (playbackAgentStatus) {
-    playbackAgentStatus.hidden = !processing && reevaluation?.status !== "failed";
-    playbackAgentStatus.classList.toggle("failed", reevaluation?.status === "failed");
-    playbackAgentStatus.textContent = processing
+    playbackAgentStatus.hidden = !processing && reevaluation?.status !== "failed" && !playbackError;
+    playbackAgentStatus.classList.toggle("failed", reevaluation?.status === "failed" || Boolean(playbackError));
+    playbackAgentStatus.textContent = playbackError || (processing
       ? activeLocaleText("משה מעבד…", "Moshe is processing…")
-      : activeLocaleText("העיבוד של משה נכשל", "Moshe processing failed");
-    playbackAgentStatus.title = reevaluation?.error || "";
+      : activeLocaleText("העיבוד של משה נכשל", "Moshe processing failed"));
+    playbackAgentStatus.title = playbackError || reevaluation?.error || "";
   }
   playbackNextButton.hidden = !next?.timeframe;
   playbackNextButton.disabled = processing;
@@ -3245,6 +3248,7 @@ async function fetchInvestigationPlayback() {
   const payload = await response.json();
   if (!response.ok) throw new Error(payload.error || activeLocaleText("טעינת מצב הניגון נכשלה", "Failed to load playback state"));
   state.investigationPlayback = payload;
+  state.playbackLoadError = "";
   renderInvestigationPlayback();
   if (payload?.run?.reevaluation?.status === "running") {
     void pollMoshePlaybackReevaluation();
