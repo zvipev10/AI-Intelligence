@@ -18,7 +18,7 @@ In progress — implementation complete; deployment and merge pending.
 
 ## Latest change since previous review
 
-Live-step polling is now scoped to the current client request instead of the agent's shared audit stream. Resume recovery also rejects blank completed payloads, and the server supplies a localized fallback when Hermes returns neither answer text nor research steps.
+Live-step polling is scoped to the current client request instead of the agent's shared audit stream. Focus and `pageshow` no longer start a competing recovery promise; the original response is used unless its fetch actually fails, in which case request-ID recovery takes over.
 
 ## Current blockers
 
@@ -26,7 +26,7 @@ None.
 
 ## Current risks
 
-Mobile browsers can still suspend the direct response; request-ID recovery remains the fallback and now shares the same completeness validation as the direct response.
+Mobile browsers can still suspend or discard the direct response; request-ID recovery remains the fallback after an actual fetch failure.
 
 ## Next expected artifact
 

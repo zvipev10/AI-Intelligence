@@ -19,7 +19,7 @@ class EvidenceUiTests(unittest.TestCase):
         self.assertIn('activeLayer.kind === "evidence"', self.app)
 
     def test_frontend_asset_version_is_bumped(self):
-        self.assertIn('app.js?v=195', self.index)
+        self.assertIn('app.js?v=196', self.index)
 
     def test_html_escaping_tolerates_missing_catalog_fields(self):
         self.assertIn('String(value ?? "").replace', self.app)
