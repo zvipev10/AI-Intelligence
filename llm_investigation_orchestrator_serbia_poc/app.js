@@ -5301,19 +5301,6 @@ async function runPrompt(prompt, options = {}) {
   let liveStepCount = 0;
   let progressTimer = null;
   let recoveryPromise = null;
-  let resumeRecoveryTimer = null;
-  let directRequestSettled = false;
-  let resolveResumeRecovery;
-  const resumeRecoverySignal = new Promise(resolve => { resolveResumeRecovery = resolve; });
-  const recoverWhenVisible = () => {
-    if (document.hidden || directRequestSettled || resumeRecoveryTimer) return;
-    resumeRecoveryTimer = setTimeout(() => {
-      resumeRecoveryTimer = null;
-      if (!directRequestSettled) resolveResumeRecovery();
-    }, 2500);
-  };
-  document.addEventListener("visibilitychange", recoverWhenVisible);
-  window.addEventListener("pageshow", recoverWhenVisible);
   const pollLiveSteps = async () => {
     try {
       const response = await fetch(liveStepsUrl(addressedPrompt, clientRequestId), { cache: "no-store" });
@@ -5345,15 +5332,7 @@ async function runPrompt(prompt, options = {}) {
       }
       try {
         const recovered = await fetch(`/api/investigate-result?id=${encodeURIComponent(clientRequestId)}`, { cache: "no-store" });
-        if (recovered.ok) {
-          const result = await recovered.json();
-          if (!cleanAssistantAnswer(result?.answer)) {
-            const incompleteError = new Error(activeLocaleText("הריצה הסתיימה ללא תשובה תקינה.", "The run completed without a usable answer."));
-            incompleteError.recoveryTerminal = true;
-            throw incompleteError;
-          }
-          return result;
-        }
+        if (recovered.ok) return await recovered.json();
         if (recovered.status === 404 && notFoundCount++ < 2) {
           await new Promise(resolve => setTimeout(resolve, 1200));
           continue;
@@ -5396,28 +5375,17 @@ async function runPrompt(prompt, options = {}) {
     });
     progressTimer = setInterval(pollLiveSteps, 1800);
     setTimeout(pollLiveSteps, 900);
-    const directResult = (async () => {
-      try {
-        const response = await investigationRequest;
-        const result = await response.json();
-        if (!response.ok) throw new Error(result.error || "Hermes request failed");
-        if (!cleanAssistantAnswer(result?.answer)) {
-          throw new Error(activeLocaleText("הריצה הסתיימה ללא תשובה תקינה.", "The run completed without a usable answer."));
-        }
-        directRequestSettled = true;
-        return { result, responseReceivedAt: performance.now() };
-      } catch (requestError) {
-        directRequestSettled = true;
-        return { result: await recoverExistingRun(), responseReceivedAt: performance.now() };
-      }
-    })();
-    const resumedResult = resumeRecoverySignal.then(async () => ({
-      result: await recoverExistingRun(),
-      responseReceivedAt: performance.now()
-    }));
-    const completedRequest = await Promise.race([directResult, resumedResult]);
-    const result = completedRequest.result;
-    const responseReceivedAt = completedRequest.responseReceivedAt;
+    let result;
+    let responseReceivedAt;
+    try {
+      const response = await investigationRequest;
+      result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Hermes request failed");
+      responseReceivedAt = performance.now();
+    } catch (requestError) {
+      result = await recoverExistingRun();
+      responseReceivedAt = performance.now();
+    }
     applyWorkstreamChatResult(result);
     result.answer = cleanAssistantAnswer(result.answer);
     state.history.push({ role: "user", content: clean }, { role: "assistant", content: result.answer });
@@ -5442,9 +5410,6 @@ async function runPrompt(prompt, options = {}) {
     finalizeAssistantMessage(`<p>${activeLocaleText("לא הצלחתי להשלים את ריצת הסוכן האמיתית.", "I couldn't complete the real agent run.")}</p><div class="answer-callout">${escapeHtml(error.message)}</div>`, { html: true });
     updateSystemStatus("agent", "Hermes אינו זמין", "Hermes unavailable", "error");
   } finally {
-    document.removeEventListener("visibilitychange", recoverWhenVisible);
-    window.removeEventListener("pageshow", recoverWhenVisible);
-    if (resumeRecoveryTimer) clearTimeout(resumeRecoveryTimer);
     if (progressTimer) clearInterval(progressTimer);
     state.busy = false;
     sendButton.disabled = false;
