@@ -195,15 +195,23 @@ def _prune_investigation_results(now: float | None = None) -> None:
         _INVESTIGATION_RESULTS.pop(key, None)
 
 
-def set_investigation_result(request_id: str, status: str, result: dict[str, Any] | None = None, error: str | None = None) -> None:
+def set_investigation_result(
+    request_id: str,
+    status: str,
+    result: dict[str, Any] | None = None,
+    error: str | None = None,
+    **metadata: Any,
+) -> None:
     request_id = str(request_id or "").strip()
     if not request_id or not INVESTIGATION_ID_PATTERN.fullmatch(request_id):
         return
     with _INVESTIGATION_RESULTS_LOCK:
         _prune_investigation_results()
+        existing = _INVESTIGATION_RESULTS.get(request_id) or {}
         _INVESTIGATION_RESULTS[request_id] = {
+            **existing,
             "request_id": request_id, "status": status, "result": result,
-            "error": error, "updated_at": time.time(),
+            "error": error, "updated_at": time.time(), **metadata,
         }
 
 
@@ -3516,9 +3524,9 @@ class HermesClient:
         lines.append("--- המשך החקירה משאלת האנליסט הנוכחית ---")
         return "\n".join(lines)
 
-    def read_live_steps(self):
+    def read_live_steps(self, started_at: datetime | None = None):
         audit_path = self.config.get("audit_path") or REMOTE_AUDIT_PATH
-        started_at = ACTIVE_RUN_STARTED_AT_BY_AUDIT.get(audit_path)
+        started_at = started_at or ACTIVE_RUN_STARTED_AT_BY_AUDIT.get(audit_path)
         if started_at is None:
             return []
         audit_text = self.ssh_command(f"cat {audit_path} 2>/dev/null || true", timeout=20)
@@ -3985,6 +3993,12 @@ class HermesClient:
                         clean_output = f"The agent run completed, but the last tool step failed: {last_result.get('error') or last_tool}."
                     else:
                         clean_output = "The agent run completed, but Hermes did not return a final text answer. Review the displayed tool steps for the available result."
+                if not clean_output.strip():
+                    clean_output = (
+                        "הריצה הושלמה, אך הסוכן לא החזיר תשובת טקסט או פירוט צעדי מחקר. נסו לשלוח את הבקשה שוב."
+                        if locale == "he"
+                        else "The run completed, but the agent returned neither a text answer nor research-step details. Please send the request again."
+                    )
                 tool_total_ms = round(sum(tool_durations), 3)
                 performance["tools"] = {
                     "tool_call_count": len(audit_records),
@@ -4880,10 +4894,20 @@ class Handler(SimpleHTTPRequestHandler):
             return
         if path.path == "/api/live-steps":
             try:
-                requested_agent = (parse_qs(path.query).get("agent") or ["general"])[0]
+                live_query = parse_qs(path.query)
+                request_id = (live_query.get("request_id") or [""])[0]
+                request_state = get_investigation_result(request_id) if request_id else None
+                if request_id and request_state is None:
+                    self.send_json(404, {"error": "Investigation request not found"})
+                    return
+                requested_agent = (
+                    request_state.get("live_agent")
+                    if request_state else (live_query.get("agent") or ["general"])[0]
+                )
                 agent_id = requested_agent if requested_agent in {MOSHE_AGENT_ID, TALIA_AGENT_ID} else "general"
                 config = load_agent_hermes_config(agent_id)
-                steps = HermesClient(config).read_live_steps()
+                request_started_at = parse_utc(request_state.get("live_started_at")) if request_state else None
+                steps = HermesClient(config).read_live_steps(started_at=request_started_at)
                 self.send_json(200, {"investigation_steps": steps})
             except Exception as exc:
                 self.send_json(502, {"error": str(exc)})
@@ -5369,9 +5393,14 @@ class Handler(SimpleHTTPRequestHandler):
             if not prompt:
                 self.send_json(400, {"error": "Missing prompt"})
                 return
-            set_investigation_result(request_id, "running")
             conversation_id = str(request.get("investigation_id") or "").strip()
             route = route_agent_request(request)
+            set_investigation_result(
+                request_id,
+                "running",
+                live_agent=route.responding_agent,
+                live_started_at=datetime.now(timezone.utc).isoformat(),
+            )
             workstream_context = bounded_workstream_context(
                 request.get("workstream_context"), conversation_id, locale
             )

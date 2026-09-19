@@ -18,7 +18,7 @@ In progress — implementation complete; deployment and merge pending.
 
 ## Latest change since previous review
 
-Resume recovery now waits for a 2.5-second grace period and no longer inserts a synthetic research step. Live step rendering restores any step disclosure the analyst opened.
+Live-step polling is now scoped to the current client request instead of the agent's shared audit stream. Resume recovery also rejects blank completed payloads, and the server supplies a localized fallback when Hermes returns neither answer text nor research steps.
 
 ## Current blockers
 
@@ -26,7 +26,7 @@ None.
 
 ## Current risks
 
-Mobile browsers can still suspend the direct response; the existing request-ID recovery remains the fallback.
+Mobile browsers can still suspend the direct response; request-ID recovery remains the fallback and now shares the same completeness validation as the direct response.
 
 ## Next expected artifact
 
@@ -40,6 +40,5 @@ Not created; this is a focused regression fix requested for immediate delivery.
 
 - Execution plan: `execution-plan.md`
 - QA review: `qa-review.md`
-- Latest checkpoint: `checkpoint-002.md`
+- Latest checkpoint: `checkpoint-003.md`
 - Handoff: `handoff-summary.md`
-

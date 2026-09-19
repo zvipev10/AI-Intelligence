@@ -349,11 +349,14 @@ function createInvestigationId() {
   return `investigation-${random}`;
 }
 
-function liveStepsUrl(currentPrompt) {
+function liveStepsUrl(currentPrompt, clientRequestId = "") {
   const prompt = String(currentPrompt || "");
-  if (/(^|[^\p{L}\p{N}_])@(משה|Moshe)(?![\p{L}\p{N}_])/iu.test(prompt)) return "/api/live-steps?agent=moshe";
-  if (/(^|[^\p{L}\p{N}_])@(טליה|Talia)(?![\p{L}\p{N}_])/iu.test(prompt)) return "/api/live-steps?agent=talia";
-  return "/api/live-steps?agent=general";
+  const agent = /(^|[^\p{L}\p{N}_])@(משה|Moshe)(?![\p{L}\p{N}_])/iu.test(prompt)
+    ? "moshe"
+    : /(^|[^\p{L}\p{N}_])@(טליה|Talia)(?![\p{L}\p{N}_])/iu.test(prompt) ? "talia" : "general";
+  const params = new URLSearchParams({ agent });
+  if (clientRequestId) params.set("request_id", clientRequestId);
+  return `/api/live-steps?${params.toString()}`;
 }
 
 const LOCALE_STORAGE_KEY = "serbia-poc-locale-v1";
@@ -5313,7 +5316,7 @@ async function runPrompt(prompt, options = {}) {
   window.addEventListener("pageshow", recoverWhenVisible);
   const pollLiveSteps = async () => {
     try {
-      const response = await fetch(liveStepsUrl(addressedPrompt), { cache: "no-store" });
+      const response = await fetch(liveStepsUrl(addressedPrompt, clientRequestId), { cache: "no-store" });
       if (!response.ok) return;
       const live = await response.json();
       const steps = live.investigation_steps || [];
@@ -5342,7 +5345,15 @@ async function runPrompt(prompt, options = {}) {
       }
       try {
         const recovered = await fetch(`/api/investigate-result?id=${encodeURIComponent(clientRequestId)}`, { cache: "no-store" });
-        if (recovered.ok) return await recovered.json();
+        if (recovered.ok) {
+          const result = await recovered.json();
+          if (!cleanAssistantAnswer(result?.answer)) {
+            const incompleteError = new Error(activeLocaleText("הריצה הסתיימה ללא תשובה תקינה.", "The run completed without a usable answer."));
+            incompleteError.recoveryTerminal = true;
+            throw incompleteError;
+          }
+          return result;
+        }
         if (recovered.status === 404 && notFoundCount++ < 2) {
           await new Promise(resolve => setTimeout(resolve, 1200));
           continue;
@@ -5390,6 +5401,9 @@ async function runPrompt(prompt, options = {}) {
         const response = await investigationRequest;
         const result = await response.json();
         if (!response.ok) throw new Error(result.error || "Hermes request failed");
+        if (!cleanAssistantAnswer(result?.answer)) {
+          throw new Error(activeLocaleText("הריצה הסתיימה ללא תשובה תקינה.", "The run completed without a usable answer."));
+        }
         directRequestSettled = true;
         return { result, responseReceivedAt: performance.now() };
       } catch (requestError) {
