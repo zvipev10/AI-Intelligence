@@ -1,4 +1,5 @@
 import unittest
+from unittest.mock import MagicMock
 
 from openai_general import GENERAL_TOOL_NAMES, configuration_error, load_settings
 
@@ -28,6 +29,17 @@ class OpenAIGeneralSettingsTests(unittest.TestCase):
         self.assertTrue({
             "present_requested_results", "present_saved_memory_layers", "open_catalog_layers",
         }.issubset(GENERAL_TOOL_NAMES))
+
+    def test_shared_bridge_capture_keeps_tool_audits_separate(self):
+        from openai_general import MCPToolBridge
+        bridge = MCPToolBridge(__file__)
+        bridge.request = MagicMock(return_value={"content": [{"text": "{}"}]})
+        with bridge.capture_calls() as first:
+            bridge.call("search_events", {"query": "first"})
+        with bridge.capture_calls() as second:
+            bridge.call("search_events", {"query": "second"})
+        self.assertEqual("first", first[0]["arguments"]["query"])
+        self.assertEqual("second", second[0]["arguments"]["query"])
 
 
 if __name__ == "__main__":

@@ -196,6 +196,26 @@ APP_BUILD = f"serbia-poc-{DATASET_VERSION}"
 REMOTE_AUDIT_PATH = "/opt/serbia-poc/mcp_audit.jsonl"
 HERMES_TOOL_PREFIX = "mcp_serbia_events_poc_"
 AGENT_ROUTES = AgentRouteRegistry()
+_OPENAI_BRIDGE: MCPToolBridge | None = None
+_OPENAI_BRIDGE_LOCK = threading.RLock()
+
+
+def shared_openai_bridge(hermes_config: dict[str, Any]) -> MCPToolBridge:
+    """Return the one MCP child used by all OpenAI General turns.
+
+    Starting a fresh data-backed MCP process for every OpenAI message can
+    exhaust the small production VM when a provider turn remains active.
+    """
+    global _OPENAI_BRIDGE
+    with _OPENAI_BRIDGE_LOCK:
+        if _OPENAI_BRIDGE and _OPENAI_BRIDGE.process and _OPENAI_BRIDGE.process.poll() is None:
+            return _OPENAI_BRIDGE
+        if _OPENAI_BRIDGE:
+            _OPENAI_BRIDGE.__exit__()
+        helper = HermesSamplingHelper(hermes_config)
+        _OPENAI_BRIDGE = MCPToolBridge(ROOT, sampling_handler=helper.sample)
+        _OPENAI_BRIDGE.__enter__()
+        return _OPENAI_BRIDGE
 
 
 def _prune_investigation_results(now: float | None = None) -> None:
@@ -5464,8 +5484,8 @@ class Handler(SimpleHTTPRequestHandler):
                 context = "\n\n".join(part for part in [
                     "--- Recent chat context ---\n" + "\n".join(history_lines) if history_lines else "",
                 ] if part)
-                hermes_helper = HermesSamplingHelper(hermes_config)
-                with MCPToolBridge(ROOT, sampling_handler=hermes_helper.sample) as bridge:
+                bridge = shared_openai_bridge(hermes_config)
+                with bridge.capture_calls() as calls:
                     openai_result = OpenAIGeneralClient(settings, bridge).investigate(
                         openai_prompt,
                         "" if route.openai_session_id else context,
@@ -5473,7 +5493,6 @@ class Handler(SimpleHTTPRequestHandler):
                         session_id=route.openai_session_id,
                     )
                 AGENT_ROUTES.bind_openai_session(conversation_id, openai_result["openai_session_id"])
-                calls = openai_result["tool_calls"]
                 event_ids = list(dict.fromkeys(
                     [*EVENT_ID_PATTERN.findall(openai_result["answer"]), *[
                         event_id for call in calls for event_id in extract_result_ids(call.get("result") or {})

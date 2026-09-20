@@ -11,6 +11,8 @@ import json
 import subprocess
 import sys
 import threading
+from contextlib import contextmanager
+import secrets
 import urllib.error
 import urllib.request
 import http.client
@@ -72,7 +74,8 @@ class MCPToolBridge:
         self.process: subprocess.Popen[str] | None = None
         self._next_id = 0
         self._lock = threading.RLock()
-        self.calls: list[dict[str, Any]] = []
+        self._capture_local = threading.local()
+        self._captures: dict[str, list[dict[str, Any]]] = {}
         self.sampling_handler = sampling_handler
 
     def __enter__(self):
@@ -93,6 +96,21 @@ class MCPToolBridge:
         if self.process and self.process.poll() is None:
             self.process.terminate()
             self.process.wait(timeout=5)
+
+    @contextmanager
+    def capture_calls(self):
+        """Keep one request's audit isolated when the bridge is shared."""
+        capture_id = secrets.token_hex(12)
+        with self._lock:
+            self._captures[capture_id] = []
+        previous = getattr(self._capture_local, "capture_id", None)
+        self._capture_local.capture_id = capture_id
+        try:
+            yield self._captures[capture_id]
+        finally:
+            self._capture_local.capture_id = previous
+            with self._lock:
+                self._captures.pop(capture_id, None)
 
     def request(self, method: str, params: dict[str, Any]) -> Any:
         if not self.process or not self.process.stdin or not self.process.stdout:
@@ -144,7 +162,13 @@ class MCPToolBridge:
             parsed = json.loads(text)
         except json.JSONDecodeError:
             parsed = {"raw": text}
-        self.calls.append({"tool": name, "arguments": arguments, "result": parsed, "is_error": bool(result.get("isError")) if isinstance(result, dict) else False})
+        record = {"tool": name, "arguments": arguments, "result": parsed, "is_error": bool(result.get("isError")) if isinstance(result, dict) else False}
+        capture_id = getattr(self._capture_local, "capture_id", None)
+        if capture_id:
+            with self._lock:
+                capture = self._captures.get(capture_id)
+                if capture is not None:
+                    capture.append(record)
         return parsed
 
 
@@ -320,4 +344,4 @@ class OpenAIGeneralClient:
         if not answer:
             raise RuntimeError("OpenAI completed without a final assistant answer")
         final_state = self._request("GET", f"/agents/sessions/{session_id}")
-        return {"answer": answer, "openai_session_id": session_id, "tool_calls": self.bridge.calls, "usage": final_state.get("usage", {})}
+        return {"answer": answer, "openai_session_id": session_id, "usage": final_state.get("usage", {})}
