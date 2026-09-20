@@ -75,8 +75,12 @@ class MCPToolBridge:
         self.sampling_handler = sampling_handler
 
     def __enter__(self):
+        configured_path = self.environ.get("INTELLIGENCE_POC_MCP_SERVER_PATH", "").strip()
+        server_path = Path(configured_path) if configured_path else self.root / "mcp_server" / "server.py"
+        if not server_path.is_file():
+            raise RuntimeError(f"MCP server is unavailable at {server_path}")
         self.process = subprocess.Popen(
-            [sys.executable, str(self.root / "mcp_server" / "server.py")], cwd=self.root,
+            [sys.executable, str(server_path)], cwd=server_path.parent.parent,
             env=self.environ, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
             text=True, encoding="utf-8", bufsize=1,
         )
@@ -201,7 +205,8 @@ class OpenAIGeneralClient:
         })
         try:
             with urllib.request.urlopen(request, timeout=120) as response:
-                return json.loads(response.read().decode("utf-8"))
+                payload = response.read().decode("utf-8")
+                return json.loads(payload) if payload.strip() else {}
         except urllib.error.HTTPError as exc:
             detail = exc.read().decode("utf-8", errors="replace")[:1000]
             raise RuntimeError(f"OpenAI Agents request failed ({exc.code}): {detail}") from exc
@@ -221,7 +226,10 @@ class OpenAIGeneralClient:
             "input": f"{context}\n\n--- Current analyst question ---\n{prompt}",
         })
         session_id = session["id"]
+        deadline = time.time() + 180
         while True:
+            if time.time() >= deadline:
+                raise TimeoutError("OpenAI General exceeded the three-minute runtime limit")
             state = self._request("GET", f"/agents/sessions/{session_id}")
             actions = state.get("required_actions") or []
             for action in actions:
@@ -233,10 +241,11 @@ class OpenAIGeneralClient:
                 except Exception as exc:
                     event = {"type": "agent.session.input.tool_result", "turn_id": action["turn_id"], "call_id": action["call_id"], "success": False, "error": str(exc)}
                 self._request("POST", f"/agents/sessions/{session_id}/events", {"events": [event]})
-            if state.get("status") in {"completed", "failed", "cancelled"}:
-                if state.get("status") != "completed":
+            if state.get("status") in {"completed", "idle", "failed", "cancelled"}:
+                if state.get("status") in {"failed", "cancelled"}:
                     raise RuntimeError(state.get("error") or f"OpenAI session {state.get('status')}")
                 break
+            time.sleep(0.5)
         items = self._request("GET", f"/agents/sessions/{session_id}/items?order=desc&limit=100").get("data", [])
         answer = ""
         for item in items:

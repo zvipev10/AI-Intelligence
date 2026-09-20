@@ -26,6 +26,7 @@ sudo tee "${DROPIN_DIR}/openai-general.conf" >/dev/null <<'EOF'
 EnvironmentFile=/etc/serbia-poc-ui/openai.env
 Environment=INTELLIGENCE_POC_OPENAI_GENERAL_ENABLED=true
 Environment=INTELLIGENCE_POC_OPENAI_GENERAL_MODEL=gpt-5.6-terra
+Environment=INTELLIGENCE_POC_MCP_SERVER_PATH=/opt/serbia-poc/mcp_server/server.py
 EOF
 
 sudo systemctl daemon-reload

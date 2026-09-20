@@ -5451,7 +5451,7 @@ class Handler(SimpleHTTPRequestHandler):
                 event_ids = list(dict.fromkeys(
                     [*EVENT_ID_PATTERN.findall(openai_result["answer"]), *[
                         event_id for call in calls for event_id in extract_result_ids(call.get("result") or {})
-                    ]
+                    ]]
                 ))
                 steps = [{
                     "tool": call["tool"],
