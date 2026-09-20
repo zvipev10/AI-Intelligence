@@ -24,6 +24,7 @@ class RouteDecision:
     conversation_id: str
     mission_run_id: str | None
     hermes_session_id: str | None
+    openai_session_id: str | None
     mission_started: bool
     mission_closed: bool
 
@@ -33,6 +34,7 @@ class _ConversationRoute:
     last_agent: str = GENERAL_AGENT_ID
     mission_run_id: str | None = None
     hermes_session_id: str | None = None
+    openai_session_id: str | None = None
 
 
 def mentions_moshe(message: str) -> bool:
@@ -84,7 +86,7 @@ class AgentRouteRegistry:
                     current.hermes_session_id = None
                 current.last_agent = requested_agent
                 return RouteDecision(
-                    requested_agent, key, current.mission_run_id, current.hermes_session_id,
+                    requested_agent, key, current.mission_run_id, current.hermes_session_id, current.openai_session_id,
                     mission_started=started, mission_closed=False,
                 )
             # Both General agents are stateless from the routing perspective. They
@@ -94,7 +96,7 @@ class AgentRouteRegistry:
             current.mission_run_id = None
             current.hermes_session_id = None
             return RouteDecision(
-                requested_agent, key, None, None,
+                requested_agent, key, None, None, current.openai_session_id,
                 mission_started=False, mission_closed=closed,
             )
 
@@ -108,6 +110,15 @@ class AgentRouteRegistry:
             if current is None or current.last_agent == GENERAL_AGENT_ID or current.mission_run_id != mission_run_id:
                 raise ValueError("Specialist mission is no longer active")
             current.hermes_session_id = session
+
+    def bind_openai_session(self, conversation_id: str, openai_session_id: str) -> None:
+        key = self._conversation_id(conversation_id)
+        session = str(openai_session_id or "").strip()
+        if not session:
+            raise ValueError("openai_session_id is required")
+        with self._lock:
+            current = self._routes.setdefault(key, _ConversationRoute())
+            current.openai_session_id = session
 
     def clear(self, conversation_id: str) -> None:
         key = self._conversation_id(conversation_id)

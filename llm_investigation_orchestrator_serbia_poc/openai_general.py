@@ -245,18 +245,25 @@ class OpenAIGeneralClient:
             detail = exc.read().decode("utf-8", errors="replace")[:1000]
             raise RuntimeError(f"OpenAI Agents stream failed ({exc.code}): {detail}") from exc
 
-    def investigate(self, prompt: str, context: str, *, instructions: str) -> dict[str, Any]:
-        if not instructions.strip():
-            raise ValueError("OpenAI General requires the shared General-agent instructions")
-        user_text = f"{context}\n\n--- Current analyst question ---\n{prompt}"
-        stream = self._stream("POST", "/agents/sessions", {
-            "stream": True,
-            "environment": {"type": "none"},
-            "agent": {"model": self.settings.model, "instructions": instructions, "tools": self.bridge.function_definitions()},
-            "input": user_text,
-        })
+    def investigate(self, prompt: str, context: str, *, instructions: str, session_id: str | None = None) -> dict[str, Any]:
+        session_id = str(session_id or "").strip()
+        if session_id:
+            self._request("POST", f"/agents/sessions/{session_id}/events", {"events": [{
+                "type": "agent.session.input.message",
+                "input": [{"role": "user", "content": [{"type": "input_text", "text": prompt}]}],
+            }]})
+            stream = self._stream("GET", f"/agents/sessions/{session_id}/events")
+        else:
+            if not instructions.strip():
+                raise ValueError("OpenAI General requires the shared General-agent instructions")
+            user_text = f"{context}\n\n--- Current analyst question ---\n{prompt}"
+            stream = self._stream("POST", "/agents/sessions", {
+                "stream": True,
+                "environment": {"type": "none"},
+                "agent": {"model": self.settings.model, "instructions": instructions, "tools": self.bridge.function_definitions()},
+                "input": user_text,
+            })
         deadline = time.time() + 180
-        session_id = ""
         completed = False
         handled_calls: set[str] = set()
         while not completed:

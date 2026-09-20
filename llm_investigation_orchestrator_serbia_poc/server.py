@@ -5434,10 +5434,15 @@ class Handler(SimpleHTTPRequestHandler):
                 settings_error = openai_general_configuration_error(settings)
                 if settings_error:
                     raise RuntimeError(settings_error)
+                # The browser augments its model prompt with internal team-mention
+                # guidance.  Routing already receives the unmodified analyst
+                # message; use that clean text for OpenAI so UI-only @mentions do
+                # not become competing instructions in the agent turn.
+                openai_prompt = str(request.get("routing_prompt") or prompt).strip()
                 recent_history = request.get("history") or []
                 hermes_config = load_agent_hermes_config(GENERAL_AGENT_ID)
                 shared_contract = HermesClient(hermes_config).investigate(
-                    prompt,
+                    openai_prompt,
                     recent_history,
                     investigation_state=investigation_state or None,
                     investigation_id=conversation_id,
@@ -5461,8 +5466,12 @@ class Handler(SimpleHTTPRequestHandler):
                 hermes_helper = HermesSamplingHelper(hermes_config)
                 with MCPToolBridge(ROOT, sampling_handler=hermes_helper.sample) as bridge:
                     openai_result = OpenAIGeneralClient(settings, bridge).investigate(
-                        prompt, context, instructions=shared_contract["instructions"]
+                        openai_prompt,
+                        "" if route.openai_session_id else context,
+                        instructions=shared_contract["instructions"],
+                        session_id=route.openai_session_id,
                     )
+                AGENT_ROUTES.bind_openai_session(conversation_id, openai_result["openai_session_id"])
                 calls = openai_result["tool_calls"]
                 event_ids = list(dict.fromkeys(
                     [*EVENT_ID_PATTERN.findall(openai_result["answer"]), *[
