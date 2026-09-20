@@ -1,7 +1,16 @@
 import unittest
 from unittest.mock import patch
 
-from agent_routing import AgentRouteRegistry, GENERAL_AGENT_ID, MOSHE_AGENT_ID, TALIA_AGENT_ID, mentions_moshe, mentions_talia
+from agent_routing import (
+    AgentRouteRegistry,
+    GENERAL_AGENT_ID,
+    MOSHE_AGENT_ID,
+    OPENAI_GENERAL_AGENT_ID,
+    TALIA_AGENT_ID,
+    mentions_moshe,
+    mentions_openai_general,
+    mentions_talia,
+)
 
 
 class AgentRoutingTests(unittest.TestCase):
@@ -33,6 +42,21 @@ class AgentRoutingTests(unittest.TestCase):
         registry = AgentRouteRegistry()
         decision = registry.route("chat-1", "המשך בבקשה")
         self.assertEqual(decision.responding_agent, GENERAL_AGENT_ID)
+
+    def test_openai_general_is_explicit_and_does_not_replace_general(self):
+        self.assertTrue(mentions_openai_general("@OpenAI בדוק את האירועים"))
+        self.assertTrue(mentions_openai_general("@אופן איי בדוק את האירועים"))
+        self.assertFalse(mentions_openai_general("OpenAI בדוק את האירועים"))
+        self.assertFalse(mentions_openai_general("@OpenAIs בדוק את האירועים"))
+
+        registry = AgentRouteRegistry()
+        experimental = registry.route("chat-openai", "@OpenAI בדוק את האירועים")
+        existing = registry.route("chat-existing", "בדוק את האירועים")
+
+        self.assertEqual(experimental.responding_agent, OPENAI_GENERAL_AGENT_ID)
+        self.assertFalse(experimental.mission_started)
+        self.assertIsNone(experimental.mission_run_id)
+        self.assertEqual(existing.responding_agent, GENERAL_AGENT_ID)
 
     def test_exact_talia_mention_routes_to_isolated_mission(self):
         self.assertTrue(mentions_talia("@טליה צרי הערכה"))

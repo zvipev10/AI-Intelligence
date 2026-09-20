@@ -34,7 +34,16 @@ from agent_result_pipeline import (
     requested_result_layers_from_audit,
 )
 from mcp_server.catalog_layers import resolve_layer, validate_filters, filter_rows
-from agent_routing import AgentRouteRegistry, MOSHE_AGENT_ID, TALIA_AGENT_ID
+from agent_routing import (
+    AgentRouteRegistry,
+    GENERAL_AGENT_ID,
+    MOSHE_AGENT_ID,
+    OPENAI_GENERAL_AGENT_ID,
+    TALIA_AGENT_ID,
+)
+from openai_general import configuration_error as openai_general_configuration_error
+from openai_general import HermesSamplingHelper, MCPToolBridge, OpenAIGeneralClient
+from openai_general import load_settings as load_openai_general_settings
 from scenario_playback import (
     PlaybackConflictError,
     claim_memory_update,
@@ -640,6 +649,13 @@ def route_agent_request(request: dict[str, Any]):
     if route.responding_agent in {MOSHE_AGENT_ID, TALIA_AGENT_ID} and route.hermes_session_id is None:
         AGENT_ROUTES.bind_hermes_session(conversation_id, route.mission_run_id, route.mission_run_id)
     return route
+
+
+def openai_general_enabled() -> bool:
+    """Keep the experimental route opt-in until its server configuration is complete."""
+    return os.environ.get("INTELLIGENCE_POC_OPENAI_GENERAL_ENABLED", "false").strip().lower() in {
+        "1", "true", "yes", "on"
+    }
 
 RECORDED_TOOL_TEXT = {
     "classify_question_intent": (
@@ -5380,18 +5396,63 @@ class Handler(SimpleHTTPRequestHandler):
                 investigation_state = {}
             if workstream_context:
                 investigation_state = {**investigation_state, "active_workstream": workstream_context}
-            config = load_agent_hermes_config(route.responding_agent)
-            result = HermesClient(config).investigate(
-                prompt,
-                request.get("history") or [],
-                investigation_state=investigation_state or None,
-                investigation_id=route.mission_run_id if route.responding_agent in {MOSHE_AGENT_ID, TALIA_AGENT_ID} else conversation_id,
-                is_continuation=bool(request.get("is_continuation")) and not route.mission_started,
-                continuation_context=request.get("continuation_context"),
-                responding_agent=route.responding_agent,
-                mission_run_id=route.mission_run_id,
-                locale=locale,
-            )
+            if route.responding_agent == OPENAI_GENERAL_AGENT_ID:
+                settings = load_openai_general_settings()
+                settings_error = openai_general_configuration_error(settings)
+                if settings_error:
+                    raise RuntimeError(settings_error)
+                state_context = render_investigation_state_localized(investigation_state, locale=locale)
+                recent_history = request.get("history") or []
+                history_lines = []
+                for item in recent_history[-10:]:
+                    if not isinstance(item, dict):
+                        continue
+                    role = str(item.get("role") or "user")
+                    content = str(item.get("content") or item.get("text") or "").strip()
+                    if content:
+                        history_lines.append(f"{role}: {content}")
+                context = "\n\n".join(part for part in [
+                    state_context,
+                    "--- Recent chat context ---\n" + "\n".join(history_lines) if history_lines else "",
+                ] if part)
+                hermes_helper = HermesSamplingHelper(load_agent_hermes_config(GENERAL_AGENT_ID))
+                with MCPToolBridge(ROOT, sampling_handler=hermes_helper.sample) as bridge:
+                    openai_result = OpenAIGeneralClient(settings, bridge).investigate(prompt, context)
+                calls = openai_result["tool_calls"]
+                event_ids = list(dict.fromkeys(
+                    [*EVENT_ID_PATTERN.findall(openai_result["answer"]), *[
+                        event_id for call in calls for event_id in extract_result_ids(call.get("result") or {})
+                    ]
+                ))
+                steps = [{
+                    "tool": call["tool"],
+                    "bridge_summary": "הסוכן הניסויי השתמש בכלי הקיים כדי לאסוף ראיות.",
+                    "action": call["tool"],
+                    "result": compact_text(json.dumps(call.get("result") or {}, ensure_ascii=False), 500),
+                    "technical": {"tool": call["tool"], "arguments": call.get("arguments") or {}, "is_error": call.get("is_error", False)},
+                } for call in calls]
+                result = build_agent_result({
+                    "run_id": openai_result["openai_session_id"],
+                    "answer": openai_result["answer"],
+                    "event_ids": event_ids,
+                    "answer_event_ids": event_ids,
+                    "recommended_view": "evidence",
+                    "investigation_steps": steps,
+                    "usage": {**(openai_result.get("usage") or {}), "runtime": "openai_general_experimental"},
+                }, responding_agent=OPENAI_GENERAL_AGENT_ID, session_id=openai_result["openai_session_id"])
+            else:
+                config = load_agent_hermes_config(route.responding_agent)
+                result = HermesClient(config).investigate(
+                    prompt,
+                    request.get("history") or [],
+                    investigation_state=investigation_state or None,
+                    investigation_id=route.mission_run_id if route.responding_agent in {MOSHE_AGENT_ID, TALIA_AGENT_ID} else conversation_id,
+                    is_continuation=bool(request.get("is_continuation")) and not route.mission_started,
+                    continuation_context=request.get("continuation_context"),
+                    responding_agent=route.responding_agent,
+                    mission_run_id=route.mission_run_id,
+                    locale=locale,
+                )
             if (
                 request.get("workstream_creation_requested") is True
                 and route.responding_agent == MOSHE_AGENT_ID

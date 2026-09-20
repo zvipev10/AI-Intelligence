@@ -1,0 +1,250 @@
+"""Bounded configuration for the additive OpenAI General experiment.
+
+This module intentionally contains no credentials.  The production server reads
+them from its service environment only when the experimental route is selected.
+"""
+
+from __future__ import annotations
+
+import os
+import json
+import subprocess
+import sys
+import threading
+import urllib.error
+import urllib.request
+import http.client
+import time
+from pathlib import Path
+from dataclasses import dataclass
+from typing import Any
+
+
+@dataclass(frozen=True)
+class OpenAIGeneralSettings:
+    api_key: str
+    model: str
+    enabled: bool
+
+
+def load_settings(environ: dict[str, str] | None = None) -> OpenAIGeneralSettings:
+    """Load the opt-in experiment settings without exposing a secret in logs."""
+    env = os.environ if environ is None else environ
+    enabled = str(env.get("INTELLIGENCE_POC_OPENAI_GENERAL_ENABLED", "")).lower() in {
+        "1", "true", "yes", "on"
+    }
+    return OpenAIGeneralSettings(
+        api_key=str(env.get("OPENAI_API_KEY", "")).strip(),
+        model=str(env.get("INTELLIGENCE_POC_OPENAI_GENERAL_MODEL", "gpt-5.6-terra")).strip(),
+        enabled=enabled,
+    )
+
+
+def configuration_error(settings: OpenAIGeneralSettings) -> str | None:
+    """Return a user-safe setup error; never include the API key itself."""
+    if not settings.enabled:
+        return "The OpenAI General experiment is not enabled on this server."
+    if not settings.api_key:
+        return "The OpenAI General experiment needs OPENAI_API_KEY on the server."
+    if not settings.model:
+        return "The OpenAI General experiment needs a configured model."
+    return None
+
+
+GENERAL_TOOL_NAMES = frozenset({
+    "prepare_evidence", "prepare_fused_evidence", "get_evidence", "search_evidence",
+    "trace_evidence_provenance", "present_requested_results", "present_saved_memory_layers",
+    "open_catalog_layers", "classify_question_intent", "plan_next_investigation_step",
+    "search_events", "semantic_search_events", "get_objects", "resolve_location",
+    "resolve_event_reference", "find_actor_history", "aggregate_events", "explain_linkage",
+    "build_event_sequence", "resolve_entity", "trace_identifier", "trace_semantic_clues",
+    "find_related_events", "compare_location_claims", "challenge_hypothesis",
+})
+
+
+class MCPToolBridge:
+    """Runs the existing MCP server unchanged and exposes its allowed General tools."""
+
+    def __init__(self, root: Path, environ: dict[str, str] | None = None, sampling_handler=None) -> None:
+        self.root = Path(root)
+        self.environ = {**os.environ, **(environ or {})}
+        self.process: subprocess.Popen[str] | None = None
+        self._next_id = 0
+        self._lock = threading.RLock()
+        self.calls: list[dict[str, Any]] = []
+        self.sampling_handler = sampling_handler
+
+    def __enter__(self):
+        self.process = subprocess.Popen(
+            [sys.executable, str(self.root / "mcp_server" / "server.py")], cwd=self.root,
+            env=self.environ, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            text=True, encoding="utf-8", bufsize=1,
+        )
+        capabilities = {"sampling": {}} if self.sampling_handler else {}
+        self.request("initialize", {"protocolVersion": "2025-06-18", "capabilities": capabilities, "clientInfo": {"name": "openai-general-bridge", "version": "0.1"}})
+        return self
+
+    def __exit__(self, *_args) -> None:
+        if self.process and self.process.poll() is None:
+            self.process.terminate()
+            self.process.wait(timeout=5)
+
+    def request(self, method: str, params: dict[str, Any]) -> Any:
+        if not self.process or not self.process.stdin or not self.process.stdout:
+            raise RuntimeError("MCP bridge is not running")
+        with self._lock:
+            self._next_id += 1
+            request_id = self._next_id
+            self.process.stdin.write(json.dumps({"jsonrpc": "2.0", "id": request_id, "method": method, "params": params}, ensure_ascii=False) + "\n")
+            self.process.stdin.flush()
+            while line := self.process.stdout.readline():
+                message = json.loads(line)
+                if message.get("method") == "sampling/createMessage":
+                    self._answer_sampling(message)
+                    continue
+                if message.get("id") != request_id:
+                    continue
+                if "error" in message:
+                    raise RuntimeError(message["error"].get("message", "MCP error"))
+                return message.get("result")
+        raise RuntimeError("MCP bridge stopped before replying")
+
+    def _answer_sampling(self, message: dict[str, Any]) -> None:
+        if not self.process or not self.process.stdin:
+            raise RuntimeError("MCP bridge is not running")
+        try:
+            if not self.sampling_handler:
+                raise RuntimeError("Hermes sampling is not configured")
+            text = self.sampling_handler(message.get("params") or {})
+            reply = {"jsonrpc": "2.0", "id": message.get("id"), "result": {"role": "assistant", "content": {"type": "text", "text": text}, "model": "hermes-helper"}}
+        except Exception as exc:
+            reply = {"jsonrpc": "2.0", "id": message.get("id"), "error": {"code": -32000, "message": str(exc)}}
+        self.process.stdin.write(json.dumps(reply, ensure_ascii=False) + "\n")
+        self.process.stdin.flush()
+
+    def function_definitions(self) -> list[dict[str, Any]]:
+        tools = self.request("tools/list", {}).get("tools", [])
+        return [{"type": "function", "name": tool["name"], "description": tool.get("description", ""), "parameters": tool.get("inputSchema", {"type": "object"})}
+                for tool in tools if tool.get("name") in GENERAL_TOOL_NAMES]
+
+    def call(self, name: str, arguments: dict[str, Any]) -> Any:
+        if name not in GENERAL_TOOL_NAMES:
+            raise ValueError(f"Tool is not permitted for OpenAI General: {name}")
+        result = self.request("tools/call", {"name": name, "arguments": arguments})
+        content = result.get("content", []) if isinstance(result, dict) else []
+        text = "\n".join(str(item.get("text", "")) for item in content if isinstance(item, dict))
+        try:
+            parsed = json.loads(text)
+        except json.JSONDecodeError:
+            parsed = {"raw": text}
+        self.calls.append({"tool": name, "arguments": arguments, "result": parsed, "is_error": bool(result.get("isError")) if isinstance(result, dict) else False})
+        return parsed
+
+
+class HermesSamplingHelper:
+    """Use Hermes only for MCP sampling requested by an otherwise unchanged tool."""
+
+    def __init__(self, config: dict[str, Any]) -> None:
+        if config.get("transport") != "direct":
+            raise RuntimeError("The experimental Hermes sampling helper requires direct VM transport")
+        self.host = str(config["remote_host"])
+        self.port = int(config["remote_port"])
+        self.api_key = str(config["api_key"])
+
+    def _request(self, method: str, path: str, body: dict[str, Any] | None = None) -> dict[str, Any]:
+        connection = http.client.HTTPConnection(self.host, self.port, timeout=45)
+        try:
+            data = json.dumps(body, ensure_ascii=False).encode("utf-8") if body else None
+            connection.request(method, path, body=data, headers={"Authorization": f"Bearer {self.api_key}", "Content-Type": "application/json"})
+            response = connection.getresponse()
+            payload = response.read().decode("utf-8", errors="replace")
+            if response.status >= 400:
+                raise RuntimeError(f"Hermes helper failed ({response.status}): {payload[:500]}")
+            return json.loads(payload)
+        finally:
+            connection.close()
+
+    def sample(self, params: dict[str, Any]) -> str:
+        system_prompt = str(params.get("systemPrompt") or "")
+        messages = params.get("messages") or []
+        prompt = "\n".join(str((item.get("content") or {}).get("text") or "") for item in messages if isinstance(item, dict))
+        created = self._request("POST", "/v1/runs", {
+            "input": prompt,
+            "instructions": system_prompt + "\nReturn only the requested content. Do not call tools.",
+            "conversation_history": [],
+            "session_id": f"openai-mcp-sample-{int(time.time() * 1000)}",
+        })
+        run_id = created["run_id"]
+        deadline = time.time() + 60
+        while time.time() < deadline:
+            status = self._request("GET", f"/v1/runs/{run_id}")
+            if status.get("status") == "completed":
+                return str(status.get("output") or "")
+            if status.get("status") in {"failed", "cancelled"}:
+                raise RuntimeError(str(status.get("error") or "Hermes helper failed"))
+            time.sleep(0.5)
+        raise TimeoutError("Hermes sampling helper timed out")
+
+
+class OpenAIGeneralClient:
+    """Small Agents API harness; app-owned chat context is supplied per question."""
+
+    base_url = "https://api.openai.com/v1"
+
+    def __init__(self, settings: OpenAIGeneralSettings, bridge: MCPToolBridge) -> None:
+        self.settings, self.bridge = settings, bridge
+
+    def _request(self, method: str, path: str, body: dict[str, Any] | None = None) -> dict[str, Any]:
+        data = json.dumps(body, ensure_ascii=False).encode("utf-8") if body is not None else None
+        request = urllib.request.Request(self.base_url + path, data=data, method=method, headers={
+            "Authorization": f"Bearer {self.settings.api_key}", "Content-Type": "application/json", "OpenAI-Beta": "agents=v1",
+        })
+        try:
+            with urllib.request.urlopen(request, timeout=120) as response:
+                return json.loads(response.read().decode("utf-8"))
+        except urllib.error.HTTPError as exc:
+            detail = exc.read().decode("utf-8", errors="replace")[:1000]
+            raise RuntimeError(f"OpenAI Agents request failed ({exc.code}): {detail}") from exc
+
+    def investigate(self, prompt: str, context: str) -> dict[str, Any]:
+        instructions = (
+            "You are the experimental General analyst for a synthetic intelligence scenario. "
+            "Use only the supplied functions and their returned data. Do not infer unavailable facts. "
+            "Reply in the language of the analyst. Separate observation from inference. "
+            "For each function call include a short, analyst-safe Hebrew step_bridge. "
+            "End with 'תצוגה מומלצת: map|timeline|evidence | reason' when responding in Hebrew, "
+            "or 'Recommended view: map|timeline|evidence | reason' in English."
+        )
+        session = self._request("POST", "/agents/sessions", {
+            "environment": {"type": "none"},
+            "agent": {"model": self.settings.model, "instructions": instructions, "tools": self.bridge.function_definitions()},
+            "input": f"{context}\n\n--- Current analyst question ---\n{prompt}",
+        })
+        session_id = session["id"]
+        while True:
+            state = self._request("GET", f"/agents/sessions/{session_id}")
+            actions = state.get("required_actions") or []
+            for action in actions:
+                if action.get("type") != "function_call":
+                    continue
+                try:
+                    output = self.bridge.call(action["name"], action.get("arguments") or {})
+                    event = {"type": "agent.session.input.tool_result", "turn_id": action["turn_id"], "call_id": action["call_id"], "success": True, "output": json.dumps(output, ensure_ascii=False)}
+                except Exception as exc:
+                    event = {"type": "agent.session.input.tool_result", "turn_id": action["turn_id"], "call_id": action["call_id"], "success": False, "error": str(exc)}
+                self._request("POST", f"/agents/sessions/{session_id}/events", {"events": [event]})
+            if state.get("status") in {"completed", "failed", "cancelled"}:
+                if state.get("status") != "completed":
+                    raise RuntimeError(state.get("error") or f"OpenAI session {state.get('status')}")
+                break
+        items = self._request("GET", f"/agents/sessions/{session_id}/items?order=desc&limit=100").get("data", [])
+        answer = ""
+        for item in items:
+            if item.get("type") != "message" or item.get("role") != "assistant":
+                continue
+            answer = "\n".join(part.get("text", "") for part in item.get("content", []) if isinstance(part, dict) and part.get("type") == "output_text").strip()
+            if answer:
+                break
+        if not answer:
+            raise RuntimeError("OpenAI completed without a final assistant answer")
+        return {"answer": answer, "openai_session_id": session_id, "tool_calls": self.bridge.calls, "usage": state.get("usage", {})}

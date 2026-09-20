@@ -12,8 +12,10 @@ from dataclasses import dataclass
 MOSHE_AGENT_ID = "moshe"
 TALIA_AGENT_ID = "talia"
 GENERAL_AGENT_ID = "general"
+OPENAI_GENERAL_AGENT_ID = "openai_general"
 MOSHE_MENTION = re.compile(r"(?<![\w\u0590-\u05ff])@(משה|Moshe)(?![\w\u0590-\u05ff])", re.IGNORECASE)
 TALIA_MENTION = re.compile(r"(?<![\w\u0590-\u05ff])@(טליה|Talia)(?![\w\u0590-\u05ff])", re.IGNORECASE)
+OPENAI_GENERAL_MENTION = re.compile(r"(?<![\w\u0590-\u05ff])@(OpenAI|אופן\s?איי)(?![\w\u0590-\u05ff])", re.IGNORECASE)
 
 
 @dataclass(frozen=True)
@@ -43,6 +45,11 @@ def mentions_talia(message: str) -> bool:
     return bool(TALIA_MENTION.search(str(message or "")))
 
 
+def mentions_openai_general(message: str) -> bool:
+    """Select the additive experimental General agent with an exact mention."""
+    return bool(OPENAI_GENERAL_MENTION.search(str(message or "")))
+
+
 class AgentRouteRegistry:
     def __init__(self) -> None:
         self._routes: dict[str, _ConversationRoute] = {}
@@ -67,9 +74,10 @@ class AgentRouteRegistry:
             requested_agent = (
                 MOSHE_AGENT_ID if mentions_moshe(current_message)
                 else TALIA_AGENT_ID if mentions_talia(current_message)
+                else OPENAI_GENERAL_AGENT_ID if mentions_openai_general(current_message)
                 else GENERAL_AGENT_ID
             )
-            if requested_agent != GENERAL_AGENT_ID:
+            if requested_agent in {MOSHE_AGENT_ID, TALIA_AGENT_ID}:
                 started = current.last_agent != requested_agent or not current.mission_run_id
                 if started:
                     current.mission_run_id = self._new_mission_id(key, requested_agent)
@@ -79,12 +87,14 @@ class AgentRouteRegistry:
                     requested_agent, key, current.mission_run_id, current.hermes_session_id,
                     mission_started=started, mission_closed=False,
                 )
-            closed = current.last_agent != GENERAL_AGENT_ID and bool(current.mission_run_id)
-            current.last_agent = GENERAL_AGENT_ID
+            # Both General agents are stateless from the routing perspective. They
+            # deliberately close a specialist mission but never create one themselves.
+            closed = current.last_agent in {MOSHE_AGENT_ID, TALIA_AGENT_ID} and bool(current.mission_run_id)
+            current.last_agent = requested_agent
             current.mission_run_id = None
             current.hermes_session_id = None
             return RouteDecision(
-                GENERAL_AGENT_ID, key, None, None,
+                requested_agent, key, None, None,
                 mission_started=False, mission_closed=closed,
             )
 

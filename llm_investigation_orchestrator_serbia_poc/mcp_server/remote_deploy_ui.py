@@ -25,6 +25,7 @@ LOCAL_HERMES_CONFIG = LOCAL_ROOT / ".hermes-api.json"
 
 FILES = [
     "server.py",
+    "openai_general.py",
     "mcp_server/catalog_layers.py",
     "agent_result_pipeline.py",
     "agent_routing.py",
@@ -39,6 +40,7 @@ FILES = [
     "styles.css",
     "help.html",
     "README.md",
+    "mcp_server/install_openai_general_env.sh",
 ]
 
 DIRS = [
