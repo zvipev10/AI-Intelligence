@@ -60,6 +60,7 @@ GENERAL_TOOL_NAMES = frozenset({
     "build_event_sequence", "resolve_entity", "trace_identifier", "trace_semantic_clues",
     "find_related_events", "compare_location_claims", "challenge_hypothesis",
 })
+GENERAL_TOOL_PREFIX = "mcp_serbia_events_poc_"
 
 
 class MCPToolBridge:
@@ -128,10 +129,12 @@ class MCPToolBridge:
 
     def function_definitions(self) -> list[dict[str, Any]]:
         tools = self.request("tools/list", {}).get("tools", [])
-        return [{"type": "function", "name": tool["name"], "description": tool.get("description", ""), "parameters": tool.get("inputSchema", {"type": "object"})}
+        return [{"type": "function", "name": f"{GENERAL_TOOL_PREFIX}{tool['name']}", "description": tool.get("description", ""), "parameters": tool.get("inputSchema", {"type": "object"})}
                 for tool in tools if tool.get("name") in GENERAL_TOOL_NAMES]
 
     def call(self, name: str, arguments: dict[str, Any]) -> Any:
+        if name.startswith(GENERAL_TOOL_PREFIX):
+            name = name[len(GENERAL_TOOL_PREFIX):]
         if name not in GENERAL_TOOL_NAMES:
             raise ValueError(f"Tool is not permitted for OpenAI General: {name}")
         result = self.request("tools/call", {"name": name, "arguments": arguments})
@@ -211,15 +214,9 @@ class OpenAIGeneralClient:
             detail = exc.read().decode("utf-8", errors="replace")[:1000]
             raise RuntimeError(f"OpenAI Agents request failed ({exc.code}): {detail}") from exc
 
-    def investigate(self, prompt: str, context: str) -> dict[str, Any]:
-        instructions = (
-            "You are the experimental General analyst for a synthetic intelligence scenario. "
-            "Use only the supplied functions and their returned data. Do not infer unavailable facts. "
-            "Reply in the language of the analyst. Separate observation from inference. "
-            "For each function call include a short, analyst-safe Hebrew step_bridge. "
-            "End with 'תצוגה מומלצת: map|timeline|evidence | reason' when responding in Hebrew, "
-            "or 'Recommended view: map|timeline|evidence | reason' in English."
-        )
+    def investigate(self, prompt: str, context: str, *, instructions: str) -> dict[str, Any]:
+        if not instructions.strip():
+            raise ValueError("OpenAI General requires the shared General-agent instructions")
         session = self._request("POST", "/agents/sessions", {
             "environment": {"type": "none"},
             "agent": {"model": self.settings.model, "instructions": instructions, "tools": self.bridge.function_definitions()},

@@ -3560,7 +3560,7 @@ class HermesClient:
                 continue
         return self.summarize_audit(audit_records)
 
-    def investigate(self, prompt, history, investigation_state=None, investigation_id=None, is_continuation=False, continuation_context=None, responding_agent="general", mission_run_id=None, locale="he"):
+    def investigate(self, prompt, history, investigation_state=None, investigation_id=None, is_continuation=False, continuation_context=None, responding_agent="general", mission_run_id=None, locale="he", instruction_only=False):
         global ACTIVE_RUN_STARTED_AT
         locale = normalize_locale(locale)
         overall_started = time.perf_counter()
@@ -3859,6 +3859,10 @@ class HermesClient:
             "bytes": len(encoded_instructions),
             "sha256": hashlib.sha256(encoded_instructions).hexdigest(),
         }
+        if instruction_only:
+            # Keep alternative model experiments on the exact General-agent contract
+            # without creating a Hermes run or touching its audit log.
+            return {"instructions": full_instructions, "performance": performance}
         safe_investigation_id = bounded_prompt_cache_key(investigation_id)
         session_id = safe_investigation_id or f"intelligence-orchestrator-{int(time.time() * 1000)}"
         session_started = time.perf_counter()
@@ -5430,8 +5434,19 @@ class Handler(SimpleHTTPRequestHandler):
                 settings_error = openai_general_configuration_error(settings)
                 if settings_error:
                     raise RuntimeError(settings_error)
-                state_context = render_investigation_state_localized(investigation_state, locale=locale)
                 recent_history = request.get("history") or []
+                hermes_config = load_agent_hermes_config(GENERAL_AGENT_ID)
+                shared_contract = HermesClient(hermes_config).investigate(
+                    prompt,
+                    recent_history,
+                    investigation_state=investigation_state or None,
+                    investigation_id=conversation_id,
+                    is_continuation=bool(request.get("is_continuation")),
+                    continuation_context=request.get("continuation_context"),
+                    responding_agent=GENERAL_AGENT_ID,
+                    locale=locale,
+                    instruction_only=True,
+                )
                 history_lines = []
                 for item in recent_history[-10:]:
                     if not isinstance(item, dict):
@@ -5441,25 +5456,20 @@ class Handler(SimpleHTTPRequestHandler):
                     if content:
                         history_lines.append(f"{role}: {content}")
                 context = "\n\n".join(part for part in [
-                    state_context,
                     "--- Recent chat context ---\n" + "\n".join(history_lines) if history_lines else "",
                 ] if part)
-                hermes_helper = HermesSamplingHelper(load_agent_hermes_config(GENERAL_AGENT_ID))
+                hermes_helper = HermesSamplingHelper(hermes_config)
                 with MCPToolBridge(ROOT, sampling_handler=hermes_helper.sample) as bridge:
-                    openai_result = OpenAIGeneralClient(settings, bridge).investigate(prompt, context)
+                    openai_result = OpenAIGeneralClient(settings, bridge).investigate(
+                        prompt, context, instructions=shared_contract["instructions"]
+                    )
                 calls = openai_result["tool_calls"]
                 event_ids = list(dict.fromkeys(
                     [*EVENT_ID_PATTERN.findall(openai_result["answer"]), *[
                         event_id for call in calls for event_id in extract_result_ids(call.get("result") or {})
                     ]]
                 ))
-                steps = [{
-                    "tool": call["tool"],
-                    "bridge_summary": "הסוכן הניסויי השתמש בכלי הקיים כדי לאסוף ראיות.",
-                    "action": call["tool"],
-                    "result": compact_text(json.dumps(call.get("result") or {}, ensure_ascii=False), 500),
-                    "technical": {"tool": call["tool"], "arguments": call.get("arguments") or {}, "is_error": call.get("is_error", False)},
-                } for call in calls]
+                steps = HermesClient.summarize_audit(calls)
                 result = build_agent_result({
                     "run_id": openai_result["openai_session_id"],
                     "answer": openai_result["answer"],
