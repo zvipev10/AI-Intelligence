@@ -214,35 +214,94 @@ class OpenAIGeneralClient:
             detail = exc.read().decode("utf-8", errors="replace")[:1000]
             raise RuntimeError(f"OpenAI Agents request failed ({exc.code}): {detail}") from exc
 
+    def _stream(self, method: str, path: str, body: dict[str, Any] | None = None):
+        """Yield JSON SSE payloads from the Agents session event stream."""
+        data = json.dumps(body, ensure_ascii=False).encode("utf-8") if body is not None else None
+        request = urllib.request.Request(self.base_url + path, data=data, method=method, headers={
+            "Authorization": f"Bearer {self.settings.api_key}",
+            "Content-Type": "application/json",
+            "Accept": "text/event-stream",
+            "OpenAI-Beta": "agents=v1",
+        })
+        try:
+            with urllib.request.urlopen(request, timeout=180) as response:
+                data_lines: list[str] = []
+                for raw_line in response:
+                    line = raw_line.decode("utf-8", errors="replace").rstrip("\r\n")
+                    if not line:
+                        if data_lines:
+                            payload = "\n".join(data_lines)
+                            data_lines = []
+                            if payload != "[DONE]":
+                                yield json.loads(payload)
+                        continue
+                    if line.startswith("data:"):
+                        data_lines.append(line[5:].lstrip())
+                if data_lines:
+                    payload = "\n".join(data_lines)
+                    if payload != "[DONE]":
+                        yield json.loads(payload)
+        except urllib.error.HTTPError as exc:
+            detail = exc.read().decode("utf-8", errors="replace")[:1000]
+            raise RuntimeError(f"OpenAI Agents stream failed ({exc.code}): {detail}") from exc
+
     def investigate(self, prompt: str, context: str, *, instructions: str) -> dict[str, Any]:
         if not instructions.strip():
             raise ValueError("OpenAI General requires the shared General-agent instructions")
-        session = self._request("POST", "/agents/sessions", {
+        user_text = f"{context}\n\n--- Current analyst question ---\n{prompt}"
+        stream = self._stream("POST", "/agents/sessions", {
+            "stream": True,
             "environment": {"type": "none"},
             "agent": {"model": self.settings.model, "instructions": instructions, "tools": self.bridge.function_definitions()},
-            "input": f"{context}\n\n--- Current analyst question ---\n{prompt}",
+            "input": user_text,
         })
-        session_id = session["id"]
         deadline = time.time() + 180
-        while True:
+        session_id = ""
+        completed = False
+        handled_calls: set[str] = set()
+        while not completed:
             if time.time() >= deadline:
                 raise TimeoutError("OpenAI General exceeded the three-minute runtime limit")
-            state = self._request("GET", f"/agents/sessions/{session_id}")
-            actions = state.get("required_actions") or []
-            for action in actions:
-                if action.get("type") != "function_call":
-                    continue
-                try:
-                    output = self.bridge.call(action["name"], action.get("arguments") or {})
-                    event = {"type": "agent.session.input.tool_result", "turn_id": action["turn_id"], "call_id": action["call_id"], "success": True, "output": json.dumps(output, ensure_ascii=False)}
-                except Exception as exc:
-                    event = {"type": "agent.session.input.tool_result", "turn_id": action["turn_id"], "call_id": action["call_id"], "success": False, "error": str(exc)}
-                self._request("POST", f"/agents/sessions/{session_id}/events", {"events": [event]})
-            if state.get("status") in {"completed", "idle", "failed", "cancelled"}:
-                if state.get("status") in {"failed", "cancelled"}:
-                    raise RuntimeError(state.get("error") or f"OpenAI session {state.get('status')}")
+            resume_stream = False
+            for message in stream:
+                event_type = str(message.get("type") or "")
+                session = message.get("session") if isinstance(message.get("session"), dict) else {}
+                session_id = str(session.get("id") or message.get("session_id") or session_id)
+                if event_type in {"error", "agent.session.failed", "agent.session.turn.failed", "agent.session.turn.cancelled"}:
+                    error = message.get("error") or message.get("turn", {}).get("error") or "OpenAI session turn failed"
+                    if isinstance(error, dict):
+                        error = error.get("message") or error.get("code") or "OpenAI session turn failed"
+                    raise RuntimeError(str(error))
+                if event_type == "agent.session.requires_action":
+                    if not session_id:
+                        raise RuntimeError("OpenAI requested a tool before returning a session id")
+                    state = self._request("GET", f"/agents/sessions/{session_id}")
+                    for action in state.get("required_actions") or []:
+                        call_id = str(action.get("call_id") or "")
+                        if action.get("type") != "function_call" or not call_id or call_id in handled_calls:
+                            continue
+                        handled_calls.add(call_id)
+                        try:
+                            output = self.bridge.call(str(action["name"]), action.get("arguments") or {})
+                            event = {"type": "agent.session.input.tool_result", "turn_id": action["turn_id"], "call_id": call_id, "success": True, "output": json.dumps(output, ensure_ascii=False)}
+                        except Exception as exc:
+                            event = {"type": "agent.session.input.tool_result", "turn_id": action["turn_id"], "call_id": call_id, "success": False, "error": str(exc)}
+                        self._request("POST", f"/agents/sessions/{session_id}/events", {"events": [event]})
+                    resume_stream = True
+                    break
+                if event_type == "agent.session.turn.completed":
+                    completed = True
+                    break
+            if completed:
                 break
-            time.sleep(0.5)
+            if not session_id:
+                raise RuntimeError("OpenAI event stream ended before creating a session")
+            # After a tool result, attach to the session's event stream for the
+            # resumed turn. This avoids treating an idle session as completion.
+            if resume_stream:
+                stream = self._stream("GET", f"/agents/sessions/{session_id}/events")
+            else:
+                raise RuntimeError("OpenAI event stream ended before turn completion")
         items = self._request("GET", f"/agents/sessions/{session_id}/items?order=desc&limit=100").get("data", [])
         answer = ""
         for item in items:
