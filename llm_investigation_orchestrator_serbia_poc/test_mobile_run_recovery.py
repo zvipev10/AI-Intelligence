@@ -14,12 +14,15 @@ class MobileRunRecoveryTests(unittest.TestCase):
             server._INVESTIGATION_RESULTS.clear()
 
     def test_completed_result_can_be_recovered_by_client_request_id(self):
-        server.set_investigation_result("request-mobile-1", "running")
+        server.set_investigation_result(
+            "request-mobile-1", "running", live_agent="talia", live_started_at="2026-09-18T16:39:08+00:00"
+        )
         self.assertEqual("running", server.get_investigation_result("request-mobile-1")["status"])
         server.set_investigation_result("request-mobile-1", "completed", result={"answer": "done"})
         recovered = server.get_investigation_result("request-mobile-1")
         self.assertEqual("completed", recovered["status"])
         self.assertEqual("done", recovered["result"]["answer"])
+        self.assertEqual("talia", recovered["live_agent"])
 
     def test_invalid_and_expired_request_ids_are_not_recoverable(self):
         server.set_investigation_result("bad id", "completed", result={"answer": "bad"})
@@ -35,15 +38,30 @@ class MobileRunRecoveryTests(unittest.TestCase):
         app = (ROOT / "app.js").read_text(encoding="utf-8")
         index = (ROOT / "index.html").read_text(encoding="utf-8")
         self.assertIn("client_request_id: clientRequestId", app)
+        self.assertIn("liveStepsUrl(addressedPrompt, clientRequestId)", app)
+        self.assertIn('params.set("request_id", clientRequestId)', app)
         self.assertIn("/api/investigate-result?id=", app)
         self.assertIn('document.addEventListener("visibilitychange", onVisible)', app)
-        self.assertIn('document.addEventListener("visibilitychange", recoverWhenVisible)', app)
-        self.assertIn('window.addEventListener("pageshow", recoverWhenVisible)', app)
-        self.assertIn("Promise.race([directResult, resumedResult])", app)
+        self.assertNotIn('document.addEventListener("visibilitychange", recoverWhenVisible)', app)
+        self.assertNotIn('window.addEventListener("pageshow", recoverWhenVisible)', app)
+        self.assertNotIn("Promise.race([directResult, resumedResult])", app)
+        self.assertNotIn('addActivity("connection_recovery"', app)
         self.assertIn("if (!recoveryPromise)", app)
-        self.assertIn('document.removeEventListener("visibilitychange", recoverWhenVisible)', app)
-        self.assertIn('window.removeEventListener("pageshow", recoverWhenVisible)', app)
-        self.assertIn("app.js?v=191", index)
+        self.assertIn("result = await recoverExistingRun();", app)
+        self.assertIn("app.js?v=196", index)
+        self.assertNotIn('addActivity("Hermes"', app)
+        self.assertNotIn("if (!cleanAssistantAnswer(result?.answer))", app)
+
+    def test_live_step_refresh_preserves_expanded_step(self):
+        app = (ROOT / "app.js").read_text(encoding="utf-8")
+        self.assertIn("const canAppendLiveSteps = !sourceBase && existingItems.length <= visibleSteps.length;", app)
+        self.assertIn("const firstStepIndex = canAppendLiveSteps ? existingItems.length : 0;", app)
+        self.assertIn('if (!canAppendLiveSteps) state.activeActivityList.innerHTML = "";', app)
+        self.assertIn("visibleSteps.slice(firstStepIndex).forEach", app)
+        self.assertIn("const expandedStepNumbers = new Set(", app)
+        self.assertIn('querySelectorAll(".activity-item > details[open]")', app)
+        self.assertIn("if (expandedStepNumbers.has(stepNumber))", app)
+        self.assertIn('setAttribute("open", "")', app)
 
 
 if __name__ == "__main__":

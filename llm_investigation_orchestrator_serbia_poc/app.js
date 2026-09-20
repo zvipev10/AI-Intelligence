@@ -349,11 +349,14 @@ function createInvestigationId() {
   return `investigation-${random}`;
 }
 
-function liveStepsUrl(currentPrompt) {
+function liveStepsUrl(currentPrompt, clientRequestId = "") {
   const prompt = String(currentPrompt || "");
-  if (/(^|[^\p{L}\p{N}_])@(משה|Moshe)(?![\p{L}\p{N}_])/iu.test(prompt)) return "/api/live-steps?agent=moshe";
-  if (/(^|[^\p{L}\p{N}_])@(טליה|Talia)(?![\p{L}\p{N}_])/iu.test(prompt)) return "/api/live-steps?agent=talia";
-  return "/api/live-steps?agent=general";
+  const agent = /(^|[^\p{L}\p{N}_])@(משה|Moshe)(?![\p{L}\p{N}_])/iu.test(prompt)
+    ? "moshe"
+    : /(^|[^\p{L}\p{N}_])@(טליה|Talia)(?![\p{L}\p{N}_])/iu.test(prompt) ? "talia" : "general";
+  const params = new URLSearchParams({ agent });
+  if (clientRequestId) params.set("request_id", clientRequestId);
+  return `/api/live-steps?${params.toString()}`;
 }
 
 const LOCALE_STORAGE_KEY = "serbia-poc-locale-v1";
@@ -4896,10 +4899,19 @@ function visibleActivitySteps(steps) {
 function renderActivitySteps(steps, sourceBase = null) {
   const shouldFollow = conversationIsNearBottom();
   ensureAssistantResearchMessage();
-  state.activeActivityList.innerHTML = "";
-  visibleActivitySteps(steps).forEach((step, index) => {
+  const visibleSteps = visibleActivitySteps(steps);
+  const existingItems = [...state.activeActivityList.querySelectorAll(":scope > .activity-item")];
+  const canAppendLiveSteps = !sourceBase && existingItems.length <= visibleSteps.length;
+  const expandedStepNumbers = new Set(
+    [...state.activeActivityList.querySelectorAll(".activity-item > details[open]")]
+      .map(details => details.closest(".activity-item")?.querySelector(".activity-step-number")?.textContent)
+      .filter(Boolean)
+  );
+  const firstStepIndex = canAppendLiveSteps ? existingItems.length : 0;
+  if (!canAppendLiveSteps) state.activeActivityList.innerHTML = "";
+  visibleSteps.slice(firstStepIndex).forEach((step, offset) => {
     const explanation = step.model_explanation || {};
-    const number = index + 1;
+    const number = firstStepIndex + offset + 1;
     addActivity(step.tool, step.action, step.result, {
       stepNumber: number,
       bridgeSummary: explanation.bridge_summary || step.bridge_summary,
@@ -4912,6 +4924,12 @@ function renderActivitySteps(steps, sourceBase = null) {
       sourceLabel: `Step ${number}: ${humanToolLabel(step.tool)}`
     });
   });
+  if (!canAppendLiveSteps) {
+    state.activeActivityList.querySelectorAll(".activity-item").forEach(item => {
+      const stepNumber = item.querySelector(".activity-step-number")?.textContent;
+      if (expandedStepNumbers.has(stepNumber)) item.querySelector("details")?.setAttribute("open", "");
+    });
+  }
   followConversationAfterUpdate(shouldFollow);
 }
 
@@ -5123,10 +5141,6 @@ async function applyAgentResult(result, prompt, options = {}) {
       });
     });
   }
-  if (!options.keepRenderedSteps && !(result.investigation_steps || []).length && !(result.events || []).some(event => event.event === "tool.started")) {
-    addActivity("Hermes", `Investigation question sent: ${prompt}`, `A response was received in run ${result.run_id}, without a detailed tool log.`);
-  }
-
   finalizeAssistantMessage(result.answer, { result, prompt });
   await presentFinalAgentResult(result, prompt);
   refreshAssistantObjectLinks();
@@ -5287,16 +5301,9 @@ async function runPrompt(prompt, options = {}) {
   let liveStepCount = 0;
   let progressTimer = null;
   let recoveryPromise = null;
-  let resolveResumeRecovery;
-  const resumeRecoverySignal = new Promise(resolve => { resolveResumeRecovery = resolve; });
-  const recoverWhenVisible = () => {
-    if (!document.hidden) resolveResumeRecovery();
-  };
-  document.addEventListener("visibilitychange", recoverWhenVisible);
-  window.addEventListener("pageshow", recoverWhenVisible);
   const pollLiveSteps = async () => {
     try {
-      const response = await fetch(liveStepsUrl(addressedPrompt), { cache: "no-store" });
+      const response = await fetch(liveStepsUrl(addressedPrompt, clientRequestId), { cache: "no-store" });
       if (!response.ok) return;
       const live = await response.json();
       const steps = live.investigation_steps || [];
@@ -5346,7 +5353,6 @@ async function runPrompt(prompt, options = {}) {
   };
   const recoverExistingRun = () => {
     if (!recoveryPromise) {
-      addActivity("connection_recovery", activeLocaleText("מתחבר מחדש לריצה הקיימת.", "Reconnecting to the existing run."));
       recoveryPromise = recoverInvestigationResult();
     }
     return recoveryPromise;
@@ -5369,23 +5375,17 @@ async function runPrompt(prompt, options = {}) {
     });
     progressTimer = setInterval(pollLiveSteps, 1800);
     setTimeout(pollLiveSteps, 900);
-    const directResult = (async () => {
-      try {
-        const response = await investigationRequest;
-        const result = await response.json();
-        if (!response.ok) throw new Error(result.error || "Hermes request failed");
-        return { result, responseReceivedAt: performance.now() };
-      } catch (requestError) {
-        return { result: await recoverExistingRun(), responseReceivedAt: performance.now() };
-      }
-    })();
-    const resumedResult = resumeRecoverySignal.then(async () => ({
-      result: await recoverExistingRun(),
-      responseReceivedAt: performance.now()
-    }));
-    const completedRequest = await Promise.race([directResult, resumedResult]);
-    const result = completedRequest.result;
-    const responseReceivedAt = completedRequest.responseReceivedAt;
+    let result;
+    let responseReceivedAt;
+    try {
+      const response = await investigationRequest;
+      result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Hermes request failed");
+      responseReceivedAt = performance.now();
+    } catch (requestError) {
+      result = await recoverExistingRun();
+      responseReceivedAt = performance.now();
+    }
     applyWorkstreamChatResult(result);
     result.answer = cleanAssistantAnswer(result.answer);
     state.history.push({ role: "user", content: clean }, { role: "assistant", content: result.answer });
@@ -5410,8 +5410,6 @@ async function runPrompt(prompt, options = {}) {
     finalizeAssistantMessage(`<p>${activeLocaleText("לא הצלחתי להשלים את ריצת הסוכן האמיתית.", "I couldn't complete the real agent run.")}</p><div class="answer-callout">${escapeHtml(error.message)}</div>`, { html: true });
     updateSystemStatus("agent", "Hermes אינו זמין", "Hermes unavailable", "error");
   } finally {
-    document.removeEventListener("visibilitychange", recoverWhenVisible);
-    window.removeEventListener("pageshow", recoverWhenVisible);
     if (progressTimer) clearInterval(progressTimer);
     state.busy = false;
     sendButton.disabled = false;
