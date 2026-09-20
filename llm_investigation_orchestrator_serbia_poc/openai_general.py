@@ -312,4 +312,5 @@ class OpenAIGeneralClient:
                 break
         if not answer:
             raise RuntimeError("OpenAI completed without a final assistant answer")
-        return {"answer": answer, "openai_session_id": session_id, "tool_calls": self.bridge.calls, "usage": state.get("usage", {})}
+        final_state = self._request("GET", f"/agents/sessions/{session_id}")
+        return {"answer": answer, "openai_session_id": session_id, "tool_calls": self.bridge.calls, "usage": final_state.get("usage", {})}
