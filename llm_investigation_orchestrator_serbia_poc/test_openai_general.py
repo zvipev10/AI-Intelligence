@@ -1,6 +1,6 @@
 import unittest
 
-from openai_general import configuration_error, load_settings
+from openai_general import GENERAL_TOOL_NAMES, configuration_error, load_settings
 
 
 class OpenAIGeneralSettingsTests(unittest.TestCase):
@@ -22,6 +22,12 @@ class OpenAIGeneralSettingsTests(unittest.TestCase):
         })
         self.assertIsNone(configuration_error(settings))
         self.assertEqual(settings.model, "gpt-5.6-terra")
+
+    def test_general_creation_and_presentation_tools_match_hermes_general(self):
+        self.assertIn("persist_fused_evidence", GENERAL_TOOL_NAMES)
+        self.assertTrue({
+            "present_requested_results", "present_saved_memory_layers", "open_catalog_layers",
+        }.issubset(GENERAL_TOOL_NAMES))
 
 
 if __name__ == "__main__":

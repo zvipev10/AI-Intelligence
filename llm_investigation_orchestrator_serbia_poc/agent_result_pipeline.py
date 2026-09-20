@@ -218,6 +218,26 @@ def evidence_reference_layers_from_audit(
     )
 
 
+def presentation_view_from_audit(audit_records: Any) -> str | None:
+    """Return the explicit view selected by the last valid UI presentation.
+
+    The presentation tool is the authoritative place for a map or timeline
+    selection.  This lets alternate model harnesses preserve the same UI
+    behavior as the Hermes route instead of guessing from prose.
+    """
+    for record in reversed(audit_records if isinstance(audit_records, list) else []):
+        if not isinstance(record, dict) or record.get("is_error"):
+            continue
+        result = record.get("result") if isinstance(record.get("result"), dict) else {}
+        for field in ("requested_result_layers", "evidence_reference_layers"):
+            layers = normalize_typed_layers(result.get(field))
+            for layer in layers:
+                view = str(layer.get("recommended_view") or "").lower()
+                if view in {"map", "timeline", "evidence"}:
+                    return view
+    return None
+
+
 def normalize_attack_targets(
     audit_records: Any,
     *,

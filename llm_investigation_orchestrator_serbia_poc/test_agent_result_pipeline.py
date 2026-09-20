@@ -8,6 +8,7 @@ from agent_result_pipeline import (
     normalize_map_locations,
     normalize_attack_targets,
     normalize_typed_layers,
+    presentation_view_from_audit,
     normalize_workstream_collaboration,
     requested_result_layers_from_audit,
 )
@@ -194,6 +195,20 @@ class AgentResultPipelineTests(unittest.TestCase):
             "locations": [{"location_id": "LOC-1", "name": "A", "count": 4}],
         }
         self.assertEqual(normalize_map_locations("search_events", result)[0]["count"], 4)
+
+    def test_presentation_view_uses_the_last_successful_ui_selection(self):
+        records = [
+            {"tool": "present_requested_results", "result": {
+                "requested_result_layers": [{"kind": "events", "rows": [], "recommended_view": "map"}],
+            }},
+            {"tool": "present_requested_results", "is_error": True, "result": {
+                "requested_result_layers": [{"kind": "events", "rows": [], "recommended_view": "evidence"}],
+            }},
+            {"tool": "present_requested_results", "result": {
+                "requested_result_layers": [{"kind": "events", "rows": [], "recommended_view": "timeline"}],
+            }},
+        ]
+        self.assertEqual("timeline", presentation_view_from_audit(records))
 
     def test_general_audit_steps_use_extracted_normalizers(self):
         steps = HermesClient.summarize_audit([{

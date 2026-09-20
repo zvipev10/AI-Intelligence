@@ -25,6 +25,7 @@ from agent_result_pipeline import (
     catalog_layer_actions_from_audit,
     evidence_reference_layers_from_audit,
     memory_layer_actions_from_audit,
+    presentation_view_from_audit,
     normalize_aggregate_groups,
     normalize_entity_layers,
     normalize_location_layers,
@@ -5479,15 +5480,41 @@ class Handler(SimpleHTTPRequestHandler):
                     ]]
                 ))
                 steps = HermesClient.summarize_audit(calls)
+                requested_layers = requested_result_layers_from_audit(
+                    calls, locations=LOCATIONS, entities=load_ui_entity_db()
+                )
+                evidence_reference_layers = evidence_reference_layers_from_audit(
+                    calls, locations=LOCATIONS, entities=load_ui_entity_db()
+                )
+                memory_layer_actions = memory_layer_actions_from_audit(calls)
+                catalog_layer_actions = catalog_layer_actions_from_audit(calls)
+                answer = openai_result["answer"]
+                view_match = re.search(
+                    r"(?im)^\s*(?:תצוגה מומלצת|Recommended view)\s*:\s*"
+                    r"(map|timeline|evidence)(?:\s*\|\s*(.+?))?\s*$",
+                    answer,
+                )
+                if view_match:
+                    recommended_view = view_match.group(1).lower()
+                    view_reason = view_match.group(2).strip() if view_match.group(2) else ""
+                    answer = (answer[:view_match.start()] + answer[view_match.end():]).strip()
+                else:
+                    recommended_view = presentation_view_from_audit(calls) or "evidence"
+                    view_reason = "Selected by the requested presentation."
                 result = build_agent_result({
                     "run_id": openai_result["openai_session_id"],
-                    "answer": openai_result["answer"],
+                    "answer": answer,
                     "event_ids": event_ids,
                     "answer_event_ids": event_ids,
-                    "recommended_view": "evidence",
+                    "recommended_view": recommended_view,
+                    "view_reason": view_reason,
                     "investigation_steps": steps,
+                    "memory_layer_actions": memory_layer_actions,
+                    "catalog_layer_actions": catalog_layer_actions,
                     "usage": {**(openai_result.get("usage") or {}), "runtime": "openai_general_experimental"},
-                }, responding_agent=OPENAI_GENERAL_AGENT_ID, session_id=openai_result["openai_session_id"])
+                }, responding_agent=OPENAI_GENERAL_AGENT_ID, session_id=openai_result["openai_session_id"],
+                    requested_result_layers=requested_layers,
+                    evidence_reference_layers=evidence_reference_layers)
             else:
                 config = load_agent_hermes_config(route.responding_agent)
                 result = HermesClient(config).investigate(

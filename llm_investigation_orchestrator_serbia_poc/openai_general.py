@@ -52,7 +52,7 @@ def configuration_error(settings: OpenAIGeneralSettings) -> str | None:
 
 
 GENERAL_TOOL_NAMES = frozenset({
-    "prepare_evidence", "prepare_fused_evidence", "get_evidence", "search_evidence",
+    "prepare_evidence", "prepare_fused_evidence", "persist_fused_evidence", "get_evidence", "search_evidence",
     "trace_evidence_provenance", "present_requested_results", "present_saved_memory_layers",
     "open_catalog_layers", "classify_question_intent", "plan_next_investigation_step",
     "search_events", "semantic_search_events", "get_objects", "resolve_location",
