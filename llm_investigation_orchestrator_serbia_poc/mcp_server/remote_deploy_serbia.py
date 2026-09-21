@@ -320,9 +320,18 @@ def main() -> int:
     args = parser.parse_args()
 
     key_path = args.key.resolve()
-    api_key = args.api_key or secrets.token_urlsafe(36)
     client = connect(key_path)
     try:
+        if args.api_key:
+            api_key = args.api_key
+        else:
+            _, current_key, _ = run(
+                client,
+                "/usr/bin/python3 -c \"import yaml; d=yaml.safe_load(open('/home/ubuntu/.hermes/config.yaml')) or {}; print((((d.get('platforms') or {}).get('api_server') or {}).get('key') or ''))\"",
+                timeout=20,
+                check=False,
+            )
+            api_key = current_key.strip() or secrets.token_urlsafe(36)
         staging = upload_files(client)
         install_files(client, staging)
         backup = configure_hermes(client, api_key)
