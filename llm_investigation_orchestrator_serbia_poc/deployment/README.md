@@ -126,4 +126,9 @@ metadata. Cellular-call tables expose the exact Side A and Side B location
 IDs while retaining the primary `location_id` as the shared map anchor. It
 advances the script to `app.js?v=198`.
 
+`SHA256SUMS-v187.txt` records the V2.1 location-resolution cleanup. When the
+active dataset is V2.1, legacy `LOC-*` definitions retained in historical raw
+rows are excluded from analyst-facing location resolution and presentation.
+Hebrew and English Ibar Bridge aliases resolve directly to `LOC-V2-010`.
+
 No production files or services were changed during capture or consolidation.

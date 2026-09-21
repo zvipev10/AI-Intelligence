@@ -22,6 +22,21 @@ class EvidenceFoundationTests(unittest.TestCase):
         approaches = server.resolve_location({"query": "הגישות הצפוניות לצפון מיטרוביצה"})
         self.assertEqual(approaches["location_ids"], ["LOC-V2-009"])
 
+    def test_v21_location_resolution_excludes_legacy_ids_and_supports_english_aliases(self):
+        if server.DATASET_VERSION != "v2.1":
+            self.skipTest("Production-only V2.1 location namespace contract")
+
+        for query in ("אזור גשר איבר", "גשר איבר", "Ibar bridge", "Mitrovica bridge"):
+            with self.subTest(query=query):
+                result = server.resolve_location({"query": query})
+                self.assertEqual(result["location_ids"], ["LOC-V2-010"])
+                self.assertNotIn("LOC-001", result["location_ids"])
+
+        broad = server.resolve_location({"query": "צפון מיטרוביצה"})
+        self.assertTrue(broad["location_ids"])
+        self.assertTrue(all(location_id.startswith("LOC-V2-") for location_id in broad["location_ids"]))
+        self.assertIsNone(server.scoped_location_presentation("LOC-001"))
+
     def test_search_evidence_defaults_to_fused_objects(self):
         class SearchStub:
             def __init__(self):
