@@ -24,7 +24,7 @@ Complete
 
 ## Latest change since previous review
 
-Dataset, API/tool contract, dedicated viewer, localized catalog, recordings, and focused tests are complete on top of `2fe94be`.
+Dataset, API/tool contract, dedicated viewer, localized catalog, recordings, and the dual-endpoint call map are complete on top of `2fe94be`.
 
 ## Current blockers
 
@@ -32,11 +32,11 @@ Dataset, API/tool contract, dedicated viewer, localized catalog, recordings, and
 
 ## Current risks
 
-- Simulated recording realism and correct two-endpoint map interpretation.
+- Simulated recording realism remains a demo-quality constraint.
 
 ## Next expected artifact
 
-Human merge review; deployment only if separately requested.
+Merge and production deployment requested by the user.
 
 ## Parent issue
 
@@ -46,20 +46,20 @@ Draft: `issues/parent-capability.md`
 
 | Issue | Role | Purpose | Status | Blocking? |
 |---|---|---|---|---|
-| Product decision | Product | Resolve open scope decisions | Draft | Yes |
-| Developer review | Development | Validate implementation approach | Draft | Yes |
-| UX review | UX | Validate viewer and terminology | Draft | Yes |
-| QA review | QA | Validate test strategy | Draft | Yes |
+| Product decision | Product | Resolve open scope decisions | Complete | No |
+| Developer review | Development | Validate implementation approach | Complete | No |
+| UX review | UX | Validate viewer and terminology | Complete | No |
+| QA review | QA | Validate test strategy | Complete | No |
 
 ## Artifact links
 
 - Capability brief: `capability-brief.md`
-- Decisions: pending
+- Decisions: `decisions.md`
 - Developer review: `developer-review.md`
 - UX review: `ux-review.md`
 - QA review: `qa-review.md`
 - Execution plan: `execution-plan.md`
-- Latest checkpoint: `checkpoint-002.md`
+- Latest checkpoint: `checkpoint-003.md`
 - Handoff: `handoff-summary.md`
 
 ## Gate checklist

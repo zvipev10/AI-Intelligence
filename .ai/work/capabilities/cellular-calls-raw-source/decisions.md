@@ -1,5 +1,11 @@
 # Capability Decisions
 
+## 2026-09-21 — Calls use a neutral two-endpoint map model
+
+Decision: A cellular call is one raw record with two endpoint markers and one connecting line. A/B and the line all open the same record; no MIL-STD symbol is assigned.
+
+Rationale: The geometry communicates the relationship between two located parties without incorrectly turning communications metadata into an observed military object or duplicating the record.
+
 ## 2026-09-21 — Cellular call endpoints use distinct catalog locations
 
 Decision: Side A follows the requested three-location scenario. Side B uses a different existing canonical location elsewhere in Kosovo for every call.

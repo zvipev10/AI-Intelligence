@@ -520,6 +520,7 @@ const state = {
   mapReady: false,
   markers: [],
   assessmentMapArtifacts: [],
+  cellularCallMapArtifacts: [],
   focusedEventPopup: null,
   focusedEventMarker: null,
   focusedMapSelection: null,
@@ -5577,6 +5578,14 @@ function initPanelResizers() {
 }
 
 function clearMarkers() {
+  (state.cellularCallMapArtifacts || []).slice().reverse().forEach(({ layerId, sourceId, onClick, onMouseEnter, onMouseLeave }) => {
+    if (layerId && onClick) state.map.off("click", layerId, onClick);
+    if (layerId && onMouseEnter) state.map.off("mouseenter", layerId, onMouseEnter);
+    if (layerId && onMouseLeave) state.map.off("mouseleave", layerId, onMouseLeave);
+    if (layerId && state.map.getLayer(layerId)) state.map.removeLayer(layerId);
+    if (sourceId && state.map.getSource(sourceId)) state.map.removeSource(sourceId);
+  });
+  state.cellularCallMapArtifacts = [];
   (state.assessmentMapArtifacts || []).slice().reverse().forEach(({ layerId, sourceId }) => {
     if (layerId && state.map.getLayer(layerId)) state.map.removeLayer(layerId);
     if (sourceId && state.map.getSource(sourceId)) state.map.removeSource(sourceId);
@@ -5588,6 +5597,84 @@ function clearMarkers() {
   state.focusedEventMarker = null;
   state.focusedEventPopup?.remove();
   state.focusedEventPopup = null;
+}
+
+function cellularCallMapLocation(event, side) {
+  const prefix = side === "a" ? "side_a" : "side_b";
+  const locationId = event[`${prefix}_location_id`];
+  const canonical = LOCATIONS[locationId];
+  if (!locationId || !canonical) return null;
+  return {
+    id: locationId,
+    name: event[`${prefix}_location_name`] || canonical.name || locationId,
+    lon: Number(canonical.lon),
+    lat: Number(canonical.lat),
+    number: event[`${prefix}_number`] || "-",
+  };
+}
+
+function addCellularCallMapPresentation(event, layer, index, bounds) {
+  const sideA = cellularCallMapLocation(event, "a");
+  const sideB = cellularCallMapLocation(event, "b");
+  if (!sideA || !sideB) return false;
+  const recordId = String(event.record_id || event.event_id || event.call_id || "");
+  if (!recordId) return false;
+  const base = sanitizeLayerKey(`cellular-call-${recordId}-${index}`);
+  const sourceId = `${base}-source`;
+  const layerId = `${base}-layer`;
+  state.map.addSource(sourceId, {
+    type: "geojson",
+    data: {
+      type: "Feature",
+      properties: { record_id: recordId },
+      geometry: { type: "LineString", coordinates: [[sideA.lon, sideA.lat], [sideB.lon, sideB.lat]] },
+    },
+  });
+  state.map.addLayer({
+    id: layerId,
+    type: "line",
+    source: sourceId,
+    paint: {
+      "line-color": layer.color || "#64c8d0",
+      "line-opacity": 0.76,
+      "line-width": 3,
+      "line-dasharray": [2, 1.25],
+    },
+  });
+  const onClick = mapEvent => {
+    mapEvent?.originalEvent?.preventDefault?.();
+    openObjectViewer("record", recordId, state.map.getCanvas());
+  };
+  const onMouseEnter = () => { state.map.getCanvas().style.cursor = "pointer"; };
+  const onMouseLeave = () => { state.map.getCanvas().style.cursor = ""; };
+  state.map.on("click", layerId, onClick);
+  state.map.on("mouseenter", layerId, onMouseEnter);
+  state.map.on("mouseleave", layerId, onMouseLeave);
+  state.cellularCallMapArtifacts.push({ layerId, sourceId, onClick, onMouseEnter, onMouseLeave });
+
+  [["a", sideA], ["b", sideB]].forEach(([side, location]) => {
+    const sideLabel = side === "a" ? activeLocaleText("צד א׳", "Side A") : activeLocaleText("צד ב׳", "Side B");
+    const element = document.createElement("button");
+    element.type = "button";
+    element.className = `cellular-call-map-endpoint cellular-call-map-endpoint-${side}`;
+    element.dataset.viewerKind = "record";
+    element.dataset.viewerId = recordId;
+    element.setAttribute("aria-haspopup", "dialog");
+    element.setAttribute("aria-label", `${recordId}, ${sideLabel}, ${location.name}`);
+    element.innerHTML = `<span aria-hidden="true">${side.toUpperCase()}</span>`;
+    const other = side === "a" ? sideB : sideA;
+    const popup = new maplibregl.Popup({ offset: 20, closeButton: true, closeOnClick: true }).setHTML(`
+      <div class="map-popup cellular-call-map-popup" dir="${currentLocale() === "en" ? "ltr" : "rtl"}">
+        <strong>${escapeHtml(sideLabel)} · ${escapeHtml(location.name)}</strong>
+        <span dir="ltr">${escapeHtml(location.number)}</span>
+        <em>${escapeHtml(activeLocaleText("שיחה אל", "Call to"))} ${escapeHtml(other.name)}</em>
+        <code dir="ltr">${escapeHtml(recordId)}</code>
+        <button type="button" class="object-viewer-open" data-viewer-kind="record" data-viewer-id="${escapeHtml(recordId)}">${escapeHtml(activeLocaleText("פתח את השיחה", "Open call"))}</button>
+      </div>`);
+    state.markers.push(new maplibregl.Marker({ element, anchor: "center" }).setLngLat([location.lon, location.lat]).setPopup(popup).addTo(state.map));
+    bounds.extend([location.lon, location.lat]);
+  });
+  return true;
 }
 
 function renderMap() {
@@ -5611,7 +5698,8 @@ function renderMap() {
     const items = itemsForLayerPresentation(layer);
     if (layer.kind === "events") {
       const grouped = new Map();
-      items.forEach(event => {
+      items.forEach((event, index) => {
+        if (isCellularCallRecord(event) && addCellularCallMapPresentation(event, layer, index, bounds)) return;
         if (!event.location_id) return;
         const current = grouped.get(event.location_id) || { count: 0, first: null };
         current.count += 1;
@@ -5874,6 +5962,17 @@ function toggleMapItem(layerId, kind, itemId) {
   activateView("map");
   setTimeout(() => {
     if (!state.mapReady || !state.map) return;
+    if (isCellularCallRecord(selectedEvent)) {
+      const sideA = cellularCallMapLocation(selectedEvent, "a");
+      const sideB = cellularCallMapLocation(selectedEvent, "b");
+      if (sideA && sideB) {
+        const callBounds = new maplibregl.LngLatBounds();
+        callBounds.extend([sideA.lon, sideA.lat]);
+        callBounds.extend([sideB.lon, sideB.lat]);
+        state.map.fitBounds(callBounds, { padding: 120, maxZoom: 10.5, duration: 450 });
+        return;
+      }
+    }
     state.map.easeTo({
       center: [coordinates.lon, coordinates.lat],
       zoom: Math.max(Number(state.map.getZoom?.() || 0), kind === "location" ? 12 : 13),

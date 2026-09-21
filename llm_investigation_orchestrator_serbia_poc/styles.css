@@ -504,6 +504,11 @@ textarea.mention-source::placeholder { color: var(--muted) !important; }
 .map-marker:hover { transform: scale(1.12); }
 .map-marker-dot { position: absolute; inset: 0; border-radius: inherit; background: var(--layer-color, #4f6f91); }
 .map-marker-count { position: absolute; right: 10px; top: -12px; min-width: 18px; height: 18px; padding: 0 4px; display: inline-grid; place-items: center; border: 1px solid rgba(255,255,255,.82); border-radius: 999px; background: rgba(24,29,38,.98); color: var(--ink); font-size: 9px; font-weight: 900; line-height: 1; }
+.cellular-call-map-endpoint { width: 28px; height: 28px; display: grid; place-items: center; padding: 0; border: 2px solid rgba(255,255,255,.92); border-radius: 999px; background: #287f98; color: #fff; box-shadow: 0 2px 12px rgba(0,0,0,.52), 0 0 0 5px rgba(74,190,207,.16); cursor: pointer; font: 900 11px/1 system-ui, sans-serif; transition: transform .14s ease, box-shadow .14s ease; }
+.cellular-call-map-endpoint:hover, .cellular-call-map-endpoint:focus-visible { transform: scale(1.12); box-shadow: 0 3px 15px rgba(0,0,0,.58), 0 0 0 6px rgba(74,190,207,.24); outline: none; }
+.cellular-call-map-endpoint-b { background: #a87525; box-shadow: 0 2px 12px rgba(0,0,0,.52), 0 0 0 5px rgba(210,168,76,.16); }
+.cellular-call-map-endpoint-b:hover, .cellular-call-map-endpoint-b:focus-visible { box-shadow: 0 3px 15px rgba(0,0,0,.58), 0 0 0 6px rgba(210,168,76,.24); }
+.cellular-call-map-popup code { color: var(--muted); font-size: 10px; }
 .milstd-marker { position: absolute; width: 42px; height: 42px; padding: 0; border: 0; background: transparent; color: #ffd166; cursor: pointer; overflow: visible; filter: drop-shadow(0 2px 4px rgba(0,0,0,.65)); }
 .milstd-marker:hover, .milstd-marker:focus-visible { z-index: 4; transform: scale(1.12); outline: none; }
 .focused-map-selection-marker { z-index: 5; }

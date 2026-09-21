@@ -65,6 +65,16 @@ class CellularCallDatasetTests(unittest.TestCase):
         ):
             self.assertIn(f'"{field}": event.get("{field}", "")', server_source)
 
+    def test_map_presents_both_call_endpoints_and_shared_record(self):
+        app_source = (ROOT / "app.js").read_text(encoding="utf-8")
+        self.assertIn('function addCellularCallMapPresentation(event, layer, index, bounds)', app_source)
+        self.assertIn('geometry: { type: "LineString"', app_source)
+        self.assertIn('[["a", sideA], ["b", sideB]]', app_source)
+        self.assertIn('element.dataset.viewerKind = "record"', app_source)
+        self.assertIn('element.dataset.viewerId = recordId', app_source)
+        self.assertIn('openObjectViewer("record", recordId', app_source)
+        self.assertIn('addCellularCallMapPresentation(event, layer, index, bounds)', app_source)
+
 
 if __name__ == "__main__":
     unittest.main()
