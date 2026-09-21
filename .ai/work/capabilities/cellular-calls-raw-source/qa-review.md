@@ -10,13 +10,13 @@ Draft: `issues/qa-review.md`
 
 ## Review status
 
-Pending human review
+Approved
 
 ## Role action
 
 | Role | Status | Required action | Due before |
 |---|---|---|---|
-| QA | AI-prepared draft | Approve or request changes | Coding |
+| QA | Approved by user delegation | Run the approved validation strategy | Final review |
 
 ## What changed since previous review
 

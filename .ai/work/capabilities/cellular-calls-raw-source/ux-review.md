@@ -10,13 +10,13 @@ Draft: `issues/ux-review.md`
 
 ## Review status
 
-Pending human review
+Approved
 
 ## Role action
 
 | Role | Status | Required action | Due before |
 |---|---|---|---|
-| UX | AI-prepared draft | Approve or request changes | Coding |
+| UX | Approved by user delegation | Verify the implemented viewer at checkpoint | Checkpoint 2 |
 
 ## What changed since previous review
 

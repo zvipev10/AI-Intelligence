@@ -6,29 +6,29 @@ Cellular Calls raw data source
 
 ## Current phase
 
-Definition and review
+Controlled execution
 
 ## Overall status
 
-Pending review
+In progress
 
 ## Who needs to act now
 
 | Role | Status | Required action | Due before |
 |---|---|---|---|
-| Product | Pending | Approve dataset size and audio simulation | Execution planning |
-| Development | Draft prepared | Approve feasibility and approach | Coding |
-| UX | Draft prepared | Approve viewer structure and localized copy | Coding |
-| QA | Draft prepared | Approve acceptance and regression coverage | Coding |
-| Architecture/Security | Pending acknowledgement | Confirm synthetic-only identifiers/audio | Coding |
+| Product | Approved | Review final behavior against acceptance criteria | Final acceptance |
+| Development | In progress | Implement the approved execution slices | Checkpoint review |
+| UX | Approved | Verify responsive RTL/LTR viewer | Checkpoint 2 |
+| QA | Approved | Validate dataset, API, viewer, and regressions | Final review |
+| Architecture/Security | Accepted constraint | Enforce synthetic-only identifiers and audio | Every slice |
 
 ## Latest change since previous review
 
-Initial capability definition and role-review drafts created.
+User approved implementation on top of commit `2fe94be`; reviews and remaining assumptions were accepted for execution.
 
 ## Current blockers
 
-- Human decision on whether non-intelligible synthetic audio plus transcript is sufficient.
+- None.
 
 ## Current risks
 
@@ -36,7 +36,7 @@ Initial capability definition and role-review drafts created.
 
 ## Next expected artifact
 
-Approved role reviews, followed by `execution-plan.md`.
+Slice 1 checkpoint covering dataset, audio, and API projection.
 
 ## Parent issue
 
@@ -58,7 +58,7 @@ Draft: `issues/parent-capability.md`
 - Developer review: `developer-review.md`
 - UX review: `ux-review.md`
 - QA review: `qa-review.md`
-- Execution plan: pending approval
+- Execution plan: `execution-plan.md`
 - Latest checkpoint: none
 - Handoff: none
 
