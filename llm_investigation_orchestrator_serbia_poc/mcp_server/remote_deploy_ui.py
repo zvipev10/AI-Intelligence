@@ -41,12 +41,14 @@ FILES = [
     "help.html",
     "README.md",
     "mcp_server/install_openai_general_env.sh",
+    "data/serbian_intelligence_v2_1/serbia_kosovo_events_projection_v2_1.csv",
+    "data/serbian_intelligence_v2_1/serbia_kosovo_locations_v2_1.json",
+    "data/serbian_intelligence_v2_1/serbia_kosovo_entities_v2_1.json",
 ]
 
 DIRS = [
     "assets",
     "vendor",
-    "data",
     "recorded_runs",
     "saved_questions",
 ]
