@@ -1,12 +1,12 @@
 # AI Intelligence Project Handoff
 
-Last updated: 2026-09-17
+Last updated: 2026-09-21
 
-This is the primary handoff for continuing the AI Intelligence project in another assistant/chat. It reflects the deployed Serbia POC on remote `main`, including evidence implementation baseline `9e6cef1`, investigation memory, scenario playback, bilingual UI behavior, mobile run recovery, multiplexed General/Moshe/Talia routing, the V2.1 Evidence Layer, Moshe target workflows, Talia enemy assessments, and additive result-layer presentation.
+This is the primary handoff for continuing the AI Intelligence project in another assistant/chat. It reflects the deployed Serbia POC on remote `main` at `47692c3`, including the Cellular Calls raw source, evidence implementation, investigation memory, scenario playback, bilingual UI behavior, mobile run recovery, multiplexed General/Moshe/Talia routing, the V2.1 Evidence Layer, Moshe target workflows, Talia enemy assessments, and additive result-layer presentation.
 
 ## One-Line Summary
 
-The active project is the Serbia/North Kosovo intelligence-analysis POC: a bilingual analyst UI backed by a multiplexed Hermes gateway and isolated General, Moshe, and Talia profiles over the 14,800-record V2.1 synthetic dataset. It supports raw data exploitation, semantic retrieval, fused evidence, target candidates, enemy assessments, MIL-STD-oriented evidence symbols, assessment graphics, investigation memory, scenario playback, and additive map/timeline/table layers.
+The active project is the Serbia/North Kosovo intelligence-analysis POC: a bilingual analyst UI backed by a multiplexed Hermes gateway and isolated General, Moshe, and Talia profiles over the 14,833-record V2.1 synthetic dataset. It supports raw data exploitation, semantic retrieval, fused evidence, target candidates, enemy assessments, MIL-STD-oriented evidence symbols, assessment graphics, investigation memory, scenario playback, cellular-call recordings with two-endpoint maps, and additive map/timeline/table layers.
 
 ## Repository And Current State
 
@@ -16,7 +16,7 @@ Repository:
 
 Current branch:
 
-- Evidence implementation baseline `9e6cef1` is merged into remote `main`; later documentation-only commits may follow it.
+- Cellular Calls release `47692c3` is merged into remote `main`; later documentation-only commits may follow it.
 - The local working checkout may remain on `codex/evidence-semantic-fusion`; fetch and inspect before switching.
 - The older branch references in this handoff are historical only; do not assume they reflect the current checked-out branch.
 - Always fetch before continuing and verify the current head with `git log -1 --oneline`.

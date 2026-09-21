@@ -6,7 +6,7 @@ Cellular Calls raw data source
 
 ## Current phase
 
-Final review and handoff
+Deployed and verified
 
 ## Overall status
 
@@ -16,15 +16,15 @@ Complete
 
 | Role | Status | Required action | Due before |
 |---|---|---|---|
-| Product | Approved | Review final behavior against acceptance criteria | Final acceptance |
-| Development | Complete | Support merge review if requested | Merge review |
+| Product | Approved | Optional final acceptance in production | — |
+| Development | Complete | No action | — |
 | UX | Complete | No action | — |
 | QA | Complete | No action | — |
 | Architecture/Security | Accepted constraint | Enforce synthetic-only identifiers and audio | Every slice |
 
 ## Latest change since previous review
 
-Dataset, API/tool contract, dedicated viewer, localized catalog, recordings, and the dual-endpoint call map are complete on top of `2fe94be`.
+Dataset, API/tool contract, dedicated viewer, localized catalog, recordings, and the dual-endpoint call map are merged to `main` at `47692c3` and deployed.
 
 ## Current blockers
 
@@ -36,7 +36,7 @@ Dataset, API/tool contract, dedicated viewer, localized catalog, recordings, and
 
 ## Next expected artifact
 
-Merge and production deployment requested by the user.
+None; capability is available for user testing.
 
 ## Parent issue
 
