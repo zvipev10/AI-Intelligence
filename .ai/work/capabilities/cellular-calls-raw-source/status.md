@@ -16,7 +16,7 @@ Pending review
 
 | Role | Status | Required action | Due before |
 |---|---|---|---|
-| Product | Pending | Approve dataset size, location interpretation, and audio simulation | Execution planning |
+| Product | Pending | Approve dataset size and audio simulation | Execution planning |
 | Development | Draft prepared | Approve feasibility and approach | Coding |
 | UX | Draft prepared | Approve viewer structure and localized copy | Coding |
 | QA | Draft prepared | Approve acceptance and regression coverage | Coding |
@@ -29,11 +29,10 @@ Initial capability definition and role-review drafts created.
 ## Current blockers
 
 - Human decision on whether non-intelligible synthetic audio plus transcript is sufficient.
-- Human confirmation of “same canonical location, different cell sector” for Side B.
 
 ## Current risks
 
-- Simulated recording realism and overstatement of location precision.
+- Simulated recording realism and correct two-endpoint map interpretation.
 
 ## Next expected artifact
 

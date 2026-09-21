@@ -36,7 +36,7 @@ Add a cross-source analytical signal that can support the existing three-locatio
 - Publish 24 synthetic call records as a normal on-demand raw layer.
 - Each record contains a call ID, start time, duration, Side A IMEI, Side A number, Side A canonical location, Side B IMEI, Side B number, Side B canonical location, collection metadata, a synthetic recording URL, and a short synthetic transcript/summary.
 - Nine linked calls use the same Side A IMEI and number: three calls at each of `LOC-V2-013`, `LOC-V2-009`, and `LOC-V2-010`.
-- In each linked call, Side B has a different IMEI and number. Both sides belong to the same canonical location, but different synthetic cell-sector identifiers represent different positions within that area.
+- In each linked call, Side B has a different IMEI and number and is located at a different existing canonical location elsewhere in Kosovo. Side B locations rotate across the existing location catalog and never equal Side A's location for that call.
 - The remaining 15 calls provide sparse background traffic without reproducing the linked three-location pattern.
 - Opening a call uses a dedicated raw-record viewer with two clearly separated party cards, call timing, source/provenance fields, recording controls, and transcript/summary.
 - All identifiers and recordings are synthetic and visibly labeled as simulation data.
@@ -64,7 +64,7 @@ Add a cross-source analytical signal that can support the existing three-locatio
 - Exactly 24 synthetic calls are generated deterministically.
 - Every call has distinct Side A and Side B IMEI/number pairs, valid canonical locations, start time, duration, and a playable recording.
 - Nine records share one Side A device and number, with three records in each of the three scenario locations.
-- For those nine records, Side B changes between calls and uses a different cell sector from Side A while remaining in the same canonical location.
+- For those nine records, Side B changes between calls and uses a different existing canonical location from Side A.
 - The viewer presents the two parties once, without duplicating generic fields, and works in desktop/mobile and RTL/LTR layouts.
 - Call records remain raw records and can be displayed only on demand through existing result-layer controls.
 - Existing UAV, raw entity, evidence, fusion, and assessment viewers are unchanged.
@@ -90,7 +90,7 @@ Add a cross-source analytical signal that can support the existing three-locatio
 
 - Use **Cellular Calls** as the English label.
 - Side A and Side B should be peers in the layout; neither implies caller ownership beyond the source metadata.
-- Show canonical area and cell-sector detail separately so “same area, different position” is understandable.
+- Show each party's canonical location prominently so the geographic separation is immediately understandable.
 - The recording module should be labeled “Simulated call recording” / `הקלטת שיחה מדומה`.
 - Do not repeat party fields in the generic metadata list.
 
@@ -102,18 +102,17 @@ Add a cross-source analytical signal that can support the existing three-locatio
 ## Risks
 
 - Synthetic tones may not feel like a call recording unless paired with a transcript and clear simulation labeling.
-- A canonical location is an area, not a coordinate; the sector distinction must not imply unsupported precision.
+- A call connects two independently located endpoints; the UI must not imply that the call itself occurred at a single map point.
 - Generic evidence preparation may later interpret summaries, but special fusion behavior is deliberately out of scope.
 
 ## Open questions
 
-1. Approve the interpretation that Side B is a different device/person in the same canonical location but a different synthetic cell sector.
-2. Approve deterministic, non-intelligible simulated call audio plus a visible synthetic transcript. If spoken dialogue is required, a separate TTS/media decision is needed.
-3. Approve 24 total calls, including the nine-record three-location chain.
+1. Approve deterministic, non-intelligible simulated call audio plus a visible synthetic transcript. If spoken dialogue is required, a separate TTS/media decision is needed.
+2. Approve 24 total calls, including the nine-record three-location chain.
 
 ## Missing inputs
 
-Human approval of the three open questions above.
+Human approval of the two remaining open questions above.
 
 ## Required reviewers
 

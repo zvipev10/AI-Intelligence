@@ -33,7 +33,7 @@ Open catalog → select Cellular Calls → inspect map/table/timeline → open a
 ## UI states
 
 - Header: source badge, call ID, start time, duration, simulation badge.
-- Party section: Side A and Side B cards with phone, IMEI, canonical location, and sector.
+- Party section: Side A and Side B cards with phone, IMEI, and their distinct canonical locations.
 - Recording section: native audio controls with localized simulation label.
 - Transcript/summary section.
 - Collapsible technical/source metadata.
@@ -56,7 +56,7 @@ Player shows metadata loading without blocking record details. No autoplay.
 - English source: `Cellular Calls`
 - `צד א׳` / `Side A`, `צד ב׳` / `Side B`
 - `הקלטת שיחה מדומה` / `Simulated call recording`
-- `אזור` / `Area`, `מגזר תא` / `Cell sector`
+- `מיקום` / `Location`
 
 ## Accessibility notes
 
@@ -79,4 +79,4 @@ Can the generic metadata field list exclude fields already consumed by the speci
 
 ## Review recommendation
 
-Approve with transcript expanded by default and with explicit area-versus-sector wording.
+Approve with transcript expanded by default and explicit two-location presentation.
