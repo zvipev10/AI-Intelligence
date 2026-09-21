@@ -22,20 +22,22 @@ class EvidenceFoundationTests(unittest.TestCase):
         approaches = server.resolve_location({"query": "הגישות הצפוניות לצפון מיטרוביצה"})
         self.assertEqual(approaches["location_ids"], ["LOC-V2-009"])
 
-    def test_v21_location_resolution_excludes_legacy_ids_and_supports_english_aliases(self):
+    def test_v21_location_resolution_keeps_full_catalog_and_supports_english_aliases(self):
         if server.DATASET_VERSION != "v2.1":
             self.skipTest("Production-only V2.1 location namespace contract")
 
-        for query in ("אזור גשר איבר", "גשר איבר", "Ibar bridge", "Mitrovica bridge"):
+        for query in ("Ibar bridge", "Mitrovica bridge"):
             with self.subTest(query=query):
                 result = server.resolve_location({"query": query})
                 self.assertEqual(result["location_ids"], ["LOC-V2-010"])
-                self.assertNotIn("LOC-001", result["location_ids"])
 
+        detailed = server.resolve_location({"query": "אזור גשר איבר"})
+        self.assertEqual(detailed["location_ids"], ["LOC-001"])
         broad = server.resolve_location({"query": "צפון מיטרוביצה"})
         self.assertTrue(broad["location_ids"])
-        self.assertTrue(all(location_id.startswith("LOC-V2-") for location_id in broad["location_ids"]))
-        self.assertIsNone(server.scoped_location_presentation("LOC-001"))
+        self.assertIn("LOC-001", broad["location_ids"])
+        self.assertIn("LOC-V2-010", broad["location_ids"])
+        self.assertIsNotNone(server.scoped_location_presentation("LOC-001"))
 
     def test_search_evidence_defaults_to_fused_objects(self):
         class SearchStub:

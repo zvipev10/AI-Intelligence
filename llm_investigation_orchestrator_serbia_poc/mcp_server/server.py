@@ -84,22 +84,6 @@ NEXT_SERVER_REQUEST_ID = 100000
 
 LOCATIONS = json.loads(LOCATIONS_PATH.read_text(encoding="utf-8")) if LOCATIONS_PATH.exists() else {}
 
-# V2.1 is the only active production geography.  Its projection still carries
-# legacy LOC-* definitions for historical raw rows, but those definitions must
-# not leak into analyst-facing resolution or be selected for new filters.
-ACTIVE_LOCATION_PREFIX = "LOC-V2-" if DATASET_VERSION == "v2.1" else ""
-
-
-def active_location_id(location_id: str) -> bool:
-    return not ACTIVE_LOCATION_PREFIX or str(location_id).startswith(ACTIVE_LOCATION_PREFIX)
-
-
-def active_location_ids_for(predicate) -> list[str]:
-    return [
-        location_id for location_id, item in LOCATIONS.items()
-        if active_location_id(location_id) and predicate(item)
-    ]
-
 AREA_ALIASES = {
     "ציר פרישטינה–מיטרוביצה": ["LOC-V2-013"] if "LOC-V2-013" in LOCATIONS else [],
     "ציר פרישטינה-מיטרוביצה": ["LOC-V2-013"] if "LOC-V2-013" in LOCATIONS else [],
@@ -111,17 +95,17 @@ AREA_ALIASES = {
     "mitrovica bridge": ["LOC-V2-010"] if "LOC-V2-010" in LOCATIONS else [],
     "main bridge mitrovica": ["LOC-V2-010"] if "LOC-V2-010" in LOCATIONS else [],
     "north mitrovica": ["LOC-V2-009", "LOC-V2-010"] if "LOC-V2-010" in LOCATIONS else [],
-    "צפון קוסובו": active_location_ids_for(lambda item: item.get("region") == "צפון קוסובו"),
-    "צפון מיטרוביצה": active_location_ids_for(lambda item: item.get("municipality") == "צפון מיטרוביצה"),
-    "זבצ׳אן": active_location_ids_for(lambda item: item.get("municipality") == "זבצ׳אן"),
-    "זובין פוטוק": active_location_ids_for(lambda item: item.get("municipality") == "זובין פוטוק"),
-    "לפוסאביץ׳": active_location_ids_for(lambda item: item.get("municipality") == "לפוסאביץ׳"),
-    "סרביה": active_location_ids_for(lambda item: item.get("country") == "סרביה"),
-    "דרום סרביה": active_location_ids_for(lambda item: item.get("region") == "דרום סרביה"),
-    "בלגרד": active_location_ids_for(lambda item: item.get("municipality") == "בלגרד"),
-    "פרישטינה": active_location_ids_for(lambda item: item.get("municipality") == "פרישטינה"),
-    "ראשקה": active_location_ids_for(lambda item: item.get("municipality") == "ראשקה"),
-    "נובי פאזאר": active_location_ids_for(lambda item: item.get("municipality") == "נובי פאזאר"),
+    "צפון קוסובו": [location_id for location_id, item in LOCATIONS.items() if item.get("region") == "צפון קוסובו"],
+    "צפון מיטרוביצה": [location_id for location_id, item in LOCATIONS.items() if item.get("municipality") == "צפון מיטרוביצה"],
+    "זבצ׳אן": [location_id for location_id, item in LOCATIONS.items() if item.get("municipality") == "זבצ׳אן"],
+    "זובין פוטוק": [location_id for location_id, item in LOCATIONS.items() if item.get("municipality") == "זובין פוטוק"],
+    "לפוסאביץ׳": [location_id for location_id, item in LOCATIONS.items() if item.get("municipality") == "לפוסאביץ׳"],
+    "סרביה": [location_id for location_id, item in LOCATIONS.items() if item.get("country") == "סרביה"],
+    "דרום סרביה": [location_id for location_id, item in LOCATIONS.items() if item.get("region") == "דרום סרביה"],
+    "בלגרד": [location_id for location_id, item in LOCATIONS.items() if item.get("municipality") == "בלגרד"],
+    "פרישטינה": [location_id for location_id, item in LOCATIONS.items() if item.get("municipality") == "פרישטינה"],
+    "ראשקה": [location_id for location_id, item in LOCATIONS.items() if item.get("municipality") == "ראשקה"],
+    "נובי פאזאר": [location_id for location_id, item in LOCATIONS.items() if item.get("municipality") == "נובי פאזאר"],
 }
 
 EVENT_REFERENCES = {}
@@ -282,8 +266,6 @@ def scoped_entity_presentation(entity_id: str) -> dict[str, Any] | None:
 
 
 def scoped_location_presentation(location_id: str) -> dict[str, Any] | None:
-    if not active_location_id(location_id):
-        return None
     base = LOCATION_PRESENTATIONS.get(location_id)
     if base is None:
         return None
@@ -343,7 +325,7 @@ def match_location_term(term: str) -> list[str]:
     # municipality alias.
     exact_locations = [
         location_id for location_id, location in LOCATIONS.items()
-        if active_location_id(location_id) and folded == _fold(location.get("name"))
+        if folded == _fold(location.get("name"))
     ]
     if exact_locations:
         return exact_locations
@@ -357,8 +339,6 @@ def match_location_term(term: str) -> list[str]:
 
     matched: list[str] = []
     for location_id, location in LOCATIONS.items():
-        if not active_location_id(location_id):
-            continue
         fields = [
             location.get("name"),
             location.get("type"),

@@ -131,4 +131,9 @@ active dataset is V2.1, legacy `LOC-*` definitions retained in historical raw
 rows are excluded from analyst-facing location resolution and presentation.
 Hebrew and English Ibar Bridge aliases resolve directly to `LOC-V2-010`.
 
+`SHA256SUMS-v188.txt` restores the complete 170-object V2.1 location catalog
+to resolver, object-retrieval, and presentation paths. Detailed `LOC-*`
+locations and broader `LOC-V2-*` operational areas remain concurrently valid;
+no hierarchy or automatic area expansion is introduced in this release.
+
 No production files or services were changed during capture or consolidation.
