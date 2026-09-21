@@ -6,20 +6,20 @@ Cellular Calls raw data source
 
 ## Current phase
 
-Controlled execution
+Final review and handoff
 
 ## Overall status
 
-In progress
+Complete
 
 ## Who needs to act now
 
 | Role | Status | Required action | Due before |
 |---|---|---|---|
 | Product | Approved | Review final behavior against acceptance criteria | Final acceptance |
-| Development | In progress | Implement the approved execution slices | Checkpoint review |
-| UX | Approved | Verify responsive RTL/LTR viewer | Checkpoint 2 |
-| QA | Approved | Validate dataset, API, viewer, and regressions | Final review |
+| Development | Complete | Support merge review if requested | Merge review |
+| UX | Complete | No action | — |
+| QA | Complete | No action | — |
 | Architecture/Security | Accepted constraint | Enforce synthetic-only identifiers and audio | Every slice |
 
 ## Latest change since previous review
@@ -36,7 +36,7 @@ Dataset, API/tool contract, dedicated viewer, localized catalog, recordings, and
 
 ## Next expected artifact
 
-Final QA result and handoff summary.
+Human merge review; deployment only if separately requested.
 
 ## Parent issue
 
@@ -59,8 +59,8 @@ Draft: `issues/parent-capability.md`
 - UX review: `ux-review.md`
 - QA review: `qa-review.md`
 - Execution plan: `execution-plan.md`
-- Latest checkpoint: `checkpoint-001.md`
-- Handoff: none
+- Latest checkpoint: `checkpoint-002.md`
+- Handoff: `handoff-summary.md`
 
 ## Gate checklist
 
