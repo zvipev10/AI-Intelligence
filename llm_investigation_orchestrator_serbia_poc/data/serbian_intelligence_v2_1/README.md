@@ -1,6 +1,14 @@
 # Serbian Intelligence Synthetic Dataset V2.1
 
-V2.1 preserves the V2 scenario, schema, record identifiers, source balance, and UAV observations while adding deterministic cross-source evidence chains for fusion evaluation.
+V2.1 preserves the V2 scenario, record identifiers, source balance, and UAV observations while adding deterministic cross-source evidence chains for fusion evaluation and 24 synthetic cellular-call records.
+
+## Cellular Calls source
+
+- Hebrew source label: `שיחות סלולר`; English label: `Cellular Calls`.
+- Nine linked calls reuse one synthetic Side A number and IMEI: three calls in each of `LOC-V2-013`, `LOC-V2-009`, and `LOC-V2-010`.
+- Every Side B uses a different synthetic identity and a different existing canonical location elsewhere in Kosovo.
+- Every call has a locally generated simulated WAV recording and a bilingual synthetic transcript.
+- All communication identifiers and audio are synthetic demonstration data; no real PII or voices are included.
 
 ## Runtime artifacts
 

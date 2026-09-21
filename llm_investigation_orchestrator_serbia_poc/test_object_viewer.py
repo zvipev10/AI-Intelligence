@@ -19,7 +19,7 @@ class ObjectViewerContractTests(unittest.TestCase):
         self.assertIn('aria-labelledby="objectViewerTitle"', self.index)
 
     def test_records_organizations_and_evidence_are_supported(self):
-        self.assertIn("if (!['record', 'organization', 'evidence'].includes(kind)) return false;", self.app)
+        self.assertIn("if (!['record', 'organization', 'evidence', 'assessment'].includes(kind)) return false;", self.app)
         self.assertIn('data-viewer-kind="evidence"', self.app)
         self.assertNotIn('data-viewer-kind="target"', self.app)
 
@@ -62,6 +62,18 @@ class ObjectViewerContractTests(unittest.TestCase):
         self.assertIn("margin-inline-start: auto", self.styles)
         self.assertIn('[dir="rtl"] .object-viewer', self.styles)
         self.assertIn("height: 100dvh", self.styles)
+
+    def test_cellular_calls_have_a_dedicated_non_duplicating_viewer(self):
+        self.assertIn("function isCellularCallRecord(item)", self.app)
+        self.assertIn("function cellularCallPartyHtml(item, side)", self.app)
+        self.assertIn("function cellularCallHtml(item)", self.app)
+        self.assertIn('activeLocaleText("שיחה סלולרית", "Cellular call")', self.app)
+        self.assertIn('activeLocaleText("הקלטת שיחה מדומה", "Simulated call recording")', self.app)
+        self.assertIn('activeLocaleText("תמלול מדומה", "Simulated transcript")', self.app)
+        self.assertIn('"side_a_imei"', self.app)
+        self.assertIn('"side_b_imei"', self.app)
+        self.assertIn(".cellular-call-parties", self.styles)
+        self.assertIn("grid-template-columns: minmax(0,1fr) minmax(0,1fr)", self.styles)
 
 
 if __name__ == "__main__":

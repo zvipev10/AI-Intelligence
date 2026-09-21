@@ -675,6 +675,25 @@ th { position: sticky; top: 0; z-index: 1; background: #202530; }
 .object-viewer-media-context span { min-width: 0; display: inline-flex; align-items: center; gap: 6px; padding: 5px 7px; border-radius: 6px; background: rgba(0,0,0,.18); color: var(--muted); font-size: 10px; }
 .object-viewer-media-context code { color: var(--ink); overflow-wrap: anywhere; }
 .object-viewer-source-media > p { margin: 10px 0 0; color: var(--muted); font-size: 11px; line-height: 1.55; }
+.cellular-call-viewer { margin-bottom: 18px; padding: 14px; border: 1px solid rgba(88,166,255,.24); border-radius: 10px; background: linear-gradient(155deg, rgba(88,166,255,.07), rgba(255,255,255,.015)); }
+.cellular-call-meta { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 12px; }
+.cellular-call-meta > span { display: inline-flex; align-items: center; gap: 6px; padding: 6px 8px; border-radius: 6px; background: rgba(0,0,0,.18); color: var(--muted); font-size: 11px; }
+.cellular-call-meta b { color: var(--ink); }
+.cellular-call-parties { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 10px; }
+.cellular-call-party { min-width: 0; padding: 12px; border: 1px solid var(--line); border-radius: 9px; background: rgba(9,13,20,.62); }
+.cellular-call-party-label { display: inline-flex; margin-bottom: 9px; padding: 3px 7px; border-radius: 999px; background: rgba(88,166,255,.13); color: var(--blue); font-size: 11px; font-weight: 800; }
+.cellular-call-party-b .cellular-call-party-label { background: rgba(210,168,76,.13); color: #d2a84c; }
+.cellular-call-party dl { margin: 0; display: grid; gap: 8px; }
+.cellular-call-party dl div { min-width: 0; }
+.cellular-call-party dt { color: var(--muted); font-size: 10px; }
+.cellular-call-party dd { margin: 2px 0 0; overflow-wrap: anywhere; font-size: 12px; }
+.cellular-call-connection { height: 14px; display: grid; place-items: center; }
+.cellular-call-connection span { width: 42%; height: 1px; background: linear-gradient(90deg, var(--blue), rgba(255,255,255,.15), #d2a84c); }
+.cellular-call-recording h4, .cellular-call-transcript h4 { margin: 0 0 7px; font-size: 12px; }
+.cellular-call-audio audio { min-height: 42px; }
+.cellular-call-transcript { margin-top: 12px; padding: 11px 12px; border-radius: 8px; background: rgba(0,0,0,.18); }
+.cellular-call-transcript p { margin: 0; line-height: 1.65; white-space: pre-wrap; }
+.cellular-call-disclaimer { margin: 10px 0 0; color: var(--muted); font-size: 10px; line-height: 1.5; }
 .object-viewer-fields { display: grid; grid-template-columns: 1fr; gap: 1px; border: 1px solid var(--line); border-radius: 9px; overflow: hidden; background: var(--line); }
 .object-viewer-field { min-width: 0; padding: 10px 12px; background: var(--panel); }
 .object-viewer-field dt { margin-bottom: 4px; color: var(--muted); font-size: 12px; }
@@ -750,6 +769,8 @@ th { position: sticky; top: 0; z-index: 1; background: #202530; }
   .object-viewer-backdrop { padding: 0; }
   .object-viewer { width: min(420px, 100vw); height: 100dvh; }
   .object-viewer-fields { grid-template-columns: 1fr; }
+  .cellular-call-parties { grid-template-columns: 1fr; }
+  .cellular-call-connection { display: none; }
 }
 @media (orientation: portrait) and (max-width: 1000px) {
   .raw-events-overlay { height: 34%; min-height: 180px; }

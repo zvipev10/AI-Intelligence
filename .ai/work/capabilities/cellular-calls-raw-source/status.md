@@ -24,7 +24,7 @@ In progress
 
 ## Latest change since previous review
 
-User approved implementation on top of commit `2fe94be`; reviews and remaining assumptions were accepted for execution.
+Dataset, API/tool contract, dedicated viewer, localized catalog, recordings, and focused tests are complete on top of `2fe94be`.
 
 ## Current blockers
 
@@ -36,7 +36,7 @@ User approved implementation on top of commit `2fe94be`; reviews and remaining a
 
 ## Next expected artifact
 
-Slice 1 checkpoint covering dataset, audio, and API projection.
+Final QA result and handoff summary.
 
 ## Parent issue
 
@@ -59,7 +59,7 @@ Draft: `issues/parent-capability.md`
 - UX review: `ux-review.md`
 - QA review: `qa-review.md`
 - Execution plan: `execution-plan.md`
-- Latest checkpoint: none
+- Latest checkpoint: `checkpoint-001.md`
 - Handoff: none
 
 ## Gate checklist

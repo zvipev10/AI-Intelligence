@@ -3288,7 +3288,46 @@ function isUavVideoRecord(item) {
   return item.collection_family === "airborne_isr_video_exploitation" || Boolean(item.video_segment_id);
 }
 
+function isCellularCallRecord(item) {
+  return item.collection_family === "synthetic_cellular_call_collection" || Boolean(item.call_id);
+}
+
+function cellularCallPartyHtml(item, side) {
+  const prefix = side === "a" ? "side_a" : "side_b";
+  const label = side === "a" ? activeLocaleText("צד א׳", "Side A") : activeLocaleText("צד ב׳", "Side B");
+  const location = item[`${prefix}_location_name`] || item[`${prefix}_location_id`] || activeLocaleText("לא ידוע", "Unknown");
+  const number = item[`${prefix}_number`] || activeLocaleText("לא ידוע", "Unknown");
+  const imei = item[`${prefix}_imei`] || activeLocaleText("לא ידוע", "Unknown");
+  return `<article class="cellular-call-party cellular-call-party-${side}">
+    <span class="cellular-call-party-label">${escapeHtml(label)}</span>
+    <dl><div><dt>${escapeHtml(activeLocaleText("מספר", "Number"))}</dt><dd dir="ltr">${escapeHtml(number)}</dd></div>
+    <div><dt>IMEI</dt><dd dir="ltr">${escapeHtml(imei)}</dd></div>
+    <div><dt>${escapeHtml(activeLocaleText("מיקום", "Location"))}</dt><dd>${escapeHtml(location)}</dd></div></dl>
+  </article>`;
+}
+
+function cellularCallHtml(item) {
+  if (!isCellularCallRecord(item)) return "";
+  const audioUrl = safeMediaUrl(item.audio_url || item.media?.audio_url);
+  const recording = audioUrl
+    ? `<div class="object-viewer-media cellular-call-audio"><audio controls preload="metadata" src="${escapeHtml(audioUrl)}"></audio></div>`
+    : `<div class="object-viewer-media-state"><span class="material-symbols-rounded">voice_over_off</span><strong>${escapeHtml(activeLocaleText("ההקלטה אינה זמינה", "Recording unavailable"))}</strong></div>`;
+  const seconds = Number(item.call_duration_seconds || 0);
+  const duration = seconds > 0 ? `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}` : activeLocaleText("לא ידוע", "Unknown");
+  const transcript = item.call_transcript || activeLocaleText("אין תמלול זמין", "No transcript available");
+  return `<section class="cellular-call-viewer" aria-labelledby="cellularCallTitle">
+    <div class="object-viewer-section-heading"><div><span class="eyebrow">${escapeHtml(activeLocaleText("חומר מקור", "Source material"))}</span><h3 id="cellularCallTitle">${escapeHtml(activeLocaleText("שיחה סלולרית", "Cellular call"))}</h3></div><span class="object-viewer-live-badge"><i></i>${escapeHtml(activeLocaleText("סימולציה", "Simulation"))}</span></div>
+    <div class="cellular-call-meta"><span><b>${escapeHtml(activeLocaleText("התחלה", "Started"))}</b><time dir="ltr">${escapeHtml(item.call_started_at_utc || item.timestamp_utc || "-")}</time></span><span><b>${escapeHtml(activeLocaleText("משך", "Duration"))}</b><span dir="ltr">${escapeHtml(duration)}</span></span></div>
+    <div class="cellular-call-parties">${cellularCallPartyHtml(item, "a")}${cellularCallPartyHtml(item, "b")}</div>
+    <div class="cellular-call-connection" aria-hidden="true"><span></span></div>
+    <div class="cellular-call-recording"><h4>${escapeHtml(activeLocaleText("הקלטת שיחה מדומה", "Simulated call recording"))}</h4>${recording}</div>
+    <div class="cellular-call-transcript"><h4>${escapeHtml(activeLocaleText("תמלול מדומה", "Simulated transcript"))}</h4><p>${escapeHtml(transcript)}</p></div>
+    <p class="cellular-call-disclaimer">${escapeHtml(activeLocaleText("המספרים, מזהי המכשירים וההקלטה נוצרו לצורכי הדגמה ואינם מידע תקשורת אמיתי.", "Numbers, device identifiers, and audio are synthetic demonstration data, not authentic communications."))}</p>
+  </section>`;
+}
+
 function viewerMediaHtml(item) {
+  if (isCellularCallRecord(item)) return "";
   const media = viewerMedia(item);
   const mediaElement = media?.type === "video"
     ? `<video controls preload="metadata" src="${escapeHtml(media.url)}"></video>`
@@ -3370,9 +3409,9 @@ function startSimulatedUavStream(item) {
 }
 
 function viewerFields(item, kind) {
-  const hidden = new Set(["event_summary", "canonical_name", "media", "video_url", "audio_url", "image_url", "raw_data_references"]);
+  const hidden = new Set(["event_summary", "canonical_name", "media", "video_url", "audio_url", "image_url", "raw_data_references", "call_started_at_utc", "call_duration_seconds", "side_a_imei", "side_a_number", "side_a_location_id", "side_a_location_name", "side_b_imei", "side_b_number", "side_b_location_id", "side_b_location_name", "call_transcript", "call_transcript_en", "synthetic_media"]);
   const preferred = kind === "record"
-    ? ["timestamp_utc", "source_type", "collection_family", "source_reliability_label", "certainty_level", "entity_name", "location_name", "observation_id", "mission_id", "video_segment_id"]
+    ? ["timestamp_utc", "source_type", "collection_family", "source_reliability_label", "certainty_level", "entity_name", "location_name", "call_id", "observation_id", "mission_id", "video_segment_id"]
     : kind === "evidence"
       ? ["evidence_status", "claim_type", "confidence", "object_class", "subject_entity_ids", "location_ids", "valid_from", "valid_to", "source_groups", "source_record_ids", "quantity", "movement", "created_by_processor"]
     : kind === "assessment"
@@ -3393,6 +3432,7 @@ function viewerFieldLabel(key) {
     observation_id: ["מזהה תצפית", "Observation ID"],
     mission_id: ["מזהה משימה", "Mission ID"],
     video_segment_id: ["מזהה מקטע", "Segment ID"],
+    call_id: ["מזהה שיחה", "Call ID"],
     entity_type: ["סוג ארגון", "Organization type"],
     aliases: ["שמות נוספים", "Aliases"],
     event_count: ["מספר רשומות", "Record count"],
@@ -3482,7 +3522,7 @@ function openObjectViewer(kind, id, trigger = document.activeElement) {
   objectViewerReturnFocus = trigger;
   const viewer = document.getElementById("objectViewer");
   const title = kind === "record"
-    ? (isUavVideoRecord(item) ? activeLocaleText("תצפית וידאו מכטב״ם", "UAV video observation") : (item.source_type || activeLocaleText("רשומת מקור", "Source record")))
+    ? (isUavVideoRecord(item) ? activeLocaleText("תצפית וידאו מכטב״ם", "UAV video observation") : isCellularCallRecord(item) ? activeLocaleText("שיחה סלולרית", "Cellular call") : (item.source_type || activeLocaleText("רשומת מקור", "Source record")))
     : kind === "evidence" ? (item.object_class || item.claim_type || id)
     : kind === "assessment" ? (item.title || id)
     : (item.canonical_name || id);
@@ -3490,8 +3530,9 @@ function openObjectViewer(kind, id, trigger = document.activeElement) {
   document.getElementById("objectViewerTitle").textContent = title;
   document.getElementById("objectViewerId").textContent = id;
   const mediaHtml = viewerMediaHtml(item);
+  const cellularHtml = kind === "record" ? cellularCallHtml(item) : "";
   const fields = viewerFields(item, kind).map(([key,value]) => `<div class="object-viewer-field"><dt>${escapeHtml(viewerFieldLabel(key))}</dt><dd>${escapeHtml(viewerValue(value))}</dd></div>`).join("");
-  document.getElementById("objectViewerBody").innerHTML = `${mediaHtml}${["record", "evidence", "assessment"].includes(kind) ? `<p class="object-viewer-summary">${escapeHtml(item.event_summary || item.summary || "-")}</p>` : ""}<dl class="object-viewer-fields">${fields}</dl>${kind === "organization" ? organizationEvidenceHtml(item) : kind === "evidence" ? evidenceProvenanceHtml(item) : kind === "assessment" ? assessmentEvidenceHtml(item) : ""}`;
+  document.getElementById("objectViewerBody").innerHTML = `${mediaHtml}${cellularHtml}${["record", "evidence", "assessment"].includes(kind) ? `<p class="object-viewer-summary">${escapeHtml(item.event_summary || item.summary || "-")}</p>` : ""}<dl class="object-viewer-fields">${fields}</dl>${kind === "organization" ? organizationEvidenceHtml(item) : kind === "evidence" ? evidenceProvenanceHtml(item) : kind === "assessment" ? assessmentEvidenceHtml(item) : ""}`;
   viewer.hidden = false;
   if (kind === "record" && isUavVideoRecord(item)) startSimulatedUavStream(item);
   document.getElementById("objectViewerClose").focus();

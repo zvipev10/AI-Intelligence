@@ -6,9 +6,12 @@ from __future__ import annotations
 import csv
 import hashlib
 import json
+import math
 import random
 import shutil
+import struct
 import sys
+import wave
 from collections import Counter, defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
@@ -22,6 +25,18 @@ POSITIVE_CHAINS = 300
 HARD_NEGATIVES = 100
 MAX_PUBLIC_DELTA_SECONDS = 8 * 60 * 60
 MOVEMENT_SCENARIO_ID = "MOV-IBAR-01"
+CELLULAR_CALL_SCENARIO_ID = "CALL-THREE-LOCATION-01"
+CELLULAR_SOURCE_TYPE = "שיחות סלולר"
+CELLULAR_CALL_COUNT = 24
+CELLULAR_LINKED_CALL_COUNT = 9
+CELLULAR_AUDIO_DIR = ROOT.parent / "assets" / "audio" / "cellular_calls"
+
+CALL_EVENT_FIELDS = [
+    "call_id", "call_started_at_utc", "call_duration_seconds",
+    "side_a_imei", "side_a_number", "side_a_location_id",
+    "side_b_imei", "side_b_number", "side_b_location_id",
+    "audio_url", "call_transcript", "call_transcript_en", "synthetic_media",
+]
 
 RAW_CSV = "north_kosovo_serbian_intelligence_v2_14800.csv"
 RAW_JSONL = "north_kosovo_serbian_intelligence_v2_14800.jsonl"
@@ -139,6 +154,154 @@ def write_jsonl(path: Path, rows: list[dict]) -> None:
 
 def parse_time(value: str) -> datetime:
     return datetime.fromisoformat(value.replace("Z", "+00:00")).astimezone(timezone.utc)
+
+
+def write_simulated_call_audio(path: Path, seed: int, duration_seconds: int = 8) -> None:
+    """Write deterministic telephone-band simulation without real voices or PII."""
+    sample_rate = 8_000
+    amplitude = 7_800
+    rng = random.Random(seed)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with wave.open(str(path), "wb") as output:
+        output.setnchannels(1)
+        output.setsampwidth(2)
+        output.setframerate(sample_rate)
+        frames = bytearray()
+        for sample_index in range(sample_rate * duration_seconds):
+            second = sample_index / sample_rate
+            speaker_phase = int(second / 1.15) % 2
+            active = (second % 1.15) < 0.88
+            base = 185 if speaker_phase == 0 else 235
+            voice = (
+                math.sin(2 * math.pi * base * second)
+                + 0.42 * math.sin(2 * math.pi * base * 2.03 * second)
+                + 0.18 * math.sin(2 * math.pi * base * 3.07 * second)
+            ) if active else 0.0
+            line_noise = rng.uniform(-0.055, 0.055)
+            sample = int(max(-32767, min(32767, amplitude * (voice * 0.42 + line_noise))))
+            frames.extend(struct.pack("<h", sample))
+        output.writeframes(frames)
+
+
+def cellular_call_rows(
+    raw_fields: list[str], projection_fields: list[str], label_fields: list[str], locations: dict[str, dict]
+) -> tuple[list[dict], list[dict], list[dict]]:
+    """Build a synthetic call layer with one repeated Side A trail across three locations."""
+    raw_rows: list[dict] = []
+    projection_rows: list[dict] = []
+    label_rows: list[dict] = []
+    linked_side_a_imei = "356789104321567"
+    linked_side_a_number = "+38349555001"
+    side_a_locations = [location for location in MOVEMENT_LOCATIONS for _ in range(3)]
+    side_b_location_ids = [
+        "LOC-V2-001", "LOC-V2-003", "LOC-V2-005",
+        "LOC-V2-011", "LOC-V2-012", "LOC-V2-014",
+        "LOC-V2-015", "LOC-V2-006", "LOC-V2-007",
+    ]
+    linked_times = [
+        "2026-09-17T06:34:00Z", "2026-09-17T06:42:00Z", "2026-09-17T06:51:00Z",
+        "2026-09-17T07:22:00Z", "2026-09-17T07:31:00Z", "2026-09-17T07:43:00Z",
+        "2026-09-17T08:12:00Z", "2026-09-17T08:20:00Z", "2026-09-17T08:28:00Z",
+    ]
+    background_a_ids = ["LOC-V2-002", "LOC-V2-004", "LOC-V2-005", "LOC-V2-006", "LOC-V2-007", "LOC-V2-008", "LOC-V2-011", "LOC-V2-012", "LOC-V2-014", "LOC-V2-015"]
+    background_b_ids = ["LOC-V2-014", "LOC-V2-012", "LOC-V2-001", "LOC-V2-003", "LOC-V2-010", "LOC-V2-013", "LOC-V2-002", "LOC-V2-004", "LOC-V2-006", "LOC-V2-008"]
+    transcripts_he = [
+        "צד א׳: נמשיך צפונה לפי התכנון. צד ב׳: קיבלתי, אעדכן כשהציר פנוי.",
+        "צד א׳: הגעתי לנקודה הבאה. צד ב׳: שמור על קשר ועדכן בעוד עשר דקות.",
+        "צד א׳: התנועה מתעכבת. צד ב׳: המתן להנחיה נוספת.",
+    ]
+    transcripts_en = [
+        "Side A: We will continue north as planned. Side B: Understood; I will report when the route is clear.",
+        "Side A: I reached the next point. Side B: Maintain contact and report again in ten minutes.",
+        "Side A: Movement is delayed. Side B: Wait for further instructions.",
+    ]
+
+    for index in range(CELLULAR_CALL_COUNT):
+        linked = index < CELLULAR_LINKED_CALL_COUNT
+        call_number = index + 1
+        record_id = f"REC-V2-{14_810 + index:06d}"
+        call_id = f"CALL-V2-{call_number:04d}"
+        if linked:
+            side_a_id = side_a_locations[index]["location_id"]
+            side_b_id = side_b_location_ids[index]
+            timestamp = linked_times[index]
+            side_a_imei = linked_side_a_imei
+            side_a_number = linked_side_a_number
+        else:
+            background_index = index - CELLULAR_LINKED_CALL_COUNT
+            side_a_id = background_a_ids[background_index % len(background_a_ids)]
+            side_b_id = background_b_ids[background_index % len(background_b_ids)]
+            if side_b_id == side_a_id:
+                side_b_id = "LOC-V2-001" if side_a_id != "LOC-V2-001" else "LOC-V2-014"
+            timestamp = f"2026-09-{14 + background_index // 6:02d}T{9 + background_index % 8:02d}:{(background_index * 7) % 60:02d}:00Z"
+            side_a_imei = f"35678910432{200 + background_index:04d}"
+            side_a_number = f"+38349556{100 + background_index:03d}"
+        side_b_imei = f"35678910433{100 + index:04d}"
+        side_b_number = f"+38349557{100 + index:03d}"
+        duration = 38 + (index * 17) % 103
+        transcript_he = transcripts_he[index % len(transcripts_he)]
+        transcript_en = transcripts_en[index % len(transcripts_en)]
+        side_a_name = locations[side_a_id]["name"]
+        side_b_name = locations[side_b_id]["name"]
+        summary = f"שיחה סלולרית מדומה בין מנוי באזור {side_a_name} למנוי באזור {side_b_name}; ההקלטה והזהויות סינתטיות לצורכי הדגמה."
+        audio_relative = f"./assets/audio/cellular_calls/{call_id}.wav"
+        write_simulated_call_audio(CELLULAR_AUDIO_DIR / f"{call_id}.wav", SEED + index)
+        call_values = {
+            "call_id": call_id, "call_started_at_utc": timestamp,
+            "call_duration_seconds": str(duration), "side_a_imei": side_a_imei,
+            "side_a_number": side_a_number, "side_a_location_id": side_a_id,
+            "side_b_imei": side_b_imei, "side_b_number": side_b_number,
+            "side_b_location_id": side_b_id, "audio_url": audio_relative,
+            "call_transcript": transcript_he, "call_transcript_en": transcript_en,
+            "synthetic_media": "true",
+        }
+        raw = {field: "" for field in raw_fields}
+        raw.update({
+            "record_id": record_id, "timestamp": timestamp, "source_type": CELLULAR_SOURCE_TYPE,
+            "language": "עברית", "country": "קוסובו", "region": locations[side_a_id].get("region", "קוסובו"),
+            "municipality": locations[side_a_id].get("municipality", ""), "locality": locations[side_a_id].get("locality", ""),
+            "place_name": side_a_name, "location_id": side_a_id,
+            "location_precision": locations[side_a_id].get("precision", "coarse_area"), "location_confidence": "גבוהה",
+            "claimed_location": side_a_name, "ground_truth_location": side_a_name,
+            "actor_mentioned": "תושבים מקומיים", "observed_actor": "תושבים מקומיים",
+            "event_id": f"EVT-CALL-{call_number:04d}", "event_name": "תקשורת סלולרית מדומה",
+            "information_type": "מטא-דאטה והקלטת שיחה", "military_signal_type": "תקשורת סלולרית",
+            "text": summary, "relevance_label": "4" if linked else "2", "reliability_label": "confirmed",
+            "claim_strength": "חזקה", "certainty_level": "גבוהה", "is_duplicate": "false",
+            "is_rumor": "false", "is_disinformation": "false", "is_civilian_related": "true",
+            "is_military_related": "false", "media_claimed": "true", "media_verified": "true",
+            "possible_misidentification": "false", "ground_truth_status": "נכון",
+            "same_event_cluster": CELLULAR_CALL_SCENARIO_ID if linked else "",
+            "analyst_question": "האם זהות צד א׳ חוזרת בין מיקומים שונים?" if linked else "",
+            "collection_family": "synthetic_cellular_call_collection",
+            "collection_platform": "synthetic_cellular_network", **call_values,
+        })
+        raw_rows.append(raw)
+        projection = {field: "" for field in projection_fields}
+        projection.update({
+            "event_id": record_id, "timestamp_utc": timestamp, "source_type": CELLULAR_SOURCE_TYPE,
+            "source_reliability": "confirmed", "source_reliability_label": "confirmed",
+            "certainty_level": "גבוהה", "entity_id": "ENT-LOCAL-RESIDENTS", "location_id": side_a_id,
+            "event_summary": summary, "collection_family": "synthetic_cellular_call_collection", **call_values,
+        })
+        projection_rows.append(projection)
+        label = {field: "" for field in label_fields}
+        label.update({
+            "event_id": record_id, "record_id": record_id, "source_type": CELLULAR_SOURCE_TYPE,
+            "scenario_event_id": raw["event_id"], "event_name": raw["event_name"],
+            "same_event_cluster": raw["same_event_cluster"], "information_type": raw["information_type"],
+            "military_signal_type": raw["military_signal_type"], "relevance_label": raw["relevance_label"],
+            "source_reliability_label": "confirmed", "claim_strength": "חזקה", "certainty_level": "גבוהה",
+            "is_duplicate": "false", "is_rumor": "false", "is_disinformation": "false",
+            "is_civilian_related": "true", "is_military_related": "false", "media_claimed": "true",
+            "media_verified": "true", "possible_misidentification": "false", "ground_truth_status": "נכון",
+            "claimed_location": side_a_name, "ground_truth_location": side_a_name,
+            "analyst_question": raw["analyst_question"], "country": "קוסובו", "region": raw["region"],
+            "municipality": raw["municipality"], "locality": raw["locality"], "place_name": side_a_name,
+            "location_precision": raw["location_precision"], "location_confidence": "גבוהה",
+        })
+        label_rows.append(label)
+    return raw_rows, projection_rows, label_rows
 
 
 def movement_demo_rows(raw_fields: list[str], projection_fields: list[str], label_fields: list[str]) -> tuple[list[dict], list[dict], list[dict], list[dict]]:
@@ -380,6 +543,8 @@ def main() -> int:
     raw_fields, rows = read_csv(SOURCE_DIR / RAW_CSV)
     projection_fields, projections = read_csv(SOURCE_DIR / PROJECTION_CSV)
     label_fields, labels = read_csv(SOURCE_DIR / LABELS_CSV)
+    raw_fields.extend(field for field in CALL_EVENT_FIELDS if field not in raw_fields)
+    projection_fields.extend(field for field in CALL_EVENT_FIELDS if field not in projection_fields)
     projection_by_id = {row["event_id"]: row for row in projections}
     label_by_id = {row["record_id"]: row for row in labels}
     row_by_id = {row["record_id"]: row for row in rows}
@@ -513,6 +678,13 @@ def main() -> int:
     rows.extend(movement_rows)
     projections.extend(movement_projections)
     labels.extend(movement_labels)
+    locations = json.loads((SOURCE_DIR / LOCATIONS_JSON).read_text(encoding="utf-8-sig"))
+    call_rows, call_projections, call_labels = cellular_call_rows(
+        raw_fields, projection_fields, label_fields, locations
+    )
+    rows.extend(call_rows)
+    projections.extend(call_projections)
+    labels.extend(call_labels)
 
     for label in labels:
         for field in TRUTH_FIELDS:
@@ -542,10 +714,11 @@ def main() -> int:
         "hard_negative_records": len(hard_negative_rows),
         "object_counts": dict(Counter(row["object_class"] for row in truth_rows)),
         "checks": {
-            "target_rows": len(rows) == 14_809,
+            "target_rows": len(rows) == 14_833,
             "unique_record_ids": len({row["record_id"] for row in rows}) == len(rows),
             "uav_count_preserved": sum(row["collection_family"] == "airborne_isr_video_exploitation" for row in rows) == 3_803,
             "movement_demo_records": len(movement_rows) == 9 and len(movement_uav) == 3,
+            "cellular_call_records": len(call_rows) == CELLULAR_CALL_COUNT,
             "positive_chain_target": len(truth_rows) >= POSITIVE_CHAINS,
             "hard_negative_target": len(hard_negative_rows) >= HARD_NEGATIVES,
             "v2_inputs_unchanged": source_hashes_before == source_hashes_after,

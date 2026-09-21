@@ -1,6 +1,6 @@
 # AI Intelligence
 
-This repository contains the Serbia/North Kosovo intelligence-analysis proof of concept. The active application is a bilingual Hebrew/English analyst workspace backed by Hermes profiles and constrained MCP tools over a synthetic 14,800-record V2.1 dataset.
+This repository contains the Serbia/North Kosovo intelligence-analysis proof of concept. The active application is a bilingual Hebrew/English analyst workspace backed by Hermes profiles and constrained MCP tools over a synthetic 14,833-record V2.1 dataset, including 24 simulated cellular-call records.
 
 Current capabilities include:
 

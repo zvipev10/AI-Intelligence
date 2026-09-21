@@ -54,6 +54,8 @@ def parse_time(value: str) -> datetime:
 
 
 def main() -> int:
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")
     regenerate = "--regenerate" in sys.argv[1:]
     report_path = V21_DIR / "generation_report_v2_1.json"
     v2_hashes_before = {path.name: sha256(path) for path in V2_DIR.iterdir() if path.is_file()}
@@ -78,7 +80,7 @@ def main() -> int:
     sys.path.insert(0, str(ROOT.parent / "mcp_server"))
     from semantic_index import dense_features
 
-    assert len(rows) == 14_809
+    assert len(rows) == 14_833
     assert len(row_by_id) == len(rows)
     assert len(projections) == len(rows)
     assert len(labels) == len(rows)
@@ -87,6 +89,17 @@ def main() -> int:
     assert len({item["fusion_truth_id"] for item in truth}) == len(truth)
     assert sum(row["collection_family"] == "public_source" for row in rows) == 11_006
     assert sum(row["collection_family"] == "airborne_isr_video_exploitation" for row in rows) == 3_803
+
+    calls = [row for row in projections if row.get("source_type") == "שיחות סלולר"]
+    assert len(calls) == 24
+    linked_calls = [row for row in calls if row["side_a_imei"] == "356789104321567"]
+    assert len(linked_calls) == 9
+    assert Counter(row["side_a_location_id"] for row in linked_calls) == {
+        "LOC-V2-013": 3, "LOC-V2-009": 3, "LOC-V2-010": 3,
+    }
+    assert all(row["side_a_location_id"] != row["side_b_location_id"] for row in calls)
+    assert len({row["side_b_imei"] for row in linked_calls}) == 9
+    assert all(row["audio_url"].endswith(".wav") for row in calls)
 
     movement_rows = [row for row in rows if row.get("same_event_cluster") == "MOV-IBAR-01"]
     movement_uav = [row for row in movement_rows if row["collection_family"] == "airborne_isr_video_exploitation"]

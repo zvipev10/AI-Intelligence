@@ -447,6 +447,19 @@ def public_event(event: dict[str, Any]) -> dict[str, Any]:
         "movement_direction": event.get("movement_direction", ""),
         "geolocation_confidence": event.get("geolocation_confidence", ""),
         "identification_confidence": event.get("identification_confidence", ""),
+        "call_id": event.get("call_id", ""),
+        "call_started_at_utc": event.get("call_started_at_utc", ""),
+        "call_duration_seconds": event.get("call_duration_seconds", ""),
+        "side_a_imei": event.get("side_a_imei", ""),
+        "side_a_number": event.get("side_a_number", ""),
+        "side_a_location_id": event.get("side_a_location_id", ""),
+        "side_b_imei": event.get("side_b_imei", ""),
+        "side_b_number": event.get("side_b_number", ""),
+        "side_b_location_id": event.get("side_b_location_id", ""),
+        "audio_url": event.get("audio_url", ""),
+        "call_transcript": event.get("call_transcript", ""),
+        "call_transcript_en": event.get("call_transcript_en", ""),
+        "synthetic_media": event.get("synthetic_media", ""),
     }
 
 

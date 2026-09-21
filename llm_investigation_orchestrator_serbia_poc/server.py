@@ -309,9 +309,15 @@ def load_ui_events(locale: str = "he") -> list[dict[str, Any]]:
             event["source_reliability_label"] = translate_plain(event.get("source_reliability_label", ""))
             event["certainty_level"] = translate_plain(event.get("certainty_level", ""))
             event["event_summary"] = translate_plain(event.get("event_summary", ""))
+            if event.get("call_transcript_en"):
+                event["call_transcript"] = event["call_transcript_en"]
         location = locations_db.get(event.get("location_id") or "", {})
         event["location_name"] = location.get("name", event.get("location_id") or "")
         event["location_type"] = location.get("type", "")
+        for side in ("a", "b"):
+            side_location_id = event.get(f"side_{side}_location_id") or ""
+            side_location = locations_db.get(side_location_id, {})
+            event[f"side_{side}_location_name"] = side_location.get("name", side_location_id)
     return sorted(events, key=lambda item: str(item.get("timestamp_utc") or ""))
 
 

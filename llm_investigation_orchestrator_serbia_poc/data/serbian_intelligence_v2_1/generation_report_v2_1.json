@@ -1,5 +1,6 @@
 {
   "checks": {
+    "cellular_call_records": true,
     "hard_negative_target": true,
     "movement_demo_records": true,
     "positive_chain_target": true,
@@ -27,18 +28,18 @@
   "output_hashes": {
     "README.md": "cf518f51259addfd194c901a5e68e516205fa18d0ca863227bb4e65532c436a2",
     "fusion_target_truth_v2_1.jsonl": "a9a3ade6eea3dc5634ea374eec84efcd95e2c7df5af68f47855bef4a57642a77",
-    "north_kosovo_serbian_intelligence_v2_1_14800.csv": "8ae685f6cfe169cb2fcf7f065f9c232cecaa1b32caabdf788d2b90726511cda4",
-    "north_kosovo_serbian_intelligence_v2_1_14800.jsonl": "ab58e5fc7025b5f40181e25777f17b94844509fe72f1c02296ef9729e3148437",
+    "north_kosovo_serbian_intelligence_v2_1_14800.csv": "b776ea6542319216e4db13d504ab43b00346b48ad1b1f60254521b407a225f40",
+    "north_kosovo_serbian_intelligence_v2_1_14800.jsonl": "e842b3b9528222e93ef966bb33730cf95e590a287c66767d92ad4fb5503e6cab",
     "serbia_kosovo_entities_v2_1.json": "fbde70e2f370fddfc1bce62642b189c76e9d18327edfe3b3975e3aae4750b739",
-    "serbia_kosovo_evaluator_labels_v2_1.csv": "179d2da214e4aeeb583bf6f97e2c1261cc7e5f08431b5ca115a9a6d644993ac7",
-    "serbia_kosovo_events_projection_v2_1.csv": "09058955d31c3f1c18bcadc875e4f0c2fbaad15ee3dc7b8547b9d1e9417efe29",
+    "serbia_kosovo_evaluator_labels_v2_1.csv": "92275231a3864460f2e9afa4057ccac27dc4e52f9d2ae017833963490743ffd0",
+    "serbia_kosovo_events_projection_v2_1.csv": "be5e8a067f0a34e76db6f7a78be8b81c5467a9cd4d668910a7644a1959105f04",
     "serbia_kosovo_locations_v2_1.json": "4dec03e8eaa713cb51661c6de728e31579937f90c24b08bd32378a509464df73",
     "serbian_uav_observations_v2_1.jsonl": "738e0e9667e0a3656cc9cf96efcdd920d4e21c7519ff3072969b58a0e878ecf9"
   },
   "positive_evidence_records": 900,
   "positive_fusion_chains": 300,
   "public_source_records": 11006,
-  "rows": 14809,
+  "rows": 14833,
   "schema_version": "2.1",
   "seed": 20260718,
   "uav_observations": 3803,

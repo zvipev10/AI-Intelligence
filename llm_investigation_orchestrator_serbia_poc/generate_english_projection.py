@@ -61,6 +61,7 @@ EXACT_TEXT_MAP = {
     "בלוג פוליטי": "Political blog",
     "פייסבוק": "Facebook",
     "ערוץ חדשות בינלאומי": "International news channel",
+    "שיחות סלולר": "Cellular Calls",
     "גורם מדווח": "Reporting actor",
     "מוקד ליבה": "Core hotspot",
     "ציר": "Route",
@@ -350,6 +351,8 @@ def project_events(src: Path, dst: Path, locations_src: Path) -> None:
                 if original:
                     summary = summary.replace(original, translate_plain(original))
         row["event_summary"] = summary
+        if row.get("call_transcript_en"):
+            row["call_transcript"] = row["call_transcript_en"]
     with dst.open("w", encoding="utf-8", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=fieldnames)
         writer.writeheader()
