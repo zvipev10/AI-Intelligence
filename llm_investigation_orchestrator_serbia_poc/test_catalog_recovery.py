@@ -1,6 +1,7 @@
 import unittest
 import json
 import threading
+from datetime import datetime, timezone
 from http.server import ThreadingHTTPServer
 from urllib.request import urlopen
 from urllib.parse import quote, urlencode
@@ -70,6 +71,39 @@ class CatalogRecoveryTests(unittest.TestCase):
         filters = {'location_ids': ['LOC-1'], 'entity_ids': ['ENT-1'], 'event_ids': ['1', '2', '3', '4'],
                    'start_time': '2026-09-16T10:00:00Z', 'end_time': '2026-09-16T12:00:00Z'}
         self.assertEqual([r['event_id'] for r in filter_rows(rows, filters)], ['1'])
+
+    def test_catalog_location_filter_matches_either_call_endpoint(self):
+        rows = [
+            {'event_id': 'a', 'location_id': 'LOC-PRIMARY', 'side_a_location_id': 'LOC-A', 'side_b_location_id': 'LOC-B'},
+            {'event_id': 'b', 'location_id': 'LOC-OTHER'},
+        ]
+        self.assertEqual(
+            [row['event_id'] for row in filter_rows(rows, {'location_ids': ['LOC-B']})],
+            ['a'],
+        )
+
+    def test_search_events_accepts_english_source_and_secondary_endpoint(self):
+        event = {
+            'event_id': 'REC-CALL-1', 'timestamp_utc': '2026-09-17T08:00:00Z',
+            'timestamp': datetime(2026, 9, 17, 8, tzinfo=timezone.utc),
+            'source_type': 'שיחות סלולר', 'source_reliability': 'confirmed',
+            'source_reliability_label': 'confirmed', 'certainty_level': 'גבוהה',
+            'entity_id': 'ENT-LOCAL-RESIDENTS', 'location_id': 'LOC-PRIMARY',
+            'location_name': 'Primary', 'location_type': 'area',
+            'side_a_location_id': 'LOC-A', 'side_b_location_id': 'LOC-B',
+            'side_a_number': '+38349000001', 'side_b_number': '+38349000002',
+            'side_a_imei': '111111111111111', 'side_b_imei': '222222222222222',
+            'call_id': 'CALL-1', 'call_transcript': 'בדיקה', 'call_transcript_en': 'test',
+            'event_summary': 'שיחה סלולרית מדומה',
+        }
+        with patch.object(self.mcp, 'visible_events', return_value=[event]):
+            result = self.mcp.search_events({
+                'source_types': ['Cellular Calls'],
+                'location_ids': ['LOC-B'],
+                'keywords': ['+38349000002'],
+            })
+        self.assertEqual(result['event_ids'], ['REC-CALL-1'])
+        self.assertEqual(result['events'][0]['side_b_location_id'], 'LOC-B')
 
     def test_tool_gateway_and_http_preserve_scope(self):
         scope = {'location_ids': ['LOC-1', 'LOC-3']}

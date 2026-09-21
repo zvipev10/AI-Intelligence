@@ -121,6 +121,19 @@ DIRECT_OBSERVATION_MARKERS = (
     "דיווח", "זוהה", "נמסר", "תועד", "נטען", "אישר", "הכחיש", "הופיע", "נסגר", "נחסם",
 )
 
+SOURCE_TYPE_ALIASES = {
+    "cellular calls": "שיחות סלולר",
+    "local news": "חדשות מקומיות",
+    "local rumor": "שמועה מקומית",
+    "whatsapp group": "קבוצת וואטסאפ",
+    "spokesperson statement": "הודעת דובר",
+    "political blog": "בלוג פוליטי",
+    "international news channel": "ערוץ חדשות בינלאומי",
+    "facebook": "פייסבוק",
+    "telegram": "טלגרם",
+    "tiktok": "טיקטוק",
+}
+
 NON_INFORMATIVE_ACTORS = {
     "", "לא ידוע", "לא מזוהה", "גורם לא ידוע", "גורם לא מזוהה", "לא ברור",
 }
@@ -422,6 +435,43 @@ def event_entity_name(event: dict[str, Any]) -> str:
     return entity.get("canonical_name") or event_entity_id(event) or "לא ידוע"
 
 
+def event_location_ids(event: dict[str, Any]) -> set[str]:
+    """Return every canonical location carried by one record.
+
+    ``location_id`` remains the primary/map-anchor field. Multi-party records
+    may additionally carry endpoint locations that must participate in
+    retrieval without duplicating the record.
+    """
+    return {
+        str(value).strip()
+        for value in (
+            event.get("location_id"),
+            event.get("side_a_location_id"),
+            event.get("side_b_location_id"),
+        )
+        if str(value or "").strip()
+    }
+
+
+def canonical_source_type(value: Any) -> str:
+    raw = str(value or "").strip()
+    return SOURCE_TYPE_ALIASES.get(normalize_text(raw), raw)
+
+
+def event_search_haystack(event: dict[str, Any]) -> str:
+    endpoint_names = [
+        (LOCATIONS.get(location_id) or {}).get("name", location_id)
+        for location_id in event_location_ids(event)
+    ]
+    values = [
+        event.get("event_summary"), event_entity_name(event), event.get("location_name"), event.get("source_type"),
+        event.get("call_id"), event.get("side_a_imei"), event.get("side_a_number"),
+        event.get("side_b_imei"), event.get("side_b_number"), event.get("call_transcript"),
+        event.get("call_transcript_en"), *endpoint_names,
+    ]
+    return normalize_text(" ".join(str(value) for value in values if value))
+
+
 def public_event(event: dict[str, Any]) -> dict[str, Any]:
     entity_id = event_entity_id(event)
     entity = ENTITY_PRESENTATIONS.get(entity_id or "", {})
@@ -453,9 +503,11 @@ def public_event(event: dict[str, Any]) -> dict[str, Any]:
         "side_a_imei": event.get("side_a_imei", ""),
         "side_a_number": event.get("side_a_number", ""),
         "side_a_location_id": event.get("side_a_location_id", ""),
+        "side_a_location_name": (LOCATIONS.get(event.get("side_a_location_id", "")) or {}).get("name", ""),
         "side_b_imei": event.get("side_b_imei", ""),
         "side_b_number": event.get("side_b_number", ""),
         "side_b_location_id": event.get("side_b_location_id", ""),
+        "side_b_location_name": (LOCATIONS.get(event.get("side_b_location_id", "")) or {}).get("name", ""),
         "audio_url": event.get("audio_url", ""),
         "call_transcript": event.get("call_transcript", ""),
         "call_transcript_en": event.get("call_transcript_en", ""),
@@ -1888,7 +1940,7 @@ def filter_event_matches(arguments: dict[str, Any]) -> list[tuple[int, dict[str,
     location_ids = set(arguments.get("location_ids") or [])
     entity_ids = set(arguments.get("entity_ids") or [])
     actors = {value.casefold() for value in arguments.get("actors") or []}
-    source_types = set(arguments.get("source_types") or [])
+    source_types = {canonical_source_type(value) for value in arguments.get("source_types") or []}
     reliabilities = set(arguments.get("reliabilities") or [])
     keywords = [normalize_text(value) for value in arguments.get("keywords") or [] if value]
     event_ids = set(arguments.get("event_ids") or [])
@@ -1901,13 +1953,13 @@ def filter_event_matches(arguments: dict[str, Any]) -> list[tuple[int, dict[str,
             continue
         if end and event["timestamp"] > end:
             continue
-        if location_ids and event["location_id"] not in location_ids:
+        if location_ids and event_location_ids(event).isdisjoint(location_ids):
             continue
         if entity_ids and event_entity_id(event) not in entity_ids:
             continue
         if actors and event_entity_name(event).casefold() not in actors:
             continue
-        if source_types and event["source_type"] not in source_types:
+        if source_types and canonical_source_type(event["source_type"]) not in source_types:
             continue
         if reliabilities and event["source_reliability"] not in reliabilities:
             continue
@@ -1916,9 +1968,7 @@ def filter_event_matches(arguments: dict[str, Any]) -> list[tuple[int, dict[str,
         hour = event["timestamp"].hour
         if night_only and not (hour >= 20 or hour < 6):
             continue
-        haystack = normalize_text(
-            " ".join([event["event_summary"], event_entity_name(event), event["location_name"], event["source_type"]])
-        )
+        haystack = event_search_haystack(event)
         if keywords:
             keyword_matches = [term_in_text(keyword, haystack) for keyword in keywords]
             if match_all_keywords and not all(keyword_matches):
@@ -3577,7 +3627,7 @@ TOOLS = [
     {
         "name": "open_catalog_layers",
         "title": "Open existing catalog layers",
-        "description": "Open existing UI catalog layers. Resolve minor naming mistakes against the live catalog; ambiguous names require analyst clarification. Carry forward all conversation constraints using filters for raw event layers. Use event_ids for other retrieval constraints. Never drop a filter to open a whole layer. Set the UI locale. A pending_ui result is queued, not proof of opening. Do not use for saved investigation-memory layers.",
+        "description": "Open existing UI catalog layers. Resolve minor naming mistakes against the live catalog; ambiguous names require analyst clarification. Carry forward all conversation constraints using filters for raw event layers. Location filters match every canonical location carried by a record; for cellular calls this includes location_id and both side endpoint location IDs. Use event_ids for other retrieval constraints. Never drop a filter to open a whole layer. Set the UI locale. A pending_ui result is queued, not proof of opening. Do not use for saved investigation-memory layers.",
         "inputSchema": with_step_bridge({
             "type": "object",
             "properties": {
@@ -3592,7 +3642,7 @@ TOOLS = [
                 "filters": {
                     "type": "object",
                     "properties": {
-                        "location_ids": {"type": "array", "items": {"type": "string"}, "minItems": 1, "maxItems": 2000},
+                        "location_ids": {"type": "array", "items": {"type": "string"}, "minItems": 1, "maxItems": 2000, "description": "Match any record location. Cellular calls match the primary map anchor or either side endpoint."},
                         "entity_ids": {"type": "array", "items": {"type": "string"}, "minItems": 1, "maxItems": 2000},
                         "event_ids": {"type": "array", "items": {"type": "string"}, "minItems": 1, "maxItems": 2000},
                         "start_time": {"type": "string"}, "end_time": {"type": "string"}
@@ -3742,16 +3792,16 @@ TOOLS = [
     {
         "name": "search_events",
         "title": "Search intelligence events",
-        "description": "Search the synthetic event dataset using deterministic filters. Use location IDs from resolve_location and ISO-8601 UTC timestamps. Returns explicit event IDs and evidence rows. Supports explicit sorting by timestamp, relevance score, or event_id. Coverage is mandatory by default: broad searches are normalized to the maximum bounded coverage limit of 2000 even if a smaller limit is supplied. If truncated=true, do not treat returned rows as exhaustive; narrow filters or report the coverage gap.",
+        "description": "Search the synthetic event dataset using deterministic filters. Use location IDs from resolve_location and ISO-8601 UTC timestamps. Location filters match every canonical location carried by a record; for cellular calls this includes location_id and both side endpoint location IDs. Source type filters accept canonical Hebrew or supported English display labels. Returns explicit event IDs and evidence rows. Supports explicit sorting by timestamp, relevance score, or event_id. Coverage is mandatory by default: broad searches are normalized to the maximum bounded coverage limit of 2000 even if a smaller limit is supplied. If truncated=true, do not treat returned rows as exhaustive; narrow filters or report the coverage gap.",
         "inputSchema": with_step_bridge({
             "type": "object",
             "properties": {
                 "start_time": {"type": "string", "description": "Inclusive ISO-8601 UTC start time."},
                 "end_time": {"type": "string", "description": "Inclusive ISO-8601 UTC end time."},
-                "location_ids": {"type": "array", "items": {"type": "string"}},
+                "location_ids": {"type": "array", "items": {"type": "string"}, "description": "Match any record location. Cellular calls match the primary map anchor or either side endpoint."},
                 "entity_ids": {"type": "array", "items": {"type": "string"}},
                 "actors": {"type": "array", "items": {"type": "string"}, "description": "Compatibility only. Prefer entity_ids from resolve_entity/get_objects."},
-                "source_types": {"type": "array", "items": {"type": "string"}},
+                "source_types": {"type": "array", "items": {"type": "string"}, "description": "Canonical Hebrew source labels and supported English display labels are accepted."},
                 "reliabilities": {"type": "array", "items": {"type": "string"}},
                 "keywords": {"type": "array", "items": {"type": "string"}},
                 "event_ids": {"type": "array", "items": {"type": "string"}},

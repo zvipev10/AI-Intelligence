@@ -78,7 +78,15 @@ def filter_rows(rows, filters):
     start = timestamp(filters["start_time"]) if filters.get("start_time") else None
     end = timestamp(filters["end_time"]) if filters.get("end_time") else None
     def matches(row):
-        for field in ("location", "entity", "event"):
+        requested_locations = set(filters.get("location_ids") or [])
+        record_locations = {
+            str(value).strip()
+            for value in (row.get("location_id"), row.get("side_a_location_id"), row.get("side_b_location_id"))
+            if str(value or "").strip()
+        }
+        if requested_locations and record_locations.isdisjoint(requested_locations):
+            return False
+        for field in ("entity", "event"):
             if filters.get(field + "_ids") and row.get(field + "_id") not in filters[field + "_ids"]:
                 return False
         if start or end:

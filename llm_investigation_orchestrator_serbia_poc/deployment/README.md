@@ -119,4 +119,11 @@ synthetic call records and recordings, a dedicated two-party viewer, and a
 neutral dual-endpoint map presentation with one shared raw-record identity.
 It advances the assets to `app.js?v=197` and `styles.css?v=152`.
 
+`SHA256SUMS-v186.txt` records the cellular-call endpoint-search follow-up.
+`search_events` and `open_catalog_layers` now match either call side's
+canonical location, accept bilingual source-type labels, and search call
+metadata. Cellular-call tables expose the exact Side A and Side B location
+IDs while retaining the primary `location_id` as the shared map anchor. It
+advances the script to `app.js?v=198`.
+
 No production files or services were changed during capture or consolidation.

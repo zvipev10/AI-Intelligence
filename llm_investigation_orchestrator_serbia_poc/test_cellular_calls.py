@@ -75,6 +75,13 @@ class CellularCallDatasetTests(unittest.TestCase):
         self.assertIn('openObjectViewer("record", recordId', app_source)
         self.assertIn('addCellularCallMapPresentation(event, layer, index, bounds)', app_source)
 
+    def test_raw_table_exposes_both_endpoint_location_ids(self):
+        app_source = (ROOT / "app.js").read_text(encoding="utf-8")
+        self.assertIn('activeLocaleText("מיקום צד א׳", "Side A location")', app_source)
+        self.assertIn('activeLocaleText("מיקום צד ב׳", "Side B location")', app_source)
+        self.assertIn('event.side_a_location_id || "-"', app_source)
+        self.assertIn('event.side_b_location_id || "-"', app_source)
+
 
 if __name__ == "__main__":
     unittest.main()
