@@ -148,43 +148,16 @@ def upload_ui(client: paramiko.SSHClient, api_key: str, moshe_api_key: str, tali
             upload_dir(sftp, LOCAL_ROOT / name, str(PurePosixPath(staging) / name))
         for name in ("he.json", "en.json", "manifest.json"):
             upload_file(sftp, catalog_dir / name, f"{staging}/data/evidence_catalog/v2.1/{name}")
-        remote_config = {
-            "transport": "direct",
-            "remote_host": "127.0.0.1",
-            "remote_port": 8642,
-            "api_key": api_key,
-            "agents": {
-                "moshe": {
-                    "remote_port": 8642,
-                    "api_key": moshe_api_key,
-                    "api_path_prefix": "/p/moshe",
-                    "mcp_tool_prefix": "mcp_serbia_events_poc_moshe_",
-                    "audit_path": "/opt/serbia-poc/mcp_audit_moshe.jsonl",
-                },
-                "talia": {
-                    "remote_port": 8642,
-                    "api_key": talia_api_key,
-                    "api_path_prefix": "/p/talia",
-                    "mcp_tool_prefix": "mcp_serbia_events_poc_talia_",
-                    "audit_path": "/opt/serbia-poc/mcp_audit_talia.jsonl",
-                },
-            },
-        }
-        config_tmp = LOCAL_ROOT / ".hermes-api.remote.tmp.json"
-        try:
-            config_tmp.write_text(json.dumps(remote_config, indent=2), encoding="utf-8")
-            upload_file(sftp, config_tmp, str(PurePosixPath(staging) / ".hermes-api.json"))
-        finally:
-            if config_tmp.exists():
-                config_tmp.unlink()
     finally:
         sftp.close()
         catalog_temp.cleanup()
     root_q = shlex.quote(REMOTE_UI_ROOT)
     staging_q = shlex.quote(staging)
+    backup = f"/home/{USER}/deploy-backups/cellular-calls-{int(time.time())}.tar.gz"
     run(
         client,
-        f"sudo -n rm -rf {root_q} "
+        f"mkdir -p /home/{USER}/deploy-backups "
+        f"&& sudo -n tar -C {root_q} --exclude=.hermes-api.json --exclude=investigations --exclude=workstreams --exclude=scenario_runs -czf {shlex.quote(backup)} . "
         f"&& sudo -n install -d -o {USER} -g {USER} -m 0755 {root_q} "
         f"&& sudo -n cp -a {staging_q}/. {root_q}/ "
         f"&& sudo -n chown -R {USER}:{USER} {root_q} "
@@ -209,6 +182,7 @@ RestartSec=3
 Environment=PYTHONUNBUFFERED=1
 Environment=PYTHONIOENCODING=utf-8
 Environment=POC_UI_HOST=0.0.0.0
+Environment=INTELLIGENCE_POC_DATASET_VERSION=v2.1
 
 [Install]
 WantedBy=multi-user.target
