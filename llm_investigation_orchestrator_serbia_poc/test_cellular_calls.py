@@ -22,6 +22,9 @@ class CellularCallDatasetTests(unittest.TestCase):
         self.assertEqual(len({row["call_id"] for row in self.calls}), 24)
         self.assertEqual(len({row["event_id"] for row in self.calls}), 24)
 
+    def test_calls_are_attributed_to_unidentified_actors(self):
+        self.assertEqual({row["entity_id"] for row in self.calls}, {"ENT-UNIDENTIFIED-ACTORS"})
+
     def test_repeated_side_a_crosses_the_three_scenario_locations(self):
         linked = [row for row in self.calls if row["side_a_imei"] == "356789104321567"]
         self.assertEqual(len(linked), 9)

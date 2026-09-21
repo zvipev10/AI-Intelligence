@@ -281,7 +281,7 @@ def cellular_call_rows(
         projection.update({
             "event_id": record_id, "timestamp_utc": timestamp, "source_type": CELLULAR_SOURCE_TYPE,
             "source_reliability": "confirmed", "source_reliability_label": "confirmed",
-            "certainty_level": "גבוהה", "entity_id": "ENT-LOCAL-RESIDENTS", "location_id": side_a_id,
+            "certainty_level": "גבוהה", "entity_id": "ENT-UNIDENTIFIED-ACTORS", "location_id": side_a_id,
             "event_summary": summary, "collection_family": "synthetic_cellular_call_collection", **call_values,
         })
         projection_rows.append(projection)

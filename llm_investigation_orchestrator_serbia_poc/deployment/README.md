@@ -136,4 +136,9 @@ to resolver, object-retrieval, and presentation paths. Detailed `LOC-*`
 locations and broader `LOC-V2-*` operational areas remain concurrently valid;
 no hierarchy or automatic area expansion is introduced in this release.
 
+`SHA256SUMS-v189.txt` attributes all 24 synthetic cellular-call raw records to
+the existing `ENT-UNIDENTIFIED-ACTORS` entity instead of local residents. The
+generator and V2.1 projection are updated together; the calls remain raw,
+neutral observations and are not classified as hostile.
+
 No production files or services were changed during capture or consolidation.
