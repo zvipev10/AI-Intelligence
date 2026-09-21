@@ -46,7 +46,7 @@ Combine deterministic data assertions, API contract tests, static asset validati
 
 - Missing audio URL/file.
 - Missing party field.
-- Same canonical area with different sectors.
+- Side A and Side B at different existing canonical locations.
 - Long Hebrew transcript and numeric bidi content.
 - Reopening different call records stops/replaces the previous media context.
 
@@ -71,7 +71,7 @@ Raw catalog counts, CSV parsing, UAV video viewer, generic audio/image media, ev
 
 ## Test data needs
 
-One repeated synthetic Side A identity, nine unique Side B identities, three sector pairs per location, and 15 unrelated background calls.
+One repeated synthetic Side A identity, nine unique Side B identities at other catalog locations, and 15 unrelated background calls.
 
 ## Environment needs
 

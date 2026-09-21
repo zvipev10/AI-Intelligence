@@ -80,7 +80,7 @@ Option 1. Extend events additively, keep blank call fields for other sources, pr
 
 - Add explicit call fields and expose them through `public_event()`.
 - Use `timestamp_utc` as the canonical start timestamp while also displaying it as call start time.
-- Add duration, sector IDs, recording URL, and transcript.
+- Add duration, independent Side A/Side B canonical location IDs, recording URL, and transcript.
 - Preserve all existing event IDs and generator determinism.
 
 ## Security/permissions considerations
@@ -97,7 +97,7 @@ Generator invariants, schema/API contract tests, asset validation, layer-catalog
 
 ## Acceptance criteria improvements
 
-Assert the repeated identity appears exactly three times in each requested location and nowhere else; assert Side B and sector differ for every linked record.
+Assert the repeated identity appears exactly three times in each requested Side A location and nowhere else; assert Side B identity and canonical location differ from Side A for every linked record.
 
 ## Proposed execution slices
 
@@ -120,7 +120,7 @@ Product scope, developer feasibility, UX viewer, QA coverage, and synthetic-data
 ## Blocking questions before execution planning
 
 - Is generated non-speech audio with transcript acceptable?
-- Is the sector-within-canonical-location model the intended meaning?
+- Side B location selection must be deterministic and must exclude the corresponding Side A location.
 
 ## Open questions for Product / UX / QA / Architecture / Security
 
