@@ -8,7 +8,7 @@ ROOT = Path(__file__).resolve().parent
 
 class CanonicalSourceContractTests(unittest.TestCase):
     def test_canonical_files_match_the_current_source_manifest(self):
-        manifest = ROOT / "deployment" / "SHA256SUMS-v184.txt"
+        manifest = ROOT / "deployment" / "SHA256SUMS-v185.txt"
         for line in manifest.read_text(encoding="utf-8").splitlines():
             expected, name = line.split(None, 1)
             actual = hashlib.sha256((ROOT / name.strip()).read_bytes()).hexdigest()
@@ -20,8 +20,8 @@ class CanonicalSourceContractTests(unittest.TestCase):
     def test_v181_bilingual_welcome_ui_contract_is_canonical(self):
         index = (ROOT / "index.html").read_text(encoding="utf-8")
         app = (ROOT / "app.js").read_text(encoding="utf-8")
-        self.assertIn('app.js?v=196', index)
-        self.assertIn('styles.css?v=151', index)
+        self.assertIn('app.js?v=197', index)
+        self.assertIn('styles.css?v=152', index)
         self.assertIn('id="languageToggle"', index)
         self.assertIn('id="welcomePage"', index)
         self.assertIn('id="welcomePromptForm"', index)

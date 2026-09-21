@@ -114,4 +114,9 @@ It advances the script to `app.js?v=190`, assigns a stable client request ID
 to each investigation, retains results for reconnection, and recovers the same
 server-side run when a backgrounded mobile browser drops its HTTP response.
 
+`SHA256SUMS-v185.txt` records the cellular-calls raw-source release. It adds
+synthetic call records and recordings, a dedicated two-party viewer, and a
+neutral dual-endpoint map presentation with one shared raw-record identity.
+It advances the assets to `app.js?v=197` and `styles.css?v=152`.
+
 No production files or services were changed during capture or consolidation.
