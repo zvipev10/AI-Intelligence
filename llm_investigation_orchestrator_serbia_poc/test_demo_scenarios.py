@@ -11,6 +11,7 @@ from pathlib import Path
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 from unittest.mock import patch
+from types import SimpleNamespace
 
 from demo_admission import AgentAdmission, AdmissionError
 from demo_runtime import DemoRuntime, load_profile
@@ -117,6 +118,45 @@ class SyriaHTTP(unittest.TestCase):
         for path in ["/.hermes-api.json", "/data/serbian_intelligence_v2_1/serbia_kosovo_events_projection_v2_1.csv", "/investigations/"]:
             with self.assertRaises(HTTPError) as error: urlopen(self.url + path)
             self.assertEqual(error.exception.code, 404)
+
+
+class Activation(unittest.TestCase):
+    def test_failed_target_restores_previous_with_new_generation(self):
+        with tempfile.TemporaryDirectory() as directory:
+            operator = Activator(ROOT, Path(directory))
+            operator.control.mkdir()
+            previous = {"scenario_id":"kosovo", "dataset_version":"v2.1", "activation_generation":"original"}
+            operator.current.write_text(json.dumps(previous))
+            actions = []
+            operator.services = lambda action: actions.append(action)
+            operator.select = lambda identity: actions.append(identity["scenario_id"])
+            operator.drain = lambda timeout: None
+            def health(identity):
+                if identity["scenario_id"] == "syria": raise RuntimeError("simulated startup failure")
+                return identity
+            operator.health = health
+            stub = SimpleNamespace(LOCK_EX=1, LOCK_NB=2, flock=lambda *args: None)
+            with patch.dict(sys.modules, {"fcntl":stub}), patch("activate_demo.load_profile", return_value={"dataset_version":"empty-v1"}):
+                with self.assertRaisesRegex(RuntimeError, "simulated startup"):
+                    operator.activate("syria")
+            self.assertEqual(actions, ["stop", "syria", "start", "stop", "kosovo", "start"])
+            restored = json.loads(operator.current.read_text())
+            self.assertEqual(restored["scenario_id"], "kosovo")
+            self.assertNotEqual(restored["activation_generation"], "original")
+            self.assertFalse((operator.control / "maintenance.json").exists())
+
+    def test_drain_failure_never_stops_current(self):
+        with tempfile.TemporaryDirectory() as directory:
+            operator = Activator(ROOT, Path(directory)); operator.control.mkdir()
+            operator.current.write_text(json.dumps({"scenario_id":"kosovo"}))
+            actions = []
+            operator.services = lambda action: actions.append(action)
+            operator.drain = lambda timeout: (_ for _ in ()).throw(RuntimeError("busy"))
+            stub = SimpleNamespace(LOCK_EX=1, LOCK_NB=2, flock=lambda *args: None)
+            with patch.dict(sys.modules, {"fcntl":stub}), patch("activate_demo.load_profile", return_value={"dataset_version":"empty-v1"}):
+                with self.assertRaisesRegex(RuntimeError, "busy"): operator.activate("syria")
+            self.assertEqual(actions, [])
+            self.assertFalse((operator.control / "maintenance.json").exists())
 
 
 if __name__ == "__main__":

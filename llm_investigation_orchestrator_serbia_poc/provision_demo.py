@@ -7,6 +7,7 @@ import hashlib
 import json
 import os
 import shutil
+import sqlite3
 import subprocess
 import uuid
 from pathlib import Path
@@ -22,6 +23,14 @@ def copy_checked(source, target):
         return []
     if target.exists():
         raise ValueError(f"Migration destination already exists: {target}")
+    if source.is_file() and source.suffix == ".db":
+        target.parent.mkdir(parents=True, exist_ok=True)
+        with sqlite3.connect(f"file:{source}?mode=ro", uri=True) as origin:
+            with sqlite3.connect(target) as destination:
+                origin.backup(destination)
+                if destination.execute("PRAGMA integrity_check").fetchone()[0] != "ok":
+                    raise ValueError(f"Database backup failed: {source}")
+        return [{"source": str(source), "target": str(target), "sqlite_backup": True, "sha256": hashlib.sha256(target.read_bytes()).hexdigest()}]
     if source.is_dir():
         shutil.copytree(source, target)
         files = [p for p in source.rglob("*") if p.is_file()]
@@ -71,7 +80,7 @@ def main():
             for name in [".env", "auth.json", "SOUL.md", "skills"]:
                 report += copy_checked(source / name, target / name)
             if scenario == "kosovo":
-                for name in ["memories", "sessions", "state", "state.db", "state.db-wal", "state.db-shm", "response_store.db", "response_store.db-wal", "response_store.db-shm"]:
+                for name in ["memories", "sessions", "state", "state.db", "response_store.db"]:
                     report += copy_checked(source / name, target / name)
             config = yaml.safe_load((source / "config.yaml").read_text())
             # Only the API route is enabled for demo profiles; root integrations stay intact.

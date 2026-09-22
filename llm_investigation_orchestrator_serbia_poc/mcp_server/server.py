@@ -11,7 +11,7 @@ import os
 import re
 import sys
 import time
-from urllib.request import urlopen
+from urllib.request import urlopen, Request
 from urllib.parse import urlencode
 from collections import Counter, defaultdict
 from datetime import datetime, timedelta, timezone
@@ -2844,7 +2844,8 @@ def present_saved_memory_layers(arguments: dict[str, Any]) -> dict[str, Any]:
 def load_ui_catalog(locale="he"):
     # The UI owns the canonical catalog; the MCP evidence store may use different labels.
     base = os.environ.get("INTELLIGENCE_POC_UI_URL", "http://127.0.0.1:8769").rstrip("/")
-    with urlopen(base + "/api/layers?" + urlencode({"locale": locale}), timeout=5) as response:
+    request = Request(base + "/api/layers?" + urlencode({"locale": locale}), headers={"X-Demo-Generation": DEMO.generation} if DEMO.enabled else {})
+    with urlopen(request, timeout=5) as response:
         catalog = json.load(response)["layers"]
     if not isinstance(catalog, list) or not catalog or any(not isinstance(item, dict) or not item.get("id") for item in catalog):
         raise ValueError("invalid UI catalog")
@@ -3398,6 +3399,7 @@ ASSESSMENT_INPUT_SCHEMA = {
 
 
 TOOLS = [
+    {"name": "demo_runtime_status", "description": "Read active scenario identity and dataset counts; no model inference.", "inputSchema": {"type": "object", "properties": {}}, "annotations": {"readOnlyHint": True}},
     {
         "name": "prepare_evidence",
         "title": "Project source records into evidence",
@@ -4089,6 +4091,7 @@ TOOLS = [
 ]
 
 TOOL_HANDLERS = {
+    "demo_runtime_status": lambda arguments: {**DEMO.identity, "event_count": len(EVENTS), "location_count": len(LOCATIONS)},
     "prepare_evidence": prepare_evidence,
     "prepare_fused_evidence": prepare_fused_evidence,
     "persist_fused_evidence": persist_fused_evidence,
@@ -4178,6 +4181,11 @@ def handle_message(message: dict[str, Any]) -> dict[str, Any] | None:
     if method == "tools/list":
         return response(request_id, {"tools": TOOLS})
     if method == "tools/call":
+        selected = DEMO.control / "selected.json"
+        if DEMO.enabled and selected.exists():
+            identity = json.loads(selected.read_text())
+            if any(identity.get(key) != value for key, value in DEMO.identity.items()):
+                return response(request_id, text_result({"error": "Inactive scenario process; reconnect tools"}, is_error=True))
         name = params.get("name")
         arguments = params.get("arguments") or {}
         handler = TOOL_HANDLERS.get(name)

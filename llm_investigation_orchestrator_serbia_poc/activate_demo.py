@@ -79,6 +79,7 @@ class Activator:
         temp = self.root / "active.env.next"
         temp.write_text("".join(f"{key}={value}\n" for key, value in environment.items()))
         os.replace(temp, self.root / "active.env")
+        atomic_json(self.control / "selected.json", identity)
         # Gateway profile MCP env must carry the same generation, not its predecessor.
         import yaml
         for role in ["general", "moshe", "talia"]:
@@ -108,6 +109,17 @@ class Activator:
                 with urlopen("http://127.0.0.1:8642/health", timeout=5) as response:
                     if response.status != 200:
                         raise RuntimeError("Gateway not ready")
+                import yaml
+                for role in ["general", "moshe", "talia"]:
+                    config = yaml.safe_load((self.root / "hermes-homes" / identity["scenario_id"] / role / "config.yaml").read_text())
+                    for tool in config["mcp_servers"].values():
+                        query = json.dumps({"jsonrpc": "2.0", "id": 1, "method": "tools/call", "params": {"name": "demo_runtime_status", "arguments": {}}}) + "\n"
+                        result = subprocess.run([tool["command"], *tool["args"]], input=query, text=True, capture_output=True, env={**os.environ, **tool["env"]}, timeout=20, check=True)
+                        tool_status = json.loads(result.stdout.strip())["result"]["structuredContent"]
+                        if any(tool_status.get(key) != value for key, value in identity.items()):
+                            raise RuntimeError(f"Tool identity mismatch for {role}")
+                        if tool_status["event_count"] != status["dataset_rows"]:
+                            raise RuntimeError(f"Tool dataset mismatch for {role}")
                 return status
             except Exception as exc:
                 last = exc
