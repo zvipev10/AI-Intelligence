@@ -40,6 +40,7 @@ FILES = [
     "styles.css",
     "help.html",
     "investigation-user-flow.html",
+    "system-capabilities-guide.html",
     "README.md",
     "mcp_server/install_openai_general_env.sh",
     "data/serbian_intelligence_v2_1/serbia_kosovo_events_projection_v2_1.csv",
