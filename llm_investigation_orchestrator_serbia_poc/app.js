@@ -1,3 +1,5 @@
+const demoRuntime = window.DEMO_RUNTIME || null;
+const scenarioStorage = window.DEMO_STORAGE || localStorage;
 ﻿const LOCATIONS = {
   "LOC-001": { name: "אזור גשר איבר", type: "מוקד ליבה", lat: 42.883, lon: 20.848 },
   "LOC-002": { name: "מבנה העירייה", type: "מוקד ליבה", lat: 42.887, lon: 20.848 },
@@ -449,7 +451,7 @@ const INITIAL_LOCALE = normalizeLocale((() => {
   const requested = requestedLocaleFromUrl();
   if (requested) return requested;
   try {
-    return localStorage.getItem(LOCALE_STORAGE_KEY);
+    return scenarioStorage.getItem(LOCALE_STORAGE_KEY);
   } catch (error) {
     return DEFAULT_LOCALE;
   }
@@ -2180,7 +2182,7 @@ function investigationNameKey(name) {
 
 function saveInvestigationRegistry() {
   try {
-    localStorage.setItem(INVESTIGATIONS_STORAGE_KEY, JSON.stringify({
+    scenarioStorage.setItem(INVESTIGATIONS_STORAGE_KEY, JSON.stringify({
       active_id: state.investigationId,
       investigations: state.investigations
     }));
@@ -2450,8 +2452,8 @@ async function registerInvestigationRecord(investigation) {
 function loadInvestigationRegistry() {
   let registry = null;
   try {
-    LEGACY_INVESTIGATIONS_STORAGE_KEYS.forEach(key => localStorage.removeItem(key));
-    registry = JSON.parse(localStorage.getItem(INVESTIGATIONS_STORAGE_KEY) || "null");
+    LEGACY_INVESTIGATIONS_STORAGE_KEYS.forEach(key => scenarioStorage.removeItem(key));
+    registry = JSON.parse(scenarioStorage.getItem(INVESTIGATIONS_STORAGE_KEY) || "null");
   } catch (error) {
     registry = null;
   }
@@ -2955,11 +2957,11 @@ function initMap() {
       },
       layers: [{ id: "osm", type: "raster", source: "osm" }]
     },
-    center: [20.82, 42.92],
-    zoom: 8.4,
-    minZoom: 6.0,
+    center: demoRuntime?.demo_profile?.map.center || [20.82, 42.92],
+    zoom: demoRuntime?.demo_profile?.map.zoom ?? 8.4,
+    minZoom: demoRuntime?.demo_profile?.map.minZoom ?? 6.0,
     maxZoom: 15,
-    maxBounds: [[19.0, 41.0], [22.2, 44.0]],
+    maxBounds: demoRuntime?.demo_profile?.map.maxBounds || [[19.0, 41.0], [22.2, 44.0]],
     attributionControl: true
   });
   state.map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-left");
@@ -3014,7 +3016,7 @@ function workstreamStatusLabels() {
 
 function loadWorkstreamSeenState() {
   try {
-    const parsed = JSON.parse(localStorage.getItem(WORKSTREAM_SEEN_STORAGE_KEY) || "{}");
+    const parsed = JSON.parse(scenarioStorage.getItem(WORKSTREAM_SEEN_STORAGE_KEY) || "{}");
     state.workstreamSeen = parsed && typeof parsed === "object" ? parsed : {};
   } catch {
     state.workstreamSeen = {};
@@ -3022,7 +3024,7 @@ function loadWorkstreamSeenState() {
 }
 
 function saveWorkstreamSeenState() {
-  localStorage.setItem(WORKSTREAM_SEEN_STORAGE_KEY, JSON.stringify(state.workstreamSeen));
+  scenarioStorage.setItem(WORKSTREAM_SEEN_STORAGE_KEY, JSON.stringify(state.workstreamSeen));
 }
 
 function workstreamSeenKey(workstreamId) {
@@ -6893,7 +6895,7 @@ playbackResetButton?.addEventListener("click", resetInvestigationPlayback);
 languageToggle?.addEventListener("change", () => {
   state.locale = languageToggle.checked ? "en" : "he";
   try {
-    localStorage.setItem(LOCALE_STORAGE_KEY, state.locale);
+    scenarioStorage.setItem(LOCALE_STORAGE_KEY, state.locale);
   } catch (error) {
     // Ignore localStorage failures and still apply the locale for this session.
   }
@@ -6971,6 +6973,9 @@ renderWelcomePage();
 setPageView("welcome", { focus: false });
 
 async function boot() {
+  if (demoRuntime?.scenario_id !== "kosovo" && demoRuntime?.scenario_id) {
+    Object.keys(LOCATIONS).forEach(key => delete LOCATIONS[key]);
+  }
   initMap();
   await hydrateInvestigationRegistry();
   await loadLayerCatalog();
@@ -6979,6 +6984,7 @@ async function boot() {
   let runtimeStatus = null;
   try {
     runtimeStatus = await fetch(buildLocaleApiUrl("/api/status"), { cache: "no-store" }).then(response => response.json());
+    Object.keys(LOCATIONS).forEach(key => delete LOCATIONS[key]);
     if (runtimeStatus.locations_url) {
       const runtimeLocations = await fetch(runtimeStatus.locations_url, { cache: "no-store" }).then(response => response.json());
       Object.entries(runtimeLocations).forEach(([locationId, location]) => {

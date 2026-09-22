@@ -18,6 +18,11 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from demo_runtime import DemoRuntime
+DEMO = DemoRuntime(Path(__file__).resolve().parent.parent)
+DEMO.bind_mcp_environment()
+
 try:
     from evidence_store import EvidenceStore, prepare_fused_object, project_event, projected_evidence_id
     from evidence_semantics import normalize_evidence_event
@@ -47,7 +52,12 @@ MAX_SEMANTIC_LIMIT = 200
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 DATASET_VERSION = os.environ.get("INTELLIGENCE_POC_DATASET_VERSION", "v2").strip().lower()
-if DATASET_VERSION in {"v2.1", "v2_1", "v21"}:
+if DEMO.enabled:
+    DEFAULT_DATASET_DIR = BASE_DIR
+    DEFAULT_DATA_PATH = BASE_DIR / DEMO.profile["files"]["events"]
+    DEFAULT_LOCATIONS_PATH = BASE_DIR / DEMO.profile["files"]["locations"]
+    DEFAULT_ENTITIES_PATH = BASE_DIR / DEMO.profile["files"]["entities"]
+elif DATASET_VERSION in {"v2.1", "v2_1", "v21"}:
     DATASET_VERSION = "v2.1"
     DEFAULT_DATASET_DIR = BASE_DIR / "data" / "serbian_intelligence_v2_1"
     DEFAULT_DATA_PATH = DEFAULT_DATASET_DIR / "serbia_kosovo_events_projection_v2_1.csv"
@@ -559,6 +569,7 @@ def text_result(payload: Any, is_error: bool = False) -> dict[str, Any]:
 
 def write_audit(tool: str, arguments: dict[str, Any], result: Any, is_error: bool = False, duration_ms: float | None = None) -> None:
     record = {
+        **(DEMO.identity if DEMO.enabled else {}),
         "timestamp_utc": datetime.now(timezone.utc).isoformat(),
         "tool": tool,
         "arguments": arguments,
@@ -583,6 +594,14 @@ def write_audit(tool: str, arguments: dict[str, Any], result: Any, is_error: boo
         AUDIT_PATH.parent.mkdir(parents=True, exist_ok=True)
         with AUDIT_PATH.open("a", encoding="utf-8") as handle:
             handle.write(json.dumps(record, ensure_ascii=False, separators=(",", ":")) + "\n")
+        if DEMO.enabled:
+            pointer = Path(str(AUDIT_PATH) + ".active")
+            run_key = pointer.read_text().strip() if pointer.exists() else ""
+            if re.fullmatch(r"[a-f0-9]{32}", run_key):
+                run_path = AUDIT_PATH.parent / "runs" / f"{run_key}.jsonl"
+                run_path.parent.mkdir(parents=True, exist_ok=True)
+                with run_path.open("a", encoding="utf-8") as handle:
+                    handle.write(json.dumps({**record, "execution_id": run_key}, ensure_ascii=False) + "\n")
     except OSError:
         pass
 
@@ -614,6 +633,8 @@ def semantic_filters_from_arguments(arguments: dict[str, Any]) -> dict[str, Any]
 
 
 def semantic_candidates(query: str, arguments: dict[str, Any], limit: int) -> list[dict[str, Any]]:
+    if DEMO.enabled and not EVENTS:
+        return []
     query = str(query or "").strip()
     if not query:
         return []
@@ -2026,6 +2047,8 @@ def search_events(arguments: dict[str, Any]) -> dict[str, Any]:
 
 
 def semantic_search_events(arguments: dict[str, Any]) -> dict[str, Any]:
+    if DEMO.enabled and not EVENTS:
+        return {"query": str(arguments.get("query") or ""), "events": [], "event_ids": [], "count": 0, "total_matches": 0, "empty_dataset": True, **DEMO.identity}
     query = str(arguments.get("query") or "").strip()
     seed_ids = arguments.get("seed_event_ids") or []
     seed_events = [event for event_id in seed_ids if (event := visible_event(event_id)) is not None]

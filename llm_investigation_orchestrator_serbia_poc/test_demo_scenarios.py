@@ -1,0 +1,123 @@
+import json
+import os
+import socket
+import subprocess
+import sys
+import tempfile
+import threading
+import time
+import unittest
+from pathlib import Path
+from urllib.error import HTTPError
+from urllib.request import Request, urlopen
+from unittest.mock import patch
+
+from demo_admission import AgentAdmission, AdmissionError
+from demo_runtime import DemoRuntime, load_profile
+from activate_demo import Activator
+
+ROOT = Path(__file__).resolve().parent
+
+
+class Profiles(unittest.TestCase):
+    def test_packages_and_state_isolation(self):
+        for scenario in ["kosovo", "syria"]:
+            load_profile(ROOT, scenario, verify=True)
+        with patch.dict(os.environ, {"INTELLIGENCE_POC_SCENARIO": "kosovo"}):
+            kosovo = DemoRuntime(ROOT)
+        with patch.dict(os.environ, {"INTELLIGENCE_POC_SCENARIO": "syria"}):
+            syria = DemoRuntime(ROOT)
+        self.assertNotEqual(kosovo.state, syria.state)
+        self.assertEqual(kosovo.profile["sources"], syria.profile["sources"])
+        self.assertNotEqual(kosovo.generation, syria.generation)
+
+    def test_invalid_selection_never_falls_back(self):
+        for scenario in ["../kosovo", "uninstalled"]:
+            with self.assertRaises((ValueError, FileNotFoundError)):
+                load_profile(ROOT, scenario)
+
+    def test_syria_mcp_has_no_kosovo_records(self):
+        result = subprocess.run([sys.executable, "-c", "import mcp_server.server as s; assert not s.EVENTS; assert not s.LOCATIONS; assert s.semantic_search_events({'query':'Kosovo'})['count']==0"], cwd=ROOT, env={**os.environ, "INTELLIGENCE_POC_SCENARIO": "syria"}, capture_output=True, timeout=30)
+        self.assertEqual(result.returncode, 0, result.stderr.decode())
+
+
+class Admission(unittest.TestCase):
+    def test_serial_and_reentrant(self):
+        gate = AgentAdmission()
+        active = []
+        peaks = []
+        def run():
+            with gate.slot():
+                with gate.slot():
+                    active.append(1)
+                    peaks.append(len(active))
+                    time.sleep(.01)
+                    active.pop()
+        threads = [threading.Thread(target=run) for _ in range(5)]
+        for thread in threads: thread.start()
+        for thread in threads: thread.join()
+        self.assertEqual(max(peaks), 1)
+        self.assertEqual(gate.status()["queued"], 0)
+
+    def test_drain_cancels_pending_not_running(self):
+        maintenance = [False]
+        gate = AgentAdmission(lambda: maintenance[0])
+        failures = []
+        def pending():
+            try:
+                with gate.slot(): failures.append("unexpected execution")
+            except AdmissionError:
+                failures.append("cancelled")
+        with gate.slot():
+            thread = threading.Thread(target=pending)
+            thread.start()
+            while not gate.status()["queued"]: time.sleep(.001)
+            maintenance[0] = True
+            thread.join(timeout=2)
+            self.assertEqual(gate.status()["running"], 1)
+        self.assertEqual(failures, ["cancelled"])
+
+
+class SyriaHTTP(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.directory = tempfile.TemporaryDirectory()
+        with socket.socket() as sock:
+            sock.bind(("127.0.0.1", 0)); port = sock.getsockname()[1]
+        cls.url = f"http://127.0.0.1:{port}"
+        cls.process = subprocess.Popen([sys.executable, "server.py", str(port)], cwd=ROOT, env={**os.environ, "POC_UI_HOST":"127.0.0.1", "INTELLIGENCE_POC_SCENARIO":"syria", "INTELLIGENCE_POC_STATE_ROOT":cls.directory.name, "INTELLIGENCE_POC_ACTIVATION":"test-generation"}, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        for _ in range(100):
+            try:
+                with urlopen(cls.url + "/api/status", timeout=1): break
+            except OSError: time.sleep(.1)
+        else: raise RuntimeError("test server did not start")
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.process.terminate(); cls.process.wait(timeout=10); cls.directory.cleanup()
+
+    def test_empty_layer_catalog_and_map(self):
+        with urlopen(self.url + "/api/status") as response: status = json.load(response)
+        self.assertEqual(status["scenario_id"], "syria")
+        self.assertEqual(status["dataset_rows"], 0)
+        self.assertEqual(status["demo_profile"]["map"]["center"], [38.5, 35.0])
+        for locale in ["en", "he"]:
+            with urlopen(self.url + "/api/layers?locale=" + locale) as response: layers = json.load(response)["layers"]
+            self.assertEqual(len(layers), 16)
+            self.assertTrue(all(layer["count"] == 0 for layer in layers))
+        with urlopen(self.url + "/api/investigations") as response: self.assertEqual(json.load(response)["investigations"], [])
+
+    def test_stale_write_and_read_rejected(self):
+        for method in ["GET", "POST", "PUT", "DELETE"]:
+            request = Request(self.url + "/api/investigations", headers={"X-Demo-Generation":"old-generation"}, method=method)
+            with self.assertRaises(HTTPError) as error: urlopen(request)
+            self.assertEqual(error.exception.code, 409)
+
+    def test_inactive_data_and_secrets_not_served(self):
+        for path in ["/.hermes-api.json", "/data/serbian_intelligence_v2_1/serbia_kosovo_events_projection_v2_1.csv", "/investigations/"]:
+            with self.assertRaises(HTTPError) as error: urlopen(self.url + path)
+            self.assertEqual(error.exception.code, 404)
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -11,6 +11,7 @@ import re
 import sys
 import time
 import secrets
+import shlex
 import subprocess
 import threading
 from collections import Counter, defaultdict
@@ -124,6 +125,10 @@ except ImportError:
 
 
 ROOT = Path(__file__).resolve().parent
+from demo_runtime import DemoRuntime
+from demo_admission import AgentAdmission, AdmissionError
+DEMO = DemoRuntime(ROOT)
+ADMISSION = AgentAdmission(lambda: DEMO.maintenance)
 ATTACK_TARGET_CATALOG_LAYER_ID = "attack-targets:all"
 EVIDENCE_CATALOG_LAYER_ID = "evidence:all"
 TARGET_CATALOG_READER = Path(os.environ.get(
@@ -137,31 +142,40 @@ TARGET_BANK_PATHS = {
 }
 CONFIG_PATH = ROOT / ".hermes-api.json"
 RECORDED_RUNS_PATH = ROOT / "test_runs" / "compact_demo_after_general_instructions_20260620T151848Z.json"
-DATASET_VERSION = os.environ.get("INTELLIGENCE_POC_DATASET_VERSION", "v2").strip().lower()
-if DATASET_VERSION in {"v2.1", "v2_1", "v21"}:
-    DATASET_VERSION = "v2.1"
-    DATASET_DIR = ROOT / "data" / "serbian_intelligence_v2_1"
-    LOCATIONS_PATH = DATASET_DIR / "serbia_kosovo_locations_v2_1.json"
-    EVENTS_PATH = DATASET_DIR / "serbia_kosovo_events_projection_v2_1.csv"
-    ENTITIES_PATH = DATASET_DIR / "serbia_kosovo_entities_v2_1.json"
-    DATASET_URL = "./data/serbian_intelligence_v2_1/serbia_kosovo_events_projection_v2_1.csv"
-    LOCATIONS_URL = "./data/serbian_intelligence_v2_1/serbia_kosovo_locations_v2_1.json"
-elif DATASET_VERSION == "v2":
-    DATASET_DIR = ROOT / "data" / "serbian_intelligence_v2"
-    LOCATIONS_PATH = DATASET_DIR / "serbia_kosovo_locations_v2.json"
-    EVENTS_PATH = DATASET_DIR / "serbia_kosovo_events_projection_v2.csv"
-    ENTITIES_PATH = DATASET_DIR / "serbia_kosovo_entities_v2.json"
-    DATASET_URL = "./data/serbian_intelligence_v2/serbia_kosovo_events_projection_v2.csv"
-    LOCATIONS_URL = "./data/serbian_intelligence_v2/serbia_kosovo_locations_v2.json"
-elif DATASET_VERSION == "v1":
-    DATASET_DIR = ROOT / "data"
-    LOCATIONS_PATH = DATASET_DIR / "serbia_kosovo_locations.json"
-    EVENTS_PATH = DATASET_DIR / "serbia_kosovo_events_projection.csv"
-    ENTITIES_PATH = DATASET_DIR / "serbia_kosovo_entities.json"
-    DATASET_URL = "./data/serbia_kosovo_events_projection.csv"
-    LOCATIONS_URL = "./data/serbia_kosovo_locations.json"
+if DEMO.enabled:
+    DATASET_VERSION = DEMO.dataset
+    EVENTS_PATH = ROOT / DEMO.profile["files"]["events"]
+    LOCATIONS_PATH = ROOT / DEMO.profile["files"]["locations"]
+    ENTITIES_PATH = ROOT / DEMO.profile["files"]["entities"]
+    DATASET_DIR = EVENTS_PATH.parent
+    DATASET_URL = "/api/dataset/events"
+    LOCATIONS_URL = "/api/dataset/locations"
 else:
-    raise ValueError(f"Unsupported INTELLIGENCE_POC_DATASET_VERSION: {DATASET_VERSION}")
+    DATASET_VERSION = os.environ.get("INTELLIGENCE_POC_DATASET_VERSION", "v2").strip().lower()
+    if DATASET_VERSION in {"v2.1", "v2_1", "v21"}:
+        DATASET_VERSION = "v2.1"
+        DATASET_DIR = ROOT / "data" / "serbian_intelligence_v2_1"
+        LOCATIONS_PATH = DATASET_DIR / "serbia_kosovo_locations_v2_1.json"
+        EVENTS_PATH = DATASET_DIR / "serbia_kosovo_events_projection_v2_1.csv"
+        ENTITIES_PATH = DATASET_DIR / "serbia_kosovo_entities_v2_1.json"
+        DATASET_URL = "./data/serbian_intelligence_v2_1/serbia_kosovo_events_projection_v2_1.csv"
+        LOCATIONS_URL = "./data/serbian_intelligence_v2_1/serbia_kosovo_locations_v2_1.json"
+    elif DATASET_VERSION == "v2":
+        DATASET_DIR = ROOT / "data" / "serbian_intelligence_v2"
+        LOCATIONS_PATH = DATASET_DIR / "serbia_kosovo_locations_v2.json"
+        EVENTS_PATH = DATASET_DIR / "serbia_kosovo_events_projection_v2.csv"
+        ENTITIES_PATH = DATASET_DIR / "serbia_kosovo_entities_v2.json"
+        DATASET_URL = "./data/serbian_intelligence_v2/serbia_kosovo_events_projection_v2.csv"
+        LOCATIONS_URL = "./data/serbian_intelligence_v2/serbia_kosovo_locations_v2.json"
+    elif DATASET_VERSION == "v1":
+        DATASET_DIR = ROOT / "data"
+        LOCATIONS_PATH = DATASET_DIR / "serbia_kosovo_locations.json"
+        EVENTS_PATH = DATASET_DIR / "serbia_kosovo_events_projection.csv"
+        ENTITIES_PATH = DATASET_DIR / "serbia_kosovo_entities.json"
+        DATASET_URL = "./data/serbia_kosovo_events_projection.csv"
+        LOCATIONS_URL = "./data/serbia_kosovo_locations.json"
+    else:
+        raise ValueError(f"Unsupported INTELLIGENCE_POC_DATASET_VERSION: {DATASET_VERSION}")
 
 # Keep replacement-scenario state separate from legacy V1 event identifiers.
 # Selecting V1 preserves the existing on-disk layout for rollback compatibility.
@@ -175,6 +189,21 @@ WORKSTREAMS_DIR = ROOT / "workstreams"
 SCENARIO_MANIFESTS_DIR = ROOT / "scenario_manifests"
 SCENARIO_RUNS_DIR = ROOT / "scenario_runs" / STATE_SUFFIX
 EVIDENCE_CATALOG_DIR = ROOT / "data" / "evidence_catalog" / DATASET_VERSION
+if DEMO.enabled:
+    STATE_SUFFIX = Path()
+    PERFORMANCE_DIR = DEMO.state / "performance_logs"
+    RECORDED_RUNS_DIR = DEMO.state / "recorded_runs"
+    RECORDED_RUNS_DIR_EN = DEMO.state / "recorded_runs_en"
+    SAVED_QUESTIONS_DIR = DEMO.state / "saved_questions"
+    INVESTIGATIONS_DIR = DEMO.state / "investigations"
+    WORKSTREAMS_DIR = DEMO.state / "workstreams"
+    SCENARIO_RUNS_DIR = DEMO.state / "scenario_runs"
+    EVIDENCE_CATALOG_DIR = DEMO.state / "evidence_catalog"
+    TARGET_BANK_PATHS = {locale: DEMO.state / "attack_targets" / locale / "attack_targets.db" for locale in ["he", "en"]}
+    RECORDED_RUNS_PATH = DEMO.state / "legacy_recorded_runs.json"
+    if not DEMO.profile["features"]["playback"]:
+        SCENARIO_MANIFESTS_DIR = DEMO.state / "scenario_manifests"
+    DEMO.bind_mcp_environment()
 TERMINAL_STATUSES = {"completed", "failed", "cancelled"}
 EVENT_ID_PATTERN = re.compile(r"\b(?:REC-(?:V2-)?\d{6}|LOC-(?:V2-)?\d{3})\b")
 SAVED_QUESTION_ID_PATTERN = re.compile(r"^[A-Za-z0-9_.-]+$")
@@ -261,8 +290,8 @@ except (OSError, json.JSONDecodeError):
 EVENTS_PATH_EN = EVENTS_PATH.with_name(EVENTS_PATH.stem + ".en" + EVENTS_PATH.suffix)
 LOCATIONS_PATH_EN = LOCATIONS_PATH.with_name(LOCATIONS_PATH.stem + ".en" + LOCATIONS_PATH.suffix)
 ENTITIES_PATH_EN = ENTITIES_PATH.with_name(ENTITIES_PATH.stem + ".en" + ENTITIES_PATH.suffix)
-DATASET_URL_EN = DATASET_URL.replace(".csv", ".en.csv")
-LOCATIONS_URL_EN = LOCATIONS_URL.replace(".json", ".en.json")
+DATASET_URL_EN = DATASET_URL + "?locale=en" if DEMO.enabled else DATASET_URL.replace(".csv", ".en.csv")
+LOCATIONS_URL_EN = LOCATIONS_URL + "?locale=en" if DEMO.enabled else LOCATIONS_URL.replace(".json", ".en.json")
 
 
 def localized_dataset_paths(locale: str = "he") -> tuple[Path, Path, Path]:
@@ -573,6 +602,9 @@ def list_ui_layers(locale: str = "he") -> list[dict[str, Any]]:
         layers[-2]["label"] = "Target candidates"
         layers[-1]["label"] = "Evidence layer"
     source_counts = Counter(event.get("source_type") or unknown_source for event in events)
+    if DEMO.enabled:
+        for source in DEMO.profile["sources"][locale]:
+            source_counts.setdefault(source, 0)
     for source_type, count in sorted(source_counts.items(), key=lambda item: (-item[1], item[0])):
         layers.append({
             "id": f"events:{source_type}",
@@ -664,6 +696,8 @@ def load_agent_hermes_config(agent_id: str) -> dict:
     merged = {**config, **override}
     merged["agent_id"] = agent_id
     merged.setdefault("audit_path", REMOTE_AUDIT_PATH)
+    if DEMO.enabled:
+        merged["audit_path"] = str(DEMO.state / "audit" / f"{agent_id}.jsonl")
     return merged
 
 
@@ -3587,6 +3621,7 @@ class HermesClient:
                 continue
         return self.summarize_audit(audit_records)
 
+    @ADMISSION.wrap
     def investigate(self, prompt, history, investigation_state=None, investigation_id=None, is_continuation=False, continuation_context=None, responding_agent="general", mission_run_id=None, locale="he", instruction_only=False):
         global ACTIVE_RUN_STARTED_AT
         locale = normalize_locale(locale)
@@ -3886,17 +3921,31 @@ class HermesClient:
             "bytes": len(encoded_instructions),
             "sha256": hashlib.sha256(encoded_instructions).hexdigest(),
         }
+        if DEMO.enabled:
+            full_instructions += "\nActive scenario: " + DEMO.scenario + ". Use only this scenario dataset. " + ("The dataset is empty; do not invent records or reuse Kosovo examples as facts." if DEMO.profile["empty_dataset"] else "")
         if instruction_only:
             # Keep alternative model experiments on the exact General-agent contract
             # without creating a Hermes run or touching its audit log.
             return {"instructions": full_instructions, "performance": performance}
+        if DEMO.enabled:
+            investigation_id = f"{DEMO.scenario}:{DEMO.dataset}:{investigation_id or secrets.token_hex(8)}"
         safe_investigation_id = bounded_prompt_cache_key(investigation_id)
         session_id = safe_investigation_id or f"intelligence-orchestrator-{int(time.time() * 1000)}"
         session_started = time.perf_counter()
         with HermesSession(self.config) as session:
             performance["gateway"]["ssh_session_open_ms"] = elapsed_ms(session_started)
             stage_started = time.perf_counter()
-            session.ssh_command(f"truncate -s 0 {audit_path}")
+            # Append-only audit; the existing timestamp filter selects this execution.
+            # Serialized admission prevents concurrent runs from sharing this window.
+            pass
+            run_audit_path = audit_path
+            if DEMO.enabled:
+                run_key = secrets.token_hex(16)
+                run_audit_path = str(Path(audit_path).parent / "runs" / f"{run_key}.jsonl")
+                session.ssh_command(
+                    f"mkdir -p {shlex.quote(str(Path(run_audit_path).parent))} && "
+                    f"printf '%s' {shlex.quote(run_key)} > {shlex.quote(audit_path + '.active')}"
+                )
             performance["gateway"]["audit_truncate_ms"] = elapsed_ms(stage_started)
             ACTIVE_RUN_STARTED_AT = datetime.now(timezone.utc)
             ACTIVE_RUN_STARTED_AT_BY_AUDIT[audit_path] = ACTIVE_RUN_STARTED_AT
@@ -3992,12 +4041,15 @@ class HermesClient:
                     if event.get("event") in {"tool.started", "tool.completed"}:
                         events.append(event)
                 audit_fetch_started = time.perf_counter()
-                audit_text = session.ssh_command(f"cat {audit_path} 2>/dev/null || true")
+                audit_text = session.ssh_command(f"cat {shlex.quote(run_audit_path)} 2>/dev/null || true")
                 performance["gateway"]["audit_fetch_ms"] = elapsed_ms(audit_fetch_started)
                 audit_records = []
                 for line in audit_text.splitlines():
                     try:
-                        audit_records.append(json.loads(line))
+                        record = json.loads(line)
+                        timestamp = parse_utc(record.get("timestamp_utc"))
+                        if timestamp and timestamp >= ACTIVE_RUN_STARTED_AT:
+                            audit_records.append(record)
                     except json.JSONDecodeError:
                         continue
                 exact_steps = self.summarize_audit(audit_records)
@@ -4474,6 +4526,9 @@ def ensure_current_playback_reevaluation(run: dict) -> bool:
     current = reevaluations.get(str(revision))
     if not isinstance(current, dict) or current.get("status") != "running":
         return False
+    if DEMO.enabled and not playback_reevaluation_running_in_process(run["run_id"], revision):
+        finish_reevaluation(SCENARIO_RUNS_DIR, run["run_id"], revision, "failed", "Interrupted execution requires explicit retry")
+        return False
     if not playback_has_active_workstreams(run):
         finish_reevaluation(
             SCENARIO_RUNS_DIR,
@@ -4713,6 +4768,11 @@ def ensure_current_memory_update(run: dict, investigation_id: str) -> bool:
     current = memory_update_for_investigation(run, investigation_id)
     if not isinstance(current, dict) or current.get("status") != "running":
         return False
+    if DEMO.enabled:
+        worker = _MEMORY_UPDATE_THREADS.get((run["run_id"], revision))
+        if not worker or not worker.is_alive():
+            finish_memory_update(SCENARIO_RUNS_DIR, run["run_id"], revision, investigation_id, "failed", "Interrupted execution requires explicit retry")
+            return False
     investigation_id = str(current.get("investigation_id") or "").strip()
     if not INVESTIGATION_ID_PATTERN.fullmatch(investigation_id):
         return False
@@ -4747,6 +4807,9 @@ class Handler(SimpleHTTPRequestHandler):
         self.send_response(status)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(payload)))
+        self.send_header("Cache-Control", "no-store")
+        if DEMO.enabled:
+            self.send_header("X-Demo-Generation", DEMO.generation)
         self.end_headers()
         try:
             self.wfile.write(payload)
@@ -4755,13 +4818,32 @@ class Handler(SimpleHTTPRequestHandler):
             # completion. The result remains recoverable by client request ID.
             return
 
+    def demo_guard(self, mutation=False):
+        if not DEMO.enabled:
+            return True
+        generation = self.headers.get("X-Demo-Generation")
+        if (mutation or generation) and generation != DEMO.generation:
+            self.send_json(409, {"error": "Scenario changed. Reload the application.", **DEMO.identity})
+            return False
+        if DEMO.maintenance and mutation:
+            self.send_json(503, {"error": "Scenario switching. Try again after reload."})
+            return False
+        return True
+
     def do_GET(self):
+        if not self.demo_guard():
+            return
         path = urlparse(self.path)
         query = parse_qs(path.query)
         locale = normalize_locale((query.get("lang") or query.get("locale") or ["he"])[0])
         if path.path == "/api/status":
             dataset_url, locations_url = localized_dataset_urls(locale)
             self.send_json(200, {
+                **(DEMO.identity if DEMO.enabled else {}),
+                "demo_profile": DEMO.profile,
+                "maintenance": DEMO.maintenance,
+                "agent_queue": ADMISSION.status(),
+                "background_workers": sum(t.is_alive() for t in list(_MEMORY_UPDATE_THREADS.values()) + list(_PLAYBACK_REEVALUATION_THREADS.values())),
                 "mode": "hermes",
                 "configured": CONFIG_PATH.exists(),
                 "build": APP_BUILD,
@@ -4771,6 +4853,17 @@ class Handler(SimpleHTTPRequestHandler):
                 "locations_url": locations_url,
                 "dataset_rows": len(load_ui_events(locale)),
             })
+            return
+        if DEMO.enabled and path.path in {"/api/dataset/events", "/api/dataset/locations"}:
+            events, locations, _ = localized_dataset_paths(locale)
+            selected = events if path.path.endswith("events") else locations
+            payload = selected.read_bytes()
+            self.send_response(200)
+            self.send_header("Content-Type", "text/csv; charset=utf-8" if selected.suffix == ".csv" else "application/json")
+            self.send_header("Cache-Control", "no-store")
+            self.send_header("Content-Length", str(len(payload)))
+            self.end_headers()
+            self.wfile.write(payload)
             return
         if path.path == "/api/layers":
             self.send_json(200, {"layers": list_ui_layers(locale)})
@@ -4971,10 +5064,33 @@ class Handler(SimpleHTTPRequestHandler):
             else:
                 self.send_json(200, recovered["result"])
             return
+        if DEMO.enabled and any(part in {"data", ".demo-state", ".demo-control", ".hermes-api.json", "investigations", "saved_questions", "recorded_runs", "recorded_runs_en", "workstreams", "scenario_runs", "performance_logs", "backups"} or part.startswith(".") for part in unquote(path.path).split("/") if part):
+            self.send_error(404)
+            return
         super().do_GET()
 
     def do_POST(self):
+        if urlparse(self.path).path == "/api/investigate":
+            try:
+                with ADMISSION.slot(foreground=True, ticket_id=self.headers.get("X-Demo-Request-ID")):
+                    return self._do_POST()
+            except AdmissionError as exc:
+                self.send_json(503, {"error": str(exc)})
+                return
+        return self._do_POST()
+
+    def _do_POST(self):
+        if not self.demo_guard(mutation=True):
+            return
         path = urlparse(self.path).path
+        if path == "/api/agent-queue/cancel":
+            length = min(int(self.headers.get("Content-Length", "0")), 4096)
+            try:
+                payload = json.loads(self.rfile.read(length))
+                self.send_json(200, {"cancelled": ADMISSION.cancel(str(payload.get("id") or ""))})
+            except (ValueError, TypeError):
+                self.send_json(400, {"error": "Invalid cancellation request"})
+            return
         if path == "/api/investigations":
             try:
                 length = int(self.headers.get("Content-Length", "0"))
@@ -5587,6 +5703,8 @@ class Handler(SimpleHTTPRequestHandler):
             self.send_json(502, {"error": str(exc)})
 
     def do_PUT(self):
+        if not self.demo_guard(mutation=True):
+            return
         parsed = urlparse(self.path)
         path = parsed.path
         query = parse_qs(parsed.query)
@@ -5631,6 +5749,8 @@ class Handler(SimpleHTTPRequestHandler):
             self.send_json(502, {"error": str(exc)})
 
     def do_DELETE(self):
+        if not self.demo_guard(mutation=True):
+            return
         path = urlparse(self.path)
         if path.path != "/api/saved-question":
             self.send_error(404)

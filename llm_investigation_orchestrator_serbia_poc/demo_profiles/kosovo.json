@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "state_schema_version": 1,
+  "scenario_id": "kosovo",
+  "profile_version": "1",
+  "dataset_version": "v2.1",
+  "label": {
+    "en": "Kosovo"
+  },
+  "empty_dataset": false,
+  "files": {
+    "events": "data/serbian_intelligence_v2_1/serbia_kosovo_events_projection_v2_1.csv",
+    "locations": "data/serbian_intelligence_v2_1/serbia_kosovo_locations_v2_1.json",
+    "entities": "data/serbian_intelligence_v2_1/serbia_kosovo_entities_v2_1.json"
+  },
+  "sources": {
+    "he": [
+      "X",
+      "בלוג פוליטי",
+      "הודעת דובר",
+      "חדשות מקומיות",
+      "חיל האוויר הסרבי - ניצול וידאו מכטב״ם",
+      "טיקטוק",
+      "טלגרם",
+      "ערוץ חדשות בינלאומי",
+      "פייסבוק",
+      "קבוצת וואטסאפ",
+      "שיחות סלולר",
+      "שמועה מקומית"
+    ],
+    "en": [
+      "X",
+      "Political blog",
+      "Spokesperson statement",
+      "Local news",
+      "חיל האוויר הסרבי - ניצול וידאו מכטב\"ם",
+      "TikTok",
+      "Telegram",
+      "International news channel",
+      "Facebook",
+      "WhatsApp group",
+      "Cellular Calls",
+      "Local rumor"
+    ]
+  },
+  "map": {
+    "center": [
+      20.82,
+      42.92
+    ],
+    "zoom": 8.4,
+    "minZoom": 6,
+    "maxBounds": [
+      [
+        19,
+        41
+      ],
+      [
+        22.2,
+        44
+      ]
+    ]
+  },
+  "agents": {
+    "roles": [
+      "general",
+      "moshe",
+      "talia",
+      "openai_general"
+    ],
+    "max_concurrency": 1,
+    "queue_capacity": 8
+  },
+  "features": {
+    "playback": true
+  },
+  "checksums": {
+    "data/serbian_intelligence_v2_1/serbia_kosovo_events_projection_v2_1.csv": "67a0fb7531c86966f9f5c4e97a2e22312cdc0fe9ac1bdce63cbf1c5d23736ff7",
+    "data/serbian_intelligence_v2_1/serbia_kosovo_locations_v2_1.json": "ca95eace5817fb2438a686fc3e14c1fa85bef24a68db0e15b022bcb4cd43c8f6",
+    "data/serbian_intelligence_v2_1/serbia_kosovo_entities_v2_1.json": "bc4216957822ccc87f37595a5905c2c0ddc187337746b0f990c363c3c293aadf"
+  }
+}
