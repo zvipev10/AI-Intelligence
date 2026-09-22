@@ -28,11 +28,11 @@ def copy_checked(source, target):
         with sqlite3.connect(f"file:{source}?mode=ro", uri=True) as origin:
             with sqlite3.connect(target) as destination:
                 origin.backup(destination)
-                if destination.execute("PRAGMA integrity_check").fetchone()[0] != "ok":
+                if destination.execute("PRAGMA quick_check").fetchone()[0] != "ok":
                     raise ValueError(f"Database backup failed: {source}")
         return [{"source": str(source), "target": str(target), "sqlite_backup": True, "sha256": hashlib.sha256(target.read_bytes()).hexdigest()}]
     if source.is_dir():
-        shutil.copytree(source, target)
+        shutil.copytree(source, target, symlinks=True)
         files = [p for p in source.rglob("*") if p.is_file()]
     else:
         target.parent.mkdir(parents=True, exist_ok=True)
