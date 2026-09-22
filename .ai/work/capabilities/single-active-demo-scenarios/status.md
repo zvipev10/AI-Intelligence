@@ -1,21 +1,11 @@
 # Single-active-demo scenario status
 
-Phase: capability definition and draft delivery proposal.
-Overall: planning complete; reviews pending, implementation not started.
-Parent: [#67](https://github.com/zvipev10/AI-Intelligence/issues/67).
-Review child: [#68](https://github.com/zvipev10/AI-Intelligence/issues/68).
-
-| Role | Required action | Due before |
-|---|---|---|
-| Product/user | Confirm operator-only switching/preserved-state assumptions; specify Syria data/map and future features | Implementation/content approval |
-| Development/architecture | Review manifest, namespaces, admission queue, safe activation and rollback | Formal execution plan |
-| UX | Review maintenance, stale-tab, queued and failure states | Behavior changes |
-| QA | Review migration/round-trip tests and capacity measurement gates | Implementation acceptance |
-
-Confirmed constraint: only one scenario active at a time. Proposed architecture: one shared codebase and endpoint, separate packages/state, active workers only.
-Current blockers: none for planning. Syria content specification and role approval are prerequisites to execution.
-Risks: existing 1 GB VM headroom; mutable global data and audit state; safe migration of Kosovo state; stale clients/background work; unspecified new features.
-Next expected artifact: reviewed role recommendations, then execution-plan.md and child implementation issues. No execution-plan.md is claimed approved or created before that gate.
-Latest: inspected main d475d2e, captured seven proposed phases and testable completion criteria; no product or VM changes.
-
-Artifacts: [brief](capability-brief.md), [proposal](proposed-plan.md), [developer review](developer-review.md), [UX review](ux-review.md), [QA review](qa-review.md), [decisions](decisions.md), [checkpoint](checkpoint-001.md), [handoff](handoff-summary.md).
+Phase: implementation authorized, baseline inspection in progress.
+Owner: development/release (Codex), QA verification within each slice.
+Parent: #67. Review: #68. Draft PR: #69.
+User approved implementation of steps 1–6 with empty Syria data and the same layers. Future features remain out of scope.
+Latest remote fetched: main d475d2e; plan branch 90de2a8. Worktree clean before task.
+Next artifact: baseline checkpoint and scenario profile implementation.
+Assumptions: countrywide Syria map; preserve state and return to Kosovo after qualification.
+Risks: 1 GB VM; shared Hermes gateway may serve unrelated integrations; inspect before modification.
+See execution-plan.md for accepted scope, slices, checks and rollback.
