@@ -23,7 +23,7 @@ Start with:
 Only load these docs if needed:
 - `docs/ai-workflow.md`
 - `docs/decisions.md`
-- `docs/product.md`
+- `docs/product-context.md`
 - `docs/architecture.md`
 - `docs/glossary.md`
 
@@ -117,7 +117,3 @@ Every meaningful session must end with:
 - risks
 - next step
 - suggested docs updates
-
-## Documentation ownership
-
-Keep one authoritative home per fact: `docs/product.md` for analyst behavior, `docs/architecture.md` for implementation contracts, `docs/demo-scenarios.md` for dataset narratives/versions, `docs/operations.md` for procedures, and `docs/decisions.md` for rationale. README and handoff entry points link to these guides instead of copying them. Contributor workflow, glossary and quality fixtures remain supporting references. Capability artifacts preserve task history; they do not override current guides. Inspect live status/release manifests instead of copying volatile deployment snapshots into multiple documents. When consolidating, preserve superseded source material and record its destination.

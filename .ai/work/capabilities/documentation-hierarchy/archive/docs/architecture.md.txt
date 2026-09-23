@@ -4,7 +4,7 @@ This document records durable architecture behavior that future implementation w
 
 ## Shared runtime and scenario isolation
 
-One canonical application package serves Kosovo and Syria; no country-specific code forks or simultaneous demo deployments. `demo_runtime.py` loads validated `demo_profiles/<scenario>.json` and binds dataset/store paths before MCP stores are imported. Profiles carry geography, localized file references, checksums, catalog sources and dataset identity. See [demo scenarios](demo-scenarios.md) for the installed profile/dataset inventory.
+One canonical application package serves Kosovo and Syria; no country-specific code forks or simultaneous demo deployments. `demo_runtime.py` loads validated `demo_profiles/<scenario>.json` and binds dataset/store paths before MCP stores are imported. Profiles carry geography, localized file references, checksums, catalog sources and dataset identity. The current Syria profile is version 6 / `network-v1`; Kosovo is version 1 / `v2.1`.
 
 | Boundary | Ownership / location |
 |---|---|
@@ -24,7 +24,7 @@ The installed Hermes root registry must contain tool definitions bound to the ac
 
 A shared reentrant execution gate serializes application agent work, with a queue of eight, cancellation for queued requests and foreground priority with aging. It includes interactive, specialist, optional OpenAI and application background jobs, but does not regulate unrelated messaging integrations. On the constrained VM, semantic indexes are built offline and checksummed; missing/stale caches fail explicitly rather than building during requests. Inactive scenario packages/state remain on disk without a second resident runtime.
 
-Operational commands and release/rollback rules are in the [operations guide](operations.md).
+Operational commands and release/rollback rules are in the [scenario runbook](../llm_investigation_orchestrator_serbia_poc/docs/demo-scenarios.md).
 
 ## Result presentation and raw source fields
 
@@ -166,13 +166,3 @@ Agent-to-UI catalog action contract:
 - The result exposes `catalog_layer_actions` and `catalog_layer_action_errors`.
 - The browser awaits `openCatalogLayer`, activates the layer, selects a supported view, and redraws.
 - Supported location/entity/event/time constraints travel in `open_catalog_layers.filters`, preserving scope through loading, saved reconstruction and refresh. Other predicates use retrieval plus explicit result IDs/`present_requested_results`; saved layers remain `present_saved_memory_layers`.
-
-## Saved-question and recording interfaces
-
-Runtime directories resolve from `DEMO.state`: `saved_questions/`, `recorded_runs/` and `recorded_runs_en/`. Saved questions use `GET /api/saved-questions`, `GET /api/saved-question?id=<id>`, `POST /api/saved-question`, and `DELETE /api/saved-question?id=<id>`. Recordings use `GET /api/recorded-questions` and `GET /api/recorded-run?id=<id>`.
-
-Saved payloads retain ID/schema, title, question, saved timestamp, source run and full result. Writes validate IDs and use atomic temporary-file replacement; listings skip malformed rows. Loading restores the answer, steps and result layers through the normal presentation path without a new Hermes call. Recorded responses retain full live output and replay steps before the final answer; follow-ups are live.
-
-## Additive layer identity
-
-`sourceId` identifies the originating final result or step and `dataId` identifies content. Their combined identity prevents duplicate layers while allowing independent sources. Layer visibility applies to Map, Timeline and Table; closing releases layer state/color and showing again recreates it. Selected-layer filters do not redefine unrelated layer metadata. Event layers require usable geometry for Map; location layers support Map/Table, time aggregations Timeline/Table, and generic grouped results Table.

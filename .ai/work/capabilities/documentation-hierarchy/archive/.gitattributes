@@ -1,0 +1,2 @@
+# Immutable source bytes retain original line endings and whitespace.
+* -text -whitespace

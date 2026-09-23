@@ -312,7 +312,7 @@ Publish:
 Use the Context Maintenance Skill to suggest updates to:
 - `docs/ai-workflow.md`
 - `docs/decisions.md`
-- `docs/product.md`
+- `docs/product-context.md`
 - `docs/architecture.md`
 - issue / PR description
 
