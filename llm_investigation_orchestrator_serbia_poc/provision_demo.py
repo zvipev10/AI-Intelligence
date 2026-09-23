@@ -40,7 +40,7 @@ def copy_checked(source, target):
         shutil.copy2(source, target)
         files = [source]
     report = []
-    api_key = json.loads((app / ".hermes-api.json").read_text())["api_key"]
+    api_credentials = json.loads((app / ".hermes-api.json").read_text())
     for path in files:
         destination = target / path.relative_to(source) if source.is_dir() else target
         digest = hashlib.sha256(path.read_bytes()).hexdigest()
@@ -103,6 +103,7 @@ def main():
             (target / "config.yaml").chmod(0o600)
             # Named profile authentication reads its .env, including General
             # (the legacy root could instead read platforms.api_server.key).
+            api_key = api_credentials.get("agents", {}).get(role, {}).get("api_key", api_credentials["api_key"])
             set_key(str(target / ".env"), "API_SERVER_KEY", api_key)
             environment_path = target / ".env"
             prefixes = ("TELEGRAM_", "DISCORD_", "WHATSAPP_", "SLACK_", "SIGNAL_", "TEAMS_", "GOOGLE_CHAT_", "FEISHU_", "QQBOT_", "YUANBAO_", "HOMEASSISTANT_")

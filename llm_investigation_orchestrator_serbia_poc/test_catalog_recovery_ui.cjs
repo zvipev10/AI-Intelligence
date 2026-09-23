@@ -23,7 +23,7 @@ context.fetch = async url => {
   context.urls.push(url);
   const filters = JSON.parse(new URL(url).searchParams.get('filters') || '{}');
   return { ok: !context.fail, json: async () => context.fail ? { error: 'load failed' } : {
-    layer: context.state.layerCatalog[0], rows: filters.location_ids ? [{ event_id: '1', location_id: filters.location_ids[0] }] : [{event_id: '1'}, {event_id: '2'}],
+    layer: context.state.layerCatalog[0], rows: context.empty ? [] : filters.location_ids ? [{ event_id: '1', location_id: filters.location_ids[0] }] : [{event_id: '1'}, {event_id: '2'}],
   } };
 };
 vm.createContext(context);
@@ -58,6 +58,13 @@ for (const name of names) {
   await context.openCatalogLayer('events:UAV', { savedLayer: { catalog_filters: action.filters }, silent: true });
   assert.equal(context.state.layers[0].items.length, 1, 'saved scope must not restore entire catalog');
   context.state.layers = [];
+  context.empty = true;
+  await context.presentFinalAgentResult({ catalog_layer_actions: [action] }, 'show empty layer', { showSummary: true });
+  assert.equal(context.state.layers.length, 1, 'empty catalog layer remains presentable');
+  assert.equal(context.state.layers[0].items.length, 0);
+  assert.equal(context.notices.at(-1)[0], 'Layer opened');
+  context.state.layers = [];
+  context.empty = false;
   context.fail = true;
   await context.presentFinalAgentResult({ catalog_layer_actions: [action] }, 'show', { showSummary: true });
   assert.equal(context.notices.at(-1)[0], 'Layer opening failed', 'summary must not overwrite failure');

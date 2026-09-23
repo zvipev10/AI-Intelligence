@@ -121,6 +121,21 @@ class SyriaHTTP(unittest.TestCase):
 
 
 class Activation(unittest.TestCase):
+    def test_crash_recovery_keeps_maintenance_until_verified(self):
+        with tempfile.TemporaryDirectory() as directory:
+            operator = Activator(ROOT, Path(directory)); operator.control.mkdir()
+            previous = {"scenario_id":"kosovo", "dataset_version":"v2.1", "activation_generation":"old"}
+            operator.current.write_text(json.dumps(previous))
+            operator.journal.write_text(json.dumps({"previous":previous, "phase":"starting", "target":{"scenario_id":"syria"}}))
+            (operator.control / "maintenance.json").write_text("{}")
+            selected = []
+            operator.select = lambda identity: selected.append(dict(identity))
+            operator.recover_before_start()
+            self.assertEqual(selected[0]["scenario_id"], "kosovo")
+            self.assertNotEqual(selected[0]["activation_generation"], "old")
+            self.assertTrue((operator.control / "maintenance.json").exists())
+            self.assertEqual(json.loads(operator.journal.read_text())["phase"], "recovered-awaiting-health")
+
     def test_failed_target_restores_previous_with_new_generation(self):
         with tempfile.TemporaryDirectory() as directory:
             operator = Activator(ROOT, Path(directory))

@@ -7,6 +7,7 @@ Never edits datasets or credentials. Provision profiles before first activation.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import shutil
@@ -36,9 +37,24 @@ class Activator:
         self.current = self.control / "current.json"
         self.journal = self.control / "transition.json"
 
+    def verify_release(self, manifest_path=None):
+        path = Path(manifest_path) if manifest_path else self.app / "release-manifest.json"
+        if not path.exists() and manifest_path is None:
+            return  # Local development before installation has no release manifest.
+        release = json.loads(path.read_text())
+        if release.get("state_schema_version") != 1:
+            raise ValueError("Unsupported release state schema")
+        for relative, expected in release["files"].items():
+            file = (self.app / relative).resolve()
+            if not file.is_relative_to(self.app.resolve()):
+                raise ValueError("Unsafe release asset path")
+            actual = hashlib.sha256(file.read_bytes().replace(b"\r\n", b"\n")).hexdigest()
+            if actual != expected:
+                raise ValueError(f"Installed release differs: {relative}")
+
     def services(self, action):
         # Stop the UI first to prevent admission, then the single gateway/MCP tree.
-        units = ["serbia-poc-ui", "hermes-gateway"]
+        units = ["serbia-poc-ui", "hermes-dashboard", "hermes-gateway"]
         if action == "start":
             units.reverse()
         for unit in units:
@@ -52,6 +68,19 @@ class Activator:
     def select(self, identity):
         scenario = identity["scenario_id"]
         load_profile(self.app, scenario, verify=True)
+        # OAuth refresh tokens are credentials, not scenario memory. Carry the
+        # latest active role's credential store across a stopped transition so
+        # an inactive profile cannot revive a stale, single-use refresh token.
+        previous = json.loads(self.current.read_text()) if self.current.exists() else None
+        if previous and previous["scenario_id"] != scenario:
+            for role in ["general", "moshe", "talia"]:
+                source = self.root / "hermes-homes" / previous["scenario_id"] / role / "auth.json"
+                target = self.root / "hermes-homes" / scenario / role / "auth.json"
+                if source.exists():
+                    temporary = target.with_suffix(".credential-next")
+                    shutil.copy2(source, temporary)
+                    temporary.chmod(0o600)
+                    os.replace(temporary, target)
         state = self.root / "state" / scenario / identity["dataset_version"]
         metadata = json.loads((state / "state.json").read_text())
         if metadata != {"schema_version": 1, "scenario_id": scenario, "dataset_version": identity["dataset_version"]}:
@@ -90,6 +119,11 @@ class Activator:
             content = yaml.safe_load(config.read_text())
             for name, server in content.get("mcp_servers", {}).items():
                 server.setdefault("env", {}).update(environment)
+                include = server.get("tools", {}).get("include")
+                if isinstance(include, list):
+                    for common in ["open_catalog_layers", "demo_runtime_status"]:
+                        if common not in include:
+                            include.append(common)
                 # Installed Hermes registers named-profile toolsets from the
                 # gateway root registry. Every definition points at the active
                 # scenario; keeping only profile copies yields no callable tools.
@@ -148,11 +182,12 @@ class Activator:
             time.sleep(.5)
         raise RuntimeError("Drain timed out; current scenario retained")
 
-    def activate(self, scenario, timeout=120):
+    def activate(self, scenario, timeout=120, release=None):
         import fcntl
         self.control.mkdir(parents=True, exist_ok=True)
         with (self.control / "activation.lock").open("a") as lock:
             fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            self.verify_release(release)
             profile = load_profile(self.app, scenario, verify=True)
             load_profile(Path("/opt/serbia-poc"), scenario, verify=True)
             if shutil.disk_usage(self.root).free < 512 * 1024 * 1024:
@@ -205,13 +240,14 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("scenario", nargs="?", choices=["kosovo", "syria"])
     parser.add_argument("--drain-timeout", type=int, default=120)
+    parser.add_argument("--release", type=Path, help="Require this installed release manifest before activation")
     parser.add_argument("--recover-before-start", action="store_true")
     args = parser.parse_args()
     operator = Activator()
     if args.recover_before_start:
         operator.recover_before_start()
     elif args.scenario:
-        print(json.dumps(operator.activate(args.scenario, args.drain_timeout), indent=2))
+        print(json.dumps(operator.activate(args.scenario, args.drain_timeout, args.release), indent=2))
     else:
         parser.error("Supply a scenario or --recover-before-start")
 

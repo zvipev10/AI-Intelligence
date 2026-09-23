@@ -1,0 +1,13 @@
+[Unit]
+Description=Recover interrupted demo activation before starting workers
+Before=serbia-poc-ui.service hermes-gateway.service hermes-dashboard.service
+After=local-fs.target
+
+[Service]
+Type=oneshot
+User=ubuntu
+ExecStart=/home/ubuntu/.hermes/hermes-agent/venv/bin/python /opt/serbia-poc-ui/activate_demo.py --recover-before-start
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
