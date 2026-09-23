@@ -61,3 +61,17 @@ For a whole-release rollback, stop all three services, restore the private sourc
 ## Verification limits
 
 The 1 GB VM remains constrained. Use one scenario and one application agent execution slot; future feature workloads need separate capacity validation. Automated API, tool, state and asset checks supplement browser acceptance. An empty Syria dataset cannot validate future Syria narratives or expected analytical answers.
+
+## Offline semantic search cache
+
+The 1 GB VM must not build a semantic index during an analyst request. Scenario MCP processes require a prebuilt compatible cache; a missing/stale cache returns an explicit operational error. Empty Syria searches return zero without an index. The existing hybrid search backend is unchanged.
+
+On a development machine with sufficient RAM and the exact release dataset bytes:
+
+```sh
+python build_demo_index.py kosovo --output /trusted/build/kosovo-index --engine python
+```
+
+The deployed MCP uses Python without NumPy, so use the `python` engine. Install both generated `semantic_event_index_hybrid_embedding.pkl` and `.json` under `/opt/demo-runtime/state/kosovo/v2.1/semantic_index/` before activation. Verify the transferred SHA-256 against the build output. These are private derived release artifacts, not Git source. Only accept trusted caches: pickle files can execute code. The operator verifies the cache hash and raw dataset signatures before stopping services. Dataset/index-format/engine changes require a rebuilt cache and a real semantic-search smoke check. Build-time Python must support the runtime's pickle format.
+
+Cold index construction during qualification timed out and caused heavy swapping. The offline cache avoids that construction cost; it does not eliminate the VM's overall RAM limit.

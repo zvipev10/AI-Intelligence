@@ -14,6 +14,7 @@ import secrets
 import shlex
 import subprocess
 import threading
+from functools import wraps
 from collections import Counter, defaultdict
 from datetime import datetime, timezone
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
@@ -129,6 +130,25 @@ from demo_runtime import DemoRuntime
 from demo_admission import AgentAdmission, AdmissionError
 DEMO = DemoRuntime(ROOT)
 ADMISSION = AgentAdmission(lambda: DEMO.maintenance)
+_API_ACTIVE_REQUESTS = 0
+_API_REQUEST_LOCK = threading.Lock()
+
+
+def track_api_request(function):
+    @wraps(function)
+    def tracked(self):
+        global _API_ACTIVE_REQUESTS
+        path = urlparse(self.path).path
+        if not path.startswith("/api/") or path == "/api/status":
+            return function(self)
+        with _API_REQUEST_LOCK:
+            _API_ACTIVE_REQUESTS += 1
+        try:
+            return function(self)
+        finally:
+            with _API_REQUEST_LOCK:
+                _API_ACTIVE_REQUESTS -= 1
+    return tracked
 ATTACK_TARGET_CATALOG_LAYER_ID = "attack-targets:all"
 EVIDENCE_CATALOG_LAYER_ID = "evidence:all"
 TARGET_CATALOG_READER = Path(os.environ.get(
@@ -4830,10 +4850,14 @@ class Handler(SimpleHTTPRequestHandler):
             return False
         return True
 
+    @track_api_request
     def do_GET(self):
         if not self.demo_guard():
             return
         path = urlparse(self.path)
+        if DEMO.maintenance and path.path.startswith("/api/") and path.path not in {"/api/status", "/api/layers", "/api/dataset/events", "/api/dataset/locations"}:
+            self.send_json(503, {"error": "Scenario switching. Reload shortly."})
+            return
         query = parse_qs(path.query)
         locale = normalize_locale((query.get("lang") or query.get("locale") or ["he"])[0])
         if path.path == "/api/status":
@@ -4844,6 +4868,7 @@ class Handler(SimpleHTTPRequestHandler):
                 "maintenance": DEMO.maintenance,
                 "agent_queue": ADMISSION.status(),
                 "background_workers": sum(t.is_alive() for t in list(_MEMORY_UPDATE_THREADS.values()) + list(_PLAYBACK_REEVALUATION_THREADS.values())),
+                "active_api_requests": _API_ACTIVE_REQUESTS,
                 "mode": "hermes",
                 "configured": CONFIG_PATH.exists(),
                 "build": APP_BUILD,
@@ -5069,6 +5094,7 @@ class Handler(SimpleHTTPRequestHandler):
             return
         super().do_GET()
 
+    @track_api_request
     def do_POST(self):
         if urlparse(self.path).path == "/api/investigate":
             try:
@@ -5702,6 +5728,7 @@ class Handler(SimpleHTTPRequestHandler):
             set_investigation_result(request_id, "failed", error=str(exc))
             self.send_json(502, {"error": str(exc)})
 
+    @track_api_request
     def do_PUT(self):
         if not self.demo_guard(mutation=True):
             return
@@ -5748,6 +5775,7 @@ class Handler(SimpleHTTPRequestHandler):
         except Exception as exc:
             self.send_json(502, {"error": str(exc)})
 
+    @track_api_request
     def do_DELETE(self):
         if not self.demo_guard(mutation=True):
             return

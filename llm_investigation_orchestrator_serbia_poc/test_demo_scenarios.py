@@ -21,6 +21,42 @@ ROOT = Path(__file__).resolve().parent
 
 
 class Profiles(unittest.TestCase):
+    def test_activation_rejects_missing_or_modified_search_cache(self):
+        import hashlib
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            operator = Activator(ROOT, root)
+            profile = load_profile(ROOT, "kosovo")
+            with self.assertRaisesRegex(RuntimeError, "offline search cache"):
+                operator.verify_search_cache(profile)
+            cache = root / "state/kosovo/v2.1/semantic_index/semantic_event_index_hybrid_embedding.pkl"
+            cache.parent.mkdir(parents=True)
+            cache.write_bytes(b"trusted-test-cache")
+            manifest = {}
+            for label in ["events", "locations", "entities"]:
+                data = (ROOT / profile["files"][label]).read_bytes()
+                manifest[label + "_sha256"] = hashlib.sha256(data).hexdigest()
+                manifest[label + "_size"] = len(data)
+            cache.with_suffix(".json").write_text(json.dumps({"manifest": manifest, "sha256": hashlib.sha256(cache.read_bytes()).hexdigest()}))
+            operator.verify_search_cache(profile)
+            cache.write_bytes(b"changed")
+            with self.assertRaises(RuntimeError):
+                operator.verify_search_cache(profile)
+
+    def test_search_never_builds_on_demo_cache_miss(self):
+        from mcp_server.semantic_index import SemanticEventIndex
+        with tempfile.TemporaryDirectory() as directory:
+            records = [{"event_id": "1", "event_summary": "reported movements"}]
+            with patch.object(SemanticEventIndex, "_build", side_effect=AssertionError("must not build")):
+                with self.assertRaisesRegex(RuntimeError, "Build with build_demo_index"):
+                    SemanticEventIndex(records, directory, require_prebuilt=True)
+            SemanticEventIndex(records, directory, signature={"dataset": "one"})
+            with patch.object(SemanticEventIndex, "_build", side_effect=AssertionError("must not build")):
+                cached = SemanticEventIndex(records, directory, signature={"dataset": "one"}, require_prebuilt=True)
+                self.assertEqual(len(cached.search("movements", {}, 1)), 1)
+                with self.assertRaises(RuntimeError):
+                    SemanticEventIndex(records, directory, signature={"dataset": "two"}, require_prebuilt=True)
+
     def test_packages_and_state_isolation(self):
         for scenario in ["kosovo", "syria"]:
             load_profile(ROOT, scenario, verify=True)
@@ -151,7 +187,7 @@ class Activation(unittest.TestCase):
                 return identity
             operator.health = health
             stub = SimpleNamespace(LOCK_EX=1, LOCK_NB=2, flock=lambda *args: None)
-            with patch.dict(sys.modules, {"fcntl":stub}), patch("activate_demo.load_profile", return_value={"dataset_version":"empty-v1"}):
+            with patch.dict(sys.modules, {"fcntl":stub}), patch("activate_demo.load_profile", return_value={"dataset_version":"empty-v1", "empty_dataset":True}):
                 with self.assertRaisesRegex(RuntimeError, "simulated startup"):
                     operator.activate("syria")
             self.assertEqual(actions, ["stop", "syria", "start", "stop", "kosovo", "start"])
@@ -168,7 +204,7 @@ class Activation(unittest.TestCase):
             operator.services = lambda action: actions.append(action)
             operator.drain = lambda timeout: (_ for _ in ()).throw(RuntimeError("busy"))
             stub = SimpleNamespace(LOCK_EX=1, LOCK_NB=2, flock=lambda *args: None)
-            with patch.dict(sys.modules, {"fcntl":stub}), patch("activate_demo.load_profile", return_value={"dataset_version":"empty-v1"}):
+            with patch.dict(sys.modules, {"fcntl":stub}), patch("activate_demo.load_profile", return_value={"dataset_version":"empty-v1", "empty_dataset":True}):
                 with self.assertRaisesRegex(RuntimeError, "busy"): operator.activate("syria")
             self.assertEqual(actions, [])
             self.assertFalse((operator.control / "maintenance.json").exists())

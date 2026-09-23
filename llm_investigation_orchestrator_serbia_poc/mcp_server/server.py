@@ -555,6 +555,7 @@ def get_semantic_index() -> SemanticEventIndex:
             cache_dir=SEMANTIC_INDEX_DIR,
             signature=semantic_index_signature(),
             backend=SEMANTIC_BACKEND,
+            require_prebuilt=DEMO.enabled,
         )
     return SEMANTIC_INDEX
 

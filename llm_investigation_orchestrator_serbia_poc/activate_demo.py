@@ -65,6 +65,22 @@ class Activator:
                 if result.returncode == 0:
                     raise RuntimeError(f"Old service still active: {unit}")
 
+    def verify_search_cache(self, profile):
+        if profile.get("empty_dataset"):
+            return
+        path = self.root / "state" / profile["scenario_id"] / profile["dataset_version"] / "semantic_index" / "semantic_event_index_hybrid_embedding.pkl"
+        try:
+            metadata = json.loads(path.with_suffix(".json").read_text())
+            if hashlib.sha256(path.read_bytes()).hexdigest() != metadata["sha256"]:
+                raise ValueError("Search cache checksum mismatch")
+            for label in ["events", "locations", "entities"]:
+                data = (self.app / profile["files"][label]).read_bytes()
+                if (metadata["manifest"][label + "_sha256"] != hashlib.sha256(data).hexdigest()
+                        or metadata["manifest"][label + "_size"] != len(data)):
+                    raise ValueError("Search cache dataset mismatch")
+        except (OSError, KeyError, ValueError) as exc:
+            raise RuntimeError("Install the matching trusted offline search cache before activation") from exc
+
     def select(self, identity):
         scenario = identity["scenario_id"]
         load_profile(self.app, scenario, verify=True)
@@ -177,7 +193,7 @@ class Activator:
             with urlopen("http://127.0.0.1:8769/api/status", timeout=5) as response:
                 status = json.load(response)
             queue = status.get("agent_queue")
-            if queue is not None and queue["running"] == 0 and queue["queued"] == 0 and status.get("background_workers", 0) == 0:
+            if queue is not None and queue["running"] == 0 and queue["queued"] == 0 and status.get("background_workers", 0) == 0 and status.get("active_api_requests", 0) == 0:
                 return
             time.sleep(.5)
         raise RuntimeError("Drain timed out; current scenario retained")
@@ -190,6 +206,7 @@ class Activator:
             self.verify_release(release)
             profile = load_profile(self.app, scenario, verify=True)
             load_profile(Path("/opt/serbia-poc"), scenario, verify=True)
+            self.verify_search_cache(profile)
             if shutil.disk_usage(self.root).free < 512 * 1024 * 1024:
                 raise RuntimeError("Less than 512 MiB free; activation aborted")
             previous = json.loads(self.current.read_text())
