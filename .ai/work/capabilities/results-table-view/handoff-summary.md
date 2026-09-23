@@ -1,4 +1,4 @@
-# Table results view — handoff
+# Table results view â€” handoff
 
 Implemented and deployed to http://151.145.93.180. Syria remains active, dataset network-v1 unchanged (208 records, including 200 geometry-free IPDR records). Runtime source commit: 89e772d88add95b765857e4af0831f64f0987049.
 
@@ -23,3 +23,6 @@ PR #76 stacks on #74; parent #67, child #75. Branch codex/results-table-view pub
 Backups: /opt/demo-runtime/backups/table-fc1c0f9 and table-89e772d; manifests pinned under releases/<commit>. Prior datasets and audit files preserved.
 
 Next action: refresh the application and review the Table tab/record viewer; merge the reviewed PR stack. Suggested durable docs updates: describe Map/Timeline/Table choice in product context and record that scenario activation updates audit destinations with dataset identity in architecture/decisions. These decisions are preserved here pending broader documentation consolidation.
+
+## User correction — IPDR schema presentation
+IPDR table now shows IP address and IMEI instead of actor/location; its viewer and filter list omit actor/location, and its table has no map action. All values come from the existing structured fields, preserving leading zeros. Other sources retain their existing layouts. JS cache version 205. Focused Node regression, media and syntax checks pass. Static VM deployment follows publishing; no dataset or agent configuration change. Product-context documentation should describe source-specific IPDR columns.

@@ -5,7 +5,7 @@ const source = fs.readFileSync(`${__dirname}/app.js`, 'utf8');
 const context = {URL, window: {location: {href: 'http://localhost/'}}, activeLocaleText: (he,en) => en,
   escapeHtml: text => String(text).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('"','&quot;')};
 vm.createContext(context);
-for (const name of ['safeMediaUrl','viewerMedia','isUavVideoRecord','isCellularCallRecord','viewerMediaHtml','viewerFields']) {
+for (const name of ['safeMediaUrl','viewerMedia','isUavVideoRecord','isCellularCallRecord','viewerMediaHtml','viewerFields','isIpdrRecord']) {
   const start = source.search(new RegExp(`function ${name}\\(`));
   const next = source.slice(start + 1).search(/\n(?:async )?function /);
   vm.runInContext(source.slice(start, next < 0 ? undefined : start + 1 + next), context);

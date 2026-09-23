@@ -1734,6 +1734,9 @@ function filterFieldsForLayer(layer) {
   ensureLayerFilterState(layer);
   const fields = new Set();
   (layer?.items || []).forEach(item => filterFieldPathsForValue(item, "", fields));
+  if (layer?.items?.length && layer.items.every(isIpdrRecord)) {
+    for (const field of ["entity_id", "entity_name", "location_id", "location_name", "location_type", "location_accuracy_m"]) fields.delete(field);
+  }
   return [...fields].sort((a, b) => a.localeCompare(b, "en"));
 }
 
@@ -3431,8 +3434,13 @@ function startSimulatedUavStream(item) {
   objectViewerUavAnimation = requestAnimationFrame(draw);
 }
 
+function isIpdrRecord(item) {
+  return String(item?.source_type || "").trim().toUpperCase() === "IPDR";
+}
+
 function viewerFields(item, kind) {
   const hidden = new Set(["event_summary", "canonical_name", "media", "image_series", "video_url", "audio_url", "image_url", "raw_data_references", "call_started_at_utc", "call_duration_seconds", "side_a_imei", "side_a_number", "side_a_location_id", "side_a_location_name", "side_b_imei", "side_b_number", "side_b_location_id", "side_b_location_name", "call_transcript", "call_transcript_en", "synthetic_media"]);
+  if (kind === "record" && isIpdrRecord(item)) ["entity_name", "location_name", "location_accuracy_m"].forEach(key => hidden.add(key));
   const preferred = kind === "record"
     ? ["timestamp_utc", "source_type", "collection_family", "source_reliability_label", "certainty_level", "entity_name", "location_name", "advertising_id", "ip_address", "imei", "session_start_utc", "session_end_utc", "source_port", "protocol", "bytes_up", "bytes_down", "location_accuracy_m", "call_id", "observation_id", "mission_id", "video_segment_id"]
     : kind === "evidence"
@@ -6357,6 +6365,23 @@ function renderEvidence() {
         <td dir="ltr">${escapeHtml(item.first_event_id || item.first_event_time || "-")}</td>
         <td dir="ltr">${escapeHtml(item.last_event_id || item.last_event_time || "-")}</td>
       </tr>`).join("") : `<tr><td colspan="5" class="empty-cell">${escapeHtml(activeLocaleText("השכבה מוסתרת או ריקה.", "Layer is hidden or empty."))}</td></tr>`;
+    enhanceResultsTable(activeLayer);
+    return;
+  }
+  const ipdrTable = activeLayer.items?.length
+    ? activeLayer.items.every(isIpdrRecord)
+    : activeLayer.catalogLayerId === "events:IPDR";
+  if (ipdrTable) {
+    head.innerHTML = `<tr><th>${escapeHtml(activeLocaleText("מזהה רשומה", "Record ID"))}</th><th>${escapeHtml(activeLocaleText("זמן", "Time"))}</th><th>${escapeHtml(activeLocaleText("אמינות", "Reliability"))}</th><th>${escapeHtml(activeLocaleText("ודאות", "Certainty"))}</th><th>${escapeHtml(activeLocaleText("כתובת IP", "IP address"))}</th><th>IMEI</th><th>${escapeHtml(activeLocaleText("תקציר", "Summary"))}</th></tr>`;
+    body.innerHTML = activeItems.length ? activeItems.map(event => `
+      <tr><td dir="ltr"><button type="button" class="object-viewer-open" data-viewer-kind="record" data-viewer-id="${escapeHtml(event.record_id || event.event_id || "")}">${escapeHtml(event.record_id || event.event_id || "-")}</button></td>
+      <td dir="ltr">${escapeHtml(event.timestamp_utc || "-")}</td>
+      <td>${escapeHtml(event.source_reliability_label || event.source_reliability || "-")}</td>
+      <td>${escapeHtml(event.certainty_level || "-")}</td>
+      <td dir="ltr">${escapeHtml(event.ip_address || "-")}</td>
+      <td dir="ltr">${escapeHtml(event.imei || "-")}</td>
+      <td>${escapeHtml(event.event_summary || "-")}</td></tr>`).join("")
+      : `<tr><td colspan="7" class="empty-cell">${escapeHtml(activeLocaleText("השכבה מוסתרת או ריקה.", "Layer is hidden or empty."))}</td></tr>`;
     enhanceResultsTable(activeLayer);
     return;
   }

@@ -13,7 +13,7 @@ const nodes = Object.fromEntries(['rawEventsOverlay','rawEventsTabs','evidenceHe
 nodes.rawEventsOverlay.closest = () => stack;
 const tabs = ['map','timeline','table'].map(view => element({dataset:{view}}));
 const panes = ['map','timeline','table'].map(view => element({id:`${view}View`}));
-const row = {event_id:'REC-SYR-IPDR-137', source_type:'IPDR', timestamp_utc:'2026-09-20T08:00:00Z', imei:'000000000001370'};
+const row = {event_id:'REC-SYR-IPDR-137', source_type:'IPDR', timestamp_utc:'2026-09-20T08:00:00Z', imei:'000000000001370', ip_address:'192.0.2.10', entity_name:'', location_name:''};
 const layer = {id:'ipdr', kind:'events', label:'IPDR', items:[row], visible:true, capabilities:{table:true,map:false,timeline:true}};
 const context = { console, Set, Map, Date, LOCATIONS:{},
  state:{layers:[layer],activeLayerId:'ipdr',rawOverlayMinimized:true,rawOverlayHeight:28},
@@ -26,7 +26,7 @@ const context = { console, Set, Map, Date, LOCATIONS:{},
  mapActionButton:()=>'',enhanceResultsTable(){},layerId:(kind,label)=>`${kind}:${label}`
 };
 vm.createContext(context);
-for (const name of ['activateView','renderEvidence','resolveFinalResultView','eventMapCoordinates','buildEventLayers']) {
+for (const name of ['activateView','renderEvidence','resolveFinalResultView','eventMapCoordinates','buildEventLayers','isIpdrRecord','viewerFields','filterFieldsForLayer','filterFieldPathsForValue']) {
  const start = source.indexOf(`function ${name}(`);
  const next = source.slice(start+1).search(/\n(?:async )?function /);
  vm.runInContext(source.slice(start,start+1+next),context);
@@ -37,6 +37,20 @@ assert(!nodes.rawEventsOverlay.classList.contains('minimized'));
 assert(context.state.rawOverlayMinimized, 'overlay preference must survive table mode');
 assert.match(nodes.evidenceRows.innerHTML,/data-viewer-kind="record" data-viewer-id="REC-SYR-IPDR-137"/);
 assert(tabs[2].classList.contains('active'));
+assert.match(nodes.evidenceHead.innerHTML, /IP address/);
+assert.match(nodes.evidenceHead.innerHTML, /IMEI/);
+assert.doesNotMatch(nodes.evidenceHead.innerHTML, /Actor|Location|result-map-action/);
+assert.match(nodes.evidenceRows.innerHTML, /192\.0\.2\.10/);
+assert.match(nodes.evidenceRows.innerHTML, /000000000001370/);
+const fields = context.viewerFields({...row, entity_name:'placeholder', location_name:'Unknown'},'record');
+assert(!fields.some(([key])=>['entity_name','location_name'].includes(key)));
+assert(fields.some(([key,value])=>key==='imei' && value==='000000000001370'));
+assert(!context.filterFieldsForLayer(layer).includes('location_name'));
+assert(context.filterFieldsForLayer(layer).includes('ip_address'));
+row.source_type='ADINT'; context.renderEvidence();
+assert.match(nodes.evidenceHead.innerHTML,/Actor/);
+assert.match(nodes.evidenceHead.innerHTML,/Location/);
+row.source_type='IPDR'; context.renderEvidence();
 const sharedBody = nodes.evidenceRows;
 context.activateView('timeline');
 assert(!stack.classList.contains('table-mode'));
