@@ -1,6 +1,6 @@
 # Proposed delivery sequence
 
-Planning requested by the user; this is a reviewable proposal, not an approved execution plan. Required role reviews remain draft under #68. No product code or VM changes in this task.
+Historical planning proposal. The user subsequently authorized steps 1–6 (baseline through VM qualification), with empty Syria and the same layers. See execution-plan.md and checkpoint-003.md for the implemented contract; future features remain out of scope.
 
 ## Target organization
 ```text

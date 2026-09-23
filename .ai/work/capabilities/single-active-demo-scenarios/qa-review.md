@@ -1,6 +1,6 @@
 # QA review
 
-Status: Draft test plan; product tests not executed in this documentation task. Review #68.
+Status: historical draft plan with executed QA evidence below. User authorized implementation; independent human acceptance remains pending.
 
 ## Blocking before implementation approval
 Finalize manifest/state identity and migration/rollback semantics; agree user-visible switching and queuing; supply or assign Syria content requirements. Set measurable performance thresholds after a baseline. These are execution prerequisites, not blockers to publishing the proposal.
@@ -20,3 +20,9 @@ Start with a small synthetic Syria fixture to validate contracts before full ing
 
 ## Recommendation and ownership
 Pause for design review before implementation. Next: product/developer/UX reviewers resolve #68; QA then formalizes executable acceptance cases. Parent #67 stays open. Historical suite failures must be reported and baselined; do not silently waive new regressions.
+
+## Executed qualification — 2026-09-23
+
+See [checkpoint-003.md](checkpoint-003.md) for exact deployed versions, automated counts, live round-trip/rollback/agent/media evidence and measured resource usage. Implementation checks passed with the same eight pre-existing full-suite failures, disclosed separately. Offline-cache mitigation resolved the semantic-search timeout without changing search ranking.
+
+Recommendation: ready for PR review and human browser acceptance. No implementation clarification remains pending. Do not mark this AI-authored evidence as human approval. Next role: reviewer/product owner. #68's planning gate is resolved by explicit user authorization; #70 closes on merge; #67 remains open through acceptance. Remaining gaps: real-browser visuals/video playback and future-workload capacity; live optional OpenAI and playback workload qualification were not performed.

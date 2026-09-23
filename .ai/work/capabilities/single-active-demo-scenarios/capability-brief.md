@@ -1,10 +1,10 @@
 # Single-active-demo scenarios
 
 Parent: [#67](https://github.com/zvipev10/AI-Intelligence/issues/67). Review: [#68](https://github.com/zvipev10/AI-Intelligence/issues/68).
-Status: planning proposal; see [status.md](status.md).
+Status: authorized implementation deployed; see [status.md](status.md).
 
 ## Confirmed user intent
-Retain Kosovo and introduce a Syria demo with a different dataset and map, sharing the application and future feature development. Exactly one demo scenario runs at a time. This task requests a plan, not implementation or deployment.
+Retain Kosovo and introduce a Syria demo with a different dataset and map, sharing the application and future feature development. Exactly one demo scenario runs at a time. The user subsequently authorized implementation of steps 1–6, with Syria empty and the same catalog layers.
 
 ## Proposed outcome
 One repository, short feature branches into main, versioned application releases and independently versioned demo packages. One public application endpoint and one active runtime on the current VM. Inactive packages and state remain on disk; their agent workers, data indexes and scheduled jobs do not run. An operator switches packages using a controlled stop/start operation. Kosovo can be reactivated without losing its investigations or agent memory.
@@ -13,7 +13,7 @@ One repository, short feature branches into main, versioned application releases
 Externalize scenario configuration; isolate scenario and agent state; migrate existing Kosovo safely; package Syria content; implement controlled activation, rollback and bounded work admission; validate resource use and complete deployment assets. Keep existing source layout initially to avoid a simultaneous broad rename. Shared capabilities remain in the application; scenario-specific content and feature enablement live in packages.
 
 ## Non-goals
-Parallel demos, two permanently running deployments, live in-session geography changes, cross-scenario search, a second VM, an infrastructure migration, a new admin UI, or implementation of as-yet unspecified new features. Dataset creation is planned but its actual content awaits inputs.
+Parallel demos, two permanently running deployments, live in-session geography changes, cross-scenario search, a second VM, an infrastructure migration, a new admin UI, or implementation of as-yet unspecified new features. Syria data content and the future-feature list remain future work.
 
 ## Acceptance
 - Kosovo behavior and existing saved work survive configuration extraction and migration.
@@ -32,4 +32,4 @@ Operator-controlled switching from the deployment tooling; short maintenance int
 Syria area of interest, time range, available or to-be-generated dataset and owner, supported languages, required sources/entity types, map/overlay assets, desired demo narrative and the new-feature list. These do not block the platform plan; they block final Syria content and acceptance scripts.
 
 ## Review and handoff
-Developer/architecture, UX and QA recommendations are drafts. Review them with the proposed sequence before authorizing code. See [proposed-plan.md](proposed-plan.md), [developer-review.md](developer-review.md), [ux-review.md](ux-review.md), [qa-review.md](qa-review.md).
+Original role recommendations are historical drafts, not independently approved role reviews. The user explicitly authorized implementation; see checkpoint-003.md for evidence and remaining acceptance limits. See [proposed-plan.md](proposed-plan.md), [developer-review.md](developer-review.md), [ux-review.md](ux-review.md), [qa-review.md](qa-review.md).
