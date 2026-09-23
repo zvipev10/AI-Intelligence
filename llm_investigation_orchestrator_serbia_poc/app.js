@@ -2950,13 +2950,26 @@ function visibleEventItems() {
     .flatMap(layer => itemsForLayerPresentation(layer));
 }
 
+function satelliteReferenceLayer(layer) {
+  return layer?.type === "line" && ["transportation", "boundary"].includes(layer["source-layer"]);
+}
+
 function setMapBasemap(mode) {
   if (!state.map?.getLayer("satellite-imagery")) return;
   const satellite = mode === "satellite";
   state.basemapMode = satellite ? "satellite" : "street";
   for (const layer of state.basemapLayers || []) {
     if (!state.map.getLayer(layer.id)) continue;
-    if (layer.type !== "symbol") {
+    if (satelliteReferenceLayer(layer)) {
+      state.map.setLayoutProperty(layer.id, "visibility", layer.layout?.visibility || "visible");
+      const boundary = layer["source-layer"] === "boundary";
+      state.map.setPaintProperty(layer.id, "line-color", satellite
+        ? (boundary ? "rgba(255,255,255,0.82)" : "rgba(255,215,112,0.82)")
+        : layer.paint?.["line-color"]);
+      state.map.setPaintProperty(layer.id, "line-opacity", satellite
+        ? (boundary ? 0.72 : 0.68)
+        : layer.paint?.["line-opacity"]);
+    } else if (layer.type !== "symbol") {
       state.map.setLayoutProperty(layer.id, "visibility", satellite ? "none" : (layer.layout?.visibility || "visible"));
     } else if (layer.layout?.["text-field"]) {
       state.map.setPaintProperty(layer.id, "text-color", satellite ? "#ffffff" : (layer.paint?.["text-color"] ?? "#000000"));
@@ -2996,6 +3009,11 @@ function initMap() {
     });
     const firstLabel = state.basemapLayers.find(layer => layer.type === "symbol")?.id;
     state.map.addLayer({ id: "satellite-imagery", type: "raster", source: "satellite-imagery", layout: { visibility: "none" } }, firstLabel);
+    // Keep the style's vector road and administrative-boundary references above
+    // the imagery while leaving terrain, land use, and water below it.
+    for (const layer of state.basemapLayers.filter(satelliteReferenceLayer)) {
+      state.map.moveLayer(layer.id, firstLabel);
+    }
     // Override zoom-dependent native labels so English stays selected when zooming in.
     for (const layer of state.map.getStyle().layers) {
       if (layer.type !== "symbol" || !JSON.stringify(layer.layout?.["text-field"] || "").includes("name")) continue;
