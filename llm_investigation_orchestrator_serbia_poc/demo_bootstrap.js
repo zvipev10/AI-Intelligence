@@ -4,6 +4,11 @@
   const notice = document.createElement("div");
   notice.setAttribute("role", "status");
   notice.style.cssText = "position:fixed;bottom:0;left:0;right:0;z-index:99999;padding:8px;text-align:center;background:#132b41;color:white";
+  function setNotice(message = "") {
+    notice.textContent = message;
+    notice.style.display = message ? "block" : "none";
+  }
+  setNotice();
   document.body.appendChild(notice);
   const pending = new Set();
   try {
@@ -40,24 +45,23 @@
       }
       const result = await nativeFetch(input, options);
       if (result.status === 409 && result.headers.get("X-Demo-Generation") !== runtime.activation_generation) {
-        notice.textContent = "Scenario changed. Reload to continue. / התרחיש השתנה. יש לרענן.";
+        setNotice("Scenario changed. Reload to continue. / התרחיש השתנה. יש לרענן.");
         throw new Error("Scenario changed. Reload to continue.");
       }
       return result;
     };
-    const label = runtime.demo_profile?.label?.en || "Kosovo";
-    notice.textContent = `${label}${runtime.demo_profile?.empty_dataset ? " — Empty dataset / מאגר ריק" : ""}`;
+    setNotice();
     const script = document.createElement("script");
     script.src = "./app.js?v=207";
-    script.onerror = () => { notice.textContent = "Application could not load. Reload to retry."; };
+    script.onerror = () => { setNotice("Application could not load. Reload to retry."); };
     document.body.appendChild(script);
     setInterval(async () => {
       try {
         const status = await nativeFetch("/api/status", { cache: "no-store" }).then(r => r.json());
         if (status.maintenance || status.activation_generation !== runtime.activation_generation) {
-          notice.textContent = "Scenario switching or changed. Reload to continue. / יש לרענן.";
+          setNotice("Scenario switching or changed. Reload to continue. / יש לרענן.");
         } else if (status.agent_queue?.queued) {
-          notice.textContent = `${label} · ${status.agent_queue.queued} agent requests queued`;
+          setNotice(`${status.agent_queue.queued} agent requests queued`);
           const id = status.agent_queue.queued_ids?.find(value => pending.has(value));
           if (id) {
             const cancel = document.createElement("button");
@@ -68,10 +72,10 @@
             };
             notice.append(" ", cancel);
           }
-        } else notice.textContent = `${label}${runtime.demo_profile?.empty_dataset ? " — Empty dataset / מאגר ריק" : ""}`;
-      } catch { notice.textContent = "Application restarting. Reload shortly."; }
+        } else setNotice();
+      } catch { setNotice("Application restarting. Reload shortly."); }
     }, 5000);
   } catch (error) {
-    notice.textContent = error.message + " / יש לרענן.";
+    setNotice(error.message + " / יש לרענן.");
   }
 })();
