@@ -1,1 +1,1 @@
-Phase: convoy-v2 deployed; public checks passed; human browser acceptance pending. Runtime 0ba309bee374f6fea8b76c2f71edc7c977c42314. Four records, three matched recurring satellite visits. PR #72 / issue #71, stacked on #69. Next: user browser acceptance and PR review.
+Syria convoy-v3/profile 4: user-requested satellite-summary cleanup. Four records and paired visit metadata retained. Runtime e07887a55170a019d76632e4c97c73df0c985a5b. PR #72, stacked on #69; source published, not merged. Dataset tests pass. Refresh the app after deployment; prior versions/state retained.
