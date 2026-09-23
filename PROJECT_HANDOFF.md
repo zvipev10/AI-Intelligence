@@ -1,12 +1,12 @@
 # AI Intelligence Project Handoff
 
-Last updated: 2026-09-21
+Last updated: 2026-09-23
 
-This is the primary handoff for continuing the AI Intelligence project in another assistant/chat. It reflects the deployed Serbia POC on remote `main` at `47692c3`, including the Cellular Calls raw source, evidence implementation, investigation memory, scenario playback, bilingual UI behavior, mobile run recovery, multiplexed General/Moshe/Talia routing, the V2.1 Evidence Layer, Moshe target workflows, Talia enemy assessments, and additive result-layer presentation.
+This is the primary handoff for continuing the AI Intelligence project in another assistant/chat. It reflects the deployed bilingual intelligence workspace, including the Cellular Calls raw source, evidence implementation, investigation memory, scenario playback, mobile run recovery, multiplexed General/Moshe/Talia routing, evidence and assessment workflows, additive result-layer presentation, and the current Syria demonstration profile.
 
 ## One-Line Summary
 
-The active project is the Serbia/North Kosovo intelligence-analysis POC: a bilingual analyst UI backed by a multiplexed Hermes gateway and isolated General, Moshe, and Talia profiles over the 14,833-record V2.1 synthetic dataset. It supports raw data exploitation, semantic retrieval, fused evidence, target candidates, enemy assessments, MIL-STD-oriented evidence symbols, assessment graphics, investigation memory, scenario playback, cellular-call recordings with two-endpoint maps, and additive map/timeline/table layers.
+The active project is a bilingual intelligence-analysis POC backed by a multiplexed Hermes gateway and isolated General, Moshe, and Talia profiles. Kosovo V2.1 remains available, while production currently runs the Syria `network-v1` profile with 208 synthetic records. The workspace supports raw data exploitation, semantic retrieval, fused evidence, target candidates, enemy assessments, MIL-STD-oriented evidence symbols, assessment graphics, investigation memory, scenario playback, cellular-call recordings with two-endpoint maps, and additive map/timeline/table layers.
 
 ## Repository And Current State
 
@@ -34,7 +34,48 @@ Current local working tree expectation:
 - As of 2026-09-17, the local workspace contains unrelated, preserved mobile-recovery/deployment changes in `.ai/work/capabilities/mobile-agent-run-recovery/checkpoint-001.md`, `llm_investigation_orchestrator_serbia_poc/server.py`, and `llm_investigation_orchestrator_serbia_poc/deployment/SHA256SUMS-v184.txt`.
 - An isolated English WIP sibling workspace exists outside the restored repo; do not stage or deploy it accidentally from the main repo.
 
-## Latest Update: Semantic Evidence Fusion And Talia Consumption
+## Latest Update: Satellite Reference Map And Damascus Camera
+
+Date: 2026-09-23
+
+The production Syria map presentation was refined and deployed.
+
+Implemented behavior:
+
+- The Street/Satellite selector is a compact bilingual segmented control.
+- Satellite is the default initial basemap.
+- Esri World Imagery is the raster foundation in Satellite mode.
+- Existing CARTO vector transportation layers are rendered above the imagery in muted amber.
+- Existing CARTO administrative-boundary layers are rendered above the imagery in white.
+- CARTO place labels remain above the raster and reference vectors with satellite-specific contrast.
+- Operational markers, MIL-STD symbols, routes, and result layers remain outside basemap mutation and continue to render above the references.
+- Street mode restores the original CARTO visibility and paint properties.
+- An Esri imagery-source failure automatically returns the application to Street mode and displays the existing status message.
+
+Initial Syria camera:
+
+- Center: Damascus, longitude `36.2765`, latitude `33.5138`.
+- Zoom: `11`.
+- The camera is only the initial view. Opening or presenting a result layer can still fit the map to that layer's extent.
+- Syria profile version: `6`.
+
+Deployment and verification:
+
+- UI root: `/opt/serbia-poc-ui`.
+- `serbia-poc-ui.service` is active.
+- Public assets: `styles.css?v=155`, `demo_bootstrap.js?v=210`, `app.js?v=209`.
+- `/api/status` reports scenario `syria`, dataset `network-v1`, 208 rows, profile version `6`, and the Damascus camera.
+- Automated basemap behavior, Syria scenario, asset-contract, and public-asset checks passed.
+- Basemap rollback: `/home/ubuntu/deploy-backups/basemap-overlay-predeploy-20260923.tar.gz`.
+- Damascus-camera rollback: `/home/ubuntu/deploy-backups/syria-profile-pre-damascus-20260923.json`.
+
+Authoritative capability artifacts:
+
+- `.ai/work/capabilities/satellite-reference-overlay/status.md`
+- `.ai/work/capabilities/satellite-reference-overlay/checkpoint-001.md`
+- `.ai/work/capabilities/satellite-reference-overlay/handoff-summary.md`
+
+## Previous Update: Semantic Evidence Fusion And Talia Consumption
 
 Date: 2026-09-17
 

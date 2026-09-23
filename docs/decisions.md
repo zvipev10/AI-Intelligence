@@ -406,3 +406,26 @@ The client renders and manages a lightweight canvas animation only while a UAV v
 
 Follow-ups:
 Replace the simulation with access-controlled genuine mission media if such assets and a delivery contract become available.
+
+### 2026-09-23 — Compose satellite imagery with vector references
+
+Decision:
+Use Satellite as the default basemap. Compose Esri World Imagery beneath selected CARTO transportation and administrative-boundary vectors and CARTO labels. Center the active Syria profile initially on Damascus at `[36.2765, 33.5138]`, zoom `11`.
+
+Context:
+Plain imagery lacked the roads, borders, and labels needed for orientation, while the original Street/Satellite control occupied too much map space. The active Syria demonstration also opened over the synthetic convoy sites rather than the requested Damascus focus.
+
+Rationale:
+Reusing the vector layers already loaded by the CARTO style adds geographic context without a new provider, dependency, or map architecture. Keeping the initial camera in the scenario profile preserves separation between scenario configuration and rendering logic.
+
+Alternatives considered:
+- Use unannotated imagery.
+- Add a separate vector-tile provider.
+- Bake roads and borders into another raster layer.
+- Hard-code Damascus in the client for every scenario.
+
+Impact:
+Satellite mode shows muted amber roads, white administrative borders, and place labels while leaving operational symbology unaffected. Street remains selectable and is the automatic fallback if imagery fails. Result layers may move the camera away from Damascus when fitted.
+
+Follow-ups:
+Tune road or border opacity only if operational symbols lose visual priority during product review.

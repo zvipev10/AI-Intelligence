@@ -2,6 +2,17 @@
 
 This document records durable architecture behavior that future implementation work should preserve.
 
+## Basemap composition
+
+The MapLibre client keeps basemap references separate from analytical presentation.
+
+- Street mode uses the native CARTO Voyager vector style.
+- Satellite mode places Esri World Imagery below selected CARTO `transportation` and `boundary` line layers and CARTO symbol/label layers.
+- Satellite-specific paint is presentation-only and must be restored from the captured CARTO layer definitions when Street mode is selected.
+- Application-created operational layers, result routes, markers, and MIL-STD symbols are not part of `state.basemapLayers` and must not be hidden or restyled by basemap switching.
+- Satellite-source failure must fail visibly and restore Street mode.
+- Scenario profiles own the initial camera. The Syria `network-v1` profile uses Damascus `[36.2765, 33.5138]` at zoom `11`; data presentation remains free to fit the camera to result geometry.
+
 ## Locale-isolated runtime state
 
 The v2.1 intelligence workspace supports Hebrew and English as separate runtime contexts.

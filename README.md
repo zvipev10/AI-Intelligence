@@ -12,6 +12,7 @@ Current capabilities include:
 - Talia (`@טליה`) for durable enemy assessments, supporting evidence, and assessment graphics.
 - Investigation memory, saved questions, workstreams, and mobile agent-run recovery.
 - Multiplexed Hermes routing through one gateway while retaining profile-specific tools, memory, and authorization boundaries.
+- A compact Street/Satellite basemap switch; Satellite is the default and retains vector roads, administrative borders, and labels.
 
 ## Current production state
 
@@ -23,8 +24,13 @@ Current capabilities include:
 - Active dataset: `v2.1`
 - Evidence catalog schema: `evidence-catalog-v2`
 - Current catalog: 5,283 rows, including 783 fused evidence objects.
+- Active scenario: Syria `network-v1` (208 records).
+- Initial map camera: Damascus (`36.2765, 33.5138`) at zoom `11`.
+- Basemap assets: `styles.css?v=155`, `demo_bootstrap.js?v=210`, `app.js?v=209`.
 
 The latest evidence update reuses the existing semantic concept vocabulary in `prepare_evidence`, applies normalized classes to `prepare_fused_evidence`, uses an eight-hour rolling catalog window, and exposes cataloged fused evidence through the same repository interface consumed by Talia. The UI catalog and Talia profile were deployed and verified together on 2026-09-17.
+
+The map presentation update deployed on 2026-09-23 uses Esri imagery beneath selected CARTO transportation and administrative-boundary vectors, with CARTO labels above them. Street mode restores the original CARTO styling, and the application falls back to Street automatically if satellite imagery is unavailable.
 
 ## Start here
 
@@ -33,6 +39,7 @@ The latest evidence update reuses the existing semantic concept vocabulary in `p
 - `.ai/work/capabilities/evidence-semantic-fusion/` — latest evidence-tool design, tests, checkpoint, and handoff.
 - `.ai/work/capabilities/mobile-agent-run-recovery/` — mobile background/recovery capability.
 - `.ai/work/capabilities/talia-enemy-assessments/` — Talia assessment capability.
+- `.ai/work/capabilities/satellite-reference-overlay/` — current basemap composition, tests, deployment, and rollback notes.
 
 ## Safety and data boundary
 

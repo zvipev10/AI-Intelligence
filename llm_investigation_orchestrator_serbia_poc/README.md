@@ -286,6 +286,16 @@ Visualization behavior:
 - Timeline-capable layers use the layer color on timeline dots.
 - Table tabs represent layers and show the layer color, count, visibility toggle, and close control.
 
+Basemap behavior:
+
+- The compact selector switches between Street and Satellite modes in both languages.
+- Satellite is the initial mode. It composes Esri World Imagery, selected CARTO transportation and administrative-boundary vectors, and CARTO place labels.
+- Satellite reference roads use muted amber and administrative borders use white so they remain legible without competing with operational symbols.
+- Street mode restores the original CARTO style.
+- Operational/result layers and markers are not mutated by basemap switching.
+- If Esri imagery fails, the client returns to Street mode and reports the fallback.
+- The Syria profile initially centers Damascus at `[36.2765, 33.5138]`, zoom `11`; result-layer presentation may subsequently fit the camera to the result extent.
+
 ## UI Deployment
 
 The VM serves the public UI at:
