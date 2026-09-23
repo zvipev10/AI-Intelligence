@@ -1,0 +1,12 @@
+[
+  {
+    "entity_id": "ENT-SYR-CONVOY",
+    "canonical_name": "Convoy",
+    "aliases": [
+      "convoy",
+      "שיירה"
+    ],
+    "entity_type": "vehicle convoy",
+    "description": "Synthetic convoy entity shared by all 12 demonstration observations."
+  }
+]

@@ -164,7 +164,7 @@ class Activator:
                     raise RuntimeError("Runtime identity mismatch")
                 with urlopen("http://127.0.0.1:8769/api/layers?locale=en", timeout=10) as response:
                     layers = json.load(response)["layers"]
-                if not layers or (identity["scenario_id"] == "syria" and any(layer["count"] for layer in layers)):
+                if not layers or (status["demo_profile"]["empty_dataset"] and any(layer["count"] for layer in layers)):
                     raise RuntimeError("Scenario catalog readiness failed")
                 # Gateway readiness is required even when the target has no data.
                 with urlopen("http://127.0.0.1:8642/health", timeout=5) as response:

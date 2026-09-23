@@ -529,6 +529,8 @@ def public_event(event: dict[str, Any]) -> dict[str, Any]:
         "call_transcript": event.get("call_transcript", ""),
         "call_transcript_en": event.get("call_transcript_en", ""),
         "synthetic_media": event.get("synthetic_media", ""),
+        "video_url": event.get("video_url", ""),
+        "image_series": event.get("image_series", ""),
     }
 
 

@@ -4855,6 +4855,11 @@ class Handler(SimpleHTTPRequestHandler):
         if not self.demo_guard():
             return
         path = urlparse(self.path)
+        if DEMO.enabled and unquote(path.path).startswith("/assets/demo/"):
+            parts = unquote(path.path).split("/")
+            if len(parts) < 5 or parts[3] != DEMO.scenario or ".." in parts:
+                self.send_error(404)
+                return
         if DEMO.maintenance and path.path.startswith("/api/") and path.path not in {"/api/status", "/api/layers", "/api/dataset/events", "/api/dataset/locations"}:
             self.send_json(503, {"error": "Scenario switching. Reload shortly."})
             return
