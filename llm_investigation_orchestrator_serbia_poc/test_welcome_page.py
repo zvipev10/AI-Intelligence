@@ -93,8 +93,9 @@ class WelcomePageContractTests(unittest.TestCase):
         self.assertIn('justify-content: center', self.styles)
 
     def test_similar_investigations_and_demo_actions_are_explicit(self):
-        self.assertIn("const SIMILAR_INVESTIGATIONS = [", self.app)
-        similar_data = self.app.split("const SIMILAR_INVESTIGATIONS = [", 1)[1].split("];", 1)[0]
+        declaration = "const SIMILAR_INVESTIGATIONS = demoRuntime?.demo_profile?.empty_dataset ? [] : ["
+        self.assertIn(declaration, self.app)
+        similar_data = self.app.split(declaration, 1)[1].split("];", 1)[0]
         participant_counts = [line.strip() for line in similar_data.splitlines() if "participants:" in line]
         self.assertEqual(["participants: 2,", "participants: 3,", "participants: 6,"], participant_counts)
         self.assertIn("slice(0, Math.min(5, participantCount))", self.app)

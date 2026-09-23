@@ -24,6 +24,11 @@ LOCAL_ROOT = Path(__file__).resolve().parent.parent
 LOCAL_HERMES_CONFIG = LOCAL_ROOT / ".hermes-api.json"
 
 FILES = [
+    "demo_runtime.py",
+    "demo_admission.py",
+    "demo_bootstrap.js",
+    "activate_demo.py",
+    "provision_demo.py",
     "server.py",
     "openai_general.py",
     "mcp_server/catalog_layers.py",
@@ -59,6 +64,8 @@ FILES = [
 ]
 
 DIRS = [
+    "demo_profiles",
+    "data/syria_empty_v1",
     "assets",
     "vendor",
     "recorded_runs",

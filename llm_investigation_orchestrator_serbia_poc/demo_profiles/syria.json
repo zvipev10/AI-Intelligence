@@ -1,0 +1,85 @@
+{
+  "schema_version": 1,
+  "state_schema_version": 1,
+  "scenario_id": "syria",
+  "profile_version": "1",
+  "dataset_version": "empty-v1",
+  "label": {
+    "en": "Syria"
+  },
+  "empty_dataset": true,
+  "files": {
+    "events": "data/syria_empty_v1/events.csv",
+    "locations": "data/syria_empty_v1/locations.json",
+    "entities": "data/syria_empty_v1/entities.json"
+  },
+  "sources": {
+    "he": [
+      "X",
+      "בלוג פוליטי",
+      "הודעת דובר",
+      "חדשות מקומיות",
+      "חיל האוויר הסרבי - ניצול וידאו מכטב״ם",
+      "טיקטוק",
+      "טלגרם",
+      "ערוץ חדשות בינלאומי",
+      "פייסבוק",
+      "קבוצת וואטסאפ",
+      "שיחות סלולר",
+      "שמועה מקומית"
+    ],
+    "en": [
+      "X",
+      "Political blog",
+      "Spokesperson statement",
+      "Local news",
+      "חיל האוויר הסרבי - ניצול וידאו מכטב\"ם",
+      "TikTok",
+      "Telegram",
+      "International news channel",
+      "Facebook",
+      "WhatsApp group",
+      "Cellular Calls",
+      "Local rumor"
+    ]
+  },
+  "map": {
+    "center": [
+      38.5,
+      35.0
+    ],
+    "zoom": 6,
+    "minZoom": 4,
+    "maxBounds": [
+      [
+        34,
+        31
+      ],
+      [
+        43.5,
+        38.5
+      ]
+    ]
+  },
+  "agents": {
+    "roles": [
+      "general",
+      "moshe",
+      "talia",
+      "openai_general"
+    ],
+    "max_concurrency": 1,
+    "queue_capacity": 8
+  },
+  "features": {
+    "playback": false
+  },
+  "checksums": {
+    "data/syria_empty_v1/events.csv": "62f9e44778c7cf32fd7cbe76a9fbfc20714743378999cf086a25da610ffed8e1",
+    "data/syria_empty_v1/events.en.csv": "62f9e44778c7cf32fd7cbe76a9fbfc20714743378999cf086a25da610ffed8e1",
+    "data/syria_empty_v1/locations.json": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+    "data/syria_empty_v1/locations.en.json": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+    "data/syria_empty_v1/entities.json": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+    "data/syria_empty_v1/entities.en.json": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356"
+  }
+}

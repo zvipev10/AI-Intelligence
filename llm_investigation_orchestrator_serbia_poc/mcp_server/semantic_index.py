@@ -152,6 +152,7 @@ class SemanticEventIndex:
         signature: dict[str, Any] | None = None,
         backend: str | None = None,
         dense_dimensions: int | None = None,
+        require_prebuilt: bool = False,
     ):
         self.records = records
         self.record_index_by_id = {record.get("event_id"): index for index, record in enumerate(records) if record.get("event_id")}
@@ -160,6 +161,7 @@ class SemanticEventIndex:
         self.record_object_counts = [object_counts(text) for text in self.record_texts]
         self.cache_dir = Path(cache_dir) if cache_dir else None
         self.signature = signature or {}
+        self.require_prebuilt = require_prebuilt
         requested_backend = normalize_text(backend or os.environ.get("INTELLIGENCE_POC_SEMANTIC_BACKEND") or "lexical_tfidf")
         self.backend = requested_backend if requested_backend in {"lexical_tfidf", "dense_hash_embedding", "hybrid_embedding"} else "lexical_tfidf"
         self.dense_dimensions = int(dense_dimensions or os.environ.get("INTELLIGENCE_POC_EMBEDDING_DIMENSIONS") or DEFAULT_DENSE_DIMENSIONS)
@@ -228,6 +230,8 @@ class SemanticEventIndex:
                     return
             except Exception:
                 pass
+        if self.require_prebuilt:
+            raise RuntimeError("Semantic index missing, incompatible or unreadable. Build with build_demo_index.py off the demo VM and install the matching cache before retrying.")
         self._build()
         self.manifest = expected
         if path:
