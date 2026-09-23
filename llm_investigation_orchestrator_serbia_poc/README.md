@@ -1,8 +1,8 @@
-# Serbia/Kosovo Investigation Orchestrator POC
+# Shared Intelligence Investigation Application
 
-This is a separate POC derived from the current investigation orchestrator. It keeps the same UI, gateway, MCP tool contract, event schema, and investigation logic, but replaces the scenario configuration and default data with a Serbia/North Kosovo corpus.
+This historically named package is the canonical application source for both Kosovo and Syria. It is not a Syria fork. A checksummed profile chooses dataset, geography and feature configuration, and the VM runs one active scenario with isolated working state. Current Syria is profile 6 / `network-v1` (208 records); Kosovo is profile 1 / `v2.1` (14,833 records).
 
-The purpose of this copy is to validate that the orchestration pattern is scenario-portable: the agent should investigate claims, locations, actors, media reports, disinformation signals, contradictions, and escalation patterns without depending on cargo-specific entities or routes.
+Start with the [product context](../docs/product-context.md), [architecture](../docs/architecture.md), and [scenario operator runbook](docs/demo-scenarios.md). They cover the current setup, CCTV/Satellite media, ADINT/IPDR matching, geometry-free Table results, English Street/Satellite basemaps and deployment/version boundaries. Original POC sections below are retained as historical development background where explicitly labeled.
 
 ## Local Run
 
@@ -48,11 +48,12 @@ different .hermes-api.json
 different POC_UI_HOST value
 ```
 
-## Data Projection
+## Original data projection (historical)
 
 The source dataset is retained under `data/north_kosovo_attachment_inspect/`, with source channels normalized for the analyst-facing runtime.
 
-The runtime MCP reads:
+The original projection used the files below. Current scenario runtime paths come from `demo_profiles/<scenario>.json` (including locale variants); these legacy paths are not the active Syria dataset:
+
 
 ```text
 data/serbia_kosovo_events_projection.csv
@@ -90,9 +91,9 @@ data/serbia_kosovo_evaluator_labels.csv
 
 That file contains scenario IDs, clusters, ground-truth status, misleading-type labels, rumor/disinformation flags, and original reliability labels. It is not used by the MCP server or UI.
 
-## MCP Tools
+## Original retrieval tools (historical)
 
-The MCP server remains read-only and exposes seventeen tools:
+The initial read-only POC exposed the following retrieval tools. Current `mcp_server/server.py` defines a larger constrained toolset, including presentation and role-authorized persistence. General/Moshe/Talia permissions remain distinct; do not infer current write permissions from this historical list:
 
 ```text
 classify_question_intent

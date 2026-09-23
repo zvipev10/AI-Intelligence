@@ -1,5 +1,15 @@
 # Production source provenance
 
+## Current scenario releases
+
+The package root remains the single source tree for both Kosovo and Syria. Use the [scenario operator runbook](../docs/demo-scenarios.md) for current installation, activation, source/data upgrades and recovery. The installed `release-manifest.json` pins application/Hermes commits, profile/dataset versions and normalized file hashes; `/opt/demo-runtime/control/deployed-release.json` locates its pinned copy. Mutable scenario state and agent homes are not deployment files.
+
+Syria is currently profile 6/network-v1, not the original empty package. Preserve Kosovo packages/state, shared guides/media and previous dataset namespaces. Never rerun one-time provisioning for a feature release. Dataset upgrades require a matching prebuilt semantic cache and refreshed role audit paths.
+
+## Historical source captures
+
+The numbered manifests below describe historical releases, not the live scenario selector.
+
 The package root is the single canonical source tree for the application
 captured from `/opt/serbia-poc-ui` on VM `151.145.93.180` on 2026-08-12.
 That capture serves `app.js?v=162`.

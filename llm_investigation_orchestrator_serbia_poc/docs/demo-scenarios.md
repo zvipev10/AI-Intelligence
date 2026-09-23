@@ -1,15 +1,17 @@
 # Single active demo scenarios
 
-One application URL serves one active scenario. Shared application code and agent roles live on the same branch. Profiles select geography, datasets and feature availability; country-specific application forks are unnecessary.
+One application URL serves one active scenario. Shared application code and reusable agent roles evolve on main through short feature branches. Profiles select geography, datasets and feature availability; country-specific application forks are unnecessary.
 
 ## Installed scenarios
 
-| Scenario | Dataset | Initial content |
+| Scenario | Dataset | Current content |
 |---|---|---|
 | `kosovo` | `v2.1` | Existing 14,833 events and preserved application/agent state |
 | `syria` | `network-v1` | 208 records: 4 CCTV/Satellite, 4 ADINT, 200 IPDR; 20 layer definitions |
 
-Syria has no synthetic operational facts, locations, entities, targets or evidence. Kosovo example investigations and prompts are hidden there. Add real demo content as a new dataset/profile version rather than overwriting the published empty package.
+Syria is **not empty**: profile 6 selects `network-v1`, with five locations and five entities. The original `empty-v1` package remains historical. Kosovo example investigations/prompts and learned state are not imported into Syria. Add future content as a new immutable dataset/profile version, rather than overwriting a published package. A profile-only map change need not change the dataset version: profile 6 retains network-v1 and moves the initial camera to Damascus `[36.2765, 33.5138]`, zoom 11.
+
+For the media narrative, exact ADINT/IPDR match, source fields and result views, see [product context](../../docs/product-context.md). Current layer counts and initial camera are profile-derived; check `/api/status` and `/api/layers?locale=en` on the active VM rather than assuming a historical count. The persistent scenario footer is intentionally hidden; operational notices remain.
 
 ## Switch on the VM
 
@@ -40,7 +42,7 @@ Failed readiness restores the previous scenario with a fresh activation generati
 - Migration proof: `control/migration-report.json`; original directories are retained.
 - Private baseline backup: `/opt/demo-runtime/backups/20260922T195952Z/`.
 
-Memories, sessions, investigations, catalogs, targets, playback and browser storage are scenario scoped. Provider credentials are deliberately not scenario data: the latest active role's credential store is carried into the next scenario at the stopped transition, preventing stale copied OAuth refresh tokens. Gateway API credentials retain their role-specific bindings. Secrets and private backups never belong in Git.
+Memories and sessions are isolated by scenario/role homes; application stores, catalogs, targets, playback and browser storage additionally use dataset namespaces. Locale separation is retained inside the selected scenario. Role homes are not automatically reset by a dataset-version change. Provider credentials are deliberately not scenario data: the latest active role's credential store is carried into the next scenario at the stopped transition, preventing stale copied OAuth refresh tokens. Gateway API credentials retain their role-specific bindings. Secrets and private backups never belong in Git. On every activation, `INTELLIGENCE_POC_AUDIT` must be refreshed to the selected dataset audit directory for each role. A stale audit path can cause tools to succeed while the UI receives no structured layer actions.
 
 One application agent execution slot covers interactive, specialist, OpenAI and background application calls. The queue is bounded at eight, prioritizes foreground requests and ages background requests after 30 seconds. This limit does not claim to regulate unrelated messaging integrations. Tool calls are serial within demo profiles.
 
@@ -60,36 +62,58 @@ For a whole-release rollback, stop all three services, restore the private sourc
 
 ## Verification limits
 
-The 1 GB VM remains constrained. Use one scenario and one application agent execution slot; future feature workloads need separate capacity validation. Automated API, tool, state and asset checks supplement browser acceptance. An empty Syria dataset cannot validate future Syria narratives or expected analytical answers.
+The 1 GB VM remains constrained. Use one scenario and one application agent execution slot; future feature workloads need separate capacity validation. Automated API, tool, state and asset checks supplement browser acceptance. The current synthetic Syria fixture validates only its documented narrative and unique IP/session match; it does not validate future data, real-world identity conclusions or additional concurrent workloads.
 
 ## Offline semantic search cache
 
-The 1 GB VM must not build a semantic index during an analyst request. Scenario MCP processes require a prebuilt compatible cache; a missing/stale cache returns an explicit operational error. Empty Syria searches return zero without an index. The existing hybrid search backend is unchanged.
+The 1 GB VM must not build a semantic index during an analyst request. Scenario MCP processes require a prebuilt compatible cache; a missing/stale cache returns an explicit operational error. The historical empty-v1 package can return zero without an index; current network-v1 is non-empty and requires a compatible prebuilt cache. The existing hybrid search backend is unchanged.
 
 On a development machine with sufficient RAM and the exact release dataset bytes:
 
 ```sh
 python build_demo_index.py kosovo --output /trusted/build/kosovo-index --engine python
+python build_demo_index.py syria --output /trusted/build/syria-index --engine python
 ```
 
-The deployed MCP uses Python without NumPy, so use the `python` engine. Install both generated `semantic_event_index_hybrid_embedding.pkl` and `.json` under `/opt/demo-runtime/state/kosovo/v2.1/semantic_index/` before activation. Verify the transferred SHA-256 against the build output. These are private derived release artifacts, not Git source. Only accept trusted caches: pickle files can execute code. The operator verifies the cache hash and raw dataset signatures before stopping services. Dataset/index-format/engine changes require a rebuilt cache and a real semantic-search smoke check. Build-time Python must support the runtime's pickle format.
+The deployed MCP uses Python without NumPy, so use the `python` engine. Install both generated `semantic_event_index_hybrid_embedding.pkl` and `.json` under the matching `/opt/demo-runtime/state/<scenario>/<dataset>/semantic_index/` before activation (currently Kosovo/v2.1 and Syria/network-v1). Verify the transferred SHA-256 against the build output. These are private derived release artifacts, not Git source. Only accept trusted caches: pickle files can execute code. The operator verifies the cache hash and raw dataset signatures before stopping services. Dataset/index-format/engine changes require a rebuilt cache and a real semantic-search smoke check. Build-time Python must support the runtime's pickle format.
 
 Cold index construction during qualification timed out and caused heavy swapping. The offline cache avoids that construction cost; it does not eliminate the VM's overall RAM limit.
 
-## Syria convoy dataset update
+## Dataset upgrade procedure
 
-Syria profile version 2 selects immutable `convoy-v1`. Two fictional sites at (35.000, 38.500) and (35.045, 38.500) are about 5.004 km apart. Each site has three CCTV records (five-second H.264 clips) and three Satellite records (three timestamped images each), all linked to `ENT-SYR-CONVOY`. Every asset is visibly synthetic. `build_syria_convoy_demo.py` is an offline fixture generator requiring Pillow/imageio-ffmpeg; these dependencies are not needed on the VM.
+1. Create a new immutable data package and compatible profile in the shared source release. Verify localized files, media URLs, checksums and schema compatibility. Keep previous packages.
+2. Build the new scenario semantic cache offline from the exact dataset bytes. Stage source/profile/data in both UI and MCP roots as applicable, and stage media in the UI root.
+3. Take a private backup; enter maintenance and drain work. Stop UI, Hermes dashboard and gateway before copying or migrating mutable state. Do not rerun one-time provisioning.
+4. Preserve the previous state namespace. If carrying work forward, copy only the selected scenario's state into the new dataset namespace while writers are stopped, update `state.json`, and validate compatibility. Browser storage naturally uses a new namespace; do not import Kosovo browser state into Syria.
+5. Install the matching index and source manifest, then use the activation operator to select the profile/dataset and refresh all role environments/audit paths. Verify catalog counts, active identity, actual role tools, media, and a representative search/presentation.
+6. On rollback, restore the compatible profile/source manifest and select preserved state; editing `active.env` alone is insufficient. Do not overwrite newer analyst work with an old snapshot without explicitly choosing that recovery point.
 
-The initial `empty-v1` state remains preserved. The upgrade copied only Syria state while UI/dashboard/gateway were stopped, changed the new state metadata to convoy-v1, installed its prebuilt index, and verified release/profile/MCP readiness. Backup: `/opt/demo-runtime/backups/syria-convoy-dd6b362`. Reverting a dataset upgrade requires restoring the matching profile/source manifest as well as selecting the retained state; merely editing active.env is insufficient. Browser storage is version-scoped, so empty-v1 browser state remains in its old namespace.
+Application versions, profile versions, immutable dataset versions and state-schema versions have different purposes. A source-only UI update does not recreate datasets or state. Server/gateway changes require controlled service restart; data/index changes require cache validation. Preserve guide pages, videos and posters during every release.
 
-### Paired visits revision (convoy-v2)
+## Syria package history (not current instructions)
 
-Profile 3 consolidates both sources to one record per location: two CCTV plus two Satellite records. Satellite records contain three repeat visits on September 20, 21 and 22, 2026. For each visit the convoy appears at Site 1 at 08:00 UTC and Site 2 at 08:15 UTC, consistent with northward movement over 5 km. Shared visit IDs and reciprocal record/image/timestamp fields connect each pair. Each record viewer shows only its own site's three captures. Shared visit IDs and counterpart references correlate visits across records without displaying the other site's images. The two CCTV clips correspond to September 22. Return journeys and travel between captures are not shown; all observations remain synthetic.
+| Profile | Dataset | Historical change |
+|---|---|---|
+| 1 | `empty-v1` | Same original catalog definitions, no content |
+| 2 | `convoy-v1` | Three CCTV and three Satellite records per site; superseded |
+| 3 | `convoy-v2` | One record per source/site; three paired Satellite visits; viewers corrected to show only their own site |
+| 4 | `convoy-v3` | Removed cross-site explanation from summaries without changing media/timestamps |
+| 5 | `network-v1` | Added four ADINT observations and 200 IPDR sessions; preserved four media records |
+| 6 | `network-v1` | Current profile; initial map moved to Damascus, data unchanged |
 
-The stopped-state upgrade preserves convoy-v1. Runtime release `0ba309bee374f6fea8b76c2f71edc7c977c42314`; source backup `/opt/demo-runtime/backups/syria-convoy-v2-0ba309b`. The current generator emits convoy-v2. Existing v1 media/data are retained as immutable historical artifacts, not active catalog records.
+Earlier packages and state remain available for controlled recovery. Historical backups include `/opt/demo-runtime/backups/syria-convoy-dd6b362`, `syria-convoy-v2-0ba309b` and `syria-network-c7c3319`. They are evidence/recovery points, not the latest release selector. Inspect `/opt/demo-runtime/control/deployed-release.json`, the installed manifest and capability deployment checkpoints before choosing a restore point.
 
-## Syria ADINT/IPDR fixture
+The convoy fixture generator `build_syria_convoy_demo.py` uses Pillow/imageio-ffmpeg offline; the network generator `build_syria_network_demo.py` uses the standard library. These are authoring tools, not commands to run against mutable production state. Do not regenerate a released package in place. The active network-v1 media references are inherited from the convoy packages.
 
-Profile 5 selects network-v1. ADINT has four observations at Site 1 and three points 500m north/east/west. IPDR has 200 sessions without asserted GPS coordinates. One session shares Site 1 ADINT's IP and contains its observation timestamp; IMEI appears only in IPDR. Existing keyword search accepts IP/IMEI/advertising IDs; record details expose those identifiers and session boundaries. A session match is a synthetic fixture relation, not a pre-established connection to the convoy.
+## Quick acceptance checks
 
-Build with `python build_syria_network_demo.py` (standard library only), then build the scenario search cache offline. Existing CCTV/Satellite fields and Kosovo datasets/profile are unchanged. Runtime c7c331911d76d575a92b9aba434ede0434a4d818; backup `/opt/demo-runtime/backups/syria-network-c7c3319`. Prior Syria packages/state remain preserved. Version upgrades copy current Syria state only while all demo writers are stopped.
+- `/api/status`: expected scenario/dataset/generation, profile and initial map configuration; only one active runtime.
+- Catalog and source rows: Syria 208 total, CCTV 2 / Satellite 2 / ADINT 4 / IPDR 200; original raw sources remain present with zero rows where applicable.
+- Open IPDR: Table view, IP address/IMEI, no actor/location or map action; record links retain all identifiers.
+- Correlate `REC-SYR-ADINT-001` and `REC-SYR-IPDR-137` by IP plus session bounds; only the latter supplies IMEI.
+- Open each Satellite record: three images for that site only, correct recurring visit timestamps; CCTV video and synthetic labels visible.
+- Satellite/Street toggle: English-preferred names, reference roads/borders, unchanged analytical overlays; network failure gives visible Street fallback.
+- After scenario/dataset activation, verify an actual catalog action reaches the UI, not merely that the agent mentions success. Check the selected dataset's role audit directory if actions disappear.
+- Reload old tabs after activation. Returning to Kosovo restores its own working state, not Syria's.
+
+Automated checks and live API/asset checks do not replace manual browser/media acceptance. Previously recorded full-suite baseline failures are documented in the capability handoffs; do not describe those suites as fully green.

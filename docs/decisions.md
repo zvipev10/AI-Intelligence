@@ -429,3 +429,63 @@ Satellite mode shows muted amber roads, white administrative borders, and place 
 
 Follow-ups:
 Tune road or border opacity only if operational symbols lose visual priority during product review.
+
+### 2026-09-23 — Share code, isolate demo state, run one scenario
+
+Decision:
+Use one application/main branch with checksummed Kosovo and Syria profiles. Keep immutable dataset packages separate from mutable scenario/dataset application state and scenario/role agent homes. Run exactly one active scenario on the current VM.
+
+Context:
+The user requested Syria without losing Kosovo, rejected parallel demos because of VM capacity, authorized implementation and accepted brief shared gateway interruption.
+
+Rationale:
+Shared features remain available in both scenarios while data, saved work and learned agent context remain isolated. Controlled activation avoids duplicate resident services/indexes and stale-tab writes.
+
+Alternatives considered:
+Country-specific application branches, simultaneous deployments, or resetting Kosovo to create Syria.
+
+Impact:
+Activation locks/drains, stops UI/dashboard/gateway, refreshes role bindings and dataset audit paths, verifies health and publishes a new generation. Credentials may be refreshed across corresponding roles without copying learned memory. One application execution slot and prebuilt semantic caches bound resource use. Dataset upgrades retain prior packages/state and require explicit compatibility handling.
+
+Follow-ups:
+Use the [scenario runbook](../llm_investigation_orchestrator_serbia_poc/docs/demo-scenarios.md) for releases and switching; independently qualify future workloads on the constrained VM.
+
+### 2026-09-23 — Keep Syria media and identifier correlation explicit
+
+Decision:
+Use one CCTV and one Satellite record per site. Each Satellite record contains only its own site's three recurring captures; shared visit metadata connects the two sites. Use four ADINT observations and 200 IPDR sessions with exactly one matching IP/session window, yielding IMEI from IPDR. IPDR has no asserted actor/location, and devices have no pre-established convoy association.
+
+Context:
+The user selected synthetic media, reduced the initial record counts, rejected showing both sites inside each record, removed verbose cross-site summary text and requested a reproducible ADINT/IPDR correlation.
+
+Rationale:
+Source records should preserve their own observations and native fields. Cross-record conclusions belong in analysis, not invented fields or duplicated imagery.
+
+Alternatives considered:
+Three records per source/site, displaying counterpart images in each record, placing IMEI directly in ADINT, or mapping IPDR onto inferred locations.
+
+Impact:
+The active network-v1 fixture has 208 records. IP/IMEI remain strings; leading zeros matter. All demo media/records are synthetic. Dataset content is versioned independently from map camera and shared UI features.
+
+Follow-ups:
+Preserve the exact fixture assertions in `test_syria_convoy.py`, `test_syria_network.py` and `test_results_table.py`; new data must not silently alter the documented demo relation.
+
+### 2026-09-23 — Make Table an agent-selectable results view
+
+Decision:
+Expose Table beside Map and Timeline using the existing table component. Choose Table for raw records, identifier inspection and geometry-free results. Keep Map for spatial questions and Timeline for chronology. Preserve legacy `evidence` view recommendations as a Table alias.
+
+Context:
+IPDR records have no geometry and need direct record opening. The old overlay-only presentation and evidence-to-Map fallback could lead to a blank map.
+
+Rationale:
+A shared table preserves filters, sorting, selected layers and record viewers without a second presentation implementation. Presentation is independent of geographic availability and persistence authorization.
+
+Alternatives considered:
+Duplicate the table, invent coordinates for IPDR, or omit geometry-free rows.
+
+Impact:
+Agent instructions, MCP tool schemas, structured actions/audits, saved-memory reconstruction and frontend resolution accept Table. IPDR displays native IP/IMEI columns and omits actor/location/map actions. A unique close catalog-name match can recover small mistakes; ambiguity still requires clarification. Normal operation no longer displays a persistent scenario footer; operational notices remain.
+
+Follow-ups:
+Keep presentation and source-specific field tests; new sources should declare meaningful geometry capabilities and native fields. See [product context](product-context.md) for analyst-facing behavior.

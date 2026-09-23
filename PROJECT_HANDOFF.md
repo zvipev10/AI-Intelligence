@@ -16,8 +16,8 @@ Repository:
 
 Current branch:
 
-- Cellular Calls release `47692c3` is merged into remote `main`; later documentation-only commits may follow it.
-- The local working checkout may remain on `codex/evidence-semantic-fusion`; fetch and inspect before switching.
+- Scenario platform, Syria media, ADINT/IPDR and Table/map changes from PRs #69, #72, #74 and #76 are merged into `main`. Later map refinements are also on main; this documentation pass inspected `7d1c325`.
+- Start new work from current remote main. Local branch/worktree names are not an authoritative deployment selector.
 - The older branch references in this handoff are historical only; do not assume they reflect the current checked-out branch.
 - Always fetch before continuing and verify the current head with `git log -1 --oneline`.
 
@@ -31,8 +31,23 @@ Current local working tree expectation:
 - `main` should be aligned with `origin/main`; do not assume the current working branch or tree is clean.
 - Do not continue from stale local files if `git fetch origin` shows the active remote branch ahead.
 - Identify and preserve unrelated dirty files before staging, switching branches, or deploying.
-- As of 2026-09-17, the local workspace contains unrelated, preserved mobile-recovery/deployment changes in `.ai/work/capabilities/mobile-agent-run-recovery/checkpoint-001.md`, `llm_investigation_orchestrator_serbia_poc/server.py`, and `llm_investigation_orchestrator_serbia_poc/deployment/SHA256SUMS-v184.txt`.
+- Historical dirty-file lists are not current workspace inventories; run `git status --short` each session.
 - An isolated English WIP sibling workspace exists outside the restored repo; do not stage or deploy it accidentally from the main repo.
+
+## Current scenario and feature handoff
+
+Use [product context](docs/product-context.md) for the current demo narrative and UI contract, [architecture](docs/architecture.md) for state/agent boundaries, and the [operator runbook](llm_investigation_orchestrator_serbia_poc/docs/demo-scenarios.md) for switching and releases. These consolidated documents supersede earlier empty-Syria, paired-image-display and unmerged-stack descriptions in historical checkpoints.
+
+- One shared application and one active scenario. Kosovo/v2.1 (14,833 records) is retained; Syria profile 6/network-v1 (208 records) is the last verified active deployment. This documentation task does not change or restart the VM.
+- Application state is isolated by scenario/dataset; browser storage is namespaced before app startup; agent homes are scenario/role scoped. Locale isolation and existing role permissions continue. Credentials are a separate shared authorization concern.
+- Syria has two CCTV movies and two Satellite records with three recurring captures each, four nearby ADINT observations and 200 geometry-free IPDR sessions. Each media record shows its own location only.
+- The demo join is `REC-SYR-ADINT-001` IP `192.0.2.10` at 08:00 UTC on September 22 with `REC-SYR-IPDR-137` session 07:58–08:04, yielding IMEI `000000000001370`. No automatic convoy/device relation is asserted.
+- Table is an agent-selectable view alongside Map/Timeline, sharing existing table state and record links. IPDR shows IP/IMEI, not actor/location. Geometry-free records remain presentable and old evidence-view recommendations remain compatible.
+- Catalog naming recovery uses the live catalog, preserves explicit filters and requests clarification for ambiguity. Audit writes must follow the selected dataset; stale paths previously caused missing UI actions despite successful tool calls.
+- English-preferred basemap labels, Satellite default, reference roads/borders, Street fallback and Damascus initial camera are documented below. Basemap imagery is separate from timestamped Satellite records.
+- Persistent scenario footer removed. Queue/restart/generation-change notices retained. Shared HTML guides, videos and posters remain deployment assets.
+
+Verification: prior feature suites reported eight existing application baseline failures and two MCP skips; focused source/presentation/map tests and live API/asset checks passed. Manual browser/media acceptance was not claimed. Future changes need checks appropriate to their scope and VM workload; do not infer complete suite success from deployed status.
 
 ## Latest Update: Satellite Reference Map And Damascus Camera
 
@@ -576,44 +591,34 @@ UI behavior:
 
 ## Current VM Deployment
 
-VM:
+The last verified scenario is Syria/network-v1 (profile 6, 208 records). This is a deployment snapshot, not a substitute for live status.
 
-- Host: `151.145.93.180`
-- User: `ubuntu`
-- SSH key path used locally: `C:\Users\user\Downloads\oracle.key`
-- Important: user explicitly said not to touch/modify the key file.
+| Component | Current location |
+|---|---|
+| Public application | `http://151.145.93.180/` |
+| UI | `/opt/serbia-poc-ui`, `serbia-poc-ui.service`, port 8769 |
+| MCP | `/opt/serbia-poc/mcp_server/server.py` |
+| Shared Hermes gateway | `hermes-gateway.service`, loopback port 8642 |
+| Dashboard / additional MCP workers | `hermes-dashboard.service` |
+| Data paths | Selected by `demo_profiles/<scenario>.json` in both source roots |
+| Mutable state | `/opt/demo-runtime/state/<scenario>/<dataset>/` |
+| Agent homes | `/opt/demo-runtime/hermes-homes/<scenario>/<role>/` |
+| Current source identity | Installed `release-manifest.json` and `control/deployed-release.json` |
 
-Active UI service:
+General, Moshe and Talia use one shared gateway with active scenario profile aliases. The old separate Moshe gateway and old projection paths in historical notes are not the current deployment recipe. SSH uses the operator's existing private key; do not modify or commit it.
 
-- Service: `serbia-poc-ui.service`
-- Actual served path: `/opt/serbia-poc-ui`
-- This is important: an earlier deploy mistakenly copied to `/opt/serbia-poc/ui`, but the active service serves `/opt/serbia-poc-ui`.
-- Current source and deployed UI asset versions as of the Moshe release:
-  - `styles.css?v=88`
-  - `app.js?v=109`
-- These versions include the earlier additive-layer investigation experience plus the `מכלול` roster, member mention autocomplete, member selection, live Moshe opening/attribution, and shared attack-target presentation.
-
-Active MCP/Hermes service:
-
-- MCP path: `/opt/serbia-poc/mcp_server/server.py`
-- Data path: `/opt/serbia-poc/data/serbia_kosovo_events_projection.csv`
-- Active dataset: V2.1, 14,800 rows.
-- General Hermes gateway service: `hermes-gateway.service`, local API port `127.0.0.1:8642`.
-- Moshe Hermes gateway service: `hermes-moshe-gateway.service`, local API port `127.0.0.1:8643`.
-
-Useful VM checks:
-
-```bash
-sudo systemctl is-active serbia-poc-ui.service
-sudo systemctl is-active hermes-gateway.service
-sudo systemctl is-active hermes-moshe-gateway.service
-curl -k -fsS https://151.145.93.180/ | grep -E 'styles.css\?v=|app.js\?v='
+```sh
+systemctl is-active serbia-poc-ui.service hermes-gateway.service hermes-dashboard.service
 curl -fsS http://127.0.0.1:8769/api/status
-curl -fsS http://127.0.0.1:8769/api/live-steps
-grep -n 'rawEventsOverlay\|final-answer-show-btn\|buildLocationLayer' /opt/serbia-poc-ui/app.js /opt/serbia-poc-ui/index.html
+cat /opt/demo-runtime/control/current.json
+cat /opt/demo-runtime/control/deployed-release.json
 ```
 
-## Deployment Notes
+Use the [operator runbook](llm_investigation_orchestrator_serbia_poc/docs/demo-scenarios.md) for switching, upgrades, source verification and rollback. Latest documented asset versions are in the map deployment section above.
+
+## Deployment Notes (historical)
+
+The current scenario runbook supersedes this earlier deployment recipe. Do not use legacy installers or separate-gateway instructions for the provisioned runtime.
 
 Use `/opt/serbia-poc-ui` for UI deploys.
 
