@@ -1,0 +1,1 @@
+AI recommendation: retain normal layer/map/timeline/detail behavior. Label every asset synthetic; show CCTV playback controls and satellite images with capture timestamps. Focus Syria map on the two demonstration sites. No separate application.

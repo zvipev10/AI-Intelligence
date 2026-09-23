@@ -1,0 +1,1 @@
+Phase: implementing authorized Syria media dataset. Branch codex/syria-convoy-media, based on published scenario PR #69. Next: dataset generation and viewer support. No blocking question; media choice confirmed. Human visual acceptance remains separate.

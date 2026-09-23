@@ -1,0 +1,1 @@
+Verify 12 unique records; 6 per source; 3 per source/location; one convoy entity; approximately 5 km distance; media files and timestamps; HTTP/UI renderer checks; MCP media/extraction fields; Kosovo profile/dataset hashes unchanged; live activation and counts.
