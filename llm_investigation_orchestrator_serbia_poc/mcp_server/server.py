@@ -933,7 +933,7 @@ def intent_defaults(intent: str, has_geo: bool = False, has_timeline: bool = Fal
             "related_expansion", "linkage", "hypothesis_challenge", "sequence",
         ]
         blocked = []
-        view_hint = "timeline" if has_timeline else "map" if has_geo else "evidence"
+        view_hint = "timeline" if has_timeline else "map" if has_geo else "table"
         reason = "השאלה מבקשת דפוס, קשר, תרחיש, חלופות או הסבר חקירתי."
     elif intent == "geographic_aggregation":
         intent = "geographic_aggregation"
@@ -960,7 +960,7 @@ def intent_defaults(intent: str, has_geo: bool = False, has_timeline: bool = Fal
         tool_budget = 3
         allowed = ["resolve", "search", "semantic_search", "aggregate", "get"]
         blocked = ["related_expansion", "hypothesis_challenge", "linkage"]
-        view_hint = "evidence"
+        view_hint = "table"
         reason = "השאלה מבקשת שליפה, סינון, צמצום או ספירה של רשומות קיימות."
     else:
         intent = "retrieval"
@@ -969,7 +969,7 @@ def intent_defaults(intent: str, has_geo: bool = False, has_timeline: bool = Fal
         tool_budget = 3
         allowed = ["resolve", "search", "semantic_search", "aggregate", "get"]
         blocked = ["related_expansion", "hypothesis_challenge", "linkage"]
-        view_hint = "evidence"
+        view_hint = "table"
         reason = "לא נמצאה בקשה מפורשת לחקירה עמוקה; ברירת המחדל היא שליפה זהירה."
     return {
         "intent": intent,
@@ -1035,7 +1035,7 @@ def classify_with_sampling(question: str, context: str = "") -> dict[str, Any] |
         "שדות חובה: intent, recommended_mode, recommended_view_hint, confidence, reason. "
         "intent חייב להיות אחד מ: retrieval, geographic_aggregation, timeline_retrieval, investigation. "
         "recommended_mode חייב להיות retrieval או investigation. "
-        "recommended_view_hint חייב להיות map, timeline או evidence. "
+        "recommended_view_hint חייב להיות map, timeline או table. "
         "כללים: אם האנליסט מבקש למיין, לסדר, לשחזר התרחשות או לקבל תמונה לפי זמן, בחר timeline_retrieval ו-timeline. "
         "אם הוא מבקש מוקדים, איפה, אזורים, מקבצים או TOP מיקומים, בחר geographic_aggregation ו-map. "
         "אם הוא מבקש רשימה, סינון, הצגה או צמצום של רשומות, בחר retrieval. "
@@ -1092,7 +1092,7 @@ def classify_question_intent(arguments: dict[str, Any]) -> dict[str, Any]:
     context = str(arguments.get("conversation_context") or "").strip()
     valid_intents = {"retrieval", "geographic_aggregation", "timeline_retrieval", "investigation"}
     valid_modes = {"retrieval", "investigation"}
-    valid_views = {"map", "timeline", "evidence"}
+    valid_views = {"map", "timeline", "table", "evidence"}
     sampled = classify_with_sampling(question, context)
     model_intent = str((sampled or {}).get("intent") or arguments.get("model_intent") or "").strip()
     model_mode = str((sampled or {}).get("recommended_mode") or arguments.get("model_recommended_mode") or "").strip()
@@ -2712,13 +2712,15 @@ def _materialize_presentation_layers(
         if not label:
             raise ValueError(f"layer {index} requires a user-facing label")
         view = str(selection.get("view") or "").strip()
+        if view == "evidence":
+            view = "table"
         if kind == "events":
             missing = [row_id for row_id in row_ids if visible_event(row_id) is None]
             if missing:
                 raise ValueError(f"unknown event IDs: {', '.join(missing)}")
             rows = [public_event(visible_event(row_id)) for row_id in row_ids]
             result_kind = "events"
-            capabilities = {"table": True, "map": True, "timeline": True}
+            capabilities = {"table": True, "map": any(row.get("location_id") in LOCATIONS for row in rows), "timeline": True}
         elif kind == "locations":
             missing = [row_id for row_id in row_ids if scoped_location_presentation(row_id) is None]
             if missing:
@@ -2782,12 +2784,12 @@ def _materialize_presentation_layers(
                 capabilities = {"table": True, "map": False, "timeline": False}
         else:
             raise ValueError(f"unsupported requested-result kind: {kind}")
-        if evidence_references and (view not in {"map", "timeline"} or not capabilities.get(view)):
-            view = "map" if capabilities.get("map") else ("timeline" if capabilities.get("timeline") else view)
-        view_capability = {"map": "map", "timeline": "timeline", "evidence": "table"}.get(view)
+        if evidence_references and (view not in {"map", "timeline", "table"} or not capabilities.get(view)):
+            view = "map" if capabilities.get("map") else "table"
+        view_capability = {"map": "map", "timeline": "timeline", "table": "table", "evidence": "table"}.get(view)
         if view_capability is None:
             raise ValueError(f"unsupported requested view: {view}")
-        if evidence_references and view not in {"map", "timeline"}:
+        if evidence_references and view not in {"map", "timeline", "table"}:
             raise ValueError("evidence-reference layer has no supported map or timeline view")
         if not capabilities.get(view_capability):
             raise ValueError(f"requested view {view} is incompatible with {result_kind}")
@@ -2861,7 +2863,7 @@ def open_catalog_layers(arguments: dict[str, Any]) -> dict[str, Any]:
     if not isinstance(ids, list) or not ids or len(ids) > 5 or any(not isinstance(i, str) or not i.strip() for i in ids):
         raise ValueError("at least one catalog_layer_id is required (maximum five)")
     view = arguments.get("view", "map")
-    if view not in {"map", "timeline", "evidence"}:
+    if view not in {"map", "timeline", "table", "evidence"}:
         raise ValueError(f"unsupported catalog view: {view}")
     locale = arguments.get("locale", "he")
     if locale not in {"he", "en"}:
@@ -2881,7 +2883,8 @@ def open_catalog_layers(arguments: dict[str, Any]) -> dict[str, Any]:
         layer = resolution["layer"]
         if filters and layer.get("kind") != "events":
             raise ValueError("catalog filters are supported only for raw event layers")
-        action = {"action": "open", "catalog_layer_id": layer["id"], "view": view}
+        selected_view = "table" if view == "evidence" or (view == "map" and layer.get("capabilities", {}).get("map") is False) else view
+        action = {"action": "open", "catalog_layer_id": layer["id"], "view": selected_view}
         if filters:
             action["filters"] = filters
         if action not in actions:
@@ -3599,7 +3602,7 @@ TOOLS = [
     {
         "name": "present_requested_results",
         "title": "Present only the requested results",
-        "description": "Final presentation-selection tool. Call once after analysis when requested results or materially relevant evidence references exist. Put only data directly requested by the user in layers. Put only canonical records that materially support the final conclusion in evidence_layers, grouped into meaningful map/timeline layers. Never include intermediate searches, rejected candidates, duplicate checks, or unrelated tool output. Canonical IDs are validated, and aggregate IDs must come from an earlier aggregate_events result in this run.",
+        "description": "Final presentation-selection tool. Call once after analysis when requested results or materially relevant evidence references exist. Put only data directly requested by the user in layers. Put only canonical records that materially support the final conclusion in evidence_layers, grouped into meaningful map/timeline/table layers. Choose table for raw records, identifier correlation, or records without geometry; map for spatial results; timeline for chronology. Never include intermediate searches, rejected candidates, duplicate checks, or unrelated tool output. Canonical IDs are validated, and aggregate IDs must come from an earlier aggregate_events result in this run.",
         "inputSchema": with_step_bridge({
             "type": "object",
             "properties": {
@@ -3612,7 +3615,7 @@ TOOLS = [
                             "kind": {"type": "string", "enum": ["events", "evidence", "assessments", "locations", "entities", "attack_targets", "aggregate_groups"]},
                             "ids": {"type": "array", "items": {"type": "string", "minLength": 1}, "minItems": 1, "maxItems": MAX_LIMIT},
                             "label": {"type": "string", "minLength": 1, "maxLength": 120},
-                            "view": {"type": "string", "enum": ["map", "timeline", "evidence"]},
+                            "view": {"type": "string", "enum": ["map", "timeline", "table", "evidence"]},
                             "group_by": {"type": "string", "description": "Required only for aggregate_groups and must match an earlier aggregate_events call."},
                         },
                         "required": ["kind", "ids", "label", "view"],
@@ -3628,7 +3631,7 @@ TOOLS = [
                             "kind": {"type": "string", "enum": ["events", "evidence", "locations", "entities", "attack_targets", "aggregate_groups"]},
                             "ids": {"type": "array", "items": {"type": "string", "minLength": 1}, "minItems": 1, "maxItems": MAX_LIMIT},
                             "label": {"type": "string", "minLength": 1, "maxLength": 120},
-                            "view": {"type": "string", "enum": ["map", "timeline"]},
+                            "view": {"type": "string", "enum": ["map", "timeline", "table"]},
                             "group_by": {"type": "string", "description": "Required only for aggregate_groups and must match an earlier aggregate_events call."},
                         },
                         "required": ["kind", "ids", "label", "view"],
@@ -3673,7 +3676,7 @@ TOOLS = [
                     "minItems": 1,
                     "maxItems": 5,
                 },
-                "view": {"type": "string", "enum": ["map", "timeline", "evidence"]},
+                "view": {"type": "string", "enum": ["map", "timeline", "table", "evidence"]},
                 "locale": {"type": "string", "enum": ["he", "en"]},
                 "filters": {
                     "type": "object",

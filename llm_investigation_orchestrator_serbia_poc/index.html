@@ -6,7 +6,7 @@
   <title>סביבת מודיעין</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="./vendor/maplibre-gl.css">
-  <link rel="stylesheet" href="./styles.css?v=152">
+  <link rel="stylesheet" href="./styles.css?v=153">
 </head>
 <body class="welcome-active">
   <a class="help-button" href="./help.html" target="_blank" rel="noopener" aria-label="פתח עזרה" data-i18n-aria-he="פתח עזרה" data-i18n-aria-en="Open help">?</a>
@@ -152,6 +152,7 @@
         <div class="view-tab-list">
           <button class="view-tab active" data-view="map" type="button" data-i18n-text-he="מפה" data-i18n-text-en="Map">מפה</button>
           <button class="view-tab" data-view="timeline" type="button" data-i18n-text-he="ציר זמן" data-i18n-text-en="Timeline">ציר זמן</button>
+          <button class="view-tab" data-view="table" type="button" data-i18n-text-he="טבלה" data-i18n-text-en="Table">טבלה</button>
         </div>
         <div class="layer-selector" aria-label="חיפוש שכבה להוספה" data-i18n-aria-he="חיפוש שכבה להוספה" data-i18n-aria-en="Search for a layer to add">
           <div class="layer-selector-search" role="combobox" aria-haspopup="listbox" aria-expanded="false" aria-owns="layerSelectorList">
@@ -167,6 +168,7 @@
           <div id="map" class="map-canvas"></div>
         </section>
         <section id="timelineView" class="view-pane"><div id="timeline" class="timeline empty-state" data-i18n-text-he="לא נבחרו אירועים להצגה." data-i18n-text-en="No events were selected for display.">לא נבחרו אירועים להצגה.</div></section>
+        <section id="tableView" class="view-pane"><div class="table-view-empty" data-i18n-text-he="פתח שכבה כדי להציג רשומות בטבלה." data-i18n-text-en="Open a layer to view its records in the table.">פתח שכבה כדי להציג רשומות בטבלה.</div></section>
         <section id="rawEventsOverlay" class="raw-events-overlay" aria-label="אירועים גולמיים" data-i18n-aria-he="אירועים גולמיים" data-i18n-aria-en="Raw events" hidden>
           <div class="raw-events-resize-handle" id="rawEventsResizeHandle" role="separator" aria-orientation="horizontal" aria-label="שינוי גודל טבלת אירועים" data-i18n-aria-he="שינוי גודל טבלת אירועים" data-i18n-aria-en="Resize results table"></div>
           <div class="raw-events-header">
@@ -325,6 +327,6 @@
   </div>
 
   <script src="./vendor/maplibre-gl.js"></script>
-  <script src="./demo_bootstrap.js?v=203"></script>
+  <script src="./demo_bootstrap.js?v=204"></script>
 </body>
 </html>

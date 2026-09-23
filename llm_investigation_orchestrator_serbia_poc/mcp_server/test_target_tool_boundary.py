@@ -152,7 +152,7 @@ class TargetToolBoundaryTests(unittest.TestCase):
         self.assertEqual([row["event_id"] for row in layer["rows"]], [event["event_id"]])
         self.assertNotIn(other["event_id"], str(layer))
 
-    def test_evidence_reference_layers_are_separate_and_map_or_timeline_only(self):
+    def test_evidence_reference_layers_are_separate_and_support_table(self):
         first, second = server.EVENTS[:2]
         result = server.present_requested_results({
             "layers": [{
@@ -179,7 +179,7 @@ class TargetToolBoundaryTests(unittest.TestCase):
             "label": "Table-requested evidence",
             "view": "evidence",
         }]})
-        self.assertEqual(recovered["evidence_reference_layers"][0]["recommended_view"], "map")
+        self.assertEqual(recovered["evidence_reference_layers"][0]["recommended_view"], "table")
 
     def test_evidence_only_selection_is_allowed_but_empty_call_is_rejected(self):
         event = server.EVENTS[0]

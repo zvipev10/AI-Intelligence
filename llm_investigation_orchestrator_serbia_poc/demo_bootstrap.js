@@ -48,7 +48,7 @@
     const label = runtime.demo_profile?.label?.en || "Kosovo";
     notice.textContent = `${label}${runtime.demo_profile?.empty_dataset ? " — Empty dataset / מאגר ריק" : ""}`;
     const script = document.createElement("script");
-    script.src = "./app.js?v=203";
+    script.src = "./app.js?v=204";
     script.onerror = () => { notice.textContent = "Application could not load. Reload to retry."; };
     document.body.appendChild(script);
     setInterval(async () => {

@@ -681,14 +681,14 @@ const queryModalClose = document.getElementById("queryModalClose");
 
 function viewLabels() {
   return currentLocale() === "en"
-    ? { map: "Map", timeline: "Timeline", evidence: "Raw events" }
-    : { map: "מפה", timeline: "ציר זמן", evidence: "אירועים גולמיים" };
+    ? { map: "Map", timeline: "Timeline", table: "Table", evidence: "Table" }
+    : { map: "מפה", timeline: "ציר זמן", table: "טבלה", evidence: "טבלה" };
 }
 
 function layerQueryLabels() {
   return currentLocale() === "en"
-    ? { map: "Raw events layer", timeline: "Raw events layer", evidence: "Raw events layer" }
-    : { map: "שכבת אירועים גולמיים", timeline: "שכבת אירועים גולמיים", evidence: "שכבת אירועים גולמיים" };
+    ? { map: "Raw events layer", timeline: "Raw events layer", table: "Raw events layer", evidence: "Raw events layer" }
+    : { map: "שכבת אירועים גולמיים", timeline: "שכבת אירועים גולמיים", table: "שכבת אירועים גולמיים", evidence: "שכבת אירועים גולמיים" };
 }
 
 const LAYER_COLORS = [
@@ -1348,7 +1348,7 @@ function buildEventLayers(events) {
       kind: "events",
       visible: true,
       items,
-      capabilities: { table: true, map: true, timeline: true }
+      capabilities: { table: true, map: items.some(event => Boolean(eventMapCoordinates(event))), timeline: true }
     }));
 }
 
@@ -1558,7 +1558,7 @@ function buildEvidenceReferencesSection(result) {
       <details class="evidence-reference-details">
         <summary class="evidence-reference-link" aria-pressed="false">
           <span class="evidence-reference-label">${escapeHtml(layer.label)}</span>
-          <span class="evidence-reference-view">${layer.preferredView === "timeline" ? "Timeline" : "Map"} · ${(layer.items || []).length.toLocaleString("en-US")}</span>
+          <span class="evidence-reference-view">${viewLabels()[layer.preferredView] || "Table"} · ${(layer.items || []).length.toLocaleString("en-US")}</span>
         </summary>
         ${shown.length ? `<div class="evidence-reference-identifiers" dir="ltr">${shown.map(escapeHtml).join(", ")}${overflow ? ` <span dir="ltr">and ${overflow.toLocaleString("en-US")} more</span>` : ""}</div>` : ""}
       </details>`;
@@ -2857,6 +2857,7 @@ async function openCatalogLayer(layerId, options = {}) {
     state.layerSearchQuery = "";
     state.layerSearchOpen = false;
     if (options.savedLayer) applySavedFiltersToLayer(existing, options.savedLayer);
+    if (!options.silent && existing.kind === "events" && !existing.capabilities.map) activateView("table");
     if (!options.silent) {
       renderAllViews();
       renderLayerSelector();
@@ -2884,7 +2885,7 @@ async function openCatalogLayer(layerId, options = {}) {
     const added = addResultLayers({
       sourceId: `catalog:${layerId}:${scopeKey}`,
       sourceLabel: openedLayer.label,
-      preferredView: openedLayer.capabilities.map ? "map" : (openedLayer.capabilities.timeline ? "timeline" : "evidence"),
+      preferredView: openedLayer.capabilities.map ? "map" : (openedLayer.kind === "events" ? "table" : (openedLayer.capabilities.timeline ? "timeline" : "table")),
       layers: [openedLayer]
     });
     const restoredLayer = added.find(item => item.catalogLayerId === layerId && item.catalogScopeKey === scopeKey)
@@ -2894,6 +2895,7 @@ async function openCatalogLayer(layerId, options = {}) {
     state.rawOverlayMinimized = false;
     state.layerSearchQuery = "";
     state.layerSearchOpen = false;
+    if (!options.silent && !openedLayer.capabilities.map) activateView(openedLayer.kind === "events" ? "table" : (openedLayer.capabilities.timeline ? "timeline" : "table"));
     if (!options.silent) showResult(
       "שכבה נפתחה",
       added.length
@@ -4247,7 +4249,7 @@ function compactArguments(argumentsPayload) {
   return Object.fromEntries(Object.entries(payload).filter(([key]) => key !== "step_bridge"));
 }
 
-function layerFromStep(step, fallback = "evidence") {
+function layerFromStep(step, fallback = "table") {
   const groupBy = step?.technical?.arguments?.group_by;
   if (step?.map_locations?.length || step?.location_layers?.length || step?.entity_layers?.length || ["location", "municipality"].includes(groupBy)) return "map";
   const aggregateGroupBy = step?.aggregate_groups?.[0]?.group_by || groupBy;
@@ -4279,13 +4281,18 @@ function buildFinalQueryContext(result, prompt) {
 }
 
 function resolveFinalResultView(result = {}, layers = []) {
-  const requestedView = ["map", "timeline"].includes(result.recommended_view)
-    ? result.recommended_view
-    : layers.find(layer => ["map", "timeline"].includes(layer.preferredView))?.preferredView;
-  if (["map", "timeline"].includes(requestedView)) return requestedView;
+  const normalize = view => view === "evidence" ? "table" : view;
+  const requestedView = ["map", "timeline", "table"].includes(normalize(result.recommended_view))
+    ? normalize(result.recommended_view)
+    : normalize(layers.find(layer => ["map", "timeline", "table", "evidence"].includes(layer.preferredView))?.preferredView);
+  if (["map", "timeline", "table"].includes(requestedView)) {
+    if (requestedView === "map" && layers.length && !layers.some(layer => layer.capabilities?.map)) return "table";
+    return requestedView;
+  }
+  if (layers.some(layer => layer.kind === "events" && !layer.capabilities?.map)) return "table";
   if (layers.some(layer => layer.capabilities?.map)) return "map";
   if (layers.some(layer => layer.capabilities?.timeline)) return "timeline";
-  return "map";
+  return "table";
 }
 
 async function executeCatalogLayerActions(result = {}) {
@@ -4312,8 +4319,8 @@ async function executeCatalogLayerActions(result = {}) {
 async function presentFinalAgentResult(result, prompt, options = {}) {
   const typedLayers = buildTypedResultLayers(result);
   const openedCatalogLayers = await executeCatalogLayerActions(result);
-  const actionView = (result.catalog_layer_actions || []).find(item => ["map", "timeline"].includes(item?.view))?.view;
-  const requestedView = actionView || resolveFinalResultView(result, [...typedLayers, ...openedCatalogLayers]);
+  const actionView = (result.catalog_layer_actions || []).find(item => ["map", "timeline", "table", "evidence"].includes(item?.view))?.view;
+  const requestedView = resolveFinalResultView({ ...result, recommended_view: actionView || result.recommended_view }, [...typedLayers, ...openedCatalogLayers]);
   state.queryContext = buildFinalQueryContext(result, prompt);
   const addedLayers = addResultLayers({
     sourceId: finalSourceId(result),
@@ -4360,7 +4367,7 @@ function buildStepQueryContext(step, label) {
 
 function activeLayer() {
   const layer = document.querySelector(".view-tab.active")?.dataset.view || "map";
-  return layer === "evidence" ? "map" : layer;
+  return layer === "evidence" ? "table" : layer;
 }
 
 function queryReadoutForLayer(layer) {
@@ -4754,7 +4761,7 @@ function showStepResult(step) {
   } else if (state.aggregateLocations.length || state.locationMetadata.length || state.entityMetadata.length || state.current.some(e => e.location_id)) {
     activateView("map", { automatic: true, reason: "Step with location data" });
   } else {
-    activateView("map", { automatic: true, reason: "Step with records" });
+    activateView("table", { automatic: true, reason: "Step with records" });
   }
 
   updateStepVisibilityButtons();
@@ -4939,22 +4946,22 @@ function cleanAssistantAnswer(text) {
 
 function inferRecommendedView(prompt, answer) {
   const text = `${prompt || ""}\n${answer || ""}`;
-  const scores = { map: 0, timeline: 0, evidence: 0 };
+  const scores = { map: 0, timeline: 0, table: 0 };
   const scoreTerms = (view, terms, weight = 1) => terms.forEach(term => {
     if (text.includes(term)) scores[view] += weight;
   });
 
   scoreTerms("map", ["map", "route", "movement path", "location", "area", "distance", "west", "east", "road", "crossing"], 2);
   scoreTerms("timeline", ["sequence", "time order", "timeline", "before", "after", "timing", "at", "minutes", "started", "ended"], 2);
-  scoreTerms("evidence", ["raw events", "records", "sources", "evidence", "quote", "verification", "check", "evidence ids"], 2);
+  scoreTerms("table", ["raw events", "records", "sources", "evidence", "quote", "verification", "check", "evidence ids"], 2);
 
   if (/\b\d{2}:\d{2}\b/.test(text)) scores.timeline += 2;
-  if ((answer || "").match(EVENT_ID_PATTERN)?.length >= 6) scores.evidence += 1;
+  if ((answer || "").match(EVENT_ID_PATTERN)?.length >= 6) scores.table += 1;
   const view = Object.entries(scores).sort((a, b) => b[1] - a[1])[0][0];
   const reasons = {
     map: "Locations and movement route are central to the answer",
     timeline: "Event sequence and timing are central to the answer",
-    evidence: "Evidence and records are central to the answer"
+    table: "Evidence and records are central to the answer"
   };
   return { view, reason: reasons[view] };
 }
@@ -5512,10 +5519,12 @@ function renderAllViews() {
 }
 
 function activateView(view, options = {}) {
-  const requestedView = view === "evidence" ? "map" : view;
+  const requestedView = view === "evidence" ? "table" : view;
   const safeView = viewLabels()[requestedView] ? requestedView : "map";
   document.querySelectorAll(".view-tab").forEach(button => button.classList.toggle("active", button.dataset.view === safeView));
   document.querySelectorAll(".view-pane").forEach(pane => pane.classList.toggle("active", pane.id === `${safeView}View`));
+  document.querySelector(".view-stack")?.classList.toggle("table-mode", safeView === "table");
+  renderEvidence();
   if (safeView === "map" && state.map) {
     setTimeout(() => {
       state.map.resize();
@@ -6194,7 +6203,7 @@ function renderEvidence() {
   const activeLayer = activeTableLayer();
 
   overlay.hidden = false;
-  overlay.classList.toggle("minimized", state.rawOverlayMinimized);
+  overlay.classList.toggle("minimized", state.rawOverlayMinimized && !viewStack?.classList.contains("table-mode"));
   overlay.classList.toggle("filter-panel-open", Boolean(activeLayer?.filterPanelOpen));
   overlay.style.setProperty("--raw-overlay-height", `${state.rawOverlayHeight}%`);
   if (viewStack) viewStack.style.setProperty("--raw-overlay-height", `${state.rawOverlayHeight}%`);

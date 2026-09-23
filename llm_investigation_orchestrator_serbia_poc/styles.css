@@ -781,3 +781,10 @@ th { position: sticky; top: 0; z-index: 1; background: #202530; }
   .raw-events-overlay { height: 34%; min-height: 180px; }
   .layer-filter-panel { bottom: calc(34% + 12px); max-height: min(340px, calc(66% - 76px)); }
 }
+
+/* Reuse the raw-records table as a standalone results view. */
+.view-stack.table-mode .raw-events-overlay { top: 0; bottom: 0; height: 100%; max-height: 100%; min-height: 0; grid-template-rows: 34px minmax(0, 1fr); }
+.view-stack.table-mode .raw-events-resize-handle,
+.view-stack.table-mode #rawEventsMinimize { display: none; }
+.view-stack.table-mode .layer-filter-panel { top: 44px; bottom: auto; max-height: calc(100% - 60px); }
+.table-view-empty { padding: 24px; color: var(--muted); }
