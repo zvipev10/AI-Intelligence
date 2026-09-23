@@ -1,0 +1,1 @@
+Syria convoy-v3/profile 4: user-requested satellite-summary cleanup. Four records and paired visit metadata retained. Runtime e07887a55170a019d76632e4c97c73df0c985a5b. PR #72, stacked on #69; source published, not merged. Dataset tests pass. Refresh the app after deployment; prior versions/state retained.

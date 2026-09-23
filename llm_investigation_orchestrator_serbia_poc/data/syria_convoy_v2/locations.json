@@ -1,0 +1,22 @@
+{
+  "LOC-SYR-001": {
+    "name": "Demo Site 1",
+    "latitude": 35.0,
+    "longitude": 38.5,
+    "country": "Syria",
+    "region": "Central Syria (synthetic demo)",
+    "type": "demonstration site",
+    "precision": "synthetic",
+    "locality": "Fictional Site 1"
+  },
+  "LOC-SYR-002": {
+    "name": "Demo Site 2",
+    "latitude": 35.045,
+    "longitude": 38.5,
+    "country": "Syria",
+    "region": "Central Syria (synthetic demo)",
+    "type": "demonstration site",
+    "precision": "synthetic",
+    "locality": "Fictional Site 2"
+  }
+}

@@ -1,0 +1,1 @@
+AI implementation assessment: reuse raw-event source layers and canonical location/entity extraction. Add generic timestamped image-list rendering and pass media fields through MCP. Replace hardcoded empty-Syria readiness with profile-driven emptiness. Publish a new dataset version and copy only existing Syria state at a stopped boundary. No Kosovo dataset/profile changes.

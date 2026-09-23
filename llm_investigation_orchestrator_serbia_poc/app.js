@@ -409,9 +409,9 @@ const TALIA_WELCOME = {
   he: "אני טליה, קצינת הערכת האויב. אוכל לבנות ולעדכן הערכות מבוססות ראיות ולהציג את הגרפיקה האנליטית שלהן.",
   en: "I’m Talia, the enemy-assessment officer. I can create and revise evidence-backed assessments and present their analytic overlays."
 };
-const DEFAULT_SUGGESTIONS = demoRuntime?.demo_profile?.empty_dataset ? {
+const DEFAULT_SUGGESTIONS = demoRuntime?.scenario_id === "syria" ? {
   he: ["הצג את שכבת המיקומים", "אילו שכבות זמינות בתרחיש סוריה?"],
-  en: ["Show the location layer", "Which layers are available in the Syria scenario?"]
+  en: ["Show the CCTV and Satellite layers", "Show all convoy observations at both locations"]
 } : {
   he: [
     "האם הטענה על חציית גבול מגובה במקור אמין?",
@@ -2219,7 +2219,7 @@ function hasCatalogLayerActions(result = {}) {
     action?.action === "open" && action.catalog_layer_id);
 }
 
-const SIMILAR_INVESTIGATIONS = demoRuntime?.demo_profile?.empty_dataset ? [] : [
+const SIMILAR_INVESTIGATIONS = demoRuntime?.scenario_id === "syria" ? [] : [
   {
     id: "regional-infrastructure",
     titleHe: "תשתיות קריטיות בצפון קוסובו",
@@ -2283,7 +2283,7 @@ function ownedInvestigationRibbonHtml(investigation, index) {
             <h3 class="ribbon-title">${escapeHtml(investigation.name)}</h3>
             <span class="ribbon-status">${activeLocaleText("פעילה", "Active")}</span>
           </div>
-          <p class="ribbon-summary">${demoRuntime?.scenario_id === "syria" ? activeLocaleText("חקירה בתרחיש סוריה. המאגר ריק בשלב זה.", "Syria investigation. The dataset is currently empty.") : activeLocaleText("חקירת המודיעין הפעילה על צפון קוסובו וסרביה.", "Active intelligence investigation covering North Kosovo and Serbia.")}</p>
+          <p class="ribbon-summary">${demoRuntime?.scenario_id === "syria" ? activeLocaleText("חקירה בתרחיש סוריה — נתוני הדגמה סינתטיים.", "Syria investigation — synthetic demonstration data.") : activeLocaleText("חקירת המודיעין הפעילה על צפון קוסובו וסרביה.", "Active intelligence investigation covering North Kosovo and Serbia.")}</p>
           <span class="ribbon-attention"><span class="material-symbols-rounded" aria-hidden="true">priority_high</span>${activeLocaleText("2 פריטים דורשים תשומת לב", "2 items need attention")}</span>
         </div>
         ${welcomeParticipantsHtml()}
@@ -3334,6 +3334,21 @@ function cellularCallHtml(item) {
 
 function viewerMediaHtml(item) {
   if (isCellularCallRecord(item)) return "";
+  let series = item.image_series || [];
+  if (typeof series === "string") {
+    try { series = JSON.parse(series); } catch { series = []; }
+  }
+  if (!Array.isArray(series)) series = [];
+  const synthetic = item.synthetic_media === true || item.synthetic_media === "true";
+  const disclaimer = synthetic ? `<p class="object-viewer-media-context">${escapeHtml(activeLocaleText("מדיה סינתטית להדגמה בלבד — אינה תיעוד אמיתי.", "SYNTHETIC DEMO — not authentic footage or satellite imagery."))}</p>` : "";
+  const images = series.map(capture => {
+    const url = safeMediaUrl(capture?.image_url);
+    if (!url) return "";
+    const pair = [{url, timestamp: capture.timestamp_utc, location: capture.location_id}];
+    const captures = pair.map(entry => `<div><div class="object-viewer-media"><img loading="lazy" src="${escapeHtml(entry.url)}" alt="${escapeHtml(activeLocaleText("תמונת לוויין מדומה", "Simulated satellite capture"))}"></div><small>${escapeHtml(entry.location || "")} · <time>${escapeHtml(entry.timestamp || "")}</time></small></div>`).join("");
+    return `<figure><figcaption><strong>${escapeHtml(capture.pair_id || "")}</strong><p>${escapeHtml(capture.description || "")}</p></figcaption><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px">${captures}</div>${capture.paired_record_id ? `<small>${escapeHtml(activeLocaleText("רשומה תואמת", "Paired record"))}: ${escapeHtml(capture.paired_record_id)}</small>` : ""}</figure>`;
+  }).join("");
+  if (images) return `<section class="object-viewer-source-media"><h3>${escapeHtml(activeLocaleText("תמונות לוויין לאורך זמן", "Satellite captures over time"))}</h3>${disclaimer}${images}</section>`;
   const media = viewerMedia(item);
   const mediaElement = media?.type === "video"
     ? `<video controls preload="metadata" src="${escapeHtml(media.url)}"></video>`
@@ -3342,7 +3357,7 @@ function viewerMediaHtml(item) {
       : media?.type === "image"
         ? `<img src="${escapeHtml(media.url)}" alt="">`
         : "";
-  if (!isUavVideoRecord(item)) return mediaElement ? `<div class="object-viewer-media">${mediaElement}</div>` : "";
+  if (!isUavVideoRecord(item)) return mediaElement ? `${disclaimer}<div class="object-viewer-media">${mediaElement}</div>` : "";
 
   const mission = item.mission_id || activeLocaleText("משימה לא מזוהה", "Unidentified mission");
   const segment = item.video_segment_id || activeLocaleText("מקטע לא מזוהה", "Unidentified segment");
@@ -3415,7 +3430,7 @@ function startSimulatedUavStream(item) {
 }
 
 function viewerFields(item, kind) {
-  const hidden = new Set(["event_summary", "canonical_name", "media", "video_url", "audio_url", "image_url", "raw_data_references", "call_started_at_utc", "call_duration_seconds", "side_a_imei", "side_a_number", "side_a_location_id", "side_a_location_name", "side_b_imei", "side_b_number", "side_b_location_id", "side_b_location_name", "call_transcript", "call_transcript_en", "synthetic_media"]);
+  const hidden = new Set(["event_summary", "canonical_name", "media", "image_series", "video_url", "audio_url", "image_url", "raw_data_references", "call_started_at_utc", "call_duration_seconds", "side_a_imei", "side_a_number", "side_a_location_id", "side_a_location_name", "side_b_imei", "side_b_number", "side_b_location_id", "side_b_location_name", "call_transcript", "call_transcript_en", "synthetic_media"]);
   const preferred = kind === "record"
     ? ["timestamp_utc", "source_type", "collection_family", "source_reliability_label", "certainty_level", "entity_name", "location_name", "call_id", "observation_id", "mission_id", "video_segment_id"]
     : kind === "evidence"

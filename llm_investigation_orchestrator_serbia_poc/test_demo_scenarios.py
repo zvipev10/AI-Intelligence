@@ -65,7 +65,7 @@ class Profiles(unittest.TestCase):
         with patch.dict(os.environ, {"INTELLIGENCE_POC_SCENARIO": "syria"}):
             syria = DemoRuntime(ROOT)
         self.assertNotEqual(kosovo.state, syria.state)
-        self.assertEqual(kosovo.profile["sources"], syria.profile["sources"])
+        self.assertEqual(kosovo.profile["sources"]["en"], syria.profile["sources"]["en"][:-2])
         self.assertNotEqual(kosovo.generation, syria.generation)
 
     def test_invalid_selection_never_falls_back(self):
@@ -74,7 +74,7 @@ class Profiles(unittest.TestCase):
                 load_profile(ROOT, scenario)
 
     def test_syria_mcp_has_no_kosovo_records(self):
-        result = subprocess.run([sys.executable, "-c", "import mcp_server.server as s; assert not s.EVENTS; assert not s.LOCATIONS; assert s.semantic_search_events({'query':'Kosovo'})['count']==0"], cwd=ROOT, env={**os.environ, "INTELLIGENCE_POC_SCENARIO": "syria"}, capture_output=True, timeout=30)
+        result = subprocess.run([sys.executable, "-c", "import mcp_server.server as s; assert len(s.EVENTS)==4; assert len(s.LOCATIONS)==2; assert all(e['entity_id']=='ENT-SYR-CONVOY' for e in s.EVENTS)"], cwd=ROOT, env={**os.environ, "INTELLIGENCE_POC_SCENARIO": "syria"}, capture_output=True, timeout=30)
         self.assertEqual(result.returncode, 0, result.stderr.decode())
 
 
@@ -133,15 +133,15 @@ class SyriaHTTP(unittest.TestCase):
     def tearDownClass(cls):
         cls.process.terminate(); cls.process.wait(timeout=10); cls.directory.cleanup()
 
-    def test_empty_layer_catalog_and_map(self):
+    def test_syria_layer_catalog_and_map(self):
         with urlopen(self.url + "/api/status") as response: status = json.load(response)
         self.assertEqual(status["scenario_id"], "syria")
-        self.assertEqual(status["dataset_rows"], 0)
-        self.assertEqual(status["demo_profile"]["map"]["center"], [38.5, 35.0])
+        self.assertEqual(status["dataset_rows"], 4)
+        self.assertEqual(status["demo_profile"]["map"]["center"], [38.5, 35.0225])
         for locale in ["en", "he"]:
             with urlopen(self.url + "/api/layers?locale=" + locale) as response: layers = json.load(response)["layers"]
-            self.assertEqual(len(layers), 16)
-            self.assertTrue(all(layer["count"] == 0 for layer in layers))
+            self.assertEqual(len(layers), 18)
+            self.assertEqual({layer["id"]: layer["count"] for layer in layers if layer["id"] in {"events:CCTV", "events:Satellite"}}, {"events:CCTV": 2, "events:Satellite": 2})
         with urlopen(self.url + "/api/investigations") as response: self.assertEqual(json.load(response)["investigations"], [])
 
     def test_stale_write_and_read_rejected(self):

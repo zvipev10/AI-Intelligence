@@ -7,7 +7,7 @@ One application URL serves one active scenario. Shared application code and agen
 | Scenario | Dataset | Initial content |
 |---|---|---|
 | `kosovo` | `v2.1` | Existing 14,833 events and preserved application/agent state |
-| `syria` | `empty-v1` | Same 16 layer definitions, zero dataset records, countrywide Syria map |
+| `syria` | `convoy-v2` | Four synthetic CCTV/Satellite records, three paired satellite visits, two sites, one convoy; 18 layer definitions |
 
 Syria has no synthetic operational facts, locations, entities, targets or evidence. Kosovo example investigations and prompts are hidden there. Add real demo content as a new dataset/profile version rather than overwriting the published empty package.
 
@@ -75,3 +75,15 @@ python build_demo_index.py kosovo --output /trusted/build/kosovo-index --engine 
 The deployed MCP uses Python without NumPy, so use the `python` engine. Install both generated `semantic_event_index_hybrid_embedding.pkl` and `.json` under `/opt/demo-runtime/state/kosovo/v2.1/semantic_index/` before activation. Verify the transferred SHA-256 against the build output. These are private derived release artifacts, not Git source. Only accept trusted caches: pickle files can execute code. The operator verifies the cache hash and raw dataset signatures before stopping services. Dataset/index-format/engine changes require a rebuilt cache and a real semantic-search smoke check. Build-time Python must support the runtime's pickle format.
 
 Cold index construction during qualification timed out and caused heavy swapping. The offline cache avoids that construction cost; it does not eliminate the VM's overall RAM limit.
+
+## Syria convoy dataset update
+
+Syria profile version 2 selects immutable `convoy-v1`. Two fictional sites at (35.000, 38.500) and (35.045, 38.500) are about 5.004 km apart. Each site has three CCTV records (five-second H.264 clips) and three Satellite records (three timestamped images each), all linked to `ENT-SYR-CONVOY`. Every asset is visibly synthetic. `build_syria_convoy_demo.py` is an offline fixture generator requiring Pillow/imageio-ffmpeg; these dependencies are not needed on the VM.
+
+The initial `empty-v1` state remains preserved. The upgrade copied only Syria state while UI/dashboard/gateway were stopped, changed the new state metadata to convoy-v1, installed its prebuilt index, and verified release/profile/MCP readiness. Backup: `/opt/demo-runtime/backups/syria-convoy-dd6b362`. Reverting a dataset upgrade requires restoring the matching profile/source manifest as well as selecting the retained state; merely editing active.env is insufficient. Browser storage is version-scoped, so empty-v1 browser state remains in its old namespace.
+
+### Paired visits revision (convoy-v2)
+
+Profile 3 consolidates both sources to one record per location: two CCTV plus two Satellite records. Satellite records contain three repeat visits on September 20, 21 and 22, 2026. For each visit the convoy appears at Site 1 at 08:00 UTC and Site 2 at 08:15 UTC, consistent with northward movement over 5 km. Shared visit IDs and reciprocal record/image/timestamp fields connect each pair. Each record viewer shows only its own site's three captures. Shared visit IDs and counterpart references correlate visits across records without displaying the other site's images. The two CCTV clips correspond to September 22. Return journeys and travel between captures are not shown; all observations remain synthetic.
+
+The stopped-state upgrade preserves convoy-v1. Runtime release `0ba309bee374f6fea8b76c2f71edc7c977c42314`; source backup `/opt/demo-runtime/backups/syria-convoy-v2-0ba309b`. The current generator emits convoy-v2. Existing v1 media/data are retained as immutable historical artifacts, not active catalog records.
