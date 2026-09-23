@@ -2,6 +2,8 @@
 
 The basemap selector is compact, and Satellite mode now composes three existing map resources: Esri raster imagery, CARTO vector transportation/boundary references, and CARTO labels. Street mode restores the native CARTO presentation. No dependency, API, dataset, or analytical-layer change was introduced.
 
+Satellite is the default initial basemap. Street remains selectable and is still the automatic fallback when the imagery source fails.
+
 ## Deployment
 
 - Deployed to `/opt/serbia-poc-ui` on `151.145.93.180` on 2026-09-23.

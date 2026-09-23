@@ -3021,7 +3021,7 @@ function initMap() {
         ["case", ["!=", ["get", "name_en"], ""], ["get", "name_en"], null],
         ["get", "name:en"], ["get", "name:latin"], ["get", "name"]]);
     }
-    setMapBasemap(state.basemapMode || "street");
+    setMapBasemap(state.basemapMode || "satellite");
   });
   document.querySelectorAll("[data-basemap]").forEach(button => {
     button.addEventListener("click", () => setMapBasemap(button.dataset.basemap));

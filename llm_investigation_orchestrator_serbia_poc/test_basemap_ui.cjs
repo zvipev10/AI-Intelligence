@@ -16,6 +16,7 @@ for(const name of ['satelliteReferenceLayer','setMapBasemap','initMap']){
 }
 context.initMap();events['style.load']();
 assert.equal(options.center[0],38.5);assert.match(sources['satellite-imagery'].tiles[0],/tile\/\{z\}\/\{y\}\/\{x\}/);assert.match(sources['satellite-imagery'].attribution,/Esri/);
+assert.equal(context.state.basemapMode,'satellite');assert.equal(buttons[1].attrs['aria-pressed'],'true');assert(layouts.some(([id,k,v])=>id==='satellite-imagery'&&v==='visible'));
 assert(layers.findIndex(l=>l.id==='satellite-imagery')<layers.findIndex(l=>l.id==='place_city'));
 assert(layouts.some(([id,k,v])=>id==='place_city'&&JSON.stringify(v).includes('name_en')));
 assert(buttons.every(b=>!b.disabled));
