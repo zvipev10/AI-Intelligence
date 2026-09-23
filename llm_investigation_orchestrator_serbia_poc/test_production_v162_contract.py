@@ -21,7 +21,7 @@ class CanonicalSourceContractTests(unittest.TestCase):
         index = (ROOT / "index.html").read_text(encoding="utf-8")
         app = (ROOT / "app.js").read_text(encoding="utf-8")
         self.assertIn('demo_bootstrap.js?v=208', index)
-        self.assertIn('app.js?v=207', (ROOT / 'demo_bootstrap.js').read_text(encoding='utf-8'))
+        self.assertIn('app.js?v=208', (ROOT / 'demo_bootstrap.js').read_text(encoding='utf-8'))
         self.assertIn('styles.css?v=154', index)
         self.assertIn('id="languageToggle"', index)
         self.assertIn('id="welcomePage"', index)
