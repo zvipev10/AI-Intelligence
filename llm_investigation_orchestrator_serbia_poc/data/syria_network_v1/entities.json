@@ -1,0 +1,44 @@
+[
+  {
+    "entity_id": "ENT-SYR-CONVOY",
+    "canonical_name": "Convoy",
+    "aliases": [
+      "convoy",
+      "שיירה"
+    ],
+    "entity_type": "vehicle convoy",
+    "description": "Synthetic convoy entity shared by all four demonstration records."
+  },
+  {
+    "entity_id": "ENT-SYR-AD-001",
+    "canonical_name": "Demo advertising device 1",
+    "entity_type": "advertising device",
+    "aliases": [
+      "00000000-0000-4000-8000-000000000001"
+    ]
+  },
+  {
+    "entity_id": "ENT-SYR-AD-002",
+    "canonical_name": "Demo advertising device 2",
+    "entity_type": "advertising device",
+    "aliases": [
+      "00000000-0000-4000-8000-000000000002"
+    ]
+  },
+  {
+    "entity_id": "ENT-SYR-AD-003",
+    "canonical_name": "Demo advertising device 3",
+    "entity_type": "advertising device",
+    "aliases": [
+      "00000000-0000-4000-8000-000000000003"
+    ]
+  },
+  {
+    "entity_id": "ENT-SYR-AD-004",
+    "canonical_name": "Demo advertising device 4",
+    "entity_type": "advertising device",
+    "aliases": [
+      "00000000-0000-4000-8000-000000000004"
+    ]
+  }
+]

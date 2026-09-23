@@ -484,7 +484,7 @@ def event_search_haystack(event: dict[str, Any]) -> str:
         event.get("event_summary"), event_entity_name(event), event.get("location_name"), event.get("source_type"),
         event.get("call_id"), event.get("side_a_imei"), event.get("side_a_number"),
         event.get("side_b_imei"), event.get("side_b_number"), event.get("call_transcript"),
-        event.get("call_transcript_en"), *endpoint_names,
+        event.get("call_transcript_en"), event.get("ip_address"), event.get("imei"), event.get("advertising_id"), *endpoint_names,
     ]
     return normalize_text(" ".join(str(value) for value in values if value))
 
@@ -531,6 +531,7 @@ def public_event(event: dict[str, Any]) -> dict[str, Any]:
         "synthetic_media": event.get("synthetic_media", ""),
         "video_url": event.get("video_url", ""),
         "image_series": event.get("image_series", ""),
+        **{key: event.get(key, "") for key in ("advertising_id", "ip_address", "imei", "session_start_utc", "session_end_utc", "source_port", "protocol", "bytes_up", "bytes_down", "location_accuracy_m")},
     }
 
 
@@ -3827,7 +3828,7 @@ TOOLS = [
     {
         "name": "search_events",
         "title": "Search intelligence events",
-        "description": "Search the synthetic event dataset using deterministic filters. Use location IDs from resolve_location and ISO-8601 UTC timestamps. Location filters match every canonical location carried by a record; for cellular calls this includes location_id and both side endpoint location IDs. Source type filters accept canonical Hebrew or supported English display labels. Returns explicit event IDs and evidence rows. Supports explicit sorting by timestamp, relevance score, or event_id. Coverage is mandatory by default: broad searches are normalized to the maximum bounded coverage limit of 2000 even if a smaller limit is supplied. If truncated=true, do not treat returned rows as exhaustive; narrow filters or report the coverage gap.",
+        "description": "Search the synthetic event dataset using deterministic filters. Keywords also search IP addresses, IMEIs and advertising IDs. For IPDR correlation, retrieve by IP and inspect session_start_utc/session_end_utc against the observation time; start_time/end_time filter record timestamps, not session overlap. Use location IDs from resolve_location and ISO-8601 UTC timestamps. Location filters match every canonical location carried by a record; for cellular calls this includes location_id and both side endpoint location IDs. Source type filters accept canonical Hebrew or supported English display labels. Returns explicit event IDs and evidence rows. Supports explicit sorting by timestamp, relevance score, or event_id. Coverage is mandatory by default: broad searches are normalized to the maximum bounded coverage limit of 2000 even if a smaller limit is supplied. If truncated=true, do not treat returned rows as exhaustive; narrow filters or report the coverage gap.",
         "inputSchema": with_step_bridge({
             "type": "object",
             "properties": {

@@ -1,0 +1,49 @@
+{
+  "LOC-SYR-001": {
+    "name": "Demo Site 1",
+    "latitude": 35.0,
+    "longitude": 38.5,
+    "country": "Syria",
+    "region": "Central Syria (synthetic demo)",
+    "type": "demonstration site",
+    "precision": "synthetic",
+    "locality": "Fictional Site 1"
+  },
+  "LOC-SYR-002": {
+    "name": "Demo Site 2",
+    "latitude": 35.045,
+    "longitude": 38.5,
+    "country": "Syria",
+    "region": "Central Syria (synthetic demo)",
+    "type": "demonstration site",
+    "precision": "synthetic",
+    "locality": "Fictional Site 2"
+  },
+  "LOC-SYR-003": {
+    "name": "Demo Site 1 - North point",
+    "latitude": 35.00449660802959,
+    "longitude": 38.5,
+    "country": "Syria",
+    "region": "Central Syria (synthetic demo)",
+    "type": "demonstration observation point",
+    "precision": "synthetic"
+  },
+  "LOC-SYR-004": {
+    "name": "Demo Site 1 - East point",
+    "latitude": 35.0,
+    "longitude": 38.50548934481815,
+    "country": "Syria",
+    "region": "Central Syria (synthetic demo)",
+    "type": "demonstration observation point",
+    "precision": "synthetic"
+  },
+  "LOC-SYR-005": {
+    "name": "Demo Site 1 - West point",
+    "latitude": 35.0,
+    "longitude": 38.49451065518185,
+    "country": "Syria",
+    "region": "Central Syria (synthetic demo)",
+    "type": "demonstration observation point",
+    "precision": "synthetic"
+  }
+}
