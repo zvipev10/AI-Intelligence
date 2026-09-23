@@ -409,7 +409,10 @@ const TALIA_WELCOME = {
   he: "אני טליה, קצינת הערכת האויב. אוכל לבנות ולעדכן הערכות מבוססות ראיות ולהציג את הגרפיקה האנליטית שלהן.",
   en: "I’m Talia, the enemy-assessment officer. I can create and revise evidence-backed assessments and present their analytic overlays."
 };
-const DEFAULT_SUGGESTIONS = {
+const DEFAULT_SUGGESTIONS = demoRuntime?.demo_profile?.empty_dataset ? {
+  he: ["הצג את שכבת המיקומים", "אילו שכבות זמינות בתרחיש סוריה?"],
+  en: ["Show the location layer", "Which layers are available in the Syria scenario?"]
+} : {
   he: [
     "האם הטענה על חציית גבול מגובה במקור אמין?",
     "איפה יש ריכוזי דיווחים מרכזיים בצפון קוסובו?"
@@ -2216,7 +2219,7 @@ function hasCatalogLayerActions(result = {}) {
     action?.action === "open" && action.catalog_layer_id);
 }
 
-const SIMILAR_INVESTIGATIONS = [
+const SIMILAR_INVESTIGATIONS = demoRuntime?.demo_profile?.empty_dataset ? [] : [
   {
     id: "regional-infrastructure",
     titleHe: "תשתיות קריטיות בצפון קוסובו",
@@ -2280,7 +2283,7 @@ function ownedInvestigationRibbonHtml(investigation, index) {
             <h3 class="ribbon-title">${escapeHtml(investigation.name)}</h3>
             <span class="ribbon-status">${activeLocaleText("פעילה", "Active")}</span>
           </div>
-          <p class="ribbon-summary">${activeLocaleText("חקירת המודיעין הפעילה על צפון קוסובו וסרביה.", "Active intelligence investigation covering North Kosovo and Serbia.")}</p>
+          <p class="ribbon-summary">${demoRuntime?.scenario_id === "syria" ? activeLocaleText("חקירה בתרחיש סוריה. המאגר ריק בשלב זה.", "Syria investigation. The dataset is currently empty.") : activeLocaleText("חקירת המודיעין הפעילה על צפון קוסובו וסרביה.", "Active intelligence investigation covering North Kosovo and Serbia.")}</p>
           <span class="ribbon-attention"><span class="material-symbols-rounded" aria-hidden="true">priority_high</span>${activeLocaleText("2 פריטים דורשים תשומת לב", "2 items need attention")}</span>
         </div>
         ${welcomeParticipantsHtml()}

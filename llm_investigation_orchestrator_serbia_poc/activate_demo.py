@@ -82,15 +82,26 @@ class Activator:
         atomic_json(self.control / "selected.json", identity)
         # Gateway profile MCP env must carry the same generation, not its predecessor.
         import yaml
+        root_config_path = Path("/home/ubuntu/.hermes/config.yaml")
+        root_config = yaml.safe_load(root_config_path.read_text())
+        root_servers = root_config.setdefault("mcp_servers", {})
         for role in ["general", "moshe", "talia"]:
             config = self.root / "hermes-homes" / scenario / role / "config.yaml"
             content = yaml.safe_load(config.read_text())
-            for server in content.get("mcp_servers", {}).values():
+            for name, server in content.get("mcp_servers", {}).items():
                 server.setdefault("env", {}).update(environment)
+                # Installed Hermes registers named-profile toolsets from the
+                # gateway root registry. Every definition points at the active
+                # scenario; keeping only profile copies yields no callable tools.
+                root_servers[name] = server
             temp = config.with_suffix(".next")
             temp.write_text(yaml.safe_dump(content, allow_unicode=True, sort_keys=False))
             temp.chmod(0o600)
             os.replace(temp, config)
+        temporary_root_config = root_config_path.with_suffix(".demo-next")
+        temporary_root_config.write_text(yaml.safe_dump(root_config, allow_unicode=True, sort_keys=False))
+        temporary_root_config.chmod(0o600)
+        os.replace(temporary_root_config, root_config_path)
 
     def health(self, identity, timeout=90):
         deadline = time.monotonic() + timeout

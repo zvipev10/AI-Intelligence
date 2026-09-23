@@ -13,6 +13,7 @@ import uuid
 from pathlib import Path
 
 import yaml
+from dotenv import set_key
 
 from activate_demo import Activator, atomic_json
 from demo_runtime import load_profile
@@ -39,6 +40,7 @@ def copy_checked(source, target):
         shutil.copy2(source, target)
         files = [source]
     report = []
+    api_key = json.loads((app / ".hermes-api.json").read_text())["api_key"]
     for path in files:
         destination = target / path.relative_to(source) if source.is_dir() else target
         digest = hashlib.sha256(path.read_bytes()).hexdigest()
@@ -96,8 +98,17 @@ def main():
                 "INTELLIGENCE_POC_AUDIT": str(state / "audit" / (role + ".jsonl")),
             }
             config["mcp_servers"] = {selected: server}
+            config.setdefault("platform_toolsets", {})["api_server"] = [selected]
             (target / "config.yaml").write_text(yaml.safe_dump(config, allow_unicode=True, sort_keys=False))
             (target / "config.yaml").chmod(0o600)
+            # Named profile authentication reads its .env, including General
+            # (the legacy root could instead read platforms.api_server.key).
+            set_key(str(target / ".env"), "API_SERVER_KEY", api_key)
+            environment_path = target / ".env"
+            prefixes = ("TELEGRAM_", "DISCORD_", "WHATSAPP_", "SLACK_", "SIGNAL_", "TEAMS_", "GOOGLE_CHAT_", "FEISHU_", "QQBOT_", "YUANBAO_", "HOMEASSISTANT_")
+            environment_path.write_text("\n".join(line for line in environment_path.read_text().splitlines() if not line.split("=", 1)[0].strip().startswith(prefixes)) + "\n")
+            set_key(str(environment_path), "HERMES_PARALLEL_TOOL_CALLS", "false")
+            (target / ".env").chmod(0o600)
             # Shared roles remain versioned; scenario grounding is supplied by UI instructions.
     config = yaml.safe_load((home / "config.yaml").read_text())
     config.setdefault("gateway", {})["multiplex_profiles"] = True
