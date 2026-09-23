@@ -1,0 +1,1221 @@
+{
+  "base_commit": "6bf53e9617c7fe32b9937dffe8cd70b6e260144b",
+  "files": [
+    {
+      "original": "README.md",
+      "snapshot": ".ai/work/capabilities/documentation-hierarchy/archive/README.md.txt",
+      "sha256": "9328e310c3673d01e78831a2ee65761ddb5b9e59279041c927f04d622048d45c",
+      "bytes": 4005,
+      "headings": [
+        {
+          "line": 1,
+          "heading": "# AI Intelligence",
+          "destination": "archive/README.md.txt",
+          "current_guidance": [
+            "docs/product.md",
+            "docs/architecture.md",
+            "docs/operations.md"
+          ]
+        },
+        {
+          "line": 19,
+          "heading": "## Current deployment snapshot",
+          "destination": "archive/README.md.txt",
+          "current_guidance": [
+            "docs/product.md",
+            "docs/architecture.md",
+            "docs/operations.md"
+          ]
+        },
+        {
+          "line": 33,
+          "heading": "## Start here",
+          "destination": "archive/README.md.txt",
+          "current_guidance": [
+            "docs/product.md",
+            "docs/architecture.md",
+            "docs/operations.md"
+          ]
+        },
+        {
+          "line": 45,
+          "heading": "## Safety and data boundary",
+          "destination": "archive/README.md.txt",
+          "current_guidance": [
+            "docs/product.md",
+            "docs/architecture.md",
+            "docs/operations.md"
+          ]
+        }
+      ]
+    },
+    {
+      "original": "PROJECT_HANDOFF.md",
+      "snapshot": ".ai/work/capabilities/documentation-hierarchy/archive/PROJECT_HANDOFF.md.txt",
+      "sha256": "c3790c80a35b9f938434298d35ade6c92d2f2415ee6daa886c89a025ada50681",
+      "bytes": 69893,
+      "headings": [
+        {
+          "line": 1,
+          "heading": "# AI Intelligence Project Handoff",
+          "destination": "archive/PROJECT_HANDOFF.md.txt",
+          "current_guidance": [
+            "docs/product.md",
+            "docs/architecture.md",
+            "docs/operations.md"
+          ]
+        },
+        {
+          "line": 7,
+          "heading": "## One-Line Summary",
+          "destination": "archive/PROJECT_HANDOFF.md.txt",
+          "current_guidance": [
+            "docs/product.md",
+            "docs/architecture.md",
+            "docs/operations.md"
+          ]
+        },
+        {
+          "line": 11,
+          "heading": "## Repository And Current State",
+          "destination": "archive/PROJECT_HANDOFF.md.txt",
+          "current_guidance": [
+            "docs/product.md",
+            "docs/architecture.md",
+            "docs/operations.md"
+          ]
+        },
+        {
+          "line": 37,
+          "heading": "## Current scenario and feature handoff",
+          "destination": "archive/PROJECT_HANDOFF.md.txt",
+          "current_guidance": [
+            "docs/product.md",
+            "docs/architecture.md",
+            "docs/operations.md"
+          ]
+        },
+        {
+          "line": 52,
+          "heading": "## Latest Update: Satellite Reference Map And Damascus Camera",
+          "destination": "archive/PROJECT_HANDOFF.md.txt",
+          "current_guidance": [
+            "docs/product.md",
+            "docs/architecture.md",
+            "docs/operations.md"
+          ]
+        },
+        {
+          "line": 93,
+          "heading": "## Previous Update: Semantic Evidence Fusion And Talia Consumption",
+          "destination": "archive/PROJECT_HANDOFF.md.txt",
+          "current_guidance": [
+            "docs/product.md",
+            "docs/architecture.md",
+            "docs/operations.md"
+          ]
+        },
+        {
+          "line": 141,
+          "heading": "## Recent Capabilities Since The Previous Project Handoff",
+          "destination": "archive/PROJECT_HANDOFF.md.txt",
+          "current_guidance": [
+            "docs/product.md",
+            "docs/architecture.md",
+            "docs/operations.md"
+          ]
+        },
+        {
+          "line": 157,
+          "heading": "## Historical Update: English Localization Hardening In Isolated WIP",
+          "destination": "archive/PROJECT_HANDOFF.md.txt",
+          "current_guidance": [
+            "docs/product.md",
+            "docs/architecture.md",
+            "docs/operations.md"
+          ]
+        },
+        {
+          "line": 202,
+          "heading": "## Previous Update: Hebrew Restore Deployed, English Work Isolated",
+          "destination": "archive/PROJECT_HANDOFF.md.txt",
+          "current_guidance": [
+            "docs/product.md",
+            "docs/architecture.md",
+            "docs/operations.md"
+          ]
+        },
+        {
+          "line": 236,
+          "heading": "### Deployment packaging correction — 2026-08-06",
+          "destination": "archive/PROJECT_HANDOFF.md.txt",
+          "current_guidance": [
+            "docs/product.md",
+            "docs/architecture.md",
+            "docs/operations.md"
+          ]
+        },
+        {
+          "line": 268,
+          "heading": "## Latest Update: REC-V2-007215 Final Validation",
+          "destination": "archive/PROJECT_HANDOFF.md.txt",
+          "current_guidance": [
+            "docs/product.md",
+            "docs/architecture.md",
+            "docs/operations.md"
+          ]
+        },
+        {
+          "line": 270,
+          "heading": "### Playback foundation follow-up — 2026-07-28",
+          "destination": "archive/PROJECT_HANDOFF.md.txt",
+          "current_guidance": [
+            "docs/product.md",
+            "docs/architecture.md",
+            "docs/operations.md"
+          ]
+        },
+        {
+          "line": 302,
+          "heading": "## Previous Update: Moshe Agent And Integrated Main",
+          "destination": "archive/PROJECT_HANDOFF.md.txt",
+          "current_guidance": [
+            "docs/product.md",
+            "docs/architecture.md",
+            "docs/operations.md"
+          ]
+        },
+        {
+          "line": 330,
+          "heading": "## Latest Update: Investigation Memory Slices 3-5 Review Deploy",
+          "destination": "archive/PROJECT_HANDOFF.md.txt",
+          "current_guidance": [
+            "docs/product.md",
+            "docs/architecture.md",
+            "docs/operations.md"
+          ]
+        },
+        {
+          "line": 361,
+          "heading": "## Previous Update: Investigation Selector First Slice",
+          "destination": "archive/PROJECT_HANDOFF.md.txt",
+          "current_guidance": [
+            "docs/product.md",
+            "docs/architecture.md",
+            "docs/operations.md"
+          ]
+        },
+        {
+          "line": 392,
+          "heading": "## Previous Update: Prompt Composer + Results Table Follow-up",
+          "destination": "archive/PROJECT_HANDOFF.md.txt",
+          "current_guidance": [
+            "docs/product.md",
+            "docs/architecture.md",
+            "docs/operations.md"
+          ]
+        },
+        {
+          "line": 415,
+          "heading": "### Follow-up Fixes (2026-07-10)",
+          "destination": "archive/PROJECT_HANDOFF.md.txt",
+          "current_guidance": [
+            "docs/product.md",
+            "docs/architecture.md",
+            "docs/operations.md"
+          ]
+        },
+        {
+          "line": 424,
+          "heading": "### Previous Update: Step Injection (\"המשך מכאן\") Feature + Bug Fixes",
+          "destination": "archive/PROJECT_HANDOFF.md.txt",
+          "current_guidance": [
+            "docs/product.md",
+            "docs/architecture.md",
+            "docs/operations.md"
+          ]
+        },
+        {
+          "line": 428,
+          "heading": "### Bug Fixes (this session)",
+          "destination": "archive/PROJECT_HANDOFF.md.txt",
+          "current_guidance": [
+            "docs/product.md",
+            "docs/architecture.md",
+            "docs/operations.md"
+          ]
+        },
+        {
+          "line": 440,
+          "heading": "### Filter Panel Simplification",
+          "destination": "archive/PROJECT_HANDOFF.md.txt",
+          "current_guidance": [
+            "docs/product.md",
+            "docs/architecture.md",
+            "docs/operations.md"
+          ]
+        },
+        {
+          "line": 449,
+          "heading": "### Step Injection Feature (\"המשך מכאן\")",
+          "destination": "archive/PROJECT_HANDOFF.md.txt",
+          "current_guidance": [
+            "docs/product.md",
+            "docs/architecture.md",
+            "docs/operations.md"
+          ]
+        },
+        {
+          "line": 484,
+          "heading": "## Semantic Tool Integration Quality",
+          "destination": "archive/PROJECT_HANDOFF.md.txt",
+          "current_guidance": [
+            "docs/product.md",
+            "docs/architecture.md",
+            "docs/operations.md"
+          ]
+        },
+        {
+          "line": 541,
+          "heading": "## Active POC",
+          "destination": "archive/PROJECT_HANDOFF.md.txt",
+          "current_guidance": [
+            "docs/product.md",
+            "docs/architecture.md",
+            "docs/operations.md"
+          ]
+        },
+        {
+          "line": 555,
+          "heading": "## Location And Entity Layer Normalization",
+          "destination": "archive/PROJECT_HANDOFF.md.txt",
+          "current_guidance": [
+            "docs/product.md",
+            "docs/architecture.md",
+            "docs/operations.md"
+          ]
+        },
+        {
+          "line": 592,
+          "heading": "## Current VM Deployment",
+          "destination": "archive/PROJECT_HANDOFF.md.txt",
+          "current_guidance": [
+            "docs/product.md",
+            "docs/architecture.md",
+            "docs/operations.md"
+          ]
+        },
+        {
+          "line": 619,
+          "heading": "## Deployment Notes (historical)",
+          "destination": "archive/PROJECT_HANDOFF.md.txt",
+          "current_guidance": [
+            "docs/product.md",
+            "docs/architecture.md",
+            "docs/operations.md"
+          ]
+        },
+        {
+          "line": 643,
+          "heading": "## Saved Questions",
+          "destination": "archive/PROJECT_HANDOFF.md.txt",
+          "current_guidance": [
+            "docs/product.md",
+            "docs/architecture.md",
+            "docs/operations.md"
+          ]
+        },
+        {
+          "line": 676,
+          "heading": "## Recorded Demo Runs",
+          "destination": "archive/PROJECT_HANDOFF.md.txt",
+          "current_guidance": [
+            "docs/product.md",
+            "docs/architecture.md",
+            "docs/operations.md"
+          ]
+        },
+        {
+          "line": 775,
+          "heading": "## Current UI Architecture",
+          "destination": "archive/PROJECT_HANDOFF.md.txt",
+          "current_guidance": [
+            "docs/product.md",
+            "docs/architecture.md",
+            "docs/operations.md"
+          ]
+        },
+        {
+          "line": 852,
+          "heading": "## Data Normalization",
+          "destination": "archive/PROJECT_HANDOFF.md.txt",
+          "current_guidance": [
+            "docs/product.md",
+            "docs/architecture.md",
+            "docs/operations.md"
+          ]
+        },
+        {
+          "line": 915,
+          "heading": "## Model Prompt And MCP Schema Updates",
+          "destination": "archive/PROJECT_HANDOFF.md.txt",
+          "current_guidance": [
+            "docs/product.md",
+            "docs/architecture.md",
+            "docs/operations.md"
+          ]
+        },
+        {
+          "line": 944,
+          "heading": "## MCP Tools",
+          "destination": "archive/PROJECT_HANDOFF.md.txt",
+          "current_guidance": [
+            "docs/product.md",
+            "docs/architecture.md",
+            "docs/operations.md"
+          ]
+        },
+        {
+          "line": 1002,
+          "heading": "## Entities",
+          "destination": "archive/PROJECT_HANDOFF.md.txt",
+          "current_guidance": [
+            "docs/product.md",
+            "docs/architecture.md",
+            "docs/operations.md"
+          ]
+        },
+        {
+          "line": 1022,
+          "heading": "## Data Policy",
+          "destination": "archive/PROJECT_HANDOFF.md.txt",
+          "current_guidance": [
+            "docs/product.md",
+            "docs/architecture.md",
+            "docs/operations.md"
+          ]
+        },
+        {
+          "line": 1035,
+          "heading": "## Current Result Presentation Behavior",
+          "destination": "archive/PROJECT_HANDOFF.md.txt",
+          "current_guidance": [
+            "docs/product.md",
+            "docs/architecture.md",
+            "docs/operations.md"
+          ]
+        },
+        {
+          "line": 1051,
+          "heading": "## Phase 2: Query Builder — Editable Query Form",
+          "destination": "archive/PROJECT_HANDOFF.md.txt",
+          "current_guidance": [
+            "docs/product.md",
+            "docs/architecture.md",
+            "docs/operations.md"
+          ]
+        },
+        {
+          "line": 1088,
+          "heading": "## Near-Term RAG / Real Semantic Search Plan",
+          "destination": "archive/PROJECT_HANDOFF.md.txt",
+          "current_guidance": [
+            "docs/product.md",
+            "docs/architecture.md",
+            "docs/operations.md"
+          ]
+        },
+        {
+          "line": 1209,
+          "heading": "## RAG Quality Test Catalog",
+          "destination": "archive/PROJECT_HANDOFF.md.txt",
+          "current_guidance": [
+            "docs/product.md",
+            "docs/architecture.md",
+            "docs/operations.md"
+          ]
+        },
+        {
+          "line": 1253,
+          "heading": "## Validation Commands",
+          "destination": "archive/PROJECT_HANDOFF.md.txt",
+          "current_guidance": [
+            "docs/product.md",
+            "docs/architecture.md",
+            "docs/operations.md"
+          ]
+        },
+        {
+          "line": 1284,
+          "heading": "## Known Risks / Watch Items",
+          "destination": "archive/PROJECT_HANDOFF.md.txt",
+          "current_guidance": [
+            "docs/product.md",
+            "docs/architecture.md",
+            "docs/operations.md"
+          ]
+        },
+        {
+          "line": 1311,
+          "heading": "## Suggested First Message To A New Assistant",
+          "destination": "archive/PROJECT_HANDOFF.md.txt",
+          "current_guidance": [
+            "docs/product.md",
+            "docs/architecture.md",
+            "docs/operations.md"
+          ]
+        },
+        {
+          "line": 1325,
+          "heading": "## File Review Order",
+          "destination": "archive/PROJECT_HANDOFF.md.txt",
+          "current_guidance": [
+            "docs/product.md",
+            "docs/architecture.md",
+            "docs/operations.md"
+          ]
+        },
+        {
+          "line": 1354,
+          "heading": "## Final Sanity Checklist Before Future Handoff",
+          "destination": "archive/PROJECT_HANDOFF.md.txt",
+          "current_guidance": [
+            "docs/product.md",
+            "docs/architecture.md",
+            "docs/operations.md"
+          ]
+        }
+      ]
+    },
+    {
+      "original": "docs/product-context.md",
+      "snapshot": ".ai/work/capabilities/documentation-hierarchy/archive/docs/product-context.md.txt",
+      "sha256": "c08cd62ad94d214622a2dbcee76dc963b59381b5eaa8aabf299f8136a3e2c614",
+      "bytes": 6101,
+      "headings": [
+        {
+          "line": 1,
+          "heading": "# Product context",
+          "destination": "archive/docs/product-context.md.txt",
+          "current_guidance": [
+            "docs/product.md",
+            "docs/demo-scenarios.md"
+          ]
+        },
+        {
+          "line": 5,
+          "heading": "## One application, two demo packages",
+          "destination": "archive/docs/product-context.md.txt",
+          "current_guidance": [
+            "docs/product.md",
+            "docs/demo-scenarios.md"
+          ]
+        },
+        {
+          "line": 16,
+          "heading": "## Syria demonstration data",
+          "destination": "archive/docs/product-context.md.txt",
+          "current_guidance": [
+            "docs/product.md",
+            "docs/demo-scenarios.md"
+          ]
+        },
+        {
+          "line": 27,
+          "heading": "## Results and record exploration",
+          "destination": "archive/docs/product-context.md.txt",
+          "current_guidance": [
+            "docs/product.md",
+            "docs/demo-scenarios.md"
+          ]
+        },
+        {
+          "line": 39,
+          "heading": "## Geographic context and media",
+          "destination": "archive/docs/product-context.md.txt",
+          "current_guidance": [
+            "docs/product.md",
+            "docs/demo-scenarios.md"
+          ]
+        },
+        {
+          "line": 47,
+          "heading": "## Separation and operating constraints",
+          "destination": "archive/docs/product-context.md.txt",
+          "current_guidance": [
+            "docs/product.md",
+            "docs/demo-scenarios.md"
+          ]
+        }
+      ]
+    },
+    {
+      "original": "docs/architecture.md",
+      "snapshot": ".ai/work/capabilities/documentation-hierarchy/archive/docs/architecture.md.txt",
+      "sha256": "be25f85ef3939e0ff952e9e1ac1b66268c7683e3879db7486f1fd0865f2f0538",
+      "bytes": 13541,
+      "headings": [
+        {
+          "line": 1,
+          "heading": "# Architecture Notes",
+          "destination": "docs/architecture.md"
+        },
+        {
+          "line": 5,
+          "heading": "## Shared runtime and scenario isolation",
+          "destination": "docs/architecture.md"
+        },
+        {
+          "line": 29,
+          "heading": "## Result presentation and raw source fields",
+          "destination": "docs/architecture.md"
+        },
+        {
+          "line": 37,
+          "heading": "## Basemap composition",
+          "destination": "docs/architecture.md"
+        },
+        {
+          "line": 50,
+          "heading": "## Locale-isolated runtime state",
+          "destination": "docs/architecture.md"
+        },
+        {
+          "line": 66,
+          "heading": "## Unified staged playback",
+          "destination": "docs/architecture.md"
+        }
+      ]
+    },
+    {
+      "original": "docs/decisions.md",
+      "snapshot": ".ai/work/capabilities/documentation-hierarchy/archive/docs/decisions.md.txt",
+      "sha256": "920b181d5344049207f26aad211568bb23b0b0e89ed1a5ade557248a315a74e1",
+      "bytes": 26143,
+      "headings": [
+        {
+          "line": 1,
+          "heading": "# Decision Log",
+          "destination": "docs/decisions.md"
+        },
+        {
+          "line": 5,
+          "heading": "## Format",
+          "destination": "docs/decisions.md"
+        },
+        {
+          "line": 7,
+          "heading": "### YYYY-MM-DD — Decision title",
+          "destination": "docs/decisions.md"
+        },
+        {
+          "line": 27,
+          "heading": "### 2026-07-18 - Preserve V2 and add evaluator-grounded V2.1 fusion evidence",
+          "destination": "docs/decisions.md"
+        },
+        {
+          "line": 47,
+          "heading": "### 2026-07-28 — Define playback scenarios as scoped timeframe stages",
+          "destination": "docs/decisions.md"
+        },
+        {
+          "line": 81,
+          "heading": "### 2026-08-08 — Isolate mutable target persistence by locale",
+          "destination": "docs/decisions.md"
+        },
+        {
+          "line": 103,
+          "heading": "### 2026-08-08 — Select one complete MCP runtime per locale",
+          "destination": "docs/decisions.md"
+        },
+        {
+          "line": 125,
+          "heading": "### 2026-08-08 — Isolate workstream persistence and flows by locale",
+          "destination": "docs/decisions.md"
+        },
+        {
+          "line": 147,
+          "heading": "### 2026-08-08 — Use one staged playback flow with cumulative visible timeframe",
+          "destination": "docs/decisions.md"
+        },
+        {
+          "line": 169,
+          "heading": "### 2026-08-09 — Create workstreams from verified evidence without redundant metadata questions",
+          "destination": "docs/decisions.md"
+        },
+        {
+          "line": 200,
+          "heading": "### 2026-08-11 — Keep staged playback global across investigations",
+          "destination": "docs/decisions.md"
+        },
+        {
+          "line": 230,
+          "heading": "### 2026-08-12 — Track the deployed production variant as an immutable source snapshot",
+          "destination": "docs/decisions.md"
+        },
+        {
+          "line": 269,
+          "heading": "### 2026-08-12 — Keep investigation-memory updates independent from workstreams",
+          "destination": "docs/decisions.md"
+        },
+        {
+          "line": 298,
+          "heading": "### 2026-09-10 — Separate evidence records from MIL-STD map objects",
+          "destination": "docs/decisions.md"
+        },
+        {
+          "line": 330,
+          "heading": "### 2026-09-11 — Apply curated organization symbology across raw event layers",
+          "destination": "docs/decisions.md"
+        },
+        {
+          "line": 364,
+          "heading": "### 2026-09-11 — Separate catalog opening from search and saved layers",
+          "destination": "docs/decisions.md"
+        },
+        {
+          "line": 390,
+          "heading": "### 2026-09-11 — Simulated UAV media is mission-level and explicitly labelled",
+          "destination": "docs/decisions.md"
+        },
+        {
+          "line": 410,
+          "heading": "### 2026-09-23 — Compose satellite imagery with vector references",
+          "destination": "docs/decisions.md"
+        },
+        {
+          "line": 433,
+          "heading": "### 2026-09-23 — Share code, isolate demo state, run one scenario",
+          "destination": "docs/decisions.md"
+        },
+        {
+          "line": 453,
+          "heading": "### 2026-09-23 — Keep Syria media and identifier correlation explicit",
+          "destination": "docs/decisions.md"
+        },
+        {
+          "line": 473,
+          "heading": "### 2026-09-23 — Make Table an agent-selectable results view",
+          "destination": "docs/decisions.md"
+        }
+      ]
+    },
+    {
+      "original": "llm_investigation_orchestrator_serbia_poc/README.md",
+      "snapshot": ".ai/work/capabilities/documentation-hierarchy/archive/llm_investigation_orchestrator_serbia_poc/README.md.txt",
+      "sha256": "c2717271f9bfc76ad1eb6a25bc0186fd5fab7f58991e42e47e81bef0f72b638d",
+      "bytes": 17841,
+      "headings": [
+        {
+          "line": 1,
+          "heading": "# Shared Intelligence Investigation Application",
+          "destination": "archive/llm_investigation_orchestrator_serbia_poc/README.md.txt",
+          "current_guidance": [
+            "docs/product.md",
+            "docs/architecture.md",
+            "docs/operations.md"
+          ]
+        },
+        {
+          "line": 7,
+          "heading": "## Local Run",
+          "destination": "archive/llm_investigation_orchestrator_serbia_poc/README.md.txt",
+          "current_guidance": [
+            "docs/product.md",
+            "docs/architecture.md",
+            "docs/operations.md"
+          ]
+        },
+        {
+          "line": 18,
+          "heading": "## Hermes API Configuration",
+          "destination": "archive/llm_investigation_orchestrator_serbia_poc/README.md.txt",
+          "current_guidance": [
+            "docs/product.md",
+            "docs/architecture.md",
+            "docs/operations.md"
+          ]
+        },
+        {
+          "line": 51,
+          "heading": "## Original data projection (historical)",
+          "destination": "archive/llm_investigation_orchestrator_serbia_poc/README.md.txt",
+          "current_guidance": [
+            "docs/product.md",
+            "docs/architecture.md",
+            "docs/operations.md"
+          ]
+        },
+        {
+          "line": 94,
+          "heading": "## Original retrieval tools (historical)",
+          "destination": "archive/llm_investigation_orchestrator_serbia_poc/README.md.txt",
+          "current_guidance": [
+            "docs/product.md",
+            "docs/architecture.md",
+            "docs/operations.md"
+          ]
+        },
+        {
+          "line": 137,
+          "heading": "## Verification",
+          "destination": "archive/llm_investigation_orchestrator_serbia_poc/README.md.txt",
+          "current_guidance": [
+            "docs/product.md",
+            "docs/architecture.md",
+            "docs/operations.md"
+          ]
+        },
+        {
+          "line": 176,
+          "heading": "## Saved Questions",
+          "destination": "archive/llm_investigation_orchestrator_serbia_poc/README.md.txt",
+          "current_guidance": [
+            "docs/product.md",
+            "docs/architecture.md",
+            "docs/operations.md"
+          ]
+        },
+        {
+          "line": 199,
+          "heading": "## Recorded Demo Runs",
+          "destination": "archive/llm_investigation_orchestrator_serbia_poc/README.md.txt",
+          "current_guidance": [
+            "docs/product.md",
+            "docs/architecture.md",
+            "docs/operations.md"
+          ]
+        },
+        {
+          "line": 264,
+          "heading": "## UI Result Layers",
+          "destination": "archive/llm_investigation_orchestrator_serbia_poc/README.md.txt",
+          "current_guidance": [
+            "docs/product.md",
+            "docs/architecture.md",
+            "docs/operations.md"
+          ]
+        },
+        {
+          "line": 300,
+          "heading": "## UI Deployment",
+          "destination": "archive/llm_investigation_orchestrator_serbia_poc/README.md.txt",
+          "current_guidance": [
+            "docs/product.md",
+            "docs/architecture.md",
+            "docs/operations.md"
+          ]
+        },
+        {
+          "line": 334,
+          "heading": "## English Localization Status — 2026-08-06",
+          "destination": "archive/llm_investigation_orchestrator_serbia_poc/README.md.txt",
+          "current_guidance": [
+            "docs/product.md",
+            "docs/architecture.md",
+            "docs/operations.md"
+          ]
+        }
+      ]
+    },
+    {
+      "original": "llm_investigation_orchestrator_serbia_poc/deployment/README.md",
+      "snapshot": ".ai/work/capabilities/documentation-hierarchy/archive/llm_investigation_orchestrator_serbia_poc/deployment/README.md.txt",
+      "sha256": "4efe80478aed82fddfa317296513290e69028069ea3ba1a782dc574809c0ca91",
+      "bytes": 8893,
+      "headings": [
+        {
+          "line": 1,
+          "heading": "# Production source provenance",
+          "destination": "archive/llm_investigation_orchestrator_serbia_poc/deployment/README.md.txt",
+          "current_guidance": [
+            "docs/operations.md",
+            "docs/demo-scenarios.md"
+          ]
+        },
+        {
+          "line": 3,
+          "heading": "## Current scenario releases",
+          "destination": "archive/llm_investigation_orchestrator_serbia_poc/deployment/README.md.txt",
+          "current_guidance": [
+            "docs/operations.md",
+            "docs/demo-scenarios.md"
+          ]
+        },
+        {
+          "line": 9,
+          "heading": "## Historical source captures",
+          "destination": "archive/llm_investigation_orchestrator_serbia_poc/deployment/README.md.txt",
+          "current_guidance": [
+            "docs/operations.md",
+            "docs/demo-scenarios.md"
+          ]
+        }
+      ]
+    },
+    {
+      "original": "llm_investigation_orchestrator_serbia_poc/docs/demo-scenarios.md",
+      "snapshot": ".ai/work/capabilities/documentation-hierarchy/archive/llm_investigation_orchestrator_serbia_poc/docs/demo-scenarios.md.txt",
+      "sha256": "5ef4600e98fd8cb0d4cd8c3a9812ddc747fd91b6a2c495bfde25531e66682560",
+      "bytes": 13322,
+      "headings": [
+        {
+          "line": 1,
+          "heading": "# Single active demo scenarios",
+          "destination": "archive/llm_investigation_orchestrator_serbia_poc/docs/demo-scenarios.md.txt",
+          "current_guidance": [
+            "docs/operations.md",
+            "docs/demo-scenarios.md"
+          ]
+        },
+        {
+          "line": 5,
+          "heading": "## Installed scenarios",
+          "destination": "archive/llm_investigation_orchestrator_serbia_poc/docs/demo-scenarios.md.txt",
+          "current_guidance": [
+            "docs/operations.md",
+            "docs/demo-scenarios.md"
+          ]
+        },
+        {
+          "line": 16,
+          "heading": "## Switch on the VM",
+          "destination": "archive/llm_investigation_orchestrator_serbia_poc/docs/demo-scenarios.md.txt",
+          "current_guidance": [
+            "docs/operations.md",
+            "docs/demo-scenarios.md"
+          ]
+        },
+        {
+          "line": 36,
+          "heading": "## State and credentials",
+          "destination": "archive/llm_investigation_orchestrator_serbia_poc/docs/demo-scenarios.md.txt",
+          "current_guidance": [
+            "docs/operations.md",
+            "docs/demo-scenarios.md"
+          ]
+        },
+        {
+          "line": 49,
+          "heading": "## Installation and future releases",
+          "destination": "archive/llm_investigation_orchestrator_serbia_poc/docs/demo-scenarios.md.txt",
+          "current_guidance": [
+            "docs/operations.md",
+            "docs/demo-scenarios.md"
+          ]
+        },
+        {
+          "line": 57,
+          "heading": "## Interrupted switch recovery",
+          "destination": "archive/llm_investigation_orchestrator_serbia_poc/docs/demo-scenarios.md.txt",
+          "current_guidance": [
+            "docs/operations.md",
+            "docs/demo-scenarios.md"
+          ]
+        },
+        {
+          "line": 63,
+          "heading": "## Verification limits",
+          "destination": "archive/llm_investigation_orchestrator_serbia_poc/docs/demo-scenarios.md.txt",
+          "current_guidance": [
+            "docs/operations.md",
+            "docs/demo-scenarios.md"
+          ]
+        },
+        {
+          "line": 67,
+          "heading": "## Offline semantic search cache",
+          "destination": "archive/llm_investigation_orchestrator_serbia_poc/docs/demo-scenarios.md.txt",
+          "current_guidance": [
+            "docs/operations.md",
+            "docs/demo-scenarios.md"
+          ]
+        },
+        {
+          "line": 82,
+          "heading": "## Dataset upgrade procedure",
+          "destination": "archive/llm_investigation_orchestrator_serbia_poc/docs/demo-scenarios.md.txt",
+          "current_guidance": [
+            "docs/operations.md",
+            "docs/demo-scenarios.md"
+          ]
+        },
+        {
+          "line": 93,
+          "heading": "## Syria package history (not current instructions)",
+          "destination": "archive/llm_investigation_orchestrator_serbia_poc/docs/demo-scenarios.md.txt",
+          "current_guidance": [
+            "docs/operations.md",
+            "docs/demo-scenarios.md"
+          ]
+        },
+        {
+          "line": 108,
+          "heading": "## Quick acceptance checks",
+          "destination": "archive/llm_investigation_orchestrator_serbia_poc/docs/demo-scenarios.md.txt",
+          "current_guidance": [
+            "docs/operations.md",
+            "docs/demo-scenarios.md"
+          ]
+        }
+      ]
+    },
+    {
+      "original": "AGENTS.md",
+      "snapshot": ".ai/work/capabilities/documentation-hierarchy/archive/AGENTS.md.txt",
+      "sha256": "98e6340823857c1cf175ae4cd93db4524e43c3f9629934acc68a426d74623f85",
+      "bytes": 3447,
+      "headings": [
+        {
+          "line": 1,
+          "heading": "# AI Agent Instructions",
+          "destination": "AGENTS.md"
+        },
+        {
+          "line": 5,
+          "heading": "## Always follow",
+          "destination": "AGENTS.md"
+        },
+        {
+          "line": 12,
+          "heading": "## Context loading rule",
+          "destination": "AGENTS.md"
+        },
+        {
+          "line": 32,
+          "heading": "## Capability workspace rule",
+          "destination": "AGENTS.md"
+        },
+        {
+          "line": 54,
+          "heading": "## Publishing rule",
+          "destination": "AGENTS.md"
+        },
+        {
+          "line": 73,
+          "heading": "## Execution rule",
+          "destination": "AGENTS.md"
+        },
+        {
+          "line": 96,
+          "heading": "## Scope rule",
+          "destination": "AGENTS.md"
+        },
+        {
+          "line": 109,
+          "heading": "## Output rule",
+          "destination": "AGENTS.md"
+        }
+      ]
+    },
+    {
+      "original": "docs/ai-workflow.md",
+      "snapshot": ".ai/work/capabilities/documentation-hierarchy/archive/docs/ai-workflow.md.txt",
+      "sha256": "2b1893f00b3fafec67901fa1d1de19466e214c93663f307dcfd194e129ad4550",
+      "bytes": 7618,
+      "headings": [
+        {
+          "line": 1,
+          "heading": "# AI Workflow",
+          "destination": "docs/ai-workflow.md"
+        },
+        {
+          "line": 5,
+          "heading": "## Core model",
+          "destination": "docs/ai-workflow.md"
+        },
+        {
+          "line": 16,
+          "heading": "## Capability workflow",
+          "destination": "docs/ai-workflow.md"
+        },
+        {
+          "line": 30,
+          "heading": "## Issue model",
+          "destination": "docs/ai-workflow.md"
+        },
+        {
+          "line": 44,
+          "heading": "## Capability status file",
+          "destination": "docs/ai-workflow.md"
+        },
+        {
+          "line": 64,
+          "heading": "## Role-boundary gates",
+          "destination": "docs/ai-workflow.md"
+        },
+        {
+          "line": 82,
+          "heading": "## Publishing workflow",
+          "destination": "docs/ai-workflow.md"
+        },
+        {
+          "line": 100,
+          "heading": "## Per-step publishing expectations",
+          "destination": "docs/ai-workflow.md"
+        },
+        {
+          "line": 123,
+          "heading": "## PM-to-developer handoff",
+          "destination": "docs/ai-workflow.md"
+        },
+        {
+          "line": 145,
+          "heading": "## Review checkpoint policy",
+          "destination": "docs/ai-workflow.md"
+        },
+        {
+          "line": 158,
+          "heading": "## Token-efficiency rule",
+          "destination": "docs/ai-workflow.md"
+        },
+        {
+          "line": 172,
+          "heading": "## Publishing safety rule",
+          "destination": "docs/ai-workflow.md"
+        }
+      ]
+    },
+    {
+      "original": ".ai/skills/context-maintenance/SKILL.md",
+      "snapshot": ".ai/work/capabilities/documentation-hierarchy/archive/.ai/skills/context-maintenance/SKILL.md.txt",
+      "sha256": "49bd7d09856e3f2e58d0c98a194a2a52155eb5bdda632a50393a2ff635e2a949",
+      "bytes": 2947,
+      "headings": [
+        {
+          "line": 6,
+          "heading": "# Context Maintenance Skill",
+          "destination": ".ai/skills/context-maintenance/SKILL.md"
+        },
+        {
+          "line": 8,
+          "heading": "## Purpose",
+          "destination": ".ai/skills/context-maintenance/SKILL.md"
+        },
+        {
+          "line": 14,
+          "heading": "## What belongs where",
+          "destination": ".ai/skills/context-maintenance/SKILL.md"
+        },
+        {
+          "line": 16,
+          "heading": "### `.ai/work/capabilities/<capability-slug>/`",
+          "destination": ".ai/skills/context-maintenance/SKILL.md"
+        },
+        {
+          "line": 30,
+          "heading": "### `docs/decisions.md`",
+          "destination": ".ai/skills/context-maintenance/SKILL.md"
+        },
+        {
+          "line": 40,
+          "heading": "### `docs/product-context.md`",
+          "destination": ".ai/skills/context-maintenance/SKILL.md"
+        },
+        {
+          "line": 49,
+          "heading": "### `docs/architecture.md`",
+          "destination": ".ai/skills/context-maintenance/SKILL.md"
+        },
+        {
+          "line": 59,
+          "heading": "### Issue / PR",
+          "destination": ".ai/skills/context-maintenance/SKILL.md"
+        },
+        {
+          "line": 74,
+          "heading": "### Git / draft PR",
+          "destination": ".ai/skills/context-maintenance/SKILL.md"
+        },
+        {
+          "line": 90,
+          "heading": "### Do not save",
+          "destination": ".ai/skills/context-maintenance/SKILL.md"
+        },
+        {
+          "line": 99,
+          "heading": "## Decision log format",
+          "destination": ".ai/skills/context-maintenance/SKILL.md"
+        },
+        {
+          "line": 103,
+          "heading": "### YYYY-MM-DD — Decision title",
+          "destination": ".ai/skills/context-maintenance/SKILL.md"
+        },
+        {
+          "line": 123,
+          "heading": "## Final output",
+          "destination": ".ai/skills/context-maintenance/SKILL.md"
+        }
+      ]
+    },
+    {
+      "original": ".ai/skills/end-to-end-feature-delivery/SKILL.md",
+      "snapshot": ".ai/work/capabilities/documentation-hierarchy/archive/.ai/skills/end-to-end-feature-delivery/SKILL.md.txt",
+      "sha256": "1866583acdb7b23c72791a6694ba7440f560de3770acae434ccc5c06802189ae",
+      "bytes": 9655,
+      "headings": [
+        {
+          "line": 6,
+          "heading": "# End-to-End Feature Delivery Skill",
+          "destination": ".ai/skills/end-to-end-feature-delivery/SKILL.md"
+        },
+        {
+          "line": 8,
+          "heading": "## Purpose",
+          "destination": ".ai/skills/end-to-end-feature-delivery/SKILL.md"
+        },
+        {
+          "line": 20,
+          "heading": "## Active capability workspace",
+          "destination": ".ai/skills/end-to-end-feature-delivery/SKILL.md"
+        },
+        {
+          "line": 44,
+          "heading": "## Issue-based task model",
+          "destination": ".ai/skills/end-to-end-feature-delivery/SKILL.md"
+        },
+        {
+          "line": 78,
+          "heading": "## Publishing rule",
+          "destination": ".ai/skills/end-to-end-feature-delivery/SKILL.md"
+        },
+        {
+          "line": 96,
+          "heading": "## Roles",
+          "destination": ".ai/skills/end-to-end-feature-delivery/SKILL.md"
+        },
+        {
+          "line": 138,
+          "heading": "## Phase 1 — Capability initiation by Product",
+          "destination": ".ai/skills/end-to-end-feature-delivery/SKILL.md"
+        },
+        {
+          "line": 169,
+          "heading": "## Phase 2 — Role enrichment",
+          "destination": ".ai/skills/end-to-end-feature-delivery/SKILL.md"
+        },
+        {
+          "line": 226,
+          "heading": "## Phase 3 — Execution plan",
+          "destination": ".ai/skills/end-to-end-feature-delivery/SKILL.md"
+        },
+        {
+          "line": 258,
+          "heading": "## Phase 4 — Controlled execution",
+          "destination": ".ai/skills/end-to-end-feature-delivery/SKILL.md"
+        },
+        {
+          "line": 295,
+          "heading": "## Phase 5 — Final review and acceptance",
+          "destination": ".ai/skills/end-to-end-feature-delivery/SKILL.md"
+        },
+        {
+          "line": 310,
+          "heading": "## Phase 6 — Context update",
+          "destination": ".ai/skills/end-to-end-feature-delivery/SKILL.md"
+        }
+      ]
+    }
+  ]
+}

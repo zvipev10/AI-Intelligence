@@ -37,7 +37,7 @@ Use for meaningful decisions with long-term impact:
 - scope decision
 - security/performance decision
 
-### `docs/product.md`
+### `docs/product-context.md`
 
 Use for stable product context:
 - user personas
@@ -125,13 +125,9 @@ Follow-ups:
 At the end of meaningful work, produce:
 
 1. Suggested updates to `docs/decisions.md`
-2. Suggested updates to `docs/product.md`
+2. Suggested updates to `docs/product-context.md`
 3. Suggested updates to `docs/architecture.md`
 4. Suggested issue/PR update
 5. Final handoff summary
 6. Publishing status
 7. Parent/child issue status
-
-## Documentation ownership
-
-Keep one authoritative home per fact: `docs/product.md` for analyst behavior, `docs/architecture.md` for implementation contracts, `docs/demo-scenarios.md` for dataset narratives/versions, `docs/operations.md` for procedures, and `docs/decisions.md` for rationale. README and handoff entry points link to these guides instead of copying them. Contributor workflow, glossary and quality fixtures remain supporting references. Capability artifacts preserve task history; they do not override current guides. Inspect live status/release manifests instead of copying volatile deployment snapshots into multiple documents. When consolidating, preserve superseded source material and record its destination.

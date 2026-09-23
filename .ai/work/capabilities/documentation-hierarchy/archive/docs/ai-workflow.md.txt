@@ -174,7 +174,3 @@ Use:
 Publishing should be scoped. The agent must not stage or commit unrelated local changes.
 
 Before any commit, the agent should call out unrelated dirty files and leave them untouched unless explicitly instructed otherwise.
-
-## Documentation ownership
-
-Keep one authoritative home per fact: `docs/product.md` for analyst behavior, `docs/architecture.md` for implementation contracts, `docs/demo-scenarios.md` for dataset narratives/versions, `docs/operations.md` for procedures, and `docs/decisions.md` for rationale. README and handoff entry points link to these guides instead of copying them. Contributor workflow, glossary and quality fixtures remain supporting references. Capability artifacts preserve task history; they do not override current guides. Inspect live status/release manifests instead of copying volatile deployment snapshots into multiple documents. When consolidating, preserve superseded source material and record its destination.
