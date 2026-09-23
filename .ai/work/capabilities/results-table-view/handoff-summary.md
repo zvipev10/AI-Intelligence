@@ -1,4 +1,4 @@
-# Table results view â€” handoff
+# Table results view — handoff
 
 Implemented and deployed to http://151.145.93.180. Syria remains active, dataset network-v1 unchanged (208 records, including 200 geometry-free IPDR records). Runtime source commit: 89e772d88add95b765857e4af0831f64f0987049.
 
@@ -24,5 +24,5 @@ Backups: /opt/demo-runtime/backups/table-fc1c0f9 and table-89e772d; manifests pi
 
 Next action: refresh the application and review the Table tab/record viewer; merge the reviewed PR stack. Suggested durable docs updates: describe Map/Timeline/Table choice in product context and record that scenario activation updates audit destinations with dataset identity in architecture/decisions. These decisions are preserved here pending broader documentation consolidation.
 
-## User correction — IPDR schema presentation
-IPDR table now shows IP address and IMEI instead of actor/location; its viewer and filter list omit actor/location, and its table has no map action. All values come from the existing structured fields, preserving leading zeros. Other sources retain their existing layouts. JS cache version 205. Focused Node regression, media and syntax checks pass. Static VM deployment follows publishing; no dataset or agent configuration change. Product-context documentation should describe source-specific IPDR columns.
+## User correction — IPDR fields
+IPDR table uses IP address and IMEI instead of actor/location. The viewer and filters omit actor/location; table has no map action. Structured values preserve IMEI leading zeros. Other sources retain their layouts. Focused Node table/viewer/filter/media tests, Python presentation test and JS syntax pass. Deployed and public assets verified: eb93c67f249fbbab7893bfdfa11ee8ba68e913c7, JS 205. Syria remains active. No dataset or agent configuration change. Backup: /opt/demo-runtime/backups/ipdr-eb93c67. Suggested product-context update: source-specific IPDR columns.
