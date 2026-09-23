@@ -2,7 +2,7 @@
   "schema_version": 1,
   "state_schema_version": 1,
   "scenario_id": "syria",
-  "profile_version": "5",
+  "profile_version": "6",
   "dataset_version": "network-v1",
   "label": {
     "en": "Syria"
@@ -53,10 +53,10 @@
   },
   "map": {
     "center": [
-      38.5,
-      35.0225
+      36.2765,
+      33.5138
     ],
-    "zoom": 12,
+    "zoom": 11,
     "minZoom": 4,
     "maxBounds": [
       [

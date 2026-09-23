@@ -137,7 +137,8 @@ class SyriaHTTP(unittest.TestCase):
         with urlopen(self.url + "/api/status") as response: status = json.load(response)
         self.assertEqual(status["scenario_id"], "syria")
         self.assertEqual(status["dataset_rows"], 208)
-        self.assertEqual(status["demo_profile"]["map"]["center"], [38.5, 35.0225])
+        self.assertEqual(status["demo_profile"]["map"]["center"], [36.2765, 33.5138])
+        self.assertEqual(status["demo_profile"]["map"]["zoom"], 11)
         for locale in ["en", "he"]:
             with urlopen(self.url + "/api/layers?locale=" + locale) as response: layers = json.load(response)["layers"]
             self.assertEqual(len(layers), 20)

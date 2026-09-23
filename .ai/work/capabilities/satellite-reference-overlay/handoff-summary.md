@@ -4,6 +4,8 @@ The basemap selector is compact, and Satellite mode now composes three existing 
 
 Satellite is the default initial basemap. Street remains selectable and is still the automatic fallback when the imagery source fails.
 
+The active Syria profile opens at Damascus (`36.2765, 33.5138`) at zoom 11. This changes only the initial camera; opening result layers may still fit the map to their own data extent.
+
 ## Deployment
 
 - Deployed to `/opt/serbia-poc-ui` on `151.145.93.180` on 2026-09-23.
