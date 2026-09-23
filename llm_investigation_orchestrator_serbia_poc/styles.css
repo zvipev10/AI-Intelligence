@@ -789,9 +789,10 @@ th { position: sticky; top: 0; z-index: 1; background: #202530; }
 .view-stack.table-mode .layer-filter-panel { top: 44px; bottom: auto; max-height: calc(100% - 60px); }
 .table-view-empty { padding: 24px; color: var(--muted); }
 
-.basemap-switch { position: absolute; top: 10px; right: 10px; z-index: 2; display: flex; gap: 2px; padding: 4px; border-radius: 7px; background: var(--map-control-surface); border: 1px solid var(--map-control-border); box-shadow: var(--map-control-shadow); }
-.basemap-switch button { padding: 6px 10px; border: 0; border-radius: 4px; background: transparent; color: var(--ink); cursor: pointer; font-weight: 700; }
-.basemap-switch button[aria-pressed="true"] { background: #235e9d; color: #fff; }
-.basemap-switch button:focus-visible { outline: 2px solid #58a6ff; outline-offset: 2px; }
+.basemap-switch { position: absolute; top: 8px; right: 8px; z-index: 2; display: flex; gap: 1px; padding: 2px; border-radius: 999px; background: color-mix(in srgb, var(--map-control-surface) 88%, transparent); border: 1px solid color-mix(in srgb, var(--map-control-border) 78%, transparent); box-shadow: 0 2px 8px rgba(0, 0, 0, .18); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+.basemap-switch button { min-height: 26px; padding: 3px 8px; border: 0; border-radius: 999px; background: transparent; color: var(--muted); cursor: pointer; font: inherit; font-size: 11px; font-weight: 650; line-height: 1; white-space: nowrap; transition: color .16s ease, background-color .16s ease, box-shadow .16s ease; }
+.basemap-switch button:hover:not(:disabled):not([aria-pressed="true"]) { color: var(--ink); background: color-mix(in srgb, var(--ink) 8%, transparent); }
+.basemap-switch button[aria-pressed="true"] { background: #235e9d; color: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, .24); }
+.basemap-switch button:focus-visible { outline: 2px solid #58a6ff; outline-offset: 1px; }
 .basemap-switch button:disabled { opacity: .5; cursor: wait; }
-.basemap-status { position: absolute; top: 58px; right: 10px; z-index: 2; max-width: 260px; padding: 8px; border-radius: 6px; background: var(--map-control-surface); color: var(--ink); }
+.basemap-status { position: absolute; top: 46px; right: 8px; z-index: 2; max-width: 260px; padding: 8px; border-radius: 6px; background: var(--map-control-surface); color: var(--ink); }
