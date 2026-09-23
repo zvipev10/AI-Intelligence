@@ -135,6 +135,8 @@ class Activator:
             content = yaml.safe_load(config.read_text())
             for name, server in content.get("mcp_servers", {}).items():
                 server.setdefault("env", {}).update(environment)
+                # Dataset upgrades must move audit writes with UI audit reads.
+                server["env"]["INTELLIGENCE_POC_AUDIT"] = str(state / "audit" / f"{role}.jsonl")
                 include = server.get("tools", {}).get("include")
                 if isinstance(include, list):
                     for common in ["open_catalog_layers", "demo_runtime_status"]:
