@@ -22,7 +22,7 @@ class CanonicalSourceContractTests(unittest.TestCase):
         app = (ROOT / "app.js").read_text(encoding="utf-8")
         self.assertIn('demo_bootstrap.js?v=209', index)
         self.assertIn('app.js?v=208', (ROOT / 'demo_bootstrap.js').read_text(encoding='utf-8'))
-        self.assertIn('styles.css?v=154', index)
+        self.assertIn('styles.css?v=155', index)
         self.assertIn('id="languageToggle"', index)
         self.assertIn('id="welcomePage"', index)
         self.assertIn('id="welcomePromptForm"', index)
