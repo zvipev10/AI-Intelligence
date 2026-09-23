@@ -633,7 +633,7 @@ def list_ui_layers(locale: str = "he") -> list[dict[str, Any]]:
             "kind": "events",
             "source_type": source_type,
             "count": count,
-            "capabilities": {"table": True, "map": True, "timeline": True},
+            "capabilities": {"table": True, "map": not count or any(event.get("location_id") in locations for event in events if (event.get("source_type") or unknown_source) == source_type), "timeline": True},
         })
     return layers
 
@@ -694,7 +694,7 @@ def validate_catalog_layer_actions(actions: Any, locale: str) -> tuple[list[dict
             errors.append({"catalog_layer_id": layer_id, "error": str(exc)})
             continue
         normalized = {"action": "open", "catalog_layer_id": layer["id"], "label": layer["label"],
-                      "view": action.get("view") if action.get("view") in {"map", "timeline", "evidence"} else "map"}
+                      "view": action.get("view") if action.get("view") in {"map", "timeline", "table", "evidence"} else "map"}
         if filters:
             normalized["filters"] = filters
         if normalized not in valid:
@@ -1277,7 +1277,7 @@ def build_english_agent_instructions(
         "When the user directly asks to open a whole named UI catalog layer without filters, call open_catalog_layers with the exact ID from the catalog list below. Do not search first and do not use present_saved_memory_layers.",
         "For a named raw catalog layer with location/entity/time constraints, call open_catalog_layers with filters and the current locale. Carry forward prior conversation filters, including on follow-up requests. For other constraints retrieve records and pass their event_ids as filters, or use present_requested_results. Never replace a filtered request with the entire catalog. A pending_ui status means queued, not opened; do not claim browser success. On clarification_required ask the analyst to choose among candidates; never guess.",
         "For all other requests, call present_requested_results exactly once before the final answer whenever there are concrete data objects or evidence layers worth presenting in the UI.",
-        "End with exactly one final line in the format 'Recommended view: VIEW | REASON'. VIEW must be one of map, timeline, or evidence. REASON must be short.",
+        "End with exactly one final line in the format 'Recommended view: VIEW | REASON'. VIEW must be one of map, timeline, or table. Choose table for raw records, identifier correlation, and records without geometry; map for spatial questions; timeline for chronology. Never discard records because they lack geometry. REASON must be short.",
     ]
     if responding_agent == MOSHE_AGENT_ID:
         lines.extend([
@@ -1612,6 +1612,8 @@ def memory_layer_presentation(investigation_id: str, memory_layer_id: str, local
         }
 
     rows = [rows_by_id[item_id] for item_id in requested_ids if item_id in rows_by_id]
+    if layer_kind == "events":
+        capabilities["map"] = any(row.get("location_id") in locations for row in rows)
     missing_ids = [item_id for item_id in requested_ids if item_id not in rows_by_id]
     restore_status = "fully_restored" if not missing_ids else ("partially_restored" if rows else "unavailable")
     result_kind = {"locations": "location_metadata", "entities": "entity_metadata"}.get(layer_kind, layer_kind)
@@ -1629,7 +1631,7 @@ def memory_layer_presentation(investigation_id: str, memory_layer_id: str, local
             "kind": result_kind,
             "rows": rows,
             "capabilities": capabilities,
-            "recommended_view": "map" if capabilities["map"] else "evidence",
+            "recommended_view": "map" if capabilities["map"] else "table",
         }] if rows else []),
     }
 
@@ -3852,7 +3854,7 @@ class HermesClient:
             "הוסף שורה אחרונה בפורמט המדויק 'תצוגה מומלצת: VIEW | REASON'.\n"
             "VIEW חייב להתבסס קודם על recommended_view_hint מ-classify_question_intent, אלא אם תוצאות הכלים מצדיקות שינוי ברור."
             " הערכים האפשריים: map כאשר הממצא הגאוגרפי או מסלול התנועה הוא העיקר;"
-            " timeline כאשר סדר האירועים והעיתוי הם העיקר; evidence כאשר בדיקת המקורות והרשומות הגולמיות היא העיקר.\n"
+            " timeline כאשר סדר האירועים והעיתוי הם העיקר; table כאשר בדיקת הרשומות, התאמת מזהים או נתונים ללא גאומטריה הם העיקר. אין להשמיט רשומות ללא מיקום.\n"
             "REASON הוא הסבר קצר בעברית, עד שמונה מילים, לבחירת התצוגה.\n"
             "אין להשתמש בכלי מערכת, קבצים, רשת או shell, ואין לבקש אישור לכלים."
             " מאגר המטרות תומך באיתור ישיר לפי מזהה רשומה גולמית באמצעות search_target_candidates עם record_id."
@@ -3863,7 +3865,7 @@ class HermesClient:
             " בכל בקשה אחרת, לפני התשובה הסופית, כאשר קיימים נתונים מבוקשים להצגה או ראיות מהותיות לניווט, חובה לקרוא פעם אחת ל-present_requested_results."
             " בשדה layers בחר רק את הרשומות שעונות ישירות למה שהמשתמש ביקש; שכבה אחת כברירת מחדל וכמה רק אם התבקשו כמה סוגי תוצאה."
             " בשדה evidence_layers בחר מספר קטן של שכבות בעלות שמות משמעותיים, ורק רשומות קנוניות שתומכות מהותית במסקנה הסופית."
-            " קבץ ראיות לפי הסיבה שהן חשובות ולא לפי הכלי שהחזיר אותן, ובחר עבורן map או timeline."
+            " קבץ ראיות לפי הסיבה שהן חשובות ולא לפי הכלי שהחזיר אותן, ובחר עבורן map, timeline או table בהתאם לתוכן."
             " לעולם אל תכלול תוצאות ביניים, בדיקות כפילות, מועמדים שנדחו או פלט כלי שאינו רלוונטי ישירות לתוצאה או למסקנה."
             " אם אין אובייקט נתונים להצגה ואין ראיות מהותיות לניווט, אל תקרא לכלי."
             " כפתור הצג תוצאות מבוסס רק על layers; אזור מזהי ראיות מבוסס רק על evidence_layers."
@@ -4025,7 +4027,7 @@ class HermesClient:
                 ]
                 output_without_steps = any_step_line_pattern.sub("", output)
                 view_match = re.search(
-                    r"(?im)^\s*(?:תצוגה מומלצת|Recommended view)\s*:\s*(map|timeline|evidence)(?:\s*\|\s*(.+?))?\s*$",
+                    r"(?im)^\s*(?:תצוגה מומלצת|Recommended view)\s*:\s*(map|timeline|table|evidence)(?:\s*\|\s*(.+?))?\s*$",
                     output_without_steps,
                 )
                 recommended_view = view_match.group(1).lower() if view_match else None
@@ -4037,7 +4039,7 @@ class HermesClient:
                 if recommended_view is None:
                     combined = f"{prompt}\n{clean_output}"
                     if re.search(r"רשומ|מקור|ראי|אימות|בדוק|ציטוט", combined):
-                        recommended_view, view_reason = "evidence", "בדיקה ישירה של הרשומות המצוטטות"
+                        recommended_view, view_reason = "table", "בדיקה ישירה של הרשומות המצוטטות"
                     elif re.search(r"רצף|סדר|ציר זמן|לפי זמן|מיין|תמיין|כרונולוג|לפני|אחרי|עיתוי|שעה", combined):
                         recommended_view, view_reason = "timeline", "העיתוי ורצף האירועים הם העיקר"
                     else:
@@ -5663,7 +5665,7 @@ class Handler(SimpleHTTPRequestHandler):
                 answer = openai_result["answer"]
                 view_match = re.search(
                     r"(?im)^\s*(?:תצוגה מומלצת|Recommended view)\s*:\s*"
-                    r"(map|timeline|evidence)(?:\s*\|\s*(.+?))?\s*$",
+                    r"(map|timeline|table|evidence)(?:\s*\|\s*(.+?))?\s*$",
                     answer,
                 )
                 if view_match:
@@ -5671,7 +5673,7 @@ class Handler(SimpleHTTPRequestHandler):
                     view_reason = view_match.group(2).strip() if view_match.group(2) else ""
                     answer = (answer[:view_match.start()] + answer[view_match.end():]).strip()
                 else:
-                    recommended_view = presentation_view_from_audit(calls) or "evidence"
+                    recommended_view = presentation_view_from_audit(calls) or "table"
                     view_reason = "Selected by the requested presentation."
                 result = build_agent_result({
                     "run_id": openai_result["openai_session_id"],

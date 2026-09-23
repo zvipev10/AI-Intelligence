@@ -1,0 +1,1 @@
+Reuse the single rawEventsOverlay DOM/component; Table mode expands it to full height. No duplicate table state. Add table to tool schemas, validation, audit/response parsing and instructions; preserve evidence as legacy view alias. Derive raw layer map capability from actual geometry.

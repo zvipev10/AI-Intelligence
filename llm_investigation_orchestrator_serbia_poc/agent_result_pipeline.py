@@ -221,7 +221,7 @@ def evidence_reference_layers_from_audit(
 def presentation_view_from_audit(audit_records: Any) -> str | None:
     """Return the explicit view selected by the last valid UI presentation.
 
-    The presentation tool is the authoritative place for a map or timeline
+    The presentation tool is the authoritative place for a map, timeline, or table
     selection.  This lets alternate model harnesses preserve the same UI
     behavior as the Hermes route instead of guessing from prose.
     """
@@ -233,7 +233,7 @@ def presentation_view_from_audit(audit_records: Any) -> str | None:
             layers = normalize_typed_layers(result.get(field))
             for layer in layers:
                 view = str(layer.get("recommended_view") or "").lower()
-                if view in {"map", "timeline", "evidence"}:
+                if view in {"map", "timeline", "table", "evidence"}:
                     return view
     return None
 

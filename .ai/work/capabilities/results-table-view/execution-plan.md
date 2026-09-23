@@ -1,0 +1,1 @@
+Authorized implementation: 1 record contract; 2 UI reuse and presentation pipeline/instructions; 3 focused/regression checks; 4 backed-up source-only VM deployment and live agent verification, keep Syria active. No dataset change or new dependency.

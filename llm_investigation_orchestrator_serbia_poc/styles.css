@@ -781,3 +781,17 @@ th { position: sticky; top: 0; z-index: 1; background: #202530; }
   .raw-events-overlay { height: 34%; min-height: 180px; }
   .layer-filter-panel { bottom: calc(34% + 12px); max-height: min(340px, calc(66% - 76px)); }
 }
+
+/* Reuse the raw-records table as a standalone results view. */
+.view-stack.table-mode .raw-events-overlay { top: 0; bottom: 0; height: 100%; max-height: 100%; min-height: 0; grid-template-rows: 34px minmax(0, 1fr); }
+.view-stack.table-mode .raw-events-resize-handle,
+.view-stack.table-mode #rawEventsMinimize { display: none; }
+.view-stack.table-mode .layer-filter-panel { top: 44px; bottom: auto; max-height: calc(100% - 60px); }
+.table-view-empty { padding: 24px; color: var(--muted); }
+
+.basemap-switch { position: absolute; top: 10px; right: 10px; z-index: 2; display: flex; gap: 2px; padding: 4px; border-radius: 7px; background: var(--map-control-surface); border: 1px solid var(--map-control-border); box-shadow: var(--map-control-shadow); }
+.basemap-switch button { padding: 6px 10px; border: 0; border-radius: 4px; background: transparent; color: var(--ink); cursor: pointer; font-weight: 700; }
+.basemap-switch button[aria-pressed="true"] { background: #235e9d; color: #fff; }
+.basemap-switch button:focus-visible { outline: 2px solid #58a6ff; outline-offset: 2px; }
+.basemap-switch button:disabled { opacity: .5; cursor: wait; }
+.basemap-status { position: absolute; top: 58px; right: 10px; z-index: 2; max-width: 260px; padding: 8px; border-radius: 6px; background: var(--map-control-surface); color: var(--ink); }
