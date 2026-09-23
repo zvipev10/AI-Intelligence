@@ -1,0 +1,1 @@
+User requests Table beside Map/Timeline, reusing the existing results table and opening records without geometry. Agents should select it for appropriate results, including IPDR/raw identifier inspection. Shared application behavior, not Syria-only data.

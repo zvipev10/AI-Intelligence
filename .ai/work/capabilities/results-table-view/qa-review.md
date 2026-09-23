@@ -1,0 +1,1 @@
+Test manual/agent table activation, geometry-free record opening, unchanged filters/layers across switches, empty/minimized states, tool schemas/actions/materialization, audit parsing, legacy evidence alias and live IPDR agent presentation.

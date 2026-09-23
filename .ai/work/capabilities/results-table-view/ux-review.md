@@ -1,0 +1,1 @@
+Three view tabs. Table retains layer tabs, sorting/filtering and record-ID buttons. Full Table hides resize/minimize controls, retains close/clear, and has an empty-state message. Returning to Map/Timeline restores existing overlay sizing/minimized state.
