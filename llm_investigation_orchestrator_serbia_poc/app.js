@@ -2953,18 +2953,7 @@ function visibleEventItems() {
 function initMap() {
   state.map = new maplibregl.Map({
     container: "map",
-    style: {
-      version: 8,
-      sources: {
-        osm: {
-          type: "raster",
-          tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
-          tileSize: 256,
-          attribution: "© OpenStreetMap contributors"
-        }
-      },
-      layers: [{ id: "osm", type: "raster", source: "osm" }]
-    },
+    style: "https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json",
     center: demoRuntime?.demo_profile?.map.center || [20.82, 42.92],
     zoom: demoRuntime?.demo_profile?.map.zoom ?? 8.4,
     minZoom: demoRuntime?.demo_profile?.map.minZoom ?? 6.0,
@@ -2973,6 +2962,15 @@ function initMap() {
     attributionControl: true
   });
   state.map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-left");
+  state.map.on("style.load", () => {
+    // Override zoom-dependent native labels so English stays selected when zooming in.
+    for (const layer of state.map.getStyle().layers) {
+      if (layer.type !== "symbol" || !JSON.stringify(layer.layout?.["text-field"] || "").includes("name")) continue;
+      state.map.setLayoutProperty(layer.id, "text-field", ["coalesce",
+        ["case", ["!=", ["get", "name_en"], ""], ["get", "name_en"], null],
+        ["get", "name:en"], ["get", "name:latin"], ["get", "name"]]);
+    }
+  });
   state.map.on("load", () => { state.mapReady = true; renderMap(); });
 }
 
