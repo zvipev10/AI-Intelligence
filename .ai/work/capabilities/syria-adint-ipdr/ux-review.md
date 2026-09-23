@@ -1,0 +1,1 @@
+Use ordinary raw source layers and record detail fields. Four ADINT points on map. IPDR sessions have no asserted GPS location. Do not pre-label the matching IPDR row or put IMEI in ADINT. Device identities are distinct from the convoy entity.

@@ -1,0 +1,1 @@
+Check 4 ADINT/200 IPDR/208 total, three 500m offsets, exactly one cross-source IP match, timestamp containment, IMEI only in IPDR, agent retrieval returns exactly one IPDR row by observed IP, existing records and Kosovo unchanged.
