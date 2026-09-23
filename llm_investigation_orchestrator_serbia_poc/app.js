@@ -2950,6 +2950,29 @@ function visibleEventItems() {
     .flatMap(layer => itemsForLayerPresentation(layer));
 }
 
+function setMapBasemap(mode) {
+  if (!state.map?.getLayer("satellite-imagery")) return;
+  const satellite = mode === "satellite";
+  state.basemapMode = satellite ? "satellite" : "street";
+  for (const layer of state.basemapLayers || []) {
+    if (!state.map.getLayer(layer.id)) continue;
+    if (layer.type !== "symbol") {
+      state.map.setLayoutProperty(layer.id, "visibility", satellite ? "none" : (layer.layout?.visibility || "visible"));
+    } else if (layer.layout?.["text-field"]) {
+      state.map.setPaintProperty(layer.id, "text-color", satellite ? "#ffffff" : (layer.paint?.["text-color"] ?? "#000000"));
+      state.map.setPaintProperty(layer.id, "text-halo-color", satellite ? "#202b35" : (layer.paint?.["text-halo-color"] ?? "rgba(0,0,0,0)"));
+      state.map.setPaintProperty(layer.id, "text-halo-width", satellite ? 1.5 : (layer.paint?.["text-halo-width"] ?? 0));
+    }
+  }
+  state.map.setLayoutProperty("satellite-imagery", "visibility", satellite ? "visible" : "none");
+  document.querySelectorAll("[data-basemap]").forEach(button => {
+    button.disabled = false;
+    button.setAttribute("aria-pressed", String(button.dataset.basemap === state.basemapMode));
+  });
+  const status = document.getElementById("basemapStatus");
+  if (status) status.hidden = true;
+}
+
 function initMap() {
   state.map = new maplibregl.Map({
     container: "map",
@@ -2963,12 +2986,35 @@ function initMap() {
   });
   state.map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-left");
   state.map.on("style.load", () => {
+    state.basemapLayers = state.map.getStyle().layers.map(layer => JSON.parse(JSON.stringify(layer)));
+    state.map.addSource("satellite-imagery", {
+      type: "raster",
+      tiles: ["https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"],
+      tileSize: 256,
+      maxzoom: 19,
+      attribution: 'Imagery &copy; <a href="https://www.arcgis.com/home/item.html?id=10df2279f9684e4a9f6a7f08febac2a9" target="_blank" rel="noopener">Esri</a>, Vantor, Earthstar Geographics, GIS User Community'
+    });
+    const firstLabel = state.basemapLayers.find(layer => layer.type === "symbol")?.id;
+    state.map.addLayer({ id: "satellite-imagery", type: "raster", source: "satellite-imagery", layout: { visibility: "none" } }, firstLabel);
     // Override zoom-dependent native labels so English stays selected when zooming in.
     for (const layer of state.map.getStyle().layers) {
       if (layer.type !== "symbol" || !JSON.stringify(layer.layout?.["text-field"] || "").includes("name")) continue;
       state.map.setLayoutProperty(layer.id, "text-field", ["coalesce",
         ["case", ["!=", ["get", "name_en"], ""], ["get", "name_en"], null],
         ["get", "name:en"], ["get", "name:latin"], ["get", "name"]]);
+    }
+    setMapBasemap(state.basemapMode || "street");
+  });
+  document.querySelectorAll("[data-basemap]").forEach(button => {
+    button.addEventListener("click", () => setMapBasemap(button.dataset.basemap));
+  });
+  state.map.on("error", event => {
+    if (event.sourceId !== "satellite-imagery" || state.basemapMode !== "satellite") return;
+    setMapBasemap("street");
+    const status = document.getElementById("basemapStatus");
+    if (status) {
+      status.textContent = activeLocaleText("תצלומי הלוויין אינם זמינים כרגע. מוצגת מפת רחובות.", "Satellite imagery is currently unavailable. Showing Street map.");
+      status.hidden = false;
     }
   });
   state.map.on("load", () => { state.mapReady = true; renderMap(); });
