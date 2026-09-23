@@ -1,1 +1,1 @@
-Implementation in progress, branch codex/syria-adint-ipdr stacked on PR #72. Synthetic assumptions stated; no blocking inputs. Next artifact: fixture and correlation tests.
+Deployed Syria network-v1/profile 5: 4 ADINT and 200 IPDR rows plus 4 existing records. PR #74 / issue #73, stacked on #72. Public count/join checks pass; live agent correlation passed (41.79 seconds). Next: user browser acceptance and PR review.

@@ -7,7 +7,7 @@ One application URL serves one active scenario. Shared application code and agen
 | Scenario | Dataset | Initial content |
 |---|---|---|
 | `kosovo` | `v2.1` | Existing 14,833 events and preserved application/agent state |
-| `syria` | `convoy-v2` | Four synthetic CCTV/Satellite records, three paired satellite visits, two sites, one convoy; 18 layer definitions |
+| `syria` | `network-v1` | 208 records: 4 CCTV/Satellite, 4 ADINT, 200 IPDR; 20 layer definitions |
 
 Syria has no synthetic operational facts, locations, entities, targets or evidence. Kosovo example investigations and prompts are hidden there. Add real demo content as a new dataset/profile version rather than overwriting the published empty package.
 
@@ -87,3 +87,9 @@ The initial `empty-v1` state remains preserved. The upgrade copied only Syria st
 Profile 3 consolidates both sources to one record per location: two CCTV plus two Satellite records. Satellite records contain three repeat visits on September 20, 21 and 22, 2026. For each visit the convoy appears at Site 1 at 08:00 UTC and Site 2 at 08:15 UTC, consistent with northward movement over 5 km. Shared visit IDs and reciprocal record/image/timestamp fields connect each pair. Each record viewer shows only its own site's three captures. Shared visit IDs and counterpart references correlate visits across records without displaying the other site's images. The two CCTV clips correspond to September 22. Return journeys and travel between captures are not shown; all observations remain synthetic.
 
 The stopped-state upgrade preserves convoy-v1. Runtime release `0ba309bee374f6fea8b76c2f71edc7c977c42314`; source backup `/opt/demo-runtime/backups/syria-convoy-v2-0ba309b`. The current generator emits convoy-v2. Existing v1 media/data are retained as immutable historical artifacts, not active catalog records.
+
+## Syria ADINT/IPDR fixture
+
+Profile 5 selects network-v1. ADINT has four observations at Site 1 and three points 500m north/east/west. IPDR has 200 sessions without asserted GPS coordinates. One session shares Site 1 ADINT's IP and contains its observation timestamp; IMEI appears only in IPDR. Existing keyword search accepts IP/IMEI/advertising IDs; record details expose those identifiers and session boundaries. A session match is a synthetic fixture relation, not a pre-established connection to the convoy.
+
+Build with `python build_syria_network_demo.py` (standard library only), then build the scenario search cache offline. Existing CCTV/Satellite fields and Kosovo datasets/profile are unchanged. Runtime c7c331911d76d575a92b9aba434ede0434a4d818; backup `/opt/demo-runtime/backups/syria-network-c7c3319`. Prior Syria packages/state remain preserved. Version upgrades copy current Syria state only while all demo writers are stopped.
