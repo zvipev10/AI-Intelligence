@@ -12,8 +12,8 @@ from PIL import Image, ImageDraw
 import imageio_ffmpeg
 
 ROOT = Path(__file__).resolve().parent
-DATA = ROOT / "data/syria_convoy_v1"
-MEDIA = ROOT / "assets/demo/syria/convoy-v1"
+DATA = ROOT / "data/syria_convoy_v2"
+MEDIA = ROOT / "assets/demo/syria/convoy-v2"
 
 
 def frame(site, step, timestamp, satellite=False):
@@ -22,18 +22,19 @@ def frame(site, step, timestamp, satellite=False):
     for x in range(0, 640, 80):
         draw.rectangle((x + 8, 66, x + 65, 128), fill="#cbbca2", outline="#827762")
         draw.rectangle((x + 12, 255, x + 61, 300), fill="#9b9477", outline="#827762")
-    draw.polygon([(0, 160), (640, 145), (640, 238), (0, 252)], fill="#55595c")
-    for x in range(0, 640, 65):
-        draw.line((x, 203, x + 32, 201), fill="#e9dfbf", width=3)
+    draw.rectangle((260, 53, 380, 325), fill="#55595c")
+    for y in range(65, 325, 45):
+        draw.line((320, y, 320, y + 22), fill="#e9dfbf", width=3)
+    draw.text((395, 80), "NORTH ^", fill="#142833")
     for vehicle in range(4):
-        x = int((step * 95 + vehicle * 76 + site * 19) % 760) - 60
-        draw.rectangle((x, 175, x + 43, 192), fill="#3e575d", outline="#152d31", width=2)
-        draw.rectangle((x + 5, 178, x + 14, 189), fill="#9ec0c6")
+        y = int((280 - step * 35 + vehicle * 55) % 255) + 55
+        draw.rectangle((340, y, 357, y + 35), fill="#3e575d", outline="#152d31", width=2)
+        draw.rectangle((343, y + 3, 354, y + 11), fill="#9ec0c6")
     draw.rectangle((0, 0, 640, 53), fill="#142833")
     draw.text((15, 10), "SYNTHETIC DEMO - NOT REAL IMAGERY", fill="white")
     draw.text((15, 30), f"{'SATELLITE' if satellite else 'CCTV'} | SITE {site} | {timestamp}", fill="#83dfed")
     draw.rectangle((0, 325, 640, 360), fill="#142833")
-    draw.text((15, 337), "Convoy: 4 simulated vehicles | Fictional observation", fill="white")
+    draw.text((15, 337), "Convoy: 4 simulated vehicles | Northward travel | Synthetic", fill="white")
     return image
 
 
@@ -42,15 +43,15 @@ def main():
     locations = {}
     for site, latitude in [(1, 35.0), (2, 35.045)]:
         locations[f"LOC-SYR-{site:03}"] = {"name": f"Demo Site {site}", "latitude": latitude, "longitude": 38.5, "country": "Syria", "region": "Central Syria (synthetic demo)", "type": "demonstration site", "precision": "synthetic", "locality": f"Fictional Site {site}"}
-    entities = [{"entity_id": "ENT-SYR-CONVOY", "canonical_name": "Convoy", "aliases": ["convoy", "שיירה"], "entity_type": "vehicle convoy", "description": "Synthetic convoy entity shared by all 12 demonstration observations."}]
+    entities = [{"entity_id": "ENT-SYR-CONVOY", "canonical_name": "Convoy", "aliases": ["convoy", "שיירה"], "entity_type": "vehicle convoy", "description": "Synthetic convoy entity shared by all four demonstration records."}]
     records = []
     for site in [1, 2]:
         for source in ["CCTV", "Satellite"]:
-            for number in range(1, 4):
+            for number in range(1, 2):
                 at = datetime(2026, 9, 22, 8, tzinfo=timezone.utc) + timedelta(hours=number - 1, minutes=(site - 1) * 15)
                 stamp = at.isoformat().replace("+00:00", "Z")
                 stem = f"site-{site}-{source.lower()}-{number}"
-                record = {"event_id": f"REC-SYR-{source.upper()}-{site}-{number}", "timestamp_utc": stamp, "source_type": source, "source_reliability": "high", "source_reliability_label": "Synthetic demo", "certainty_level": "observed", "entity_id": "ENT-SYR-CONVOY", "location_id": f"LOC-SYR-{site:03}", "event_summary": f"SYNTHETIC DEMO: {source} observation {number} shows movement of the Convoy (4 simulated vehicles) at Demo Site {site}. Extracted location and entity are demonstration annotations, not real-world detections.", "collection_family": "synthetic_cctv_video" if source == "CCTV" else "synthetic_satellite_imagery", "observation_id": stem, "mission_id": f"SYR-DEMO-{site}", "object_class": "שיירת כלי רכב", "estimated_object_count": "4", "movement_status": "moving", "movement_direction": "east", "geolocation_confidence": "high", "identification_confidence": "high", "synthetic_media": "true", "video_url": "", "image_series": ""}
+                record = {"event_id": f"REC-SYR-{source.upper()}-{site}-{number}", "timestamp_utc": stamp, "source_type": source, "source_reliability": "high", "source_reliability_label": "Synthetic demo", "certainty_level": "observed", "entity_id": "ENT-SYR-CONVOY", "location_id": f"LOC-SYR-{site:03}", "event_summary": f"SYNTHETIC DEMO: {source} observation {number} shows movement of the Convoy (4 simulated vehicles) at Demo Site {site}. Extracted location and entity are demonstration annotations, not real-world detections.", "collection_family": "synthetic_cctv_video" if source == "CCTV" else "synthetic_satellite_imagery", "observation_id": stem, "mission_id": f"SYR-DEMO-{site}", "object_class": "שיירת כלי רכב", "estimated_object_count": "4", "movement_status": "moving", "movement_direction": "north", "geolocation_confidence": "high", "identification_confidence": "high", "synthetic_media": "true", "video_url": "", "image_series": ""}
                 if source == "CCTV":
                     path = MEDIA / (stem + ".mp4")
                     command = [imageio_ffmpeg.get_ffmpeg_exe(), "-y", "-loglevel", "error", "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", "640x360", "-r", "12", "-i", "-", "-an", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-movflags", "+faststart", str(path)]
@@ -63,11 +64,13 @@ def main():
                 else:
                     series = []
                     for capture in range(3):
-                        captured = (at + timedelta(minutes=capture * 5)).isoformat().replace("+00:00", "Z")
+                        captured = (at - timedelta(days=2 - capture)).isoformat().replace("+00:00", "Z")
                         path = MEDIA / f"{stem}-{capture + 1}.png"
                         frame(site, number + capture / 2, captured, True).save(path)
-                        series.append({"image_url": "/" + path.relative_to(ROOT).as_posix(), "timestamp_utc": captured})
+                        series.append({"image_url": "/" + path.relative_to(ROOT).as_posix(), "timestamp_utc": captured, "pair_id": f"SYR-VISIT-{capture + 1}", "entity_id": "ENT-SYR-CONVOY", "location_id": f"LOC-SYR-{site:03}", "paired_record_id": f"REC-SYR-SATELLITE-{3 - site}-1", "paired_image_url": f"/assets/demo/syria/convoy-v2/site-{3 - site}-satellite-1-{capture + 1}.png", "paired_timestamp_utc": (at - timedelta(days=2-capture) + timedelta(minutes=15 if site == 1 else -15)).isoformat().replace("+00:00", "Z"), "paired_location_id": f"LOC-SYR-{3 - site:03}", "description": f"Visit {capture + 1}: convoy at Site {site}; paired Site {3 - site} capture is 15 minutes {'later' if site == 1 else 'earlier'}."})
                     record["image_series"] = json.dumps(series)
+                    record["timestamp_utc"] = series[0]["timestamp_utc"]
+                    record["event_summary"] = f"SYNTHETIC DEMO: Convoy repeatedly appears at Demo Site {site} on September 20, 21 and 22, 2026 at {'08:00' if site == 1 else '08:15'} UTC. Three paired visits (SYR-VISIT-1/2/3) link Site 1 to Site 2, 5 km north, 15 minutes later each day. This is a constructed movement scenario; travel between captures and return journeys are not imaged."
                 records.append(record)
     for suffix in ["", ".en"]:
         with (DATA / f"events{suffix}.csv").open("w", encoding="utf-8", newline="") as handle:
@@ -76,8 +79,8 @@ def main():
             (DATA / f"{name}{suffix}.json").write_bytes(json.dumps(content, indent=2, ensure_ascii=False).encode())
     profile_path = ROOT / "demo_profiles/syria.json"
     profile = json.loads(profile_path.read_text(encoding="utf-8"))
-    profile.update(profile_version="2", dataset_version="convoy-v1", empty_dataset=False)
-    profile["files"] = {kind: f"data/syria_convoy_v1/{kind}.{'csv' if kind == 'events' else 'json'}" for kind in ["events", "locations", "entities"]}
+    profile.update(profile_version="3", dataset_version="convoy-v2", empty_dataset=False)
+    profile["files"] = {kind: f"data/syria_convoy_v2/{kind}.{'csv' if kind == 'events' else 'json'}" for kind in ["events", "locations", "entities"]}
     for language in ["he", "en"]:
         profile["sources"][language] = [source for source in profile["sources"][language] if source not in ["CCTV", "Satellite"]] + ["CCTV", "Satellite"]
     profile["map"]["center"] = [38.5, 35.0225]; profile["map"]["zoom"] = 12

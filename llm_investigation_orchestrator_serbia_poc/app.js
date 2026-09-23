@@ -3343,7 +3343,13 @@ function viewerMediaHtml(item) {
   const disclaimer = synthetic ? `<p class="object-viewer-media-context">${escapeHtml(activeLocaleText("מדיה סינתטית להדגמה בלבד — אינה תיעוד אמיתי.", "SYNTHETIC DEMO — not authentic footage or satellite imagery."))}</p>` : "";
   const images = series.map(capture => {
     const url = safeMediaUrl(capture?.image_url);
-    return url ? `<figure><div class="object-viewer-media"><img loading="lazy" src="${escapeHtml(url)}" alt="${escapeHtml(activeLocaleText("תמונת לוויין מדומה", "Simulated satellite capture"))}"></div><figcaption><time>${escapeHtml(capture.timestamp_utc || "")}</time></figcaption></figure>` : "";
+    if (!url) return "";
+    const pair = [{url, timestamp: capture.timestamp_utc, location: capture.location_id}];
+    const pairedUrl = safeMediaUrl(capture.paired_image_url);
+    if (pairedUrl) pair.push({url: pairedUrl, timestamp: capture.paired_timestamp_utc, location: capture.paired_location_id});
+    pair.sort((a, b) => String(a.timestamp || "").localeCompare(String(b.timestamp || "")));
+    const captures = pair.map(entry => `<div><div class="object-viewer-media"><img loading="lazy" src="${escapeHtml(entry.url)}" alt="${escapeHtml(activeLocaleText("תמונת לוויין מדומה", "Simulated satellite capture"))}"></div><small>${escapeHtml(entry.location || "")} · <time>${escapeHtml(entry.timestamp || "")}</time></small></div>`).join("");
+    return `<figure><figcaption><strong>${escapeHtml(capture.pair_id || "")}</strong><p>${escapeHtml(capture.description || "")}</p></figcaption><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px">${captures}</div>${capture.paired_record_id ? `<small>${escapeHtml(activeLocaleText("רשומה תואמת", "Paired record"))}: ${escapeHtml(capture.paired_record_id)}</small>` : ""}</figure>`;
   }).join("");
   if (images) return `<section class="object-viewer-source-media"><h3>${escapeHtml(activeLocaleText("תמונות לוויין לאורך זמן", "Satellite captures over time"))}</h3>${disclaimer}${images}</section>`;
   const media = viewerMedia(item);

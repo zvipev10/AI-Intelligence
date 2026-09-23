@@ -19,4 +19,8 @@ const html = context.viewerMediaHtml({synthetic_media:'true',image_series: JSON.
 assert.equal((html.match(/<img /g)||[]).length,2);
 assert.match(html,/08:00:00Z/);assert.match(html,/08:05:00Z/);assert.doesNotMatch(html,/javascript:/);
 assert.equal(context.viewerMediaHtml({image_series:'broken'}),'');
+const pairedHtml = context.viewerMediaHtml({image_series:[{image_url:'/second.png',timestamp_utc:'2026-09-20T08:15:00Z',pair_id:'VISIT-1',paired_image_url:'/first.png',paired_timestamp_utc:'2026-09-20T08:00:00Z'}]});
+assert.equal((pairedHtml.match(/<img /g)||[]).length,2);
+assert(pairedHtml.indexOf('first.png') < pairedHtml.indexOf('second.png'));
+assert.match(pairedHtml,/VISIT-1/);
 console.log('PASS: CCTV player, timestamped image sequence, synthetic labels and URL validation');

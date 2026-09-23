@@ -67,6 +67,7 @@ DIRS = [
     "demo_profiles",
     "data/syria_empty_v1",
     "data/syria_convoy_v1",
+    "data/syria_convoy_v2",
     "assets",
     "vendor",
     "recorded_runs",
