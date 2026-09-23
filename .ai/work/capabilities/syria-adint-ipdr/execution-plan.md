@@ -1,0 +1,1 @@
+Implement user-authorized data contract. Generate versioned fixtures; expose structured fields and searchable identifiers. Test exact correlation and UI catalog. Back up and copy only Syria state at stopped upgrade, install prebuilt index and release, activate Syria and verify public rows and MCP search.

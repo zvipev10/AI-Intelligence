@@ -1,0 +1,1 @@
+Deployed Syria network-v1/profile 5: 4 ADINT and 200 IPDR rows plus 4 existing records. PR #74 / issue #73, stacked on #72. Public count/join checks pass; live agent correlation passed (41.79 seconds). Next: user browser acceptance and PR review.

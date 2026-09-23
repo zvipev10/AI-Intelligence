@@ -1,0 +1,1 @@
+User authorized Syria-only ADINT/IPDR layers: four ADINT observations at Site 1 plus three points roughly 500m nearby, 200 IPDR rows, exactly one IP match exposing IMEI for the Site 1 observation. Synthetic data continues the established demo convention. Preserve CCTV/Satellite and Kosovo.

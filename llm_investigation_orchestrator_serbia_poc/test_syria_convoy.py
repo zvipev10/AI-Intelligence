@@ -14,10 +14,12 @@ class SyriaConvoy(unittest.TestCase):
     def test_dataset_relations_and_media(self):
         profile = load_profile(ROOT, "syria", verify=True)
         rows = list(csv.DictReader((ROOT / profile["files"]["events"]).read_text(encoding="utf-8").splitlines()))
+        rows = [r for r in rows if r["source_type"] in {"CCTV", "Satellite"}]
         locations = json.loads((ROOT / profile["files"]["locations"]).read_text())
         entities = json.loads((ROOT / profile["files"]["entities"]).read_text(encoding="utf-8"))
         self.assertEqual(len({r["event_id"] for r in rows}), 4)
-        self.assertEqual(len(entities), 1)
+        self.assertEqual(sum(e["entity_id"] == "ENT-SYR-CONVOY" for e in entities), 1)
+        locations = {k: v for k, v in locations.items() if k in {"LOC-SYR-001", "LOC-SYR-002"}}
         self.assertEqual(Counter((r["source_type"], r["location_id"]) for r in rows), {(s, l): 1 for s in ["CCTV", "Satellite"] for l in locations})
         first, second = locations.values()
         distance = 6371 * math.radians(abs(first["latitude"] - second["latitude"]))

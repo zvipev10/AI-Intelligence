@@ -5,7 +5,7 @@ const source = fs.readFileSync(`${__dirname}/app.js`, 'utf8');
 const context = {URL, window: {location: {href: 'http://localhost/'}}, activeLocaleText: (he,en) => en,
   escapeHtml: text => String(text).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('"','&quot;')};
 vm.createContext(context);
-for (const name of ['safeMediaUrl','viewerMedia','isUavVideoRecord','isCellularCallRecord','viewerMediaHtml']) {
+for (const name of ['safeMediaUrl','viewerMedia','isUavVideoRecord','isCellularCallRecord','viewerMediaHtml','viewerFields']) {
   const start = source.search(new RegExp(`function ${name}\\(`));
   const next = source.slice(start + 1).search(/\n(?:async )?function /);
   vm.runInContext(source.slice(start, next < 0 ? undefined : start + 1 + next), context);
@@ -25,3 +25,6 @@ assert.doesNotMatch(pairedHtml,/first\.png/);
 assert.match(pairedHtml,/second\.png/);
 assert.match(pairedHtml,/VISIT-1/);
 console.log('PASS: CCTV player, timestamped image sequence, synthetic labels and URL validation');
+
+const networkFields = context.viewerFields({ip_address:"192.0.2.10",imei:"000000000001370",session_start_utc:"2026-09-22T07:58:00Z"},"record");
+assert.deepEqual(Array.from(networkFields, row => row[0]), ["ip_address","imei","session_start_utc"]);

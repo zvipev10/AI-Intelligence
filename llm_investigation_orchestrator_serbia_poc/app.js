@@ -3432,7 +3432,7 @@ function startSimulatedUavStream(item) {
 function viewerFields(item, kind) {
   const hidden = new Set(["event_summary", "canonical_name", "media", "image_series", "video_url", "audio_url", "image_url", "raw_data_references", "call_started_at_utc", "call_duration_seconds", "side_a_imei", "side_a_number", "side_a_location_id", "side_a_location_name", "side_b_imei", "side_b_number", "side_b_location_id", "side_b_location_name", "call_transcript", "call_transcript_en", "synthetic_media"]);
   const preferred = kind === "record"
-    ? ["timestamp_utc", "source_type", "collection_family", "source_reliability_label", "certainty_level", "entity_name", "location_name", "call_id", "observation_id", "mission_id", "video_segment_id"]
+    ? ["timestamp_utc", "source_type", "collection_family", "source_reliability_label", "certainty_level", "entity_name", "location_name", "advertising_id", "ip_address", "imei", "session_start_utc", "session_end_utc", "source_port", "protocol", "bytes_up", "bytes_down", "location_accuracy_m", "call_id", "observation_id", "mission_id", "video_segment_id"]
     : kind === "evidence"
       ? ["evidence_status", "claim_type", "confidence", "object_class", "subject_entity_ids", "location_ids", "valid_from", "valid_to", "source_groups", "source_record_ids", "quantity", "movement", "created_by_processor"]
     : kind === "assessment"
@@ -3443,6 +3443,16 @@ function viewerFields(item, kind) {
 
 function viewerFieldLabel(key) {
   const labels = {
+    advertising_id: ["מזהה פרסום", "Advertising ID"],
+    ip_address: ["כתובת IP", "IP address"],
+    imei: ["IMEI", "IMEI"],
+    session_start_utc: ["תחילת חיבור", "Session start (UTC)"],
+    session_end_utc: ["סיום חיבור", "Session end (UTC)"],
+    source_port: ["פורט מקור", "Source port"],
+    protocol: ["פרוטוקול", "Protocol"],
+    bytes_up: ["בתים שנשלחו", "Bytes uploaded"],
+    bytes_down: ["בתים שהתקבלו", "Bytes downloaded"],
+    location_accuracy_m: ["דיוק מיקום במטרים", "Location accuracy (m)"],
     timestamp_utc: ["זמן", "Time"],
     source_type: ["סוג מקור", "Source type"],
     collection_family: ["משפחת איסוף", "Collection family"],
