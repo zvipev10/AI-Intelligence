@@ -11,3 +11,5 @@ Verification: 15 focused scenario/data tests, paired-renderer chronology checks,
 Next: refresh the application and open either Satellite record to inspect all three paired visits. Review PR #72 after platform #69. Focused operator documentation updated in `docs/demo-scenarios.md`; no further architecture change is needed. Fixed demo dates and fictional sites are retained assumptions; one record per source/location and synthetic media were user-confirmed.
 
 Display correction: each Satellite record shows only its own location's three images. Matching visit IDs, timestamps and counterpart record references preserve cross-location correlation without displaying the other location's images. This supersedes the paired-image display described above.
+
+Copy correction: convoy-v3/profile 4 removes the user-specified cross-site explanation from both satellite summaries. Existing observations, timestamps, media and correlation metadata are unchanged. Prior packages remain retained.

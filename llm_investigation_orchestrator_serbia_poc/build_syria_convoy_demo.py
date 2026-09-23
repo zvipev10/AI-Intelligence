@@ -12,7 +12,7 @@ from PIL import Image, ImageDraw
 import imageio_ffmpeg
 
 ROOT = Path(__file__).resolve().parent
-DATA = ROOT / "data/syria_convoy_v2"
+DATA = ROOT / "data/syria_convoy_v3"
 MEDIA = ROOT / "assets/demo/syria/convoy-v2"
 
 
@@ -70,7 +70,7 @@ def main():
                         series.append({"image_url": "/" + path.relative_to(ROOT).as_posix(), "timestamp_utc": captured, "pair_id": f"SYR-VISIT-{capture + 1}", "entity_id": "ENT-SYR-CONVOY", "location_id": f"LOC-SYR-{site:03}", "paired_record_id": f"REC-SYR-SATELLITE-{3 - site}-1", "paired_image_url": f"/assets/demo/syria/convoy-v2/site-{3 - site}-satellite-1-{capture + 1}.png", "paired_timestamp_utc": (at - timedelta(days=2-capture) + timedelta(minutes=15 if site == 1 else -15)).isoformat().replace("+00:00", "Z"), "paired_location_id": f"LOC-SYR-{3 - site:03}", "description": f"Visit {capture + 1}: convoy at Site {site}; paired Site {3 - site} capture is 15 minutes {'later' if site == 1 else 'earlier'}."})
                     record["image_series"] = json.dumps(series)
                     record["timestamp_utc"] = series[0]["timestamp_utc"]
-                    record["event_summary"] = f"SYNTHETIC DEMO: Convoy repeatedly appears at Demo Site {site} on September 20, 21 and 22, 2026 at {'08:00' if site == 1 else '08:15'} UTC. Three paired visits (SYR-VISIT-1/2/3) link Site 1 to Site 2, 5 km north, 15 minutes later each day. This is a constructed movement scenario; travel between captures and return journeys are not imaged."
+                    record["event_summary"] = f"SYNTHETIC DEMO: Convoy repeatedly appears at Demo Site {site} on September 20, 21 and 22, 2026 at {'08:00' if site == 1 else '08:15'} UTC."
                 records.append(record)
     for suffix in ["", ".en"]:
         with (DATA / f"events{suffix}.csv").open("w", encoding="utf-8", newline="") as handle:
@@ -79,8 +79,8 @@ def main():
             (DATA / f"{name}{suffix}.json").write_bytes(json.dumps(content, indent=2, ensure_ascii=False).encode())
     profile_path = ROOT / "demo_profiles/syria.json"
     profile = json.loads(profile_path.read_text(encoding="utf-8"))
-    profile.update(profile_version="3", dataset_version="convoy-v2", empty_dataset=False)
-    profile["files"] = {kind: f"data/syria_convoy_v2/{kind}.{'csv' if kind == 'events' else 'json'}" for kind in ["events", "locations", "entities"]}
+    profile.update(profile_version="4", dataset_version="convoy-v3", empty_dataset=False)
+    profile["files"] = {kind: f"data/syria_convoy_v3/{kind}.{'csv' if kind == 'events' else 'json'}" for kind in ["events", "locations", "entities"]}
     for language in ["he", "en"]:
         profile["sources"][language] = [source for source in profile["sources"][language] if source not in ["CCTV", "Satellite"]] + ["CCTV", "Satellite"]
     profile["map"]["center"] = [38.5, 35.0225]; profile["map"]["zoom"] = 12
