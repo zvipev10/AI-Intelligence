@@ -1,12 +1,14 @@
 # AI Intelligence
 
-This repository contains the Serbia/North Kosovo intelligence-analysis proof of concept. The active application is a bilingual Hebrew/English analyst workspace backed by Hermes profiles and constrained MCP tools over a synthetic 14,833-record V2.1 dataset, including 24 simulated cellular-call records.
+This repository contains one shared bilingual intelligence-analysis application with isolated Kosovo and Syria demo packages. Hermes General/Moshe/Talia roles serve one active scenario at a time. Kosovo retains its 14,833-record V2.1 dataset and saved work; the current Syria `network-v1` package contains 208 synthetic records.
 
 Current capabilities include:
 
 - General investigation with semantic and deterministic retrieval.
 - Additive map, timeline, table, entity, location, evidence, target, and assessment layers.
-- Raw-record viewing with simulated UAV video for UAV observations.
+- Raw-record viewing with simulated UAV video, CCTV movies and timestamped Satellite image sequences.
+- Syria ADINT/IPDR correlation by IP and session time, returning IMEI from IPDR.
+- A standalone Table tab for geometry-free records, with IP/IMEI-specific IPDR columns.
 - A precomputed Evidence Layer plus on-demand evidence preparation and neutral fusion.
 - Moshe (`@משה` / `@Moshe`) for evidence-backed target-candidate workflows.
 - Talia (`@טליה`) for durable enemy assessments, supporting evidence, and assessment graphics.
@@ -14,26 +16,25 @@ Current capabilities include:
 - Multiplexed Hermes routing through one gateway while retaining profile-specific tools, memory, and authorization boundaries.
 - A compact Street/Satellite basemap switch; Satellite is the default and retains vector roads, administrative borders, and labels.
 
-## Current production state
+## Current deployment snapshot
 
-- Evidence implementation baseline on `main`: `9e6cef1`.
-- UI root: `/opt/serbia-poc-ui`
-- MCP root: `/opt/serbia-poc`
-- UI service: `serbia-poc-ui.service`, port `8769`
-- Hermes service: `hermes-gateway.service`
-- Active dataset: `v2.1`
-- Evidence catalog schema: `evidence-catalog-v2`
-- Current catalog: 5,283 rows, including 783 fused evidence objects.
-- Active scenario: Syria `network-v1` (208 records).
-- Initial map camera: Damascus (`36.2765, 33.5138`) at zoom `11`.
-- Basemap assets: `styles.css?v=155`, `demo_bootstrap.js?v=210`, `app.js?v=209`.
+As documented on 2026-09-23:
 
-The latest evidence update reuses the existing semantic concept vocabulary in `prepare_evidence`, applies normalized classes to `prepare_fused_evidence`, uses an eight-hour rolling catalog window, and exposes cataloged fused evidence through the same repository interface consumed by Talia. The UI catalog and Talia profile were deployed and verified together on 2026-09-17.
+- UI `/opt/serbia-poc-ui`, service `serbia-poc-ui.service`, port `8769`; MCP `/opt/serbia-poc`.
+- Shared gateway `hermes-gateway.service`; scenario transitions also stop `hermes-dashboard.service`.
+- Active scenario: Syria profile 6, `network-v1`, 208 records and 20 catalog definitions. Kosovo `v2.1` remains installed and inactive.
+- Initial Syria camera: Damascus `[36.2765, 33.5138]`, zoom `11`.
+- Satellite default, English-preferred labels, vector roads/borders, selectable Street fallback.
+- Public assets: `styles.css?v=155`, `demo_bootstrap.js?v=210`, `app.js?v=209`.
+- Source changes in PRs #69, #72, #74 and #76 are merged into `main`, along with later map refinements. Start new shared features from current remote `main`.
 
-The map presentation update deployed on 2026-09-23 uses Esri imagery beneath selected CARTO transportation and administrative-boundary vectors, with CARTO labels above them. Street mode restores the original CARTO styling, and the application falls back to Street automatically if satellite imagery is unavailable.
+Check `/api/status` and the installed release manifest for live identity. The historical 5,283-row evidence catalog (783 fused objects) belongs to the Kosovo evidence release; it is not the active Syria catalog count. Immutable profile/data versions and mutable scenario state are separate from the shared application release.
 
 ## Start here
 
+- [Product context](docs/product-context.md) — current datasets, demo narrative and analyst-facing features.
+- [Scenario operator runbook](llm_investigation_orchestrator_serbia_poc/docs/demo-scenarios.md) — isolation, switching, upgrades and recovery.
+- [Architecture](docs/architecture.md) and [decisions](docs/decisions.md) — durable implementation contracts.
 - `PROJECT_HANDOFF.md` — current deployment state, operational constraints, verification results, and continuation guidance.
 - `llm_investigation_orchestrator_serbia_poc/README.md` — detailed application architecture and commands.
 - `.ai/work/capabilities/evidence-semantic-fusion/` — latest evidence-tool design, tests, checkpoint, and handoff.

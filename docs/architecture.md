@@ -2,11 +2,45 @@
 
 This document records durable architecture behavior that future implementation work should preserve.
 
+## Shared runtime and scenario isolation
+
+One canonical application package serves Kosovo and Syria; no country-specific code forks or simultaneous demo deployments. `demo_runtime.py` loads validated `demo_profiles/<scenario>.json` and binds dataset/store paths before MCP stores are imported. Profiles carry geography, localized file references, checksums, catalog sources and dataset identity. The current Syria profile is version 6 / `network-v1`; Kosovo is version 1 / `v2.1`.
+
+| Boundary | Ownership / location |
+|---|---|
+| Immutable data and media | Versioned packages referenced by scenario profile; source tree remains shared |
+| Application persistence | `/opt/demo-runtime/state/<scenario>/<dataset>/`: investigations, targets, evidence, assessments, playback, caches and audit |
+| Browser persistence | `<scenario>:<dataset>:` storage prefix installed by `demo_bootstrap.js` before application startup |
+| Agent homes | `/opt/demo-runtime/hermes-homes/<scenario>/<role>/`, selected through `demo-general`, `demo-moshe`, `demo-talia` aliases |
+| Role audit | `<scenario>/<dataset>/audit/<role>.jsonl`; per-run records under `audit/runs/` |
+| Active identity | `scenario_id`, `dataset_version`, `activation_generation`; control files and `active.env` select one runtime |
+| Locale | Existing Hebrew/English data/store/cache isolation inside the selected scenario; omitted locale retains compatibility behavior |
+
+Agent homes are scenario/role scoped, while application data and audits are also dataset scoped. Do not describe an unchanged role home as a fresh dataset-specific agent memory. Provider credentials may be carried between corresponding roles at a stopped scenario transition to avoid stale OAuth tokens; this is distinct from copying conversations or learned scenario memory.
+
+`activate_demo.py` verifies installed release/profile/state/cache compatibility, locks activation, enters maintenance, drains work, then stops UI, dashboard and gateway. The dashboard owns MCP workers too. Selection updates aliases, environment, gateway tool registry and **each role's audit path**. Readiness checks UI/gateway/catalog and actual role identity/counts before committing current identity and reopening admission. Stale tabs receive HTTP 409 and must reload. Failed readiness restores the prior selection with a fresh generation; boot recovery preserves maintenance until verification.
+
+The installed Hermes root registry must contain tool definitions bound to the active scenario even though roles use named homes. Updating profile files alone is insufficient. The audit-path update prevents an old dataset directory receiving tool results while the UI reads the new directory.
+
+A shared reentrant execution gate serializes application agent work, with a queue of eight, cancellation for queued requests and foreground priority with aging. It includes interactive, specialist, optional OpenAI and application background jobs, but does not regulate unrelated messaging integrations. On the constrained VM, semantic indexes are built offline and checksummed; missing/stale caches fail explicitly rather than building during requests. Inactive scenario packages/state remain on disk without a second resident runtime.
+
+Operational commands and release/rollback rules are in the [scenario runbook](../llm_investigation_orchestrator_serbia_poc/docs/demo-scenarios.md).
+
+## Result presentation and raw source fields
+
+`map`, `timeline` and `table` are valid agent presentation choices for requested results, supporting evidence references and catalog actions. English/Hebrew instructions choose spatial, chronological or record/identifier presentation accordingly. Legacy view `evidence` aliases to Table; evidence object kinds are unchanged.
+
+The standalone Table tab reuses the same raw-results table DOM, selected layer, filters, sorting and record viewer as the Map/Timeline overlay. Table mode changes layout rather than cloning the component. Geometry-free records retain their IDs and open-record actions; map capability is derived from available locations for raw catalog/materialized/saved rows. IPDR's source-specific table and viewer expose native IP/IMEI and session fields, not inferred actor/location; identifiers remain strings.
+
+`present_requested_results` materializes selected canonical rows and their recommended view. `agent_result_pipeline.py` preserves the structured presentation through audit parsing. Whole/filtered catalog actions and saved-memory actions use their own contracts; the browser reports actual loading success/failure. Presentation never implies a target or assessment mutation.
+
 ## Basemap composition
 
 The MapLibre client keeps basemap references separate from analytical presentation.
 
-- Street mode uses the native CARTO Voyager vector style.
+- Satellite is the initial default; Street mode uses the native CARTO Voyager vector style.
+- Name-based labels prefer English at every zoom, falling back to available names where English is missing.
+- Basemap imagery is geographic context, independent of timestamped synthetic Satellite source records; retain provider attribution.
 - Satellite mode places Esri World Imagery below selected CARTO `transportation` and `boundary` line layers and CARTO symbol/label layers.
 - Satellite-specific paint is presentation-only and must be restored from the captured CARTO layer definitions when Street mode is selected.
 - Application-created operational layers, result routes, markers, and MIL-STD symbols are not part of `state.basemapLayers` and must not be hidden or restyled by basemap switching.
@@ -15,7 +49,7 @@ The MapLibre client keeps basemap references separate from analytical presentati
 
 ## Locale-isolated runtime state
 
-The v2.1 intelligence workspace supports Hebrew and English as separate runtime contexts.
+Hebrew and English remain separate runtime contexts within the selected scenario. The v2.1 paths below describe the Kosovo implementation; resolve scenario roots through `DemoRuntime`, rather than hard-coding Kosovo paths for Syria.
 
 - Immutable runtime data is selected by locale and dataset version.
 - MCP runtime bundles are locale-specific and fail closed if English assets are missing or invalid.
@@ -127,8 +161,8 @@ Evidence contract:
 
 Agent-to-UI catalog action contract:
 
-- Direct unfiltered opening uses MCP `open_catalog_layers` with an exact ID from the injected localized catalog.
+- Named catalog opening uses MCP `open_catalog_layers`; the live resolver returns canonical IDs for exact/unique close matches, requests clarification for ambiguity and fails closed when the catalog is unavailable.
 - The gateway extracts the latest successful action and validates it against `list_ui_layers(locale)`.
 - The result exposes `catalog_layer_actions` and `catalog_layer_action_errors`.
 - The browser awaits `openCatalogLayer`, activates the layer, selects a supported view, and redraws.
-- Filtered requests remain search plus `present_requested_results`; saved layers remain `present_saved_memory_layers`.
+- Supported location/entity/event/time constraints travel in `open_catalog_layers.filters`, preserving scope through loading, saved reconstruction and refresh. Other predicates use retrieval plus explicit result IDs/`present_requested_results`; saved layers remain `present_saved_memory_layers`.
