@@ -1,0 +1,3 @@
+# Implementation checkpoint
+
+User confirmed Syria only with invented data. Added four synthetic geolocations and two calls for two devices, using existing sites. String IMEI/SIM fields supported by viewer/table and MCP identifier search. Calls table exposes both side IMEIs (already supported by viewer and retrieval). Existing 424 records preserved. New cellular-v1/profile14: 430 records, 88 locations, 13 entities, 21 catalog definitions. Kosovo unchanged. 34 Python checks, UI table/viewer harness and JS syntax pass; compatible offline index built. Next: backed-up deployment and live verification. Issue83.

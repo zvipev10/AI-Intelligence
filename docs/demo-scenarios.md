@@ -9,7 +9,7 @@ The bilingual Hebrew/English intelligence workspace has one shared codebase and 
 | Package | Current profile / dataset | Content |
 |---|---|---|
 | Kosovo | profile 1 / `v2.1` | 14,833 records, including 24 simulated cellular calls; preserved investigations and agent state |
-| Syria | profile 13 / `adint-v3` | 424 records: 2 CCTV, 2 Satellite, 120 ADINT, 300 IPDR; 88 locations, 13 entities and 20 catalog definitions |
+| Syria | profile 18 / `call-media-v1` | 444 records: 2 CCTV, 2 Satellite, 120 ADINT, 300 IPDR, 18 Cellular Geolocations, 2 Cellular Calls; 102 locations, 13 entities and 21 catalog definitions |
 
 Deployment identity must be checked through `/api/status`; this is an installed-package inventory, not a live status assertion. Syria's initial camera is Damascus (longitude 36.2765, latitude 33.5138), zoom 11. The fictional convoy sites are elsewhere; opening results can fit the map to their geometry. Installed profiles, not this document, are authoritative for future versions.
 
@@ -56,3 +56,19 @@ The convoy fixture generator `build_syria_convoy_demo.py` uses Pillow/imageio-ff
 5. Switch to Kosovo only through the operator procedure and confirm its own saved state returns.
 
 Kosovo retains the bilingual V2.1 corpus, including 24 synthetic cellular calls. The historical 5,283-row evidence catalog (783 fused objects) belongs to its evidence release, not to Syria. Detailed prior demo scripts and quality results remain in [historical capability records](../.ai/work/capabilities/) and the [documentation archive](../.ai/work/capabilities/documentation-hierarchy/migration-map.md).
+
+## Cellular samples
+
+Syria cellular-v1/profile14 adds four synthetic Cellular Geolocations with string IMEI, SIM and canonical location_id, plus two synthetic Cellular Calls showing side_a_imei and side_b_imei. Two demo devices (990000000000001/2) use DEMO-SIM-SYR-001/002 at existing ADINT points 001/002 on September 1 at 09:00 and 10:00 UTC, with calls five minutes later. These are invented examples, not collected communications; no audio/transcript is supplied. Existing 424 rows and Kosovo data remain unchanged. Record IDs and timestamps support the standard viewer, map and timeline.
+
+### Coastal route extension
+
+cellular-v2/profile15 retains the four initial cellular observations and adds twelve device-1 observations from Satellite site 1 toward the Baniyas seafront on September 20, 08:30–11:15 UTC, at 15-minute intervals. These synthetic waypoints show a scenario route, not a verified road track. Both calls occur at Coastal route stop 05 (35.133, 36.117), at 09:46 and 09:50. Side B is at a separate new remote location (35.12, 36.03), with two matching device-2 geolocations. All existing non-call records and earlier location coordinates remain unchanged. Coastal geographic reference: [Baniyas](https://mapcarta.com/Baniyas).
+
+cellular-v3/profile16 moves only the first route observation to LOC-SYR-CELL-START-001, a new point 60 metres north of Satellite site 1. The Satellite coordinates, other route observations and call endpoints remain unchanged.
+
+cellular-v4/profile17 moves Side B of both calls and its two matching geolocations to new LOC-SYR-CALL-NORTH-001 (36.60,37.05), far north of every Side A route point. Side A and route coordinates are unchanged; the prior remote location remains historical with no current call references.
+
+### Supplied Call 1 media
+
+call-media-v1/profile18 attaches the supplied Arabic recording, original transcript and English translation to REC-SYR-CALL-001. The viewer presents caller details, a satellite endpoint map, bilingual conversation bubbles and audio controls. The original MP3 and text files are retained; a PCM WAV derivative supports browser playback. No per-line timestamps were supplied, so bubbles are not synchronized to audio. Scenario times, coordinates and existing IMEIs remain demo metadata. Transcript speaker IMEI 353294702931926 is displayed separately from the scenario IMEI pending confirmation. Call 2 remains without media. Kosovo is unchanged.

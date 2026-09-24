@@ -2,16 +2,16 @@
   "schema_version": 1,
   "state_schema_version": 1,
   "scenario_id": "syria",
-  "profile_version": "13",
-  "dataset_version": "adint-v3",
+  "profile_version": "18",
+  "dataset_version": "call-media-v1",
   "label": {
     "en": "Syria"
   },
   "empty_dataset": false,
   "files": {
-    "events": "data/syria_adint_v3/events.csv",
-    "locations": "data/syria_adint_v3/locations.json",
-    "entities": "data/syria_adint_v3/entities.json"
+    "events": "data/syria_call_media_v1/events.csv",
+    "locations": "data/syria_call_media_v1/locations.json",
+    "entities": "data/syria_call_media_v1/entities.json"
   },
   "sources": {
     "he": [
@@ -30,7 +30,8 @@
       "CCTV",
       "Satellite",
       "ADINT",
-      "IPDR"
+      "IPDR",
+      "Cellular Geolocations"
     ],
     "en": [
       "X",
@@ -48,7 +49,8 @@
       "CCTV",
       "Satellite",
       "ADINT",
-      "IPDR"
+      "IPDR",
+      "Cellular Geolocations"
     ]
   },
   "map": {
@@ -93,13 +95,17 @@
     "assets/demo/syria/convoy-v2/site-2-satellite-1-3.png": "bbd1df8849ac78bf8d19511e5e7c67d596f9cc9e836663ec4b3a3f90424f84ce",
     "assets/demo/syria/satellite-v1/satellite-1.jpeg": "530a859c78c9f7d866bf0012c53b1932c4935ec313a0b98e752ab75b676ef3ce",
     "assets/demo/syria/satellite-v1/satellite-2.jpeg": "a7e22e7b46bd1806b95c51207d40cd9f6639c5fd79eb96c538eacbe376fe18ea",
-    "data/syria_adint_v3/ADINT.json": "d20ac68df152bd4532ca69bf576d3fea23446cd38683cfcb609d859d818ed90b",
-    "data/syria_adint_v3/entities.en.json": "db07bf91b57ee6cd6c88d84b97e8ef7bdcb635778f5ea34a65975d20526099e9",
-    "data/syria_adint_v3/entities.json": "db07bf91b57ee6cd6c88d84b97e8ef7bdcb635778f5ea34a65975d20526099e9",
-    "data/syria_adint_v3/events.csv": "feb28b2ffcba333dbc7bfc40c9939324c1949fecc3512a2527d854cd1b341226",
-    "data/syria_adint_v3/events.en.csv": "feb28b2ffcba333dbc7bfc40c9939324c1949fecc3512a2527d854cd1b341226",
-    "data/syria_adint_v3/IPDR-expanded.csv": "4fbc961a4fba1d91d69f0e8bc8f1fb68e9d56bcb43f7708a4a72f45ad281f7e6",
-    "data/syria_adint_v3/locations.en.json": "b47fa1118f12d611d78817240c7a5bcbb71e0b2e831fe91ed0fdd85413419b35",
-    "data/syria_adint_v3/locations.json": "b47fa1118f12d611d78817240c7a5bcbb71e0b2e831fe91ed0fdd85413419b35"
+    "data/syria_call_media_v1/ADINT.json": "d20ac68df152bd4532ca69bf576d3fea23446cd38683cfcb609d859d818ed90b",
+    "data/syria_call_media_v1/entities.en.json": "db07bf91b57ee6cd6c88d84b97e8ef7bdcb635778f5ea34a65975d20526099e9",
+    "data/syria_call_media_v1/entities.json": "db07bf91b57ee6cd6c88d84b97e8ef7bdcb635778f5ea34a65975d20526099e9",
+    "data/syria_call_media_v1/events.csv": "39859705e42a585b2730ff686f7bb79d4faf0040dd7cdf20e785046ed046c5ee",
+    "data/syria_call_media_v1/events.en.csv": "c802420c0269583850c2bcd1d961167a44a5d59ba371a8bf2060bc8c48592c80",
+    "data/syria_call_media_v1/IPDR-expanded.csv": "4fbc961a4fba1d91d69f0e8bc8f1fb68e9d56bcb43f7708a4a72f45ad281f7e6",
+    "data/syria_call_media_v1/locations.en.json": "4861511460fa3f407e4bd90dc33b67861eccbe97a491f355db96ac41d6a581f4",
+    "data/syria_call_media_v1/locations.json": "4861511460fa3f407e4bd90dc33b67861eccbe97a491f355db96ac41d6a581f4",
+    "assets/demo/syria/call-media-v1/call-1-transcript-ar.txt": "80d9997ae4d8a1ecec67b63bbe419ee393c531ace62ad6ed233acb13fb9721a7",
+    "assets/demo/syria/call-media-v1/call-1-translation-en.txt": "b3c3852ceab90aa1a19e0c690e9a6795f2425a906a8a18a0f858565aec627897",
+    "assets/demo/syria/call-media-v1/call-1.mp3": "349a3aab9e56738931abc12ab85365cfab3475c6b06749158534727d496883ab",
+    "assets/demo/syria/call-media-v1/call-1.wav": "90c3e3ace4b55fedbac5eb0d57f4b581d68494a203675c7501412898b67c1957"
   }
 }

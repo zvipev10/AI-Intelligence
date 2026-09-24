@@ -1,0 +1,3 @@
+# Call 1 media and viewer
+
+Attach user-supplied MP3, Arabic transcript and English translation to Call1. Preserve text/media bytes. Speaker IMEI differs from scenario: user clarification pending. No transcript timecodes provided; do not fabricate alignment. Use screenshot as layout reference within existing app: wide dark viewer, left caller details, right satellite map and bilingual conversation, bottom audio player. Reuse MapLibre and material icons; no generated imagery needed. Measure audio duration. Add source/provenance/language fields to retrieval and viewer. Verify audio, Arabic/English, map, closing cleanup, small viewport and existing call without media; publish and deploy with rollback.

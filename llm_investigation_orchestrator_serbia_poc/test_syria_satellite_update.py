@@ -7,10 +7,10 @@ class SatelliteUpdate(unittest.TestCase):
   p=load_profile(ROOT,'syria',verify=True)
   rows=list(csv.DictReader((ROOT/p['files']['events']).read_text().splitlines()))
   old={r['event_id']:r for r in csv.DictReader((ROOT/'data/syria_ipdr_v1/events.csv').read_text().splitlines())}
-  loc=json.loads((ROOT/p['files']['locations']).read_text());self.assertEqual(len(loc),88)
+  loc=json.loads((ROOT/p['files']['locations']).read_text());self.assertEqual(len(loc),102)
   sats=[r for r in rows if r['source_type']=='Satellite'];self.assertEqual(len(sats),2)
   for r in rows:
-   if r['source_type'] not in ['Satellite','ADINT']:self.assertEqual(old[r['event_id']],{k:r[k] for k in old[r['event_id']]})
+   if r['event_id'] in old and r['source_type'] not in ['Satellite','ADINT']:self.assertEqual(old[r['event_id']],{k:r[k] for k in old[r['event_id']]})
   for r in sats:
    self.assertNotIn('ADINT',r['event_summary']);self.assertNotIn('repeatedly',r['event_summary'])
    self.assertTrue(r['location_id'].startswith('LOC-SYR-SAT-'))
