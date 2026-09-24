@@ -6620,7 +6620,7 @@ function renderEvidence() {
   }
   const cellularCallTable = (activeLayer.items || []).some(isCellularCallRecord) || ["events:Cellular Calls", "events:שיחות סלולר"].includes(activeLayer.catalogLayerId);
   const endpointHeaders = cellularCallTable
-    ? `<th>${escapeHtml(activeLocaleText("מיקום צד א׳", "Side A location"))}</th><th>${escapeHtml(activeLocaleText("מיקום צד ב׳", "Side B location"))}</th><th>Side A IMEI</th><th>Side B IMEI</th>`
+    ? `<th>${escapeHtml(activeLocaleText("מיקום צד א׳", "Side A location"))}</th><th>${escapeHtml(activeLocaleText("מיקום צד ב׳", "Side B location"))}</th><th>Side A SIM</th><th>Side B SIM</th><th>Side A IMEI</th><th>Side B IMEI</th>`
     : "";
   head.innerHTML = `<tr><th class="result-map-action-column" data-result-action-column="true" aria-label="${escapeHtml(activeLocaleText("פעולות", "Actions"))}"></th><th>${escapeHtml(activeLocaleText("מזהה רשומה", "Record ID"))}</th><th>${escapeHtml(activeLocaleText("זמן", "Time"))}</th><th>${escapeHtml(activeLocaleText("אמינות", "Reliability"))}</th><th>${escapeHtml(activeLocaleText("ודאות", "Certainty"))}</th><th>${escapeHtml(activeLocaleText("גורם", "Actor"))}</th><th>${escapeHtml(activeLocaleText("מיקום", "Location"))}</th>${endpointHeaders}<th>${escapeHtml(activeLocaleText("תקציר", "Summary"))}</th></tr>`;
   body.innerHTML = activeItems.length ? activeItems.map(event => {
@@ -6635,7 +6635,7 @@ function renderEvidence() {
       <td>${escapeHtml(event.certainty_level || "-")}</td>
       <td>${escapeHtml(event.entity_name || event.entity_id || "-")}</td>
       <td>${escapeHtml(event.location_name || "-")}</td>
-      ${cellularCallTable ? `<td dir="ltr">${escapeHtml(event.side_a_location_id || "-")}</td><td dir="ltr">${escapeHtml(event.side_b_location_id || "-")}</td><td dir="ltr">${escapeHtml(event.side_a_imei || "—")}</td><td dir="ltr">${escapeHtml(event.side_b_imei || "—")}</td>` : ""}
+      ${cellularCallTable ? `<td dir="ltr">${escapeHtml(event.side_a_location_id || "-")}</td><td dir="ltr">${escapeHtml(event.side_b_location_id || "-")}</td><td dir="ltr">${escapeHtml(event.side_a_sim || "—")}</td><td dir="ltr">${escapeHtml(event.side_b_sim || "—")}</td><td dir="ltr">${escapeHtml(event.side_a_imei || "—")}</td><td dir="ltr">${escapeHtml(event.side_b_imei || "—")}</td>` : ""}
       <td>${escapeHtml(event.event_summary || "-")}</td>
     </tr>`;
   }).join("") : `<tr><td colspan="${cellularCallTable ? 12 : 8}" class="empty-cell">${escapeHtml(activeLocaleText("השכבה מוסתרת או ריקה.", "Layer is hidden or empty."))}</td></tr>`;

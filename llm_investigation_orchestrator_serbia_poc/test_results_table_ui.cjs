@@ -67,7 +67,7 @@ row.source_type='Cellular Geolocations';row.sim='00001234';row.imei='00000000000
 assert.match(nodes.evidenceHead.innerHTML,/SIM/);assert.match(nodes.evidenceHead.innerHTML,/IMEI/);
 assert.doesNotMatch(nodes.evidenceHead.innerHTML,/Actor/);assert.match(nodes.evidenceRows.innerHTML,/00001234/);
 assert(context.viewerFields(row,'record').some(([k,v])=>k==='sim' && v==='00001234'));
-row.source_type='Cellular Calls';row.call_id='CALL-1';row.side_a_imei='000000000000001';row.side_b_imei='000000000000002';context.renderEvidence();
+row.source_type='Cellular Calls';row.call_id='CALL-1';row.side_a_sim='89000000000000000001';row.side_b_sim='89000000000000000002';row.side_a_imei='000000000000001';row.side_b_imei='000000000000002';context.renderEvidence();
 assert.match(nodes.evidenceHead.innerHTML,/Side A IMEI/);assert.match(nodes.evidenceHead.innerHTML,/Side B IMEI/);
 assert.match(nodes.evidenceRows.innerHTML,/000000000000001/);assert.match(nodes.evidenceRows.innerHTML,/000000000000002/);
 context.state.layers=[];context.renderEvidence();
@@ -80,3 +80,5 @@ assert.equal(context.resolveFinalResultView({recommended_view:'map'},[callsLayer
 assert.equal(context.resolveFinalResultView({recommended_view:'table'},[callsLayer]),'table');
 assert.equal(context.resolveFinalResultView({},[callsLayer,{kind:'events',items:[{}],capabilities:{map:true}}]),'map');
 console.log('PASS: calls default to Timeline; explicit views and mixed sources preserved');
+
+context.state.layers=[layer];context.renderEvidence();assert.match(nodes.evidenceHead.innerHTML,/Side A SIM/);assert.match(nodes.evidenceRows.innerHTML,/89000000000000000001/);
