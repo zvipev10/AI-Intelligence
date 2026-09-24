@@ -76,6 +76,7 @@ DIRS = [
     "data/syria_satellite_v1",
     "data/syria_satellite_v2",
     "data/syria_satellite_v3",
+    "data/syria_adint_v3",
     "assets",
     "vendor",
     "recorded_runs",

@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parent
 class AdintImportTests(unittest.TestCase):
     def test_exact_fields_nulls_and_preserved_sources(self):
         profile = load_profile(ROOT, "syria", verify=True)
-        self.assertEqual(profile["dataset_version"], "satellite-v3")
+        self.assertEqual(profile["dataset_version"], "adint-v3")
         source = json.loads((ROOT / "data/syria_adint_v1/ADINT.json").read_text())
         rows = list(csv.DictReader((ROOT / "data/syria_adint_v1/events.csv").read_text().splitlines()))
         imported = {r["observation_id"]: r for r in rows if r["source_type"] == "ADINT"}
@@ -39,6 +39,24 @@ class AdintImportTests(unittest.TestCase):
                 self.assertEqual(row, {k: current[row["event_id"]][k] for k in row})
         self.assertEqual((ROOT / "data/syria_adint_v1/events.csv").read_bytes(), (ROOT / "data/syria_adint_v1/events.en.csv").read_bytes())
 
+    def test_adint2_exact_replacement_and_unchanged_other_sources(self):
+        profile = load_profile(ROOT, "syria", verify=True)
+        folder = (ROOT / profile["files"]["events"]).parent
+        source = json.loads((folder / "ADINT.json").read_text())
+        current = list(csv.DictReader((folder / "events.csv").read_text().splitlines()))
+        imported = {r["observation_id"]: r for r in current if r["source_type"] == "ADINT"}
+        self.assertEqual(set(imported), {x["observation_id"] for x in source})
+        self.assertEqual(len(imported), 120)
+        for item in source:
+            row = imported[item["observation_id"]]
+            for key, value in item.items():
+                self.assertEqual(row[key], "" if value is None else str(value))
+            self.assertEqual(row["ip_address"], item["ip"])
+        previous = list(csv.DictReader((ROOT / "data/syria_satellite_v3/events.csv").read_text().splitlines()))
+        self.assertEqual([x for x in current if x["source_type"] != "ADINT"], [x for x in previous if x["source_type"] != "ADINT"])
+        for name in ["locations.json", "locations.en.json", "entities.json", "entities.en.json"]:
+            self.assertEqual((folder / name).read_bytes(), (ROOT / "data/syria_satellite_v3" / name).read_bytes())
+
     def test_invalid_input_rejected(self):
         rows = json.loads((ROOT / "data/syria_adint_v1/ADINT.json").read_text())
         for key, value in [("latitude", 100), ("longitude", None), ("accuracy_m", -1), ("ip", "invalid")]:
@@ -52,7 +70,8 @@ class AdintImportTests(unittest.TestCase):
 assert len(s.EVENTS)==424
 rows=[s.public_event(r) for r in s.EVENTS if r['source_type']=='ADINT']
 assert sum(r['latitude'] is None for r in rows)==36
-assert sum(r['ip'] is None for r in rows)==51
+assert sum(r['ip'] is None for r in rows)==0
+assert sum(r['ip']=='203.0.113.107' for r in rows)==10
 assert sum(r['keyboard_language'] is None for r in rows)==76
 assert all(not r['location_id'] for r in rows if r['latitude'] is None)
 for keyword in ['OBS-01-001',rows[0]['device_id'],'iPhone 15']:
