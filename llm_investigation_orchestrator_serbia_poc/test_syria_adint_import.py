@@ -14,9 +14,9 @@ ROOT = Path(__file__).resolve().parent
 class AdintImportTests(unittest.TestCase):
     def test_exact_fields_nulls_and_preserved_sources(self):
         profile = load_profile(ROOT, "syria", verify=True)
-        self.assertEqual(profile["dataset_version"], "adint-v1")
+        self.assertEqual(profile["dataset_version"], "adint-v2")
         source = json.loads((ROOT / "data/syria_adint_v1/ADINT.json").read_text())
-        rows = list(csv.DictReader((ROOT / profile["files"]["events"]).read_text().splitlines()))
+        rows = list(csv.DictReader((ROOT / "data/syria_adint_v1/events.csv").read_text().splitlines()))
         imported = {r["observation_id"]: r for r in rows if r["source_type"] == "ADINT"}
         self.assertEqual(len(rows), 324); self.assertEqual(len(imported), 120)
         locations = json.loads((ROOT / profile["files"]["locations"]).read_text())

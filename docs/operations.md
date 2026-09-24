@@ -72,7 +72,7 @@ The 1 GB VM remains constrained. Use one scenario and one application agent exec
 
 ## Offline semantic search cache
 
-The 1 GB VM must not build a semantic index during an analyst request. Scenario MCP processes require a prebuilt compatible cache; a missing/stale cache returns an explicit operational error. The historical empty-v1 package can return zero without an index; current adint-v1 is non-empty and requires a compatible prebuilt cache. The existing hybrid search backend is unchanged.
+The 1 GB VM must not build a semantic index during an analyst request. Scenario MCP processes require a prebuilt compatible cache; a missing/stale cache returns an explicit operational error. The historical empty-v1 package can return zero without an index; current adint-v2 is non-empty and requires a compatible prebuilt cache. The existing hybrid search backend is unchanged.
 
 On a development machine with sufficient RAM and the exact release dataset bytes:
 
@@ -81,7 +81,7 @@ python build_demo_index.py kosovo --output /trusted/build/kosovo-index --engine 
 python build_demo_index.py syria --output /trusted/build/syria-index --engine python
 ```
 
-The deployed MCP uses Python without NumPy, so use the `python` engine. Install both generated `semantic_event_index_hybrid_embedding.pkl` and `.json` under the matching `/opt/demo-runtime/state/<scenario>/<dataset>/semantic_index/` before activation (currently Kosovo/v2.1 and Syria/adint-v1). Verify the transferred SHA-256 against the build output. These are private derived release artifacts, not Git source. Only accept trusted caches: pickle files can execute code. The operator verifies the cache hash and raw dataset signatures before stopping services. Dataset/index-format/engine changes require a rebuilt cache and a real semantic-search smoke check. Build-time Python must support the runtime's pickle format.
+The deployed MCP uses Python without NumPy, so use the `python` engine. Install both generated `semantic_event_index_hybrid_embedding.pkl` and `.json` under the matching `/opt/demo-runtime/state/<scenario>/<dataset>/semantic_index/` before activation (currently Kosovo/v2.1 and Syria/adint-v2). Verify the transferred SHA-256 against the build output. These are private derived release artifacts, not Git source. Only accept trusted caches: pickle files can execute code. The operator verifies the cache hash and raw dataset signatures before stopping services. Dataset/index-format/engine changes require a rebuilt cache and a real semantic-search smoke check. Build-time Python must support the runtime's pickle format.
 
 Cold index construction during qualification timed out and caused heavy swapping. The offline cache avoids that construction cost; it does not eliminate the VM's overall RAM limit.
 

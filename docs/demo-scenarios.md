@@ -9,13 +9,13 @@ The bilingual Hebrew/English intelligence workspace has one shared codebase and 
 | Package | Current profile / dataset | Content |
 |---|---|---|
 | Kosovo | profile 1 / `v2.1` | 14,833 records, including 24 simulated cellular calls; preserved investigations and agent state |
-| Syria | profile 7 / `adint-v1` | 324 records: 2 CCTV, 2 Satellite, 120 ADINT, 200 IPDR; 86 locations, 13 entities and 20 catalog definitions |
+| Syria | profile 8 / `adint-v2` | 324 records: 2 CCTV, 2 Satellite, 120 ADINT, 200 IPDR; 86 locations, 13 entities and 20 catalog definitions |
 
 Deployment identity must be checked through `/api/status`; this is an installed-package inventory, not a live status assertion. Syria's initial camera is Damascus (longitude 36.2765, latitude 33.5138), zoom 11. The fictional convoy sites are elsewhere; opening results can fit the map to their geometry. Installed profiles, not this document, are authoritative for future versions.
 
 ## Syria demonstration data
 
-The original sites are `LOC-SYR-001` at latitude 35.000 / longitude 38.500 and `LOC-SYR-002` at 35.045 / 38.500, approximately 5.004 km apart. Both media sources identify `ENT-SYR-CONVOY`.
+CCTV and Satellite Site 1 now use `LOC-SYR-ADINT-002` (35.077055, 36.333669); Site 2 uses `LOC-SYR-ADINT-001` (35.108621, 36.312140). These reuse existing ADINT observation points. Both media sources identify `ENT-SYR-CONVOY`. Media/timestamps are unchanged; spatial co-location does not establish that the ADINT device is the convoy. Original site definitions remain historical catalog entries with no current media records.
 
 - **CCTV:** one record and one five-second synthetic movie per site, representing the September 22 visit.
 - **Satellite records:** one record per site, each containing its own three timestamped images. The convoy recurs on September 20, 21 and 22, 2026: Site 1 at 08:00 UTC, then Site 2 at 08:15 UTC. Visit metadata correlates the two sites; a viewer must not show the other site's images. Cross-site explanatory copy removed at the user's request must not be reintroduced into record summaries. Travel between captures and return journeys are not observed.
@@ -36,6 +36,7 @@ The former `network-v1` fixture had one IP/time match with IPDR. The imported AD
 | 5 | `network-v1` | Added four ADINT observations and 200 IPDR sessions; preserved four media records |
 | 6 | `network-v1` | Initial map moved to Damascus, data unchanged |
 | 7 | `adint-v1` | Replaced ADINT with 120 supplied observations and native fields; 84 new points, old ADINT-only points/devices removed; other sources unchanged |
+| 8 | `adint-v2` | Moved both CCTV/Satellite site groups to existing ADINT points 002 and 001; image pair references updated, media/times and other sources unchanged |
 
 Earlier packages and state remain available for controlled recovery. Historical backups include `/opt/demo-runtime/backups/syria-convoy-dd6b362`, `syria-convoy-v2-0ba309b` and `syria-network-c7c3319`. They are evidence/recovery points, not the latest release selector. Inspect `/opt/demo-runtime/control/deployed-release.json`, the installed manifest and capability deployment checkpoints before choosing a restore point.
 
