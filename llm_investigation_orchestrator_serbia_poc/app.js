@@ -3379,24 +3379,57 @@ function cellularCallPartyHtml(item, side) {
   </article>`;
 }
 
+let cellularViewerMap = null;
+
 function cellularCallHtml(item) {
   if (!isCellularCallRecord(item)) return "";
   const audioUrl = safeMediaUrl(item.audio_url || item.media?.audio_url);
-  const recording = audioUrl
-    ? `<div class="object-viewer-media cellular-call-audio"><audio controls preload="metadata" src="${escapeHtml(audioUrl)}"></audio></div>`
-    : `<div class="object-viewer-media-state"><span class="material-symbols-rounded">voice_over_off</span><strong>${escapeHtml(activeLocaleText("ההקלטה אינה זמינה", "Recording unavailable"))}</strong></div>`;
-  const seconds = Number(item.call_duration_seconds || 0);
-  const duration = seconds > 0 ? `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}` : activeLocaleText("לא ידוע", "Unknown");
-  const transcript = item.call_transcript || activeLocaleText("אין תמלול זמין", "No transcript available");
-  return `<section class="cellular-call-viewer" aria-labelledby="cellularCallTitle">
-    <div class="object-viewer-section-heading"><div><span class="eyebrow">${escapeHtml(activeLocaleText("חומר מקור", "Source material"))}</span><h3 id="cellularCallTitle">${escapeHtml(activeLocaleText("שיחה סלולרית", "Cellular call"))}</h3></div><span class="object-viewer-live-badge"><i></i>${escapeHtml(activeLocaleText("סימולציה", "Simulation"))}</span></div>
-    <div class="cellular-call-meta"><span><b>${escapeHtml(activeLocaleText("התחלה", "Started"))}</b><time dir="ltr">${escapeHtml(item.call_started_at_utc || item.timestamp_utc || "-")}</time></span><span><b>${escapeHtml(activeLocaleText("משך", "Duration"))}</b><span dir="ltr">${escapeHtml(duration)}</span></span></div>
-    <div class="cellular-call-parties">${cellularCallPartyHtml(item, "a")}${cellularCallPartyHtml(item, "b")}</div>
-    <div class="cellular-call-connection" aria-hidden="true"><span></span></div>
-    <div class="cellular-call-recording"><h4>${escapeHtml(activeLocaleText("הקלטת שיחה מדומה", "Simulated call recording"))}</h4>${recording}</div>
-    <div class="cellular-call-transcript"><h4>${escapeHtml(activeLocaleText("תמלול מדומה", "Simulated transcript"))}</h4><p>${escapeHtml(transcript)}</p></div>
-    <p class="cellular-call-disclaimer">${escapeHtml(activeLocaleText("המספרים, מזהי המכשירים וההקלטה נוצרו לצורכי הדגמה ואינם מידע תקשורת אמיתי.", "Numbers, device identifiers, and audio are synthetic demonstration data, not authentic communications."))}</p>
+  const original = item.call_transcript_original || item.call_transcript || "";
+  const translations = String(item.call_transcript_en || "").split(/\n\s*\n/).filter(Boolean);
+  const paragraphs = String(original).split(/\n\s*\n/).filter(Boolean);
+  const bubbles = paragraphs.map((text, index) => {
+    const match = text.match(/^([^:]+):\s*([\s\S]*)$/);
+    const speaker = match ? match[1] : "";
+    const side = speaker.startsWith("IMEI") ? "a" : speaker ? "b" : "note";
+    const translated = translations[index] || "";
+    const translation = translated.replace(/^[^:]+:\s*/, "");
+    return `<article class="call-bubble call-bubble-${side}">${speaker ? `<header>${escapeHtml(speaker)}</header>` : ""}<p lang="${item.call_language === 'Arabic' ? 'ar' : 'en'}" dir="auto">${escapeHtml(match ? match[2] : text)}</p>${translation && translation !== (match ? match[2] : text) ? `<p class="call-translation" lang="en" dir="ltr">${escapeHtml(translation)}</p>` : ""}</article>`;
+  }).join("");
+  const detail = (label,value) => `<div><dt>${escapeHtml(label)}</dt><dd dir="auto">${escapeHtml(value || "—")}</dd></div>`;
+  const download = (url,label) => { const safe=safeMediaUrl(url); return safe ? `<a href="${escapeHtml(safe)}" target="_blank" rel="noopener">${escapeHtml(label)}</a>` : ""; };
+  const duration = Number(item.call_duration_seconds || 0);
+  return `<section class="call-workspace" aria-label="Cellular call analysis">
+    <aside class="call-sidebar"><div class="call-section-title"><span class="material-symbols-rounded">call</span><h3>Call details</h3></div>
+    <dl class="call-detail-list">${detail("Record ID",item.event_id || item.record_id)}${detail("Started · UTC",item.call_started_at_utc || item.timestamp_utc)}${detail("Duration",duration ? `${duration.toFixed(1)} seconds` : "")}${detail("Language",item.call_language)}${detail("Source",item.call_media_origin || "Synthetic demo scenario")}</dl>
+    <div class="cellular-call-parties">${cellularCallPartyHtml(item,"a")}${cellularCallPartyHtml(item,"b")}</div>
+    ${item.call_transcript_speaker_imei && item.call_transcript_speaker_imei !== item.side_a_imei ? `<p class="call-source-note">Transcript speaker IMEI: <b>${escapeHtml(item.call_transcript_speaker_imei)}</b>. Scenario device ID is shown separately above.</p>` : ""}
+    <div class="call-source-links">${download(item.call_transcript_url,"Arabic source")}${download(item.call_translation_url,"English translation")}</div></aside>
+    <div class="call-main"><section class="call-map-panel"><div id="callViewerMap" aria-label="Call endpoint map"></div><div class="call-map-caption"><span class="material-symbols-rounded">location_on</span>Call endpoints · A / B<button type="button" id="callFitMap">Fit both</button></div></section>
+    <section class="call-conversation"><header class="call-conversation-heading"><span class="material-symbols-rounded">forum</span><h3>Conversation</h3><label><input id="callTranslationToggle" type="checkbox" checked> English translation</label></header>
+    <div class="call-transcript-scroll">${bubbles || '<p class="call-empty">No transcript supplied for this call.</p>'}</div><p class="call-timing-note">${paragraphs.length ? 'Transcript order is preserved. Per-line timestamps were not supplied.' : 'Open Call 1 to view its supplied recording and transcripts.'}</p></section></div>
+    <footer class="call-player"><div><span class="material-symbols-rounded">graphic_eq</span><strong>${audioUrl ? 'Supplied recording' : 'Recording unavailable'}</strong></div>${audioUrl ? `<audio controls preload="metadata" src="${escapeHtml(audioUrl.endsWith("/call-1.mp3") ? audioUrl.replace(/\.mp3$/, ".wav") : audioUrl)}" aria-label="Call recording"></audio>` : '<p>No audio attached to this record.</p>'}</footer>
+    <p class="call-provenance">${escapeHtml(item.call_media_origin || 'Synthetic demo call. No authentic communications are claimed.')}</p>
   </section>`;
+}
+
+function initializeCellularViewer(item) {
+  const toggle = document.getElementById("callTranslationToggle");
+  toggle?.addEventListener("change", () => document.querySelectorAll(".call-translation").forEach(el => { el.hidden = !toggle.checked; }));
+  const points = ["a","b"].map(side => ({side,...cellularCallMapLocation(item,side)})).filter(p => Number.isFinite(p.lon) && Number.isFinite(p.lat));
+  const container = document.getElementById("callViewerMap");
+  if (!points.length || typeof maplibregl === "undefined") { container.textContent = "Location map unavailable"; return; }
+  const map = new maplibregl.Map({container,style:{version:8,sources:{imagery:{type:"raster",tiles:["https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"],tileSize:256,attribution:"Imagery © Esri, Vantor, Earthstar Geographics"}},layers:[{id:"imagery",type:"raster",source:"imagery"}]},center:[points[0].lon,points[0].lat],zoom:8});
+  cellularViewerMap = map;
+  map.addControl(new maplibregl.NavigationControl({showCompass:false}),"top-left");
+  const bounds = new maplibregl.LngLatBounds();
+  for (const point of points) {
+    bounds.extend([point.lon,point.lat]);
+    const marker = document.createElement("button");marker.type="button";marker.className=`cellular-call-map-endpoint cellular-call-map-endpoint-${point.side}`;marker.textContent=point.side.toUpperCase();marker.setAttribute("aria-label",`Side ${point.side.toUpperCase()}: ${point.name}`);
+    new maplibregl.Marker({element:marker}).setLngLat([point.lon,point.lat]).setPopup(new maplibregl.Popup().setText(`Side ${point.side.toUpperCase()} · ${point.name}`)).addTo(map);
+  }
+  const fit=()=>map.fitBounds(bounds,{padding:48,maxZoom:13,duration:0});
+  map.on("load",()=>{map.resize();fit();});
+  document.getElementById("callFitMap")?.addEventListener("click",fit);
 }
 
 function viewerMediaHtml(item) {
@@ -3656,6 +3689,7 @@ function assessmentEvidenceHtml(item) {
 function closeObjectViewer() {
   const viewer = document.getElementById("objectViewer");
   stopSimulatedUavStream();
+  cellularViewerMap?.remove(); cellularViewerMap = null;
   viewer.querySelectorAll("video,audio").forEach(media => { media.pause(); media.removeAttribute("src"); media.load(); });
   viewer.hidden = true;
   objectViewerReturnFocus?.focus?.();
@@ -3676,11 +3710,14 @@ function openObjectViewer(kind, id, trigger = document.activeElement) {
   document.getElementById("objectViewerKind").textContent = kind === "record" ? activeLocaleText("רשומה גולמית", "Raw record") : kind === "evidence" ? activeLocaleText("אובייקט ראיה", "Evidence object") : kind === "assessment" ? activeLocaleText("הערכת אויב", "Enemy assessment") : activeLocaleText("ארגון", "Organization");
   document.getElementById("objectViewerTitle").textContent = title;
   document.getElementById("objectViewerId").textContent = id;
+  cellularViewerMap?.remove(); cellularViewerMap = null;
+  viewer.classList.toggle("is-cellular-viewer", kind === "record" && isCellularCallRecord(item));
   const mediaHtml = viewerMediaHtml(item);
   const cellularHtml = kind === "record" ? cellularCallHtml(item) : "";
   const fields = viewerFields(item, kind).map(([key,value]) => `<div class="object-viewer-field"><dt>${escapeHtml(viewerFieldLabel(key))}</dt><dd>${escapeHtml(viewerValue(value))}</dd></div>`).join("");
   document.getElementById("objectViewerBody").innerHTML = `${mediaHtml}${cellularHtml}${["record", "evidence", "assessment"].includes(kind) ? `<p class="object-viewer-summary">${escapeHtml(item.event_summary || item.summary || "-")}</p>` : ""}<dl class="object-viewer-fields">${fields}</dl>${kind === "organization" ? organizationEvidenceHtml(item) : kind === "evidence" ? evidenceProvenanceHtml(item) : kind === "assessment" ? assessmentEvidenceHtml(item) : ""}`;
   viewer.hidden = false;
+  if (kind === "record" && isCellularCallRecord(item)) initializeCellularViewer(item);
   if (kind === "record" && isUavVideoRecord(item)) startSimulatedUavStream(item);
   document.getElementById("objectViewerClose").focus();
   return true;

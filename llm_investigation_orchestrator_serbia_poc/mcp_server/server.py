@@ -528,6 +528,7 @@ def public_event(event: dict[str, Any]) -> dict[str, Any]:
         "movement_direction": event.get("movement_direction", ""),
         "geolocation_confidence": event.get("geolocation_confidence", ""),
         "identification_confidence": event.get("identification_confidence", ""),
+        **{key: event.get(key, "") for key in ("call_transcript_original", "call_language", "call_media_origin", "call_transcript_url", "call_translation_url", "call_transcript_speaker_imei")},
         "call_id": event.get("call_id", ""),
         "call_started_at_utc": event.get("call_started_at_utc", ""),
         "call_duration_seconds": event.get("call_duration_seconds", ""),

@@ -9,7 +9,7 @@ The bilingual Hebrew/English intelligence workspace has one shared codebase and 
 | Package | Current profile / dataset | Content |
 |---|---|---|
 | Kosovo | profile 1 / `v2.1` | 14,833 records, including 24 simulated cellular calls; preserved investigations and agent state |
-| Syria | profile 17 / `cellular-v4` | 444 records: 2 CCTV, 2 Satellite, 120 ADINT, 300 IPDR, 18 Cellular Geolocations, 2 Cellular Calls; 102 locations, 13 entities and 21 catalog definitions |
+| Syria | profile 18 / `call-media-v1` | 444 records: 2 CCTV, 2 Satellite, 120 ADINT, 300 IPDR, 18 Cellular Geolocations, 2 Cellular Calls; 102 locations, 13 entities and 21 catalog definitions |
 
 Deployment identity must be checked through `/api/status`; this is an installed-package inventory, not a live status assertion. Syria's initial camera is Damascus (longitude 36.2765, latitude 33.5138), zoom 11. The fictional convoy sites are elsewhere; opening results can fit the map to their geometry. Installed profiles, not this document, are authoritative for future versions.
 
@@ -68,3 +68,7 @@ cellular-v2/profile15 retains the four initial cellular observations and adds tw
 cellular-v3/profile16 moves only the first route observation to LOC-SYR-CELL-START-001, a new point 60 metres north of Satellite site 1. The Satellite coordinates, other route observations and call endpoints remain unchanged.
 
 cellular-v4/profile17 moves Side B of both calls and its two matching geolocations to new LOC-SYR-CALL-NORTH-001 (36.60,37.05), far north of every Side A route point. Side A and route coordinates are unchanged; the prior remote location remains historical with no current call references.
+
+### Supplied Call 1 media
+
+call-media-v1/profile18 attaches the supplied Arabic recording, original transcript and English translation to REC-SYR-CALL-001. The viewer presents caller details, a satellite endpoint map, bilingual conversation bubbles and audio controls. The original MP3 and text files are retained; a PCM WAV derivative supports browser playback. No per-line timestamps were supplied, so bubbles are not synchronized to audio. Scenario times, coordinates and existing IMEIs remain demo metadata. Transcript speaker IMEI 353294702931926 is displayed separately from the scenario IMEI pending confirmation. Call 2 remains without media. Kosovo is unchanged.

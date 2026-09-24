@@ -43,7 +43,7 @@ class CellularGeolocations(unittest.TestCase):
   old=list(csv.DictReader((ROOT/'data/syria_cellular_v1/events.csv').read_text().splitlines()))
   byid={r['event_id']:r for r in rows}
   for row in old:
-   if not row.get('call_id'):self.assertEqual(row,byid[row['event_id']])
+   if not row.get('call_id'):self.assertEqual(row,{k:byid[row['event_id']][k] for k in row})
   for id,value in json.loads((ROOT/'data/syria_cellular_v1/locations.json').read_text()).items():self.assertEqual(loc[id],value)
  def test_catalog_public_fields_and_identifier_search(self):
   with tempfile.TemporaryDirectory() as state:
