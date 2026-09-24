@@ -1,0 +1,5 @@
+# Handoff
+
+Deployed 1436fe79: Syria cellular-v1/profile14, 430 records. Live catalog has four Cellular Geolocations; two Cellular Calls carry both endpoint IMEIs. Public data and app217 assets verified. System-Python MCP loaded the 430-record cache and SIM identifier search returned two expected geolocations. 34 Python checks, shared table/viewer harness and JS syntax passed. Existing 424 records and Kosovo dataset/profile preserved. Backup /opt/demo-runtime/backups/syria-cellular-1436fe79. Draft PR84, issue83; not merged. Next: refresh application and review samples.
+
+All six new records are synthetic, with explicit summaries/provenance. IMEIs are string identifiers; SIM values are DEMO-SIM-SYR-001/002, distinct from synthetic call numbers. Location uses existing catalog IDs, with record IDs/timestamps retained for map/timeline/viewer. No audio or transcript was generated. Shared UI supports the new schema; Syria alone includes its catalog/data. No architecture or dependency changes. Updated scenario/operations guides are authoritative; no further documentation change proposed.
