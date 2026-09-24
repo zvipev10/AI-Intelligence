@@ -43,3 +43,7 @@ See [architecture](architecture.md) for interfaces and state ownership. All demo
 ### Calls presentation
 
 Cellular Calls default to Timeline even when endpoint coordinates are present. Compact entries show time, duration, endpoints and a short summary. Selecting a call opens its existing viewer beside the timeline rather than covering it. On narrow screens the panels stack. Explicit Map/Table choices remain available; mixed-source results keep their existing defaults.
+
+### Map polygons
+
+Use the translucent polygon icon at the bottom-right of Map to place vertices. Click the first point after at least three distinct points to close the polygon. Escape or the icon cancels an unfinished shape. Completed polygons remain on the current page and across basemap switches; they are not saved and trigger no search, filtering or agent action.

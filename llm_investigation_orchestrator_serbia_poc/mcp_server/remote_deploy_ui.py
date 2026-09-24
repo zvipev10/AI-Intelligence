@@ -42,6 +42,7 @@ FILES = [
     "mcp_server/fusion_tools.py",
     "index.html",
     "app.js",
+    "polygon_draw.js",
     "styles.css",
     "help.html",
     "investigation-user-flow.html",

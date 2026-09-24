@@ -3036,6 +3036,14 @@ function initMap() {
       status.hidden = false;
     }
   });
+  state.polygonDraw = new PolygonDrawControl(state.map, document.getElementById("polygonDrawButton"), document.getElementById("polygonDrawHint"));
+  const overlay = document.getElementById("rawEventsOverlay");
+  const positionDrawControl = () => {
+    const height = !overlay.hidden && getComputedStyle(overlay).display !== "none" ? overlay.getBoundingClientRect().height : 0;
+    document.getElementById("mapView").style.setProperty("--draw-bottom", `${height + 34}px`);
+  };
+  new ResizeObserver(positionDrawControl).observe(overlay);
+  new MutationObserver(positionDrawControl).observe(overlay, {attributes:true,attributeFilter:["hidden","class","style"]});
   state.map.on("load", () => { state.mapReady = true; renderMap(); });
 }
 
@@ -5855,11 +5863,12 @@ function addCellularCallMapPresentation(event, layer, index, bounds) {
     },
   });
   const onClick = mapEvent => {
+    if (state.polygonDraw?.active || mapEvent?.originalEvent?.defaultPrevented) return;
     mapEvent?.originalEvent?.preventDefault?.();
     openObjectViewer("record", recordId, state.map.getCanvas());
   };
-  const onMouseEnter = () => { state.map.getCanvas().style.cursor = "pointer"; };
-  const onMouseLeave = () => { state.map.getCanvas().style.cursor = ""; };
+  const onMouseEnter = () => { if (!state.polygonDraw?.active) state.map.getCanvas().style.cursor = "pointer"; };
+  const onMouseLeave = () => { if (!state.polygonDraw?.active) state.map.getCanvas().style.cursor = ""; };
   state.map.on("click", layerId, onClick);
   state.map.on("mouseenter", layerId, onMouseEnter);
   state.map.on("mouseleave", layerId, onMouseLeave);

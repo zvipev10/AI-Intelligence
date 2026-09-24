@@ -6,7 +6,7 @@
   <title>סביבת מודיעין</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="./vendor/maplibre-gl.css">
-  <link rel="stylesheet" href="./styles.css?v=157">
+  <link rel="stylesheet" href="./styles.css?v=158">
 </head>
 <body class="welcome-active">
   <a class="help-button" href="./help.html" target="_blank" rel="noopener" aria-label="פתח עזרה" data-i18n-aria-he="פתח עזרה" data-i18n-aria-en="Open help">?</a>
@@ -170,6 +170,10 @@
             <button type="button" data-basemap="street" aria-pressed="false" disabled data-i18n-text-he="רחובות" data-i18n-text-en="Street">Street</button>
             <button type="button" data-basemap="satellite" aria-pressed="true" disabled data-i18n-text-he="לוויין" data-i18n-text-en="Satellite">Satellite</button>
           </div>
+          <button id="polygonDrawButton" class="polygon-draw-button" type="button" aria-label="Draw polygon" title="Draw polygon" aria-pressed="false" disabled data-i18n-aria-he="ציור מצולע" data-i18n-aria-en="Draw polygon">
+            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M5 5 19 7 16 20 4 16Z" fill="none" stroke="currentColor" stroke-width="1.5"/><g fill="currentColor"><circle cx="5" cy="5" r="2"/><circle cx="19" cy="7" r="2"/><circle cx="16" cy="20" r="2"/><circle cx="4" cy="16" r="2"/></g></svg>
+          </button>
+          <div id="polygonDrawHint" class="polygon-draw-hint" role="status" hidden data-i18n-text-he="לחצו להוספת נקודות. לחצו על הנקודה הראשונה לסגירה (לפחות 3 נקודות). Esc לביטול." data-i18n-text-en="Click to add points. Click the first point to close (at least 3 points). Esc to cancel.">Click to add points. Click the first point to close (at least 3 points). Esc to cancel.</div>
           <div id="basemapStatus" class="basemap-status" role="status" hidden></div>
         </section>
         <section id="timelineView" class="view-pane"><div id="timeline" class="timeline empty-state" data-i18n-text-he="לא נבחרו אירועים להצגה." data-i18n-text-en="No events were selected for display.">לא נבחרו אירועים להצגה.</div></section>
@@ -332,6 +336,7 @@
   </div>
 
   <script src="./vendor/maplibre-gl.js"></script>
-  <script src="./demo_bootstrap.js?v=219"></script>
+  <script src="./polygon_draw.js?v=1"></script>
+  <script src="./demo_bootstrap.js?v=220"></script>
 </body>
 </html>
