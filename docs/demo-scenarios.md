@@ -9,7 +9,7 @@ The bilingual Hebrew/English intelligence workspace has one shared codebase and 
 | Package | Current profile / dataset | Content |
 |---|---|---|
 | Kosovo | profile 1 / `v2.1` | 14,833 records, including 24 simulated cellular calls; preserved investigations and agent state |
-| Syria | profile 11 / `satellite-v2` | 424 records: 2 CCTV, 2 Satellite, 120 ADINT, 300 IPDR; 88 locations, 13 entities and 20 catalog definitions |
+| Syria | profile 12 / `satellite-v3` | 424 records: 2 CCTV, 2 Satellite, 120 ADINT, 300 IPDR; 88 locations, 13 entities and 20 catalog definitions |
 
 Deployment identity must be checked through `/api/status`; this is an installed-package inventory, not a live status assertion. Syria's initial camera is Damascus (longitude 36.2765, latitude 33.5138), zoom 11. The fictional convoy sites are elsewhere; opening results can fit the map to their geometry. Installed profiles, not this document, are authoritative for future versions.
 
@@ -40,6 +40,7 @@ The imported sessions are dated September 1-6. Records 3001185062876120 and 3495
 | 9 | `ipdr-v1` | Replaced 200 IPDR sessions with 300 supplied records and the expanded native schema; other layers unchanged |
 | 10 | `satellite-v1` | Replaced Satellite sequences with two supplied images; created two sites30m east; retained disclosed image provenance |
 | 11 | `satellite-v2` | Updated the two Satellite site coordinates to user-supplied positions; records/media unchanged |
+| 12 | `satellite-v3` | Swapped the two Satellite images and matching descriptions/counts; coordinates unchanged |
 
 Earlier packages and state remain available for controlled recovery. Historical backups include `/opt/demo-runtime/backups/syria-convoy-dd6b362`, `syria-convoy-v2-0ba309b` and `syria-network-c7c3319`. They are evidence/recovery points, not the latest release selector. Inspect `/opt/demo-runtime/control/deployed-release.json`, the installed manifest and capability deployment checkpoints before choosing a restore point.
 
