@@ -1,0 +1,814 @@
+{
+  "LOC-SYR-001": {
+    "name": "Demo Site 1",
+    "latitude": 35.0,
+    "longitude": 38.5,
+    "country": "Syria",
+    "region": "Central Syria (synthetic demo)",
+    "type": "demonstration site",
+    "precision": "synthetic",
+    "locality": "Fictional Site 1"
+  },
+  "LOC-SYR-002": {
+    "name": "Demo Site 2",
+    "latitude": 35.045,
+    "longitude": 38.5,
+    "country": "Syria",
+    "region": "Central Syria (synthetic demo)",
+    "type": "demonstration site",
+    "precision": "synthetic",
+    "locality": "Fictional Site 2"
+  },
+  "LOC-SYR-ADINT-001": {
+    "name": "ADINT observation point 001",
+    "latitude": 35.108621,
+    "longitude": 36.31214,
+    "country": "Syria",
+    "type": "ADINT observation point",
+    "precision": "reported coordinates"
+  },
+  "LOC-SYR-ADINT-002": {
+    "name": "ADINT observation point 002",
+    "latitude": 35.077055,
+    "longitude": 36.333669,
+    "country": "Syria",
+    "type": "ADINT observation point",
+    "precision": "reported coordinates"
+  },
+  "LOC-SYR-ADINT-003": {
+    "name": "ADINT observation point 003",
+    "latitude": 35.05595,
+    "longitude": 36.263032,
+    "country": "Syria",
+    "type": "ADINT observation point",
+    "precision": "reported coordinates"
+  },
+  "LOC-SYR-ADINT-004": {
+    "name": "ADINT observation point 004",
+    "latitude": 35.101805,
+    "longitude": 36.311906,
+    "country": "Syria",
+    "type": "ADINT observation point",
+    "precision": "reported coordinates"
+  },
+  "LOC-SYR-ADINT-005": {
+    "name": "ADINT observation point 005",
+    "latitude": 35.052094,
+    "longitude": 36.304397,
+    "country": "Syria",
+    "type": "ADINT observation point",
+    "precision": "reported coordinates"
+  },
+  "LOC-SYR-ADINT-006": {
+    "name": "ADINT observation point 006",
+    "latitude": 35.075422,
+    "longitude": 36.313753,
+    "country": "Syria",
+    "type": "ADINT observation point",
+    "precision": "reported coordinates"
+  },
+  "LOC-SYR-ADINT-007": {
+    "name": "ADINT observation point 007",
+    "latitude": 35.05523,
+    "longitude": 36.291542,
+    "country": "Syria",
+    "type": "ADINT observation point",
+    "precision": "reported coordinates"
+  },
+  "LOC-SYR-ADINT-008": {
+    "name": "ADINT observation point 008",
+    "latitude": 35.11353,
+    "longitude": 36.30728,
+    "country": "Syria",
+    "type": "ADINT observation point",
+    "precision": "reported coordinates"
+  },
+  "LOC-SYR-ADINT-009": {
+    "name": "ADINT observation point 009",
+    "latitude": 35.060178,
+    "longitude": 36.258543,
+    "country": "Syria",
+    "type": "ADINT observation point",
+    "precision": "reported coordinates"
+  },
+  "LOC-SYR-ADINT-010": {
+    "name": "ADINT observation point 010",
+    "latitude": 35.087783,
+    "longitude": 36.331827,
+    "country": "Syria",
+    "type": "ADINT observation point",
+    "precision": "reported coordinates"
+  },
+  "LOC-SYR-ADINT-011": {
+    "name": "ADINT observation point 011",
+    "latitude": 35.050327,
+    "longitude": 36.35124,
+    "country": "Syria",
+    "type": "ADINT observation point",
+    "precision": "reported coordinates"
+  },
+  "LOC-SYR-ADINT-012": {
+    "name": "ADINT observation point 012",
+    "latitude": 35.040193,
+    "longitude": 36.274594,
+    "country": "Syria",
+    "type": "ADINT observation point",
+    "precision": "reported coordinates"
+  },
+  "LOC-SYR-ADINT-013": {
+    "name": "ADINT observation point 013",
+    "latitude": 35.067967,
+    "longitude": 36.256303,
+    "country": "Syria",
+    "type": "ADINT observation point",
+    "precision": "reported coordinates"
+  },
+  "LOC-SYR-ADINT-014": {
+    "name": "ADINT observation point 014",
+    "latitude": 35.105567,
+    "longitude": 36.298494,
+    "country": "Syria",
+    "type": "ADINT observation point",
+    "precision": "reported coordinates"
+  },
+  "LOC-SYR-ADINT-015": {
+    "name": "ADINT observation point 015",
+    "latitude": 35.042992,
+    "longitude": 36.271361,
+    "country": "Syria",
+    "type": "ADINT observation point",
+    "precision": "reported coordinates"
+  },
+  "LOC-SYR-ADINT-016": {
+    "name": "ADINT observation point 016",
+    "latitude": 35.036198,
+    "longitude": 36.281448,
+    "country": "Syria",
+    "type": "ADINT observation point",
+    "precision": "reported coordinates"
+  },
+  "LOC-SYR-ADINT-017": {
+    "name": "ADINT observation point 017",
+    "latitude": 35.109298,
+    "longitude": 36.318363,
+    "country": "Syria",
+    "type": "ADINT observation point",
+    "precision": "reported coordinates"
+  },
+  "LOC-SYR-ADINT-018": {
+    "name": "ADINT observation point 018",
+    "latitude": 35.067847,
+    "longitude": 36.330689,
+    "country": "Syria",
+    "type": "ADINT observation point",
+    "precision": "reported coordinates"
+  },
+  "LOC-SYR-ADINT-019": {
+    "name": "ADINT observation point 019",
+    "latitude": 35.074478,
+    "longitude": 36.320691,
+    "country": "Syria",
+    "type": "ADINT observation point",
+    "precision": "reported coordinates"
+  },
+  "LOC-SYR-ADINT-020": {
+    "name": "ADINT observation point 020",
+    "latitude": 35.049423,
+    "longitude": 36.338141,
+    "country": "Syria",
+    "type": "ADINT observation point",
+    "precision": "reported coordinates"
+  },
+  "LOC-SYR-ADINT-021": {
+    "name": "ADINT observation point 021",
+    "latitude": 35.07999,
+    "longitude": 36.337616,
+    "country": "Syria",
+    "type": "ADINT observation point",
+    "precision": "reported coordinates"
+  },
+  "LOC-SYR-ADINT-022": {
+    "name": "ADINT observation point 022",
+    "latitude": 35.094525,
+    "longitude": 36.294255,
+    "country": "Syria",
+    "type": "ADINT observation point",
+    "precision": "reported coordinates"
+  },
+  "LOC-SYR-ADINT-023": {
+    "name": "ADINT observation point 023",
+    "latitude": 35.070673,
+    "longitude": 36.282728,
+    "country": "Syria",
+    "type": "ADINT observation point",
+    "precision": "reported coordinates"
+  },
+  "LOC-SYR-ADINT-024": {
+    "name": "ADINT observation point 024",
+    "latitude": 35.059899,
+    "longitude": 36.320517,
+    "country": "Syria",
+    "type": "ADINT observation point",
+    "precision": "reported coordinates"
+  },
+  "LOC-SYR-ADINT-025": {
+    "name": "ADINT observation point 025",
+    "latitude": 35.0597,
+    "longitude": 36.267676,
+    "country": "Syria",
+    "type": "ADINT observation point",
+    "precision": "reported coordinates"
+  },
+  "LOC-SYR-ADINT-026": {
+    "name": "ADINT observation point 026",
+    "latitude": 35.079812,
+    "longitude": 36.255487,
+    "country": "Syria",
+    "type": "ADINT observation point",
+    "precision": "reported coordinates"
+  },
+  "LOC-SYR-ADINT-027": {
+    "name": "ADINT observation point 027",
+    "latitude": 35.070295,
+    "longitude": 36.335927,
+    "country": "Syria",
+    "type": "ADINT observation point",
+    "precision": "reported coordinates"
+  },
+  "LOC-SYR-ADINT-028": {
+    "name": "ADINT observation point 028",
+    "latitude": 35.092447,
+    "longitude": 36.296399,
+    "country": "Syria",
+    "type": "ADINT observation point",
+    "precision": "reported coordinates"
+  },
+  "LOC-SYR-ADINT-029": {
+    "name": "ADINT observation point 029",
+    "latitude": 35.044252,
+    "longitude": 36.332374,
+    "country": "Syria",
+    "type": "ADINT observation point",
+    "precision": "reported coordinates"
+  },
+  "LOC-SYR-ADINT-030": {
+    "name": "ADINT observation point 030",
+    "latitude": 35.031535,
+    "longitude": 36.318688,
+    "country": "Syria",
+    "type": "ADINT observation point",
+    "precision": "reported coordinates"
+  },
+  "LOC-SYR-ADINT-031": {
+    "name": "ADINT observation point 031",
+    "latitude": 35.070407,
+    "longitude": 36.346293,
+    "country": "Syria",
+    "type": "ADINT observation point",
+    "precision": "reported coordinates"
+  },
+  "LOC-SYR-ADINT-032": {
+    "name": "ADINT observation point 032",
+    "latitude": 35.100641,
+    "longitude": 36.280098,
+    "country": "Syria",
+    "type": "ADINT observation point",
+    "precision": "reported coordinates"
+  },
+  "LOC-SYR-ADINT-033": {
+    "name": "ADINT observation point 033",
+    "latitude": 35.028278,
+    "longitude": 36.30198,
+    "country": "Syria",
+    "type": "ADINT observation point",
+    "precision": "reported coordinates"
+  },
+  "LOC-SYR-ADINT-034": {
+    "name": "ADINT observation point 034",
+    "latitude": 35.086076,
+    "longitude": 36.310095,
+    "country": "Syria",
+    "type": "ADINT observation point",
+    "precision": "reported coordinates"
+  },
+  "LOC-SYR-ADINT-035": {
+    "name": "ADINT observation point 035",
+    "latitude": 35.037778,
+    "longitude": 36.328224,
+    "country": "Syria",
+    "type": "ADINT observation point",
+    "precision": "reported coordinates"
+  },
+  "LOC-SYR-ADINT-036": {
+    "name": "ADINT observation point 036",
+    "latitude": 35.064767,
+    "longitude": 36.314637,
+    "country": "Syria",
+    "type": "ADINT observation point",
+    "precision": "reported coordinates"
+  },
+  "LOC-SYR-ADINT-037": {
+    "name": "ADINT observation point 037",
+    "latitude": 35.101513,
+    "longitude": 36.263699,
+    "country": "Syria",
+    "type": "ADINT observation point",
+    "precision": "reported coordinates"
+  },
+  "LOC-SYR-ADINT-038": {
+    "name": "ADINT observation point 038",
+    "latitude": 35.072227,
+    "longitude": 36.299473,
+    "country": "Syria",
+    "type": "ADINT observation point",
+    "precision": "reported coordinates"
+  },
+  "LOC-SYR-ADINT-039": {
+    "name": "ADINT observation point 039",
+    "latitude": 35.058409,
+    "longitude": 36.283288,
+    "country": "Syria",
+    "type": "ADINT observation point",
+    "precision": "reported coordinates"
+  },
+  "LOC-SYR-ADINT-040": {
+    "name": "ADINT observation point 040",
+    "latitude": 35.059333,
+    "longitude": 36.312572,
+    "country": "Syria",
+    "type": "ADINT observation point",
+    "precision": "reported coordinates"
+  },
+  "LOC-SYR-ADINT-041": {
+    "name": "ADINT observation point 041",
+    "latitude": 35.069561,
+    "longitude": 36.356496,
+    "country": "Syria",
+    "type": "ADINT observation point",
+    "precision": "reported coordinates"
+  },
+  "LOC-SYR-ADINT-042": {
+    "name": "ADINT observation point 042",
+    "latitude": 35.086892,
+    "longitude": 36.340299,
+    "country": "Syria",
+    "type": "ADINT observation point",
+    "precision": "reported coordinates"
+  },
+  "LOC-SYR-ADINT-043": {
+    "name": "ADINT observation point 043",
+    "latitude": 35.057323,
+    "longitude": 36.282265,
+    "country": "Syria",
+    "type": "ADINT observation point",
+    "precision": "reported coordinates"
+  },
+  "LOC-SYR-ADINT-044": {
+    "name": "ADINT observation point 044",
+    "latitude": 35.093219,
+    "longitude": 36.340401,
+    "country": "Syria",
+    "type": "ADINT observation point",
+    "precision": "reported coordinates"
+  },
+  "LOC-SYR-ADINT-045": {
+    "name": "ADINT observation point 045",
+    "latitude": 35.034149,
+    "longitude": 36.296075,
+    "country": "Syria",
+    "type": "ADINT observation point",
+    "precision": "reported coordinates"
+  },
+  "LOC-SYR-ADINT-046": {
+    "name": "ADINT observation point 046",
+    "latitude": 35.072625,
+    "longitude": 36.306435,
+    "country": "Syria",
+    "type": "ADINT observation point",
+    "precision": "reported coordinates"
+  },
+  "LOC-SYR-ADINT-047": {
+    "name": "ADINT observation point 047",
+    "latitude": 35.093792,
+    "longitude": 36.260379,
+    "country": "Syria",
+    "type": "ADINT observation point",
+    "precision": "reported coordinates"
+  },
+  "LOC-SYR-ADINT-048": {
+    "name": "ADINT observation point 048",
+    "latitude": 35.09641,
+    "longitude": 36.31611,
+    "country": "Syria",
+    "type": "ADINT observation point",
+    "precision": "reported coordinates"
+  },
+  "LOC-SYR-ADINT-049": {
+    "name": "ADINT observation point 049",
+    "latitude": 35.059999,
+    "longitude": 36.306674,
+    "country": "Syria",
+    "type": "ADINT observation point",
+    "precision": "reported coordinates"
+  },
+  "LOC-SYR-ADINT-050": {
+    "name": "ADINT observation point 050",
+    "latitude": 35.073895,
+    "longitude": 36.290838,
+    "country": "Syria",
+    "type": "ADINT observation point",
+    "precision": "reported coordinates"
+  },
+  "LOC-SYR-ADINT-051": {
+    "name": "ADINT observation point 051",
+    "latitude": 35.043613,
+    "longitude": 36.293605,
+    "country": "Syria",
+    "type": "ADINT observation point",
+    "precision": "reported coordinates"
+  },
+  "LOC-SYR-ADINT-052": {
+    "name": "ADINT observation point 052",
+    "latitude": 35.08921,
+    "longitude": 36.284935,
+    "country": "Syria",
+    "type": "ADINT observation point",
+    "precision": "reported coordinates"
+  },
+  "LOC-SYR-ADINT-053": {
+    "name": "ADINT observation point 053",
+    "latitude": 35.068949,
+    "longitude": 36.265235,
+    "country": "Syria",
+    "type": "ADINT observation point",
+    "precision": "reported coordinates"
+  },
+  "LOC-SYR-ADINT-054": {
+    "name": "ADINT observation point 054",
+    "latitude": 35.06548,
+    "longitude": 36.328071,
+    "country": "Syria",
+    "type": "ADINT observation point",
+    "precision": "reported coordinates"
+  },
+  "LOC-SYR-ADINT-055": {
+    "name": "ADINT observation point 055",
+    "latitude": 35.043527,
+    "longitude": 36.301255,
+    "country": "Syria",
+    "type": "ADINT observation point",
+    "precision": "reported coordinates"
+  },
+  "LOC-SYR-ADINT-056": {
+    "name": "ADINT observation point 056",
+    "latitude": 35.075583,
+    "longitude": 36.324133,
+    "country": "Syria",
+    "type": "ADINT observation point",
+    "precision": "reported coordinates"
+  },
+  "LOC-SYR-ADINT-057": {
+    "name": "ADINT observation point 057",
+    "latitude": 35.077118,
+    "longitude": 36.331158,
+    "country": "Syria",
+    "type": "ADINT observation point",
+    "precision": "reported coordinates"
+  },
+  "LOC-SYR-ADINT-058": {
+    "name": "ADINT observation point 058",
+    "latitude": 35.064967,
+    "longitude": 36.294521,
+    "country": "Syria",
+    "type": "ADINT observation point",
+    "precision": "reported coordinates"
+  },
+  "LOC-SYR-ADINT-059": {
+    "name": "ADINT observation point 059",
+    "latitude": 35.110733,
+    "longitude": 36.327209,
+    "country": "Syria",
+    "type": "ADINT observation point",
+    "precision": "reported coordinates"
+  },
+  "LOC-SYR-ADINT-060": {
+    "name": "ADINT observation point 060",
+    "latitude": 35.062414,
+    "longitude": 36.281859,
+    "country": "Syria",
+    "type": "ADINT observation point",
+    "precision": "reported coordinates"
+  },
+  "LOC-SYR-ADINT-061": {
+    "name": "ADINT observation point 061",
+    "latitude": 35.033875,
+    "longitude": 36.282331,
+    "country": "Syria",
+    "type": "ADINT observation point",
+    "precision": "reported coordinates"
+  },
+  "LOC-SYR-ADINT-062": {
+    "name": "ADINT observation point 062",
+    "latitude": 35.079774,
+    "longitude": 36.268374,
+    "country": "Syria",
+    "type": "ADINT observation point",
+    "precision": "reported coordinates"
+  },
+  "LOC-SYR-ADINT-063": {
+    "name": "ADINT observation point 063",
+    "latitude": 35.060401,
+    "longitude": 36.312441,
+    "country": "Syria",
+    "type": "ADINT observation point",
+    "precision": "reported coordinates"
+  },
+  "LOC-SYR-ADINT-064": {
+    "name": "ADINT observation point 064",
+    "latitude": 35.044468,
+    "longitude": 36.312614,
+    "country": "Syria",
+    "type": "ADINT observation point",
+    "precision": "reported coordinates"
+  },
+  "LOC-SYR-ADINT-065": {
+    "name": "ADINT observation point 065",
+    "latitude": 35.109452,
+    "longitude": 36.336873,
+    "country": "Syria",
+    "type": "ADINT observation point",
+    "precision": "reported coordinates"
+  },
+  "LOC-SYR-ADINT-066": {
+    "name": "ADINT observation point 066",
+    "latitude": 35.057922,
+    "longitude": 36.334772,
+    "country": "Syria",
+    "type": "ADINT observation point",
+    "precision": "reported coordinates"
+  },
+  "LOC-SYR-ADINT-067": {
+    "name": "ADINT observation point 067",
+    "latitude": 35.05451,
+    "longitude": 36.312862,
+    "country": "Syria",
+    "type": "ADINT observation point",
+    "precision": "reported coordinates"
+  },
+  "LOC-SYR-ADINT-068": {
+    "name": "ADINT observation point 068",
+    "latitude": 35.067893,
+    "longitude": 36.340373,
+    "country": "Syria",
+    "type": "ADINT observation point",
+    "precision": "reported coordinates"
+  },
+  "LOC-SYR-ADINT-069": {
+    "name": "ADINT observation point 069",
+    "latitude": 35.09238,
+    "longitude": 36.277272,
+    "country": "Syria",
+    "type": "ADINT observation point",
+    "precision": "reported coordinates"
+  },
+  "LOC-SYR-ADINT-070": {
+    "name": "ADINT observation point 070",
+    "latitude": 35.104794,
+    "longitude": 36.318004,
+    "country": "Syria",
+    "type": "ADINT observation point",
+    "precision": "reported coordinates"
+  },
+  "LOC-SYR-ADINT-071": {
+    "name": "ADINT observation point 071",
+    "latitude": 35.112716,
+    "longitude": 36.28111,
+    "country": "Syria",
+    "type": "ADINT observation point",
+    "precision": "reported coordinates"
+  },
+  "LOC-SYR-ADINT-072": {
+    "name": "ADINT observation point 072",
+    "latitude": 35.093893,
+    "longitude": 36.34905,
+    "country": "Syria",
+    "type": "ADINT observation point",
+    "precision": "reported coordinates"
+  },
+  "LOC-SYR-ADINT-073": {
+    "name": "ADINT observation point 073",
+    "latitude": 35.099673,
+    "longitude": 36.317796,
+    "country": "Syria",
+    "type": "ADINT observation point",
+    "precision": "reported coordinates"
+  },
+  "LOC-SYR-ADINT-074": {
+    "name": "ADINT observation point 074",
+    "latitude": 35.100672,
+    "longitude": 36.302142,
+    "country": "Syria",
+    "type": "ADINT observation point",
+    "precision": "reported coordinates"
+  },
+  "LOC-SYR-ADINT-075": {
+    "name": "ADINT observation point 075",
+    "latitude": 35.046256,
+    "longitude": 36.322493,
+    "country": "Syria",
+    "type": "ADINT observation point",
+    "precision": "reported coordinates"
+  },
+  "LOC-SYR-ADINT-076": {
+    "name": "ADINT observation point 076",
+    "latitude": 35.117086,
+    "longitude": 36.303714,
+    "country": "Syria",
+    "type": "ADINT observation point",
+    "precision": "reported coordinates"
+  },
+  "LOC-SYR-ADINT-077": {
+    "name": "ADINT observation point 077",
+    "latitude": 35.067988,
+    "longitude": 36.325952,
+    "country": "Syria",
+    "type": "ADINT observation point",
+    "precision": "reported coordinates"
+  },
+  "LOC-SYR-ADINT-078": {
+    "name": "ADINT observation point 078",
+    "latitude": 35.034213,
+    "longitude": 36.279466,
+    "country": "Syria",
+    "type": "ADINT observation point",
+    "precision": "reported coordinates"
+  },
+  "LOC-SYR-ADINT-079": {
+    "name": "ADINT observation point 079",
+    "latitude": 35.063826,
+    "longitude": 36.298633,
+    "country": "Syria",
+    "type": "ADINT observation point",
+    "precision": "reported coordinates"
+  },
+  "LOC-SYR-ADINT-080": {
+    "name": "ADINT observation point 080",
+    "latitude": 35.092284,
+    "longitude": 36.27413,
+    "country": "Syria",
+    "type": "ADINT observation point",
+    "precision": "reported coordinates"
+  },
+  "LOC-SYR-ADINT-081": {
+    "name": "ADINT observation point 081",
+    "latitude": 35.078101,
+    "longitude": 36.319566,
+    "country": "Syria",
+    "type": "ADINT observation point",
+    "precision": "reported coordinates"
+  },
+  "LOC-SYR-ADINT-082": {
+    "name": "ADINT observation point 082",
+    "latitude": 35.057396,
+    "longitude": 36.26748,
+    "country": "Syria",
+    "type": "ADINT observation point",
+    "precision": "reported coordinates"
+  },
+  "LOC-SYR-ADINT-083": {
+    "name": "ADINT observation point 083",
+    "latitude": 35.074106,
+    "longitude": 36.357088,
+    "country": "Syria",
+    "type": "ADINT observation point",
+    "precision": "reported coordinates"
+  },
+  "LOC-SYR-ADINT-084": {
+    "name": "ADINT observation point 084",
+    "latitude": 35.047738,
+    "longitude": 36.27639,
+    "country": "Syria",
+    "type": "ADINT observation point",
+    "precision": "reported coordinates"
+  },
+  "LOC-SYR-SAT-001": {
+    "name": "Satellite observation site 1",
+    "latitude": 35.065212338738036,
+    "longitude": 36.28815755309795,
+    "country": "Syria",
+    "type": "satellite observation site",
+    "precision": "user-supplied coordinates"
+  },
+  "LOC-SYR-SAT-002": {
+    "name": "Satellite observation site 2",
+    "latitude": 35.06503531383431,
+    "longitude": 36.289563371508734,
+    "country": "Syria",
+    "type": "satellite observation site",
+    "precision": "user-supplied coordinates"
+  },
+  "LOC-SYR-COAST-001": {
+    "name": "Coastal route stop 01",
+    "latitude": 35.07,
+    "longitude": 36.265,
+    "country": "Syria",
+    "type": "synthetic cellular route waypoint",
+    "precision": "synthetic scenario coordinate"
+  },
+  "LOC-SYR-COAST-002": {
+    "name": "Coastal route stop 02",
+    "latitude": 35.082,
+    "longitude": 36.232,
+    "country": "Syria",
+    "type": "synthetic cellular route waypoint",
+    "precision": "synthetic scenario coordinate"
+  },
+  "LOC-SYR-COAST-003": {
+    "name": "Coastal route stop 03",
+    "latitude": 35.096,
+    "longitude": 36.195,
+    "country": "Syria",
+    "type": "synthetic cellular route waypoint",
+    "precision": "synthetic scenario coordinate"
+  },
+  "LOC-SYR-COAST-004": {
+    "name": "Coastal route stop 04",
+    "latitude": 35.116,
+    "longitude": 36.155,
+    "country": "Syria",
+    "type": "synthetic cellular route waypoint",
+    "precision": "synthetic scenario coordinate"
+  },
+  "LOC-SYR-COAST-005": {
+    "name": "Coastal route stop 05",
+    "latitude": 35.133,
+    "longitude": 36.117,
+    "country": "Syria",
+    "type": "synthetic cellular route waypoint",
+    "precision": "synthetic scenario coordinate"
+  },
+  "LOC-SYR-COAST-006": {
+    "name": "Coastal route stop 06",
+    "latitude": 35.151,
+    "longitude": 36.078,
+    "country": "Syria",
+    "type": "synthetic cellular route waypoint",
+    "precision": "synthetic scenario coordinate"
+  },
+  "LOC-SYR-COAST-007": {
+    "name": "Coastal route stop 07",
+    "latitude": 35.165,
+    "longitude": 36.044,
+    "country": "Syria",
+    "type": "synthetic cellular route waypoint",
+    "precision": "synthetic scenario coordinate"
+  },
+  "LOC-SYR-COAST-008": {
+    "name": "Coastal route stop 08",
+    "latitude": 35.176,
+    "longitude": 36.013,
+    "country": "Syria",
+    "type": "synthetic cellular route waypoint",
+    "precision": "synthetic scenario coordinate"
+  },
+  "LOC-SYR-COAST-009": {
+    "name": "Coastal route stop 09",
+    "latitude": 35.181,
+    "longitude": 35.987,
+    "country": "Syria",
+    "type": "synthetic cellular route waypoint",
+    "precision": "synthetic scenario coordinate"
+  },
+  "LOC-SYR-COAST-010": {
+    "name": "Coastal route stop 10",
+    "latitude": 35.182,
+    "longitude": 35.96,
+    "country": "Syria",
+    "type": "synthetic cellular route waypoint",
+    "precision": "synthetic scenario coordinate"
+  },
+  "LOC-SYR-COAST-011": {
+    "name": "Baniyas seafront demo endpoint",
+    "latitude": 35.18222,
+    "longitude": 35.94028,
+    "country": "Syria",
+    "type": "synthetic cellular route waypoint",
+    "precision": "synthetic scenario coordinate"
+  },
+  "LOC-SYR-CALL-REMOTE-001": {
+    "name": "Remote caller demo location",
+    "latitude": 35.12,
+    "longitude": 36.03,
+    "country": "Syria",
+    "type": "synthetic cellular call endpoint",
+    "precision": "synthetic scenario coordinate"
+  },
+  "LOC-SYR-CELL-START-001": {
+    "name": "Cellular route start near Satellite site 1",
+    "latitude": 35.065751931701584,
+    "longitude": 36.28815755309795,
+    "country": "Syria",
+    "type": "synthetic cellular route waypoint",
+    "precision": "synthetic scenario coordinate"
+  }
+}

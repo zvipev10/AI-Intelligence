@@ -74,7 +74,7 @@ class Profiles(unittest.TestCase):
                 load_profile(ROOT, scenario)
 
     def test_syria_mcp_has_no_kosovo_records(self):
-        result = subprocess.run([sys.executable, "-c", "import mcp_server.server as s; assert len(s.EVENTS)==444; assert len(s.LOCATIONS)==100; assert all(e['event_id'].startswith('REC-SYR-') for e in s.EVENTS)"], cwd=ROOT, env={**os.environ, "INTELLIGENCE_POC_SCENARIO": "syria"}, capture_output=True, timeout=30)
+        result = subprocess.run([sys.executable, "-c", "import mcp_server.server as s; assert len(s.EVENTS)==444; assert len(s.LOCATIONS)==101; assert all(e['event_id'].startswith('REC-SYR-') for e in s.EVENTS)"], cwd=ROOT, env={**os.environ, "INTELLIGENCE_POC_SCENARIO": "syria"}, capture_output=True, timeout=30)
         self.assertEqual(result.returncode, 0, result.stderr.decode())
 
 

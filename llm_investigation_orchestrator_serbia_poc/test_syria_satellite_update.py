@@ -7,7 +7,7 @@ class SatelliteUpdate(unittest.TestCase):
   p=load_profile(ROOT,'syria',verify=True)
   rows=list(csv.DictReader((ROOT/p['files']['events']).read_text().splitlines()))
   old={r['event_id']:r for r in csv.DictReader((ROOT/'data/syria_ipdr_v1/events.csv').read_text().splitlines())}
-  loc=json.loads((ROOT/p['files']['locations']).read_text());self.assertEqual(len(loc),100)
+  loc=json.loads((ROOT/p['files']['locations']).read_text());self.assertEqual(len(loc),101)
   sats=[r for r in rows if r['source_type']=='Satellite'];self.assertEqual(len(sats),2)
   for r in rows:
    if r['event_id'] in old and r['source_type'] not in ['Satellite','ADINT']:self.assertEqual(old[r['event_id']],{k:r[k] for k in old[r['event_id']]})
