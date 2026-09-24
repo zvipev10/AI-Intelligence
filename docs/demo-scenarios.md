@@ -9,7 +9,7 @@ The bilingual Hebrew/English intelligence workspace has one shared codebase and 
 | Package | Current profile / dataset | Content |
 |---|---|---|
 | Kosovo | profile 1 / `v2.1` | 14,833 records, including 24 simulated cellular calls; preserved investigations and agent state |
-| Syria | profile 14 / `cellular-v1` | 430 records: 2 CCTV, 2 Satellite, 120 ADINT, 300 IPDR, 4 Cellular Geolocations, 2 Cellular Calls; 88 locations, 13 entities and 21 catalog definitions |
+| Syria | profile 15 / `cellular-v2` | 444 records: 2 CCTV, 2 Satellite, 120 ADINT, 300 IPDR, 18 Cellular Geolocations, 2 Cellular Calls; 100 locations, 13 entities and 21 catalog definitions |
 
 Deployment identity must be checked through `/api/status`; this is an installed-package inventory, not a live status assertion. Syria's initial camera is Damascus (longitude 36.2765, latitude 33.5138), zoom 11. The fictional convoy sites are elsewhere; opening results can fit the map to their geometry. Installed profiles, not this document, are authoritative for future versions.
 
@@ -60,3 +60,7 @@ Kosovo retains the bilingual V2.1 corpus, including 24 synthetic cellular calls.
 ## Cellular samples
 
 Syria cellular-v1/profile14 adds four synthetic Cellular Geolocations with string IMEI, SIM and canonical location_id, plus two synthetic Cellular Calls showing side_a_imei and side_b_imei. Two demo devices (990000000000001/2) use DEMO-SIM-SYR-001/002 at existing ADINT points 001/002 on September 1 at 09:00 and 10:00 UTC, with calls five minutes later. These are invented examples, not collected communications; no audio/transcript is supplied. Existing 424 rows and Kosovo data remain unchanged. Record IDs and timestamps support the standard viewer, map and timeline.
+
+### Coastal route extension
+
+cellular-v2/profile15 retains the four initial cellular observations and adds twelve device-1 observations from Satellite site 1 toward the Baniyas seafront on September 20, 08:30–11:15 UTC, at 15-minute intervals. These synthetic waypoints show a scenario route, not a verified road track. Both calls occur at Coastal route stop 05 (35.133, 36.117), at 09:46 and 09:50. Side B is at a separate new remote location (35.12, 36.03), with two matching device-2 geolocations. All existing non-call records and earlier location coordinates remain unchanged. Coastal geographic reference: [Baniyas](https://mapcarta.com/Baniyas).

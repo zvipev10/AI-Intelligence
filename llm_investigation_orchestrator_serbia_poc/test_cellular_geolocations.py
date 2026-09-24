@@ -8,25 +8,48 @@ class CellularGeolocations(unittest.TestCase):
   rows=list(csv.DictReader((ROOT/profile['files']['events']).read_text().splitlines()))
   old=list(csv.DictReader((ROOT/'data/syria_adint_v3/events.csv').read_text().splitlines()))
   byid={r['event_id']:r for r in rows}
-  self.assertEqual(len(rows),430);self.assertEqual(len(byid),430)
+  self.assertEqual(len(rows),444);self.assertEqual(len(byid),444)
   for row in old:self.assertEqual(row,{k:byid[row['event_id']][k] for k in row})
-  geo=[r for r in rows if r['source_type']=='Cellular Geolocations'];self.assertEqual(len(geo),4)
+  geo=[r for r in rows if r['source_type']=='Cellular Geolocations'];self.assertEqual(len(geo),18)
   calls=[r for r in rows if r.get('call_id')];self.assertEqual(len(calls),2)
   for call in calls:
    for side in ['a','b']:
     matches=[g for g in geo if g['imei']==call[f'side_{side}_imei'] and g['location_id']==call[f'side_{side}_location_id'] and g['timestamp_utc'][:13]==call['timestamp_utc'][:13]]
-    self.assertEqual(len(matches),1)
+    self.assertTrue(matches)
+    self.assertNotEqual(call['side_a_location_id'],call['side_b_location_id'])
   self.assertTrue(all(r['synthetic_media']=='true' for r in geo+calls))
   self.assertNotIn('Cellular Geolocations',load_profile(ROOT,'kosovo')['sources']['en'])
+ def test_route_order_and_preserved_history(self):
+  p=load_profile(ROOT,'syria',verify=True)
+  rows=list(csv.DictReader((ROOT/p['files']['events']).read_text().splitlines()))
+  route=sorted([r for r in rows if r['event_id'].startswith('REC-SYR-CELL-ROUTE-')],key=lambda r:r['timestamp_utc'])
+  self.assertEqual(len(route),12)
+  self.assertEqual(route[0]['location_id'],'LOC-SYR-SAT-001')
+  self.assertEqual(route[-1]['location_id'],'LOC-SYR-COAST-011')
+  self.assertEqual(len({r['imei'] for r in route}),1)
+  self.assertEqual(len({r['timestamp_utc'] for r in route}),12)
+  loc=json.loads((ROOT/p['files']['locations']).read_text())
+  self.assertTrue(all(loc[a['location_id']]['longitude']>loc[b['location_id']]['longitude'] for a,b in zip(route,route[1:])))
+  calls=[r for r in rows if r.get('call_id')]
+  self.assertEqual({r['location_id'] for r in calls},{'LOC-SYR-COAST-005'})
+  for c in calls:
+   self.assertEqual(c['location_id'],c['side_a_location_id'])
+   self.assertEqual(c['side_b_location_id'],'LOC-SYR-CALL-REMOTE-001')
+   self.assertLess(route[5]['timestamp_utc'],c['timestamp_utc']);self.assertLess(c['timestamp_utc'],route[6]['timestamp_utc'])
+  old=list(csv.DictReader((ROOT/'data/syria_cellular_v1/events.csv').read_text().splitlines()))
+  byid={r['event_id']:r for r in rows}
+  for row in old:
+   if not row.get('call_id'):self.assertEqual(row,byid[row['event_id']])
+  for id,value in json.loads((ROOT/'data/syria_cellular_v1/locations.json').read_text()).items():self.assertEqual(loc[id],value)
  def test_catalog_public_fields_and_identifier_search(self):
   with tempfile.TemporaryDirectory() as state:
    code="""import server as ui
 import mcp_server.server as s
 layer,rows=ui.get_ui_layer_rows('events:Cellular Geolocations','en')
-assert layer['count']==4 and len(rows)==4 and layer['capabilities']['map']
+assert layer['count']==18 and len(rows)==18 and layer['capabilities']['map']
 for key,value in [('sim','DEMO-SIM-SYR-001'),('imei','990000000000001')]:
  r=s.search_events({'source_types':['Cellular Geolocations'],'keywords':[value]})
- assert r['total']==2 and all(e[key]==value for e in r['events'])
+ assert r['total']==14 and all(e[key]==value for e in r['events'])
 r=s.search_events({'source_types':['Cellular Calls'],'keywords':['990000000000002']})
 assert r['total']==2 and all(e['side_b_imei']=='990000000000002' for e in r['events'])
 """

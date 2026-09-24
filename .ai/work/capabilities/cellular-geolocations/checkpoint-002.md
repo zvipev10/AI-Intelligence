@@ -1,0 +1,3 @@
+# Coastal route follow-up
+
+User requests more geolocations from the site to sea and moving both calls to one route location with Side B elsewhere. Use Satellite site 1, twelve timed synthetic route observations on September 20 from 08:30 to 11:15 UTC toward Baniyas seafront. Retain previous four observations. Calls at stop 05 at 09:46/09:50; new remote Side B location with two matching observations. Total 18 geolocations, 2 calls, 444 rows, 100 locations. Preserve all non-call existing rows and all pre-existing location coordinates. New immutable cellular-v2/profile15. Waypoints are constructed demo positions, not a verified road track. Geographic reference: https://mapcarta.com/Baniyas . Next: route/time/source tests, cache, controlled deploy.

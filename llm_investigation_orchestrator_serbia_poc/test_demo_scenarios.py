@@ -74,7 +74,7 @@ class Profiles(unittest.TestCase):
                 load_profile(ROOT, scenario)
 
     def test_syria_mcp_has_no_kosovo_records(self):
-        result = subprocess.run([sys.executable, "-c", "import mcp_server.server as s; assert len(s.EVENTS)==430; assert len(s.LOCATIONS)==88; assert all(e['event_id'].startswith('REC-SYR-') for e in s.EVENTS)"], cwd=ROOT, env={**os.environ, "INTELLIGENCE_POC_SCENARIO": "syria"}, capture_output=True, timeout=30)
+        result = subprocess.run([sys.executable, "-c", "import mcp_server.server as s; assert len(s.EVENTS)==444; assert len(s.LOCATIONS)==100; assert all(e['event_id'].startswith('REC-SYR-') for e in s.EVENTS)"], cwd=ROOT, env={**os.environ, "INTELLIGENCE_POC_SCENARIO": "syria"}, capture_output=True, timeout=30)
         self.assertEqual(result.returncode, 0, result.stderr.decode())
 
 
@@ -136,7 +136,7 @@ class SyriaHTTP(unittest.TestCase):
     def test_syria_layer_catalog_and_map(self):
         with urlopen(self.url + "/api/status") as response: status = json.load(response)
         self.assertEqual(status["scenario_id"], "syria")
-        self.assertEqual(status["dataset_rows"], 430)
+        self.assertEqual(status["dataset_rows"], 444)
         self.assertEqual(status["demo_profile"]["map"]["center"], [36.2765, 33.5138])
         self.assertEqual(status["demo_profile"]["map"]["zoom"], 11)
         for locale in ["en", "he"]:
