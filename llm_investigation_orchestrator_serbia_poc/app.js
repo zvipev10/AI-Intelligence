@@ -3508,7 +3508,7 @@ function viewerFields(item, kind) {
   const hidden = new Set(["event_summary", "canonical_name", "media", "image_series", "video_url", "audio_url", "image_url", "raw_data_references", "call_started_at_utc", "call_duration_seconds", "side_a_imei", "side_a_number", "side_a_location_id", "side_a_location_name", "side_b_imei", "side_b_number", "side_b_location_id", "side_b_location_name", "call_transcript", "call_transcript_en", "synthetic_media"]);
   if (kind === "record" && isIpdrRecord(item)) ["entity_name", "location_name", "location_accuracy_m"].forEach(key => hidden.add(key));
   if (kind === "record" && isAdintRecord(item) && item.device_id) {
-    return ["observation_id", "device_id", "timestamp_utc", "brand", "model", "os", "keyboard_language", "ip", "latitude", "longitude", "accuracy_m"].map(key => [key, item[key] ?? "—"]);
+    return ["observation_id", "device_id", "timestamp_utc", "brand", "model", "os", "keyboard_language", "ip", "latitude", "longitude", "accuracy_m"].map(key => [key, item[key] == null || item[key] === "" ? "—" : item[key]]);
   }
   const preferred = kind === "record"
     ? ["timestamp_utc", "source_type", "collection_family", "source_reliability_label", "certainty_level", "entity_name", "location_name", "advertising_id", "ip_address", "imei", "session_start_utc", "session_end_utc", "source_port", "protocol", "bytes_up", "bytes_down", "location_accuracy_m", "call_id", "observation_id", "mission_id", "video_segment_id"]
@@ -6026,7 +6026,7 @@ function eventMapCoordinates(event = {}) {
   )) || null;
   const lon = canonical?.lon ?? event.longitude ?? event.lon;
   const lat = canonical?.lat ?? event.latitude ?? event.lat;
-  if (lon == null || lat == null || !Number.isFinite(Number(lon)) || !Number.isFinite(Number(lat))) return null;
+  if (lon == null || lat == null || String(lon).trim() === "" || String(lat).trim() === "" || !Number.isFinite(Number(lon)) || !Number.isFinite(Number(lat)) || Math.abs(Number(lon)) > 180 || Math.abs(Number(lat)) > 90) return null;
   return { lon: Number(lon), lat: Number(lat) };
 }
 
@@ -6456,7 +6456,7 @@ function renderEvidence() {
       const eventId = String(event.record_id || event.event_id || "");
       const selected = isMapItemSelected(activeLayer.id, "event", eventId);
       return `<tr class="${selected ? "map-selected-row" : ""}"><td class="result-map-action-cell">${mapActionButton(activeLayer.id, "event", eventId, event)}</td>${columns.map(key => {
-        const value = escapeHtml(event[key] ?? "—");
+        const value = escapeHtml(event[key] == null || event[key] === "" ? "—" : event[key]);
         return key === "observation_id"
           ? `<td dir="ltr"><button type="button" class="object-viewer-open" data-viewer-kind="record" data-viewer-id="${escapeHtml(eventId)}">${value}</button></td>`
           : `<td dir="ltr">${value}</td>`;
