@@ -3510,7 +3510,7 @@ function viewerFields(item, kind) {
   const hidden = new Set(["event_summary", "canonical_name", "media", "image_series", "video_url", "audio_url", "image_url", "raw_data_references", "call_started_at_utc", "call_duration_seconds", "side_a_imei", "side_a_number", "side_a_location_id", "side_a_location_name", "side_b_imei", "side_b_number", "side_b_location_id", "side_b_location_name", "call_transcript", "call_transcript_en", "synthetic_media"]);
   if (kind === "record" && isIpdrRecord(item)) ["entity_name", "location_name", "location_accuracy_m"].forEach(key => hidden.add(key));
   if (kind === "record" && isAdintRecord(item) && item.device_id) {
-    return ["observation_id", "device_id", "timestamp_utc", "brand", "model", "os", "keyboard_language", "ip", "latitude", "longitude", "accuracy_m"].map(key => [key, item[key] == null || item[key] === "" ? "—" : item[key]]);
+    return ["event_id", "device_id", "timestamp_utc", "brand", "model", "os", "keyboard_language", "ip", "latitude", "longitude", "accuracy_m"].map(key => [key, item[key] == null || item[key] === "" ? "—" : item[key]]);
   }
   if (kind === "record" && isIpdrRecord(item) && item.source_record_id) {
     return IPDR_SOURCE_FIELDS.map(key => [key, item[key] == null || item[key] === "" ? "—" : item[key]]);
@@ -3569,6 +3569,7 @@ function viewerFieldLabel(key) {
     certainty_level: ["רמת ודאות", "Confidence"],
     entity_name: ["גורם", "Entity"],
     location_name: ["מיקום", "Location"],
+    event_id: ["מזהה רשומה", "Record ID"],
     observation_id: ["מזהה תצפית", "Observation ID"],
     mission_id: ["מזהה משימה", "Mission ID"],
     video_segment_id: ["מזהה מקטע", "Segment ID"],
@@ -6471,14 +6472,14 @@ function renderEvidence() {
     ? activeLayer.items.every(isAdintRecord)
     : activeLayer.catalogLayerId === "events:ADINT";
   if (adintTable) {
-    const columns = ["observation_id", "device_id", "timestamp_utc", "brand", "model", "os", "keyboard_language", "ip", "latitude", "longitude", "accuracy_m"];
+    const columns = ["event_id", "device_id", "timestamp_utc", "brand", "model", "os", "keyboard_language", "ip", "latitude", "longitude", "accuracy_m"];
     head.innerHTML = `<tr><th class="result-map-action-column" data-result-action-column="true"></th>${columns.map(key => `<th>${escapeHtml(viewerFieldLabel(key))}</th>`).join("")}</tr>`;
     body.innerHTML = activeItems.length ? activeItems.map(event => {
       const eventId = String(event.record_id || event.event_id || "");
       const selected = isMapItemSelected(activeLayer.id, "event", eventId);
       return `<tr class="${selected ? "map-selected-row" : ""}"><td class="result-map-action-cell">${mapActionButton(activeLayer.id, "event", eventId, event)}</td>${columns.map(key => {
         const value = escapeHtml(event[key] == null || event[key] === "" ? "—" : event[key]);
-        return key === "observation_id"
+        return key === "event_id"
           ? `<td dir="ltr"><button type="button" class="object-viewer-open" data-viewer-kind="record" data-viewer-id="${escapeHtml(eventId)}">${value}</button></td>`
           : `<td dir="ltr">${value}</td>`;
       }).join("")}</tr>`;
