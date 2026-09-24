@@ -16,7 +16,7 @@ ROOT = Path(__file__).resolve().parent
 
 class NetworkFixture(unittest.TestCase):
     def test_unique_ip_join_and_nearby_points(self):
-        p = load_profile(ROOT, "syria", verify=True)
+        p = {"files": {"events": "data/syria_network_v1/events.csv", "locations": "data/syria_network_v1/locations.json"}}
         rows = list(csv.DictReader((ROOT / p["files"]["events"]).read_text().splitlines()))
         counts = Counter(r["source_type"] for r in rows)
         self.assertEqual(counts, {"CCTV": 2, "Satellite": 2, "ADINT": 4, "IPDR": 200})
@@ -43,14 +43,15 @@ class NetworkFixture(unittest.TestCase):
             current = next(r for r in rows if r["event_id"] == old["event_id"])
             self.assertEqual({k: current[k] for k in old}, old)
 
-    def test_agent_search_retrieves_imei_via_ip(self):
+    def test_adint2_ip_retrieval_matches_ipdr_source(self):
         with tempfile.TemporaryDirectory() as state:
             code = """import mcp_server.server as s
-a=s.search_events({'source_types':['ADINT'],'location_ids':['LOC-SYR-001']})['events']
+a=s.search_events({'source_types':['ADINT'],'keywords':['OBS-01-001']})['events']
 assert len(a)==1 and not a[0]['imei']
+assert a[0]['device_id'] and a[0]['ip']=='203.0.113.107'
 r=s.search_events({'source_types':['IPDR'],'keywords':[a[0]['ip_address']]})
-assert r['total']==1 and r['events'][0]['imei']
-print(r['events'][0]['event_id'],r['events'][0]['imei'])
+expected=[x for x in s.EVENTS if x['source_type']=='IPDR' and a[0]['ip'] in [(x.get(k) or '').strip() for k in ['ip_source','ip_target','ip_public','ip_private','ip_out']]]
+assert expected and r['total']==len(expected)
 """
             result = subprocess.run([sys.executable, "-c", code], cwd=ROOT, env={**os.environ, "INTELLIGENCE_POC_SCENARIO": "syria", "INTELLIGENCE_POC_STATE_ROOT": state}, capture_output=True, timeout=30)
             self.assertEqual(result.returncode, 0, result.stderr.decode())

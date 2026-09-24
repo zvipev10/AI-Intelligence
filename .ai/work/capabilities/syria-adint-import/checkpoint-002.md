@@ -1,0 +1,3 @@
+# Media relocation checkpoint
+
+User explicitly requests moving CCTV/Satellite to two ADINT locations chosen by the agent. Site1 -> LOC-SYR-ADINT-002 (35.077055,36.333669); Site2 -> LOC-SYR-ADINT-001 (35.108621,36.312140). New immutable adint-v2/profile8 preserves 324 rows and all non-media rows. Each Satellite image and counterpart location reference is updated; media URLs, timestamps, pair IDs, entity and source IDs are unchanged. Existing location definitions are retained. No inferred device/convoy association or temporal alignment. Next: parity tests, offline cache and controlled VM upgrade. This is a focused follow-up on PR82.

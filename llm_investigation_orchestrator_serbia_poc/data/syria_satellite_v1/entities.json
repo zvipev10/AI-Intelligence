@@ -1,0 +1,108 @@
+[
+  {
+    "entity_id": "ENT-SYR-CONVOY",
+    "canonical_name": "Convoy",
+    "aliases": [
+      "convoy",
+      "שיירה"
+    ],
+    "entity_type": "vehicle convoy",
+    "description": "Synthetic convoy entity shared by all four demonstration records."
+  },
+  {
+    "entity_id": "ENT-SYR-DEVICE-fbb49f825c12d583",
+    "canonical_name": "a48aba99-9f79-5ddf-b1e4-74d774925315",
+    "entity_type": "device",
+    "aliases": [
+      "a48aba99-9f79-5ddf-b1e4-74d774925315"
+    ]
+  },
+  {
+    "entity_id": "ENT-SYR-DEVICE-89ae0a96b2c54d13",
+    "canonical_name": "78cdcc3a-82ba-5f1a-a8dc-95860b9557aa",
+    "entity_type": "device",
+    "aliases": [
+      "78cdcc3a-82ba-5f1a-a8dc-95860b9557aa"
+    ]
+  },
+  {
+    "entity_id": "ENT-SYR-DEVICE-185b869c3e9d2572",
+    "canonical_name": "727a83dc-1259-5864-945a-cfe477029088",
+    "entity_type": "device",
+    "aliases": [
+      "727a83dc-1259-5864-945a-cfe477029088"
+    ]
+  },
+  {
+    "entity_id": "ENT-SYR-DEVICE-b7784d3122dbfdf4",
+    "canonical_name": "6edb6e89-7052-5852-a7e2-3861f86758e4",
+    "entity_type": "device",
+    "aliases": [
+      "6edb6e89-7052-5852-a7e2-3861f86758e4"
+    ]
+  },
+  {
+    "entity_id": "ENT-SYR-DEVICE-9f86d6ec61505a51",
+    "canonical_name": "f5bce365-0fa8-5126-a78e-420e831e80d7",
+    "entity_type": "device",
+    "aliases": [
+      "f5bce365-0fa8-5126-a78e-420e831e80d7"
+    ]
+  },
+  {
+    "entity_id": "ENT-SYR-DEVICE-0be435de0dd7dbf1",
+    "canonical_name": "c003db68-2e82-57cc-af46-0ab3d36513b3",
+    "entity_type": "device",
+    "aliases": [
+      "c003db68-2e82-57cc-af46-0ab3d36513b3"
+    ]
+  },
+  {
+    "entity_id": "ENT-SYR-DEVICE-d99057ea6bd00e63",
+    "canonical_name": "cdaf4359-854c-5a05-8e7d-55e9b5c09488",
+    "entity_type": "device",
+    "aliases": [
+      "cdaf4359-854c-5a05-8e7d-55e9b5c09488"
+    ]
+  },
+  {
+    "entity_id": "ENT-SYR-DEVICE-64220f1c118bda3c",
+    "canonical_name": "dd77b660-a4bc-51a6-8843-4905ac5904fd",
+    "entity_type": "device",
+    "aliases": [
+      "dd77b660-a4bc-51a6-8843-4905ac5904fd"
+    ]
+  },
+  {
+    "entity_id": "ENT-SYR-DEVICE-9bf8f68b239710fa",
+    "canonical_name": "28482af2-2dda-53b9-80fb-f856fced2c2c",
+    "entity_type": "device",
+    "aliases": [
+      "28482af2-2dda-53b9-80fb-f856fced2c2c"
+    ]
+  },
+  {
+    "entity_id": "ENT-SYR-DEVICE-572febce9ba3bdab",
+    "canonical_name": "0015f94d-1ac6-518d-b398-4ddf941ca214",
+    "entity_type": "device",
+    "aliases": [
+      "0015f94d-1ac6-518d-b398-4ddf941ca214"
+    ]
+  },
+  {
+    "entity_id": "ENT-SYR-DEVICE-32505acae5a2b3be",
+    "canonical_name": "617d3717-391d-58b9-b9a4-ecd1236a2314",
+    "entity_type": "device",
+    "aliases": [
+      "617d3717-391d-58b9-b9a4-ecd1236a2314"
+    ]
+  },
+  {
+    "entity_id": "ENT-SYR-DEVICE-80a510bfe5ac5951",
+    "canonical_name": "dfd60f21-0f73-5490-8137-a6c7391196eb",
+    "entity_type": "device",
+    "aliases": [
+      "dfd60f21-0f73-5490-8137-a6c7391196eb"
+    ]
+  }
+]

@@ -484,9 +484,20 @@ def event_search_haystack(event: dict[str, Any]) -> str:
         event.get("event_summary"), event_entity_name(event), event.get("location_name"), event.get("source_type"),
         event.get("call_id"), event.get("side_a_imei"), event.get("side_a_number"),
         event.get("side_b_imei"), event.get("side_b_number"), event.get("call_transcript"),
-        event.get("call_transcript_en"), event.get("ip_address"), event.get("imei"), event.get("advertising_id"), *endpoint_names,
+        event.get("call_transcript_en"), event.get("ip_address"), event.get("imei"), event.get("advertising_id"), event.get("device_id"), event.get("observation_id"),
+        event.get("brand"), event.get("model"), event.get("os"), event.get("keyboard_language"), event.get("ip"), *[event.get(k) for k in ("source_record_id", "ip_source", "ip_target", "ip_public", "ip_private", "ip_out", "source_system", "mac", "SUBNETMASK")], *endpoint_names,
     ]
     return normalize_text(" ".join(str(value) for value in values if value))
+
+
+def adint_fields(event: dict[str, Any]) -> dict[str, Any]:
+    if event.get("source_type") != "ADINT" or not event.get("device_id"):
+        return {}
+    fields = {key: event.get(key) or None for key in ("device_id", "brand", "model", "os", "keyboard_language", "ip")}
+    for key in ("latitude", "longitude", "accuracy_m"):
+        value = event.get(key)
+        fields[key] = float(value) if value is not None and value != "" else None
+    return fields
 
 
 def public_event(event: dict[str, Any]) -> dict[str, Any]:
@@ -495,6 +506,7 @@ def public_event(event: dict[str, Any]) -> dict[str, Any]:
     return {
         "event_id": event["event_id"],
         "timestamp_utc": event["timestamp_utc"],
+        "timestamp_basis": event.get("timestamp_basis", ""),
         "source_type": event["source_type"],
         "source_reliability": event["source_reliability"],
         "certainty_level": event.get("certainty_level", ""),
@@ -531,6 +543,8 @@ def public_event(event: dict[str, Any]) -> dict[str, Any]:
         "synthetic_media": event.get("synthetic_media", ""),
         "video_url": event.get("video_url", ""),
         "image_series": event.get("image_series", ""),
+        **adint_fields(event),
+        **({key: event.get(key, "") for key in ("start_time", "end_time", "ip_source", "ip_target", "ip_public", "ip_private", "ip_out", "source_record_id", "target_port", "public_port", "bytes_sent", "bytes_received", "source_system", "mac", "SUBNETMASK")} if event.get("source_type") == "IPDR" else {}),
         **{key: event.get(key, "") for key in ("advertising_id", "ip_address", "imei", "session_start_utc", "session_end_utc", "source_port", "protocol", "bytes_up", "bytes_down", "location_accuracy_m")},
     }
 

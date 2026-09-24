@@ -3415,7 +3415,7 @@ function viewerMediaHtml(item) {
     const captures = pair.map(entry => `<div><div class="object-viewer-media"><img loading="lazy" src="${escapeHtml(entry.url)}" alt="${escapeHtml(activeLocaleText("תמונת לוויין מדומה", "Simulated satellite capture"))}"></div><small>${escapeHtml(entry.location || "")} · <time>${escapeHtml(entry.timestamp || "")}</time></small></div>`).join("");
     return `<figure><figcaption><strong>${escapeHtml(capture.pair_id || "")}</strong><p>${escapeHtml(capture.description || "")}</p></figcaption><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px">${captures}</div>${capture.paired_record_id ? `<small>${escapeHtml(activeLocaleText("רשומה תואמת", "Paired record"))}: ${escapeHtml(capture.paired_record_id)}</small>` : ""}</figure>`;
   }).join("");
-  if (images) return `<section class="object-viewer-source-media"><h3>${escapeHtml(activeLocaleText("תמונות לוויין לאורך זמן", "Satellite captures over time"))}</h3>${disclaimer}${images}</section>`;
+  if (images) return `<section class="object-viewer-source-media"><h3>${escapeHtml(series.length === 1 ? activeLocaleText("תמונת לוויין", "Satellite image") : activeLocaleText("תמונות לוויין לאורך זמן", "Satellite captures over time"))}</h3>${disclaimer}${images}</section>`;
   const media = viewerMedia(item);
   const mediaElement = media?.type === "video"
     ? `<video controls preload="metadata" src="${escapeHtml(media.url)}"></video>`
@@ -3496,6 +3496,12 @@ function startSimulatedUavStream(item) {
   objectViewerUavAnimation = requestAnimationFrame(draw);
 }
 
+function isAdintRecord(item) {
+  return String(item?.source_type || "").trim().toUpperCase() === "ADINT";
+}
+
+const IPDR_SOURCE_FIELDS = ["start_time", "end_time", "ip_source", "ip_target", "ip_public", "ip_private", "ip_out", "source_record_id", "source_port", "target_port", "public_port", "protocol", "bytes_sent", "bytes_received", "source_system", "imei", "mac", "SUBNETMASK"];
+
 function isIpdrRecord(item) {
   return String(item?.source_type || "").trim().toUpperCase() === "IPDR";
 }
@@ -3503,8 +3509,14 @@ function isIpdrRecord(item) {
 function viewerFields(item, kind) {
   const hidden = new Set(["event_summary", "canonical_name", "media", "image_series", "video_url", "audio_url", "image_url", "raw_data_references", "call_started_at_utc", "call_duration_seconds", "side_a_imei", "side_a_number", "side_a_location_id", "side_a_location_name", "side_b_imei", "side_b_number", "side_b_location_id", "side_b_location_name", "call_transcript", "call_transcript_en", "synthetic_media"]);
   if (kind === "record" && isIpdrRecord(item)) ["entity_name", "location_name", "location_accuracy_m"].forEach(key => hidden.add(key));
+  if (kind === "record" && isAdintRecord(item) && item.device_id) {
+    return ["event_id", "device_id", "timestamp_utc", "brand", "model", "os", "keyboard_language", "ip", "latitude", "longitude", "accuracy_m"].map(key => [key, item[key] == null || item[key] === "" ? "—" : item[key]]);
+  }
+  if (kind === "record" && isIpdrRecord(item) && item.source_record_id) {
+    return IPDR_SOURCE_FIELDS.map(key => [key, item[key] == null || item[key] === "" ? "—" : item[key]]);
+  }
   const preferred = kind === "record"
-    ? ["timestamp_utc", "source_type", "collection_family", "source_reliability_label", "certainty_level", "entity_name", "location_name", "advertising_id", "ip_address", "imei", "session_start_utc", "session_end_utc", "source_port", "protocol", "bytes_up", "bytes_down", "location_accuracy_m", "call_id", "observation_id", "mission_id", "video_segment_id"]
+    ? ["timestamp_utc", "timestamp_basis", "source_type", "collection_family", "source_reliability_label", "certainty_level", "entity_name", "location_name", "advertising_id", "ip_address", "imei", "session_start_utc", "session_end_utc", "source_port", "protocol", "bytes_up", "bytes_down", "location_accuracy_m", "call_id", "observation_id", "mission_id", "video_segment_id"]
     : kind === "evidence"
       ? ["evidence_status", "claim_type", "confidence", "object_class", "subject_entity_ids", "location_ids", "valid_from", "valid_to", "source_groups", "source_record_ids", "quantity", "movement", "created_by_processor"]
     : kind === "assessment"
@@ -3515,6 +3527,30 @@ function viewerFields(item, kind) {
 
 function viewerFieldLabel(key) {
   const labels = {
+    start_time: ["תחילת חיבור", "Start time"],
+    end_time: ["סיום חיבור", "End time"],
+    ip_source: ["IP מקור", "Source IP"],
+    ip_target: ["IP יעד", "Target IP"],
+    ip_public: ["IP ציבורי", "Public IP"],
+    ip_private: ["IP פרטי", "Private IP"],
+    ip_out: ["IP יוצא", "Outbound IP"],
+    source_record_id: ["מזהה רשומה", "Record ID"],
+    target_port: ["פורט יעד", "Target port"],
+    public_port: ["פורט ציבורי", "Public port"],
+    bytes_sent: ["בתים שנשלחו", "Bytes sent"],
+    bytes_received: ["בתים שהתקבלו", "Bytes received"],
+    source_system: ["מערכת מקור", "Source system"],
+    mac: ["MAC", "MAC"],
+    SUBNETMASK: ["מסכת רשת", "Subnet mask"],
+    device_id: ["מזהה מכשיר", "Device ID"],
+    brand: ["יצרן", "Brand"],
+    model: ["דגם", "Model"],
+    os: ["מערכת הפעלה", "OS"],
+    keyboard_language: ["שפת מקלדת", "Keyboard language"],
+    ip: ["כתובת IP", "IP address"],
+    latitude: ["קו רוחב", "Latitude"],
+    longitude: ["קו אורך", "Longitude"],
+    accuracy_m: ["דיוק במטרים", "Accuracy (m)"],
     advertising_id: ["מזהה פרסום", "Advertising ID"],
     ip_address: ["כתובת IP", "IP address"],
     imei: ["IMEI", "IMEI"],
@@ -3525,6 +3561,7 @@ function viewerFieldLabel(key) {
     bytes_up: ["בתים שנשלחו", "Bytes uploaded"],
     bytes_down: ["בתים שהתקבלו", "Bytes downloaded"],
     location_accuracy_m: ["דיוק מיקום במטרים", "Location accuracy (m)"],
+    timestamp_basis: ["בסיס הזמן", "Timestamp basis"],
     timestamp_utc: ["זמן", "Time"],
     source_type: ["סוג מקור", "Source type"],
     collection_family: ["משפחת איסוף", "Collection family"],
@@ -3532,6 +3569,7 @@ function viewerFieldLabel(key) {
     certainty_level: ["רמת ודאות", "Confidence"],
     entity_name: ["גורם", "Entity"],
     location_name: ["מיקום", "Location"],
+    event_id: ["מזהה רשומה", "Record ID"],
     observation_id: ["מזהה תצפית", "Observation ID"],
     mission_id: ["מזהה משימה", "Mission ID"],
     video_segment_id: ["מזהה מקטע", "Segment ID"],
@@ -6010,7 +6048,7 @@ function eventMapCoordinates(event = {}) {
   )) || null;
   const lon = canonical?.lon ?? event.longitude ?? event.lon;
   const lat = canonical?.lat ?? event.latitude ?? event.lat;
-  if (lon == null || lat == null || !Number.isFinite(Number(lon)) || !Number.isFinite(Number(lat))) return null;
+  if (lon == null || lat == null || String(lon).trim() === "" || String(lat).trim() === "" || !Number.isFinite(Number(lon)) || !Number.isFinite(Number(lat)) || Math.abs(Number(lon)) > 180 || Math.abs(Number(lat)) > 90) return null;
   return { lon: Number(lon), lat: Number(lat) };
 }
 
@@ -6430,9 +6468,39 @@ function renderEvidence() {
     enhanceResultsTable(activeLayer);
     return;
   }
+  const adintTable = activeLayer.items?.length
+    ? activeLayer.items.every(isAdintRecord)
+    : activeLayer.catalogLayerId === "events:ADINT";
+  if (adintTable) {
+    const columns = ["event_id", "device_id", "timestamp_utc", "brand", "model", "os", "keyboard_language", "ip", "latitude", "longitude", "accuracy_m"];
+    head.innerHTML = `<tr><th class="result-map-action-column" data-result-action-column="true"></th>${columns.map(key => `<th>${escapeHtml(viewerFieldLabel(key))}</th>`).join("")}</tr>`;
+    body.innerHTML = activeItems.length ? activeItems.map(event => {
+      const eventId = String(event.record_id || event.event_id || "");
+      const selected = isMapItemSelected(activeLayer.id, "event", eventId);
+      return `<tr class="${selected ? "map-selected-row" : ""}"><td class="result-map-action-cell">${mapActionButton(activeLayer.id, "event", eventId, event)}</td>${columns.map(key => {
+        const value = escapeHtml(event[key] == null || event[key] === "" ? "—" : event[key]);
+        return key === "event_id"
+          ? `<td dir="ltr"><button type="button" class="object-viewer-open" data-viewer-kind="record" data-viewer-id="${escapeHtml(eventId)}">${value}</button></td>`
+          : `<td dir="ltr">${value}</td>`;
+      }).join("")}</tr>`;
+    }).join("") : `<tr><td colspan="12" class="empty-cell">${escapeHtml(activeLocaleText("השכבה מוסתרת או ריקה.", "Layer is hidden or empty."))}</td></tr>`;
+    enhanceResultsTable(activeLayer);
+    return;
+  }
   const ipdrTable = activeLayer.items?.length
     ? activeLayer.items.every(isIpdrRecord)
     : activeLayer.catalogLayerId === "events:IPDR";
+  if (ipdrTable && (activeLayer.items || []).some(event => event.source_record_id)) {
+    head.innerHTML = `<tr>${IPDR_SOURCE_FIELDS.map(key => `<th>${escapeHtml(viewerFieldLabel(key))}</th>`).join("")}</tr>`;
+    body.innerHTML = activeItems.length ? activeItems.map(event => `<tr>${IPDR_SOURCE_FIELDS.map(key => {
+      const value = escapeHtml(event[key] == null || event[key] === "" ? "—" : event[key]);
+      return key === "source_record_id"
+        ? `<td dir="ltr"><button type="button" class="object-viewer-open" data-viewer-kind="record" data-viewer-id="${escapeHtml(event.event_id || event.record_id || "")}">${value}</button></td>`
+        : `<td dir="ltr">${value}</td>`;
+    }).join("")}</tr>`).join("") : `<tr><td colspan="18" class="empty-cell">${escapeHtml(activeLocaleText("השכבה מוסתרת או ריקה.", "Layer is hidden or empty."))}</td></tr>`;
+    enhanceResultsTable(activeLayer);
+    return;
+  }
   if (ipdrTable) {
     head.innerHTML = `<tr><th>${escapeHtml(activeLocaleText("מזהה רשומה", "Record ID"))}</th><th>${escapeHtml(activeLocaleText("זמן", "Time"))}</th><th>${escapeHtml(activeLocaleText("אמינות", "Reliability"))}</th><th>${escapeHtml(activeLocaleText("ודאות", "Certainty"))}</th><th>${escapeHtml(activeLocaleText("כתובת IP", "IP address"))}</th><th>IMEI</th><th>${escapeHtml(activeLocaleText("תקציר", "Summary"))}</th></tr>`;
     body.innerHTML = activeItems.length ? activeItems.map(event => `
