@@ -34,6 +34,16 @@ The standalone Table tab reuses the same raw-results table DOM, selected layer, 
 
 `present_requested_results` materializes selected canonical rows and their recommended view. `agent_result_pipeline.py` preserves the structured presentation through audit parsing. Whole/filtered catalog actions and saved-memory actions use their own contracts; the browser reports actual loading success/failure. Presentation never implies a target or assessment mutation.
 
+### Call defaults and viewer docking
+
+Call-only results and calls catalog actions default to Timeline when no explicit view is selected. Catalog validation, MCP defaults, restored call layers and agent guidance use the same rule. Explicit Map/Table requests remain supported; mixed-source results keep their existing defaults. Compact timeline entries are keyboard-operable record buttons. The existing viewer DOM is moved into the Timeline grid for calls and becomes nonmodal; other viewer contexts retain their existing behavior. Closing or switching view removes its MapLibre instance and releases media. No record schema change is needed for docking.
+
+### Local polygon drawing
+
+`polygon_draw.js` owns a page-local MapLibre GeoJSON source (`draw-polygon`) with fill, outline and draft-vertex layers. The main map initializes the control; `index.html` loads the helper before the app, and the deployment bundle includes it. Closing requires at least three distinct vertices and a click within 12 screen pixels of the first point. Escape/button cancellation removes only the unfinished draft. Double-click zoom is restored to its prior state when drawing ends. Completed polygons survive basemap toggles but not page reloads.
+
+No drawing operation calls the backend, changes record filters, runs an agent or writes saved investigation state. Marker pointer events are suppressed during drawing; call-route click handlers ignore drawing clicks. Resize/mutation observers keep the control above the raw-results overlay. Existing sources receive updates even while tiles are loading, ensuring cancellation clears draft geometry promptly.
+
 ## Basemap composition
 
 The MapLibre client keeps basemap references separate from analytical presentation.

@@ -72,7 +72,7 @@ The 1 GB VM remains constrained. Use one scenario and one application agent exec
 
 ## Offline semantic search cache
 
-The 1 GB VM must not build a semantic index during an analyst request. Scenario MCP processes require a prebuilt compatible cache; a missing/stale cache returns an explicit operational error. The historical empty-v1 package can return zero without an index; current cellular-v4 is non-empty and requires a compatible prebuilt cache. The existing hybrid search backend is unchanged.
+The 1 GB VM must not build a semantic index during an analyst request. Scenario MCP processes require a prebuilt compatible cache; a missing/stale cache returns an explicit operational error. The historical empty-v1 package can return zero without an index; the current Syria package is non-empty and requires a compatible prebuilt cache. The existing hybrid search backend is unchanged.
 
 On a development machine with sufficient RAM and the exact release dataset bytes:
 
@@ -81,7 +81,7 @@ python build_demo_index.py kosovo --output /trusted/build/kosovo-index --engine 
 python build_demo_index.py syria --output /trusted/build/syria-index --engine python
 ```
 
-The deployed MCP uses Python without NumPy, so use the `python` engine. Install both generated `semantic_event_index_hybrid_embedding.pkl` and `.json` under the matching `/opt/demo-runtime/state/<scenario>/<dataset>/semantic_index/` before activation (currently Kosovo/v2.1 and Syria/cellular-v4). Verify the transferred SHA-256 against the build output. These are private derived release artifacts, not Git source. Only accept trusted caches: pickle files can execute code. The operator verifies the cache hash and raw dataset signatures before stopping services. Dataset/index-format/engine changes require a rebuilt cache and a real semantic-search smoke check. Build-time Python must support the runtime's pickle format.
+The deployed MCP uses Python without NumPy, so use the `python` engine. Install both generated `semantic_event_index_hybrid_embedding.pkl` and `.json` under the matching `/opt/demo-runtime/state/<scenario>/<dataset>/semantic_index/` before activation (use the active profile dataset version; see [demo scenarios](demo-scenarios.md)). Verify the transferred SHA-256 against the build output. These are private derived release artifacts, not Git source. Only accept trusted caches: pickle files can execute code. The operator verifies the cache hash and raw dataset signatures before stopping services. Dataset/index-format/engine changes require a rebuilt cache and a real semantic-search smoke check. Build-time Python must support the runtime's pickle format.
 
 Cold index construction during qualification timed out and caused heavy swapping. The offline cache avoids that construction cost; it does not eliminate the VM's overall RAM limit.
 
@@ -122,3 +122,9 @@ python docs/quality/score_semantic_tool_integration.py --current-label working_t
 The semantic quality gold fixture is `docs/quality/semantic_tool_integration_gold_v2.json` under the package. Record actual results and baseline failures in the capability handoff; a historical report is not evidence for a new release.
 
 Saved-question and recorded-run files belong to the selected runtime state directory, not the source deployment. Capture a complete successful live investigation response with its question, title, locale, identifiers, elapsed time and recording metadata; preserve all steps/results. Verify replay with the matching scenario/dataset/locale and confirm subsequent follow-ups call the live agent. Never replace mutable saved work during source deployment. See [architecture](architecture.md#saved-question-and-recording-interfaces) for API and storage contracts.
+
+## Calls and polygon UI release checks
+
+Include `polygon_draw.js` with the UI bundle, and update the app/bootstrap/style cache versions when shipping changes. UI-only changes do not require rebuilding a compatible dataset index. Removing a record does: publish a new dataset/profile version, rebuild the Python-engine index offline and retain the prior package/state for rollback.
+
+After release, verify `/api/status` identity and maintenance state, then refresh the browser. Open Cellular Calls and confirm Timeline is selected, the current call count matches the profile, and selecting a call opens its viewer beside the list. Check audio playback and that switching view releases the viewer. On Map, draw three vertices and click the first to close; verify the shape remains without an agent request or result change. Start another polygon and cancel with Escape; the completed shape must remain. Check Street/Satellite switching and control placement above an open results table.
