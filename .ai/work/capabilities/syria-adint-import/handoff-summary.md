@@ -1,6 +1,6 @@
 # Syria ADINT import handoff
 
-## Delivered
+## Historical initial delivery
 
 Syria adint-v1/profile7 is active on VM 151.145.93.180. Deployed source commit 04abab48b1e9083253c2d3a7c34afafab0de4882. Four former ADINT rows were replaced by all 120 supplied observations, with 84 new coordinate locations and 12 device identities. Total 324 rows, 86 locations and 13 entities. Other 204 source rows and Kosovo data/profile unchanged. Previous package and state retained; source/state backup: /opt/demo-runtime/backups/syria-adint-09d48be7.
 
@@ -19,3 +19,7 @@ Published branch codex/syria-adint-import and draft PR #82; issue #81 tracks the
 ## Follow-up: media relocation (2026-09-24)
 
 User requested selecting two ADINT locations for the existing CCTV/Satellite records. Deployed 4796185b as adint-v2/profile8: Site1 uses LOC-SYR-ADINT-002 (35.077055,36.333669); Site2 uses LOC-SYR-ADINT-001 (35.108621,36.312140). All image own/paired location references and record summaries agree. Media, dates, identities and all non-media rows unchanged. The existing two original location definitions remain in the catalog; no records reference them. 19 focused tests pass, live search retrieves ADINT/CCTV/Satellite at each point, all four public row locations verified and all six images/two movies accessible. UI/gateway/role readiness and prebuilt index passed. Backup: /opt/demo-runtime/backups/syria-media-adint-4796185b. No separate browser interaction was needed for this data-only follow-up; viewer/map behavior was validated in the preceding release. PR82 updated; no merge requested.
+
+## ADINT2 replacement (2026-09-24)
+
+Deployed adint-v3/profile13 at b11912a5. All 120 live ADINT records match every ADINT2 field; supplied coordinates verified against the live location catalog. Total remains 424 records, 88 locations and 13 entities. 23 focused tests passed; semantic cache rebuilt. Service health/identity checks passed and maintenance is disabled. Backup: /opt/demo-runtime/backups/syria-adint2-b11912a5. Draft PR82 published, unmerged. Next: refresh application. No architecture changes or additional documentation decisions required.

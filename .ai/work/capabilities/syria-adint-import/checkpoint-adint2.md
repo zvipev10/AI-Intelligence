@@ -1,3 +1,5 @@
 # ADINT2 replacement
 
 Replace all 120 ADINT records from user-supplied ADINT2. Validated schema and unique IDs. Source differs only in all 120 IP values; 12 devices, 84 distinct coordinate pairs, 36 records without geometry and 76 missing keyboard languages are unchanged. No missing IPs; 10 records use 203.0.113.107. Copy exact source bytes into ADINT.json. Preserve location IDs/coordinates and all 304 non-ADINT records, including exchanged Satellite images. New immutable adint-v3/profile13; rebuild cache and deploy with state backup. Issue81 / draft PR82.
+
+Deployed adint-v3/profile13 at b11912a5. All 120 live ADINT records match every ADINT2 field; supplied coordinates verified against the live location catalog. Total remains 424 records, 88 locations and 13 entities. 23 focused tests passed; semantic cache rebuilt. Service health/identity checks passed and maintenance is disabled. Backup: /opt/demo-runtime/backups/syria-adint2-b11912a5. Draft PR82 published, unmerged. Next: refresh application. No architecture changes or additional documentation decisions required.
