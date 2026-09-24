@@ -70,6 +70,7 @@ DIRS = [
     "data/syria_convoy_v2",
     "data/syria_convoy_v3",
     "data/syria_network_v1",
+    "data/syria_adint_v1",
     "assets",
     "vendor",
     "recorded_runs",

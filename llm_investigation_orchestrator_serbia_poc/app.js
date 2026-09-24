@@ -3496,6 +3496,10 @@ function startSimulatedUavStream(item) {
   objectViewerUavAnimation = requestAnimationFrame(draw);
 }
 
+function isAdintRecord(item) {
+  return String(item?.source_type || "").trim().toUpperCase() === "ADINT";
+}
+
 function isIpdrRecord(item) {
   return String(item?.source_type || "").trim().toUpperCase() === "IPDR";
 }
@@ -3503,6 +3507,9 @@ function isIpdrRecord(item) {
 function viewerFields(item, kind) {
   const hidden = new Set(["event_summary", "canonical_name", "media", "image_series", "video_url", "audio_url", "image_url", "raw_data_references", "call_started_at_utc", "call_duration_seconds", "side_a_imei", "side_a_number", "side_a_location_id", "side_a_location_name", "side_b_imei", "side_b_number", "side_b_location_id", "side_b_location_name", "call_transcript", "call_transcript_en", "synthetic_media"]);
   if (kind === "record" && isIpdrRecord(item)) ["entity_name", "location_name", "location_accuracy_m"].forEach(key => hidden.add(key));
+  if (kind === "record" && isAdintRecord(item) && item.device_id) {
+    return ["observation_id", "device_id", "timestamp_utc", "brand", "model", "os", "keyboard_language", "ip", "latitude", "longitude", "accuracy_m"].map(key => [key, item[key] ?? "—"]);
+  }
   const preferred = kind === "record"
     ? ["timestamp_utc", "source_type", "collection_family", "source_reliability_label", "certainty_level", "entity_name", "location_name", "advertising_id", "ip_address", "imei", "session_start_utc", "session_end_utc", "source_port", "protocol", "bytes_up", "bytes_down", "location_accuracy_m", "call_id", "observation_id", "mission_id", "video_segment_id"]
     : kind === "evidence"
@@ -3515,6 +3522,15 @@ function viewerFields(item, kind) {
 
 function viewerFieldLabel(key) {
   const labels = {
+    device_id: ["מזהה מכשיר", "Device ID"],
+    brand: ["יצרן", "Brand"],
+    model: ["דגם", "Model"],
+    os: ["מערכת הפעלה", "OS"],
+    keyboard_language: ["שפת מקלדת", "Keyboard language"],
+    ip: ["כתובת IP", "IP address"],
+    latitude: ["קו רוחב", "Latitude"],
+    longitude: ["קו אורך", "Longitude"],
+    accuracy_m: ["דיוק במטרים", "Accuracy (m)"],
     advertising_id: ["מזהה פרסום", "Advertising ID"],
     ip_address: ["כתובת IP", "IP address"],
     imei: ["IMEI", "IMEI"],
@@ -6427,6 +6443,25 @@ function renderEvidence() {
         <td dir="ltr">${escapeHtml(item.first_event_id || item.first_event_time || "-")}</td>
         <td dir="ltr">${escapeHtml(item.last_event_id || item.last_event_time || "-")}</td>
       </tr>`).join("") : `<tr><td colspan="5" class="empty-cell">${escapeHtml(activeLocaleText("השכבה מוסתרת או ריקה.", "Layer is hidden or empty."))}</td></tr>`;
+    enhanceResultsTable(activeLayer);
+    return;
+  }
+  const adintTable = activeLayer.items?.length
+    ? activeLayer.items.every(isAdintRecord)
+    : activeLayer.catalogLayerId === "events:ADINT";
+  if (adintTable) {
+    const columns = ["observation_id", "device_id", "timestamp_utc", "brand", "model", "os", "keyboard_language", "ip", "latitude", "longitude", "accuracy_m"];
+    head.innerHTML = `<tr><th class="result-map-action-column" data-result-action-column="true"></th>${columns.map(key => `<th>${escapeHtml(viewerFieldLabel(key))}</th>`).join("")}</tr>`;
+    body.innerHTML = activeItems.length ? activeItems.map(event => {
+      const eventId = String(event.record_id || event.event_id || "");
+      const selected = isMapItemSelected(activeLayer.id, "event", eventId);
+      return `<tr class="${selected ? "map-selected-row" : ""}"><td class="result-map-action-cell">${mapActionButton(activeLayer.id, "event", eventId, event)}</td>${columns.map(key => {
+        const value = escapeHtml(event[key] ?? "—");
+        return key === "observation_id"
+          ? `<td dir="ltr"><button type="button" class="object-viewer-open" data-viewer-kind="record" data-viewer-id="${escapeHtml(eventId)}">${value}</button></td>`
+          : `<td dir="ltr">${value}</td>`;
+      }).join("")}</tr>`;
+    }).join("") : `<tr><td colspan="12" class="empty-cell">${escapeHtml(activeLocaleText("השכבה מוסתרת או ריקה.", "Layer is hidden or empty."))}</td></tr>`;
     enhanceResultsTable(activeLayer);
     return;
   }

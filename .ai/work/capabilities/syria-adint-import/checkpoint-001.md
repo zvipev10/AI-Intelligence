@@ -1,0 +1,3 @@
+# Local implementation checkpoint
+
+Issue #81. New adint-v1/profile7 replaces four ADINT records with 120 supplied observations. Source JSON SHA256: 36b9c59389555e25680c6245ec43fa4000d939808cf7545c55505dbd33c063a0. Total 324 rows, 86 locations (84 new), 13 entities (12 devices). All other-source fields unchanged. Native public fields retain numeric/null semantics, identifier search includes new fields, Table/viewer use the source schema. Five import/network tests and JS syntax pass. Offline Python-engine cache built for 324 rows. No VM mutation yet; prepare private rollback backup and retain old dataset/state.
