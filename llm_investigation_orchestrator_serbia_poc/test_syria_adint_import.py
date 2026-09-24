@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parent
 class AdintImportTests(unittest.TestCase):
     def test_exact_fields_nulls_and_preserved_sources(self):
         profile = load_profile(ROOT, "syria", verify=True)
-        self.assertEqual(profile["dataset_version"], "adint-v3")
+        self.assertEqual(profile["dataset_version"], "cellular-v1")
         source = json.loads((ROOT / "data/syria_adint_v1/ADINT.json").read_text())
         rows = list(csv.DictReader((ROOT / "data/syria_adint_v1/events.csv").read_text().splitlines()))
         imported = {r["observation_id"]: r for r in rows if r["source_type"] == "ADINT"}
@@ -53,7 +53,10 @@ class AdintImportTests(unittest.TestCase):
                 self.assertEqual(row[key], "" if value is None else str(value))
             self.assertEqual(row["ip_address"], item["ip"])
         previous = list(csv.DictReader((ROOT / "data/syria_satellite_v3/events.csv").read_text().splitlines()))
-        self.assertEqual([x for x in current if x["source_type"] != "ADINT"], [x for x in previous if x["source_type"] != "ADINT"])
+        by_id = {x["event_id"]: x for x in current}
+        for row in previous:
+            if row["source_type"] != "ADINT":
+                self.assertEqual(row, {key: by_id[row["event_id"]][key] for key in row})
         for name in ["locations.json", "locations.en.json", "entities.json", "entities.en.json"]:
             self.assertEqual((folder / name).read_bytes(), (ROOT / "data/syria_satellite_v3" / name).read_bytes())
 
@@ -67,7 +70,7 @@ class AdintImportTests(unittest.TestCase):
     def test_public_projection_and_search(self):
         with tempfile.TemporaryDirectory() as state:
             code = """import mcp_server.server as s
-assert len(s.EVENTS)==424
+assert len(s.EVENTS)==430
 rows=[s.public_event(r) for r in s.EVENTS if r['source_type']=='ADINT']
 assert sum(r['latitude'] is None for r in rows)==36
 assert sum(r['ip'] is None for r in rows)==0

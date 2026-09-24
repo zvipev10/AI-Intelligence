@@ -3496,6 +3496,10 @@ function startSimulatedUavStream(item) {
   objectViewerUavAnimation = requestAnimationFrame(draw);
 }
 
+function isCellularGeolocationRecord(item) {
+  return item?.source_type === "Cellular Geolocations" || item?.collection_family === "synthetic_cellular_geolocation";
+}
+
 function isAdintRecord(item) {
   return String(item?.source_type || "").trim().toUpperCase() === "ADINT";
 }
@@ -3507,6 +3511,7 @@ function isIpdrRecord(item) {
 }
 
 function viewerFields(item, kind) {
+  if (kind === "record" && isCellularGeolocationRecord(item)) return ["event_id", "timestamp_utc", "imei", "sim", "location_name"].map(key => [key, item[key] || (key === "location_name" ? item.location_id : "") || "—"]);
   const hidden = new Set(["event_summary", "canonical_name", "media", "image_series", "video_url", "audio_url", "image_url", "raw_data_references", "call_started_at_utc", "call_duration_seconds", "side_a_imei", "side_a_number", "side_a_location_id", "side_a_location_name", "side_b_imei", "side_b_number", "side_b_location_id", "side_b_location_name", "call_transcript", "call_transcript_en", "synthetic_media"]);
   if (kind === "record" && isIpdrRecord(item)) ["entity_name", "location_name", "location_accuracy_m"].forEach(key => hidden.add(key));
   if (kind === "record" && isAdintRecord(item) && item.device_id) {
@@ -3554,6 +3559,7 @@ function viewerFieldLabel(key) {
     advertising_id: ["מזהה פרסום", "Advertising ID"],
     ip_address: ["כתובת IP", "IP address"],
     imei: ["IMEI", "IMEI"],
+    sim: ["SIM", "SIM"],
     session_start_utc: ["תחילת חיבור", "Session start (UTC)"],
     session_end_utc: ["סיום חיבור", "Session end (UTC)"],
     source_port: ["פורט מקור", "Source port"],
@@ -6468,6 +6474,22 @@ function renderEvidence() {
     enhanceResultsTable(activeLayer);
     return;
   }
+  const cellularGeolocationTable = activeLayer.items?.length
+    ? activeLayer.items.every(isCellularGeolocationRecord)
+    : activeLayer.catalogLayerId === "events:Cellular Geolocations";
+  if (cellularGeolocationTable) {
+    const columns = ["event_id", "timestamp_utc", "imei", "sim", "location_name"];
+    head.innerHTML = `<tr><th class="result-map-action-column" data-result-action-column="true"></th>${columns.map(key => `<th>${escapeHtml(viewerFieldLabel(key))}</th>`).join("")}</tr>`;
+    body.innerHTML = activeItems.length ? activeItems.map(event => {
+      const id = String(event.record_id || event.event_id || "");
+      return `<tr><td>${mapActionButton(activeLayer.id, "event", id, event)}</td>${columns.map(key => {
+        const value = escapeHtml(event[key] || (key === "location_name" ? event.location_id : "") || "—");
+        return key === "event_id" ? `<td><button type="button" class="object-viewer-open" data-viewer-kind="record" data-viewer-id="${escapeHtml(id)}">${value}</button></td>` : `<td dir="ltr">${value}</td>`;
+      }).join("")}</tr>`;
+    }).join("") : `<tr><td colspan="6" class="empty-cell">${escapeHtml(activeLocaleText("השכבה ריקה.", "Layer is empty."))}</td></tr>`;
+    enhanceResultsTable(activeLayer);
+    return;
+  }
   const adintTable = activeLayer.items?.length
     ? activeLayer.items.every(isAdintRecord)
     : activeLayer.catalogLayerId === "events:ADINT";
@@ -6515,9 +6537,9 @@ function renderEvidence() {
     enhanceResultsTable(activeLayer);
     return;
   }
-  const cellularCallTable = (activeLayer.items || []).some(isCellularCallRecord);
+  const cellularCallTable = (activeLayer.items || []).some(isCellularCallRecord) || ["events:Cellular Calls", "events:שיחות סלולר"].includes(activeLayer.catalogLayerId);
   const endpointHeaders = cellularCallTable
-    ? `<th>${escapeHtml(activeLocaleText("מיקום צד א׳", "Side A location"))}</th><th>${escapeHtml(activeLocaleText("מיקום צד ב׳", "Side B location"))}</th>`
+    ? `<th>${escapeHtml(activeLocaleText("מיקום צד א׳", "Side A location"))}</th><th>${escapeHtml(activeLocaleText("מיקום צד ב׳", "Side B location"))}</th><th>Side A IMEI</th><th>Side B IMEI</th>`
     : "";
   head.innerHTML = `<tr><th class="result-map-action-column" data-result-action-column="true" aria-label="${escapeHtml(activeLocaleText("פעולות", "Actions"))}"></th><th>${escapeHtml(activeLocaleText("מזהה רשומה", "Record ID"))}</th><th>${escapeHtml(activeLocaleText("זמן", "Time"))}</th><th>${escapeHtml(activeLocaleText("אמינות", "Reliability"))}</th><th>${escapeHtml(activeLocaleText("ודאות", "Certainty"))}</th><th>${escapeHtml(activeLocaleText("גורם", "Actor"))}</th><th>${escapeHtml(activeLocaleText("מיקום", "Location"))}</th>${endpointHeaders}<th>${escapeHtml(activeLocaleText("תקציר", "Summary"))}</th></tr>`;
   body.innerHTML = activeItems.length ? activeItems.map(event => {
@@ -6532,10 +6554,10 @@ function renderEvidence() {
       <td>${escapeHtml(event.certainty_level || "-")}</td>
       <td>${escapeHtml(event.entity_name || event.entity_id || "-")}</td>
       <td>${escapeHtml(event.location_name || "-")}</td>
-      ${cellularCallTable ? `<td dir="ltr">${escapeHtml(event.side_a_location_id || "-")}</td><td dir="ltr">${escapeHtml(event.side_b_location_id || "-")}</td>` : ""}
+      ${cellularCallTable ? `<td dir="ltr">${escapeHtml(event.side_a_location_id || "-")}</td><td dir="ltr">${escapeHtml(event.side_b_location_id || "-")}</td><td dir="ltr">${escapeHtml(event.side_a_imei || "—")}</td><td dir="ltr">${escapeHtml(event.side_b_imei || "—")}</td>` : ""}
       <td>${escapeHtml(event.event_summary || "-")}</td>
     </tr>`;
-  }).join("") : `<tr><td colspan="${cellularCallTable ? 10 : 8}" class="empty-cell">${escapeHtml(activeLocaleText("השכבה מוסתרת או ריקה.", "Layer is hidden or empty."))}</td></tr>`;
+  }).join("") : `<tr><td colspan="${cellularCallTable ? 12 : 8}" class="empty-cell">${escapeHtml(activeLocaleText("השכבה מוסתרת או ריקה.", "Layer is hidden or empty."))}</td></tr>`;
   enhanceResultsTable(activeLayer);
 }
 

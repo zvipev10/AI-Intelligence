@@ -140,6 +140,8 @@ DIRECT_OBSERVATION_MARKERS = (
 
 SOURCE_TYPE_ALIASES = {
     "cellular calls": "שיחות סלולר",
+    "cellular geolocations": "Cellular Geolocations",
+    "cellular geolocation": "Cellular Geolocations",
     "local news": "חדשות מקומיות",
     "local rumor": "שמועה מקומית",
     "whatsapp group": "קבוצת וואטסאפ",
@@ -484,7 +486,7 @@ def event_search_haystack(event: dict[str, Any]) -> str:
         event.get("event_summary"), event_entity_name(event), event.get("location_name"), event.get("source_type"),
         event.get("call_id"), event.get("side_a_imei"), event.get("side_a_number"),
         event.get("side_b_imei"), event.get("side_b_number"), event.get("call_transcript"),
-        event.get("call_transcript_en"), event.get("ip_address"), event.get("imei"), event.get("advertising_id"), event.get("device_id"), event.get("observation_id"),
+        event.get("call_transcript_en"), event.get("ip_address"), event.get("imei"), event.get("sim"), event.get("advertising_id"), event.get("device_id"), event.get("observation_id"),
         event.get("brand"), event.get("model"), event.get("os"), event.get("keyboard_language"), event.get("ip"), *[event.get(k) for k in ("source_record_id", "ip_source", "ip_target", "ip_public", "ip_private", "ip_out", "source_system", "mac", "SUBNETMASK")], *endpoint_names,
     ]
     return normalize_text(" ".join(str(value) for value in values if value))
@@ -545,7 +547,7 @@ def public_event(event: dict[str, Any]) -> dict[str, Any]:
         "image_series": event.get("image_series", ""),
         **adint_fields(event),
         **({key: event.get(key, "") for key in ("start_time", "end_time", "ip_source", "ip_target", "ip_public", "ip_private", "ip_out", "source_record_id", "target_port", "public_port", "bytes_sent", "bytes_received", "source_system", "mac", "SUBNETMASK")} if event.get("source_type") == "IPDR" else {}),
-        **{key: event.get(key, "") for key in ("advertising_id", "ip_address", "imei", "session_start_utc", "session_end_utc", "source_port", "protocol", "bytes_up", "bytes_down", "location_accuracy_m")},
+        **{key: event.get(key, "") for key in ("advertising_id", "ip_address", "imei", "sim", "session_start_utc", "session_end_utc", "source_port", "protocol", "bytes_up", "bytes_down", "location_accuracy_m")},
     }
 
 

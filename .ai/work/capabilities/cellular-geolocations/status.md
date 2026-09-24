@@ -1,3 +1,3 @@
 # Status
 
-Implementation commencing. Owner: coding agent. No required blocker. Optional clarification on scenario/sample data pending; default Syria and no samples. Next: implementation checkpoint.
+Implementation and validation complete. Owner: coding agent. No blocker. User confirmed Syria synthetic samples. Issue83. Next: deploy and verify; checkpoint-001.md records checks.

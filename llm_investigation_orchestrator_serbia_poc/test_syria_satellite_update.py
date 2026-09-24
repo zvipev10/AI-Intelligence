@@ -10,7 +10,7 @@ class SatelliteUpdate(unittest.TestCase):
   loc=json.loads((ROOT/p['files']['locations']).read_text());self.assertEqual(len(loc),88)
   sats=[r for r in rows if r['source_type']=='Satellite'];self.assertEqual(len(sats),2)
   for r in rows:
-   if r['source_type'] not in ['Satellite','ADINT']:self.assertEqual(old[r['event_id']],{k:r[k] for k in old[r['event_id']]})
+   if r['event_id'] in old and r['source_type'] not in ['Satellite','ADINT']:self.assertEqual(old[r['event_id']],{k:r[k] for k in old[r['event_id']]})
   for r in sats:
    self.assertNotIn('ADINT',r['event_summary']);self.assertNotIn('repeatedly',r['event_summary'])
    self.assertTrue(r['location_id'].startswith('LOC-SYR-SAT-'))

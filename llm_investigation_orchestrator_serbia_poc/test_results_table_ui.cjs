@@ -26,7 +26,7 @@ const context = { console, Set, Map, Date, LOCATIONS:{},
  mapActionButton:()=>'',enhanceResultsTable(){},layerId:(kind,label)=>`${kind}:${label}`
 };
 vm.createContext(context);
-for (const name of ['activateView','renderEvidence','resolveFinalResultView','eventMapCoordinates','buildEventLayers','isIpdrRecord','viewerFields','filterFieldsForLayer','filterFieldPathsForValue']) {
+for (const name of ['activateView','renderEvidence','resolveFinalResultView','eventMapCoordinates','buildEventLayers','isIpdrRecord','isAdintRecord','isCellularGeolocationRecord','isCellularCallRecord','viewerFieldLabel','viewerFields','filterFieldsForLayer','filterFieldPathsForValue']) {
  const start = source.indexOf(`function ${name}(`);
  const next = source.slice(start+1).search(/\n(?:async )?function /);
  vm.runInContext(source.slice(start,start+1+next),context);
@@ -48,8 +48,8 @@ assert(fields.some(([key,value])=>key==='imei' && value==='000000000001370'));
 assert(!context.filterFieldsForLayer(layer).includes('location_name'));
 assert(context.filterFieldsForLayer(layer).includes('ip_address'));
 row.source_type='ADINT'; context.renderEvidence();
-assert.match(nodes.evidenceHead.innerHTML,/Actor/);
-assert.match(nodes.evidenceHead.innerHTML,/Location/);
+assert.match(nodes.evidenceHead.innerHTML,/Device ID/);
+assert.match(nodes.evidenceHead.innerHTML,/Latitude/);
 row.source_type='IPDR'; context.renderEvidence();
 const sharedBody = nodes.evidenceRows;
 context.activateView('timeline');
@@ -63,6 +63,13 @@ assert.equal(context.resolveFinalResultView({recommended_view:'table'},[layer]),
 assert.equal(context.resolveFinalResultView({recommended_view:'timeline'},[layer]),'timeline');
 assert.equal(context.resolveFinalResultView({recommended_view:'map'},[layer]),'table');
 assert.equal(context.buildEventLayers([row])[0].capabilities.map,false);
+row.source_type='Cellular Geolocations';row.sim='00001234';row.imei='000000000000001';row.location_id='LOC-1';context.renderEvidence();
+assert.match(nodes.evidenceHead.innerHTML,/SIM/);assert.match(nodes.evidenceHead.innerHTML,/IMEI/);
+assert.doesNotMatch(nodes.evidenceHead.innerHTML,/Actor/);assert.match(nodes.evidenceRows.innerHTML,/00001234/);
+assert(context.viewerFields(row,'record').some(([k,v])=>k==='sim' && v==='00001234'));
+row.source_type='Cellular Calls';row.call_id='CALL-1';row.side_a_imei='000000000000001';row.side_b_imei='000000000000002';context.renderEvidence();
+assert.match(nodes.evidenceHead.innerHTML,/Side A IMEI/);assert.match(nodes.evidenceHead.innerHTML,/Side B IMEI/);
+assert.match(nodes.evidenceRows.innerHTML,/000000000000001/);assert.match(nodes.evidenceRows.innerHTML,/000000000000002/);
 context.state.layers=[];context.renderEvidence();
 assert(nodes.rawEventsOverlay.hidden,'empty table exposes its placeholder');
 console.log('PASS: shared table, geometry-free record links, recommendation, legacy restore, empty state and minimization');
