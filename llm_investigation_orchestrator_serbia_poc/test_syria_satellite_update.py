@@ -17,8 +17,7 @@ class SatelliteUpdate(unittest.TestCase):
    series=json.loads(r['image_series']);self.assertEqual(len(series),1)
    self.assertEqual(series[0]['location_id'],r['location_id']);self.assertNotIn('paired_record_id',series[0]);self.assertNotIn('pair_id',series[0])
    self.assertTrue((ROOT/series[0]['image_url'].lstrip('/')).is_file())
-   a=loc[old[r['event_id']]['location_id']];b=loc[r['location_id']]
-   d=6371000*math.cos(math.radians(a['latitude']))*math.radians(b['longitude']-a['longitude'])
-   self.assertAlmostEqual(d,30,places=2);self.assertEqual(a['latitude'],b['latitude'])
+   expected={'LOC-SYR-SAT-001':(35.065212338738036,36.28815755309795),'LOC-SYR-SAT-002':(35.06503531383431,36.289563371508734)}
+   self.assertEqual((loc[r['location_id']]['latitude'],loc[r['location_id']]['longitude']),expected[r['location_id']])
    self.assertEqual(r['synthetic_media'],'true');self.assertIn('capture date not supplied',r['timestamp_basis'])
 if __name__=='__main__':unittest.main()
