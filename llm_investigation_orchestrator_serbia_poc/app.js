@@ -3378,11 +3378,11 @@ function cellularCallPartyHtml(item, side) {
   const prefix = side === "a" ? "side_a" : "side_b";
   const label = side === "a" ? activeLocaleText("צד א׳", "Side A") : activeLocaleText("צד ב׳", "Side B");
   const location = item[`${prefix}_location_name`] || item[`${prefix}_location_id`] || activeLocaleText("לא ידוע", "Unknown");
-  const number = item[`${prefix}_number`] || activeLocaleText("לא ידוע", "Unknown");
+  const number = item[`${prefix}_sim`] || item[`${prefix}_number`] || activeLocaleText("לא ידוע", "Unknown");
   const imei = item[`${prefix}_imei`] || activeLocaleText("לא ידוע", "Unknown");
   return `<article class="cellular-call-party cellular-call-party-${side}">
     <span class="cellular-call-party-label">${escapeHtml(label)}</span>
-    <dl><div><dt>${escapeHtml(activeLocaleText("מספר", "Number"))}</dt><dd dir="ltr">${escapeHtml(number)}</dd></div>
+    <dl><div><dt>${escapeHtml((item[`${prefix}_sim`] ? "SIM" : activeLocaleText("מספר", "Number")))}</dt><dd dir="ltr">${escapeHtml(number)}</dd></div>
     <div><dt>IMEI</dt><dd dir="ltr">${escapeHtml(imei)}</dd></div>
     <div><dt>${escapeHtml(activeLocaleText("מיקום", "Location"))}</dt><dd>${escapeHtml(location)}</dd></div></dl>
   </article>`;
@@ -5830,7 +5830,7 @@ function cellularCallMapLocation(event, side) {
     name: event[`${prefix}_location_name`] || canonical.name || locationId,
     lon: Number(canonical.lon),
     lat: Number(canonical.lat),
-    number: event[`${prefix}_number`] || "-",
+    number: event[`${prefix}_sim`] || event[`${prefix}_number`] || "-",
   };
 }
 
@@ -6224,7 +6224,7 @@ function callTimelineEntry(event) {
   const duration = Number(event.call_duration_seconds);
   return `<button type="button" class="call-timeline-entry" data-viewer-kind="record" data-viewer-id="${escapeHtml(id)}" aria-pressed="false">
     <span class="call-timeline-time">${escapeHtml(time)}${duration > 0 ? ` · ${duration.toFixed(1)}s` : ""}</span>
-    <strong dir="ltr">${escapeHtml(event.side_a_number || event.side_a_imei || "A")} → ${escapeHtml(event.side_b_number || event.side_b_imei || "B")}</strong>
+    <strong dir="ltr">${escapeHtml(event.side_a_sim || event.side_a_number || event.side_a_imei || "A")} → ${escapeHtml(event.side_b_sim || event.side_b_number || event.side_b_imei || "B")}</strong>
     <span class="call-timeline-summary">${escapeHtml(event.event_summary || "")}</span>
     <span class="call-timeline-id">${escapeHtml(id)}</span>
   </button>`;

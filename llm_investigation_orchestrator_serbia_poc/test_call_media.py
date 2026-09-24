@@ -12,6 +12,8 @@ class CallMedia(unittest.TestCase):
   for key,row in previous.items():
    if key!='REC-SYR-CALL-002':self.assertEqual(row,{k:current[key][k] for k in row})
   c=current['REC-SYR-CALL-001']
+  self.assertEqual(c['side_a_sim'],'DEMO-SIM-SYR-001')
+  self.assertEqual(c['side_b_sim'],'DEMO-SIM-SYR-002')
   self.assertEqual(c['call_transcript_speaker_imei'],'353294702931926')
   self.assertEqual(c['side_a_imei'],previous[c['event_id']]['side_a_imei'])
   self.assertEqual(c['call_transcript_original'],(ROOT/c['call_transcript_url'].lstrip('/')).read_text(encoding='utf-8'))
