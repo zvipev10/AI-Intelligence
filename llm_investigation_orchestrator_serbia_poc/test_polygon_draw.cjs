@@ -10,3 +10,5 @@ click(100,100);click(0,0);assert(!draw.active);assert(zoom);assert.deepEqual(dra
 draw.start();click(30,30);draw.cancel();assert.equal(draw.polygons.length,1);assert.equal(draw.points.length,0);
 zoom=false;draw.start();draw.cancel();assert(!zoom);
 console.log('PASS: minimum vertices, closure, cancellation, completed polygon preservation, navigation restoration');
+
+map.isStyleLoaded=()=>false; draw.start(); click(30,30); draw.cancel(); assert.equal(data.features.length,1); console.log("PASS: cancellation updates existing source while tiles are loading");
