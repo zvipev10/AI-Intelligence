@@ -694,7 +694,7 @@ def validate_catalog_layer_actions(actions: Any, locale: str) -> tuple[list[dict
             errors.append({"catalog_layer_id": layer_id, "error": str(exc)})
             continue
         normalized = {"action": "open", "catalog_layer_id": layer["id"], "label": layer["label"],
-                      "view": action.get("view") if action.get("view") in {"map", "timeline", "table", "evidence"} else "map"}
+                      "view": action.get("view") if action.get("view") in {"map", "timeline", "table", "evidence"} else ("timeline" if layer.get("source_type") == "Cellular Calls" else "map")}
         if filters:
             normalized["filters"] = filters
         if normalized not in valid:
@@ -1277,7 +1277,7 @@ def build_english_agent_instructions(
         "When the user directly asks to open a whole named UI catalog layer without filters, call open_catalog_layers with the exact ID from the catalog list below. Do not search first and do not use present_saved_memory_layers.",
         "For a named raw catalog layer with location/entity/time constraints, call open_catalog_layers with filters and the current locale. Carry forward prior conversation filters, including on follow-up requests. For other constraints retrieve records and pass their event_ids as filters, or use present_requested_results. Never replace a filtered request with the entire catalog. A pending_ui status means queued, not opened; do not claim browser success. On clarification_required ask the analyst to choose among candidates; never guess.",
         "For all other requests, call present_requested_results exactly once before the final answer whenever there are concrete data objects or evidence layers worth presenting in the UI.",
-        "End with exactly one final line in the format 'Recommended view: VIEW | REASON'. VIEW must be one of map, timeline, or table. Choose table for raw records, identifier correlation, and records without geometry; map for spatial questions; timeline for chronology. Never discard records because they lack geometry. REASON must be short.",
+        "End with exactly one final line in the format 'Recommended view: VIEW | REASON'. VIEW must be one of map, timeline, or table. Choose table for raw records, identifier correlation, and records without geometry; map for spatial questions; timeline for chronology. Cellular Calls default to timeline even when endpoints have locations; use map or table only when the analyst explicitly requests it. Never discard records because they lack geometry. REASON must be short.",
     ]
     if responding_agent == MOSHE_AGENT_ID:
         lines.extend([
@@ -1631,7 +1631,7 @@ def memory_layer_presentation(investigation_id: str, memory_layer_id: str, local
             "kind": result_kind,
             "rows": rows,
             "capabilities": capabilities,
-            "recommended_view": "map" if capabilities["map"] else "table",
+            "recommended_view": "timeline" if rows and all(row.get("call_id") for row in rows) else ("map" if capabilities["map"] else "table"),
         }] if rows else []),
     }
 

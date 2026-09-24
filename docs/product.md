@@ -39,3 +39,7 @@ Saved questions restore complete answers, steps and result presentation without 
 Scenario selection preserves Kosovo work and does not copy its example investigations or learned memory into Syria. Locale isolation continues inside scenario state. Agents serve the active scenario only; concurrent scenario runtimes are outside the accepted scope. One bounded application execution slot and offline semantic-index builds accommodate the constrained VM. Shared messaging integrations can briefly pause during a switch, as accepted by the user.
 
 See [architecture](architecture.md) for interfaces and state ownership. All demonstration data is synthetic. Evaluator truth stays offline and must never enter runtime retrieval, prompts, evidence creation or user-facing layers.
+
+### Calls presentation
+
+Cellular Calls default to Timeline even when endpoint coordinates are present. Compact entries show time, duration, endpoints and a short summary. Selecting a call opens its existing viewer beside the timeline rather than covering it. On narrow screens the panels stack. Explicit Map/Table choices remain available; mixed-source results keep their existing defaults.

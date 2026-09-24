@@ -2888,7 +2888,7 @@ async function openCatalogLayer(layerId, options = {}) {
     const added = addResultLayers({
       sourceId: `catalog:${layerId}:${scopeKey}`,
       sourceLabel: openedLayer.label,
-      preferredView: openedLayer.capabilities.map ? "map" : (openedLayer.kind === "events" ? "table" : (openedLayer.capabilities.timeline ? "timeline" : "table")),
+      preferredView: isCallsLayer(openedLayer) ? "timeline" : openedLayer.capabilities.map ? "map" : (openedLayer.kind === "events" ? "table" : (openedLayer.capabilities.timeline ? "timeline" : "table")),
       layers: [openedLayer]
     });
     const restoredLayer = added.find(item => item.catalogLayerId === layerId && item.catalogScopeKey === scopeKey)
@@ -2898,7 +2898,8 @@ async function openCatalogLayer(layerId, options = {}) {
     state.rawOverlayMinimized = false;
     state.layerSearchQuery = "";
     state.layerSearchOpen = false;
-    if (!options.silent && !openedLayer.capabilities.map) activateView(openedLayer.kind === "events" ? "table" : (openedLayer.capabilities.timeline ? "timeline" : "table"));
+    if (!options.silent && isCallsLayer(openedLayer)) activateView("timeline");
+    else if (!options.silent && !openedLayer.capabilities.map) activateView(openedLayer.kind === "events" ? "table" : (openedLayer.capabilities.timeline ? "timeline" : "table"));
     if (!options.silent) showResult(
       "שכבה נפתחה",
       added.length
@@ -3427,7 +3428,7 @@ function initializeCellularViewer(item) {
     const marker = document.createElement("button");marker.type="button";marker.className=`cellular-call-map-endpoint cellular-call-map-endpoint-${point.side}`;marker.textContent=point.side.toUpperCase();marker.setAttribute("aria-label",`Side ${point.side.toUpperCase()}: ${point.name}`);
     new maplibregl.Marker({element:marker}).setLngLat([point.lon,point.lat]).setPopup(new maplibregl.Popup().setText(`Side ${point.side.toUpperCase()} · ${point.name}`)).addTo(map);
   }
-  const fit=()=>map.fitBounds(bounds,{padding:48,maxZoom:13,duration:0});
+  const fit=()=>map.fitBounds(bounds,{padding:Math.max(12,Math.min(48,container.clientHeight / 4,container.clientWidth / 4)),maxZoom:13,duration:0});
   map.on("load",()=>{map.resize();fit();});
   document.getElementById("callFitMap")?.addEventListener("click",fit);
 }
@@ -3686,12 +3687,23 @@ function assessmentEvidenceHtml(item) {
   return `<section class="object-viewer-evidence"><h3>${escapeHtml(activeLocaleText("ראיות תומכות", "Supporting evidence"))}</h3><div class="object-viewer-evidence-links">${links}</div></section>`;
 }
 
+function setViewerDocked(docked) {
+  const viewer = document.getElementById("objectViewer");
+  const timeline = document.getElementById("timelineView");
+  viewer.classList.toggle("is-docked", docked);
+  timeline.classList.toggle("has-record-viewer", docked);
+  viewer.querySelector(".object-viewer").setAttribute("aria-modal", String(!docked));
+  (docked ? timeline : document.body).appendChild(viewer);
+}
+
 function closeObjectViewer() {
   const viewer = document.getElementById("objectViewer");
   stopSimulatedUavStream();
   cellularViewerMap?.remove(); cellularViewerMap = null;
   viewer.querySelectorAll("video,audio").forEach(media => { media.pause(); media.removeAttribute("src"); media.load(); });
   viewer.hidden = true;
+  setViewerDocked(false);
+  document.querySelectorAll(".call-timeline-entry").forEach(row => row.setAttribute("aria-pressed", "false"));
   objectViewerReturnFocus?.focus?.();
   objectViewerReturnFocus = null;
 }
@@ -3710,7 +3722,11 @@ function openObjectViewer(kind, id, trigger = document.activeElement) {
   document.getElementById("objectViewerKind").textContent = kind === "record" ? activeLocaleText("רשומה גולמית", "Raw record") : kind === "evidence" ? activeLocaleText("אובייקט ראיה", "Evidence object") : kind === "assessment" ? activeLocaleText("הערכת אויב", "Enemy assessment") : activeLocaleText("ארגון", "Organization");
   document.getElementById("objectViewerTitle").textContent = title;
   document.getElementById("objectViewerId").textContent = id;
+  viewer.querySelectorAll("video,audio").forEach(media => { media.pause(); media.removeAttribute("src"); media.load(); });
   cellularViewerMap?.remove(); cellularViewerMap = null;
+  const docked = kind === "record" && isCellularCallRecord(item) && document.getElementById("timelineView").classList.contains("active");
+  setViewerDocked(docked);
+  document.querySelectorAll(".call-timeline-entry").forEach(row => row.setAttribute("aria-pressed", String(row.dataset.viewerId === id)));
   viewer.classList.toggle("is-cellular-viewer", kind === "record" && isCellularCallRecord(item));
   const mediaHtml = viewerMediaHtml(item);
   const cellularHtml = kind === "record" ? cellularCallHtml(item) : "";
@@ -4431,6 +4447,10 @@ function buildFinalQueryContext(result, prompt) {
   };
 }
 
+function isCallsLayer(layer) {
+  return layer.kind === "events" && ((layer.items?.length > 0 && layer.items.every(isCellularCallRecord)) || /cellular calls/i.test(layer.source_type || layer.label || ""));
+}
+
 function resolveFinalResultView(result = {}, layers = []) {
   const normalize = view => view === "evidence" ? "table" : view;
   const requestedView = ["map", "timeline", "table"].includes(normalize(result.recommended_view))
@@ -4440,6 +4460,7 @@ function resolveFinalResultView(result = {}, layers = []) {
     if (requestedView === "map" && layers.length && !layers.some(layer => layer.capabilities?.map)) return "table";
     return requestedView;
   }
+  if (layers.length && layers.every(isCallsLayer)) return "timeline";
   if (layers.some(layer => layer.kind === "events" && !layer.capabilities?.map)) return "table";
   if (layers.some(layer => layer.capabilities?.map)) return "map";
   if (layers.some(layer => layer.capabilities?.timeline)) return "timeline";
@@ -5672,6 +5693,8 @@ function renderAllViews() {
 function activateView(view, options = {}) {
   const requestedView = view === "evidence" ? "table" : view;
   const safeView = viewLabels()[requestedView] ? requestedView : "map";
+  if (safeView !== "timeline" && document.getElementById("objectViewer")?.classList.contains("is-docked")) closeObjectViewer();
+  document.querySelector(".view-stack")?.classList.toggle("timeline-mode", safeView === "timeline");
   document.querySelectorAll(".view-tab").forEach(button => button.classList.toggle("active", button.dataset.view === safeView));
   document.querySelectorAll(".view-pane").forEach(pane => pane.classList.toggle("active", pane.id === `${safeView}View`));
   document.querySelector(".view-stack")?.classList.toggle("table-mode", safeView === "table");
@@ -6186,6 +6209,18 @@ function toggleMapItem(layerId, kind, itemId) {
   }, 0);
 }
 
+function callTimelineEntry(event) {
+  const id = event.event_id || event.record_id;
+  const time = String(event.call_started_at_utc || event.timestamp_utc || "").replace("T", " ").replace("Z", " UTC");
+  const duration = Number(event.call_duration_seconds);
+  return `<button type="button" class="call-timeline-entry" data-viewer-kind="record" data-viewer-id="${escapeHtml(id)}" aria-pressed="false">
+    <span class="call-timeline-time">${escapeHtml(time)}${duration > 0 ? ` · ${duration.toFixed(1)}s` : ""}</span>
+    <strong dir="ltr">${escapeHtml(event.side_a_number || event.side_a_imei || "A")} → ${escapeHtml(event.side_b_number || event.side_b_imei || "B")}</strong>
+    <span class="call-timeline-summary">${escapeHtml(event.event_summary || "")}</span>
+    <span class="call-timeline-id">${escapeHtml(id)}</span>
+  </button>`;
+}
+
 function renderTimeline() {
   const timeline = document.getElementById("timeline");
   const eventTimelineItems = visibleLayers("timeline")
@@ -6214,7 +6249,7 @@ function renderTimeline() {
       <div class="timeline-title">${escapeHtml(layer.label)} · ${escapeHtml(activeLocaleText(`${item.count.toLocaleString("he-IL")} אירועים`, `${item.count.toLocaleString("en-US")} events`))}</div>
       <div class="timeline-summary">${escapeHtml(item.summary)}</div>
     </article>`).join("");
-  const eventHtml = eventTimelineItems.sort((a, b) => a.sort - b.sort).map(({ layer, event }) => `
+  const eventHtml = eventTimelineItems.sort((a, b) => a.sort - b.sort).map(({ layer, event }) => isCellularCallRecord(event) ? callTimelineEntry(event) : `
     <article class="timeline-item" style="${layerColorStyle(layer)}">
       <span class="timeline-dot"></span>
       <div class="timeline-time">${escapeHtml(String(event.timestamp_utc || "").replace("T", " ").replace("Z", ""))}</div>
