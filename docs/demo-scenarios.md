@@ -9,7 +9,7 @@ The bilingual Hebrew/English intelligence workspace has one shared codebase and 
 | Package | Current profile / dataset | Content |
 |---|---|---|
 | Kosovo | profile 1 / `v2.1` | 14,833 records, including 24 simulated cellular calls; preserved investigations and agent state |
-| Syria | profile 8 / `adint-v2` | 324 records: 2 CCTV, 2 Satellite, 120 ADINT, 200 IPDR; 86 locations, 13 entities and 20 catalog definitions |
+| Syria | profile 9 / `ipdr-v1` | 424 records: 2 CCTV, 2 Satellite, 120 ADINT, 300 IPDR; 86 locations, 13 entities and 20 catalog definitions |
 
 Deployment identity must be checked through `/api/status`; this is an installed-package inventory, not a live status assertion. Syria's initial camera is Damascus (longitude 36.2765, latitude 33.5138), zoom 11. The fictional convoy sites are elsewhere; opening results can fit the map to their geometry. Installed profiles, not this document, are authoritative for future versions.
 
@@ -20,9 +20,9 @@ CCTV and Satellite Site 1 now use `LOC-SYR-ADINT-002` (35.077055, 36.333669); Si
 - **CCTV:** one record and one five-second synthetic movie per site, representing the September 22 visit.
 - **Satellite records:** one record per site, each containing its own three timestamped images. The convoy recurs on September 20, 21 and 22, 2026: Site 1 at 08:00 UTC, then Site 2 at 08:15 UTC. Visit metadata correlates the two sites; a viewer must not show the other site's images. Cross-site explanatory copy removed at the user's request must not be reintroduced into record summaries. Travel between captures and return journeys are not observed.
 - **ADINT:** 120 observations imported from the supplied `ADINT.json`, September 1–5, 2026, replacing the four original observations. Native fields: `observation_id`, `device_id`, `timestamp_utc`, `brand`, `model`, `os`, `keyboard_language`, `ip`, `latitude`, `longitude`, `accuracy_m`. Twelve device identities are not identified people. There are 84 distinct coordinate points and 36 geometry-free observations; 51 IP values and 76 keyboard-language values are null. Missing values are preserved, not inferred. The table/viewer expose these fields; geometry-free records remain accessible in Table.
-- **IPDR:** 200 synthetic sessions with IP address, IMEI, session bounds, source port, protocol and traffic byte counts. IPDR asserts neither an actor nor a location. Its table uses IP address and IMEI columns instead of Actor/Location, has no map action, and preserves leading zeros in IMEI. Its record details and filter choices omit actor/location fields.
+- **IPDR:** 300 records from `IPDR-expanded.csv`, replacing the prior 200 sessions. Native fields: start_time, end_time, ip_source, ip_target, ip_public, ip_private, ip_out, record_id, source_port, target_port, public_port, protocol, bytes_sent, bytes_received, source_system, imei, mac, SUBNETMASK. Only two rows supply IMEI; absent values remain blank. No actor or location is asserted. Table/viewer show all source fields and no map action. Internal `source_record_id` retains the original record_id string separately from canonical application event IDs. SUBNETMASK header whitespace is trimmed; source values and original file bytes are retained.
 
-The former `network-v1` fixture had one IP/time match with IPDR. The imported ADINT observations end September 5, whereas preserved IPDR sessions occur September 22. Shared IP alone does not establish a time-overlapping correlation or device identity. IPDR was not changed to manufacture a match. No convoy/device link is established. The exact supplied JSON remains alongside the immutable projection.
+The imported sessions are dated September 1-6. Records 3001185062876120 and 3495155497992130 contain an end date before the start date; these source values are preserved pending user clarification and must not be treated as valid time-overlap evidence. Match the appropriate IP role and valid session interval before drawing a correlation. Do not infer a convoy/device relationship from location sharing.
 
 ## Syria package history
 
@@ -37,6 +37,7 @@ The former `network-v1` fixture had one IP/time match with IPDR. The imported AD
 | 6 | `network-v1` | Initial map moved to Damascus, data unchanged |
 | 7 | `adint-v1` | Replaced ADINT with 120 supplied observations and native fields; 84 new points, old ADINT-only points/devices removed; other sources unchanged |
 | 8 | `adint-v2` | Moved both CCTV/Satellite site groups to existing ADINT points 002 and 001; image pair references updated, media/times and other sources unchanged |
+| 9 | `ipdr-v1` | Replaced 200 IPDR sessions with 300 supplied records and the expanded native schema; other layers unchanged |
 
 Earlier packages and state remain available for controlled recovery. Historical backups include `/opt/demo-runtime/backups/syria-convoy-dd6b362`, `syria-convoy-v2-0ba309b` and `syria-network-c7c3319`. They are evidence/recovery points, not the latest release selector. Inspect `/opt/demo-runtime/control/deployed-release.json`, the installed manifest and capability deployment checkpoints before choosing a restore point.
 
@@ -47,7 +48,7 @@ The convoy fixture generator `build_syria_convoy_demo.py` uses Pillow/imageio-ff
 1. Open CCTV and Satellite at Site 1, then Site 2. Each viewer contains only its own site media.
 2. Compare the three paired Satellite dates in Timeline; distinguish repeated observations from unobserved travel.
 3. Open ADINT in Table to inspect all 120 observations; Map shows only observations with supplied coordinates.
-4. Open IPDR in Table and compare IP plus session time. The current imported ADINT has no temporal overlap with these sessions; report that limitation instead of returning a supposed match.
+4. Open IPDR in Table and compare IP plus session time. Respect missing identifiers and reject reversed session intervals when evaluating a temporal match.
 5. Switch to Kosovo only through the operator procedure and confirm its own saved state returns.
 
 Kosovo retains the bilingual V2.1 corpus, including 24 synthetic cellular calls. The historical 5,283-row evidence catalog (783 fused objects) belongs to its evidence release, not to Syria. Detailed prior demo scripts and quality results remain in [historical capability records](../.ai/work/capabilities/) and the [documentation archive](../.ai/work/capabilities/documentation-hierarchy/migration-map.md).

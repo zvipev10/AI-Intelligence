@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parent
 class AdintImportTests(unittest.TestCase):
     def test_exact_fields_nulls_and_preserved_sources(self):
         profile = load_profile(ROOT, "syria", verify=True)
-        self.assertEqual(profile["dataset_version"], "adint-v2")
+        self.assertEqual(profile["dataset_version"], "ipdr-v1")
         source = json.loads((ROOT / "data/syria_adint_v1/ADINT.json").read_text())
         rows = list(csv.DictReader((ROOT / "data/syria_adint_v1/events.csv").read_text().splitlines()))
         imported = {r["observation_id"]: r for r in rows if r["source_type"] == "ADINT"}
@@ -49,7 +49,7 @@ class AdintImportTests(unittest.TestCase):
     def test_public_projection_and_search(self):
         with tempfile.TemporaryDirectory() as state:
             code = """import mcp_server.server as s
-assert len(s.EVENTS)==324
+assert len(s.EVENTS)==424
 rows=[s.public_event(r) for r in s.EVENTS if r['source_type']=='ADINT']
 assert sum(r['latitude'] is None for r in rows)==36
 assert sum(r['ip'] is None for r in rows)==51

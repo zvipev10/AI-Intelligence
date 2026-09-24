@@ -72,7 +72,7 @@ The 1 GB VM remains constrained. Use one scenario and one application agent exec
 
 ## Offline semantic search cache
 
-The 1 GB VM must not build a semantic index during an analyst request. Scenario MCP processes require a prebuilt compatible cache; a missing/stale cache returns an explicit operational error. The historical empty-v1 package can return zero without an index; current adint-v2 is non-empty and requires a compatible prebuilt cache. The existing hybrid search backend is unchanged.
+The 1 GB VM must not build a semantic index during an analyst request. Scenario MCP processes require a prebuilt compatible cache; a missing/stale cache returns an explicit operational error. The historical empty-v1 package can return zero without an index; current ipdr-v1 is non-empty and requires a compatible prebuilt cache. The existing hybrid search backend is unchanged.
 
 On a development machine with sufficient RAM and the exact release dataset bytes:
 
@@ -81,7 +81,7 @@ python build_demo_index.py kosovo --output /trusted/build/kosovo-index --engine 
 python build_demo_index.py syria --output /trusted/build/syria-index --engine python
 ```
 
-The deployed MCP uses Python without NumPy, so use the `python` engine. Install both generated `semantic_event_index_hybrid_embedding.pkl` and `.json` under the matching `/opt/demo-runtime/state/<scenario>/<dataset>/semantic_index/` before activation (currently Kosovo/v2.1 and Syria/adint-v2). Verify the transferred SHA-256 against the build output. These are private derived release artifacts, not Git source. Only accept trusted caches: pickle files can execute code. The operator verifies the cache hash and raw dataset signatures before stopping services. Dataset/index-format/engine changes require a rebuilt cache and a real semantic-search smoke check. Build-time Python must support the runtime's pickle format.
+The deployed MCP uses Python without NumPy, so use the `python` engine. Install both generated `semantic_event_index_hybrid_embedding.pkl` and `.json` under the matching `/opt/demo-runtime/state/<scenario>/<dataset>/semantic_index/` before activation (currently Kosovo/v2.1 and Syria/ipdr-v1). Verify the transferred SHA-256 against the build output. These are private derived release artifacts, not Git source. Only accept trusted caches: pickle files can execute code. The operator verifies the cache hash and raw dataset signatures before stopping services. Dataset/index-format/engine changes require a rebuilt cache and a real semantic-search smoke check. Build-time Python must support the runtime's pickle format.
 
 Cold index construction during qualification timed out and caused heavy swapping. The offline cache avoids that construction cost; it does not eliminate the VM's overall RAM limit.
 
@@ -99,9 +99,9 @@ Application versions, profile versions, immutable dataset versions and state-sch
 ## Quick acceptance checks
 
 - `/api/status`: expected scenario/dataset/generation, profile and initial map configuration; only one active runtime.
-- Catalog and source rows: Syria 324 total, CCTV 2 / Satellite 2 / ADINT 120 / IPDR 200; original raw sources remain present with zero rows where applicable.
+- Catalog and source rows: Syria 424 total, CCTV 2 / Satellite 2 / ADINT 120 / IPDR 300; original raw sources remain present with zero rows where applicable.
 - Open IPDR: Table view, IP address/IMEI, no actor/location or map action; record links retain all identifiers.
-- ADINT: verify all 120 native observations, 84 mapped points and 36 geometry-free rows. Imported dates do not overlap the preserved IPDR sessions; do not infer identity from shared IP alone.
+- ADINT: verify all 120 native observations, 84 mapped points and 36 geometry-free rows. Check IP role and valid session intervals; two supplied IPDR records have reversed timestamps, preserved pending clarification.
 - Open each Satellite record: three images for that site only, correct recurring visit timestamps; CCTV video and synthetic labels visible.
 - Satellite/Street toggle: English-preferred names, reference roads/borders, unchanged analytical overlays; network failure gives visible Street fallback.
 - After scenario/dataset activation, verify an actual catalog action reaches the UI, not merely that the agent mentions success. Check the selected dataset's role audit directory if actions disappear.

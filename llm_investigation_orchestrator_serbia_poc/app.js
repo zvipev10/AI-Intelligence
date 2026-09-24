@@ -3500,6 +3500,8 @@ function isAdintRecord(item) {
   return String(item?.source_type || "").trim().toUpperCase() === "ADINT";
 }
 
+const IPDR_SOURCE_FIELDS = ["start_time", "end_time", "ip_source", "ip_target", "ip_public", "ip_private", "ip_out", "source_record_id", "source_port", "target_port", "public_port", "protocol", "bytes_sent", "bytes_received", "source_system", "imei", "mac", "SUBNETMASK"];
+
 function isIpdrRecord(item) {
   return String(item?.source_type || "").trim().toUpperCase() === "IPDR";
 }
@@ -3509,6 +3511,9 @@ function viewerFields(item, kind) {
   if (kind === "record" && isIpdrRecord(item)) ["entity_name", "location_name", "location_accuracy_m"].forEach(key => hidden.add(key));
   if (kind === "record" && isAdintRecord(item) && item.device_id) {
     return ["observation_id", "device_id", "timestamp_utc", "brand", "model", "os", "keyboard_language", "ip", "latitude", "longitude", "accuracy_m"].map(key => [key, item[key] == null || item[key] === "" ? "—" : item[key]]);
+  }
+  if (kind === "record" && isIpdrRecord(item) && item.source_record_id) {
+    return IPDR_SOURCE_FIELDS.map(key => [key, item[key] == null || item[key] === "" ? "—" : item[key]]);
   }
   const preferred = kind === "record"
     ? ["timestamp_utc", "source_type", "collection_family", "source_reliability_label", "certainty_level", "entity_name", "location_name", "advertising_id", "ip_address", "imei", "session_start_utc", "session_end_utc", "source_port", "protocol", "bytes_up", "bytes_down", "location_accuracy_m", "call_id", "observation_id", "mission_id", "video_segment_id"]
@@ -3522,6 +3527,21 @@ function viewerFields(item, kind) {
 
 function viewerFieldLabel(key) {
   const labels = {
+    start_time: ["תחילת חיבור", "Start time"],
+    end_time: ["סיום חיבור", "End time"],
+    ip_source: ["IP מקור", "Source IP"],
+    ip_target: ["IP יעד", "Target IP"],
+    ip_public: ["IP ציבורי", "Public IP"],
+    ip_private: ["IP פרטי", "Private IP"],
+    ip_out: ["IP יוצא", "Outbound IP"],
+    source_record_id: ["מזהה רשומה", "Record ID"],
+    target_port: ["פורט יעד", "Target port"],
+    public_port: ["פורט ציבורי", "Public port"],
+    bytes_sent: ["בתים שנשלחו", "Bytes sent"],
+    bytes_received: ["בתים שהתקבלו", "Bytes received"],
+    source_system: ["מערכת מקור", "Source system"],
+    mac: ["MAC", "MAC"],
+    SUBNETMASK: ["מסכת רשת", "Subnet mask"],
     device_id: ["מזהה מכשיר", "Device ID"],
     brand: ["יצרן", "Brand"],
     model: ["דגם", "Model"],
@@ -6468,6 +6488,17 @@ function renderEvidence() {
   const ipdrTable = activeLayer.items?.length
     ? activeLayer.items.every(isIpdrRecord)
     : activeLayer.catalogLayerId === "events:IPDR";
+  if (ipdrTable && (activeLayer.items || []).some(event => event.source_record_id)) {
+    head.innerHTML = `<tr>${IPDR_SOURCE_FIELDS.map(key => `<th>${escapeHtml(viewerFieldLabel(key))}</th>`).join("")}</tr>`;
+    body.innerHTML = activeItems.length ? activeItems.map(event => `<tr>${IPDR_SOURCE_FIELDS.map(key => {
+      const value = escapeHtml(event[key] == null || event[key] === "" ? "—" : event[key]);
+      return key === "source_record_id"
+        ? `<td dir="ltr"><button type="button" class="object-viewer-open" data-viewer-kind="record" data-viewer-id="${escapeHtml(event.event_id || event.record_id || "")}">${value}</button></td>`
+        : `<td dir="ltr">${value}</td>`;
+    }).join("")}</tr>`).join("") : `<tr><td colspan="18" class="empty-cell">${escapeHtml(activeLocaleText("השכבה מוסתרת או ריקה.", "Layer is hidden or empty."))}</td></tr>`;
+    enhanceResultsTable(activeLayer);
+    return;
+  }
   if (ipdrTable) {
     head.innerHTML = `<tr><th>${escapeHtml(activeLocaleText("מזהה רשומה", "Record ID"))}</th><th>${escapeHtml(activeLocaleText("זמן", "Time"))}</th><th>${escapeHtml(activeLocaleText("אמינות", "Reliability"))}</th><th>${escapeHtml(activeLocaleText("ודאות", "Certainty"))}</th><th>${escapeHtml(activeLocaleText("כתובת IP", "IP address"))}</th><th>IMEI</th><th>${escapeHtml(activeLocaleText("תקציר", "Summary"))}</th></tr>`;
     body.innerHTML = activeItems.length ? activeItems.map(event => `

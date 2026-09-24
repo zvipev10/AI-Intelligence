@@ -5,7 +5,7 @@ ROOT=Path(__file__).resolve().parent
 class MediaRelocation(unittest.TestCase):
  def test_only_media_locations_changed(self):
   profile=load_profile(ROOT,'syria',verify=True)
-  current=list(csv.DictReader((ROOT/profile['files']['events']).read_text().splitlines()))
+  current=list(csv.DictReader((ROOT/'data/syria_adint_v2/events.csv').read_text().splitlines()))
   previous={r['event_id']:r for r in csv.DictReader((ROOT/'data/syria_adint_v1/events.csv').read_text().splitlines())}
   mapping={'LOC-SYR-001':'LOC-SYR-ADINT-002','LOC-SYR-002':'LOC-SYR-ADINT-001'}
   self.assertEqual(len(current),324)

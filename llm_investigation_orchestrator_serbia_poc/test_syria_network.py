@@ -43,15 +43,14 @@ class NetworkFixture(unittest.TestCase):
             current = next(r for r in rows if r["event_id"] == old["event_id"])
             self.assertEqual({k: current[k] for k in old}, old)
 
-    def test_agent_search_retrieves_imei_via_ip(self):
+    def test_replaced_ipdr_does_not_retain_old_synthetic_match(self):
         with tempfile.TemporaryDirectory() as state:
             code = """import mcp_server.server as s
 a=s.search_events({'source_types':['ADINT'],'keywords':['OBS-01-001']})['events']
 assert len(a)==1 and not a[0]['imei']
 assert a[0]['device_id'] and a[0]['ip']=='192.0.2.10'
 r=s.search_events({'source_types':['IPDR'],'keywords':[a[0]['ip_address']]})
-assert r['total']==1 and r['events'][0]['imei']
-print(r['events'][0]['event_id'],r['events'][0]['imei'])
+assert r['total']==0
 """
             result = subprocess.run([sys.executable, "-c", code], cwd=ROOT, env={**os.environ, "INTELLIGENCE_POC_SCENARIO": "syria", "INTELLIGENCE_POC_STATE_ROOT": state}, capture_output=True, timeout=30)
             self.assertEqual(result.returncode, 0, result.stderr.decode())
