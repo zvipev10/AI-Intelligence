@@ -80,6 +80,7 @@ DIRS = [
     "data/syria_cellular_v1",
     "data/syria_cellular_v2",
     "data/syria_cellular_v3",
+    "data/syria_cellular_v4",
     "assets",
     "vendor",
     "recorded_runs",

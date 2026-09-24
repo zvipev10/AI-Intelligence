@@ -32,11 +32,13 @@ class CellularGeolocations(unittest.TestCase):
   self.assertAlmostEqual((loc['LOC-SYR-CELL-START-001']['latitude']-loc['LOC-SYR-SAT-001']['latitude'])*3.141592653589793/180*6371000,60,places=5)
   self.assertEqual(loc['LOC-SYR-CELL-START-001']['longitude'],loc['LOC-SYR-SAT-001']['longitude'])
   self.assertTrue(all(loc[a['location_id']]['longitude']>loc[b['location_id']]['longitude'] for a,b in zip(route,route[1:])))
+  north=loc['LOC-SYR-CALL-NORTH-001']
+  self.assertTrue(all(north['latitude']-loc[r['location_id']]['latitude']>1.4 for r in route))
   calls=[r for r in rows if r.get('call_id')]
   self.assertEqual({r['location_id'] for r in calls},{'LOC-SYR-COAST-005'})
   for c in calls:
    self.assertEqual(c['location_id'],c['side_a_location_id'])
-   self.assertEqual(c['side_b_location_id'],'LOC-SYR-CALL-REMOTE-001')
+   self.assertEqual(c['side_b_location_id'],'LOC-SYR-CALL-NORTH-001')
    self.assertLess(route[5]['timestamp_utc'],c['timestamp_utc']);self.assertLess(c['timestamp_utc'],route[6]['timestamp_utc'])
   old=list(csv.DictReader((ROOT/'data/syria_cellular_v1/events.csv').read_text().splitlines()))
   byid={r['event_id']:r for r in rows}
