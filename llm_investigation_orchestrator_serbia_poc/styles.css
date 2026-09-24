@@ -851,3 +851,39 @@ th { position: sticky; top: 0; z-index: 1; background: #202530; }
  .call-conversation{min-height:0}
  .call-transcript-scroll{flex:1;min-height:0;max-height:none}
 }
+
+/* Keep call selection visible while reading a record. */
+.view-stack.timeline-mode .raw-events-overlay { display:none; }
+#timelineView.has-record-viewer { display:grid;grid-template-rows:minmax(0,1fr);grid-template-columns:minmax(180px,24%) minmax(0,1fr);gap:10px; }
+.call-timeline-entry { display:flex;flex-direction:column;gap:5px;width:100%;padding:12px;margin:0 0 8px;border:1px solid var(--line);border-inline-start:3px solid #75b6ee;border-radius:8px;background:var(--panel);color:var(--text);text-align:start;cursor:pointer; }
+.call-timeline-entry:hover,.call-timeline-entry[aria-pressed="true"] { background:#27394c;border-color:#75b6ee; }
+.call-timeline-entry:focus-visible { outline:2px solid #a8d6ff;outline-offset:2px; }
+.call-timeline-time,.call-timeline-id { font-size:10px;color:var(--muted); }
+.call-timeline-entry strong { font-size:12px;overflow-wrap:anywhere; }
+.call-timeline-summary { font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;width:100%; }
+.has-record-viewer #timeline { padding:10px 0 10px 10px; }
+.object-viewer-backdrop.is-docked { position:relative;inset:auto;z-index:auto;min-width:0;min-height:0;height:100%;background:none; }
+.is-docked .object-viewer { width:100%;height:100%;margin:0;border:1px solid var(--line);border-radius:10px;box-shadow:none;animation:none; }
+.is-docked .object-viewer-body { padding:10px;overflow:auto; }
+.is-docked .call-workspace { height:100%;min-height:0;grid-template-columns:minmax(140px,28%) minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto;gap:8px; }
+.is-docked .call-sidebar { padding:10px;overflow:auto; }
+.is-docked .call-detail-list { margin:10px 0;gap:8px; }
+.is-docked .call-main { min-height:0;grid-template-rows:32% minmax(0,1fr);gap:8px; }
+.is-docked .call-player { padding:8px;gap:6px;flex-wrap:wrap; }
+.is-docked .call-player>div { display:none; }
+.is-docked .call-provenance { display:none; }
+.is-docked .call-transcript-scroll { padding:10px; }
+.is-docked .call-bubble { padding:8px;max-width:100%; }
+@media(max-width:760px) {
+ #timelineView.has-record-viewer { grid-template-columns:1fr;grid-template-rows:130px minmax(0,1fr); }
+ .is-docked .call-workspace { display:flex;flex-direction:column;height:auto; }
+ .is-docked .call-sidebar { max-height:180px;flex-shrink:0; }
+ .is-docked .call-main { grid-template-rows:160px minmax(220px,auto); }
+}
+
+.polygon-draw-button { position:absolute;right:10px;bottom:var(--draw-bottom,34px);z-index:2;display:grid;place-items:center;width:34px;height:34px;padding:6px;border:1px solid rgba(220,235,255,.35);border-radius:7px;background:rgba(20,29,40,.28);backdrop-filter:blur(5px);color:#eef7ff;cursor:pointer; }
+.polygon-draw-button:hover,.polygon-draw-button[aria-pressed="true"] { background:rgba(45,120,173,.65);border-color:#9adaff; }
+.polygon-draw-button:focus-visible { outline:2px solid #9adaff;outline-offset:3px; }
+.polygon-draw-button:disabled { opacity:.35;cursor:wait; }
+.polygon-draw-hint { position:absolute;right:52px;bottom:var(--draw-bottom,34px);z-index:2;max-width:270px;padding:8px 10px;border-radius:6px;background:rgba(15,24,34,.85);color:#eff7ff;font-size:11px;pointer-events:none; }
+.polygon-drawing .maplibregl-marker,.polygon-drawing .maplibregl-popup { pointer-events:none; }

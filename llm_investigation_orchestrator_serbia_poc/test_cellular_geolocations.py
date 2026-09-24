@@ -8,10 +8,10 @@ class CellularGeolocations(unittest.TestCase):
   rows=list(csv.DictReader((ROOT/profile['files']['events']).read_text().splitlines()))
   old=list(csv.DictReader((ROOT/'data/syria_adint_v3/events.csv').read_text().splitlines()))
   byid={r['event_id']:r for r in rows}
-  self.assertEqual(len(rows),444);self.assertEqual(len(byid),444)
+  self.assertEqual(len(rows),443);self.assertEqual(len(byid),443)
   for row in old:self.assertEqual(row,{k:byid[row['event_id']][k] for k in row})
   geo=[r for r in rows if r['source_type']=='Cellular Geolocations'];self.assertEqual(len(geo),18)
-  calls=[r for r in rows if r.get('call_id')];self.assertEqual(len(calls),2)
+  calls=[r for r in rows if r.get('call_id')];self.assertEqual(len(calls),1)
   for call in calls:
    for side in ['a','b']:
     matches=[g for g in geo if g['imei']==call[f'side_{side}_imei'] and g['location_id']==call[f'side_{side}_location_id'] and g['timestamp_utc'][:13]==call['timestamp_utc'][:13]]
@@ -55,7 +55,7 @@ for key,value in [('sim','DEMO-SIM-SYR-001'),('imei','990000000000001')]:
  r=s.search_events({'source_types':['Cellular Geolocations'],'keywords':[value]})
  assert r['total']==14 and all(e[key]==value for e in r['events'])
 r=s.search_events({'source_types':['Cellular Calls'],'keywords':['990000000000002']})
-assert r['total']==2 and all(e['side_b_imei']=='990000000000002' for e in r['events'])
+assert r['total']==1 and all(e['side_b_imei']=='990000000000002' for e in r['events'])
 """
    result=subprocess.run([sys.executable,'-c',code],cwd=ROOT,env={**os.environ,'INTELLIGENCE_POC_SCENARIO':'syria','INTELLIGENCE_POC_STATE_ROOT':state},capture_output=True,text=True,timeout=60)
    self.assertEqual(result.returncode,0,result.stderr)

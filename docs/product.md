@@ -13,12 +13,16 @@ Draft exploration is ephemeral until an investigation is created. Saved investig
 | Presentation | Appropriate use |
 |---|---|
 | Map | Spatial questions and results with usable geometry |
-| Timeline | Event sequence, recurrence and chronology |
+| Timeline | Calls by default; event sequence, recurrence and chronology |
 | Table | Raw records, identifier comparison, and results without geometry |
 
 Table is a standalone tab beside Map and Timeline, using the same component as the table beneath the map. Layer selection, filters, sorting and record opening are shared. Switching views retains table state and the overlay's minimized preference. Geometry-free rows remain accessible; IPDR defaults to Table. Older `evidence` view recommendations are interpreted as Table, without renaming evidence objects or the Evidence Layer.
 
 General and specialist presentation instructions recognize all three views. Named catalog requests use the live catalog and preserve filters; a unique close naming match can be recovered, while ambiguous candidates require clarification. A queued action is not proof that the browser opened a layer. Saved layers and explicitly selected result/evidence layers retain their separate presentation contracts.
+
+### Calls presentation
+
+Cellular Calls default to Timeline even when endpoint coordinates are present. Compact entries show time, duration, endpoints and a short summary. Selecting a call opens its existing viewer beside the timeline rather than covering it. The selected entry stays visible, with the endpoint map, bilingual transcript and audio controls in the adjacent viewer. Switching away from Timeline closes the docked viewer and stops its media. On narrow screens the panels stack. Explicit Map/Table choices remain available; mixed-source results keep their existing defaults.
 
 ## Geographic context and media
 
@@ -27,6 +31,10 @@ Satellite is the default basemap. The compact Street/Satellite selector switches
 **Satellite basemap imagery is not the Satellite data source.** Basemap imagery provides geographic context, may have different dates/resolution, and is not tied to the demo observation timestamps. Satellite records hold the explicitly dated synthetic convoy images. Source attribution remains visible on the map.
 
 Normal operation has no persistent Syria/scenario label at the bottom. Queue, restart and scenario-change notices still appear when needed. Existing investigation guide and capabilities-guide media remain part of the installed application; switching scenarios must preserve these shared assets.
+
+### Map polygons
+
+Use the translucent polygon icon at the bottom-right of Map to place vertices. Click the first point after at least three distinct points to close the polygon. Escape or the icon cancels an unfinished shape. Completed polygons remain on the current page and across basemap switches; they are not saved and trigger no search, filtering or agent action.
 
 ## Saved work and additive results
 
@@ -38,4 +46,4 @@ Saved questions restore complete answers, steps and result presentation without 
 
 Scenario selection preserves Kosovo work and does not copy its example investigations or learned memory into Syria. Locale isolation continues inside scenario state. Agents serve the active scenario only; concurrent scenario runtimes are outside the accepted scope. One bounded application execution slot and offline semantic-index builds accommodate the constrained VM. Shared messaging integrations can briefly pause during a switch, as accepted by the user.
 
-See [architecture](architecture.md) for interfaces and state ownership. All demonstration data is synthetic. Evaluator truth stays offline and must never enter runtime retrieval, prompts, evidence creation or user-facing layers.
+See [architecture](architecture.md) for interfaces and state ownership. Scenario metadata is demonstration data. Supplied media retains its stated provenance; its authenticity is not independently established. Evaluator truth stays offline and must never enter runtime retrieval, prompts, evidence creation or user-facing layers.

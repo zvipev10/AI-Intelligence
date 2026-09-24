@@ -26,7 +26,7 @@ const context = { console, Set, Map, Date, LOCATIONS:{},
  mapActionButton:()=>'',enhanceResultsTable(){},layerId:(kind,label)=>`${kind}:${label}`
 };
 vm.createContext(context);
-for (const name of ['activateView','renderEvidence','resolveFinalResultView','eventMapCoordinates','buildEventLayers','isIpdrRecord','isAdintRecord','isCellularGeolocationRecord','isCellularCallRecord','viewerFieldLabel','viewerFields','filterFieldsForLayer','filterFieldPathsForValue']) {
+for (const name of ['activateView','renderEvidence','resolveFinalResultView','isCallsLayer','eventMapCoordinates','buildEventLayers','isIpdrRecord','isAdintRecord','isCellularGeolocationRecord','isCellularCallRecord','viewerFieldLabel','viewerFields','filterFieldsForLayer','filterFieldPathsForValue']) {
  const start = source.indexOf(`function ${name}(`);
  const next = source.slice(start+1).search(/\n(?:async )?function /);
  vm.runInContext(source.slice(start,start+1+next),context);
@@ -73,3 +73,10 @@ assert.match(nodes.evidenceRows.innerHTML,/000000000000001/);assert.match(nodes.
 context.state.layers=[];context.renderEvidence();
 assert(nodes.rawEventsOverlay.hidden,'empty table exposes its placeholder');
 console.log('PASS: shared table, geometry-free record links, recommendation, legacy restore, empty state and minimization');
+
+const callsLayer={kind:'events',items:[{call_id:'CALL-1'}],capabilities:{map:true,timeline:true,table:true}};
+assert.equal(context.resolveFinalResultView({},[callsLayer]),'timeline');
+assert.equal(context.resolveFinalResultView({recommended_view:'map'},[callsLayer]),'map');
+assert.equal(context.resolveFinalResultView({recommended_view:'table'},[callsLayer]),'table');
+assert.equal(context.resolveFinalResultView({},[callsLayer,{kind:'events',items:[{}],capabilities:{map:true}}]),'map');
+console.log('PASS: calls default to Timeline; explicit views and mixed sources preserved');

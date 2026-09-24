@@ -1,6 +1,9 @@
 # Status
 
-Complete and deployed. Deployed 28feea1a: Syria cellular-v2/profile15, 444 records and 100 locations. 18 geolocations include the four earlier samples, 12 ordered coastal route observations and two remote endpoint observations. Both calls are at route stop05 (35.133,36.117), with Side B at new location (35.12,36.03). Calls occur at09:46/09:50 during the device1 stop09:45–10:00 on September20. Route starts at Satellite site1 and ends near Baniyas seafront at11:15. 35 tests passed; offline cache rebuilt. Live API verified route/order/endpoints/counts and maintenance disabled. Service health/identity passed. Backup /opt/demo-runtime/backups/syria-cellular-route-28feea1a. Published in draft PR84, unmerged. Refresh application to load latest data.
+Delivery complete and deployed. Current Syria inventory is owned by docs/demo-scenarios.md; live identity is available at /api/status. PR84 is merged. PR85 contains the second-call removal, compact calls Timeline with adjacent viewer, and page-local polygon drawing. User has authorized documentation updates and merging PR85; GitHub is authoritative for its final merge status.
 
-## Call media update
-Delivered and deployed: see checkpoint-005.md and handoff-summary.md. Draft PR84 contains the change. Awaiting optional clarification on replacing scenario IMEIs with the source transcript IMEI; existing links remain unchanged.
+No implementation blockers. Existing scenario IMEIs remain unchanged; the supplied transcript IMEI is displayed separately. Future changes to identifier correlation require a new user instruction.
+
+Latest verification and rollback references: checkpoint-006.md (record removal), checkpoint-007.md (timeline/viewer), checkpoint-008.md (polygon). Analyst behavior: docs/product.md. Implementation contracts: docs/architecture.md. Release checks: docs/operations.md. Parent issue: #83; PRs: #84 and #85.
+
+Next action: final merge verification, then user refreshes the VM application. Earlier dataset/deployment history remains in the numbered checkpoints and handoff summary.

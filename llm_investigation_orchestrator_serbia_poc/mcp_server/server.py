@@ -2901,6 +2901,8 @@ def open_catalog_layers(arguments: dict[str, Any]) -> dict[str, Any]:
         if filters and layer.get("kind") != "events":
             raise ValueError("catalog filters are supported only for raw event layers")
         selected_view = "table" if view == "evidence" or (view == "map" and layer.get("capabilities", {}).get("map") is False) else view
+        if "view" not in arguments and layer.get("source_type") == "Cellular Calls":
+            selected_view = "timeline"
         action = {"action": "open", "catalog_layer_id": layer["id"], "view": selected_view}
         if filters:
             action["filters"] = filters
