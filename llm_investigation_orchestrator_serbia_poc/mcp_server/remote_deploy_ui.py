@@ -85,6 +85,7 @@ DIRS = [
     "data/syria_call_media_v1",
     "data/syria_call_media_v2",
     "data/syria_call_media_v3",
+    "data/syria_call_media_v4",
     "assets/demo/syria/call-media-v1",
     "assets",
     "vendor",

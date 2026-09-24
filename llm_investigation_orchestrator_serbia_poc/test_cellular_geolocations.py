@@ -9,7 +9,7 @@ class CellularGeolocations(unittest.TestCase):
   old=list(csv.DictReader((ROOT/'data/syria_adint_v3/events.csv').read_text().splitlines()))
   byid={r['event_id']:r for r in rows}
   self.assertEqual(len(rows),443);self.assertEqual(len(byid),443)
-  for row in old:self.assertEqual(row,{k:byid[row['event_id']][k] for k in row})
+  for row in old:self.assertEqual({k:({'DEMO-SIM-SYR-001':'89000000000000000001','DEMO-SIM-SYR-002':'89000000000000000002'}.get(v,v) if k=='sim' else v) for k,v in row.items()},{k:byid[row['event_id']][k] for k in row})
   geo=[r for r in rows if r['source_type']=='Cellular Geolocations'];self.assertEqual(len(geo),18)
   calls=[r for r in rows if r.get('call_id')];self.assertEqual(len(calls),1)
   for call in calls:
@@ -43,7 +43,7 @@ class CellularGeolocations(unittest.TestCase):
   old=list(csv.DictReader((ROOT/'data/syria_cellular_v1/events.csv').read_text().splitlines()))
   byid={r['event_id']:r for r in rows}
   for row in old:
-   if not row.get('call_id'):self.assertEqual(row,{k:byid[row['event_id']][k] for k in row})
+   if not row.get('call_id'):self.assertEqual({k:({'DEMO-SIM-SYR-001':'89000000000000000001','DEMO-SIM-SYR-002':'89000000000000000002'}.get(v,v) if k=='sim' else v) for k,v in row.items()},{k:byid[row['event_id']][k] for k in row})
   for id,value in json.loads((ROOT/'data/syria_cellular_v1/locations.json').read_text()).items():self.assertEqual(loc[id],value)
  def test_catalog_public_fields_and_identifier_search(self):
   with tempfile.TemporaryDirectory() as state:
@@ -51,7 +51,7 @@ class CellularGeolocations(unittest.TestCase):
 import mcp_server.server as s
 layer,rows=ui.get_ui_layer_rows('events:Cellular Geolocations','en')
 assert layer['count']==18 and len(rows)==18 and layer['capabilities']['map']
-for key,value in [('sim','DEMO-SIM-SYR-001'),('imei','990000000000001')]:
+for key,value in [('sim','89000000000000000001'),('imei','990000000000001')]:
  r=s.search_events({'source_types':['Cellular Geolocations'],'keywords':[value]})
  assert r['total']==14 and all(e[key]==value for e in r['events'])
 r=s.search_events({'source_types':['Cellular Calls'],'keywords':['990000000000002']})

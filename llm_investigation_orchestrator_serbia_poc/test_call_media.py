@@ -10,10 +10,10 @@ class CallMedia(unittest.TestCase):
   current=rows(ROOT/p['files']['events']); previous=rows(ROOT/'data/syria_call_media_v1/events.csv')
   self.assertEqual(set(current),set(previous)-{'REC-SYR-CALL-002'})
   for key,row in previous.items():
-   if key!='REC-SYR-CALL-002':self.assertEqual(row,{k:current[key][k] for k in row})
+   if key!='REC-SYR-CALL-002':self.assertEqual({k:({'DEMO-SIM-SYR-001':'89000000000000000001','DEMO-SIM-SYR-002':'89000000000000000002'}.get(v,v) if k=='sim' else v) for k,v in row.items()},{k:current[key][k] for k in row})
   c=current['REC-SYR-CALL-001']
-  self.assertEqual(c['side_a_sim'],'DEMO-SIM-SYR-001')
-  self.assertEqual(c['side_b_sim'],'DEMO-SIM-SYR-002')
+  self.assertEqual(c['side_a_sim'],'89000000000000000001')
+  self.assertEqual(c['side_b_sim'],'89000000000000000002')
   self.assertEqual(c['call_transcript_speaker_imei'],'353294702931926')
   self.assertEqual(c['side_a_imei'],previous[c['event_id']]['side_a_imei'])
   self.assertEqual(c['call_transcript_original'],(ROOT/c['call_transcript_url'].lstrip('/')).read_text(encoding='utf-8'))
