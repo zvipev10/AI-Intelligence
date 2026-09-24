@@ -1,0 +1,17 @@
+# Syria ADINT import handoff
+
+## Delivered
+
+Syria adint-v1/profile7 is active on VM 151.145.93.180. Deployed source commit 04abab48b1e9083253c2d3a7c34afafab0de4882. Four former ADINT rows were replaced by all 120 supplied observations, with 84 new coordinate locations and 12 device identities. Total 324 rows, 86 locations and 13 entities. Other 204 source rows and Kosovo data/profile unchanged. Previous package and state retained; source/state backup: /opt/demo-runtime/backups/syria-adint-09d48be7.
+
+## Source mapping
+
+The 11 source fields are retained. Observation IDs map to REC-SYR-ADINT-<observation_id> for existing application identity contracts; device identities are deterministic hashes with the original device_id as canonical name/alias. Native numeric/null values are returned through MCP; CSV blanks represent missing values. Legacy advertising_id/ip_address/location_accuracy_m are compatibility aliases, not additional inferred observations. No person, missing coordinate, missing IP or device-to-convoy relationship is inferred. Imported ADINT dates September1-5 do not overlap preserved September22 IPDR sessions.
+
+## Validation
+
+18 focused import/network/scenario tests passed, JavaScript syntax passed, and isolated viewer/coordinate checks passed. VM activation checked UI/gateway and actual role identity/counts. Live public CSV matched every supplied field for all 120 observations; 36 lack geometry, 51 lack IP, 76 lack keyboard language. Real browser verified ADINT 120 catalog entry, all native table columns, and OBS-01-004 opening with absent coordinate fields and disabled map action. Blank CSV coordinate handling was corrected after browser testing (empty strings must not become zero). Live prebuilt index and identifier retrieval passed using the deployed system-Python engine; an initial diagnostic using Hermes' different venv engine rejected the Python cache, so qualification was rerun with the correct MCP interpreter.
+
+## Publishing and limits
+
+Published branch codex/syria-adint-import and draft PR #82; issue #81 tracks the work. Not merged in this request. Documentation updated in demo-scenarios.md and operations.md. Runtime source and dataset changes are deployed; later handoff/test-only commits do not require a redeploy. Existing saved work was copied at a stopped transition; references to removed historical ADINT records may remain historical references. No full-suite or new live LLM investigation was claimed. Next: user can refresh and open ADINT; PR remains available for review/merge.

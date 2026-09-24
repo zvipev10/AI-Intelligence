@@ -1,3 +1,3 @@
 # Status
 
-Active implementation requested by user. Inspection complete: 120 unique observations, 12 devices, 84 coordinates, 36 missing coordinates, 51 missing IPs. No blocking schema ambiguity; IPDR remains unchanged. Next: importer and presentation checks.
+Implemented, published and deployed. Issue #81; draft PR #82. Active Syria adint-v1/profile7, 324 rows. Tests/API/browser verification passed. No implementation blocker. Next: user review and merge PR. See [handoff](handoff-summary.md) for source identity, backup and limits.
