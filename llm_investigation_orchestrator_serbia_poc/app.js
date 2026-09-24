@@ -3516,7 +3516,7 @@ function viewerFields(item, kind) {
     return IPDR_SOURCE_FIELDS.map(key => [key, item[key] == null || item[key] === "" ? "—" : item[key]]);
   }
   const preferred = kind === "record"
-    ? ["timestamp_utc", "source_type", "collection_family", "source_reliability_label", "certainty_level", "entity_name", "location_name", "advertising_id", "ip_address", "imei", "session_start_utc", "session_end_utc", "source_port", "protocol", "bytes_up", "bytes_down", "location_accuracy_m", "call_id", "observation_id", "mission_id", "video_segment_id"]
+    ? ["timestamp_utc", "timestamp_basis", "source_type", "collection_family", "source_reliability_label", "certainty_level", "entity_name", "location_name", "advertising_id", "ip_address", "imei", "session_start_utc", "session_end_utc", "source_port", "protocol", "bytes_up", "bytes_down", "location_accuracy_m", "call_id", "observation_id", "mission_id", "video_segment_id"]
     : kind === "evidence"
       ? ["evidence_status", "claim_type", "confidence", "object_class", "subject_entity_ids", "location_ids", "valid_from", "valid_to", "source_groups", "source_record_ids", "quantity", "movement", "created_by_processor"]
     : kind === "assessment"
@@ -3561,6 +3561,7 @@ function viewerFieldLabel(key) {
     bytes_up: ["בתים שנשלחו", "Bytes uploaded"],
     bytes_down: ["בתים שהתקבלו", "Bytes downloaded"],
     location_accuracy_m: ["דיוק מיקום במטרים", "Location accuracy (m)"],
+    timestamp_basis: ["בסיס הזמן", "Timestamp basis"],
     timestamp_utc: ["זמן", "Time"],
     source_type: ["סוג מקור", "Source type"],
     collection_family: ["משפחת איסוף", "Collection family"],

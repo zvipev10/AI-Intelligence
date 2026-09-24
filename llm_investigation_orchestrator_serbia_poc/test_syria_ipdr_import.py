@@ -5,7 +5,7 @@ ROOT=Path(__file__).resolve().parent
 class IpdrImport(unittest.TestCase):
  def test_source_parity_and_other_layers(self):
   p=load_profile(ROOT,'syria',verify=True)
-  rows=list(csv.DictReader((ROOT/p['files']['events']).read_text().splitlines()))
+  rows=list(csv.DictReader((ROOT/'data/syria_ipdr_v1/events.csv').read_text().splitlines()))
   source=list(csv.DictReader((ROOT/'data/syria_ipdr_v1/IPDR-expanded.csv').read_text().splitlines()))
   current={r['source_record_id']:r for r in rows if r['source_type']=='IPDR'}
   self.assertEqual(len(rows),424);self.assertEqual(len(current),300)

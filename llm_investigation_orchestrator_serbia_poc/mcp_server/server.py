@@ -506,6 +506,7 @@ def public_event(event: dict[str, Any]) -> dict[str, Any]:
     return {
         "event_id": event["event_id"],
         "timestamp_utc": event["timestamp_utc"],
+        "timestamp_basis": event.get("timestamp_basis", ""),
         "source_type": event["source_type"],
         "source_reliability": event["source_reliability"],
         "certainty_level": event.get("certainty_level", ""),
