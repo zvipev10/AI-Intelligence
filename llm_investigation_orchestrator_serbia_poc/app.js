@@ -3570,7 +3570,7 @@ function viewerFields(item, kind) {
     return IPDR_SOURCE_FIELDS.map(key => [key, item[key] == null || item[key] === "" ? "—" : item[key]]);
   }
   const preferred = kind === "person"
-    ? ["identity_status", "role", "affiliations", "nationality", "languages", "associated_entity_ids", "identifiers", "aliases", "event_count", "top_locations", "top_sources", "biographical_notes"]
+    ? ["identity_status", "given_name", "family_name", "gender", "age_years", "date_of_birth", "nationality", "ethnicity", "occupation", "residence", "role", "affiliations", "languages", "associated_entity_ids", "identifiers", "aliases", "event_count", "top_locations", "top_sources", "biographical_notes"]
     : kind === "record"
     ? ["timestamp_utc", "timestamp_basis", "source_type", "collection_family", "source_reliability_label", "certainty_level", "entity_name", "location_name", "advertising_id", "ip_address", "imei", "session_start_utc", "session_end_utc", "source_port", "protocol", "bytes_up", "bytes_down", "location_accuracy_m", "call_id", "observation_id", "mission_id", "video_segment_id"]
     : kind === "evidence"
@@ -3633,10 +3633,18 @@ function viewerFieldLabel(key) {
     call_id: ["מזהה שיחה", "Call ID"],
     entity_type: ["סוג ישות", "Entity type"],
     identity_status: ["מצב זיהוי", "Identity status"],
+    given_name: ["שם פרטי", "Given name"],
+    family_name: ["שם משפחה", "Family name"],
+    gender: ["מגדר", "Gender"],
+    age_years: ["גיל", "Age"],
+    date_of_birth: ["תאריך לידה", "Date of birth"],
     role: ["תפקיד", "Role"],
+    occupation: ["עיסוק", "Occupation"],
     affiliations: ["שיוכים", "Affiliations"],
     nationality: ["לאום", "Nationality"],
+    ethnicity: ["מוצא", "Ethnicity"],
     languages: ["שפות", "Languages"],
+    residence: ["מקום מגורים", "Residence"],
     associated_entity_ids: ["ישויות קשורות", "Associated entities"],
     identifiers: ["מזהים", "Identifiers"],
     biographical_notes: ["הערות ביוגרפיות", "Biographical notes"],

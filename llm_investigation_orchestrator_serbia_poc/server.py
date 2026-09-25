@@ -382,8 +382,10 @@ def load_ui_entity_db(locale: str = "he") -> dict[str, dict[str, Any]]:
 
 
 ENTITY_PROFILE_FIELDS = (
-    "description", "identity_status", "role", "affiliations", "nationality",
-    "languages", "associated_entity_ids", "identifiers", "biographical_notes",
+    "description", "identity_status", "given_name", "family_name", "gender",
+    "age_years", "date_of_birth", "role", "occupation", "affiliations",
+    "nationality", "ethnicity", "languages", "residence", "associated_entity_ids",
+    "identifiers", "biographical_notes",
 )
 
 

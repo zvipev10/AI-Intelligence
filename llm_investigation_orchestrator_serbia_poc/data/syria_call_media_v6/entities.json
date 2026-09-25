@@ -11,23 +11,38 @@
   },
   {
     "entity_id": "ENT-SYR-PERSON-001",
-    "canonical_name": "Synthetic Person 001",
+    "canonical_name": "Omar Al-Khatib",
     "aliases": [
-      "Person 001",
-      "Subject Alpha"
+      "Omar Khatib",
+      "Abu Tareq",
+      "عمر الخطيب"
     ],
     "entity_type": "person",
-    "description": "Synthetic person profile for demonstrating person-entity presentation. It is not a real individual.",
-    "identity_status": "unattributed",
-    "role": "person of interest",
+    "description": "Fully fictional Arabic male profile for the Syria demonstration dataset. It does not represent a real person.",
+    "identity_status": "synthetic profile",
+    "given_name": "Omar",
+    "family_name": "Al-Khatib",
+    "gender": "male",
+    "age_years": 36,
+    "date_of_birth": "1990-06-12",
+    "nationality": "Syrian",
+    "ethnicity": "Arab",
+    "occupation": "commercial truck driver",
+    "residence": "Baniyas, Syria (synthetic)",
+    "role": "independent logistics contractor",
     "affiliations": [
-      "unknown"
+      "Independent freight work (synthetic)"
     ],
-    "nationality": "unknown",
-    "languages": [],
+    "languages": [
+      "Arabic",
+      "English (basic)"
+    ],
     "associated_entity_ids": [],
-    "identifiers": {},
-    "biographical_notes": "No identity, demographic, or operational attribution is asserted by this synthetic profile."
+    "identifiers": {
+      "profile_reference": "SYR-DEMO-PER-001",
+      "driver_permit_reference": "DEMO-SYR-DL-10428"
+    },
+    "biographical_notes": "Fictional profile created solely to demonstrate the Person entity viewer. All identifying and biographical details are invented."
   },
   {
     "entity_id": "ENT-SYR-DEVICE-fbb49f825c12d583",
