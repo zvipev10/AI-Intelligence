@@ -139,7 +139,12 @@ class Activator:
                 server["env"]["INTELLIGENCE_POC_AUDIT"] = str(state / "audit" / f"{role}.jsonl")
                 include = server.get("tools", {}).get("include")
                 if isinstance(include, list):
-                    for common in ["open_catalog_layers", "demo_runtime_status"]:
+                    for common in [
+                        "open_catalog_layers",
+                        "demo_runtime_status",
+                        "describe_active_data",
+                        "discover_record_correlations",
+                    ]:
                         if common not in include:
                             include.append(common)
                 # Installed Hermes registers named-profile toolsets from the

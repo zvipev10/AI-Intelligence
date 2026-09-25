@@ -153,6 +153,25 @@ SOURCE_TYPE_ALIASES = {
     "tiktok": "טיקטוק",
 }
 
+# Correlation roles deliberately describe *what a value identifies*, rather
+# than requiring every producer to use the same column name.  For example, a
+# cellular call has two endpoint IMEIs while a cellular-geolocation record has
+# one `imei`; both are device identifiers and can be compared exactly.
+CORRELATION_FIELD_ROLES = {
+    "device_identifier": ("imei", "side_a_imei", "side_b_imei", "call_transcript_speaker_imei", "device_id"),
+    "phone_number": ("side_a_number", "side_b_number"),
+    "ip_address": ("ip_address",),
+    "advertising_identifier": ("advertising_id",),
+    "mission_identifier": ("mission_id",),
+    "observation_identifier": ("observation_id",),
+    "entity_identifier": ("entity_id",),
+    # Location is useful context, but is intentionally opt-in for automatic
+    # correlation because co-location alone does not establish identity.
+    "location_identifier": ("location_id", "side_a_location_id", "side_b_location_id"),
+}
+CONTEXTUAL_CORRELATION_ROLES = frozenset({"location_identifier"})
+SCHEMA_EXCLUDED_FIELDS = frozenset({"timestamp", "location_name", "location_type"})
+
 NON_INFORMATIVE_ACTORS = {
     "", "לא ידוע", "לא מזוהה", "גורם לא ידוע", "גורם לא מזוהה", "לא ברור",
 }
@@ -258,7 +277,13 @@ def scoped_entity_presentation(entity_id: str) -> dict[str, Any] | None:
     events = [event for event in visible_events() if event.get("entity_id") == entity_id]
     if not events:
         return None
-    return {
+    cross_source_request = any(token in f"{question} {context}".lower() for token in (
+        "connect", "link", "correlat", "across source", "different source", "sources and fields",
+    ))
+    if cross_source_request:
+        allowed = [*allowed, "schema_discovery", "correlation_discovery"]
+
+    result = {
         **base,
         "event_count": len(events),
         "top_locations": [
@@ -1157,6 +1182,12 @@ def classify_question_intent(arguments: dict[str, Any]) -> dict[str, Any]:
         "classification_source": source,
         "counts_as_data_query": False,
     }
+    if cross_source_request:
+        result["cross_source_protocol"] = {
+            "required_first_tools": ["describe_active_data", "discover_record_correlations"],
+            "instruction": "Before following record-specific leads, discover the active sources/fields and exact cross-source correlation groups."
+        }
+    return result
 
 
 def plan_next_investigation_step(arguments: dict[str, Any]) -> dict[str, Any]:
@@ -1983,6 +2014,134 @@ def sort_event_matches(matches: list[tuple[int, dict[str, Any]]], arguments: dic
     return matches
 
 
+def correlation_role_for_field(field: str) -> str | None:
+    for role, fields in CORRELATION_FIELD_ROLES.items():
+        if field in fields:
+            return role
+    return None
+
+
+def exact_field_filters(arguments: dict[str, Any]) -> list[tuple[str, str]]:
+    """Validate generic exact filters against the active raw record schema."""
+    filters = arguments.get("field_filters") or []
+    if not isinstance(filters, list):
+        raise ValueError("field_filters must be an array")
+    known_fields = set().union(*(event.keys() for event in EVENTS)) if EVENTS else set()
+    result: list[tuple[str, str]] = []
+    for item in filters:
+        if not isinstance(item, dict):
+            raise ValueError("each field_filter must be an object")
+        field = str(item.get("field") or "").strip()
+        value = str(item.get("equals") or "").strip()
+        if not field or not value:
+            raise ValueError("field_filters require non-empty field and equals values")
+        if field not in known_fields or field in SCHEMA_EXCLUDED_FIELDS:
+            raise ValueError(f"unknown or unsupported exact-filter field: {field}")
+        result.append((field, normalize_text(value)))
+    return result
+
+
+def describe_active_data(arguments: dict[str, Any]) -> dict[str, Any]:
+    """Expose active sources, populated fields, and correlation roles to agents."""
+    events = visible_events()
+    source_counts = Counter(str(event.get("source_type") or "Unknown") for event in events)
+    source_order = sorted(source_counts)
+    raw_fields = sorted(set().union(*(event.keys() for event in events)) - SCHEMA_EXCLUDED_FIELDS) if events else []
+    fields = []
+    for field in raw_fields:
+        by_source: dict[str, int] = {}
+        values: set[str] = set()
+        for source in source_order:
+            present = [event.get(field) for event in events if str(event.get("source_type") or "Unknown") == source and str(event.get(field) or "").strip()]
+            if present:
+                by_source[source] = len(present)
+                values.update(normalize_text(str(value)) for value in present)
+        if not by_source:
+            continue
+        role = correlation_role_for_field(field)
+        fields.append({
+            "name": field,
+            "role": role,
+            "value_count": len(values),
+            "sources_with_values": sorted(by_source),
+            "source_value_counts": by_source,
+            "exact_filterable": field not in SCHEMA_EXCLUDED_FIELDS,
+            "correlation_eligible": role is not None,
+            "contextual_only": role in CONTEXTUAL_CORRELATION_ROLES,
+        })
+    return {
+        **DEMO.identity,
+        "source_field": "source_type",
+        "record_count": len(events),
+        "sources": [{"name": source, "record_count": source_counts[source]} for source in source_order],
+        "field_roles": {role: list(fields) for role, fields in CORRELATION_FIELD_ROLES.items()},
+        "fields": fields,
+        "existing_tool_support": {
+            "search_events": {"exact_filter": "field_filters", "keyword_search": True},
+            "discover_record_correlations": {"exact_cross_source_matching": True},
+        },
+    }
+
+
+def discover_record_correlations(arguments: dict[str, Any]) -> dict[str, Any]:
+    """Find exact-value correlation groups without requiring source or field input."""
+    events = visible_events()
+    requested_roles = arguments.get("roles") or []
+    roles = set(requested_roles) if requested_roles else set(CORRELATION_FIELD_ROLES)
+    unknown_roles = sorted(roles - set(CORRELATION_FIELD_ROLES))
+    if unknown_roles:
+        raise ValueError(f"unknown correlation roles: {', '.join(unknown_roles)}")
+    include_contextual = bool(arguments.get("include_contextual", False))
+    roles -= CONTEXTUAL_CORRELATION_ROLES if not include_contextual else set()
+    source_filter = {canonical_source_type(value) for value in arguments.get("source_types") or []}
+    min_sources = max(2, min(int(arguments.get("min_sources", 2)), 20))
+    limit = min(bounded_limit(arguments.get("limit", 100)), 500)
+    groups: dict[tuple[str, str], list[dict[str, str]]] = defaultdict(list)
+    for event in events:
+        source = canonical_source_type(event.get("source_type"))
+        if source_filter and source not in source_filter:
+            continue
+        for role in roles:
+            for field in CORRELATION_FIELD_ROLES[role]:
+                value = str(event.get(field) or "").strip()
+                if value:
+                    groups[(role, normalize_text(value))].append({
+                        "source_type": source,
+                        "event_id": event["event_id"],
+                        "field": field,
+                        "value": value,
+                        "timestamp_utc": event.get("timestamp_utc", ""),
+                    })
+    correlations = []
+    for (role, normalized_value), members in groups.items():
+        source_types = sorted({member["source_type"] for member in members})
+        event_ids = {member["event_id"] for member in members}
+        if len(source_types) < min_sources or len(event_ids) < 2:
+            continue
+        fields = sorted({member["field"] for member in members})
+        correlations.append({
+            "correlation_id": f"CORR-{role}-{hashlib.sha256((role + '\\n' + normalized_value).encode('utf-8')).hexdigest()[:12]}",
+            "role": role,
+            "value": members[0]["value"],
+            "source_types": source_types,
+            "fields": fields,
+            "strength": "contextual" if role in CONTEXTUAL_CORRELATION_ROLES else "exact_identifier",
+            "records": sorted(members, key=lambda item: (item["timestamp_utc"], item["event_id"], item["field"])),
+        })
+    correlations.sort(key=lambda item: (-len(item["source_types"]), -len({row["event_id"] for row in item["records"]}), item["role"], item["value"]))
+    return {
+        **DEMO.identity,
+        "source_field": "source_type",
+        "roles_checked": sorted(roles),
+        "include_contextual": include_contextual,
+        "min_sources": min_sources,
+        "total_correlations": len(correlations),
+        "returned": min(len(correlations), limit),
+        "truncated": len(correlations) > limit,
+        "correlations": correlations[:limit],
+    }
+
+
 def filter_event_matches(arguments: dict[str, Any]) -> list[tuple[int, dict[str, Any]]]:
     start = parse_time(arguments.get("start_time"))
     end = parse_time(arguments.get("end_time"))
@@ -1995,6 +2154,7 @@ def filter_event_matches(arguments: dict[str, Any]) -> list[tuple[int, dict[str,
     event_ids = set(arguments.get("event_ids") or [])
     night_only = bool(arguments.get("night_only"))
     match_all_keywords = bool(arguments.get("match_all_keywords"))
+    field_filters = exact_field_filters(arguments)
 
     matches = []
     for event in visible_events():
@@ -2013,6 +2173,8 @@ def filter_event_matches(arguments: dict[str, Any]) -> list[tuple[int, dict[str,
         if reliabilities and event["source_reliability"] not in reliabilities:
             continue
         if event_ids and event["event_id"] not in event_ids:
+            continue
+        if any(normalize_text(str(event.get(field) or "")) != value for field, value in field_filters):
             continue
         hour = event["timestamp"].hour
         if night_only and not (hour >= 20 or hour < 6):
@@ -3427,6 +3589,13 @@ ASSESSMENT_INPUT_SCHEMA = {
 TOOLS = [
     {"name": "demo_runtime_status", "description": "Read active scenario identity and dataset counts; no model inference.", "inputSchema": {"type": "object", "properties": {}}, "annotations": {"readOnlyHint": True}},
     {
+        "name": "describe_active_data",
+        "title": "Describe active data sources and fields",
+        "description": "Discover the active corpus's source types, populated fields, exact-filter support, and known correlation roles. Use before cross-source analysis when source names or record schema are unknown.",
+        "inputSchema": {"type": "object", "properties": {}, "additionalProperties": False},
+        "annotations": {"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": False},
+    },
+    {
         "name": "prepare_evidence",
         "title": "Project source records into evidence",
         "description": "Deterministically project canonical REC records into neutral reported or observed evidence objects. Missing object classes are normalized with the shared semantic concept vocabulary. Projection is read-only and on demand; raw records remain immutable.",
@@ -3862,6 +4031,7 @@ TOOLS = [
                 "source_types": {"type": "array", "items": {"type": "string"}, "description": "Canonical Hebrew source labels and supported English display labels are accepted."},
                 "reliabilities": {"type": "array", "items": {"type": "string"}},
                 "keywords": {"type": "array", "items": {"type": "string"}},
+                "field_filters": {"type": "array", "maxItems": 20, "items": {"type": "object", "properties": {"field": {"type": "string"}, "equals": {"type": "string"}}, "required": ["field", "equals"], "additionalProperties": False}, "description": "Exact matches against fields reported by describe_active_data. Combine filters with AND."},
                 "event_ids": {"type": "array", "items": {"type": "string"}},
                 "night_only": {"type": "boolean", "description": "Keep events between 20:00 and 06:00 UTC."},
                 "match_all_keywords": {"type": "boolean"},
@@ -3870,6 +4040,22 @@ TOOLS = [
                 "limit": {"type": "integer", "minimum": 1, "maximum": MAX_LIMIT, "description": "Requested maximum returned rows. Broad retrieval is normalized to 2000 by coverage policy; smaller values are not proof of absence."},
             },
             "additionalProperties": False,
+        }),
+        "annotations": {"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": False},
+    },
+    {
+        "name": "discover_record_correlations",
+        "title": "Discover exact cross-source correlations",
+        "description": "Automatically discover exact-value correlation groups across distinct source types, without requiring the caller to know the source list or schema. Uses known field roles so call endpoint IMEIs can match cellular-geolocation IMEIs. Location-only matches are excluded unless explicitly requested because co-location alone is contextual evidence.",
+        "inputSchema": with_step_bridge({
+            "type": "object",
+            "properties": {
+                "roles": {"type": "array", "items": {"type": "string", "enum": sorted(CORRELATION_FIELD_ROLES)}, "description": "Optional role restriction. Omit to inspect all non-contextual roles."},
+                "source_types": {"type": "array", "items": {"type": "string"}, "description": "Optional source restriction; omit to discover every active source."},
+                "include_contextual": {"type": "boolean", "description": "Include shared location IDs as contextual, not identity, correlations. Defaults to false."},
+                "min_sources": {"type": "integer", "minimum": 2, "maximum": 20},
+                "limit": {"type": "integer", "minimum": 1, "maximum": 500},
+            }, "additionalProperties": False,
         }),
         "annotations": {"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": False},
     },
@@ -4118,6 +4304,7 @@ TOOLS = [
 
 TOOL_HANDLERS = {
     "demo_runtime_status": lambda arguments: {**DEMO.identity, "event_count": len(EVENTS), "location_count": len(LOCATIONS)},
+    "describe_active_data": describe_active_data,
     "prepare_evidence": prepare_evidence,
     "prepare_fused_evidence": prepare_fused_evidence,
     "persist_fused_evidence": persist_fused_evidence,
@@ -4146,6 +4333,7 @@ TOOL_HANDLERS = {
     "classify_question_intent": classify_question_intent,
     "plan_next_investigation_step": plan_next_investigation_step,
     "search_events": search_events,
+    "discover_record_correlations": discover_record_correlations,
     "semantic_search_events": semantic_search_events,
     "get_objects": get_objects,
     "resolve_location": resolve_location,

@@ -1,0 +1,9 @@
+{
+  "purpose": "Synthetic realistic-format identifiers; no actual subscriber or carrier allocation is claimed. Imported valid IMEI 353294702931926 is preserved.",
+  "mapping": {
+    "990000000000001": "353294708462710",
+    "990000000000002": "358240116593823",
+    "89000000000000000001": "8996301746283951072",
+    "89000000000000000002": "8996301839572614087"
+  }
+}

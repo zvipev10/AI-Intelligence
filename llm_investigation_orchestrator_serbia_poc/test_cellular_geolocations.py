@@ -9,7 +9,7 @@ class CellularGeolocations(unittest.TestCase):
   old=list(csv.DictReader((ROOT/'data/syria_adint_v3/events.csv').read_text().splitlines()))
   byid={r['event_id']:r for r in rows}
   self.assertEqual(len(rows),443);self.assertEqual(len(byid),443)
-  for row in old:self.assertEqual({k:({'DEMO-SIM-SYR-001':'8996301746283951072','DEMO-SIM-SYR-002':'8996301839572614087'}.get(v,v) if k=='sim' else {'990000000000001':'353294708462710','990000000000002':'358240116593823'}.get(v,v)) for k,v in row.items()},{k:byid[row['event_id']][k] for k in row})
+  for row in old:self.assertEqual({k:({'DEMO-SIM-SYR-001':'8996301746283951072','DEMO-SIM-SYR-002':'8996301839572614087'}.get(v,v) if k=='sim' else {'990000000000001':'353294702931926','990000000000002':'353294702931926'}.get(v,v)) for k,v in row.items()},{k:byid[row['event_id']][k] for k in row})
   geo=[r for r in rows if r['source_type']=='Cellular Geolocations'];self.assertEqual(len(geo),18)
   calls=[r for r in rows if r.get('call_id')];self.assertEqual(len(calls),1)
   for call in calls:
@@ -43,7 +43,7 @@ class CellularGeolocations(unittest.TestCase):
   old=list(csv.DictReader((ROOT/'data/syria_cellular_v1/events.csv').read_text().splitlines()))
   byid={r['event_id']:r for r in rows}
   for row in old:
-   if not row.get('call_id'):self.assertEqual({k:({'DEMO-SIM-SYR-001':'8996301746283951072','DEMO-SIM-SYR-002':'8996301839572614087'}.get(v,v) if k=='sim' else {'990000000000001':'353294708462710','990000000000002':'358240116593823'}.get(v,v)) for k,v in row.items()},{k:byid[row['event_id']][k] for k in row})
+   if not row.get('call_id'):self.assertEqual({k:({'DEMO-SIM-SYR-001':'8996301746283951072','DEMO-SIM-SYR-002':'8996301839572614087'}.get(v,v) if k=='sim' else {'990000000000001':'353294702931926','990000000000002':'353294702931926'}.get(v,v)) for k,v in row.items()},{k:byid[row['event_id']][k] for k in row})
   for id,value in json.loads((ROOT/'data/syria_cellular_v1/locations.json').read_text()).items():self.assertEqual(loc[id],value)
  def test_catalog_public_fields_and_identifier_search(self):
   with tempfile.TemporaryDirectory() as state:
@@ -51,11 +51,12 @@ class CellularGeolocations(unittest.TestCase):
 import mcp_server.server as s
 layer,rows=ui.get_ui_layer_rows('events:Cellular Geolocations','en')
 assert layer['count']==18 and len(rows)==18 and layer['capabilities']['map']
-for key,value in [('sim','8996301746283951072'),('imei','353294708462710')]:
+for key,value in [('sim','8996301746283951072'),('imei','353294702931926')]:
  r=s.search_events({'source_types':['Cellular Geolocations'],'keywords':[value]})
- assert r['total']==14 and all(e[key]==value for e in r['events'])
-r=s.search_events({'source_types':['Cellular Calls'],'keywords':['358240116593823']})
-assert r['total']==1 and all(e['side_b_imei']=='358240116593823' for e in r['events'])
+ assert r['total']==14 if key=='sim' else r['total']==18
+ assert all(e[key]==value for e in r['events'])
+r=s.search_events({'source_types':['Cellular Calls'],'keywords':['353294702931926']})
+assert r['total']==1 and all(e['side_b_imei']=='353294702931926' for e in r['events'])
 """
    result=subprocess.run([sys.executable,'-c',code],cwd=ROOT,env={**os.environ,'INTELLIGENCE_POC_SCENARIO':'syria','INTELLIGENCE_POC_STATE_ROOT':state},capture_output=True,text=True,timeout=60)
    self.assertEqual(result.returncode,0,result.stderr)
