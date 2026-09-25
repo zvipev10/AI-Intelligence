@@ -3750,10 +3750,9 @@ function entityLocationMapHtml(item) {
   const points = entityRecordLocationPoints(item);
   if (!points.length) return "";
   const locations = points.length.toLocaleString(currentLocaleTag());
-  const records = points.reduce((total, point) => total + point.records.length, 0).toLocaleString(currentLocaleTag());
-  return `<section class="entity-location-map-section" aria-labelledby="entityLocationMapTitle">
-    <div class="entity-location-map-heading"><div><span class="eyebrow">${escapeHtml(activeLocaleText("מיקומים קשורים", "Connected locations"))}</span><h3 id="entityLocationMapTitle">${escapeHtml(activeLocaleText("מפת רשומות ישות", "Entity record map"))}</h3></div><span>${escapeHtml(activeLocaleText(`${locations} מיקומים · ${records} רשומות`, `${locations} locations · ${records} records`))}</span></div>
-    <div id="entityViewerMap" class="entity-location-map" aria-label="${escapeHtml(activeLocaleText("מיקומים של רשומות המקושרות לישות", "Locations of records connected to this entity"))}"></div>
+  return `<section class="entity-record-map-panel call-map-panel" aria-labelledby="entityLocationMapTitle">
+    <div id="entityViewerMap" aria-label="${escapeHtml(activeLocaleText("מיקומים של רשומות המקושרות לישות", "Locations of records connected to this entity"))}"></div>
+    <div class="call-map-caption"><span class="material-symbols-rounded">location_on</span><span id="entityLocationMapTitle">${escapeHtml(activeLocaleText(`מיקומי ישות · ${locations}`, `Entity locations · ${locations}`))}</span><button type="button" id="entityFitMap">${escapeHtml(activeLocaleText("התאם", "Fit locations"))}</button></div>
   </section>`;
 }
 
@@ -3773,8 +3772,9 @@ function initializeEntityLocationMap(item) {
   const bounds = new maplibregl.LngLatBounds();
   points.forEach(point => {
     bounds.extend([point.lon, point.lat]);
-    const marker = document.createElement("span");
-    marker.className = "entity-location-map-marker";
+    const marker = document.createElement("button");
+    marker.type = "button";
+    marker.className = "cellular-call-map-endpoint entity-location-map-marker";
     marker.textContent = String(point.records.length);
     marker.setAttribute("aria-label", `${point.name}: ${point.records.length} records`);
     const recordList = point.records.slice(0, 6).map(escapeHtml).join(" · ");
@@ -3783,6 +3783,7 @@ function initializeEntityLocationMap(item) {
   });
   const fit = () => map.fitBounds(bounds, { padding: 32, maxZoom: 13, duration: 0 });
   map.on("load", () => { map.resize(); fit(); });
+  document.getElementById("entityFitMap")?.addEventListener("click", fit);
 }
 
 function evidenceProvenanceHtml(item) {

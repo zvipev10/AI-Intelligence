@@ -82,7 +82,9 @@ class ObjectViewerContractTests(unittest.TestCase):
         self.assertIn('id="entityViewerMap"', self.app)
         self.assertIn('entityViewerMap?.remove()', self.app)
         self.assertIn('initializeEntityLocationMap(item)', self.app)
-        self.assertIn('.entity-location-map {', self.styles)
+        self.assertIn('.entity-record-map-panel {', self.styles)
+        self.assertIn('class="entity-record-map-panel call-map-panel"', self.app)
+        self.assertIn('id="entityFitMap"', self.app)
 
 
 if __name__ == "__main__":
