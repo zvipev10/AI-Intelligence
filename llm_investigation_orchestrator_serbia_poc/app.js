@@ -3843,13 +3843,15 @@ function assessmentEvidenceHtml(item) {
   return `<section class="object-viewer-evidence"><h3>${escapeHtml(activeLocaleText("ראיות תומכות", "Supporting evidence"))}</h3><div class="object-viewer-evidence-links">${links}</div></section>`;
 }
 
-function setViewerDocked(docked) {
+function setViewerDocked(target = null) {
   const viewer = document.getElementById("objectViewer");
   const timeline = document.getElementById("timelineView");
+  const table = document.getElementById("rawEventsOverlay");
+  const docked = Boolean(target);
   viewer.classList.toggle("is-docked", docked);
-  timeline.classList.toggle("has-record-viewer", docked);
+  [timeline, table].forEach(container => container?.classList.toggle("has-record-viewer", container === target));
   viewer.querySelector(".object-viewer").setAttribute("aria-modal", String(!docked));
-  (docked ? timeline : document.body).appendChild(viewer);
+  (target || document.body).appendChild(viewer);
 }
 
 function closeObjectViewer() {
@@ -3859,7 +3861,7 @@ function closeObjectViewer() {
   entityViewerMap?.remove(); entityViewerMap = null;
   viewer.querySelectorAll("video,audio").forEach(media => { media.pause(); media.removeAttribute("src"); media.load(); });
   viewer.hidden = true;
-  setViewerDocked(false);
+  setViewerDocked();
   document.querySelectorAll(".call-timeline-entry").forEach(row => row.setAttribute("aria-pressed", "false"));
   objectViewerReturnFocus?.focus?.();
   objectViewerReturnFocus = null;
@@ -3882,8 +3884,14 @@ function openObjectViewer(kind, id, trigger = document.activeElement) {
   viewer.querySelectorAll("video,audio").forEach(media => { media.pause(); media.removeAttribute("src"); media.load(); });
   cellularViewerMap?.remove(); cellularViewerMap = null;
   entityViewerMap?.remove(); entityViewerMap = null;
-  const docked = kind === "record" && isCellularCallRecord(item) && document.getElementById("timelineView").classList.contains("active");
-  setViewerDocked(docked);
+  const timeline = document.getElementById("timelineView");
+  const table = document.getElementById("rawEventsOverlay");
+  const dockTarget = kind === "record" && isCellularCallRecord(item) && timeline.classList.contains("active")
+    ? timeline
+    : ["person", "organization"].includes(kind) && document.getElementById("tableView").classList.contains("active")
+      ? table
+      : null;
+  setViewerDocked(dockTarget);
   document.querySelectorAll(".call-timeline-entry").forEach(row => row.setAttribute("aria-pressed", String(row.dataset.viewerId === id)));
   const cellularCallViewer = kind === "record" && isCellularCallRecord(item);
   const personViewer = kind === "person";
@@ -5860,7 +5868,13 @@ function renderAllViews() {
 function activateView(view, options = {}) {
   const requestedView = view === "evidence" ? "table" : view;
   const safeView = viewLabels()[requestedView] ? requestedView : "map";
-  if (safeView !== "timeline" && document.getElementById("objectViewer")?.classList.contains("is-docked")) closeObjectViewer();
+  const dockedViewer = document.getElementById("objectViewer");
+  const expectedDockParent = safeView === "timeline"
+    ? document.getElementById("timelineView")
+    : safeView === "table"
+      ? document.getElementById("rawEventsOverlay")
+      : null;
+  if (dockedViewer?.classList.contains("is-docked") && dockedViewer.parentElement !== expectedDockParent) closeObjectViewer();
   document.querySelector(".view-stack")?.classList.toggle("timeline-mode", safeView === "timeline");
   document.querySelectorAll(".view-tab").forEach(button => button.classList.toggle("active", button.dataset.view === safeView));
   document.querySelectorAll(".view-pane").forEach(pane => pane.classList.toggle("active", pane.id === `${safeView}View`));

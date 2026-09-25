@@ -95,6 +95,13 @@ class ObjectViewerContractTests(unittest.TestCase):
         self.assertIn('.person-workspace {', self.styles)
         self.assertIn('.person-table-identity {', self.styles)
 
+    def test_entity_viewers_dock_beside_the_table(self):
+        self.assertIn('function setViewerDocked(target = null)', self.app)
+        self.assertIn('document.getElementById("rawEventsOverlay")', self.app)
+        self.assertIn('["person", "organization"].includes(kind)', self.app)
+        self.assertIn('.raw-events-overlay.has-record-viewer', self.styles)
+        self.assertIn('> .object-viewer-backdrop.is-docked', self.styles)
+
 
 if __name__ == "__main__":
     unittest.main()
