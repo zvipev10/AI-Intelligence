@@ -25,6 +25,7 @@
     "gender": "male",
     "age_years": 36,
     "date_of_birth": "1990-06-12",
+    "place_of_birth": "Homs, Syria (synthetic)",
     "nationality": "Syrian",
     "ethnicity": "Arab",
     "occupation": "commercial truck driver",
@@ -34,15 +35,24 @@
       "Independent freight work (synthetic)"
     ],
     "languages": [
-      "Arabic",
+      "Arabic (native)",
+      "Persian (conversational)",
       "English (basic)"
     ],
+    "previous_residences": [
+      "Tehran, Iran (synthetic; 2014–2018)",
+      "Homs, Syria (synthetic; 1990–2014)"
+    ],
+    "connections": [
+      "Iran — previous commercial logistics work and personal ties (synthetic)"
+    ],
+    "military_service": "Completed mandatory service in a fictional Syrian logistics unit (2010–2012).",
     "associated_entity_ids": [],
     "identifiers": {
       "profile_reference": "SYR-DEMO-PER-001",
       "driver_permit_reference": "DEMO-SYR-DL-10428"
     },
-    "biographical_notes": "Fictional profile created solely to demonstrate the Person entity viewer. All identifying and biographical details are invented."
+    "biographical_notes": "Fictional profile created solely to demonstrate the Person entity viewer. All identifying, biographical, military, and Iran-related details are invented."
   },
   {
     "entity_id": "ENT-SYR-DEVICE-fbb49f825c12d583",

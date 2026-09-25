@@ -3570,7 +3570,7 @@ function viewerFields(item, kind) {
     return IPDR_SOURCE_FIELDS.map(key => [key, item[key] == null || item[key] === "" ? "—" : item[key]]);
   }
   const preferred = kind === "person"
-    ? ["identity_status", "given_name", "family_name", "gender", "age_years", "date_of_birth", "nationality", "ethnicity", "occupation", "residence", "role", "affiliations", "languages", "associated_entity_ids", "identifiers", "aliases", "event_count", "top_locations", "top_sources", "biographical_notes"]
+    ? ["identity_status", "given_name", "family_name", "gender", "age_years", "date_of_birth", "place_of_birth", "nationality", "ethnicity", "occupation", "residence", "previous_residences", "role", "affiliations", "connections", "military_service", "languages", "associated_entity_ids", "identifiers", "aliases", "event_count", "top_locations", "top_sources", "biographical_notes"]
     : kind === "record"
     ? ["timestamp_utc", "timestamp_basis", "source_type", "collection_family", "source_reliability_label", "certainty_level", "entity_name", "location_name", "advertising_id", "ip_address", "imei", "session_start_utc", "session_end_utc", "source_port", "protocol", "bytes_up", "bytes_down", "location_accuracy_m", "call_id", "observation_id", "mission_id", "video_segment_id"]
     : kind === "evidence"
@@ -3638,6 +3638,7 @@ function viewerFieldLabel(key) {
     gender: ["מגדר", "Gender"],
     age_years: ["גיל", "Age"],
     date_of_birth: ["תאריך לידה", "Date of birth"],
+    place_of_birth: ["מקום לידה", "Place of birth"],
     role: ["תפקיד", "Role"],
     occupation: ["עיסוק", "Occupation"],
     affiliations: ["שיוכים", "Affiliations"],
@@ -3645,6 +3646,9 @@ function viewerFieldLabel(key) {
     ethnicity: ["מוצא", "Ethnicity"],
     languages: ["שפות", "Languages"],
     residence: ["מקום מגורים", "Residence"],
+    previous_residences: ["מקומות מגורים קודמים", "Previous residences"],
+    connections: ["קשרים", "Connections"],
+    military_service: ["שירות צבאי", "Military service"],
     associated_entity_ids: ["ישויות קשורות", "Associated entities"],
     identifiers: ["מזהים", "Identifiers"],
     biographical_notes: ["הערות ביוגרפיות", "Biographical notes"],
