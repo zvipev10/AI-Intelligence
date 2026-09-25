@@ -19,7 +19,7 @@ class ObjectViewerContractTests(unittest.TestCase):
         self.assertIn('aria-labelledby="objectViewerTitle"', self.index)
 
     def test_records_organizations_and_evidence_are_supported(self):
-        self.assertIn("if (!['record', 'organization', 'evidence', 'assessment'].includes(kind)) return false;", self.app)
+        self.assertIn("if (!['record', 'organization', 'person', 'evidence', 'assessment'].includes(kind)) return false;", self.app)
         self.assertIn('data-viewer-kind="evidence"', self.app)
         self.assertNotIn('data-viewer-kind="target"', self.app)
 
@@ -36,12 +36,12 @@ class ObjectViewerContractTests(unittest.TestCase):
         self.assertIn('<video controls preload="metadata"', self.app)
         self.assertIn('<audio controls preload="metadata"', self.app)
         self.assertNotIn('<video autoplay', self.app)
-        self.assertIn('SIMULATED ISR', self.app)
+        self.assertIn('>ISR</span>', self.app)
         self.assertIn("function safeMediaUrl", self.app)
 
     def test_uav_media_is_presented_as_shared_source_material(self):
         self.assertIn('UAV video stream', self.app)
-        self.assertIn('this is not authentic operational footage', self.app)
+        self.assertIn('Collection-mission visualization.', self.app)
         self.assertIn('item.mission_id', self.app)
         self.assertIn('item.video_segment_id', self.app)
         self.assertIn('function viewerFieldLabel', self.app)
@@ -68,12 +68,21 @@ class ObjectViewerContractTests(unittest.TestCase):
         self.assertIn("function cellularCallPartyHtml(item, side)", self.app)
         self.assertIn("function cellularCallHtml(item)", self.app)
         self.assertIn('activeLocaleText("שיחה סלולרית", "Cellular call")', self.app)
-        self.assertIn('activeLocaleText("הקלטת שיחה מדומה", "Simulated call recording")', self.app)
-        self.assertIn('activeLocaleText("תמלול מדומה", "Simulated transcript")', self.app)
+        self.assertIn('Call details', self.app)
+        self.assertIn('Conversation', self.app)
         self.assertIn('"side_a_imei"', self.app)
         self.assertIn('"side_b_imei"', self.app)
         self.assertIn(".cellular-call-parties", self.styles)
         self.assertIn("grid-template-columns: minmax(0,1fr) minmax(0,1fr)", self.styles)
+
+    def test_entity_viewer_includes_connected_record_location_map(self):
+        self.assertIn("function entityRecordLocationPoints(item)", self.app)
+        self.assertIn("function entityLocationMapHtml(item)", self.app)
+        self.assertIn("function initializeEntityLocationMap(item)", self.app)
+        self.assertIn('id="entityViewerMap"', self.app)
+        self.assertIn('entityViewerMap?.remove()', self.app)
+        self.assertIn('initializeEntityLocationMap(item)', self.app)
+        self.assertIn('.entity-location-map {', self.styles)
 
 
 if __name__ == "__main__":

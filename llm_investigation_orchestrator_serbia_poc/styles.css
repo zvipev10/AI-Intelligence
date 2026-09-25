@@ -686,6 +686,16 @@ th { position: sticky; top: 0; z-index: 1; background: #202530; }
 .object-viewer-media-context span { min-width: 0; display: inline-flex; align-items: center; gap: 6px; padding: 5px 7px; border-radius: 6px; background: rgba(0,0,0,.18); color: var(--muted); font-size: 10px; }
 .object-viewer-media-context code { color: var(--ink); overflow-wrap: anywhere; }
 .object-viewer-source-media > p { margin: 10px 0 0; color: var(--muted); font-size: 11px; line-height: 1.55; }
+.entity-location-map-section { margin: 0 0 18px; padding: 12px; border: 1px solid rgba(88,166,255,.24); border-radius: 10px; background: rgba(88,166,255,.045); }
+.entity-location-map-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+.entity-location-map-heading h3 { margin: 3px 0 0; font-size: 14px; }
+.entity-location-map-heading > span { padding: 4px 7px; border-radius: 999px; background: rgba(88,166,255,.12); color: var(--blue); font-size: 10px; font-weight: 800; white-space: nowrap; }
+.entity-location-map { height: 208px; overflow: hidden; border: 1px solid var(--line); border-radius: 8px; background: #0a1017; }
+.entity-location-map-marker { width: 27px; height: 27px; display: grid; place-items: center; padding: 0; border: 2px solid rgba(255,255,255,.94); border-radius: 50%; background: #3879c5; color: white; box-shadow: 0 2px 10px rgba(0,0,0,.42); font: 800 10px/1 system-ui,sans-serif; cursor: pointer; }
+.entity-location-map-popup { display: grid; gap: 3px; min-width: 130px; }
+.entity-location-map-popup strong { color: #172231; font-size: 12px; }
+.entity-location-map-popup span, .entity-location-map-popup small { color: #435265; font-size: 10px; }
+.entity-location-map-popup small { overflow-wrap: anywhere; }
 .cellular-call-viewer { margin-bottom: 18px; padding: 14px; border: 1px solid rgba(88,166,255,.24); border-radius: 10px; background: linear-gradient(155deg, rgba(88,166,255,.07), rgba(255,255,255,.015)); }
 .cellular-call-meta { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 12px; }
 .cellular-call-meta > span { display: inline-flex; align-items: center; gap: 6px; padding: 6px 8px; border-radius: 6px; background: rgba(0,0,0,.18); color: var(--muted); font-size: 11px; }

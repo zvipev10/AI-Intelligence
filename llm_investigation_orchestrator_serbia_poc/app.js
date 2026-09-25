@@ -3394,6 +3394,7 @@ function cellularCallPartyHtml(item, side) {
 }
 
 let cellularViewerMap = null;
+let entityViewerMap = null;
 
 function cellularCallHtml(item) {
   if (!isCellularCallRecord(item)) return "";
@@ -3718,6 +3719,72 @@ function personProfileHtml(item) {
   return `<section class="person-viewer-profile">${portrait}<div><p class="person-viewer-status">${escapeHtml(status)}</p><h3>${escapeHtml(role)}</h3><p>${escapeHtml(summary)}</p></div></section>`;
 }
 
+function entityRecordLocationPoints(item) {
+  const entityId = String(item?.entity_id || "").trim();
+  if (!entityId) return [];
+  const valuesFor = value => Array.isArray(value) ? value.map(String) : String(value || "").split(/[,;|\s]+/).filter(Boolean);
+  const related = state.events.filter(event => {
+    if (String(event.entity_id || "") === entityId) return true;
+    return [event.entity_ids, event.related_entity_ids, event.subject_entity_ids].some(value => valuesFor(value).includes(entityId));
+  });
+  const byLocation = new Map();
+  related.forEach(event => {
+    const locationId = String(event.location_id || "").trim();
+    const location = LOCATIONS[locationId] || {};
+    const lon = Number(location.lon ?? event.longitude ?? event.lon);
+    const lat = Number(location.lat ?? event.latitude ?? event.lat);
+    if (!locationId || !Number.isFinite(lon) || !Number.isFinite(lat)) return;
+    const point = byLocation.get(locationId) || {
+      locationId, name: location.name || event.location_name || locationId, lon, lat,
+      records: [], latestTimestamp: ""
+    };
+    const recordId = event.record_id || event.event_id;
+    if (recordId && !point.records.includes(recordId)) point.records.push(recordId);
+    if (String(event.timestamp_utc || "") > point.latestTimestamp) point.latestTimestamp = String(event.timestamp_utc || "");
+    byLocation.set(locationId, point);
+  });
+  return [...byLocation.values()].sort((a, b) => b.records.length - a.records.length || a.name.localeCompare(b.name));
+}
+
+function entityLocationMapHtml(item) {
+  const points = entityRecordLocationPoints(item);
+  if (!points.length) return "";
+  const locations = points.length.toLocaleString(currentLocaleTag());
+  const records = points.reduce((total, point) => total + point.records.length, 0).toLocaleString(currentLocaleTag());
+  return `<section class="entity-location-map-section" aria-labelledby="entityLocationMapTitle">
+    <div class="entity-location-map-heading"><div><span class="eyebrow">${escapeHtml(activeLocaleText("מיקומים קשורים", "Connected locations"))}</span><h3 id="entityLocationMapTitle">${escapeHtml(activeLocaleText("מפת רשומות ישות", "Entity record map"))}</h3></div><span>${escapeHtml(activeLocaleText(`${locations} מיקומים · ${records} רשומות`, `${locations} locations · ${records} records`))}</span></div>
+    <div id="entityViewerMap" class="entity-location-map" aria-label="${escapeHtml(activeLocaleText("מיקומים של רשומות המקושרות לישות", "Locations of records connected to this entity"))}"></div>
+  </section>`;
+}
+
+function initializeEntityLocationMap(item) {
+  entityViewerMap?.remove();
+  entityViewerMap = null;
+  const container = document.getElementById("entityViewerMap");
+  const points = entityRecordLocationPoints(item);
+  if (!container || !points.length || typeof maplibregl === "undefined") return;
+  const map = new maplibregl.Map({
+    container,
+    style: { version: 8, sources: { imagery: { type: "raster", tiles: ["https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"], tileSize: 256, attribution: "Imagery © Esri, Vantor, Earthstar Geographics" } }, layers: [{ id: "imagery", type: "raster", source: "imagery" }] },
+    center: [points[0].lon, points[0].lat], zoom: 9, interactive: true
+  });
+  entityViewerMap = map;
+  map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-left");
+  const bounds = new maplibregl.LngLatBounds();
+  points.forEach(point => {
+    bounds.extend([point.lon, point.lat]);
+    const marker = document.createElement("span");
+    marker.className = "entity-location-map-marker";
+    marker.textContent = String(point.records.length);
+    marker.setAttribute("aria-label", `${point.name}: ${point.records.length} records`);
+    const recordList = point.records.slice(0, 6).map(escapeHtml).join(" · ");
+    const popup = `<strong>${escapeHtml(point.name)}</strong><span>${escapeHtml(`${point.records.length} ${activeLocaleText("רשומות", "records")}`)}</span>${recordList ? `<small dir="ltr">${recordList}</small>` : ""}`;
+    new maplibregl.Marker({ element: marker }).setLngLat([point.lon, point.lat]).setPopup(new maplibregl.Popup({ offset: 14 }).setHTML(`<div class="entity-location-map-popup">${popup}</div>`)).addTo(map);
+  });
+  const fit = () => map.fitBounds(bounds, { padding: 32, maxZoom: 13, duration: 0 });
+  map.on("load", () => { map.resize(); fit(); });
+}
+
 function evidenceProvenanceHtml(item) {
   const available = viewerObjects();
   const ids = item.source_record_ids || [];
@@ -3751,6 +3818,7 @@ function closeObjectViewer() {
   const viewer = document.getElementById("objectViewer");
   stopSimulatedUavStream();
   cellularViewerMap?.remove(); cellularViewerMap = null;
+  entityViewerMap?.remove(); entityViewerMap = null;
   viewer.querySelectorAll("video,audio").forEach(media => { media.pause(); media.removeAttribute("src"); media.load(); });
   viewer.hidden = true;
   setViewerDocked(false);
@@ -3775,6 +3843,7 @@ function openObjectViewer(kind, id, trigger = document.activeElement) {
   document.getElementById("objectViewerId").textContent = id;
   viewer.querySelectorAll("video,audio").forEach(media => { media.pause(); media.removeAttribute("src"); media.load(); });
   cellularViewerMap?.remove(); cellularViewerMap = null;
+  entityViewerMap?.remove(); entityViewerMap = null;
   const docked = kind === "record" && isCellularCallRecord(item) && document.getElementById("timelineView").classList.contains("active");
   setViewerDocked(docked);
   document.querySelectorAll(".call-timeline-entry").forEach(row => row.setAttribute("aria-pressed", String(row.dataset.viewerId === id)));
@@ -3782,9 +3851,11 @@ function openObjectViewer(kind, id, trigger = document.activeElement) {
   const mediaHtml = viewerMediaHtml(item);
   const cellularHtml = kind === "record" ? cellularCallHtml(item) : "";
   const fields = viewerFields(item, kind).map(([key,value]) => `<div class="object-viewer-field"><dt>${escapeHtml(viewerFieldLabel(key))}</dt><dd>${escapeHtml(viewerValue(value))}</dd></div>`).join("");
-  document.getElementById("objectViewerBody").innerHTML = `${mediaHtml}${cellularHtml}${kind === "person" ? personProfileHtml(item) : ""}${["record", "evidence", "assessment"].includes(kind) ? `<p class="object-viewer-summary">${escapeHtml(item.event_summary || item.summary || "-")}</p>` : ""}<dl class="object-viewer-fields">${fields}</dl>${kind === "organization" ? organizationEvidenceHtml(item) : kind === "evidence" ? evidenceProvenanceHtml(item) : kind === "assessment" ? assessmentEvidenceHtml(item) : ""}`;
+  const entityMapHtml = ["person", "organization"].includes(kind) ? entityLocationMapHtml(item) : "";
+  document.getElementById("objectViewerBody").innerHTML = `${mediaHtml}${cellularHtml}${kind === "person" ? personProfileHtml(item) : ""}${entityMapHtml}${["record", "evidence", "assessment"].includes(kind) ? `<p class="object-viewer-summary">${escapeHtml(item.event_summary || item.summary || "-")}</p>` : ""}<dl class="object-viewer-fields">${fields}</dl>${kind === "organization" ? organizationEvidenceHtml(item) : kind === "evidence" ? evidenceProvenanceHtml(item) : kind === "assessment" ? assessmentEvidenceHtml(item) : ""}`;
   viewer.hidden = false;
   if (kind === "record" && isCellularCallRecord(item)) initializeCellularViewer(item);
+  if (["person", "organization"].includes(kind)) initializeEntityLocationMap(item);
   if (kind === "record" && isUavVideoRecord(item)) startSimulatedUavStream(item);
   document.getElementById("objectViewerClose").focus();
   return true;
