@@ -1414,7 +1414,8 @@ function buildEntityMetadataLayer(items) {
     kind: "entity_metadata",
     visible: true,
     items,
-    capabilities: { table: true, map: true, timeline: false }
+    capabilities: { table: true, map: true, timeline: false },
+    preferredView: "table"
   };
 }
 
@@ -2888,7 +2889,7 @@ async function openCatalogLayer(layerId, options = {}) {
     const added = addResultLayers({
       sourceId: `catalog:${layerId}:${scopeKey}`,
       sourceLabel: openedLayer.label,
-      preferredView: isCallsLayer(openedLayer) ? "timeline" : openedLayer.capabilities.map ? "map" : (openedLayer.kind === "events" ? "table" : (openedLayer.capabilities.timeline ? "timeline" : "table")),
+      preferredView: isCallsLayer(openedLayer) ? "timeline" : openedLayer.kind === "entity_metadata" ? "table" : openedLayer.capabilities.map ? "map" : (openedLayer.kind === "events" ? "table" : (openedLayer.capabilities.timeline ? "timeline" : "table")),
       layers: [openedLayer]
     });
     const restoredLayer = added.find(item => item.catalogLayerId === layerId && item.catalogScopeKey === scopeKey)
@@ -2899,6 +2900,7 @@ async function openCatalogLayer(layerId, options = {}) {
     state.layerSearchQuery = "";
     state.layerSearchOpen = false;
     if (!options.silent && isCallsLayer(openedLayer)) activateView("timeline");
+    else if (!options.silent && openedLayer.kind === "entity_metadata") activateView("table");
     else if (!options.silent && !openedLayer.capabilities.map) activateView(openedLayer.kind === "events" ? "table" : (openedLayer.capabilities.timeline ? "timeline" : "table"));
     if (!options.silent) showResult(
       "שכבה נפתחה",
@@ -6547,7 +6549,7 @@ function renderEvidence() {
       const topLocations = (item.top_locations || []).slice(0, 4).map(location => `${location.location_name || location.location_id} (${Number(location.count || 0).toLocaleString("en-US")})`).join(", ");
       return `
       <tr>
-        <td><button type="button" class="object-viewer-open" data-viewer-kind="organization" data-viewer-id="${escapeHtml(item.entity_id || "")}">${escapeHtml(item.canonical_name || item.entity_id || "-")}</button></td>
+        <td><button type="button" class="object-viewer-open" data-viewer-kind="${isPersonEntity(item) ? "person" : "organization"}" data-viewer-id="${escapeHtml(item.entity_id || "")}">${escapeHtml(item.canonical_name || item.entity_id || "-")}</button></td>
         <td>${Number(item.event_count || item.count || 0).toLocaleString("en-US")}</td>
         <td>${escapeHtml(item.entity_type || "-")}</td>
         <td>${escapeHtml(aliases || "-")}</td>
