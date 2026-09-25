@@ -1406,17 +1406,22 @@ function buildLocationMetadataLayer(items) {
   };
 }
 
-function buildEntityMetadataLayer(items) {
-  if (!items.length) return null;
-  return {
-    dataId: layerId("entity-metadata", items.map(item => item.entity_id).slice(0, 8).join("-")),
-    label: "שכבת ישויות",
-    kind: "entity_metadata",
+function buildEntityMetadataLayers(items) {
+  const people = items.filter(isPersonEntity);
+  const entities = items.filter(item => !isPersonEntity(item));
+  const makeLayer = (layerItems, label, kind) => layerItems.length ? ({
+    dataId: layerId(kind, layerItems.map(item => item.entity_id).slice(0, 8).join("-")),
+    label,
+    kind,
     visible: true,
-    items,
-    capabilities: { table: true, map: true, timeline: false },
+    items: layerItems,
+    capabilities: { table: true, map: kind === "entity_metadata", timeline: false },
     preferredView: "table"
-  };
+  }) : null;
+  return [
+    makeLayer(entities, activeLocaleText("שכבת ישויות", "Entity layer"), "entity_metadata"),
+    makeLayer(people, activeLocaleText("אנשים", "People"), "person_entities")
+  ].filter(Boolean);
 }
 
 function buildResultLayers({ events = [], locations = [], timeline = [], groups = [], locationMetadata = [], entityMetadata = [] } = {}) {
@@ -1426,7 +1431,7 @@ function buildResultLayers({ events = [], locations = [], timeline = [], groups 
     buildTimeAggregationLayer(timeline),
     buildGroupAggregationLayer(groups),
     buildLocationMetadataLayer(locationMetadata),
-    buildEntityMetadataLayer(entityMetadata)
+    ...buildEntityMetadataLayers(entityMetadata)
   ].filter(Boolean);
 }
 
@@ -2889,7 +2894,7 @@ async function openCatalogLayer(layerId, options = {}) {
     const added = addResultLayers({
       sourceId: `catalog:${layerId}:${scopeKey}`,
       sourceLabel: openedLayer.label,
-      preferredView: isCallsLayer(openedLayer) ? "timeline" : openedLayer.kind === "entity_metadata" ? "table" : openedLayer.capabilities.map ? "map" : (openedLayer.kind === "events" ? "table" : (openedLayer.capabilities.timeline ? "timeline" : "table")),
+      preferredView: isCallsLayer(openedLayer) ? "timeline" : ["entity_metadata", "person_entities"].includes(openedLayer.kind) ? "table" : openedLayer.capabilities.map ? "map" : (openedLayer.kind === "events" ? "table" : (openedLayer.capabilities.timeline ? "timeline" : "table")),
       layers: [openedLayer]
     });
     const restoredLayer = added.find(item => item.catalogLayerId === layerId && item.catalogScopeKey === scopeKey)
@@ -2900,7 +2905,7 @@ async function openCatalogLayer(layerId, options = {}) {
     state.layerSearchQuery = "";
     state.layerSearchOpen = false;
     if (!options.silent && isCallsLayer(openedLayer)) activateView("timeline");
-    else if (!options.silent && openedLayer.kind === "entity_metadata") activateView("table");
+    else if (!options.silent && ["entity_metadata", "person_entities"].includes(openedLayer.kind)) activateView("table");
     else if (!options.silent && !openedLayer.capabilities.map) activateView(openedLayer.kind === "events" ? "table" : (openedLayer.capabilities.timeline ? "timeline" : "table"));
     if (!options.silent) showResult(
       "שכבה נפתחה",
@@ -3345,7 +3350,7 @@ function viewerObjects() {
     if (layer.kind === "events") (layer.items || []).forEach(item => objects.set(`record:${item.record_id || item.event_id}`, item));
     if (layer.kind === "evidence") (layer.items || []).forEach(item => objects.set(`evidence:${item.evidence_id}`, item));
     if (layer.kind === "assessments") (layer.items || []).forEach(item => objects.set(`assessment:${item.assessment_id}`, item));
-    if (layer.kind === "entity_metadata") (layer.items || []).forEach(item => {
+    if (["entity_metadata", "person_entities"].includes(layer.kind)) (layer.items || []).forEach(item => {
       const kind = isPersonEntity(item) ? "person" : "organization";
       objects.set(`${kind}:${item.entity_id}`, item);
     });
@@ -3786,6 +3791,38 @@ function initializeEntityLocationMap(item) {
   document.getElementById("entityFitMap")?.addEventListener("click", fit);
 }
 
+function personWorkspaceHtml(item) {
+  const points = entityRecordLocationPoints(item);
+  const records = [...new Set(points.flatMap(point => point.records))];
+  const detail = (label, value, direction = "auto") => value ? `<div><dt>${escapeHtml(label)}</dt><dd dir="${direction}">${escapeHtml(viewerValue(value))}</dd></div>` : "";
+  const mapPanel = points.length
+    ? entityLocationMapHtml(item)
+    : `<section class="call-map-panel person-map-empty"><span class="material-symbols-rounded">location_off</span><strong>${escapeHtml(activeLocaleText("אין מיקומי רשומות מקושרים", "No connected record locations"))}</strong><p>${escapeHtml(activeLocaleText("יוצגו כאן מיקומים לאחר שייווצרו רשומות המקושרות לאדם.", "Connected record locations will appear here when available."))}</p></section>`;
+  const recordLinks = records.length
+    ? records.map(id => `<button type="button" class="object-viewer-open" data-viewer-kind="record" data-viewer-id="${escapeHtml(id)}">${escapeHtml(id)}</button>`).join("")
+    : `<p class="call-empty">${escapeHtml(activeLocaleText("לא נמצאו רשומות מקושרות.", "No connected records."))}</p>`;
+  return `<section class="person-workspace call-workspace" aria-label="${escapeHtml(activeLocaleText("פרופיל אדם", "Person profile"))}">
+    <aside class="call-sidebar person-profile-sidebar">
+      ${personProfileHtml(item)}
+      <dl class="call-detail-list">
+        ${detail(activeLocaleText("גיל", "Age"), item.age_years ? `${item.age_years} ${activeLocaleText("שנים", "years")}` : "")}
+        ${detail(activeLocaleText("לאום", "Nationality"), item.nationality)}
+        ${detail(activeLocaleText("מגורים", "Residence"), item.residence)}
+        ${detail(activeLocaleText("תפקיד", "Role"), item.role)}
+        ${detail(activeLocaleText("שפות", "Languages"), item.languages)}
+        ${detail(activeLocaleText("שירות צבאי", "Military service"), item.military_service)}
+      </dl>
+    </aside>
+    <div class="call-main person-workspace-main">
+      ${mapPanel}
+      <section class="call-conversation person-records-panel">
+        <header class="call-conversation-heading"><span class="material-symbols-rounded">hub</span><h3>${escapeHtml(activeLocaleText("רשומות מקושרות", "Connected records"))}</h3><span>${escapeHtml(records.length.toLocaleString(currentLocaleTag()))}</span></header>
+        <div class="person-record-list">${recordLinks}</div>
+      </section>
+    </div>
+  </section>`;
+}
+
 function evidenceProvenanceHtml(item) {
   const available = viewerObjects();
   const ids = item.source_record_ids || [];
@@ -3848,14 +3885,17 @@ function openObjectViewer(kind, id, trigger = document.activeElement) {
   const docked = kind === "record" && isCellularCallRecord(item) && document.getElementById("timelineView").classList.contains("active");
   setViewerDocked(docked);
   document.querySelectorAll(".call-timeline-entry").forEach(row => row.setAttribute("aria-pressed", String(row.dataset.viewerId === id)));
-  viewer.classList.toggle("is-cellular-viewer", kind === "record" && isCellularCallRecord(item));
+  const cellularCallViewer = kind === "record" && isCellularCallRecord(item);
+  const personViewer = kind === "person";
+  viewer.classList.toggle("is-cellular-viewer", cellularCallViewer);
+  viewer.classList.toggle("is-person-viewer", personViewer);
   const mediaHtml = viewerMediaHtml(item);
   const cellularHtml = kind === "record" ? cellularCallHtml(item) : "";
   const fields = viewerFields(item, kind).map(([key,value]) => `<div class="object-viewer-field"><dt>${escapeHtml(viewerFieldLabel(key))}</dt><dd>${escapeHtml(viewerValue(value))}</dd></div>`).join("");
-  const entityMapHtml = ["person", "organization"].includes(kind) ? entityLocationMapHtml(item) : "";
-  document.getElementById("objectViewerBody").innerHTML = `${mediaHtml}${cellularHtml}${kind === "person" ? personProfileHtml(item) : ""}${entityMapHtml}${["record", "evidence", "assessment"].includes(kind) ? `<p class="object-viewer-summary">${escapeHtml(item.event_summary || item.summary || "-")}</p>` : ""}<dl class="object-viewer-fields">${fields}</dl>${kind === "organization" ? organizationEvidenceHtml(item) : kind === "evidence" ? evidenceProvenanceHtml(item) : kind === "assessment" ? assessmentEvidenceHtml(item) : ""}`;
+  const entityMapHtml = kind === "organization" ? entityLocationMapHtml(item) : "";
+  document.getElementById("objectViewerBody").innerHTML = `${mediaHtml}${cellularHtml}${personViewer ? personWorkspaceHtml(item) : ""}${entityMapHtml}${["record", "evidence", "assessment"].includes(kind) ? `<p class="object-viewer-summary">${escapeHtml(item.event_summary || item.summary || "-")}</p>` : ""}${personViewer ? "" : `<dl class="object-viewer-fields">${fields}</dl>`}${kind === "organization" ? organizationEvidenceHtml(item) : kind === "evidence" ? evidenceProvenanceHtml(item) : kind === "assessment" ? assessmentEvidenceHtml(item) : ""}`;
   viewer.hidden = false;
-  if (kind === "record" && isCellularCallRecord(item)) initializeCellularViewer(item);
+  if (cellularCallViewer) initializeCellularViewer(item);
   if (["person", "organization"].includes(kind)) initializeEntityLocationMap(item);
   if (kind === "record" && isUavVideoRecord(item)) startSimulatedUavStream(item);
   document.getElementById("objectViewerClose").focus();
@@ -6609,6 +6649,28 @@ function renderEvidence() {
         <td>${escapeHtml(item.type || "-")}</td>
         <td>${escapeHtml(item.precision || "-")}</td>
         <td dir="ltr">${escapeHtml(item.location_id || "-")}</td>
+      </tr>`;
+    }).join("") : `<tr><td colspan="7" class="empty-cell">${escapeHtml(activeLocaleText("השכבה מוסתרת או ריקה.", "Layer is hidden or empty."))}</td></tr>`;
+    enhanceResultsTable(activeLayer);
+    return;
+  }
+  if (activeLayer.kind === "person_entities") {
+    head.innerHTML = `<tr><th>${escapeHtml(activeLocaleText("אדם", "Person"))}</th><th>${escapeHtml(activeLocaleText("גיל", "Age"))}</th><th>${escapeHtml(activeLocaleText("לאום", "Nationality"))}</th><th>${escapeHtml(activeLocaleText("מגורים", "Residence"))}</th><th>${escapeHtml(activeLocaleText("שפות", "Languages"))}</th><th>${escapeHtml(activeLocaleText("קשרים", "Connections"))}</th><th>${escapeHtml(activeLocaleText("רשומות", "Records"))}</th></tr>`;
+    body.innerHTML = activeItems.length ? activeItems.map(item => {
+      const name = item.canonical_name || item.entity_id || "-";
+      const initials = String(name).split(/\s+/).map(part => part[0]).join("").slice(0, 2).toUpperCase();
+      const imageUrl = safeMediaUrl(item.image_url);
+      const portrait = imageUrl
+        ? `<img src="${escapeHtml(imageUrl)}" alt="" loading="lazy">`
+        : `<span aria-hidden="true">${escapeHtml(initials)}</span>`;
+      return `<tr class="person-entity-table-row">
+        <td><div class="person-table-identity"><div class="person-table-portrait">${portrait}</div><div><button type="button" class="object-viewer-open" data-viewer-kind="person" data-viewer-id="${escapeHtml(item.entity_id || "")}">${escapeHtml(name)}</button><small dir="ltr">${escapeHtml(item.entity_id || "-")}</small></div></div></td>
+        <td>${escapeHtml(item.age_years || "-")}</td>
+        <td>${escapeHtml(item.nationality || "-")}</td>
+        <td>${escapeHtml(item.residence || "-")}</td>
+        <td>${escapeHtml(viewerValue(item.languages || "-"))}</td>
+        <td>${escapeHtml(viewerValue(item.connections || "-"))}</td>
+        <td>${Number(item.event_count || item.count || 0).toLocaleString(currentLocaleTag())}</td>
       </tr>`;
     }).join("") : `<tr><td colspan="7" class="empty-cell">${escapeHtml(activeLocaleText("השכבה מוסתרת או ריקה.", "Layer is hidden or empty."))}</td></tr>`;
     enhanceResultsTable(activeLayer);

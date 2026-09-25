@@ -86,6 +86,15 @@ class ObjectViewerContractTests(unittest.TestCase):
         self.assertIn('class="entity-record-map-panel call-map-panel"', self.app)
         self.assertIn('id="entityFitMap"', self.app)
 
+    def test_people_use_a_dedicated_table_and_workspace_viewer(self):
+        self.assertIn('function buildEntityMetadataLayers(items)', self.app)
+        self.assertIn('kind: "person_entities"', self.app)
+        self.assertIn('if (activeLayer.kind === "person_entities")', self.app)
+        self.assertIn('function personWorkspaceHtml(item)', self.app)
+        self.assertIn('viewer.classList.toggle("is-person-viewer", personViewer)', self.app)
+        self.assertIn('.person-workspace {', self.styles)
+        self.assertIn('.person-table-identity {', self.styles)
+
 
 if __name__ == "__main__":
     unittest.main()
