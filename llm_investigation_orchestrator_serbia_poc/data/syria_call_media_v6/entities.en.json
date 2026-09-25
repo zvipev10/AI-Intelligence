@@ -18,6 +18,7 @@
       "عمر الخطيب"
     ],
     "entity_type": "person",
+    "image_url": "/assets/demo/syria/persons/omar-al-khatib-candid-v1.png",
     "description": "Fully fictional Arabic male profile for the Syria demonstration dataset. It does not represent a real person.",
     "identity_status": "synthetic profile",
     "given_name": "Omar",

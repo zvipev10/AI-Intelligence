@@ -3709,7 +3709,11 @@ function personProfileHtml(item) {
   const role = item.role || activeLocaleText("לא צוין", "Not specified");
   const summary = item.description || item.biographical_notes || activeLocaleText("לא סופק תקציר לפרופיל זה.", "No profile summary was supplied.");
   const initials = String(item.canonical_name || item.entity_id || "?").split(/\s+/).map(part => part[0]).join("").slice(0, 2).toUpperCase();
-  return `<section class="person-viewer-profile"><div class="person-viewer-avatar" aria-hidden="true">${escapeHtml(initials)}</div><div><p class="person-viewer-status">${escapeHtml(status)}</p><h3>${escapeHtml(role)}</h3><p>${escapeHtml(summary)}</p></div></section>`;
+  const imageUrl = safeMediaUrl(item.image_url);
+  const portrait = imageUrl
+    ? `<img class="person-viewer-portrait" src="${escapeHtml(imageUrl)}" alt="${escapeHtml(activeLocaleText("תצלום התייחסות בדיוני של ", "Fictional reference image of ") + (item.canonical_name || item.entity_id))}">`
+    : `<div class="person-viewer-avatar" aria-hidden="true">${escapeHtml(initials)}</div>`;
+  return `<section class="person-viewer-profile">${portrait}<div><p class="person-viewer-status">${escapeHtml(status)}</p><h3>${escapeHtml(role)}</h3><p>${escapeHtml(summary)}</p></div></section>`;
 }
 
 function evidenceProvenanceHtml(item) {
