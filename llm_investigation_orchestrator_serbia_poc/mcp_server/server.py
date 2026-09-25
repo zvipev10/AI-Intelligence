@@ -575,7 +575,7 @@ def public_event(event: dict[str, Any]) -> dict[str, Any]:
         "audio_url": event.get("audio_url", ""),
         "call_transcript": event.get("call_transcript", ""),
         "call_transcript_en": event.get("call_transcript_en", ""),
-        "synthetic_media": event.get("synthetic_media", ""),
+        "demo_media": event.get("demo_media", ""),
         "video_url": event.get("video_url", ""),
         "image_series": event.get("image_series", ""),
         **adint_fields(event),

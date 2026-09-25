@@ -1,5 +1,5 @@
 {
-  "purpose": "Synthetic realistic-format identifiers; no actual subscriber or carrier allocation is claimed. Imported valid IMEI 353294702931926 is preserved.",
+  "purpose": "Identifier mapping for the Syria scenario. Imported IMEI 353294702931926 is preserved.",
   "mapping": {
     "990000000000001": "353294708462710",
     "990000000000002": "358240116593823",

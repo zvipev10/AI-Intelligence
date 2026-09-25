@@ -4,20 +4,20 @@
     "latitude": 35.0,
     "longitude": 38.5,
     "country": "Syria",
-    "region": "Central Syria (synthetic demo)",
+    "region": "Central Syria",
     "type": "demonstration site",
-    "precision": "synthetic",
-    "locality": "Fictional Site 1"
+    "precision": "scenario estimate",
+    "locality": "Site 1"
   },
   "LOC-SYR-002": {
     "name": "Demo Site 2",
     "latitude": 35.045,
     "longitude": 38.5,
     "country": "Syria",
-    "region": "Central Syria (synthetic demo)",
+    "region": "Central Syria",
     "type": "demonstration site",
-    "precision": "synthetic",
-    "locality": "Fictional Site 2"
+    "precision": "scenario estimate",
+    "locality": "Site 2"
   },
   "LOC-SYR-ADINT-001": {
     "name": "ADINT observation point 001",
@@ -712,111 +712,111 @@
     "latitude": 35.07,
     "longitude": 36.265,
     "country": "Syria",
-    "type": "synthetic cellular route waypoint",
-    "precision": "synthetic scenario coordinate"
+    "type": "cellular route waypoint",
+    "precision": "scenario coordinate"
   },
   "LOC-SYR-COAST-002": {
     "name": "Coastal route stop 02",
     "latitude": 35.082,
     "longitude": 36.232,
     "country": "Syria",
-    "type": "synthetic cellular route waypoint",
-    "precision": "synthetic scenario coordinate"
+    "type": "cellular route waypoint",
+    "precision": "scenario coordinate"
   },
   "LOC-SYR-COAST-003": {
     "name": "Coastal route stop 03",
     "latitude": 35.096,
     "longitude": 36.195,
     "country": "Syria",
-    "type": "synthetic cellular route waypoint",
-    "precision": "synthetic scenario coordinate"
+    "type": "cellular route waypoint",
+    "precision": "scenario coordinate"
   },
   "LOC-SYR-COAST-004": {
     "name": "Coastal route stop 04",
     "latitude": 35.116,
     "longitude": 36.155,
     "country": "Syria",
-    "type": "synthetic cellular route waypoint",
-    "precision": "synthetic scenario coordinate"
+    "type": "cellular route waypoint",
+    "precision": "scenario coordinate"
   },
   "LOC-SYR-COAST-005": {
     "name": "Coastal route stop 05",
     "latitude": 35.133,
     "longitude": 36.117,
     "country": "Syria",
-    "type": "synthetic cellular route waypoint",
-    "precision": "synthetic scenario coordinate"
+    "type": "cellular route waypoint",
+    "precision": "scenario coordinate"
   },
   "LOC-SYR-COAST-006": {
     "name": "Coastal route stop 06",
     "latitude": 35.151,
     "longitude": 36.078,
     "country": "Syria",
-    "type": "synthetic cellular route waypoint",
-    "precision": "synthetic scenario coordinate"
+    "type": "cellular route waypoint",
+    "precision": "scenario coordinate"
   },
   "LOC-SYR-COAST-007": {
     "name": "Coastal route stop 07",
     "latitude": 35.165,
     "longitude": 36.044,
     "country": "Syria",
-    "type": "synthetic cellular route waypoint",
-    "precision": "synthetic scenario coordinate"
+    "type": "cellular route waypoint",
+    "precision": "scenario coordinate"
   },
   "LOC-SYR-COAST-008": {
     "name": "Coastal route stop 08",
     "latitude": 35.176,
     "longitude": 36.013,
     "country": "Syria",
-    "type": "synthetic cellular route waypoint",
-    "precision": "synthetic scenario coordinate"
+    "type": "cellular route waypoint",
+    "precision": "scenario coordinate"
   },
   "LOC-SYR-COAST-009": {
     "name": "Coastal route stop 09",
     "latitude": 35.181,
     "longitude": 35.987,
     "country": "Syria",
-    "type": "synthetic cellular route waypoint",
-    "precision": "synthetic scenario coordinate"
+    "type": "cellular route waypoint",
+    "precision": "scenario coordinate"
   },
   "LOC-SYR-COAST-010": {
     "name": "Coastal route stop 10",
     "latitude": 35.182,
     "longitude": 35.96,
     "country": "Syria",
-    "type": "synthetic cellular route waypoint",
-    "precision": "synthetic scenario coordinate"
+    "type": "cellular route waypoint",
+    "precision": "scenario coordinate"
   },
   "LOC-SYR-COAST-011": {
     "name": "Baniyas seafront demo endpoint",
     "latitude": 35.18222,
     "longitude": 35.94028,
     "country": "Syria",
-    "type": "synthetic cellular route waypoint",
-    "precision": "synthetic scenario coordinate"
+    "type": "cellular route waypoint",
+    "precision": "scenario coordinate"
   },
   "LOC-SYR-CALL-REMOTE-001": {
     "name": "Remote caller demo location",
     "latitude": 35.12,
     "longitude": 36.03,
     "country": "Syria",
-    "type": "synthetic cellular call endpoint",
-    "precision": "synthetic scenario coordinate"
+    "type": "cellular call endpoint",
+    "precision": "scenario coordinate"
   },
   "LOC-SYR-CELL-START-001": {
     "name": "Cellular route start near Satellite site 1",
     "latitude": 35.065751931701584,
     "longitude": 36.28815755309795,
     "country": "Syria",
-    "type": "synthetic cellular route waypoint",
-    "precision": "synthetic scenario coordinate"
+    "type": "cellular route waypoint",
+    "precision": "scenario coordinate"
   },
   "LOC-SYR-CALL-NORTH-001": {
     "name": "Northern remote caller demo location",
     "latitude": 36.6,
     "longitude": 37.05,
     "country": "Syria",
-    "type": "synthetic cellular call endpoint",
-    "precision": "synthetic scenario coordinate"
+    "type": "cellular call endpoint",
+    "precision": "scenario coordinate"
   }
 }

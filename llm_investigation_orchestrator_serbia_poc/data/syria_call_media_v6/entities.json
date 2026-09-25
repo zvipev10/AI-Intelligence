@@ -7,7 +7,7 @@
       "שיירה"
     ],
     "entity_type": "vehicle convoy",
-    "description": "Synthetic convoy entity shared by all four demonstration records."
+    "description": "Convoy entity shared by four scenario records."
   },
   {
     "entity_id": "ENT-SYR-PERSON-001",
@@ -19,21 +19,21 @@
     ],
     "entity_type": "person",
     "image_url": "/assets/demo/syria/persons/omar-al-khatib-candid-v1.png",
-    "description": "Fully fictional Arabic male profile for the Syria demonstration dataset. It does not represent a real person.",
-    "identity_status": "synthetic profile",
+    "description": "Arabic male profile in the Syria scenario.",
+    "identity_status": "profiled individual",
     "given_name": "Omar",
     "family_name": "Al-Khatib",
     "gender": "male",
     "age_years": 36,
     "date_of_birth": "1990-06-12",
-    "place_of_birth": "Homs, Syria (synthetic)",
+    "place_of_birth": "Homs, Syria",
     "nationality": "Syrian",
     "ethnicity": "Arab",
     "occupation": "commercial truck driver",
-    "residence": "Baniyas, Syria (synthetic)",
+    "residence": "Baniyas, Syria",
     "role": "independent logistics contractor",
     "affiliations": [
-      "Independent freight work (synthetic)"
+      "Independent freight work"
     ],
     "languages": [
       "Arabic (native)",
@@ -41,19 +41,19 @@
       "English (basic)"
     ],
     "previous_residences": [
-      "Tehran, Iran (synthetic; 2014–2018)",
-      "Homs, Syria (synthetic; 1990–2014)"
+      "Tehran, Iran (2014–2018)",
+      "Homs, Syria (1990–2014)"
     ],
     "connections": [
-      "Iran — previous commercial logistics work and personal ties (synthetic)"
+      "Iran — previous commercial logistics work and personal ties"
     ],
-    "military_service": "Completed mandatory service in a fictional Syrian logistics unit (2010–2012).",
+    "military_service": "Completed mandatory service in a Syrian logistics unit (2010–2012).",
     "associated_entity_ids": [],
     "identifiers": {
-      "profile_reference": "SYR-DEMO-PER-001",
-      "driver_permit_reference": "DEMO-SYR-DL-10428"
+      "profile_reference": "SYR-PER-001",
+      "driver_permit_reference": "SYR-DL-10428"
     },
-    "biographical_notes": "Fictional profile created solely to demonstrate the Person entity viewer. All identifying, biographical, military, and Iran-related details are invented."
+    "biographical_notes": "Profile prepared for the Syria scenario."
   },
   {
     "entity_id": "ENT-SYR-DEVICE-fbb49f825c12d583",
