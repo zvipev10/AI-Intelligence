@@ -277,13 +277,7 @@ def scoped_entity_presentation(entity_id: str) -> dict[str, Any] | None:
     events = [event for event in visible_events() if event.get("entity_id") == entity_id]
     if not events:
         return None
-    cross_source_request = any(token in f"{question} {context}".lower() for token in (
-        "connect", "link", "correlat", "across source", "different source", "sources and fields",
-    ))
-    if cross_source_request:
-        allowed = [*allowed, "schema_discovery", "correlation_discovery"]
-
-    result = {
+    return {
         **base,
         "event_count": len(events),
         "top_locations": [
@@ -1169,7 +1163,24 @@ def classify_question_intent(arguments: dict[str, Any]) -> dict[str, Any]:
         view_hint = fallback["recommended_view_hint"]
         source = "deterministic_fallback"
 
-    return {
+    cross_source_request = any(token in f"{question} {context}".lower() for token in (
+        "connect", "link", "correlat", "across source", "different source", "sources and fields",
+    ))
+    if cross_source_request:
+        # A linking question starts with corpus and field discovery, rather
+        # than relying on model memory of the active data package.
+        allowed = list(dict.fromkeys([
+            *allowed,
+            "schema_discovery",
+            "correlation_discovery",
+        ]))
+        recommended_mode = "investigation"
+        tool_budget = max(tool_budget, 30)
+        blocked = [family for family in blocked if family not in {
+            "schema_discovery", "correlation_discovery",
+        }]
+
+    result = {
         "question": question,
         "intent": intent,
         "recommended_mode": recommended_mode,
@@ -1185,7 +1196,7 @@ def classify_question_intent(arguments: dict[str, Any]) -> dict[str, Any]:
     if cross_source_request:
         result["cross_source_protocol"] = {
             "required_first_tools": ["describe_active_data", "discover_record_correlations"],
-            "instruction": "Before following record-specific leads, discover the active sources/fields and exact cross-source correlation groups."
+            "instruction": "Before following record-specific leads, call both required tools. Use their returned source list, fields, and exact correlation groups to select the next joins; do not assume a source schema."
         }
     return result
 
