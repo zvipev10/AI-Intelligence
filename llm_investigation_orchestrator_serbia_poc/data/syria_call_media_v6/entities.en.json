@@ -10,6 +10,26 @@
     "description": "Synthetic convoy entity shared by all four demonstration records."
   },
   {
+    "entity_id": "ENT-SYR-PERSON-001",
+    "canonical_name": "Synthetic Person 001",
+    "aliases": [
+      "Person 001",
+      "Subject Alpha"
+    ],
+    "entity_type": "person",
+    "description": "Synthetic person profile for demonstrating person-entity presentation. It is not a real individual.",
+    "identity_status": "unattributed",
+    "role": "person of interest",
+    "affiliations": [
+      "unknown"
+    ],
+    "nationality": "unknown",
+    "languages": [],
+    "associated_entity_ids": [],
+    "identifiers": {},
+    "biographical_notes": "No identity, demographic, or operational attribution is asserted by this synthetic profile."
+  },
+  {
     "entity_id": "ENT-SYR-DEVICE-fbb49f825c12d583",
     "canonical_name": "a48aba99-9f79-5ddf-b1e4-74d774925315",
     "entity_type": "device",

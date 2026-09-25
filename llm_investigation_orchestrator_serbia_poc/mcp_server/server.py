@@ -389,14 +389,16 @@ def load_entity_db() -> dict[str, dict[str, Any]]:
     return {item["entity_id"]: item for item in loaded if item.get("entity_id")}
 
 
+ENTITY_PROFILE_FIELDS = (
+    "description", "identity_status", "role", "affiliations", "nationality",
+    "languages", "associated_entity_ids", "identifiers", "biographical_notes",
+)
+
+
 def build_entity_layers() -> dict[str, dict[str, Any]]:
     entity_db = load_entity_db()
-    entity_ids = sorted({event.get("entity_id", "") for event in EVENTS if event.get("entity_id")})
     presentations: dict[str, dict[str, Any]] = {}
-    for entity_id in entity_ids:
-        base = entity_db.get(entity_id)
-        if not base:
-            raise ValueError(f"Missing entity_id in entities DB: {entity_id}")
+    for entity_id, base in sorted(entity_db.items()):
         events = [event for event in EVENTS if event.get("entity_id") == entity_id]
         top_locations = []
         for location_id, count in Counter(event["location_id"] for event in events).most_common(12):
@@ -409,7 +411,7 @@ def build_entity_layers() -> dict[str, dict[str, Any]]:
                 "longitude": location.get("longitude"),
                 "count": count,
             })
-        presentations[entity_id] = {
+        presentation = {
             "entity_id": entity_id,
             "canonical_name": base.get("canonical_name") or entity_id,
             "entity_type": base.get("entity_type") or "גורם מדווח",
@@ -422,6 +424,11 @@ def build_entity_layers() -> dict[str, dict[str, Any]]:
             "certainty_breakdown": dict(Counter(event.get("certainty_level") or "לא ידוע" for event in events)),
             "reliability_breakdown": dict(Counter(event.get("source_reliability_label") or event.get("source_reliability") or "לא ידוע" for event in events)),
         }
+        presentation.update({
+            field: base[field] for field in ENTITY_PROFILE_FIELDS
+            if base.get(field) not in (None, "", [], {})
+        })
+        presentations[entity_id] = presentation
     return presentations
 
 

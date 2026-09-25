@@ -3343,7 +3343,10 @@ function viewerObjects() {
     if (layer.kind === "events") (layer.items || []).forEach(item => objects.set(`record:${item.record_id || item.event_id}`, item));
     if (layer.kind === "evidence") (layer.items || []).forEach(item => objects.set(`evidence:${item.evidence_id}`, item));
     if (layer.kind === "assessments") (layer.items || []).forEach(item => objects.set(`assessment:${item.assessment_id}`, item));
-    if (layer.kind === "entity_metadata") (layer.items || []).forEach(item => objects.set(`organization:${item.entity_id}`, item));
+    if (layer.kind === "entity_metadata") (layer.items || []).forEach(item => {
+      const kind = isPersonEntity(item) ? "person" : "organization";
+      objects.set(`${kind}:${item.entity_id}`, item);
+    });
   });
   return objects;
 }
@@ -3552,6 +3555,10 @@ function isIpdrRecord(item) {
   return String(item?.source_type || "").trim().toUpperCase() === "IPDR";
 }
 
+function isPersonEntity(item) {
+  return String(item?.entity_type || "").trim().toLowerCase() === "person";
+}
+
 function viewerFields(item, kind) {
   if (kind === "record" && isCellularGeolocationRecord(item)) return ["event_id", "timestamp_utc", "imei", "sim", "location_name"].map(key => [key, item[key] || (key === "location_name" ? item.location_id : "") || "—"]);
   const hidden = new Set(["event_summary", "canonical_name", "media", "image_series", "video_url", "audio_url", "image_url", "raw_data_references", "call_started_at_utc", "call_duration_seconds", "side_a_imei", "side_a_number", "side_a_location_id", "side_a_location_name", "side_b_imei", "side_b_number", "side_b_location_id", "side_b_location_name", "call_transcript", "call_transcript_en", "synthetic_media"]);
@@ -3562,7 +3569,9 @@ function viewerFields(item, kind) {
   if (kind === "record" && isIpdrRecord(item) && item.source_record_id) {
     return IPDR_SOURCE_FIELDS.map(key => [key, item[key] == null || item[key] === "" ? "—" : item[key]]);
   }
-  const preferred = kind === "record"
+  const preferred = kind === "person"
+    ? ["identity_status", "role", "affiliations", "nationality", "languages", "associated_entity_ids", "identifiers", "aliases", "event_count", "top_locations", "top_sources", "biographical_notes"]
+    : kind === "record"
     ? ["timestamp_utc", "timestamp_basis", "source_type", "collection_family", "source_reliability_label", "certainty_level", "entity_name", "location_name", "advertising_id", "ip_address", "imei", "session_start_utc", "session_end_utc", "source_port", "protocol", "bytes_up", "bytes_down", "location_accuracy_m", "call_id", "observation_id", "mission_id", "video_segment_id"]
     : kind === "evidence"
       ? ["evidence_status", "claim_type", "confidence", "object_class", "subject_entity_ids", "location_ids", "valid_from", "valid_to", "source_groups", "source_record_ids", "quantity", "movement", "created_by_processor"]
@@ -3622,7 +3631,15 @@ function viewerFieldLabel(key) {
     mission_id: ["מזהה משימה", "Mission ID"],
     video_segment_id: ["מזהה מקטע", "Segment ID"],
     call_id: ["מזהה שיחה", "Call ID"],
-    entity_type: ["סוג ארגון", "Organization type"],
+    entity_type: ["סוג ישות", "Entity type"],
+    identity_status: ["מצב זיהוי", "Identity status"],
+    role: ["תפקיד", "Role"],
+    affiliations: ["שיוכים", "Affiliations"],
+    nationality: ["לאום", "Nationality"],
+    languages: ["שפות", "Languages"],
+    associated_entity_ids: ["ישויות קשורות", "Associated entities"],
+    identifiers: ["מזהים", "Identifiers"],
+    biographical_notes: ["הערות ביוגרפיות", "Biographical notes"],
     aliases: ["שמות נוספים", "Aliases"],
     event_count: ["מספר רשומות", "Record count"],
     top_locations: ["מיקומים מובילים", "Top locations"],
@@ -3675,6 +3692,14 @@ function organizationEvidenceHtml(item) {
   return `<section class="object-viewer-evidence"><h3>${escapeHtml(activeLocaleText("ראיות לפי נוכחות במיקום", "Evidence by location presence"))}</h3><ul>${rows}</ul></section>`;
 }
 
+function personProfileHtml(item) {
+  const status = item.identity_status || activeLocaleText("לא צוין", "Not specified");
+  const role = item.role || activeLocaleText("לא צוין", "Not specified");
+  const summary = item.description || item.biographical_notes || activeLocaleText("לא סופק תקציר לפרופיל זה.", "No profile summary was supplied.");
+  const initials = String(item.canonical_name || item.entity_id || "?").split(/\s+/).map(part => part[0]).join("").slice(0, 2).toUpperCase();
+  return `<section class="person-viewer-profile"><div class="person-viewer-avatar" aria-hidden="true">${escapeHtml(initials)}</div><div><p class="person-viewer-status">${escapeHtml(status)}</p><h3>${escapeHtml(role)}</h3><p>${escapeHtml(summary)}</p></div></section>`;
+}
+
 function evidenceProvenanceHtml(item) {
   const available = viewerObjects();
   const ids = item.source_record_ids || [];
@@ -3717,7 +3742,7 @@ function closeObjectViewer() {
 }
 
 function openObjectViewer(kind, id, trigger = document.activeElement) {
-  if (!['record', 'organization', 'evidence', 'assessment'].includes(kind)) return false;
+  if (!['record', 'organization', 'person', 'evidence', 'assessment'].includes(kind)) return false;
   const item = viewerObjects().get(`${kind}:${id}`);
   if (!item) return false;
   objectViewerReturnFocus = trigger;
@@ -3727,7 +3752,7 @@ function openObjectViewer(kind, id, trigger = document.activeElement) {
     : kind === "evidence" ? (item.object_class || item.claim_type || id)
     : kind === "assessment" ? (item.title || id)
     : (item.canonical_name || id);
-  document.getElementById("objectViewerKind").textContent = kind === "record" ? activeLocaleText("רשומה גולמית", "Raw record") : kind === "evidence" ? activeLocaleText("אובייקט ראיה", "Evidence object") : kind === "assessment" ? activeLocaleText("הערכת אויב", "Enemy assessment") : activeLocaleText("ארגון", "Organization");
+  document.getElementById("objectViewerKind").textContent = kind === "record" ? activeLocaleText("רשומה גולמית", "Raw record") : kind === "person" ? activeLocaleText("אדם", "Person") : kind === "evidence" ? activeLocaleText("אובייקט ראיה", "Evidence object") : kind === "assessment" ? activeLocaleText("הערכת אויב", "Enemy assessment") : activeLocaleText("ישות", "Entity");
   document.getElementById("objectViewerTitle").textContent = title;
   document.getElementById("objectViewerId").textContent = id;
   viewer.querySelectorAll("video,audio").forEach(media => { media.pause(); media.removeAttribute("src"); media.load(); });
@@ -3739,7 +3764,7 @@ function openObjectViewer(kind, id, trigger = document.activeElement) {
   const mediaHtml = viewerMediaHtml(item);
   const cellularHtml = kind === "record" ? cellularCallHtml(item) : "";
   const fields = viewerFields(item, kind).map(([key,value]) => `<div class="object-viewer-field"><dt>${escapeHtml(viewerFieldLabel(key))}</dt><dd>${escapeHtml(viewerValue(value))}</dd></div>`).join("");
-  document.getElementById("objectViewerBody").innerHTML = `${mediaHtml}${cellularHtml}${["record", "evidence", "assessment"].includes(kind) ? `<p class="object-viewer-summary">${escapeHtml(item.event_summary || item.summary || "-")}</p>` : ""}<dl class="object-viewer-fields">${fields}</dl>${kind === "organization" ? organizationEvidenceHtml(item) : kind === "evidence" ? evidenceProvenanceHtml(item) : kind === "assessment" ? assessmentEvidenceHtml(item) : ""}`;
+  document.getElementById("objectViewerBody").innerHTML = `${mediaHtml}${cellularHtml}${kind === "person" ? personProfileHtml(item) : ""}${["record", "evidence", "assessment"].includes(kind) ? `<p class="object-viewer-summary">${escapeHtml(item.event_summary || item.summary || "-")}</p>` : ""}<dl class="object-viewer-fields">${fields}</dl>${kind === "organization" ? organizationEvidenceHtml(item) : kind === "evidence" ? evidenceProvenanceHtml(item) : kind === "assessment" ? assessmentEvidenceHtml(item) : ""}`;
   viewer.hidden = false;
   if (kind === "record" && isCellularCallRecord(item)) initializeCellularViewer(item);
   if (kind === "record" && isUavVideoRecord(item)) startSimulatedUavStream(item);
@@ -3750,7 +3775,11 @@ function openObjectViewer(kind, id, trigger = document.activeElement) {
 function appendAssistantObjectLinks(article) {
   const text = article.textContent || "";
   const ids = [...new Set(text.match(/\b(?:REC-(?:V2-)?\d{6}|ENT-[A-Z0-9-]+)\b/g) || [])];
-  const available = ids.map(id => [id.startsWith("REC-") ? "record" : "organization", id]).filter(([kind,id]) => viewerObjects().has(`${kind}:${id}`));
+  const available = ids.map(id => {
+    if (id.startsWith("REC-")) return ["record", id];
+    const entity = viewerObjects().get(`person:${id}`);
+    return [entity ? "person" : "organization", id];
+  }).filter(([kind,id]) => viewerObjects().has(`${kind}:${id}`));
   if (!available.length) return;
   const links = document.createElement("div"); links.className = "assistant-object-links";
   links.innerHTML = available.map(([kind,id]) => `<button type="button" class="object-viewer-open" data-viewer-kind="${kind}" data-viewer-id="${escapeHtml(id)}">${escapeHtml(activeLocaleText("פתח", "Open"))} ${escapeHtml(id)}</button>`).join("");

@@ -381,6 +381,12 @@ def load_ui_entity_db(locale: str = "he") -> dict[str, dict[str, Any]]:
     return {item["entity_id"]: item for item in loaded if item.get("entity_id")}
 
 
+ENTITY_PROFILE_FIELDS = (
+    "description", "identity_status", "role", "affiliations", "nationality",
+    "languages", "associated_entity_ids", "identifiers", "biographical_notes",
+)
+
+
 PRESENCE_CLAIM_TERMS = (
     "נוכחות", "תנועה", "פעילות", "היערכות", "פריסה", "תגבור",
     "presence", "movement", "activity", "deployment", "operating", "reinforcement",
@@ -395,10 +401,8 @@ def event_supports_presence(event: dict[str, Any]) -> bool:
 def build_ui_entity_layers(events: list[dict[str, Any]], locale: str = "he") -> dict[str, dict[str, Any]]:
     entity_db = load_ui_entity_db(locale)
     locations_db = load_locations_db(locale)
-    entity_ids = sorted({event.get("entity_id", "") for event in events if event.get("entity_id")})
     presentations: dict[str, dict[str, Any]] = {}
-    for entity_id in entity_ids:
-        base = entity_db.get(entity_id, {})
+    for entity_id, base in sorted(entity_db.items()):
         entity_events = [event for event in events if event.get("entity_id") == entity_id]
         top_locations = []
         for location_id, count in Counter(event.get("location_id") for event in entity_events if event.get("location_id")).most_common(12):
@@ -424,7 +428,7 @@ def build_ui_entity_layers(events: list[dict[str, Any]], locale: str = "he") -> 
                 "latest_timestamp_utc": max((str(event.get("timestamp_utc") or "") for event in presence_events), default=""),
                 "evidence_record_ids": [event.get("record_id") or event.get("event_id") for event in presence_events[:25]],
             })
-        presentations[entity_id] = {
+        presentation = {
             "entity_id": entity_id,
             "canonical_name": base.get("canonical_name") or entity_id,
             "entity_type": base.get("entity_type") or "גורם מדווח",
@@ -437,6 +441,11 @@ def build_ui_entity_layers(events: list[dict[str, Any]], locale: str = "he") -> 
             "certainty_breakdown": dict(Counter(event.get("certainty_level") or "לא ידוע" for event in entity_events)),
             "reliability_breakdown": dict(Counter(event.get("source_reliability_label") or event.get("source_reliability") or "לא ידוע" for event in entity_events)),
         }
+        presentation.update({
+            field: base[field] for field in ENTITY_PROFILE_FIELDS
+            if base.get(field) not in (None, "", [], {})
+        })
+        presentations[entity_id] = presentation
     return presentations
 
 
