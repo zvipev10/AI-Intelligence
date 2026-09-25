@@ -434,7 +434,10 @@ def build_ui_entity_layers(events: list[dict[str, Any]], locale: str = "he") -> 
             "entity_type": base.get("entity_type") or "גורם מדווח",
             "confidence": base.get("confidence") or "entity_id גלוי ברשומה",
             "basis": base.get("basis") or "ישות מתוך serbia_kosovo_entities.json לפי entity_id ברשומה",
-            "aliases": list(dict.fromkeys(base.get("aliases") or [base.get("canonical_name") or entity_id])),
+            "aliases": list(dict.fromkeys([
+                base.get("canonical_name") or entity_id,
+                *(base.get("aliases") or []),
+            ])),
             "event_count": len(entity_events),
             "top_locations": top_locations,
             "top_sources": [{"source_type": key, "count": count} for key, count in Counter(event.get("source_type") or "לא ידוע" for event in entity_events).most_common(10)],

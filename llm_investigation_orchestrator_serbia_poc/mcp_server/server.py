@@ -417,7 +417,10 @@ def build_entity_layers() -> dict[str, dict[str, Any]]:
             "entity_type": base.get("entity_type") or "גורם מדווח",
             "confidence": base.get("confidence") or "entity_id גלוי ברשומה",
             "basis": base.get("basis") or "ישות מתוך serbia_kosovo_entities.json לפי entity_id ברשומה",
-            "aliases": list(dict.fromkeys(base.get("aliases") or [base.get("canonical_name") or entity_id])),
+            "aliases": list(dict.fromkeys([
+                base.get("canonical_name") or entity_id,
+                *(base.get("aliases") or []),
+            ])),
             "event_count": len(events),
             "top_locations": top_locations,
             "top_sources": [{"source_type": key, "count": count} for key, count in Counter(event["source_type"] for event in events).most_common(10)],
