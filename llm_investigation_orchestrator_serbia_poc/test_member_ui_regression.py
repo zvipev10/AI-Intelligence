@@ -86,7 +86,7 @@ class MemberUiRegressionTests(unittest.TestCase):
         self.assertIn('function roleWorkspaceLayers(layers = state.layers)', self.app)
         self.assertIn('return roleWorkspaceLayers().filter(layer => layer.visible', self.app)
         self.assertIn('.filter(layer => roleWorkspaceAllowsCatalogLayer(layer.id))', self.app)
-        self.assertIn('if (!options.roleDefault && !roleWorkspaceAllowsCatalogLayer(layerId)) return null;', self.app)
+        self.assertIn('if (!options.roleDefault && !options.memoryRestore && !roleWorkspaceAllowsCatalogLayer(layerId)) return null;', self.app)
 
     def _superseded_test_at_mention_autocomplete_is_wired(self):
         self.assertIn("function activeMentionRange(textarea)", self.app)

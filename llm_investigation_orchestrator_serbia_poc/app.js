@@ -2017,7 +2017,7 @@ function currentPresentationView() {
 async function openSavedMemoryLayer(item, trigger) {
   if (!item) return;
   let layer = state.layers.find(candidate => candidate.investigation_memory_layer_id === item.id);
-  if (!layer && item.catalog_layer_id) layer = await openCatalogLayer(item.catalog_layer_id, { silent: true, savedLayer: item });
+  if (!layer && item.catalog_layer_id) layer = await openCatalogLayer(item.catalog_layer_id, { silent: true, savedLayer: item, memoryRestore: true });
   if (!layer) return;
   applySavedFiltersToLayer(layer, item);
   layer.visible = true;
@@ -2182,7 +2182,8 @@ async function restoreMemorySavedLayers(memoryPayload, token) {
     }
     const openedLayer = await openCatalogLayer(catalogLayerId, {
       silent: true,
-      savedLayer
+      savedLayer,
+      memoryRestore: true
     });
     restoredMemoryLayers.push({
       ...savedLayer,
@@ -3098,7 +3099,7 @@ async function loadLayerCatalog() {
 }
 
 async function openCatalogLayer(layerId, options = {}) {
-  if (!options.roleDefault && !roleWorkspaceAllowsCatalogLayer(layerId)) return null;
+  if (!options.roleDefault && !options.memoryRestore && !roleWorkspaceAllowsCatalogLayer(layerId)) return null;
   const layer = state.layerCatalog.find(item => item.id === layerId);
   const filters = options.filters || options.savedLayer?.catalog_filters || {};
   const scopeKey = JSON.stringify(Object.fromEntries(Object.keys(filters).sort().map(key =>
