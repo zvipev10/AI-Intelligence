@@ -17,3 +17,7 @@
 ## Compatibility
 
 Older saved layers have no captured presentation value and fall back to their existing source default. No data migration is needed.
+
+## Deployment verification
+
+Deployed to the active Syria server on 2026-09-27. `serbia-poc-ui.service` is active; `/api/status` reports `scenario_id: syria` and `dataset_version: call-media-v6`. The served assets reference `styles.css?v=160`, `demo_bootstrap.js?v=227`, and `app.js?v=227`. The scoped pre-deployment asset backup remains on the VM.
