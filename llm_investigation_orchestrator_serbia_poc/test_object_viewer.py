@@ -18,6 +18,15 @@ class ObjectViewerContractTests(unittest.TestCase):
         self.assertIn('aria-modal="true"', self.index)
         self.assertIn('aria-labelledby="objectViewerTitle"', self.index)
 
+    def test_memory_action_is_in_the_viewer_header_next_to_the_record_title(self):
+        header = self.index.split('<header class="object-viewer-header">', 1)[1].split("</header>", 1)[0]
+        self.assertIn('id="objectMemoryAction"', header)
+        self.assertIn('class="object-viewer-title-actions"', header)
+        self.assertNotIn('class="object-memory-action" data-memory-object-kind=', self.app)
+        self.assertIn('objectMemoryAction.dataset.memoryObjectKind = kind;', self.app)
+        self.assertIn('objectMemoryAction.dataset.memoryObjectId = id;', self.app)
+        self.assertIn('.object-memory-header-action {', self.styles)
+
     def test_records_organizations_and_evidence_are_supported(self):
         self.assertIn("if (!['record', 'organization', 'person', 'evidence', 'assessment'].includes(kind)) return false;", self.app)
         self.assertIn('data-viewer-kind="evidence"', self.app)

@@ -4162,6 +4162,16 @@ function openObjectViewer(kind, id, trigger = document.activeElement) {
   document.getElementById("objectViewerKind").textContent = kind === "record" ? activeLocaleText("רשומה גולמית", "Raw record") : kind === "person" ? activeLocaleText("אדם", "Person") : kind === "evidence" ? activeLocaleText("אובייקט ראיה", "Evidence object") : kind === "assessment" ? activeLocaleText("הערכת אויב", "Enemy assessment") : activeLocaleText("ישות", "Entity");
   document.getElementById("objectViewerTitle").textContent = title;
   document.getElementById("objectViewerId").textContent = id;
+  const objectMemoryAction = document.getElementById("objectMemoryAction");
+  if (objectMemoryAction) {
+    const memoryLabel = activeLocaleText("שמור לזיכרון", "Save to memory");
+    objectMemoryAction.dataset.memoryObjectKind = kind;
+    objectMemoryAction.dataset.memoryObjectId = id;
+    objectMemoryAction.title = memoryLabel;
+    objectMemoryAction.setAttribute("aria-label", memoryLabel);
+    objectMemoryAction.querySelector(".object-memory-action-label").textContent = memoryLabel;
+    objectMemoryAction.hidden = false;
+  }
   viewer.querySelectorAll("video,audio").forEach(media => { media.pause(); media.removeAttribute("src"); media.load(); });
   cellularViewerMap?.remove(); cellularViewerMap = null;
   entityViewerMap?.remove(); entityViewerMap = null;
@@ -4182,7 +4192,7 @@ function openObjectViewer(kind, id, trigger = document.activeElement) {
   const cellularHtml = kind === "record" ? cellularCallHtml(item) : "";
   const fields = viewerFields(item, kind).map(([key,value]) => `<div class="object-viewer-field"><dt>${escapeHtml(viewerFieldLabel(key))}</dt><dd>${escapeHtml(viewerValue(value))}</dd></div>`).join("");
   const entityMapHtml = kind === "organization" ? entityLocationMapHtml(item) : "";
-  document.getElementById("objectViewerBody").innerHTML = `${mediaHtml}${cellularHtml}${personViewer ? personWorkspaceHtml(item) : ""}${entityMapHtml}${["record", "evidence", "assessment"].includes(kind) ? `<p class="object-viewer-summary">${escapeHtml(item.event_summary || item.summary || "-")}</p>` : ""}<button type="button" class="object-memory-action" data-memory-object-kind="${escapeHtml(kind)}" data-memory-object-id="${escapeHtml(id)}">${escapeHtml(activeLocaleText("שמור לזיכרון", "Save to memory"))}</button>${personViewer ? "" : `<dl class="object-viewer-fields">${fields}</dl>`}${kind === "organization" ? organizationEvidenceHtml(item) : kind === "evidence" ? evidenceProvenanceHtml(item) : kind === "assessment" ? assessmentEvidenceHtml(item) : ""}`;
+  document.getElementById("objectViewerBody").innerHTML = `${mediaHtml}${cellularHtml}${personViewer ? personWorkspaceHtml(item) : ""}${entityMapHtml}${["record", "evidence", "assessment"].includes(kind) ? `<p class="object-viewer-summary">${escapeHtml(item.event_summary || item.summary || "-")}</p>` : ""}${personViewer ? "" : `<dl class="object-viewer-fields">${fields}</dl>`}${kind === "organization" ? organizationEvidenceHtml(item) : kind === "evidence" ? evidenceProvenanceHtml(item) : kind === "assessment" ? assessmentEvidenceHtml(item) : ""}`;
   viewer.hidden = false;
   if (cellularCallViewer) initializeCellularViewer(item);
   if (["person", "organization"].includes(kind)) initializeEntityLocationMap(item);

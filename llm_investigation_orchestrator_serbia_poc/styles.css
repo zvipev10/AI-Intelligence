@@ -694,6 +694,11 @@ th { position: sticky; top: 0; z-index: 1; background: #202530; }
 [dir="rtl"] .object-viewer { animation-name: object-viewer-enter-rtl; }
 @keyframes object-viewer-enter-rtl { from { opacity: .65; transform: translateX(-18px); } }
 .object-viewer-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; padding: 18px 20px 16px; border-bottom: 1px solid var(--line); background: rgba(255,255,255,.015); }
+.object-viewer-title-actions { min-width: 0; flex: 1; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; }
+.object-viewer-title-actions > div { min-width: 0; }
+.object-memory-header-action { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 6px; margin: 0; padding: 5px 8px; border: 1px solid rgba(88,166,255,.42); border-radius: 999px; background: rgba(88,166,255,.08); color: var(--blue); font-size: 11px; font-weight: 800; white-space: nowrap; }
+.object-memory-header-action:hover,.object-memory-header-action:focus-visible { border-color: var(--blue); background: rgba(88,166,255,.18); color: #fff; outline: none; }
+.object-memory-header-action .memory-bookmark-icon { width: 12px; height: 12px; }
 .object-viewer-header h2 { margin: 4px 0 6px; font-size: 18px; line-height: 1.35; }
 .object-viewer-header code { color: var(--muted); font-size: 12px; }
 .object-viewer-body { overflow: auto; padding: 18px 20px 28px; scrollbar-gutter: stable; }
