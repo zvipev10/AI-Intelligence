@@ -23,9 +23,10 @@ const interactiveMap={
   project:p=>({x:p[0],y:p[1]}), isStyleLoaded:()=>true,
   getSource:()=>null, addSource(_id,value){ sourceData=value.data; }, addLayer(){}
 };
-const interactive=new Draw(interactiveMap,{addEventListener(){},setAttribute(){}},{hidden:true},{onSelect:value=>selected=value});
+const interactive=new Draw(interactiveMap,{addEventListener(){},setAttribute(){}},{hidden:true},{onContextMenu:value=>selected=value});
 interactive.start(); interactive.click({lngLat:{lng:0,lat:0},point:{x:0,y:0}}); interactive.click({lngLat:{lng:100,lat:0},point:{x:100,y:0}}); interactive.click({lngLat:{lng:100,lat:100},point:{x:100,y:100}}); interactive.click({lngLat:{lng:0,lat:0},point:{x:0,y:0}});
 assert.equal(sourceData.features[0].properties.polygonId, interactive.polygonIds[0]);
-handlers["click:draw-polygon-fill"]({features:[{properties:{polygonId:interactive.polygonIds[0]}}],originalEvent:{preventDefault(){},stopPropagation(){}}});
+handlers["contextmenu:draw-polygon-fill"]({features:[{properties:{polygonId:interactive.polygonIds[0]}}],point:{x:50,y:50},originalEvent:{clientX:150,clientY:250,preventDefault(){},stopPropagation(){}}});
 assert.deepEqual(selected.coordinates,[[0,0],[100,0],[100,100],[0,0]]);
-console.log("PASS: clicking a completed polygon selects it for the memory workflow");
+assert.deepEqual(selected.position,{x:150,y:250});
+console.log("PASS: right-clicking a completed polygon opens its action menu");

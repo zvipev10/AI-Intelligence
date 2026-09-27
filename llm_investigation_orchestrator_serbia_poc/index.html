@@ -6,7 +6,7 @@
   <title>סביבת מודיעין</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="./vendor/maplibre-gl.css">
-  <link rel="stylesheet" href="./styles.css?v=166">
+  <link rel="stylesheet" href="./styles.css?v=167">
 </head>
 <body class="welcome-active">
   <a class="help-button" href="./help.html" target="_blank" rel="noopener" aria-label="פתח עזרה" data-i18n-aria-he="פתח עזרה" data-i18n-aria-en="Open help">?</a>
@@ -232,12 +232,9 @@
     </form>
   </div>
 
-  <div id="polygonActionModal" class="modal-backdrop collection-modal" hidden>
-    <section class="collection-modal-panel" role="dialog" aria-modal="true" aria-labelledby="polygonActionTitle">
-      <header><div><span class="eyebrow" data-i18n-text-he="אזור מסומן" data-i18n-text-en="Marked area">אזור מסומן</span><h2 id="polygonActionTitle" data-i18n-text-he="מה לעשות עם האזור?" data-i18n-text-en="What would you like to do with this area?">מה לעשות עם האזור?</h2></div><button id="polygonActionClose" class="modal-close-button" type="button" aria-label="סגור" data-i18n-aria-he="סגור" data-i18n-aria-en="Close">×</button></header>
-      <p data-i18n-text-he="שמרו את האזור לחקירה או בקשו איסוף חדש עבורו." data-i18n-text-en="Save this area to the investigation or request new collection for it.">שמרו את האזור לחקירה או בקשו איסוף חדש עבורו.</p>
-      <div class="collection-modal-actions"><button id="polygonSaveMemory" type="button" data-i18n-text-he="שמור לזיכרון" data-i18n-text-en="Save to memory">שמור לזיכרון</button><button id="polygonRequestCollection" class="primary-filter-action" type="button" data-i18n-text-he="בקשת איסוף" data-i18n-text-en="Request collection">בקשת איסוף</button></div>
-    </section>
+  <div id="polygonActionMenu" class="polygon-action-menu" role="menu" aria-label="Polygon actions" data-i18n-aria-he="פעולות אזור" data-i18n-aria-en="Polygon actions" hidden>
+    <button id="polygonSaveMemory" type="button" role="menuitem"><span class="material-symbols-rounded" aria-hidden="true">bookmark_add</span><span data-i18n-text-he="שמור לזיכרון" data-i18n-text-en="Save to memory">שמור לזיכרון</span></button>
+    <button id="polygonRequestCollection" type="button" role="menuitem"><span class="material-symbols-rounded" aria-hidden="true">satellite_alt</span><span data-i18n-text-he="בקשת איסוף" data-i18n-text-en="Request collection">בקשת איסוף</span></button>
   </div>
 
   <div id="collectionRequestModal" class="modal-backdrop collection-modal" hidden>
@@ -376,7 +373,7 @@
   </div>
 
   <script src="./vendor/maplibre-gl.js"></script>
-  <script src="./polygon_draw.js?v=1"></script>
-  <script src="./demo_bootstrap.js?v=237"></script>
+  <script src="./polygon_draw.js?v=2"></script>
+  <script src="./demo_bootstrap.js?v=238"></script>
 </body>
 </html>

@@ -702,7 +702,7 @@ const memoryCommentSubject = document.getElementById("memoryCommentSubject");
 const memoryCommentError = document.getElementById("memoryCommentError");
 let pendingMemoryCommentAction = null;
 let memoryReturnFocus = null;
-const polygonActionModal = document.getElementById("polygonActionModal");
+const polygonActionMenu = document.getElementById("polygonActionMenu");
 const collectionRequestModal = document.getElementById("collectionRequestModal");
 const collectionRequestForm = document.getElementById("collectionRequestForm");
 const collectionRequestTarget = document.getElementById("collectionRequestTarget");
@@ -2028,9 +2028,9 @@ function collectionImeiButton(value) {
   return `<button type="button" class="collection-imei" data-collection-imei="${escapeHtml(imei)}" title="${escapeHtml(activeLocaleText("בקשת איסוף עבור IMEI", "Request collection for this IMEI"))}">${escapeHtml(imei)}</button>`;
 }
 
-function closePolygonActionDialog() {
+function closePolygonActionMenu() {
   pendingPolygonAction = null;
-  polygonActionModal.hidden = true;
+  polygonActionMenu.hidden = true;
 }
 
 function closeCollectionRequestDialog() {
@@ -2039,11 +2039,17 @@ function closeCollectionRequestDialog() {
   collectionRequestError.hidden = true;
 }
 
-function openPolygonActionDialog(polygon) {
+function openPolygonActionMenu(polygon) {
   if (!polygon?.coordinates || state.draftSessionActive) return;
   pendingPolygonAction = polygon;
-  polygonActionModal.hidden = false;
-  document.getElementById("polygonRequestCollection")?.focus();
+  const minimumMargin = 8;
+  const menuWidth = 213;
+  const menuHeight = 82;
+  const x = Math.min(Math.max(polygon.position?.x ?? window.innerWidth / 2, minimumMargin), window.innerWidth - menuWidth - minimumMargin);
+  const y = Math.min(Math.max(polygon.position?.y ?? window.innerHeight / 2, minimumMargin), window.innerHeight - menuHeight - minimumMargin);
+  polygonActionMenu.style.left = `${x}px`;
+  polygonActionMenu.style.top = `${y}px`;
+  polygonActionMenu.hidden = false;
 }
 
 function openCollectionRequestDialog(target, trigger = document.activeElement) {
@@ -3397,7 +3403,7 @@ function initMap() {
       status.hidden = false;
     }
   });
-  state.polygonDraw = new PolygonDrawControl(state.map, document.getElementById("polygonDrawButton"), document.getElementById("polygonDrawHint"), { onSelect: polygon => openPolygonActionDialog(polygon) });
+  state.polygonDraw = new PolygonDrawControl(state.map, document.getElementById("polygonDrawButton"), document.getElementById("polygonDrawHint"), { onContextMenu: polygon => openPolygonActionMenu(polygon) });
   const overlay = document.getElementById("rawEventsOverlay");
   const positionDrawControl = () => {
     const height = !overlay.hidden && getComputedStyle(overlay).display !== "none" ? overlay.getBoundingClientRect().height : 0;
@@ -7346,6 +7352,9 @@ document.addEventListener("input", event => {
 });
 
 document.addEventListener("click", event => {
+  if (polygonActionMenu && !polygonActionMenu.hidden && !event.target.closest("#polygonActionMenu")) {
+    closePolygonActionMenu();
+  }
   const resultTableControlEntries = state.resultTableControls instanceof Map
     ? [...state.resultTableControls.entries()]
     : Object.entries(state.resultTableControls || {});
@@ -7854,16 +7863,14 @@ workstreamRailToggle?.addEventListener("click", () => setWorkstreamRailCollapsed
 memoryButton?.addEventListener("click", () => openMemoryScreen(memoryButton));
 document.getElementById("memoryModalClose")?.addEventListener("click", closeMemoryScreen);
 memoryModal?.addEventListener("click", event => { if (event.target === memoryModal) closeMemoryScreen(); });
-document.getElementById("polygonActionClose")?.addEventListener("click", closePolygonActionDialog);
-polygonActionModal?.addEventListener("click", event => { if (event.target === polygonActionModal) closePolygonActionDialog(); });
 document.getElementById("polygonSaveMemory")?.addEventListener("click", () => {
   const polygon = pendingPolygonAction;
-  closePolygonActionDialog();
+  closePolygonActionMenu();
   if (polygon) void savePolygonToInvestigationMemory(polygon);
 });
 document.getElementById("polygonRequestCollection")?.addEventListener("click", () => {
   const polygon = pendingPolygonAction;
-  closePolygonActionDialog();
+  closePolygonActionMenu();
   if (polygon) openCollectionRequestDialog({ type: "polygon", coordinates: polygon.coordinates }, document.getElementById("polygonDrawButton"));
 });
 document.getElementById("collectionRequestClose")?.addEventListener("click", closeCollectionRequestDialog);
@@ -7947,9 +7954,9 @@ document.addEventListener("keydown", event => {
     closeCollectionRequestDialog();
     return;
   }
-  if (event.key === "Escape" && polygonActionModal && !polygonActionModal.hidden) {
+  if (event.key === "Escape" && polygonActionMenu && !polygonActionMenu.hidden) {
     event.preventDefault();
-    closePolygonActionDialog();
+    closePolygonActionMenu();
     return;
   }
   if (event.key === "Escape" && !document.getElementById("objectViewer").hidden) {

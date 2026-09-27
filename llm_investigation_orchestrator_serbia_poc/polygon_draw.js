@@ -2,7 +2,7 @@
 class PolygonDrawControl {
   constructor(map, button, hint, options={}) {
     this.map = map; this.button = button; this.hint = hint;
-    this.active = false; this.points = []; this.polygons = []; this.polygonIds = []; this.preview = null; this.onSelect = options.onSelect;
+    this.active = false; this.points = []; this.polygons = []; this.polygonIds = []; this.preview = null; this.onContextMenu = options.onContextMenu;
     this.button.addEventListener("click", () => this.active ? this.cancel() : this.start());
     map.on("style.load", () => { this.render(); button.disabled = false; });
     map.on("click", event => this.click(event));
@@ -54,7 +54,7 @@ class PolygonDrawControl {
     this.map.addLayer({id:"draw-polygon-fill",type:"fill",source:"draw-polygon",filter:["==","$type","Polygon"],paint:{"fill-color":"#72c9ff","fill-opacity":0.18}});
     this.map.addLayer({id:"draw-polygon-line",type:"line",source:"draw-polygon",filter:["!=","$type","Point"],paint:{"line-color":"#9adaff","line-width":2}});
     this.map.addLayer({id:"draw-polygon-points",type:"circle",source:"draw-polygon",filter:["==","$type","Point"],paint:{"circle-radius":["case",["get","first"],7,4],"circle-color":"#132636","circle-stroke-color":"#9adaff","circle-stroke-width":2}});
-    if (!this.selectionBound) { this.selectionBound=true; this.map.on("click","draw-polygon-fill",event => { if (this.active) return; const id=event.features?.[0]?.properties?.polygonId; const index=this.polygonIds.indexOf(id); if (index >= 0) { event.originalEvent?.preventDefault?.(); event.originalEvent?.stopPropagation?.(); this.onSelect?.({id,coordinates:this.polygons[index]}); } }); }
+    if (!this.selectionBound) { this.selectionBound=true; this.map.on("contextmenu","draw-polygon-fill",event => { if (this.active) return; const id=event.features?.[0]?.properties?.polygonId; const index=this.polygonIds.indexOf(id); if (index >= 0) { event.originalEvent?.preventDefault?.(); event.originalEvent?.stopPropagation?.(); this.onContextMenu?.({id,coordinates:this.polygons[index],position:{x:event.originalEvent?.clientX ?? event.point?.x,y:event.originalEvent?.clientY ?? event.point?.y}}); } }); }
   }
 }
 if (typeof module !== "undefined") module.exports = PolygonDrawControl;
