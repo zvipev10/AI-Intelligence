@@ -228,6 +228,12 @@ body.welcome-active .investigation-switcher { visibility: hidden; pointer-events
 .memory-group { display:grid;gap:7px; }
 .memory-group h3 { margin:0;font-size:13px; }
 .memory-entry { display:grid;gap:5px;padding:10px;border:1px solid rgba(146,170,205,.22);border-radius:9px;background:rgba(255,255,255,.025); }
+.memory-entry-heading { display:flex;align-items:center;justify-content:space-between;gap:8px; }
+.memory-entry-open { min-width:0;border:0;background:transparent;color:var(--ink);padding:0;text-align:start;cursor:pointer;font:inherit; }
+.memory-entry-open:hover,.memory-entry-open:focus-visible { color:var(--blue);text-decoration:underline; }
+.memory-entry-delete { display:grid;place-items:center;width:28px;height:28px;border:0;border-radius:6px;background:transparent;color:var(--muted);cursor:pointer;flex:0 0 auto; }
+.memory-entry-delete:hover,.memory-entry-delete:focus-visible { background:rgba(248,81,73,.14);color:var(--red); }
+.memory-entry-delete .material-symbols-rounded { font-size:17px; }
 .memory-entry-meta { color:var(--muted);font-size:10px; }
 .memory-entry-comment { margin:0;color:var(--ink);white-space:pre-wrap; }
 .memory-comment-panel label { font-size:12px;font-weight:800; }

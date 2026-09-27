@@ -1550,6 +1550,7 @@ def create_layer_memory(request: dict) -> dict:
         "source_id": compact_text(layer.get("source_id") or layer.get("sourceId"), 240),
         "source_label": compact_text(layer.get("source_label") or layer.get("sourceLabel"), 240),
         "source_type": compact_text(layer.get("source_type"), 160),
+        "presentation_view": compact_text(layer.get("presentation_view"), 20) if compact_text(layer.get("presentation_view"), 20) in {"map", "timeline", "table"} else "",
         "original_count": memory_count(layer.get("original_count")),
         "filtered_count": memory_count(layer.get("filtered_count")),
         "applied_filters": normalize_memory_filters(layer.get("applied_filters")),
@@ -1615,6 +1616,36 @@ def create_memory_artifact(request: dict) -> dict:
     artifacts = normalize_memory_list(memory.get("artifacts")); artifacts.append(item)
     saved = save_investigation_memory({"investigation_id": investigation_id, "name": request.get("name") or existing.get("name") or investigation_id, "memory": {"chat_summaries": normalize_memory_list(memory.get("chat_summaries")), "layers": normalize_memory_list(memory.get("layers")), "artifacts": artifacts}})
     return {"saved": item, "memory": saved}
+
+
+def delete_memory_entry(request: dict) -> dict:
+    investigation_id = str(request.get("investigation_id") or "").strip()
+    group = str(request.get("group") or "").strip()
+    item_id = compact_text(request.get("item_id"), 240)
+    if not INVESTIGATION_ID_PATTERN.fullmatch(investigation_id):
+        raise ValueError("Invalid investigation id")
+    if group not in {"chat_summaries", "layers", "artifacts"}:
+        raise ValueError("Invalid memory group")
+    if not item_id:
+        raise ValueError("Missing memory item id")
+    existing = load_investigation_memory(investigation_id)
+    memory = existing.get("memory") if isinstance(existing.get("memory"), dict) else {}
+    entries = normalize_memory_list(memory.get(group))
+    remaining = [item for item in entries if str(item.get("id") or "") != item_id]
+    if len(remaining) == len(entries):
+        raise ValueError("Memory item not found")
+    saved_memory = {
+        "chat_summaries": normalize_memory_list(memory.get("chat_summaries")),
+        "layers": normalize_memory_list(memory.get("layers")),
+        "artifacts": normalize_memory_list(memory.get("artifacts")),
+    }
+    saved_memory[group] = remaining
+    saved = save_investigation_memory({
+        "investigation_id": investigation_id,
+        "name": existing.get("name") or investigation_id,
+        "memory": saved_memory,
+    })
+    return {"deleted_id": item_id, "group": group, "memory": saved}
 
 
 def memory_layer_presentation(investigation_id: str, memory_layer_id: str, locale: str = "he") -> dict | None:
@@ -5671,6 +5702,21 @@ class Handler(SimpleHTTPRequestHandler):
                 if not isinstance(request, dict):
                     raise ValueError("Invalid investigation memory artifact payload")
                 self.send_json(201, create_memory_artifact(request))
+            except ValueError as exc:
+                self.send_json(400, {"error": str(exc)})
+            except Exception as exc:
+                self.send_json(502, {"error": str(exc)})
+            return
+        if path == "/api/investigation-memory/delete":
+            try:
+                length = int(self.headers.get("Content-Length", "0"))
+                if length > 100_000:
+                    self.send_json(413, {"error": "Investigation memory delete payload too large"})
+                    return
+                request = json.loads(self.rfile.read(length).decode("utf-8-sig"))
+                if not isinstance(request, dict):
+                    raise ValueError("Invalid investigation memory delete payload")
+                self.send_json(200, delete_memory_entry(request))
             except ValueError as exc:
                 self.send_json(400, {"error": str(exc)})
             except Exception as exc:

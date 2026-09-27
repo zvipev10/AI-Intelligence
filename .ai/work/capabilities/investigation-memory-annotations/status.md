@@ -6,25 +6,25 @@ Annotated investigation memory
 
 ## Current phase
 
-Delivered and deployed.
+Follow-up implementation and release validation.
 
 ## Overall status
 
-Complete
+In progress
 
 ## Who needs to act now
 
 | Role | Status | Required action | Due before |
 |---|---|---|---|
 | Product | Approved | Approved duplicate annotations and a dedicated Memory screen. | Complete |
-| Development | Complete | Additive API, comments, object/area artifacts and agent context implemented. | Complete |
-| UX | Complete | Shared optional-comment dialog and investigation-scoped Memory screen implemented. | Complete |
-| QA | Complete | Automated coverage and deployed API/static-asset smoke checks passed. | Complete |
+| Development | In progress | Add links to saved presentations and entry deletion. | Final validation |
+| UX | In progress | Add clear entry links and delete controls. | Final validation |
+| QA | In progress | Validate reopening/deletion and regression behavior. | Deployment smoke check |
 | Architecture/Security | Consult as needed | Confirm bounded payload and provenance/geometry validation. | Before implementation |
 
 ## Latest change since previous review
 
-Implementation preserves legacy memory entries, retains additive annotations, and bounds comment/geometry payloads.
+Product requested that saved Memory objects reopen their original presentation and every entry be removable.
 
 ## Current blockers
 
@@ -36,7 +36,7 @@ Memory-schema compatibility, bounded agent context, and polygon map-click intera
 
 ## Next expected artifact
 
-Handoff.
+Checkpoint 002 and deployment verification.
 
 ## Parent issue
 

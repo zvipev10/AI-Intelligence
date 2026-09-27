@@ -95,6 +95,35 @@ class InvestigationRegistryTests(unittest.TestCase):
         self.assertEqual("Area of convoy activity.", memory["artifacts"][1]["analyst_comment"])
         self.assertTrue(server.investigation_memory_has_content({"memory": memory}))
 
+        deleted = server.delete_memory_entry({
+            "investigation_id": "investigation-a",
+            "group": "artifacts",
+            "item_id": object_saved["saved"]["id"],
+        })
+        memory = server.load_investigation_memory("investigation-a")["memory"]
+
+        self.assertEqual(object_saved["saved"]["id"], deleted["deleted_id"])
+        self.assertEqual("artifacts", deleted["group"])
+        self.assertEqual([polygon_saved["saved"]["id"]], [item["id"] for item in memory["artifacts"]])
+
+    def test_memory_delete_removes_only_the_requested_group_item(self):
+        chat = server.create_chat_summary_memory({
+            "investigation_id": "investigation-b",
+            "prompt": "What changed?",
+            "result": {"answer": "A concise finding."},
+        })
+        layer = server.create_layer_memory({
+            "investigation_id": "investigation-b",
+            "layer": {"id": "calls", "label": "Cellular Calls", "kind": "events", "presentation_view": "timeline"},
+        })
+
+        server.delete_memory_entry({"investigation_id": "investigation-b", "group": "chat_summaries", "item_id": chat["saved"]["id"]})
+        memory = server.load_investigation_memory("investigation-b")["memory"]
+
+        self.assertEqual([], memory["chat_summaries"])
+        self.assertEqual([layer["saved"]["id"]], [item["id"] for item in memory["layers"]])
+        self.assertEqual("timeline", memory["layers"][0]["presentation_view"])
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -1993,13 +1993,91 @@ function renderMemoryScreen() {
   if (!memoryModalBody) return;
   const memory = currentSavedMemory();
   const groups = [
-    [activeLocaleText("שיחות", "Chat"), memory.chat_summaries || [], item => item.answer_preview || item.prompt || "—"],
-    [activeLocaleText("שכבות", "Layers"), memory.layers || [], item => item.label || "—"],
-    [activeLocaleText("אובייקטים", "Objects"), (memory.artifacts || []).filter(item => item.kind === "object"), item => item.label || item.object_id || "—"],
-    [activeLocaleText("אזורים", "Areas"), (memory.artifacts || []).filter(item => item.kind === "polygon"), item => item.label || activeLocaleText("אזור שמור", "Saved area")]
+    ["chat_summaries", activeLocaleText("שיחות", "Chat"), memory.chat_summaries || [], item => item.answer_preview || item.prompt || "—", false],
+    ["layers", activeLocaleText("שכבות", "Layers"), memory.layers || [], item => item.label || "—", true],
+    ["artifacts", activeLocaleText("אובייקטים", "Objects"), (memory.artifacts || []).filter(item => item.kind === "object"), item => item.label || item.object_id || "—", true],
+    ["artifacts", activeLocaleText("אזורים", "Areas"), (memory.artifacts || []).filter(item => item.kind === "polygon"), item => item.label || activeLocaleText("אזור שמור", "Saved area"), true]
   ];
-  const html = groups.filter(([, items]) => items.length).map(([title, items, label]) => `<section class="memory-group"><h3>${escapeHtml(title)}</h3>${items.slice().reverse().map(item => `<article class="memory-entry"><strong>${escapeHtml(label(item))}</strong><span class="memory-entry-meta">${escapeHtml(formatSavedTime(item.saved_at_utc))}${item.object_id ? ` · ${escapeHtml(item.object_id)}` : ""}</span>${item.analyst_comment ? `<p class="memory-entry-comment">${escapeHtml(item.analyst_comment)}</p>` : ""}</article>`).join("")}</section>`).join("");
+  const html = groups.filter(([, , items]) => items.length).map(([group, title, items, label, openable]) => `<section class="memory-group"><h3>${escapeHtml(title)}</h3>${items.slice().reverse().map(item => `<article class="memory-entry"><div class="memory-entry-heading">${openable ? `<button type="button" class="memory-entry-open" data-memory-open-group="${group}" data-memory-open-id="${escapeHtml(item.id)}"><strong>${escapeHtml(label(item))}</strong></button>` : `<strong>${escapeHtml(label(item))}</strong>`}<button type="button" class="memory-entry-delete" data-memory-delete-group="${group}" data-memory-delete-id="${escapeHtml(item.id)}" title="${escapeHtml(activeLocaleText("הסר מהזיכרון", "Remove from memory"))}" aria-label="${escapeHtml(activeLocaleText("הסר מהזיכרון", "Remove from memory"))}"><span class="material-symbols-rounded" aria-hidden="true">delete</span></button></div><span class="memory-entry-meta">${escapeHtml(formatSavedTime(item.saved_at_utc))}${item.object_id ? ` · ${escapeHtml(item.object_id)}` : ""}</span>${item.analyst_comment ? `<p class="memory-entry-comment">${escapeHtml(item.analyst_comment)}</p>` : ""}</article>`).join("")}</section>`).join("");
   memoryModalBody.innerHTML = html || `<div class="activity-empty">${escapeHtml(activeLocaleText("עדיין לא נשמרו פריטים לחקירה זו.", "No items have been saved to this investigation yet."))}</div>`;
+}
+
+function savedMemoryEntry(group, id) {
+  return normalizeMemoryList(currentSavedMemory()[group]).find(item => item.id === id) || null;
+}
+
+function memoryPresentationView(value, fallback = "table") {
+  return ["map", "timeline", "table"].includes(value) ? value : fallback;
+}
+
+function currentPresentationView() {
+  return memoryPresentationView(document.querySelector(".view-tab.active")?.dataset.view, "map");
+}
+
+async function openSavedMemoryLayer(item, trigger) {
+  if (!item) return;
+  let layer = state.layers.find(candidate => candidate.investigation_memory_layer_id === item.id);
+  if (!layer && item.catalog_layer_id) layer = await openCatalogLayer(item.catalog_layer_id, { silent: true, savedLayer: item });
+  if (!layer) return;
+  applySavedFiltersToLayer(layer, item);
+  layer.visible = true;
+  state.activeLayerId = layer.id;
+  activateView(memoryPresentationView(item.presentation_view, viewRecommendation(layer)));
+  renderAllViews();
+  closeMemoryScreen();
+  trigger?.focus?.();
+}
+
+function openSavedMemoryPolygon(item, trigger) {
+  const geometry = item?.geometry;
+  const ring = geometry?.type === "Polygon" ? geometry.coordinates?.[0] : null;
+  if (!Array.isArray(ring) || ring.length < 4) return;
+  activateView("map");
+  const show = () => {
+    if (!state.map?.isStyleLoaded?.()) return;
+    const data = { type: "Feature", properties: { memory_id: item.id }, geometry };
+    const source = state.map.getSource("memory-polygon-focus");
+    if (source) source.setData(data);
+    else {
+      state.map.addSource("memory-polygon-focus", { type: "geojson", data });
+      state.map.addLayer({ id: "memory-polygon-focus-fill", type: "fill", source: "memory-polygon-focus", paint: { "fill-color": "#58a6ff", "fill-opacity": 0.18 } });
+      state.map.addLayer({ id: "memory-polygon-focus-line", type: "line", source: "memory-polygon-focus", paint: { "line-color": "#9adaff", "line-width": 3 } });
+    }
+    const bounds = new maplibregl.LngLatBounds();
+    ring.forEach(point => bounds.extend(point));
+    state.map.fitBounds(bounds, { padding: 70, maxZoom: 14, duration: 0 });
+  };
+  requestAnimationFrame(show);
+  closeMemoryScreen();
+  trigger?.focus?.();
+}
+
+async function openMemoryEntry(group, id, trigger) {
+  const item = savedMemoryEntry(group, id);
+  if (!item) return;
+  if (group === "layers") return openSavedMemoryLayer(item, trigger);
+  if (group === "artifacts" && item.kind === "object") {
+    const opened = openObjectViewer(item.object_kind, item.object_id, trigger);
+    if (opened) closeMemoryScreen();
+    return;
+  }
+  if (group === "artifacts" && item.kind === "polygon") openSavedMemoryPolygon(item, trigger);
+}
+
+async function deleteMemoryEntry(group, id) {
+  if (!state.investigationId) return;
+  const response = await fetch("/api/investigation-memory/delete", {
+    method: "POST",
+    headers: { "Content-Type": "application/json; charset=utf-8" },
+    body: JSON.stringify({ investigation_id: state.investigationId, group, item_id: id })
+  });
+  const payload = await response.json();
+  if (!response.ok) throw new Error(payload.error || activeLocaleText("מחיקת פריט הזיכרון נכשלה", "Failed to delete memory item"));
+  if (group === "layers") {
+    const layer = state.layers.find(candidate => candidate.investigation_memory_layer_id === id);
+    if (layer) delete layer.investigation_memory_layer_id;
+  }
+  await loadInvestigationMemory();
 }
 
 function openMemoryScreen(trigger = memoryButton) {
@@ -2175,6 +2253,7 @@ function layerMemoryPayload(layer) {
     source_id: layer.sourceId || "",
     source_label: layer.sourceLabel || "",
     source_type: sourceType,
+    presentation_view: currentPresentationView(),
     original_count: (layer.items || []).length,
     filtered_count: filteredItems.length,
     applied_filters: appliedFilters,
@@ -3513,6 +3592,11 @@ let objectViewerReturnFocus = null;
 
 function viewerObjects() {
   const objects = new Map();
+  state.events.forEach(item => objects.set(`record:${item.record_id || item.event_id}`, item));
+  state.entityMetadata.forEach(item => {
+    const kind = isPersonEntity(item) ? "person" : "organization";
+    objects.set(`${kind}:${item.entity_id}`, item);
+  });
   state.layers.forEach(layer => {
     if (layer.kind === "events") (layer.items || []).forEach(item => objects.set(`record:${item.record_id || item.event_id}`, item));
     if (layer.kind === "evidence") (layer.items || []).forEach(item => objects.set(`evidence:${item.evidence_id}`, item));
@@ -7136,6 +7220,18 @@ document.addEventListener("input", event => {
 });
 
 document.addEventListener("click", event => {
+  const memoryDelete = event.target.closest("[data-memory-delete-group][data-memory-delete-id]");
+  if (memoryDelete) {
+    event.preventDefault();
+    void deleteMemoryEntry(memoryDelete.dataset.memoryDeleteGroup, memoryDelete.dataset.memoryDeleteId).catch(error => { memoryCommentError.textContent = error.message; memoryCommentError.hidden = false; });
+    return;
+  }
+  const memoryOpen = event.target.closest("[data-memory-open-group][data-memory-open-id]");
+  if (memoryOpen) {
+    event.preventDefault();
+    void openMemoryEntry(memoryOpen.dataset.memoryOpenGroup, memoryOpen.dataset.memoryOpenId, memoryOpen);
+    return;
+  }
   const memoryObject = event.target.closest("[data-memory-object-kind][data-memory-object-id]");
   if (memoryObject) {
     event.preventDefault();
