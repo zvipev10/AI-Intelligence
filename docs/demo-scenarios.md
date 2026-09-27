@@ -9,13 +9,13 @@ The bilingual Hebrew/English intelligence workspace has one shared codebase and 
 | Package | Current profile / dataset | Content |
 |---|---|---|
 | Kosovo | profile 1 / `v2.1` | 14,833 records, including 24 simulated cellular calls; preserved investigations and agent state |
-| Syria | profile 25 / `cellular-records-v2` | 725 records: 2 CCTV, 2 Satellite, 120 ADINT, 300 IPDR, 300 Cellular Geolocations, 1 Cellular Call; 384 locations, 13 entities and 21 catalog definitions |
+| Syria | profile 26 / `cellular-records-v3` | 725 records: 2 CCTV, 2 Satellite, 120 ADINT, 300 IPDR, 300 Cellular Geolocations, 1 Cellular Call; 384 locations, 13 entities and 21 catalog definitions |
 
 Deployment identity must be checked through `/api/status`; this is an installed-package inventory, not a live status assertion. Syria's initial camera is Damascus (longitude 36.2765, latitude 33.5138), zoom 11. The fictional convoy sites are elsewhere; opening results can fit the map to their geometry. Installed profiles, not this document, are authoritative for future versions.
 
 ## Syria demonstration data
 
-CCTV Site 1 uses `LOC-SYR-ADINT-002` (35.077055, 36.333669); Site 2 uses `LOC-SYR-ADINT-001` (35.108621, 36.312140). These reuse existing ADINT observation points. Both media sources identify `ENT-SYR-CONVOY`. Media/timestamps are unchanged; spatial co-location does not establish that the ADINT device is the convoy. Original site definitions remain historical catalog entries with no current media records.
+CCTV Site 1 uses `LOC-SYR-001` (35.000000, 38.500000); Site 2 uses `LOC-SYR-002` (35.045000, 38.500000). Both media sources identify `ENT-SYR-CONVOY`. These are the dedicated CCTV scenario locations; they are not ADINT observations and do not establish a relationship to an ADINT device.
 
 - **CCTV:** one supplied eight-second video per site. Site 1 is a shop-facing camera: a tan military Humvee leads canvas-covered military cargo trucks and a tanker left-to-right past the storefront. Site 2 is a petrol-station camera: a military convoy with the same vehicle types travels right-to-left on the adjacent road. The clips do not establish total convoy size, capture time, real-world geolocation, or compass direction; those fields are explicitly marked as not established from footage. Existing scenario timestamps, location IDs, and `ENT-SYR-CONVOY` association are retained for record continuity rather than treated as facts derived from the video.
 - **Satellite:** one supplied image per record, at dedicated Satellite observation sites 1/2, at user-supplied coordinates: site 1 (35.065212338738036, 36.28815755309795), site 2 (35.06503531383431, 36.289563371508734). No repeated visits, paired captures or return/movement narrative. Descriptions reflect visible vehicles, road and terrain. The supplied images visibly carry SYNTHETIC DEMO; originals and provenance remain intact. No capture-date/GPS metadata was supplied: existing record times are labeled scenario timestamps, and map coordinates are user-supplied positions. CCTV remains at the ADINT reference points.
