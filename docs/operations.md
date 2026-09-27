@@ -99,10 +99,10 @@ Application versions, profile versions, immutable dataset versions and state-sch
 ## Quick acceptance checks
 
 - `/api/status`: expected scenario/dataset/generation, profile and initial map configuration; only one active runtime.
-- Catalog and source rows: Syria 424 total, CCTV 2 / Satellite 2 / ADINT 120 / IPDR 300; original raw sources remain present with zero rows where applicable.
+- Catalog and source rows: Syria 725 total, CCTV 2 / Satellite 2 / ADINT 120 / IPDR 300 / Cellular Geolocations 300 / Cellular Calls 1; original raw sources remain present with zero rows where applicable.
 - Open IPDR: Table view, IP address/IMEI, no actor/location or map action; record links retain all identifiers.
 - ADINT: verify all 120 native observations, 84 mapped points and 36 geometry-free rows. Check IP role and valid session intervals; two supplied IPDR records have reversed timestamps, preserved pending clarification.
-- Open each Satellite record: one supplied image at its own Satellite site, no visit/pair metadata, explicit scenario timestamp basis; CCTV video and synthetic labels visible.
+- Open each Satellite record: one supplied image at its own Satellite site, no visit/pair metadata, explicit scenario timestamp basis. Open each CCTV record: supplied video and footage-derived uncertainty labels must be visible.
 - Satellite/Street toggle: English-preferred names, reference roads/borders, unchanged analytical overlays; network failure gives visible Street fallback.
 - After scenario/dataset activation, verify an actual catalog action reaches the UI, not merely that the agent mentions success. Check the selected dataset's role audit directory if actions disappear.
 - Reload old tabs after activation. Returning to Kosovo restores its own working state, not Syria's.
