@@ -40,9 +40,9 @@ Call-only results and calls catalog actions default to Timeline when no explicit
 
 ### Local polygon drawing
 
-`polygon_draw.js` owns a page-local MapLibre GeoJSON source (`draw-polygon`) with fill, outline and draft-vertex layers. The main map initializes the control; `index.html` loads the helper before the app, and the deployment bundle includes it. Closing requires at least three distinct vertices and a click within 12 screen pixels of the first point. Escape/button cancellation removes only the unfinished draft. Double-click zoom is restored to its prior state when drawing ends. Completed polygons survive basemap toggles but not page reloads.
+`polygon_draw.js` owns a page-local MapLibre GeoJSON source (`draw-polygon`) with fill, outline and draft-vertex layers. The main map initializes the control; `index.html` loads the helper before the app, and the deployment bundle includes it. Closing requires at least three distinct vertices and a click within 12 screen pixels of the first point. Escape/button cancellation removes only the unfinished draft. Double-click zoom is restored to its prior state when drawing ends. Completed polygons survive basemap toggles but not page reloads. Clicking a completed polygon invokes the investigation-scoped memory save flow; drawing still does not search, filter, or run an agent.
 
-No drawing operation calls the backend, changes record filters, runs an agent or writes saved investigation state. Marker pointer events are suppressed during drawing; call-route click handlers ignore drawing clicks. Resize/mutation observers keep the control above the raw-results overlay. Existing sources receive updates even while tiles are loading, ensuring cancellation clears draft geometry promptly.
+No drawing operation changes record filters or runs an agent. Marker pointer events are suppressed during drawing; call-route click handlers ignore drawing clicks. Resize/mutation observers keep the control above the raw-results overlay. Existing sources receive updates even while tiles are loading, ensuring cancellation clears draft geometry promptly.
 
 ## Basemap composition
 
@@ -184,5 +184,9 @@ Runtime directories resolve from `DEMO.state`: `saved_questions/`, `recorded_run
 Saved payloads retain ID/schema, title, question, saved timestamp, source run and full result. Writes validate IDs and use atomic temporary-file replacement; listings skip malformed rows. Loading restores the answer, steps and result layers through the normal presentation path without a new Hermes call. Recorded responses retain full live output and replay steps before the final answer; follow-ups are live.
 
 ## Additive layer identity
+
+## Investigation-memory annotations
+
+Investigation memory is an atomic JSON payload with additive `chat_summaries`, `layers`, and `artifacts` arrays. `POST /api/investigation-memory/chat-summary` and `POST /api/investigation-memory/layer` accept a validated optional `comment`; `POST /api/investigation-memory/artifact` accepts a validated object or one closed Polygon ring plus the same comment. Artifact writes retain all existing groups, validate bounded text and finite geographic coordinates, and use the existing atomic memory write path. The browser keeps Memory as an investigation-scoped modal screen, while Map/Timeline/Table stay presentations. The prompt adapter includes saved comments and compact artifact metadata; polygons retain their geometry but only their labels/comments are rendered in the initial Memory UI.
 
 `sourceId` identifies the originating final result or step and `dataId` identifies content. Their combined identity prevents duplicate layers while allowing independent sources. Layer visibility applies to Map, Timeline and Table; closing releases layer state/color and showing again recreates it. Selected-layer filters do not redefine unrelated layer metadata. Event layers require usable geometry for Map; location layers support Map/Table, time aggregations Timeline/Table, and generic grouped results Table.

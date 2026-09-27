@@ -45,9 +45,13 @@ Normal operation has no persistent Syria/scenario label at the bottom. Queue, re
 
 ### Map polygons
 
-Use the translucent polygon icon at the bottom-right of Map to place vertices. Click the first point after at least three distinct points to close the polygon. Escape or the icon cancels an unfinished shape. Completed polygons remain on the current page and across basemap switches; they are not saved and trigger no search, filtering or agent action.
+Use the translucent polygon icon at the bottom-right of Map to place vertices. Click the first point after at least three distinct points to close the polygon. Escape or the icon cancels an unfinished shape. Completed polygons remain on the current page and across basemap switches. Clicking a completed polygon opens an optional comment step and saves the polygon as an investigation-memory area; it does not trigger search or filtering.
 
 ## Saved work and additive results
+
+### Investigation memory
+
+Within an active investigation, an analyst can save a chat finding, a layer state, one table/viewer object, or a drawn map area to Memory. Every save opens the same optional comment step. Saves are additive, including repeated objects or areas with different comments. The investigation header exposes a Memory screen that groups saved chat findings, layers, objects, and areas with timestamps and comments. Saved comments and compact object/area metadata are supplied with saved memory to the investigation agent; the screen is deliberately a simple review surface, not a new presentation type.
 
 Selected final structured results can be presented automatically. Intermediate tool output is not automatically a new layer. Show adds or focuses a result layer; Hide changes its visibility across views; Close removes it and frees its color. Showing a closed result recreates it. Filters affect the selected layer. Raw records remain the provenance source; organizations and records open in the shared side drawer, and unavailable media does not hide textual evidence.
 

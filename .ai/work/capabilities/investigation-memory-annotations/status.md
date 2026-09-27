@@ -6,25 +6,25 @@ Annotated investigation memory
 
 ## Current phase
 
-Execution planning and implementation.
+Release validation and deployment.
 
 ## Overall status
 
-In progress
+Ready to deploy
 
 ## Who needs to act now
 
 | Role | Status | Required action | Due before |
 |---|---|---|---|
 | Product | Approved | Approved duplicate annotations and a dedicated Memory screen. | Complete |
-| Development | Approved by delegation | Implement additive data/API approach. | Final QA |
-| UX | Approved by delegation | Implement dedicated screen and shared dialog flow. | Final QA |
-| QA | Approved by delegation | Validate persistence and map interaction coverage. | Final QA |
+| Development | Complete | Additive API, comments, object/area artifacts and agent context implemented. | Complete |
+| UX | Complete | Shared optional-comment dialog and investigation-scoped Memory screen implemented. | Complete |
+| QA | Complete | Automated persistence, table, and polygon-selection coverage passed. | Deployment smoke check |
 | Architecture/Security | Consult as needed | Confirm bounded payload and provenance/geometry validation. | Before implementation |
 
 ## Latest change since previous review
 
-Product owner approved the developer, UX, and QA recommendations and authorized end-to-end implementation.
+Implementation preserves legacy memory entries, retains additive annotations, and bounds comment/geometry payloads.
 
 ## Current blockers
 
@@ -36,7 +36,7 @@ Memory-schema compatibility, bounded agent context, and polygon map-click intera
 
 ## Next expected artifact
 
-Execution plan, then checkpoint 001 implementation.
+Checkpoint 001 and deployment verification.
 
 ## Parent issue
 
@@ -47,9 +47,9 @@ Local draft: `issues/parent-capability.md`.
 | Issue | Role | Purpose | Status | Blocking? |
 |---|---|---|---|---|
 | Approved in user conversation | Product | Confirm MVP and open questions | Complete | No |
-| Draft — developer review | Development | Validate persistence/API approach | Pending | Yes |
-| Draft — UX review | UX | Validate comments and map selection flow | Pending | Yes |
-| Draft — QA review | QA | Define coverage and acceptance checks | Pending | Yes |
+| Approved developer review | Development | Validate persistence/API approach | Complete | No |
+| Approved UX review | UX | Validate comments and map selection flow | Complete | No |
+| Approved QA review | QA | Define coverage and acceptance checks | Complete | No |
 
 ## Artifact links
 
