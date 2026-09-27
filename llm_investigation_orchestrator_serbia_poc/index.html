@@ -40,7 +40,6 @@
           <div id="investigationList" class="investigation-list" role="listbox" hidden></div>
         </div>
         <div id="michlolTeam" class="michlol-team" role="list" aria-label="מכלול" data-i18n-aria-he="מכלול" data-i18n-aria-en="Team cell"></div>
-        <button id="memoryButton" class="memory-header-button" type="button" hidden data-i18n-text-he="זיכרון" data-i18n-text-en="Memory" data-i18n-aria-he="פתח זיכרון חקירה" data-i18n-aria-en="Open investigation memory">זיכרון</button>
       </div>
     </section>
     <div class="header-status" aria-label="מצב מערכת" data-i18n-aria-he="מצב מערכת" data-i18n-aria-en="System status">
@@ -154,6 +153,7 @@
           <button class="view-tab active" data-view="map" type="button" data-i18n-text-he="מפה" data-i18n-text-en="Map">מפה</button>
           <button class="view-tab" data-view="timeline" type="button" data-i18n-text-he="ציר זמן" data-i18n-text-en="Timeline">ציר זמן</button>
           <button class="view-tab" data-view="table" type="button" data-i18n-text-he="טבלה" data-i18n-text-en="Table">טבלה</button>
+          <button id="memoryButton" class="view-tab" type="button" hidden data-i18n-text-he="זיכרון" data-i18n-text-en="Memory" data-i18n-aria-he="פתח זיכרון חקירה" data-i18n-aria-en="Open investigation memory">זיכרון</button>
         </div>
         <div class="layer-selector" aria-label="חיפוש שכבה להוספה" data-i18n-aria-he="חיפוש שכבה להוספה" data-i18n-aria-en="Search for a layer to add">
           <div class="layer-selector-search" role="combobox" aria-haspopup="listbox" aria-expanded="false" aria-owns="layerSelectorList">
@@ -355,6 +355,6 @@
 
   <script src="./vendor/maplibre-gl.js"></script>
   <script src="./polygon_draw.js?v=1"></script>
-  <script src="./demo_bootstrap.js?v=228"></script>
+  <script src="./demo_bootstrap.js?v=229"></script>
 </body>
 </html>

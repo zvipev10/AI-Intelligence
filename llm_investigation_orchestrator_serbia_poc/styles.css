@@ -31,8 +31,6 @@ button, textarea { font: inherit; }
 button { cursor: pointer; }
 .help-button { position: fixed; top: 20px; left: auto; right: auto; inset-inline-end: 18px; z-index: 20; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; border: 1px solid #b9cdbf; background: var(--green-soft); color: var(--green); text-decoration: none; font-size: 18px; font-weight: 900; box-shadow: 0 2px 8px rgba(29, 45, 38, .12); }
 .help-button:hover { background: #1e4731; }
-.memory-header-button { min-height:32px;border:1px solid rgba(88,166,255,.45);border-radius:8px;background:rgba(88,166,255,.1);color:var(--blue);padding:5px 10px;font:inherit;font-size:11px;font-weight:800;cursor:pointer; }
-.memory-header-button:hover,.memory-header-button:focus-visible { background:rgba(88,166,255,.2);color:#fff;outline:none; }
 .app-header { min-height: 68px; padding: 10px 24px; display: grid; grid-template-columns: minmax(620px, 1.25fr) minmax(430px, 520px) minmax(0, .75fr); align-items: center; gap: 14px; background: #12161d; border-bottom: 1px solid var(--line); }
 .header-copy { min-width: 0; justify-self: start; display: flex; align-items: center; gap: 10px; flex-wrap: nowrap; }
 .app-header h1 { flex: 0 0 auto; margin: 0; font-size: 22px; white-space: nowrap; }
