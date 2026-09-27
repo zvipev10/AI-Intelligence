@@ -14,7 +14,7 @@ Draft local issue body: `issues/parent-capability.md` (remote issue not created)
 
 ## Current status
 
-Draft — pending product, UX, developer, and QA review. See `status.md`.
+Product scope approved; UX, developer, and QA review remain pending. See `status.md`.
 
 ## User problem
 
@@ -33,13 +33,15 @@ Assessment officers and the SIGINT/VISINT specialists working inside saved inves
 1. Every existing **Save to memory** action for a chat result or layer opens one shared, optional-comment dialog before saving.
 2. A table row and an open object viewer expose **Save to memory**. They save one immutable object reference/snapshot with the same optional comment.
 3. A completed drawn polygon is selectable on the map. Selecting it opens a small action surface with **Save to memory**, which opens the same comment dialog.
-4. Saved comments are persisted with their memory item and included in the bounded context provided to the investigation agent.
+4. A **Memory** button opens a dedicated screen, rather than adding a fourth Map/Timeline/Table presentation. It shows saved chat, layer, object, and polygon memory items in the simplest grouped list with their saved time, optional comment, and current saved details.
+5. Saved comments are persisted with their memory item and included in the bounded context provided to the investigation agent.
 
 ## MVP scope
 
 - Saved investigations only; no welcome-page or draft persistence.
 - Optional plain-text comments, normalized and length-bounded server-side.
 - Additive `memory.artifacts` entries for object and polygon saves; preserve existing `chat_summaries` and `layers` data unchanged.
+- A simple read-only Memory screen reached by a button in the saved-investigation workspace.
 - Record enough immutable object identity/provenance and polygon geometry to show the saved item later, without inferring new evidence or target/assessment status.
 - Support bilingual labels, keyboard operation, error states, and already-saved feedback.
 
@@ -94,12 +96,11 @@ Add server validation/persistence tests, client source/behavior regression tests
 
 ## Open questions
 
-- Should a saved comment be shown to the analyst in a dedicated memory browser in this MVP, or only carried forward to the agent/context? Proposed: persist it now; defer a memory browser unless the existing UI has a suitable surface.
-- Should duplicate object/polygon saves be blocked or allowed as separate analyst annotations? Proposed: allow separate entries because comments may represent distinct analytic rationale.
+None. Product approved the Memory screen and duplicate-save behavior.
 
 ## Missing inputs
 
-Product confirmation of the proposed MVP and the two open questions above.
+No product inputs currently missing.
 
 ## Required reviewers
 

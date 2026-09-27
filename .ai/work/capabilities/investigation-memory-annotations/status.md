@@ -6,17 +6,17 @@ Annotated investigation memory
 
 ## Current phase
 
-Capability initiation — review gate before execution planning.
+Role enrichment — review gate before execution planning.
 
 ## Overall status
 
-Pending review
+Product scope approved; technical, UX, and QA review pending.
 
 ## Who needs to act now
 
 | Role | Status | Required action | Due before |
 |---|---|---|---|
-| Product | Pending human approval | Confirm MVP, duplicate-save behavior, and comment visibility scope. | Execution plan |
+| Product | Approved | Approved duplicate annotations and a dedicated Memory screen. | Complete |
 | Development | Draft pending review | Review additive data/API and restore approach. | Execution plan |
 | UX | Draft pending review | Review dialog, table/viewer/map interaction, and accessibility states. | Execution plan |
 | QA | Draft pending review | Review persistence, locale, and map interaction coverage. | Execution plan |
@@ -24,11 +24,11 @@ Pending review
 
 ## Latest change since previous review
 
-Created the capability brief after tracing the existing chat/layer memory endpoints, object viewer, table actions, and polygon draw control.
+Product approved separate duplicate annotations and a dedicated Memory screen; review drafts are now being prepared.
 
 ## Current blockers
 
-Required human review of the data/API and UX scope.
+Required human approval or explicit delegation for developer, UX, and QA review drafts.
 
 ## Current risks
 
@@ -36,7 +36,7 @@ Memory-schema compatibility, bounded agent context, and polygon map-click intera
 
 ## Next expected artifact
 
-Product/UX/developer/QA review artifacts, then an approved execution plan.
+Developer, UX, and QA review artifacts, then an approved execution plan.
 
 ## Parent issue
 
@@ -46,7 +46,7 @@ Local draft: `issues/parent-capability.md`.
 
 | Issue | Role | Purpose | Status | Blocking? |
 |---|---|---|---|---|
-| Draft — product review | Product | Confirm MVP and open questions | Pending | Yes |
+| Approved in user conversation | Product | Confirm MVP and open questions | Complete | No |
 | Draft — developer review | Development | Validate persistence/API approach | Pending | Yes |
 | Draft — UX review | UX | Validate comments and map selection flow | Pending | Yes |
 | Draft — QA review | QA | Define coverage and acceptance checks | Pending | Yes |
