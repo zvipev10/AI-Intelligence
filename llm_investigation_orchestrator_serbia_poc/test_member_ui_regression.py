@@ -49,6 +49,8 @@ class MemberUiRegressionTests(unittest.TestCase):
         self.assertIn('const pointsLeft = currentLocale() === "he"', self.app)
         self.assertIn('state.chatPanelCollapsed\n        : !state.chatPanelCollapsed', self.app)
         self.assertIn('icon.textContent = pointsLeft ? "chevron_left" : "chevron_right";', self.app)
+        locale_ui = self.app.split("function applyLocaleUi()", 1)[1].split("function createTeamMentionMenu", 1)[0]
+        self.assertIn("setChatPanelCollapsed(state.chatPanelCollapsed);", locale_ui)
         self.assertIn('event.target.closest(".chat-panel-toggle")', self.app)
         self.assertIn(".workspace.chat-panel-collapsed {", self.styles)
         self.assertIn("grid-template-columns: 0 28px", self.styles)

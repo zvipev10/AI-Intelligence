@@ -922,6 +922,7 @@ function applyLocaleUi() {
     // Ignore URL rewrite issues and continue applying locale in-memory.
   }
   applyLocaleAttributes();
+  setChatPanelCollapsed(state.chatPanelCollapsed);
   renderSystemStatuses();
   document.title = activeLocaleText("סביבת מודיעין", "Intelligence Workspace");
   const helpButton = document.querySelector(".help-button");
