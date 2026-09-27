@@ -913,9 +913,7 @@ th { position: sticky; top: 0; z-index: 1; background: #202530; }
 .call-provenance { grid-column:1/-1;margin:0; }
 .call-empty { color:#bec6b8;padding:20px; }
 .person-workspace { height:calc(100dvh - 150px); min-height:440px; grid-template-rows:minmax(0,1fr); }
-.person-profile-sidebar .person-viewer-profile { grid-template-columns:92px 1fr; padding:0 0 16px; border:0; border-bottom:1px solid #424940; border-radius:0; background:transparent; }
-.person-profile-sidebar .person-viewer-portrait { width:92px; height:118px; border-radius:9px; }
-.person-profile-sidebar .person-viewer-avatar { width:80px; height:80px; font-size:20px; }
+.person-profile-sidebar .person-viewer-profile { display:block; padding:0 0 16px; border:0; border-bottom:1px solid #424940; border-radius:0; background:transparent; }
 .person-workspace-main { grid-template-rows:260px minmax(220px,1fr); }
 .person-records-panel .call-conversation-heading > span:last-child { margin-inline-start:auto; display:grid; place-items:center; min-width:22px; height:22px; border-radius:999px; background:#3a4138; color:#c4cbbd; font-size:10px; font-weight:900; }
 .person-record-list { padding:16px; display:flex; flex-wrap:wrap; align-content:flex-start; gap:8px; overflow:auto; }
