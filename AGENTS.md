@@ -121,28 +121,3 @@ Every meaningful session must end with:
 ## Documentation ownership
 
 Keep one authoritative home per fact: `docs/product.md` for analyst behavior, `docs/architecture.md` for implementation contracts, `docs/demo-scenarios.md` for dataset narratives/versions, `docs/operations.md` for procedures, and `docs/decisions.md` for rationale. README and handoff entry points link to these guides instead of copying them. Contributor workflow, glossary and quality fixtures remain supporting references. Capability artifacts preserve task history; they do not override current guides. Inspect live status/release manifests instead of copying volatile deployment snapshots into multiple documents. When consolidating, preserve superseded source material and record its destination.
-
-## AI Intelligence application and production routing
-
-The canonical application package is
-`llm_investigation_orchestrator_serbia_poc/`. Before investigating, planning,
-editing, testing, or deploying it, read `docs/product-context.md`,
-`docs/architecture.md`, `docs/product.md`, `docs/operations.md`, and
-`docs/decisions.md`. Also read `docs/demo-scenarios.md` for any scenario,
-dataset, or demonstration task.
-
-Treat those documents as the durable project record. Do not substitute an
-earlier chat transcript, a historical artifact, or remembered VM state for
-them. Inspect current source and tests as well: documentation establishes the
-contract, while code and tests establish executable behavior.
-
-Before any production check, deployment, recovery, or scenario activation,
-read `docs/operations.md` in full. For the current VM connection and
-deployment helpers, inspect the maintained `remote_deploy_*` helpers under
-`llm_investigation_orchestrator_serbia_poc/mcp_server/`; do not guess a host,
-key, service name, or copy procedure. Never place credentials, private keys,
-mutable runtime state, or backups in Git.
-
-Establish the live state from the VM's `/api/status` and installed release
-manifest before claiming what is deployed. Follow the operations guide's
-different procedures for UI-only, server/gateway, and dataset/index changes.
