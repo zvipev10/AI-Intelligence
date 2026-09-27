@@ -9,5 +9,7 @@ assert.match(app, /openCatalogLayer\(catalogLayerId, \{\s*silent: true,\s*savedL
 assert.match(app, /return Boolean\(layer\?\.memoryPresentationOpen\) \|\| roleWorkspaceAllowsCatalogLayer\(layer\?\.catalogLayerId\);/);
 assert.match(app, /layer\.memoryPresentationOpen = true;\s*applySavedFiltersToLayer\(layer, item\);/);
 assert.match(app, /state\.layers\.forEach\(layer => \{ layer\.memoryPresentationOpen = false; \}\);/);
+assert.match(app, /activateView\(memoryPresentationView\(item\.presentation_view, layer\.preferredView \|\| "table"\)\);/);
+assert.doesNotMatch(app, /viewRecommendation\(layer\)/);
 
 console.log('PASS: saved Memory layers remain visible while opening their presentation, then return to role scoping on role change');

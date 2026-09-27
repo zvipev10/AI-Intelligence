@@ -2024,7 +2024,7 @@ async function openSavedMemoryLayer(item, trigger) {
   applySavedFiltersToLayer(layer, item);
   layer.visible = true;
   state.activeLayerId = layer.id;
-  activateView(memoryPresentationView(item.presentation_view, viewRecommendation(layer)));
+  activateView(memoryPresentationView(item.presentation_view, layer.preferredView || "table"));
   renderAllViews();
   closeMemoryScreen();
   trigger?.focus?.();
