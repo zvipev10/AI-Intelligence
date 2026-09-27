@@ -1361,7 +1361,8 @@ def empty_investigation_memory(investigation_id: str, name: str = "") -> dict:
         "memory": {
             "chat_summaries": [],
             "layers": [],
-            "artifacts": []
+            "artifacts": [],
+            "collection_requests": []
         }
     }
 
@@ -1376,6 +1377,7 @@ def investigation_memory_metadata(payload: dict) -> dict:
         "chat_summary_count": len(memory.get("chat_summaries") or []),
         "layer_count": len(memory.get("layers") or []),
         "artifact_count": len(memory.get("artifacts") or []),
+        "collection_request_count": len(memory.get("collection_requests") or []),
     }
 
 
@@ -1618,13 +1620,88 @@ def create_memory_artifact(request: dict) -> dict:
     return {"saved": item, "memory": saved}
 
 
+COLLECTION_REQUEST_TYPES = {"adint", "ipdr", "cellular_geolocations", "cellular_calls", "satellite", "cctv"}
+COLLECTION_REQUEST_TYPES_BY_ROLE = {
+    "general": COLLECTION_REQUEST_TYPES,
+    "sigint": {"cellular_geolocations", "cellular_calls"},
+    "visint": {"satellite", "cctv"},
+}
+COLLECTION_EXTRACTION_OBJECTS = {"convoy", "vehicles", "personnel", "equipment", "infrastructure"}
+
+
+def create_collection_request(request: dict) -> dict:
+    investigation_id = str(request.get("investigation_id") or "").strip()
+    if not INVESTIGATION_ID_PATTERN.fullmatch(investigation_id):
+        raise ValueError("Invalid investigation id")
+    role = compact_text(request.get("role") or "general", 20).lower()
+    if role not in COLLECTION_REQUEST_TYPES_BY_ROLE:
+        raise ValueError("Invalid collection role")
+    collection_type = compact_text(request.get("collection_type"), 40).lower()
+    if collection_type not in COLLECTION_REQUEST_TYPES_BY_ROLE[role]:
+        raise ValueError("Collection type is not available for this role")
+    target = request.get("target") if isinstance(request.get("target"), dict) else {}
+    target_type = compact_text(target.get("type"), 20)
+    normalized_target: dict
+    if target_type == "imei":
+        imei = compact_text(target.get("imei"), 32)
+        if not re.fullmatch(r"[0-9A-Za-z._:-]{6,32}", imei):
+            raise ValueError("Invalid IMEI collection target")
+        normalized_target = {"type": "imei", "imei": imei}
+    elif target_type == "polygon":
+        geometry = target.get("geometry") if isinstance(target.get("geometry"), dict) else {}
+        coordinates = geometry.get("coordinates") if geometry.get("type") == "Polygon" else None
+        if not isinstance(coordinates, list) or len(coordinates) != 1 or not isinstance(coordinates[0], list):
+            raise ValueError("Collection polygon requires one ring")
+        ring = coordinates[0]
+        if len(ring) < 4 or len(ring) > 200 or ring[0] != ring[-1]:
+            raise ValueError("Collection polygon must be closed with 4 to 200 positions")
+        normalized_ring = []
+        for position in ring:
+            if not isinstance(position, list) or len(position) != 2:
+                raise ValueError("Invalid collection polygon position")
+            lon, lat = position
+            if not isinstance(lon, (int, float)) or not isinstance(lat, (int, float)) or not math.isfinite(lon) or not math.isfinite(lat) or not -180 <= lon <= 180 or not -90 <= lat <= 90:
+                raise ValueError("Invalid collection polygon coordinates")
+            normalized_ring.append([float(lon), float(lat)])
+        normalized_target = {"type": "polygon", "geometry": {"type": "Polygon", "coordinates": [normalized_ring]}}
+    else:
+        raise ValueError("Unsupported collection target")
+    requested_objects = request.get("extraction_objects") if isinstance(request.get("extraction_objects"), list) else []
+    extraction_objects = []
+    for value in requested_objects:
+        item = compact_text(value, 40).lower()
+        if item in COLLECTION_EXTRACTION_OBJECTS and item not in extraction_objects:
+            extraction_objects.append(item)
+    if role == "visint" and not extraction_objects:
+        raise ValueError("Choose at least one object to extract for a VISINT request")
+    label = f"{collection_type.replace('_', ' ')} · {normalized_target.get('imei') or 'marked area'}"
+    item = {
+        "id": f"collection_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}_{secrets.token_hex(3)}",
+        "kind": "collection_request",
+        "saved_at_utc": utc_now_iso(),
+        "source": "demo_user_action",
+        "status": "requested",
+        "role": role,
+        "collection_type": collection_type,
+        "target": normalized_target,
+        "extraction_objects": extraction_objects[:12],
+        "instructions": normalize_memory_comment(request.get("instructions")),
+        "label": label,
+    }
+    existing = load_investigation_memory(investigation_id)
+    memory = existing.get("memory") if isinstance(existing.get("memory"), dict) else {}
+    requests = normalize_memory_list(memory.get("collection_requests")); requests.append(item)
+    saved = save_investigation_memory({"investigation_id": investigation_id, "name": request.get("name") or existing.get("name") or investigation_id, "memory": {"collection_requests": requests}})
+    return {"saved": item, "memory": saved}
+
+
 def delete_memory_entry(request: dict) -> dict:
     investigation_id = str(request.get("investigation_id") or "").strip()
     group = str(request.get("group") or "").strip()
     item_id = compact_text(request.get("item_id"), 240)
     if not INVESTIGATION_ID_PATTERN.fullmatch(investigation_id):
         raise ValueError("Invalid investigation id")
-    if group not in {"chat_summaries", "layers", "artifacts"}:
+    if group not in {"chat_summaries", "layers", "artifacts", "collection_requests"}:
         raise ValueError("Invalid memory group")
     if not item_id:
         raise ValueError("Missing memory item id")
@@ -1638,6 +1715,7 @@ def delete_memory_entry(request: dict) -> dict:
         "chat_summaries": normalize_memory_list(memory.get("chat_summaries")),
         "layers": normalize_memory_list(memory.get("layers")),
         "artifacts": normalize_memory_list(memory.get("artifacts")),
+        "collection_requests": normalize_memory_list(memory.get("collection_requests")),
     }
     saved_memory[group] = remaining
     saved = save_investigation_memory({
@@ -1761,6 +1839,7 @@ def normalize_investigation_memory(request: dict) -> dict:
             "chat_summaries": normalize_memory_list(memory.get("chat_summaries", existing_memory.get("chat_summaries"))),
             "layers": normalize_memory_list(memory.get("layers", existing_memory.get("layers"))),
             "artifacts": normalize_memory_list(memory.get("artifacts", existing_memory.get("artifacts"))),
+            "collection_requests": normalize_memory_list(memory.get("collection_requests", existing_memory.get("collection_requests"))),
         }
     }
 
@@ -1789,6 +1868,7 @@ def load_investigation_memory(investigation_id: str) -> dict:
             "chat_summaries": normalize_memory_list(memory.get("chat_summaries")),
             "layers": normalize_memory_list(memory.get("layers")),
             "artifacts": normalize_memory_list(memory.get("artifacts")),
+            "collection_requests": normalize_memory_list(memory.get("collection_requests")),
         }
     }
 
@@ -5702,6 +5782,21 @@ class Handler(SimpleHTTPRequestHandler):
                 if not isinstance(request, dict):
                     raise ValueError("Invalid investigation memory artifact payload")
                 self.send_json(201, create_memory_artifact(request))
+            except ValueError as exc:
+                self.send_json(400, {"error": str(exc)})
+            except Exception as exc:
+                self.send_json(502, {"error": str(exc)})
+            return
+        if path == "/api/collection-request":
+            try:
+                length = int(self.headers.get("Content-Length", "0"))
+                if length > 200_000:
+                    self.send_json(413, {"error": "Collection request payload too large"})
+                    return
+                request = json.loads(self.rfile.read(length).decode("utf-8-sig"))
+                if not isinstance(request, dict):
+                    raise ValueError("Invalid collection request payload")
+                self.send_json(201, create_collection_request(request))
             except ValueError as exc:
                 self.send_json(400, {"error": str(exc)})
             except Exception as exc:

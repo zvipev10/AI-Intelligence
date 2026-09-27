@@ -702,6 +702,16 @@ const memoryCommentSubject = document.getElementById("memoryCommentSubject");
 const memoryCommentError = document.getElementById("memoryCommentError");
 let pendingMemoryCommentAction = null;
 let memoryReturnFocus = null;
+const polygonActionModal = document.getElementById("polygonActionModal");
+const collectionRequestModal = document.getElementById("collectionRequestModal");
+const collectionRequestForm = document.getElementById("collectionRequestForm");
+const collectionRequestTarget = document.getElementById("collectionRequestTarget");
+const collectionRequestTypes = document.getElementById("collectionRequestTypes");
+const collectionExtractionObjects = document.getElementById("collectionExtractionObjects");
+const collectionRequestNote = document.getElementById("collectionRequestNote");
+const collectionRequestError = document.getElementById("collectionRequestError");
+let pendingPolygonAction = null;
+let pendingCollectionRequest = null;
 const queryLayerName = document.getElementById("queryLayerName");
 const queryToolName = document.getElementById("queryToolName");
 const queryModal = document.getElementById("queryModal");
@@ -1964,7 +1974,7 @@ function normalizeMemoryList(value) {
 
 function currentSavedMemory() {
   const memory = state.investigationMemory?.memory;
-  return memory && typeof memory === "object" ? memory : { chat_summaries: [], layers: [], artifacts: [] };
+  return memory && typeof memory === "object" ? memory : { chat_summaries: [], layers: [], artifacts: [], collection_requests: [] };
 }
 
 function memoryCommentValue(value) {
@@ -1990,6 +2000,96 @@ function closeMemoryCommentDialog() {
   memoryReturnFocus = null;
 }
 
+const COLLECTION_TYPES = [
+  { id: "adint", he: "ADINT", en: "ADINT", descriptionHe: "איסוף נתוני מכשירים ופרסומות באזור", descriptionEn: "Collect device and advertising observations in the area" },
+  { id: "ipdr", he: "IPDR", en: "IPDR", descriptionHe: "איסוף רשומות שימוש בנתוני רשת", descriptionEn: "Collect network data-session records" },
+  { id: "cellular_geolocations", he: "מיקומי סלולר", en: "Cellular geolocations", descriptionHe: "איסוף מיקומי מכשירים", descriptionEn: "Collect device location observations" },
+  { id: "cellular_calls", he: "שיחות סלולר", en: "Cellular calls", descriptionHe: "איסוף רשומות שיחות", descriptionEn: "Collect call-detail records" },
+  { id: "satellite", he: "לוויין", en: "Satellite", descriptionHe: "בקשת צילום לווייני", descriptionEn: "Request satellite imagery" },
+  { id: "cctv", he: "CCTV", en: "CCTV", descriptionHe: "בקשת וידאו ממצלמות", descriptionEn: "Request camera video" }
+];
+const COLLECTION_EXTRACTION_OBJECTS = [
+  { id: "convoy", he: "שיירה", en: "Convoy" },
+  { id: "vehicles", he: "כלי רכב", en: "Vehicles" },
+  { id: "personnel", he: "כוח אדם", en: "Personnel" },
+  { id: "equipment", he: "ציוד", en: "Equipment" },
+  { id: "infrastructure", he: "תשתיות", en: "Infrastructure" }
+];
+
+function collectionTypesForRole() {
+  if (state.activeRoleWorkspace === "sigint") return COLLECTION_TYPES.filter(item => ["cellular_geolocations", "cellular_calls"].includes(item.id));
+  if (state.activeRoleWorkspace === "visint") return COLLECTION_TYPES.filter(item => ["satellite", "cctv"].includes(item.id));
+  return COLLECTION_TYPES;
+}
+
+function collectionImeiButton(value) {
+  const imei = String(value || "").trim();
+  if (!imei || imei === "-" || imei === "—" || /unknown/i.test(imei)) return escapeHtml(imei || "—");
+  return `<button type="button" class="collection-imei" data-collection-imei="${escapeHtml(imei)}" title="${escapeHtml(activeLocaleText("בקשת איסוף עבור IMEI", "Request collection for this IMEI"))}">${escapeHtml(imei)}</button>`;
+}
+
+function closePolygonActionDialog() {
+  pendingPolygonAction = null;
+  polygonActionModal.hidden = true;
+}
+
+function closeCollectionRequestDialog() {
+  pendingCollectionRequest = null;
+  collectionRequestModal.hidden = true;
+  collectionRequestError.hidden = true;
+}
+
+function openPolygonActionDialog(polygon) {
+  if (!polygon?.coordinates || state.draftSessionActive) return;
+  pendingPolygonAction = polygon;
+  polygonActionModal.hidden = false;
+  document.getElementById("polygonRequestCollection")?.focus();
+}
+
+function openCollectionRequestDialog(target, trigger = document.activeElement) {
+  if (state.draftSessionActive) { openDraftCreateModal(() => openCollectionRequestDialog(target, trigger)); return; }
+  if (!state.investigationId || !target) return;
+  pendingCollectionRequest = { ...target, trigger };
+  const isImei = target.type === "imei";
+  collectionRequestTarget.textContent = isImei
+    ? `IMEI: ${target.imei}`
+    : activeLocaleText("אזור מסומן במפה", "Marked area on the map");
+  const types = collectionTypesForRole();
+  collectionRequestTypes.innerHTML = `<legend>${escapeHtml(activeLocaleText("סוג איסוף", "Collection type"))}</legend>${types.map((item, index) => `<label class="collection-option"><input type="radio" name="collectionType" value="${item.id}" ${index === 0 ? "checked" : ""}><span><strong>${escapeHtml(activeLocaleText(item.he, item.en))}</strong><small>${escapeHtml(activeLocaleText(item.descriptionHe, item.descriptionEn))}</small></span></label>`).join("")}`;
+  const visint = state.activeRoleWorkspace === "visint";
+  collectionExtractionObjects.hidden = !visint;
+  collectionExtractionObjects.innerHTML = visint ? `<legend>${escapeHtml(activeLocaleText("אובייקטים לחילוץ", "Objects to extract"))}</legend>${COLLECTION_EXTRACTION_OBJECTS.map((item, index) => `<label class="collection-option"><input type="checkbox" name="collectionObject" value="${item.id}" ${index === 0 ? "checked" : ""}><span><strong>${escapeHtml(activeLocaleText(item.he, item.en))}</strong></span></label>`).join("")}` : "";
+  collectionRequestNote.value = "";
+  collectionRequestError.hidden = true;
+  collectionRequestModal.hidden = false;
+  collectionRequestTypes.querySelector("input")?.focus();
+}
+
+async function submitCollectionRequest() {
+  const target = pendingCollectionRequest;
+  const type = collectionRequestForm.querySelector('input[name="collectionType"]:checked')?.value;
+  if (!target || !type) return;
+  const objects = [...collectionRequestForm.querySelectorAll('input[name="collectionObject"]:checked')].map(input => input.value);
+  const response = await fetch("/api/collection-request", {
+    method: "POST",
+    headers: { "Content-Type": "application/json; charset=utf-8" },
+    body: JSON.stringify({
+      investigation_id: state.investigationId,
+      name: state.investigationName,
+      role: state.activeRoleWorkspace || "general",
+      target: target.type === "imei" ? { type: "imei", imei: target.imei } : { type: "polygon", geometry: { type: "Polygon", coordinates: [target.coordinates] } },
+      collection_type: type,
+      extraction_objects: objects,
+      instructions: memoryCommentValue(collectionRequestNote.value)
+    })
+  });
+  const payload = await response.json();
+  if (!response.ok) throw new Error(payload.error || activeLocaleText("שליחת בקשת האיסוף נכשלה", "Could not submit collection request"));
+  await loadInvestigationMemory();
+  closeCollectionRequestDialog();
+  target.trigger?.focus?.();
+}
+
 function renderMemoryScreen() {
   if (!memoryModalBody) return;
   const memory = currentSavedMemory();
@@ -1997,7 +2097,8 @@ function renderMemoryScreen() {
     ["chat_summaries", activeLocaleText("שיחות", "Chat"), memory.chat_summaries || [], item => item.answer_preview || item.prompt || "—", false],
     ["layers", activeLocaleText("שכבות", "Layers"), memory.layers || [], item => item.label || "—", true],
     ["artifacts", activeLocaleText("אובייקטים", "Objects"), (memory.artifacts || []).filter(item => item.kind === "object"), item => item.label || item.object_id || "—", true],
-    ["artifacts", activeLocaleText("אזורים", "Areas"), (memory.artifacts || []).filter(item => item.kind === "polygon"), item => item.label || activeLocaleText("אזור שמור", "Saved area"), true]
+    ["artifacts", activeLocaleText("אזורים", "Areas"), (memory.artifacts || []).filter(item => item.kind === "polygon"), item => item.label || activeLocaleText("אזור שמור", "Saved area"), true],
+    ["collection_requests", activeLocaleText("בקשות איסוף", "Collection requests"), memory.collection_requests || [], item => item.label || item.collection_type || "—", false]
   ];
   const html = groups.filter(([, , items]) => items.length).map(([group, title, items, label, openable]) => `<section class="memory-group"><h3>${escapeHtml(title)}</h3>${items.slice().reverse().map(item => `<article class="memory-entry"><div class="memory-entry-heading">${openable ? `<button type="button" class="memory-entry-open" data-memory-open-group="${group}" data-memory-open-id="${escapeHtml(item.id)}"><strong>${escapeHtml(label(item))}</strong></button>` : `<strong>${escapeHtml(label(item))}</strong>`}<button type="button" class="memory-entry-delete" data-memory-delete-group="${group}" data-memory-delete-id="${escapeHtml(item.id)}" title="${escapeHtml(activeLocaleText("הסר מהזיכרון", "Remove from memory"))}" aria-label="${escapeHtml(activeLocaleText("הסר מהזיכרון", "Remove from memory"))}"><span class="material-symbols-rounded" aria-hidden="true">delete</span></button></div><span class="memory-entry-meta">${escapeHtml(formatSavedTime(item.saved_at_utc))}${item.object_id ? ` · ${escapeHtml(item.object_id)}` : ""}</span>${item.analyst_comment ? `<p class="memory-entry-comment">${escapeHtml(item.analyst_comment)}</p>` : ""}</article>`).join("")}</section>`).join("");
   memoryModalBody.innerHTML = html || `<div class="activity-empty">${escapeHtml(activeLocaleText("עדיין לא נשמרו פריטים לחקירה זו.", "No items have been saved to this investigation yet."))}</div>`;
@@ -2137,16 +2238,20 @@ function normalizeSavedMemoryForAgent(memory = currentSavedMemory()) {
   const artifacts = normalizeMemoryList(memory.artifacts).slice(-12).map(item => ({
     id: item.id || "", kind: item.kind || "", label: item.label || "", object_kind: item.object_kind || "", object_id: item.object_id || "", summary: item.summary || "", analyst_comment: item.analyst_comment || "", saved_at_utc: item.saved_at_utc || ""
   }));
+  const collectionRequests = normalizeMemoryList(memory.collection_requests).slice(-12).map(item => ({
+    id: item.id || "", collection_type: item.collection_type || "", role: item.role || "general", target: item.target || {}, extraction_objects: Array.isArray(item.extraction_objects) ? item.extraction_objects.slice(0, 12) : [], instructions: item.instructions || "", saved_at_utc: item.saved_at_utc || ""
+  }));
   return {
     chat_summaries: chatSummaries,
     layers,
-    artifacts
+    artifacts,
+    collection_requests: collectionRequests
   };
 }
 
 function investigationMemoryForAgent() {
   const memory = normalizeSavedMemoryForAgent();
-  if (!memory.chat_summaries.length && !memory.layers.length && !memory.artifacts.length) return null;
+  if (!memory.chat_summaries.length && !memory.layers.length && !memory.artifacts.length && !memory.collection_requests.length) return null;
   return memory;
 }
 
@@ -3292,7 +3397,7 @@ function initMap() {
       status.hidden = false;
     }
   });
-  state.polygonDraw = new PolygonDrawControl(state.map, document.getElementById("polygonDrawButton"), document.getElementById("polygonDrawHint"), { onSelect: polygon => savePolygonToInvestigationMemory(polygon) });
+  state.polygonDraw = new PolygonDrawControl(state.map, document.getElementById("polygonDrawButton"), document.getElementById("polygonDrawHint"), { onSelect: polygon => openPolygonActionDialog(polygon) });
   const overlay = document.getElementById("rawEventsOverlay");
   const positionDrawControl = () => {
     const height = !overlay.hidden && getComputedStyle(overlay).display !== "none" ? overlay.getBoundingClientRect().height : 0;
@@ -6859,6 +6964,16 @@ function enhanceResultsTable(layer) {
     save.innerHTML = '<span class="memory-bookmark-icon" aria-hidden="true"></span>';
     open.insertAdjacentElement("afterend", save);
   });
+  const imeiColumns = [...head.querySelectorAll("th")]
+    .map((cell, index) => /\bimei\b/i.test(normalizedTableCellText(cell.textContent)) ? index : -1)
+    .filter(index => index >= 0);
+  if (imeiColumns.length) document.getElementById("evidenceRows")?.querySelectorAll("tr").forEach(row => {
+    imeiColumns.forEach(index => {
+      const cell = row.children[index];
+      const imei = normalizedTableCellText(cell?.textContent);
+      if (cell && imei && !cell.querySelector(".collection-imei")) cell.innerHTML = collectionImeiButton(imei);
+    });
+  });
 }
 
 function renderEvidence() {
@@ -7077,7 +7192,7 @@ function renderEvidence() {
       const id = String(event.record_id || event.event_id || "");
       return `<tr><td>${mapActionButton(activeLayer.id, "event", id, event)}</td>${columns.map(key => {
         const value = escapeHtml(event[key] || (key === "location_name" ? event.location_id : "") || "—");
-        return key === "event_id" ? `<td><button type="button" class="object-viewer-open" data-viewer-kind="record" data-viewer-id="${escapeHtml(id)}">${value}</button></td>` : `<td dir="ltr">${value}</td>`;
+        return key === "event_id" ? `<td><button type="button" class="object-viewer-open" data-viewer-kind="record" data-viewer-id="${escapeHtml(id)}">${value}</button></td>` : `<td dir="ltr">${key === "imei" ? collectionImeiButton(event[key]) : value}</td>`;
       }).join("")}</tr>`;
     }).join("") : `<tr><td colspan="6" class="empty-cell">${escapeHtml(activeLocaleText("השכבה ריקה.", "Layer is empty."))}</td></tr>`;
     enhanceResultsTable(activeLayer);
@@ -7111,7 +7226,7 @@ function renderEvidence() {
       const value = escapeHtml(event[key] == null || event[key] === "" ? "—" : event[key]);
       return key === "source_record_id"
         ? `<td dir="ltr"><button type="button" class="object-viewer-open" data-viewer-kind="record" data-viewer-id="${escapeHtml(event.event_id || event.record_id || "")}">${value}</button></td>`
-        : `<td dir="ltr">${value}</td>`;
+        : `<td dir="ltr">${key === "imei" ? collectionImeiButton(event[key]) : value}</td>`;
     }).join("")}</tr>`).join("") : `<tr><td colspan="18" class="empty-cell">${escapeHtml(activeLocaleText("השכבה מוסתרת או ריקה.", "Layer is hidden or empty."))}</td></tr>`;
     enhanceResultsTable(activeLayer);
     return;
@@ -7124,7 +7239,7 @@ function renderEvidence() {
       <td>${escapeHtml(event.source_reliability_label || event.source_reliability || "-")}</td>
       <td>${escapeHtml(event.certainty_level || "-")}</td>
       <td dir="ltr">${escapeHtml(event.ip_address || "-")}</td>
-      <td dir="ltr">${escapeHtml(event.imei || "-")}</td>
+      <td dir="ltr">${collectionImeiButton(event.imei)}</td>
       <td>${escapeHtml(event.event_summary || "-")}</td></tr>`).join("")
       : `<tr><td colspan="7" class="empty-cell">${escapeHtml(activeLocaleText("השכבה מוסתרת או ריקה.", "Layer is hidden or empty."))}</td></tr>`;
     enhanceResultsTable(activeLayer);
@@ -7147,7 +7262,7 @@ function renderEvidence() {
       <td>${escapeHtml(event.certainty_level || "-")}</td>
       <td>${escapeHtml(event.entity_name || event.entity_id || "-")}</td>
       <td>${escapeHtml(event.location_name || "-")}</td>
-      ${cellularCallTable ? `<td dir="ltr">${escapeHtml(event.side_a_location_id || "-")}</td><td dir="ltr">${escapeHtml(event.side_b_location_id || "-")}</td><td dir="ltr">${escapeHtml(event.side_a_sim || "—")}</td><td dir="ltr">${escapeHtml(event.side_b_sim || "—")}</td><td dir="ltr">${escapeHtml(event.side_a_imei || "—")}</td><td dir="ltr">${escapeHtml(event.side_b_imei || "—")}</td>` : ""}
+      ${cellularCallTable ? `<td dir="ltr">${escapeHtml(event.side_a_location_id || "-")}</td><td dir="ltr">${escapeHtml(event.side_b_location_id || "-")}</td><td dir="ltr">${escapeHtml(event.side_a_sim || "—")}</td><td dir="ltr">${escapeHtml(event.side_b_sim || "—")}</td><td dir="ltr">${collectionImeiButton(event.side_a_imei)}</td><td dir="ltr">${collectionImeiButton(event.side_b_imei)}</td>` : ""}
       <td>${escapeHtml(event.event_summary || "-")}</td>
     </tr>`;
   }).join("") : `<tr><td colspan="${cellularCallTable ? 12 : 8}" class="empty-cell">${escapeHtml(activeLocaleText("השכבה מוסתרת או ריקה.", "Layer is hidden or empty."))}</td></tr>`;
@@ -7249,6 +7364,12 @@ document.addEventListener("click", event => {
   if (memoryObject) {
     event.preventDefault();
     void saveObjectToInvestigationMemory(memoryObject.dataset.memoryObjectKind, memoryObject.dataset.memoryObjectId, memoryObject);
+    return;
+  }
+  const imeiCollection = event.target.closest("[data-collection-imei]");
+  if (imeiCollection) {
+    event.preventDefault();
+    openCollectionRequestDialog({ type: "imei", imei: imeiCollection.dataset.collectionImei }, imeiCollection);
     return;
   }
   const viewerTrigger = event.target.closest("[data-viewer-kind][data-viewer-id]");
@@ -7719,6 +7840,30 @@ workstreamRailToggle?.addEventListener("click", () => setWorkstreamRailCollapsed
 memoryButton?.addEventListener("click", () => openMemoryScreen(memoryButton));
 document.getElementById("memoryModalClose")?.addEventListener("click", closeMemoryScreen);
 memoryModal?.addEventListener("click", event => { if (event.target === memoryModal) closeMemoryScreen(); });
+document.getElementById("polygonActionClose")?.addEventListener("click", closePolygonActionDialog);
+polygonActionModal?.addEventListener("click", event => { if (event.target === polygonActionModal) closePolygonActionDialog(); });
+document.getElementById("polygonSaveMemory")?.addEventListener("click", () => {
+  const polygon = pendingPolygonAction;
+  closePolygonActionDialog();
+  if (polygon) void savePolygonToInvestigationMemory(polygon);
+});
+document.getElementById("polygonRequestCollection")?.addEventListener("click", () => {
+  const polygon = pendingPolygonAction;
+  closePolygonActionDialog();
+  if (polygon) openCollectionRequestDialog({ type: "polygon", coordinates: polygon.coordinates }, document.getElementById("polygonDrawButton"));
+});
+document.getElementById("collectionRequestClose")?.addEventListener("click", closeCollectionRequestDialog);
+document.getElementById("collectionRequestCancel")?.addEventListener("click", closeCollectionRequestDialog);
+collectionRequestModal?.addEventListener("click", event => { if (event.target === collectionRequestModal) closeCollectionRequestDialog(); });
+collectionRequestForm?.addEventListener("submit", async event => {
+  event.preventDefault();
+  const submit = document.getElementById("collectionRequestSubmit");
+  submit.disabled = true;
+  collectionRequestError.hidden = true;
+  try { await submitCollectionRequest(); }
+  catch (error) { collectionRequestError.textContent = error.message || activeLocaleText("שליחת בקשת האיסוף נכשלה", "Could not submit collection request"); collectionRequestError.hidden = false; }
+  finally { submit.disabled = false; }
+});
 document.getElementById("memoryCommentClose")?.addEventListener("click", closeMemoryCommentDialog);
 document.getElementById("memoryCommentCancel")?.addEventListener("click", closeMemoryCommentDialog);
 memoryCommentModal?.addEventListener("click", event => { if (event.target === memoryCommentModal) closeMemoryCommentDialog(); });
@@ -7781,6 +7926,16 @@ document.addEventListener("keydown", event => {
   if (event.key === "Escape" && memoryModal && !memoryModal.hidden) {
     event.preventDefault();
     closeMemoryScreen();
+    return;
+  }
+  if (event.key === "Escape" && collectionRequestModal && !collectionRequestModal.hidden) {
+    event.preventDefault();
+    closeCollectionRequestDialog();
+    return;
+  }
+  if (event.key === "Escape" && polygonActionModal && !polygonActionModal.hidden) {
+    event.preventDefault();
+    closePolygonActionDialog();
     return;
   }
   if (event.key === "Escape" && !document.getElementById("objectViewer").hidden) {

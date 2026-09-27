@@ -232,6 +232,26 @@
     </form>
   </div>
 
+  <div id="polygonActionModal" class="modal-backdrop collection-modal" hidden>
+    <section class="collection-modal-panel" role="dialog" aria-modal="true" aria-labelledby="polygonActionTitle">
+      <header><div><span class="eyebrow" data-i18n-text-he="אזור מסומן" data-i18n-text-en="Marked area">אזור מסומן</span><h2 id="polygonActionTitle" data-i18n-text-he="מה לעשות עם האזור?" data-i18n-text-en="What would you like to do with this area?">מה לעשות עם האזור?</h2></div><button id="polygonActionClose" class="modal-close-button" type="button" aria-label="סגור" data-i18n-aria-he="סגור" data-i18n-aria-en="Close">×</button></header>
+      <p data-i18n-text-he="שמרו את האזור לחקירה או בקשו איסוף חדש עבורו." data-i18n-text-en="Save this area to the investigation or request new collection for it.">שמרו את האזור לחקירה או בקשו איסוף חדש עבורו.</p>
+      <div class="collection-modal-actions"><button id="polygonSaveMemory" type="button" data-i18n-text-he="שמור לזיכרון" data-i18n-text-en="Save to memory">שמור לזיכרון</button><button id="polygonRequestCollection" class="primary-filter-action" type="button" data-i18n-text-he="בקשת איסוף" data-i18n-text-en="Request collection">בקשת איסוף</button></div>
+    </section>
+  </div>
+
+  <div id="collectionRequestModal" class="modal-backdrop collection-modal" hidden>
+    <form id="collectionRequestForm" class="collection-modal-panel" aria-labelledby="collectionRequestTitle">
+      <header><div><span class="eyebrow" data-i18n-text-he="הדגמה בלבד" data-i18n-text-en="Demo only">הדגמה בלבד</span><h2 id="collectionRequestTitle" data-i18n-text-he="בקשת איסוף" data-i18n-text-en="Request collection">בקשת איסוף</h2><p id="collectionRequestTarget"></p></div><button id="collectionRequestClose" class="modal-close-button" type="button" aria-label="סגור" data-i18n-aria-he="סגור" data-i18n-aria-en="Close">×</button></header>
+      <fieldset id="collectionRequestTypes" class="collection-request-types"></fieldset>
+      <fieldset id="collectionExtractionObjects" class="collection-extraction-objects" hidden></fieldset>
+      <label for="collectionRequestNote" data-i18n-text-he="הנחיות לאיסוף (אופציונלי)" data-i18n-text-en="Collection instructions (optional)">הנחיות לאיסוף (אופציונלי)</label>
+      <textarea id="collectionRequestNote" maxlength="1200" rows="3" data-i18n-placeholder-he="מה צריך לאסוף ולמה?" data-i18n-placeholder-en="What should be collected and why?"></textarea>
+      <p id="collectionRequestError" class="memory-comment-error" role="alert" hidden></p>
+      <div class="collection-modal-actions"><button id="collectionRequestCancel" type="button" data-i18n-text-he="ביטול" data-i18n-text-en="Cancel">ביטול</button><button id="collectionRequestSubmit" class="primary-filter-action" type="submit" data-i18n-text-he="שלח בקשה" data-i18n-text-en="Submit request">שלח בקשה</button></div>
+    </form>
+  </div>
+
   <div id="welcomeActionModal" class="modal-backdrop welcome-action-backdrop" hidden>
     <section class="welcome-action-modal" role="dialog" aria-modal="true" aria-labelledby="welcomeActionTitle" aria-describedby="welcomeActionDescription">
       <div class="welcome-action-icon"><span class="material-symbols-rounded" aria-hidden="true">group_add</span></div>
@@ -357,6 +377,6 @@
 
   <script src="./vendor/maplibre-gl.js"></script>
   <script src="./polygon_draw.js?v=1"></script>
-  <script src="./demo_bootstrap.js?v=233"></script>
+  <script src="./demo_bootstrap.js?v=234"></script>
 </body>
 </html>

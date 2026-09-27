@@ -219,9 +219,9 @@ body.welcome-active .investigation-switcher { visibility: hidden; pointer-events
 .chat-panel-toggle:hover { border-color: var(--blue); background: #202a37; color: var(--ink); }
 .chat-panel-toggle:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
 .chat-panel-toggle .material-symbols-rounded { font-size: 16px; direction: ltr; }
-.modal-backdrop.memory-modal,.modal-backdrop.memory-comment-modal { z-index:150; }
-.memory-modal-panel,.memory-comment-panel { width:min(720px,calc(100vw - 28px));max-height:min(760px,calc(100dvh - 28px));display:grid;gap:14px;padding:20px;border:1px solid var(--line);border-radius:14px;background:var(--panel);box-shadow:0 24px 70px rgba(0,0,0,.55);overflow:auto; }
-.memory-modal-header,.memory-comment-panel>header { display:flex;align-items:flex-start;justify-content:space-between;gap:12px;border-bottom:1px solid var(--line);padding-bottom:12px; }
+.modal-backdrop.memory-modal,.modal-backdrop.memory-comment-modal,.modal-backdrop.collection-modal { z-index:150; }
+.memory-modal-panel,.memory-comment-panel,.collection-modal-panel { width:min(720px,calc(100vw - 28px));max-height:min(760px,calc(100dvh - 28px));display:grid;gap:14px;padding:20px;border:1px solid var(--line);border-radius:14px;background:var(--panel);box-shadow:0 24px 70px rgba(0,0,0,.55);overflow:auto; }
+.memory-modal-header,.memory-comment-panel>header,.collection-modal-panel>header { display:flex;align-items:flex-start;justify-content:space-between;gap:12px;border-bottom:1px solid var(--line);padding-bottom:12px; }
 .memory-modal-body { display:grid;gap:14px; }
 .memory-group { display:grid;gap:7px; }
 .memory-group h3 { margin:0;font-size:13px; }
@@ -240,6 +240,20 @@ body.welcome-active .investigation-switcher { visibility: hidden; pointer-events
 .memory-comment-actions button { min-height:34px;border:1px solid rgba(146,170,205,.32);border-radius:8px;background:rgba(255,255,255,.04);color:var(--ink);padding:6px 12px;font:inherit;cursor:pointer; }
 .memory-comment-actions .primary-filter-action { border-color:rgba(88,166,255,.52);background:rgba(88,166,255,.14);color:var(--blue); }
 .memory-comment-error { margin:0;color:var(--red);font-size:12px; }
+.collection-modal-panel>p,.collection-modal-panel header p { margin:0;color:var(--muted);font-size:12px;line-height:1.45; }
+.collection-request-types,.collection-extraction-objects { display:grid;gap:8px;margin:0;padding:0;border:0; }
+.collection-request-types legend,.collection-extraction-objects legend { font-size:12px;font-weight:800; }
+.collection-option { display:flex;align-items:flex-start;gap:9px;padding:9px 10px;border:1px solid rgba(146,170,205,.26);border-radius:8px;background:rgba(255,255,255,.025);cursor:pointer; }
+.collection-option:hover { border-color:rgba(88,166,255,.52);background:rgba(88,166,255,.07); }
+.collection-option input { margin-top:2px;accent-color:var(--blue); }
+.collection-option span { display:grid;gap:2px;font-size:12px; }
+.collection-option small { color:var(--muted);font-size:11px; }
+.collection-modal-panel textarea { width:100%;resize:vertical;border:1px solid rgba(146,170,205,.38);border-radius:9px;background:#10141b;color:var(--ink);padding:9px;font:inherit; }
+.collection-modal-actions { display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap; }
+.collection-modal-actions button { min-height:34px;border:1px solid rgba(146,170,205,.32);border-radius:8px;background:rgba(255,255,255,.04);color:var(--ink);padding:6px 12px;font:inherit;cursor:pointer; }
+.collection-modal-actions .primary-filter-action { border-color:rgba(88,166,255,.52);background:rgba(88,166,255,.14);color:var(--blue); }
+.collection-imei { border:0;background:transparent;color:var(--blue);padding:0;font:inherit;text-decoration:underline;text-decoration-style:dotted;cursor:pointer; }
+.collection-imei:hover,.collection-imei:focus-visible { color:#b6dcff;outline:none; }
 .object-memory-action,.table-object-memory { margin-inline-start:6px;border:0;background:transparent;color:var(--muted);cursor:pointer;vertical-align:middle; }
 .object-memory-action:hover,.table-object-memory:hover { color:var(--blue); }
 .conversation-panel { display: grid; grid-template-rows: 1fr auto auto; }
