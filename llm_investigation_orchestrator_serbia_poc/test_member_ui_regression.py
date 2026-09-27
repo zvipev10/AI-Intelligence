@@ -30,11 +30,14 @@ class MemberUiRegressionTests(unittest.TestCase):
     def test_result_header_places_tabs_left_and_layer_search_right(self):
         tabs = self.index.split('<nav class="view-tabs"', 1)[1].split("</nav>", 1)[0]
         self.assertLess(tabs.index('class="view-tab-list"'), tabs.index('class="layer-selector"'))
-        self.assertIn('id="memoryButton" class="view-tab"', tabs)
+        actions = tabs.split('class="view-tabs-actions"', 1)[1]
+        self.assertIn('id="memoryButton" class="view-tab memory-presentation-button"', actions)
+        self.assertLess(actions.index('id="memoryButton"'), actions.index('class="layer-selector"'))
         self.assertNotIn('id="memoryButton"', self.index.split('<nav class="view-tabs"', 1)[0])
         view_tabs_rule = self.styles.split(".view-tabs {", 1)[1].split("}", 1)[0]
         self.assertIn("justify-content: space-between", view_tabs_rule)
         self.assertIn("direction: ltr", view_tabs_rule)
+        self.assertIn(".view-tabs-actions {", self.styles)
         layer_selector_rule = self.styles.split(".layer-selector {", 1)[1].split("}", 1)[0]
         self.assertIn("position: relative", layer_selector_rule)
         self.assertNotIn("position: absolute", layer_selector_rule)

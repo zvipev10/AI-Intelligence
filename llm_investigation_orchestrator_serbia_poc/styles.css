@@ -365,8 +365,10 @@ textarea.mention-source::placeholder { color: var(--muted) !important; }
 .result-panel { display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto; }
 .view-tabs { min-width: 0; padding: 0 14px; display: flex; align-items: center; justify-content: space-between; gap: 18px; direction: ltr; border-bottom: 1px solid var(--line); }
 .view-tab-list { flex: 0 0 auto; display: flex; gap: 18px; direction: ltr; }
+.view-tabs-actions { min-width: 0; display: flex; align-items: center; gap: 12px; direction: ltr; }
 .view-tab { height: 42px; border: 0; border-bottom: 3px solid transparent; background: transparent; color: var(--muted); }
 .view-tab.active { border-bottom-color: var(--green); color: var(--ink); font-weight: 700; }
+.memory-presentation-button { flex: 0 0 auto; padding: 0 2px; }
 .view-recommendation { min-height: 30px; padding: 7px 14px; border-bottom: 1px solid var(--line); background: var(--green-soft); color: var(--green); font-size: 11px; }
 .view-recommendation[hidden] { display: none; }
 .layer-selector { position: relative; z-index: 5; flex: 0 1 190px; width: min(190px, 42vw); min-width: 120px; direction: ltr; }
@@ -806,6 +808,7 @@ th { position: sticky; top: 0; z-index: 1; background: #202530; }
   .team-mention-menu { max-height: 168px; }
   .view-tabs { gap: 10px; padding: 0 10px; }
   .view-tab-list { gap: 10px; }
+  .view-tabs-actions { gap: 8px; }
   .layer-selector { flex-basis: 220px; width: min(220px, 48vw); min-width: 128px; }
   .raw-events-overlay { left: 0; right: 0; bottom: 0; height: 36%; min-height: 190px; }
   .layer-filter-panel { left: 10px; bottom: calc(34% + 10px); width: min(300px, calc(100% - 20px)); max-height: min(300px, calc(66% - 76px)); }
