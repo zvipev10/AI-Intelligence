@@ -344,14 +344,57 @@ def localized_recorded_runs_dir(locale: str = "he") -> Path:
     return RECORDED_RUNS_DIR
 
 
+def load_person_telecom_links(events_path: Path, entities_path: Path) -> list[dict[str, Any]]:
+    """Load optional scenario identity associations without modifying supplied telecom records."""
+    path = events_path.parent / "person-telecom-links.json"
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        links = payload.get("links", [])
+        entities = json.loads(entities_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return []
+    names = {
+        str(entity.get("entity_id")): str(entity.get("canonical_name") or entity.get("entity_id"))
+        for entity in entities if entity.get("entity_id")
+    }
+    return [
+        {**link, "entity_name": names.get(str(link.get("entity_id")), str(link.get("entity_id") or ""))}
+        for link in links if isinstance(link, dict) and link.get("entity_id")
+    ]
+
+
+def apply_person_telecom_links(events: list[dict[str, Any]], links: list[dict[str, Any]]) -> None:
+    by_id = {str(event.get("event_id")): event for event in events if event.get("event_id")}
+    for link in links:
+        entity_id = str(link["entity_id"])
+        for event_id in [*(link.get("ipdr_event_ids") or []), *(link.get("cellular_geolocation_event_ids") or [])]:
+            event = by_id.get(str(event_id))
+            if event is not None:
+                event.setdefault("related_entity_ids", []).append(entity_id)
+        for party in link.get("call_parties") or []:
+            if not isinstance(party, dict) or party.get("side") not in {"a", "b"}:
+                continue
+            event = by_id.get(str(party.get("event_id") or ""))
+            if event is None:
+                continue
+            event.setdefault("related_entity_ids", []).append(entity_id)
+            prefix = f"side_{party['side']}"
+            event[f"{prefix}_entity_id"] = entity_id
+            event[f"{prefix}_entity_name"] = link["entity_name"]
+    for event in events:
+        if isinstance(event.get("related_entity_ids"), list):
+            event["related_entity_ids"] = list(dict.fromkeys(event["related_entity_ids"]))
+
+
 def load_ui_events(locale: str = "he") -> list[dict[str, Any]]:
-    events_path, _, _ = localized_dataset_paths(locale)
+    events_path, _, entities_path = localized_dataset_paths(locale)
     locale = normalize_locale(locale)
     locations_db = load_locations_db(locale)
     if not events_path.exists():
         return []
     with events_path.open(encoding="utf-8-sig", newline="") as handle:
         events = list(csv.DictReader(handle))
+    apply_person_telecom_links(events, load_person_telecom_links(events_path, entities_path))
     for event in events:
         if locale == "en":
             event["source_type"] = translate_plain(event.get("source_type", ""))
@@ -407,7 +450,10 @@ def build_ui_entity_layers(events: list[dict[str, Any]], locale: str = "he") -> 
     locations_db = load_locations_db(locale)
     presentations: dict[str, dict[str, Any]] = {}
     for entity_id, base in sorted(entity_db.items()):
-        entity_events = [event for event in events if event.get("entity_id") == entity_id]
+        entity_events = [
+            event for event in events
+            if event.get("entity_id") == entity_id or entity_id in (event.get("related_entity_ids") or [])
+        ]
         top_locations = []
         for location_id, count in Counter(event.get("location_id") for event in entity_events if event.get("location_id")).most_common(12):
             location = locations_db.get(location_id, {})

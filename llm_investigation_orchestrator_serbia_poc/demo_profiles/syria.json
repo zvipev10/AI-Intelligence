@@ -2,8 +2,8 @@
   "schema_version": 1,
   "state_schema_version": 1,
   "scenario_id": "syria",
-  "profile_version": "26",
-  "dataset_version": "cellular-records-v3",
+  "profile_version": "27",
+  "dataset_version": "cellular-records-v4",
   "label": {
     "en": "Syria"
   },
@@ -96,13 +96,14 @@
     "assets/demo/syria/persons/omar-al-khatib-candid-v1.png": "0ac1be53c0d1fdfec1c7475b8209410a506b602b5744f26e65851375efd0f9a9",
     "data/syria_cellular_records_v1/1SMSUpload260901.csv": "5fd32fafc22cc7845a78e3a7687b7734fa5ec7ef774c924c790a2aeb8f24643a",
     "data/syria_cellular_records_v1/ADINT.json": "d20ac68df152bd4532ca69bf576d3fea23446cd38683cfcb609d859d818ed90b",
-    "data/syria_cellular_records_v1/entities.en.json": "d3e4b0df77b794c0aa0a4d1c3812aacf969b62a4854a90ab52696103e428a813",
-    "data/syria_cellular_records_v1/entities.json": "d3e4b0df77b794c0aa0a4d1c3812aacf969b62a4854a90ab52696103e428a813",
+    "data/syria_cellular_records_v1/entities.en.json": "8e0d38c4674317067e88b45f0bc0563093918a715858e16c5ab4953686fc5e72",
+    "data/syria_cellular_records_v1/entities.json": "8e0d38c4674317067e88b45f0bc0563093918a715858e16c5ab4953686fc5e72",
     "data/syria_cellular_records_v1/events.csv": "c13944a1274cf52ebe1c34b35a7ed5f2f910960d3083ee7088d7566aebd324ad",
     "data/syria_cellular_records_v1/events.en.csv": "c13944a1274cf52ebe1c34b35a7ed5f2f910960d3083ee7088d7566aebd324ad",
     "data/syria_cellular_records_v1/IPDR-expanded.csv": "4fbc961a4fba1d91d69f0e8bc8f1fb68e9d56bcb43f7708a4a72f45ad281f7e6",
     "data/syria_cellular_records_v1/locations.en.json": "37f47efde4fe2995f05e85cbb5bb4af65a2010fd35d5b1351b114639f8af9808",
     "data/syria_cellular_records_v1/locations.json": "37f47efde4fe2995f05e85cbb5bb4af65a2010fd35d5b1351b114639f8af9808",
-    "data/syria_cellular_records_v1/identifier-mapping.json": "dd8d0b9d4d4cb537ac9c088c296c2a845a8da7924bbd55ffe853b72cb3983852"
+    "data/syria_cellular_records_v1/identifier-mapping.json": "dd8d0b9d4d4cb537ac9c088c296c2a845a8da7924bbd55ffe853b72cb3983852",
+    "data/syria_cellular_records_v1/person-telecom-links.json": "4fd2ecd40456deb376a3e00506e643eed8e51877f6b1f8c9aa173d765c6cc469"
   }
 }

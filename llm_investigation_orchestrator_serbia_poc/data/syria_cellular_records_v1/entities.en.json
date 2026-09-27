@@ -56,6 +56,56 @@
     "biographical_notes": "Profile prepared for the Syria scenario."
   },
   {
+    "entity_id": "ENT-SYR-PERSON-002",
+    "canonical_name": "Arman Rahimi",
+    "aliases": [
+      "Arman R.",
+      "آرمان رحیمی"
+    ],
+    "entity_type": "person",
+    "description": "Synthetic Iranian profile associated in the scenario with a handset observed in IPDR and cellular geolocation records.",
+    "identity_status": "scenario-associated individual",
+    "given_name": "Arman",
+    "family_name": "Rahimi",
+    "gender": "male",
+    "nationality": "Iranian",
+    "ethnicity": "Persian",
+    "occupation": "cross-border logistics contact",
+    "residence": "Tehran, Iran",
+    "role": "logistics contact",
+    "affiliations": [
+      "Scenario commercial logistics network"
+    ],
+    "languages": [
+      "Persian (native)",
+      "Arabic (conversational)"
+    ],
+    "connections": [
+      "Omar Al-Khatib — designated Side B in REC-SYR-CALL-001"
+    ],
+    "associated_entity_ids": [
+      "ENT-SYR-PERSON-001"
+    ],
+    "identifiers": {
+      "profile_reference": "SYR-PER-002",
+      "imei": "353294702931926",
+      "imsi": "417011234567890",
+      "ipdr_record_ids": [
+        "REC-SYR-IPDR-1683930569233410",
+        "REC-SYR-IPDR-3495155497992130"
+      ],
+      "cellular_geolocation_record_ids": [
+        "REC-SYR-CELL-CSV-013",
+        "REC-SYR-CELL-CSV-021",
+        "REC-SYR-CELL-CSV-024",
+        "REC-SYR-CELL-CSV-077",
+        "REC-SYR-CELL-CSV-101"
+      ],
+      "call_record": "REC-SYR-CALL-001 (Side A)"
+    },
+    "biographical_notes": "Synthetic profile prepared exclusively for the Syria demonstration scenario."
+  },
+  {
     "entity_id": "ENT-SYR-DEVICE-fbb49f825c12d583",
     "canonical_name": "a48aba99-9f79-5ddf-b1e4-74d774925315",
     "entity_type": "device",

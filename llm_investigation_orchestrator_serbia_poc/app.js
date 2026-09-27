@@ -3749,8 +3749,9 @@ function cellularCallPartyHtml(item, side) {
   const location = item[`${prefix}_location_name`] || item[`${prefix}_location_id`] || activeLocaleText("לא ידוע", "Unknown");
   const number = item[`${prefix}_sim`] || item[`${prefix}_number`] || activeLocaleText("לא ידוע", "Unknown");
   const imei = item[`${prefix}_imei`] || activeLocaleText("לא ידוע", "Unknown");
+  const person = item[`${prefix}_entity_name`] || "";
   return `<article class="cellular-call-party cellular-call-party-${side}">
-    <span class="cellular-call-party-label">${escapeHtml(label)}</span>
+    <span class="cellular-call-party-label">${escapeHtml(label)}</span>${person ? `<strong class="cellular-call-party-person">${escapeHtml(person)}</strong>` : ""}
     <dl><div><dt>${escapeHtml((item[`${prefix}_sim`] ? "SIM" : activeLocaleText("מספר", "Number")))}</dt><dd dir="ltr">${escapeHtml(number)}</dd></div>
     <div><dt>IMEI</dt><dd dir="ltr">${escapeHtml(imei)}</dd></div>
     <div><dt>${escapeHtml(activeLocaleText("מיקום", "Location"))}</dt><dd>${escapeHtml(location)}</dd></div></dl>
@@ -4089,7 +4090,7 @@ function entityRecordLocationPoints(item) {
   const valuesFor = value => Array.isArray(value) ? value.map(String) : String(value || "").split(/[,;|\s]+/).filter(Boolean);
   const related = state.events.filter(event => {
     if (String(event.entity_id || "") === entityId) return true;
-    return [event.entity_ids, event.related_entity_ids, event.subject_entity_ids].some(value => valuesFor(value).includes(entityId));
+    return [event.entity_ids, event.related_entity_ids, event.subject_entity_ids, event.side_a_entity_id, event.side_b_entity_id].some(value => valuesFor(value).includes(entityId));
   });
   const byLocation = new Map();
   related.forEach(event => {
