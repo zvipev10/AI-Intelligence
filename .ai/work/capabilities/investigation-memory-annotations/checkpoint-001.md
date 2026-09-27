@@ -20,3 +20,7 @@
 ## Release scope
 
 Client assets, `server.py`, tests, and durable product/architecture documentation. No migration is required: legacy investigation memory files load with an empty `artifacts` list.
+
+## Deployment verification
+
+Deployed to the Syria demo server on 2026-09-27. `serbia-poc-ui.service` restarted cleanly, `/api/status` reported `scenario_id: syria` and `dataset_version: call-media-v6`, and the nginx-served HTML/bootstrap assets referenced `styles.css?v=159`, `demo_bootstrap.js?v=226`, and `app.js?v=226`. The previous six release assets are retained in the server backup directory created during deployment.

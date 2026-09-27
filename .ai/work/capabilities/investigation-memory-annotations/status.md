@@ -6,11 +6,11 @@ Annotated investigation memory
 
 ## Current phase
 
-Release validation and deployment.
+Delivered and deployed.
 
 ## Overall status
 
-Ready to deploy
+Complete
 
 ## Who needs to act now
 
@@ -19,7 +19,7 @@ Ready to deploy
 | Product | Approved | Approved duplicate annotations and a dedicated Memory screen. | Complete |
 | Development | Complete | Additive API, comments, object/area artifacts and agent context implemented. | Complete |
 | UX | Complete | Shared optional-comment dialog and investigation-scoped Memory screen implemented. | Complete |
-| QA | Complete | Automated persistence, table, and polygon-selection coverage passed. | Deployment smoke check |
+| QA | Complete | Automated coverage and deployed API/static-asset smoke checks passed. | Complete |
 | Architecture/Security | Consult as needed | Confirm bounded payload and provenance/geometry validation. | Before implementation |
 
 ## Latest change since previous review
@@ -36,7 +36,7 @@ Memory-schema compatibility, bounded agent context, and polygon map-click intera
 
 ## Next expected artifact
 
-Checkpoint 001 and deployment verification.
+Handoff.
 
 ## Parent issue
 
