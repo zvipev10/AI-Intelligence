@@ -6000,7 +6000,12 @@ function setChatPanelCollapsed(collapsed) {
     chatPanelToggle.setAttribute("aria-label", label);
     chatPanelToggle.setAttribute("aria-expanded", state.chatPanelCollapsed ? "false" : "true");
     const icon = chatPanelToggle.querySelector(".material-symbols-rounded");
-    if (icon) icon.textContent = state.chatPanelCollapsed ? "chevron_left" : "chevron_right";
+    if (icon) {
+      const pointsLeft = currentLocale() === "he"
+        ? state.chatPanelCollapsed
+        : !state.chatPanelCollapsed;
+      icon.textContent = pointsLeft ? "chevron_left" : "chevron_right";
+    }
   }
   if (state.map) {
     setTimeout(() => {
