@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parent
 class SyriaPersonTelecomLinks(unittest.TestCase):
     def test_iranian_person_links_to_existing_telecom_records_and_call_parties(self):
         profile = load_profile(ROOT, "syria", verify=True)
-        self.assertEqual(profile["dataset_version"], "cellular-records-v4")
+        self.assertEqual(profile["dataset_version"], "cellular-records-v5")
         code = r'''
 import server
 
@@ -23,6 +23,8 @@ by_id = {event["event_id"]: event for event in events}
 person = entities["ENT-SYR-PERSON-002"]
 assert person["canonical_name"] == "Arman Rahimi"
 assert person["nationality"] == "Iranian"
+assert person["image_url"] == "/assets/demo/syria/persons/arman-rahimi-reference-v1.png"
+assert person["identity_status"] == "profiled individual"
 assert person["identifiers"]["imei"] == "353294702931926"
 assert person["event_count"] == 8
 assert "ENT-SYR-PERSON-002" in by_id["REC-SYR-IPDR-1683930569233410"]["related_entity_ids"]

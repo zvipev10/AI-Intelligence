@@ -63,26 +63,36 @@
       "آرمان رحیمی"
     ],
     "entity_type": "person",
-    "description": "Synthetic Iranian profile associated in the scenario with a handset observed in IPDR and cellular geolocation records.",
-    "identity_status": "scenario-associated individual",
+    "image_url": "/assets/demo/syria/persons/arman-rahimi-reference-v1.png",
+    "description": "Iranian logistics liaison whose device activity is associated with IPDR and cellular geolocation reporting in the Syria investigation.",
+    "identity_status": "profiled individual",
     "given_name": "Arman",
     "family_name": "Rahimi",
     "gender": "male",
+    "age_years": 39,
+    "date_of_birth": "1987-02-18",
+    "place_of_birth": "Shiraz, Iran",
     "nationality": "Iranian",
     "ethnicity": "Persian",
-    "occupation": "cross-border logistics contact",
+    "occupation": "freight and vehicle-maintenance coordinator",
     "residence": "Tehran, Iran",
-    "role": "logistics contact",
+    "role": "cross-border logistics liaison",
     "affiliations": [
-      "Scenario commercial logistics network"
+      "Regional freight and equipment-support network"
     ],
     "languages": [
       "Persian (native)",
-      "Arabic (conversational)"
+      "Arabic (conversational)",
+      "English (basic)"
+    ],
+    "previous_residences": [
+      "Damascus, Syria (2018–2022)",
+      "Shiraz, Iran (1987–2008)"
     ],
     "connections": [
-      "Omar Al-Khatib — designated Side B in REC-SYR-CALL-001"
+      "Omar Al-Khatib — commercial transport contact and designated Side B in REC-SYR-CALL-001"
     ],
+    "military_service": "Completed compulsory service in an Iranian transport-support unit (2006–2008).",
     "associated_entity_ids": [
       "ENT-SYR-PERSON-001"
     ],
@@ -103,7 +113,7 @@
       ],
       "call_record": "REC-SYR-CALL-001 (Side A)"
     },
-    "biographical_notes": "Synthetic profile prepared exclusively for the Syria demonstration scenario."
+    "biographical_notes": "Known to coordinate vehicle maintenance, cargo routing and cross-border driver handoffs."
   },
   {
     "entity_id": "ENT-SYR-DEVICE-fbb49f825c12d583",
