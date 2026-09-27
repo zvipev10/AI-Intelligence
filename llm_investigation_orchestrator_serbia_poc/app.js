@@ -508,7 +508,7 @@ function roleWorkspaceAllowsCatalogLayer(layerId) {
 }
 
 function roleWorkspaceAllowsLayer(layer) {
-  return roleWorkspaceAllowsCatalogLayer(layer?.catalogLayerId);
+  return Boolean(layer?.memoryPresentationOpen) || roleWorkspaceAllowsCatalogLayer(layer?.catalogLayerId);
 }
 
 function roleWorkspaceLayers(layers = state.layers) {
@@ -873,6 +873,7 @@ async function applyRoleWorkspace(member) {
   const role = member?.workspaceRole;
   const profile = ROLE_WORKSPACES[role] || null;
   state.activeRoleWorkspace = profile ? role : null;
+  state.layers.forEach(layer => { layer.memoryPresentationOpen = false; });
   closeObjectViewer();
   ensureActiveLayer();
   renderLayerSelector();
@@ -2019,6 +2020,7 @@ async function openSavedMemoryLayer(item, trigger) {
   let layer = state.layers.find(candidate => candidate.investigation_memory_layer_id === item.id);
   if (!layer && item.catalog_layer_id) layer = await openCatalogLayer(item.catalog_layer_id, { silent: true, savedLayer: item, memoryRestore: true });
   if (!layer) return;
+  layer.memoryPresentationOpen = true;
   applySavedFiltersToLayer(layer, item);
   layer.visible = true;
   state.activeLayerId = layer.id;
