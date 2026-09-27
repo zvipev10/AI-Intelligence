@@ -10,11 +10,11 @@ Annotated investigation memory
 
 ## Review status
 
-Draft — pending human developer approval.
+Approved by product-owner delegation on 2026-09-27.
 
 ## Reviewer / input source
 
-AI-prepared draft; the product owner approved the scope but has not delegated the developer decision.
+AI-prepared draft; the product owner explicitly approved the developer, UX, and QA recommendations and authorized implementation on 2026-09-27.
 
 ## Context reviewed
 

@@ -6,29 +6,29 @@ Annotated investigation memory
 
 ## Current phase
 
-Role enrichment — review gate before execution planning.
+Execution planning and implementation.
 
 ## Overall status
 
-Product scope approved; technical, UX, and QA review pending.
+In progress
 
 ## Who needs to act now
 
 | Role | Status | Required action | Due before |
 |---|---|---|---|
 | Product | Approved | Approved duplicate annotations and a dedicated Memory screen. | Complete |
-| Development | Draft pending review | Review additive data/API and restore approach. | Execution plan |
-| UX | Draft pending review | Review dialog, table/viewer/map interaction, and accessibility states. | Execution plan |
-| QA | Draft pending review | Review persistence, locale, and map interaction coverage. | Execution plan |
+| Development | Approved by delegation | Implement additive data/API approach. | Final QA |
+| UX | Approved by delegation | Implement dedicated screen and shared dialog flow. | Final QA |
+| QA | Approved by delegation | Validate persistence and map interaction coverage. | Final QA |
 | Architecture/Security | Consult as needed | Confirm bounded payload and provenance/geometry validation. | Before implementation |
 
 ## Latest change since previous review
 
-Product approved separate duplicate annotations and a dedicated Memory screen; review drafts are now being prepared.
+Product owner approved the developer, UX, and QA recommendations and authorized end-to-end implementation.
 
 ## Current blockers
 
-Required human approval or explicit delegation for developer, UX, and QA review drafts.
+None.
 
 ## Current risks
 
@@ -36,7 +36,7 @@ Memory-schema compatibility, bounded agent context, and polygon map-click intera
 
 ## Next expected artifact
 
-Developer, UX, and QA review artifacts, then an approved execution plan.
+Execution plan, then checkpoint 001 implementation.
 
 ## Parent issue
 

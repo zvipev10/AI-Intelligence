@@ -10,7 +10,7 @@ Annotated investigation memory
 
 ## Review status
 
-Draft — pending human QA approval.
+Approved by product-owner delegation on 2026-09-27.
 
 ## Acceptance criteria review
 
