@@ -6,7 +6,7 @@
   <title>סביבת מודיעין</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="./vendor/maplibre-gl.css">
-  <link rel="stylesheet" href="./styles.css?v=158">
+  <link rel="stylesheet" href="./styles.css?v=159">
 </head>
 <body class="welcome-active">
   <a class="help-button" href="./help.html" target="_blank" rel="noopener" aria-label="פתח עזרה" data-i18n-aria-he="פתח עזרה" data-i18n-aria-en="Open help">?</a>
@@ -40,6 +40,7 @@
           <div id="investigationList" class="investigation-list" role="listbox" hidden></div>
         </div>
         <div id="michlolTeam" class="michlol-team" role="list" aria-label="מכלול" data-i18n-aria-he="מכלול" data-i18n-aria-en="Team cell"></div>
+        <button id="memoryButton" class="memory-header-button" type="button" hidden data-i18n-text-he="זיכרון" data-i18n-text-en="Memory" data-i18n-aria-he="פתח זיכרון חקירה" data-i18n-aria-en="Open investigation memory">זיכרון</button>
       </div>
     </section>
     <div class="header-status" aria-label="מצב מערכת" data-i18n-aria-he="מצב מערכת" data-i18n-aria-en="System status">
@@ -212,6 +213,23 @@
     </section>
   </div>
 
+  <div id="memoryModal" class="modal-backdrop memory-modal" hidden>
+    <section class="memory-modal-panel" role="dialog" aria-modal="true" aria-labelledby="memoryModalTitle">
+      <header class="memory-modal-header"><div><span class="eyebrow" data-i18n-text-he="חקירה פעילה" data-i18n-text-en="Active investigation">חקירה פעילה</span><h2 id="memoryModalTitle" data-i18n-text-he="זיכרון" data-i18n-text-en="Memory">זיכרון</h2></div><button id="memoryModalClose" class="modal-close-button" type="button" aria-label="סגור" data-i18n-aria-he="סגור" data-i18n-aria-en="Close">×</button></header>
+      <div id="memoryModalBody" class="memory-modal-body"></div>
+    </section>
+  </div>
+
+  <div id="memoryCommentModal" class="modal-backdrop memory-comment-modal" hidden>
+    <form id="memoryCommentForm" class="memory-comment-panel" aria-labelledby="memoryCommentTitle">
+      <header><div><span class="eyebrow" data-i18n-text-he="שמירה לחקירה" data-i18n-text-en="Save to investigation">שמירה לחקירה</span><h2 id="memoryCommentTitle" data-i18n-text-he="הוספה לזיכרון" data-i18n-text-en="Add to memory">הוספה לזיכרון</h2><p id="memoryCommentSubject"></p></div><button id="memoryCommentClose" class="modal-close-button" type="button" aria-label="סגור" data-i18n-aria-he="סגור" data-i18n-aria-en="Close">×</button></header>
+      <label for="memoryCommentInput" data-i18n-text-he="הערה (אופציונלי)" data-i18n-text-en="Comment (optional)">הערה (אופציונלי)</label>
+      <textarea id="memoryCommentInput" maxlength="1200" rows="4" data-i18n-placeholder-he="למה חשוב לשמור את הפריט הזה?" data-i18n-placeholder-en="Why is this item important to save?"></textarea>
+      <p id="memoryCommentError" class="memory-comment-error" role="alert" hidden></p>
+      <div class="memory-comment-actions"><button id="memoryCommentCancel" type="button" data-i18n-text-he="ביטול" data-i18n-text-en="Cancel">ביטול</button><button id="memoryCommentSubmit" class="primary-filter-action" type="submit" data-i18n-text-he="שמור לזיכרון" data-i18n-text-en="Save to memory">שמור לזיכרון</button></div>
+    </form>
+  </div>
+
   <div id="welcomeActionModal" class="modal-backdrop welcome-action-backdrop" hidden>
     <section class="welcome-action-modal" role="dialog" aria-modal="true" aria-labelledby="welcomeActionTitle" aria-describedby="welcomeActionDescription">
       <div class="welcome-action-icon"><span class="material-symbols-rounded" aria-hidden="true">group_add</span></div>
@@ -337,6 +355,6 @@
 
   <script src="./vendor/maplibre-gl.js"></script>
   <script src="./polygon_draw.js?v=1"></script>
-  <script src="./demo_bootstrap.js?v=225"></script>
+  <script src="./demo_bootstrap.js?v=226"></script>
 </body>
 </html>

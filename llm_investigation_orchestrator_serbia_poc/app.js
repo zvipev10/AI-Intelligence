@@ -692,6 +692,16 @@ const layerSelectorList = document.getElementById("layerSelectorList");
 const layerSelectorStatus = document.getElementById("layerSelectorStatus");
 const workspace = document.querySelector(".workspace");
 const chatPanelToggle = document.getElementById("chatPanelToggle");
+const memoryButton = document.getElementById("memoryButton");
+const memoryModal = document.getElementById("memoryModal");
+const memoryModalBody = document.getElementById("memoryModalBody");
+const memoryCommentModal = document.getElementById("memoryCommentModal");
+const memoryCommentForm = document.getElementById("memoryCommentForm");
+const memoryCommentInput = document.getElementById("memoryCommentInput");
+const memoryCommentSubject = document.getElementById("memoryCommentSubject");
+const memoryCommentError = document.getElementById("memoryCommentError");
+let pendingMemoryCommentAction = null;
+let memoryReturnFocus = null;
 const queryLayerName = document.getElementById("queryLayerName");
 const queryToolName = document.getElementById("queryToolName");
 const queryModal = document.getElementById("queryModal");
@@ -1953,7 +1963,57 @@ function normalizeMemoryList(value) {
 
 function currentSavedMemory() {
   const memory = state.investigationMemory?.memory;
-  return memory && typeof memory === "object" ? memory : { chat_summaries: [], layers: [] };
+  return memory && typeof memory === "object" ? memory : { chat_summaries: [], layers: [], artifacts: [] };
+}
+
+function memoryCommentValue(value) {
+  return String(value || "").replace(/\s+/g, " ").trim().slice(0, 1200);
+}
+
+function openMemoryCommentDialog(options) {
+  if (!state.investigationId || !memoryCommentModal) return;
+  pendingMemoryCommentAction = options;
+  memoryReturnFocus = options.trigger || document.activeElement;
+  memoryCommentSubject.textContent = options.label || "";
+  memoryCommentInput.value = "";
+  memoryCommentError.hidden = true;
+  memoryCommentError.textContent = "";
+  memoryCommentModal.hidden = false;
+  memoryCommentInput.focus();
+}
+
+function closeMemoryCommentDialog() {
+  pendingMemoryCommentAction = null;
+  memoryCommentModal.hidden = true;
+  memoryReturnFocus?.focus?.();
+  memoryReturnFocus = null;
+}
+
+function renderMemoryScreen() {
+  if (!memoryModalBody) return;
+  const memory = currentSavedMemory();
+  const groups = [
+    [activeLocaleText("שיחות", "Chat"), memory.chat_summaries || [], item => item.answer_preview || item.prompt || "—"],
+    [activeLocaleText("שכבות", "Layers"), memory.layers || [], item => item.label || "—"],
+    [activeLocaleText("אובייקטים", "Objects"), (memory.artifacts || []).filter(item => item.kind === "object"), item => item.label || item.object_id || "—"],
+    [activeLocaleText("אזורים", "Areas"), (memory.artifacts || []).filter(item => item.kind === "polygon"), item => item.label || activeLocaleText("אזור שמור", "Saved area")]
+  ];
+  const html = groups.filter(([, items]) => items.length).map(([title, items, label]) => `<section class="memory-group"><h3>${escapeHtml(title)}</h3>${items.slice().reverse().map(item => `<article class="memory-entry"><strong>${escapeHtml(label(item))}</strong><span class="memory-entry-meta">${escapeHtml(formatSavedTime(item.saved_at_utc))}${item.object_id ? ` · ${escapeHtml(item.object_id)}` : ""}</span>${item.analyst_comment ? `<p class="memory-entry-comment">${escapeHtml(item.analyst_comment)}</p>` : ""}</article>`).join("")}</section>`).join("");
+  memoryModalBody.innerHTML = html || `<div class="activity-empty">${escapeHtml(activeLocaleText("עדיין לא נשמרו פריטים לחקירה זו.", "No items have been saved to this investigation yet."))}</div>`;
+}
+
+function openMemoryScreen(trigger = memoryButton) {
+  if (!state.investigationId || state.draftSessionActive) return;
+  memoryReturnFocus = trigger;
+  renderMemoryScreen();
+  memoryModal.hidden = false;
+  document.getElementById("memoryModalClose")?.focus();
+}
+
+function closeMemoryScreen() {
+  memoryModal.hidden = true;
+  memoryReturnFocus?.focus?.();
+  memoryReturnFocus = null;
 }
 
 function normalizeSavedMemoryForAgent(memory = currentSavedMemory()) {
@@ -1967,7 +2027,8 @@ function normalizeSavedMemoryForAgent(memory = currentSavedMemory()) {
     source_run_id: item.source_run_id || "",
     recommended_view: item.recommended_view || "",
     step_count: Number(item.step_count || 0),
-    evidence_ids: Array.isArray(item.evidence_ids) ? item.evidence_ids.slice(0, 80) : []
+    evidence_ids: Array.isArray(item.evidence_ids) ? item.evidence_ids.slice(0, 80) : [],
+    analyst_comment: item.analyst_comment || ""
   }));
   const layers = normalizeMemoryList(memory.layers).slice(-12).map(item => ({
     id: item.id || "",
@@ -1990,17 +2051,22 @@ function normalizeSavedMemoryForAgent(memory = currentSavedMemory()) {
       value: stringifyFilterValue(filter.value)
     })).filter(filter => filter.field && filter.value),
     sample_ids: Array.isArray(item.sample_ids) ? item.sample_ids.slice(0, 80) : [],
+    analyst_comment: item.analyst_comment || "",
     restore_status: item.restore_status || ""
+  }));
+  const artifacts = normalizeMemoryList(memory.artifacts).slice(-12).map(item => ({
+    id: item.id || "", kind: item.kind || "", label: item.label || "", object_kind: item.object_kind || "", object_id: item.object_id || "", summary: item.summary || "", analyst_comment: item.analyst_comment || "", saved_at_utc: item.saved_at_utc || ""
   }));
   return {
     chat_summaries: chatSummaries,
-    layers
+    layers,
+    artifacts
   };
 }
 
 function investigationMemoryForAgent() {
   const memory = normalizeSavedMemoryForAgent();
-  if (!memory.chat_summaries.length && !memory.layers.length) return null;
+  if (!memory.chat_summaries.length && !memory.layers.length && !memory.artifacts.length) return null;
   return memory;
 }
 
@@ -2051,7 +2117,8 @@ async function restoreMemorySavedLayers(memoryPayload, token) {
     ...memoryPayload,
     memory: {
       chat_summaries: normalizeMemoryList(memory.chat_summaries),
-      layers: restoredMemoryLayers
+      layers: restoredMemoryLayers,
+      artifacts: normalizeMemoryList(memory.artifacts)
     }
   };
   renderAllViews();
@@ -2071,6 +2138,7 @@ async function loadInvestigationMemory(options = {}) {
     if (token !== state.investigationMemoryLoadToken) return null;
     state.investigationMemory = payload;
     if (options.restoreLayers) await restoreMemorySavedLayers(payload, token);
+    if (!memoryModal?.hidden) renderMemoryScreen();
     return payload;
   } catch (error) {
     if (token === state.investigationMemoryLoadToken) {
@@ -2124,12 +2192,16 @@ function canSaveLayerToMemory(layer) {
   );
 }
 
-async function saveLayerToInvestigationMemory(layer, button) {
+async function saveLayerToInvestigationMemory(layer, button, comment = "", confirmed = false) {
   if (state.draftSessionActive) {
     openDraftCreateModal(() => saveLayerToInvestigationMemory(layer, button));
     return;
   }
   if (!canSaveLayerToMemory(layer) || state.busy || button?.dataset.memorySaving === "true") return;
+  if (!confirmed) {
+    openMemoryCommentDialog({ label: layer.label, trigger: button, onSave: value => saveLayerToInvestigationMemory(layer, button, value, true) });
+    return;
+  }
   button.dataset.memorySaving = "true";
   button.title = "Saving layer to investigation memory";
   button.setAttribute("aria-label", "Saving layer to investigation memory");
@@ -2144,11 +2216,13 @@ async function saveLayerToInvestigationMemory(layer, button) {
         investigation_id: state.investigationId,
         name: state.investigationName,
         layer: layerMemoryPayload(layer),
+        comment: memoryCommentValue(comment),
       }),
     });
     const payload = await response.json();
     if (!response.ok) throw new Error(payload.error || activeLocaleText("שמירת השכבה לזיכרון נכשלה", "Failed to save layer to memory"));
     layer.investigation_memory_layer_id = payload.saved?.id || true;
+    await loadInvestigationMemory();
     button.title = activeLocaleText("השכבה נשמרה בזיכרון החקירה", "Layer saved to investigation memory");
     button.setAttribute("aria-label", button.title);
     renderEvidence();
@@ -2157,6 +2231,7 @@ async function saveLayerToInvestigationMemory(layer, button) {
       ? activeLocaleText("שמירת השכבה ארכה יותר מדי זמן. נסו שוב.", "Saving the layer took too long. Try again.")
       : error.message;
     button.setAttribute("aria-label", button.title);
+    if (confirmed) throw error;
   } finally {
     clearTimeout(timeout);
     delete button.dataset.memorySaving;
@@ -2440,6 +2515,7 @@ function setPageView(view, options = {}) {
   document.body.classList.toggle("welcome-active", showingWelcome);
   renderDraftInvestigationUi();
   renderMichlolTeam();
+  renderInvestigationSelector();
   if (showingWelcome) {
     renderWelcomePage();
     if (options.focus !== false) document.getElementById("welcomeTitle")?.focus?.();
@@ -2627,6 +2703,7 @@ function matchingInvestigations(query) {
 
 function renderInvestigationSelector() {
   if (!investigationInput || !investigationList) return;
+  if (memoryButton) memoryButton.hidden = !roleWorkspaceSelectionAvailable() || !state.investigationId;
   if (document.activeElement !== investigationInput) {
     investigationInput.value = state.investigationName || defaultInvestigationName();
   }
@@ -3133,7 +3210,7 @@ function initMap() {
       status.hidden = false;
     }
   });
-  state.polygonDraw = new PolygonDrawControl(state.map, document.getElementById("polygonDrawButton"), document.getElementById("polygonDrawHint"));
+  state.polygonDraw = new PolygonDrawControl(state.map, document.getElementById("polygonDrawButton"), document.getElementById("polygonDrawHint"), { onSelect: polygon => savePolygonToInvestigationMemory(polygon) });
   const overlay = document.getElementById("rawEventsOverlay");
   const positionDrawControl = () => {
     const height = !overlay.hidden && getComputedStyle(overlay).display !== "none" ? overlay.getBoundingClientRect().height : 0;
@@ -3957,6 +4034,35 @@ function closeObjectViewer() {
   objectViewerReturnFocus = null;
 }
 
+function objectMemoryPayload(kind, id) {
+  const item = viewerObjects().get(`${kind}:${id}`);
+  if (!item) return null;
+  const label = kind === "record" ? (item.record_id || item.event_id || id) : (item.title || item.canonical_name || item.object_class || id);
+  return { kind: "object", object_kind: kind, object_id: id, label, source_type: item.source_type || "", summary: item.event_summary || item.summary || "" };
+}
+
+async function saveObjectToInvestigationMemory(kind, id, trigger, comment = "", confirmed = false) {
+  if (state.draftSessionActive) { openDraftCreateModal(() => saveObjectToInvestigationMemory(kind, id, trigger)); return; }
+  const artifact = objectMemoryPayload(kind, id);
+  if (!state.investigationId || !artifact || state.busy) return;
+  if (!confirmed) { openMemoryCommentDialog({ label: artifact.label, trigger, onSave: value => saveObjectToInvestigationMemory(kind, id, trigger, value, true) }); return; }
+  const response = await fetch("/api/investigation-memory/artifact", { method: "POST", headers: { "Content-Type": "application/json; charset=utf-8" }, body: JSON.stringify({ investigation_id: state.investigationId, name: state.investigationName, artifact, comment: memoryCommentValue(comment) }) });
+  const payload = await response.json();
+  if (!response.ok) throw new Error(payload.error || activeLocaleText("שמירת האובייקט נכשלה", "Failed to save object"));
+  await loadInvestigationMemory();
+}
+
+async function savePolygonToInvestigationMemory(polygon, comment = "", confirmed = false) {
+  if (state.draftSessionActive) { openDraftCreateModal(() => savePolygonToInvestigationMemory(polygon)); return; }
+  if (!state.investigationId || !polygon?.coordinates) return;
+  const artifact = { kind: "polygon", label: activeLocaleText("אזור מסומן", "Marked area"), geometry: { type: "Polygon", coordinates: [polygon.coordinates] } };
+  if (!confirmed) { openMemoryCommentDialog({ label: artifact.label, trigger: document.getElementById("polygonDrawButton"), onSave: value => savePolygonToInvestigationMemory(polygon, value, true) }); return; }
+  const response = await fetch("/api/investigation-memory/artifact", { method: "POST", headers: { "Content-Type": "application/json; charset=utf-8" }, body: JSON.stringify({ investigation_id: state.investigationId, name: state.investigationName, artifact, comment: memoryCommentValue(comment) }) });
+  const payload = await response.json();
+  if (!response.ok) throw new Error(payload.error || activeLocaleText("שמירת האזור נכשלה", "Failed to save area"));
+  await loadInvestigationMemory();
+}
+
 function openObjectViewer(kind, id, trigger = document.activeElement) {
   if (!['record', 'organization', 'person', 'evidence', 'assessment'].includes(kind)) return false;
   const item = viewerObjects().get(`${kind}:${id}`);
@@ -3991,7 +4097,7 @@ function openObjectViewer(kind, id, trigger = document.activeElement) {
   const cellularHtml = kind === "record" ? cellularCallHtml(item) : "";
   const fields = viewerFields(item, kind).map(([key,value]) => `<div class="object-viewer-field"><dt>${escapeHtml(viewerFieldLabel(key))}</dt><dd>${escapeHtml(viewerValue(value))}</dd></div>`).join("");
   const entityMapHtml = kind === "organization" ? entityLocationMapHtml(item) : "";
-  document.getElementById("objectViewerBody").innerHTML = `${mediaHtml}${cellularHtml}${personViewer ? personWorkspaceHtml(item) : ""}${entityMapHtml}${["record", "evidence", "assessment"].includes(kind) ? `<p class="object-viewer-summary">${escapeHtml(item.event_summary || item.summary || "-")}</p>` : ""}${personViewer ? "" : `<dl class="object-viewer-fields">${fields}</dl>`}${kind === "organization" ? organizationEvidenceHtml(item) : kind === "evidence" ? evidenceProvenanceHtml(item) : kind === "assessment" ? assessmentEvidenceHtml(item) : ""}`;
+  document.getElementById("objectViewerBody").innerHTML = `${mediaHtml}${cellularHtml}${personViewer ? personWorkspaceHtml(item) : ""}${entityMapHtml}${["record", "evidence", "assessment"].includes(kind) ? `<p class="object-viewer-summary">${escapeHtml(item.event_summary || item.summary || "-")}</p>` : ""}<button type="button" class="object-memory-action" data-memory-object-kind="${escapeHtml(kind)}" data-memory-object-id="${escapeHtml(id)}">${escapeHtml(activeLocaleText("שמור לזיכרון", "Save to memory"))}</button>${personViewer ? "" : `<dl class="object-viewer-fields">${fields}</dl>`}${kind === "organization" ? organizationEvidenceHtml(item) : kind === "evidence" ? evidenceProvenanceHtml(item) : kind === "assessment" ? assessmentEvidenceHtml(item) : ""}`;
   viewer.hidden = false;
   if (cellularCallViewer) initializeCellularViewer(item);
   if (["person", "organization"].includes(kind)) initializeEntityLocationMap(item);
@@ -5547,12 +5653,16 @@ async function saveResultQuestion(result, prompt, button) {
   }
 }
 
-async function saveResultToInvestigationMemory(result, prompt, button) {
+async function saveResultToInvestigationMemory(result, prompt, button, comment = "", confirmed = false) {
   if (state.draftSessionActive) {
     openDraftCreateModal(() => saveResultToInvestigationMemory(result, prompt, button));
     return;
   }
   if (!canSaveResultToMemory(result, prompt) || state.busy || button?.disabled) return;
+  if (!confirmed) {
+    openMemoryCommentDialog({ label: prompt, trigger: button, onSave: value => saveResultToInvestigationMemory(result, prompt, button, value, true) });
+    return;
+  }
   button.disabled = true;
   button.textContent = activeLocaleText("שומר לזיכרון...", "Saving to memory...");
   button.title = activeLocaleText("שומר את הממצא לזיכרון החקירה", "Saving the finding to investigation memory");
@@ -5568,11 +5678,13 @@ async function saveResultToInvestigationMemory(result, prompt, button) {
         name: state.investigationName,
         prompt,
         result,
+        comment: memoryCommentValue(comment),
       }),
     });
     const payload = await response.json();
     if (!response.ok) throw new Error(payload.error || activeLocaleText("שמירה לזיכרון החקירה נכשלה", "Failed to save to investigation memory"));
     result.investigation_memory_summary_id = payload.saved?.id || true;
+    await loadInvestigationMemory();
     if (state.lastResult === result) state.lastResult = result;
     button.textContent = activeLocaleText("נשמר בזיכרון", "Saved to memory");
     button.title = activeLocaleText("הממצא נשמר בזיכרון החקירה", "Finding saved to investigation memory");
@@ -5589,6 +5701,7 @@ async function saveResultToInvestigationMemory(result, prompt, button) {
         button.title = activeLocaleText("שמור את הממצא לזיכרון החקירה", "Save the finding to investigation memory");
       }
     }, 2500);
+    if (confirmed) throw error;
   } finally {
     clearTimeout(timeout);
   }
@@ -6637,6 +6750,18 @@ function enhanceResultsTable(layer) {
   if (Number.isInteger(control.openFilterColumn)) {
     head.querySelector(`.result-column-filter[data-result-filter="${control.openFilterColumn}"]`)?.focus();
   }
+  document.getElementById("evidenceRows")?.querySelectorAll(".object-viewer-open[data-viewer-kind][data-viewer-id]").forEach(open => {
+    if (open.nextElementSibling?.classList.contains("table-object-memory")) return;
+    const save = document.createElement("button");
+    save.type = "button";
+    save.className = "table-object-memory";
+    save.dataset.memoryObjectKind = open.dataset.viewerKind;
+    save.dataset.memoryObjectId = open.dataset.viewerId;
+    save.title = activeLocaleText("שמור לזיכרון", "Save to memory");
+    save.setAttribute("aria-label", save.title);
+    save.innerHTML = '<span class="memory-bookmark-icon" aria-hidden="true"></span>';
+    open.insertAdjacentElement("afterend", save);
+  });
 }
 
 function renderEvidence() {
@@ -7011,6 +7136,12 @@ document.addEventListener("input", event => {
 });
 
 document.addEventListener("click", event => {
+  const memoryObject = event.target.closest("[data-memory-object-kind][data-memory-object-id]");
+  if (memoryObject) {
+    event.preventDefault();
+    void saveObjectToInvestigationMemory(memoryObject.dataset.memoryObjectKind, memoryObject.dataset.memoryObjectId, memoryObject);
+    return;
+  }
   const viewerTrigger = event.target.closest("[data-viewer-kind][data-viewer-id]");
   if (viewerTrigger) {
     event.preventDefault();
@@ -7476,6 +7607,23 @@ promptOptionsButton.addEventListener("click", event => {
   setPromptOptionsOpen(!state.promptOptionsOpen);
 });
 workstreamRailToggle?.addEventListener("click", () => setWorkstreamRailCollapsed(!state.workstreamRailCollapsed));
+memoryButton?.addEventListener("click", () => openMemoryScreen(memoryButton));
+document.getElementById("memoryModalClose")?.addEventListener("click", closeMemoryScreen);
+memoryModal?.addEventListener("click", event => { if (event.target === memoryModal) closeMemoryScreen(); });
+document.getElementById("memoryCommentClose")?.addEventListener("click", closeMemoryCommentDialog);
+document.getElementById("memoryCommentCancel")?.addEventListener("click", closeMemoryCommentDialog);
+memoryCommentModal?.addEventListener("click", event => { if (event.target === memoryCommentModal) closeMemoryCommentDialog(); });
+memoryCommentForm?.addEventListener("submit", async event => {
+  event.preventDefault();
+  const action = pendingMemoryCommentAction;
+  if (!action) return;
+  const submit = document.getElementById("memoryCommentSubmit");
+  submit.disabled = true;
+  memoryCommentError.hidden = true;
+  try { await action.onSave(memoryCommentValue(memoryCommentInput.value)); closeMemoryCommentDialog(); }
+  catch (error) { memoryCommentError.textContent = error.message || activeLocaleText("השמירה נכשלה", "Save failed"); memoryCommentError.hidden = false; }
+  finally { submit.disabled = false; }
+});
 playbackNextButton?.addEventListener("click", advanceInvestigationPlayback);
 playbackResetButton?.addEventListener("click", resetInvestigationPlayback);
 languageToggle?.addEventListener("change", () => {
@@ -7516,6 +7664,16 @@ draftCreateModal?.addEventListener("click", event => {
   if (event.target === draftCreateModal) closeDraftCreateModal();
 });
 document.addEventListener("keydown", event => {
+  if (event.key === "Escape" && memoryCommentModal && !memoryCommentModal.hidden) {
+    event.preventDefault();
+    closeMemoryCommentDialog();
+    return;
+  }
+  if (event.key === "Escape" && memoryModal && !memoryModal.hidden) {
+    event.preventDefault();
+    closeMemoryScreen();
+    return;
+  }
   if (event.key === "Escape" && !document.getElementById("objectViewer").hidden) {
     event.preventDefault();
     closeObjectViewer();

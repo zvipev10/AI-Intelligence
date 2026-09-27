@@ -6,6 +6,7 @@ import csv
 import hashlib
 import json
 import mimetypes
+import math
 import os
 import re
 import sys
@@ -1359,7 +1360,8 @@ def empty_investigation_memory(investigation_id: str, name: str = "") -> dict:
         "updated_at_utc": now,
         "memory": {
             "chat_summaries": [],
-            "layers": []
+            "layers": [],
+            "artifacts": []
         }
     }
 
@@ -1373,6 +1375,7 @@ def investigation_memory_metadata(payload: dict) -> dict:
         "updated_at_utc": payload.get("updated_at_utc"),
         "chat_summary_count": len(memory.get("chat_summaries") or []),
         "layer_count": len(memory.get("layers") or []),
+        "artifact_count": len(memory.get("artifacts") or []),
     }
 
 
@@ -1387,6 +1390,13 @@ def compact_text(value: Any, limit: int) -> str:
     if len(text) <= limit:
         return text
     return text[: max(0, limit - 3)].rstrip() + "..."
+
+
+def normalize_memory_comment(value: Any) -> str:
+    text = re.sub(r"\s+", " ", str(value or "")).strip()
+    if len(text) > 1200:
+        raise ValueError("Memory comment exceeds 1200 characters")
+    return text
 
 
 def extract_result_ids(result: dict) -> list[str]:
@@ -1435,6 +1445,7 @@ def create_chat_summary_memory(request: dict) -> dict:
         "recommended_view": result.get("recommended_view") or "",
         "step_count": len(result.get("investigation_steps") or []),
         "evidence_ids": extract_result_ids(result),
+        "analyst_comment": normalize_memory_comment(request.get("comment")),
     }
 
     existing = load_investigation_memory(investigation_id)
@@ -1447,6 +1458,7 @@ def create_chat_summary_memory(request: dict) -> dict:
         "memory": {
             "chat_summaries": chat_summaries,
             "layers": normalize_memory_list(memory.get("layers")),
+            "artifacts": normalize_memory_list(memory.get("artifacts")),
         }
     })
     return {"saved": item, "memory": saved}
@@ -1543,6 +1555,7 @@ def create_layer_memory(request: dict) -> dict:
         "applied_filters": normalize_memory_filters(layer.get("applied_filters")),
         "sample_ids": normalize_memory_ids(layer.get("sample_ids")),
         "reconstruction": normalize_memory_reconstruction(layer.get("reconstruction")),
+        "analyst_comment": normalize_memory_comment(request.get("comment")),
     }
 
     existing = load_investigation_memory(investigation_id)
@@ -1555,8 +1568,52 @@ def create_layer_memory(request: dict) -> dict:
         "memory": {
             "chat_summaries": normalize_memory_list(memory.get("chat_summaries")),
             "layers": layers,
+            "artifacts": normalize_memory_list(memory.get("artifacts")),
         }
     })
+    return {"saved": item, "memory": saved}
+
+
+def create_memory_artifact(request: dict) -> dict:
+    investigation_id = str(request.get("investigation_id") or "").strip()
+    if not INVESTIGATION_ID_PATTERN.fullmatch(investigation_id):
+        raise ValueError("Invalid investigation id")
+    artifact = request.get("artifact")
+    if not isinstance(artifact, dict):
+        raise ValueError("Missing memory artifact")
+    kind = compact_text(artifact.get("kind"), 32)
+    if kind == "object":
+        object_kind = compact_text(artifact.get("object_kind"), 40)
+        object_id = compact_text(artifact.get("object_id"), 240)
+        label = compact_text(artifact.get("label"), 240)
+        if not object_kind or not object_id or not label:
+            raise ValueError("Memory object requires kind, id and label")
+        item = {"kind": "object", "object_kind": object_kind, "object_id": object_id, "label": label,
+                "summary": compact_text(artifact.get("summary"), 1800), "source_type": compact_text(artifact.get("source_type"), 160)}
+    elif kind == "polygon":
+        geometry = artifact.get("geometry")
+        coordinates = geometry.get("coordinates") if isinstance(geometry, dict) and geometry.get("type") == "Polygon" else None
+        if not isinstance(coordinates, list) or len(coordinates) != 1 or not isinstance(coordinates[0], list):
+            raise ValueError("Memory polygon requires one ring")
+        ring = coordinates[0]
+        if len(ring) < 4 or len(ring) > 200 or ring[0] != ring[-1]:
+            raise ValueError("Memory polygon must be closed with 4 to 200 positions")
+        normalized_ring = []
+        for position in ring:
+            if not isinstance(position, list) or len(position) != 2:
+                raise ValueError("Invalid polygon position")
+            lon, lat = position
+            if not isinstance(lon, (int, float)) or not isinstance(lat, (int, float)) or not math.isfinite(lon) or not math.isfinite(lat) or not -180 <= lon <= 180 or not -90 <= lat <= 90:
+                raise ValueError("Invalid polygon coordinates")
+            normalized_ring.append([float(lon), float(lat)])
+        item = {"kind": "polygon", "label": compact_text(artifact.get("label") or "Saved area", 240), "geometry": {"type": "Polygon", "coordinates": [normalized_ring]}}
+    else:
+        raise ValueError("Unsupported memory artifact")
+    item.update({"id": f"artifact_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}_{secrets.token_hex(3)}", "saved_at_utc": utc_now_iso(), "source": "manual_user_action", "analyst_comment": normalize_memory_comment(request.get("comment"))})
+    existing = load_investigation_memory(investigation_id)
+    memory = existing.get("memory") if isinstance(existing.get("memory"), dict) else {}
+    artifacts = normalize_memory_list(memory.get("artifacts")); artifacts.append(item)
+    saved = save_investigation_memory({"investigation_id": investigation_id, "name": request.get("name") or existing.get("name") or investigation_id, "memory": {"chat_summaries": normalize_memory_list(memory.get("chat_summaries")), "layers": normalize_memory_list(memory.get("layers")), "artifacts": artifacts}})
     return {"saved": item, "memory": saved}
 
 
@@ -1672,6 +1729,7 @@ def normalize_investigation_memory(request: dict) -> dict:
         "memory": {
             "chat_summaries": normalize_memory_list(memory.get("chat_summaries", existing_memory.get("chat_summaries"))),
             "layers": normalize_memory_list(memory.get("layers", existing_memory.get("layers"))),
+            "artifacts": normalize_memory_list(memory.get("artifacts", existing_memory.get("artifacts"))),
         }
     }
 
@@ -1699,6 +1757,7 @@ def load_investigation_memory(investigation_id: str) -> dict:
         "memory": {
             "chat_summaries": normalize_memory_list(memory.get("chat_summaries")),
             "layers": normalize_memory_list(memory.get("layers")),
+            "artifacts": normalize_memory_list(memory.get("artifacts")),
         }
     }
 
@@ -3581,6 +3640,9 @@ class HermesClient:
                         parts.append(f"שאלה={prompt[:500]}")
                     if summary:
                         parts.append(f"סיכום={summary[:800]}")
+                    comment = str(item.get("analyst_comment") or "").strip()
+                    if comment:
+                        parts.append(f"הערת אנליסט={comment[:800]}")
                     if ids_text:
                         parts.append(f"evidence_ids={ids_text}")
                     lines.append(" | ".join(parts))
@@ -3631,9 +3693,31 @@ class HermesClient:
                             parts.append("sample_ids_are_partial=true")
                     if restore_status:
                         parts.append(f"restore_status={restore_status}")
+                    comment = str(layer.get("analyst_comment") or "").strip()
+                    if comment:
+                        parts.append(f"הערת אנליסט={comment[:800]}")
                     lines.append(" | ".join(parts))
                 lines.append("זיכרון זה נשמר ידנית; כאשר השאלה מתייחסת לחקירה הקודמת, המשך ממנו במקום להתחיל מאפס.")
                 lines.append("כאשר האנליסט מבקש להציג שכבה שמורה, חובה לקרוא ל-present_saved_memory_layers עם memory_layer_id מהרשימה. אין להסתפק בתיאור טקסטואלי של השכבה.")
+
+            artifacts = saved_memory.get("artifacts") or []
+            if artifacts:
+                lines.append("זיכרון חקירה שנשמר ידנית על ידי האנליסט - אובייקטים ואזורים:")
+                for artifact in artifacts[:12]:
+                    if not isinstance(artifact, dict):
+                        continue
+                    label = str(artifact.get("label") or artifact.get("object_id") or "פריט שמור")
+                    kind = str(artifact.get("kind") or "object")
+                    parts = [f"- {label}", f"kind={kind}"]
+                    if artifact.get("object_id"):
+                        parts.append(f"object_id={artifact['object_id']}")
+                    if artifact.get("source_type"):
+                        parts.append(f"source_type={artifact['source_type']}")
+                    if artifact.get("summary"):
+                        parts.append(f"summary={str(artifact['summary'])[:800]}")
+                    if artifact.get("analyst_comment"):
+                        parts.append(f"הערת אנליסט={str(artifact['analyst_comment'])[:800]}")
+                    lines.append(" | ".join(parts))
 
         lines.append("--- המשך החקירה משאלת האנליסט הנוכחית ---")
         return "\n".join(lines)
@@ -4664,7 +4748,7 @@ def start_moshe_playback_reevaluation(
 
 def investigation_memory_has_content(payload: dict) -> bool:
     memory = payload.get("memory") if isinstance(payload.get("memory"), dict) else {}
-    return bool(memory.get("chat_summaries") or memory.get("layers"))
+    return bool(memory.get("chat_summaries") or memory.get("layers") or memory.get("artifacts"))
 
 
 def build_investigation_memory_update_prompt(
@@ -4722,7 +4806,7 @@ def run_investigation_memory_update(
         locale=locale,
     )
     memory_references = [
-        str(item.get("id")) for group in ("chat_summaries", "layers")
+        str(item.get("id")) for group in ("chat_summaries", "layers", "artifacts")
         for item in memory.get(group) or []
         if isinstance(item, dict) and item.get("id")
     ]
@@ -5572,6 +5656,21 @@ class Handler(SimpleHTTPRequestHandler):
                     raise ValueError("Invalid investigation memory layer payload")
                 saved = create_layer_memory(request)
                 self.send_json(201, saved)
+            except ValueError as exc:
+                self.send_json(400, {"error": str(exc)})
+            except Exception as exc:
+                self.send_json(502, {"error": str(exc)})
+            return
+        if path == "/api/investigation-memory/artifact":
+            try:
+                length = int(self.headers.get("Content-Length", "0"))
+                if length > 2_000_000:
+                    self.send_json(413, {"error": "Investigation memory artifact payload too large"})
+                    return
+                request = json.loads(self.rfile.read(length).decode("utf-8-sig"))
+                if not isinstance(request, dict):
+                    raise ValueError("Invalid investigation memory artifact payload")
+                self.send_json(201, create_memory_artifact(request))
             except ValueError as exc:
                 self.send_json(400, {"error": str(exc)})
             except Exception as exc:

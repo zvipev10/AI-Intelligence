@@ -67,6 +67,34 @@ class InvestigationRegistryTests(unittest.TestCase):
             {item["investigation_id"] for item in items},
         )
 
+    def test_memory_artifacts_are_additive_and_keep_analyst_comments(self):
+        object_saved = server.create_memory_artifact({
+            "investigation_id": "investigation-a",
+            "name": "Syria convoy lead",
+            "comment": "Check the call pattern before assessment.",
+            "artifact": {
+                "kind": "object", "object_kind": "record", "object_id": "CALL-001",
+                "label": "Cell call CALL-001", "source_type": "cellular_calls",
+            },
+        })
+        polygon_saved = server.create_memory_artifact({
+            "investigation_id": "investigation-a",
+            "comment": "Area of convoy activity.",
+            "artifact": {
+                "kind": "polygon", "label": "Convoy search area",
+                "geometry": {"type": "Polygon", "coordinates": [[[35.0, 33.0], [35.1, 33.0], [35.1, 33.1], [35.0, 33.0]]]},
+            },
+        })
+
+        memory = server.load_investigation_memory("investigation-a")["memory"]
+
+        self.assertEqual("object", object_saved["saved"]["kind"])
+        self.assertEqual("polygon", polygon_saved["saved"]["kind"])
+        self.assertEqual(2, len(memory["artifacts"]))
+        self.assertEqual("Check the call pattern before assessment.", memory["artifacts"][0]["analyst_comment"])
+        self.assertEqual("Area of convoy activity.", memory["artifacts"][1]["analyst_comment"])
+        self.assertTrue(server.investigation_memory_has_content({"memory": memory}))
+
 
 if __name__ == "__main__":
     unittest.main()

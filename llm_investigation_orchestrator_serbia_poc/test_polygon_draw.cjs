@@ -12,3 +12,20 @@ zoom=false;draw.start();draw.cancel();assert(!zoom);
 console.log('PASS: minimum vertices, closure, cancellation, completed polygon preservation, navigation restoration');
 
 map.isStyleLoaded=()=>false; draw.start(); click(30,30); draw.cancel(); assert.equal(data.features.length,1); console.log("PASS: cancellation updates existing source while tiles are loading");
+
+let selected;
+let sourceData;
+const handlers={};
+const interactiveMap={
+  on(event,layer,handler){ handlers[`${event}:${layer}`]=handler; },
+  doubleClickZoom:{isEnabled:()=>true,disable(){},enable(){}},
+  getContainer:()=>({classList:{toggle(){}}}), getCanvas:()=>({style:{}}),
+  project:p=>({x:p[0],y:p[1]}), isStyleLoaded:()=>true,
+  getSource:()=>null, addSource(_id,value){ sourceData=value.data; }, addLayer(){}
+};
+const interactive=new Draw(interactiveMap,{addEventListener(){},setAttribute(){}},{hidden:true},{onSelect:value=>selected=value});
+interactive.start(); interactive.click({lngLat:{lng:0,lat:0},point:{x:0,y:0}}); interactive.click({lngLat:{lng:100,lat:0},point:{x:100,y:0}}); interactive.click({lngLat:{lng:100,lat:100},point:{x:100,y:100}}); interactive.click({lngLat:{lng:0,lat:0},point:{x:0,y:0}});
+assert.equal(sourceData.features[0].properties.polygonId, interactive.polygonIds[0]);
+handlers["click:draw-polygon-fill"]({features:[{properties:{polygonId:interactive.polygonIds[0]}}],originalEvent:{preventDefault(){},stopPropagation(){}}});
+assert.deepEqual(selected.coordinates,[[0,0],[100,0],[100,100],[0,0]]);
+console.log("PASS: clicking a completed polygon selects it for the memory workflow");
