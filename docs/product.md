@@ -8,6 +8,17 @@ One bilingual Hebrew/English application serves one active scenario at a time. G
 
 Draft exploration is ephemeral until an investigation is created. Saved investigation memory, workstreams, targets and assessments retain their own ownership boundaries. Selecting an investigation changes its request context, while staged playback and its cumulative visible timeframe remain global to the active runtime. Next advances available data; later slices may trigger separate memory and workstream updates. Mobile reconnection recovers the same server-side agent run.
 
+### Specialist role workspaces
+
+Team-member selection is available only inside a saved investigation workspace, never on the welcome page or during draft exploration. Naama is the SIGINT Officer and Gadi is the VISINT Officer. Selecting either applies a client-side source workspace: it limits the visible/openable catalog and result layers for that role without deleting other investigation layers.
+
+| Member | Allowed Syria source layers | Default presentation |
+|---|---|---|
+| Naama / SIGINT Officer | ADINT, IPDR, Cellular Geolocations, Cellular Calls | Opens Cellular Calls in Timeline and docks the latest available call viewer. |
+| Gadi / VISINT Officer | CCTV, Satellite | Opens Satellite in Map. |
+
+Selecting the active member again returns to the general workspace. This is a presentation boundary, not a server-side access-control boundary: the existing general-agent routing and data permissions remain unchanged.
+
 ## Results and record exploration
 
 | Presentation | Appropriate use |

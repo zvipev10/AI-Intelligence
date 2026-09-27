@@ -376,15 +376,15 @@ const MICHLOL_MEMBERS = {
   he: [
     { id: "moshe-targets-officer", displayName: "משה", roleLabel: "קצין מטרות", memberType: "user", avatar: "./assets/michlol/moshe.png", initial: "מ" },
     { id: "talia-tama-officer", displayName: "טליה", roleLabel: "קצינת תמא", memberType: "user", avatar: "./assets/michlol/talia.png", initial: "ט" },
-    { id: "naama-field-officer", displayName: "נעמה", roleLabel: "קצינת שטח", memberType: "user", avatar: "./assets/michlol/naama.png", initial: "נ" },
-    { id: "gadi-collection-officer", displayName: "גדי", roleLabel: "קצין איסוף", memberType: "user", avatar: "./assets/michlol/gadi.png", initial: "ג" },
+    { id: "naama-field-officer", displayName: "נעמה", roleLabel: "קצינת סיגינט", memberType: "user", workspaceRole: "sigint", avatar: "./assets/michlol/naama.png", initial: "נ" },
+    { id: "gadi-collection-officer", displayName: "גדי", roleLabel: "קצין ויזינט", memberType: "user", workspaceRole: "visint", avatar: "./assets/michlol/gadi.png", initial: "ג" },
     { id: "yahli-processing-officer", displayName: "יהלי", roleLabel: "קצין עיבוד", memberType: "user", avatar: "./assets/michlol/yahli.png", initial: "י" }
   ],
   en: [
     { id: "moshe-targets-officer", displayName: "Moshe", roleLabel: "Targets Officer", memberType: "user", avatar: "./assets/michlol/moshe.png", initial: "M" },
     { id: "talia-tama-officer", displayName: "Talia", roleLabel: "Enemy Assessment Officer", memberType: "user", avatar: "./assets/michlol/talia.png", initial: "T" },
-    { id: "naama-field-officer", displayName: "Naama", roleLabel: "Field Officer", memberType: "user", avatar: "./assets/michlol/naama.png", initial: "N" },
-    { id: "gadi-collection-officer", displayName: "Gadi", roleLabel: "Collection Officer", memberType: "user", avatar: "./assets/michlol/gadi.png", initial: "G" },
+    { id: "naama-field-officer", displayName: "Naama", roleLabel: "SIGINT Officer", memberType: "user", workspaceRole: "sigint", avatar: "./assets/michlol/naama.png", initial: "N" },
+    { id: "gadi-collection-officer", displayName: "Gadi", roleLabel: "VISINT Officer", memberType: "user", workspaceRole: "visint", avatar: "./assets/michlol/gadi.png", initial: "G" },
     { id: "yahli-processing-officer", displayName: "Yahli", roleLabel: "Processing Officer", memberType: "user", avatar: "./assets/michlol/yahli.png", initial: "Y" }
   ]
 };
@@ -395,6 +395,28 @@ const MICHLOL_MEMBER_WELCOME = {
 };
 const MOSHE_MEMBER_ID = "moshe-targets-officer";
 const TALIA_MEMBER_ID = "talia-tama-officer";
+const ROLE_WORKSPACES = {
+  sigint: {
+    allowedCatalogLayerIds: new Set([
+      "events:ADINT",
+      "events:IPDR",
+      "events:Cellular Geolocations",
+      "events:Cellular Calls"
+    ]),
+    defaultCatalogLayerId: "events:Cellular Calls",
+    defaultView: "timeline",
+    openDefaultCall: true
+  },
+  visint: {
+    allowedCatalogLayerIds: new Set([
+      "events:CCTV",
+      "events:Satellite"
+    ]),
+    defaultCatalogLayerId: "events:Satellite",
+    defaultView: "map",
+    openDefaultCall: false
+  }
+};
 const WORKSTREAM_SEEN_STORAGE_KEY = "serbia-poc-workstream-seen-v2";
 const MOSHE_MESSAGE_LABEL = {
   he: "משה - קצין מטרות",
@@ -470,6 +492,27 @@ function currentLocaleTag() {
 
 function currentMembers() {
   return MICHLOL_MEMBERS[currentLocale()];
+}
+
+function roleWorkspaceSelectionAvailable() {
+  return state.pageView === "workspace" && !state.draftSessionActive;
+}
+
+function activeRoleWorkspaceProfile() {
+  return ROLE_WORKSPACES[state.activeRoleWorkspace] || null;
+}
+
+function roleWorkspaceAllowsCatalogLayer(layerId) {
+  const profile = activeRoleWorkspaceProfile();
+  return !profile || profile.allowedCatalogLayerIds.has(String(layerId || ""));
+}
+
+function roleWorkspaceAllowsLayer(layer) {
+  return roleWorkspaceAllowsCatalogLayer(layer?.catalogLayerId);
+}
+
+function roleWorkspaceLayers(layers = state.layers) {
+  return layers.filter(roleWorkspaceAllowsLayer);
 }
 
 function activeLocaleText(he, en) {
@@ -569,6 +612,7 @@ const state = {
   renderedMemoryUpdateKeys: new Set(),
   pendingMosheWorkstreamProposal: null,
   activeConversationMemberId: null,
+  activeRoleWorkspace: null,
   openingLayerIds: new Set(),
   layers: [],
   activeLayerId: null,
@@ -737,6 +781,12 @@ function michlolMemberHtml(member) {
 
 function renderMichlolTeam() {
   if (!michlolTeam) return;
+  const available = roleWorkspaceSelectionAvailable();
+  michlolTeam.hidden = !available;
+  if (!available) {
+    michlolTeam.innerHTML = "";
+    return;
+  }
   const members = currentMembers();
   const visible = members.slice(0, 3);
   const hidden = members.slice(3);
@@ -803,12 +853,45 @@ function appendMemberWelcomeMessage(member) {
   });
 }
 
+function defaultCallRecordId(layer) {
+  return [...(layer?.items || [])]
+    .filter(isCellularCallRecord)
+    .sort((left, right) => String(right.call_started_at_utc || right.timestamp_utc || "").localeCompare(String(left.call_started_at_utc || left.timestamp_utc || "")))[0]?.event_id || "";
+}
+
+async function applyRoleWorkspace(member) {
+  const role = member?.workspaceRole;
+  const profile = ROLE_WORKSPACES[role] || null;
+  state.activeRoleWorkspace = profile ? role : null;
+  closeObjectViewer();
+  ensureActiveLayer();
+  renderLayerSelector();
+  renderQueryLayersModal();
+  renderAllViews();
+  if (!profile) return;
+
+  const openedLayer = await openCatalogLayer(profile.defaultCatalogLayerId, { silent: true, roleDefault: true });
+  if (!openedLayer || state.activeConversationMemberId !== member.id || state.activeRoleWorkspace !== role) return;
+
+  state.rawOverlayMinimized = false;
+  state.activeLayerId = openedLayer.capabilities.table ? openedLayer.id : state.activeLayerId;
+  activateView(profile.defaultView, { reason: activeLocaleText("תצוגת ברירת המחדל של התפקיד", "Role default view") });
+  renderAllViews();
+
+  if (profile.openDefaultCall) {
+    const recordId = defaultCallRecordId(openedLayer);
+    if (recordId) openObjectViewer("record", recordId, document.getElementById("timeline"));
+  }
+}
+
 function selectConversationMember(memberId) {
+  if (!roleWorkspaceSelectionAvailable()) return;
   const member = currentMembers().find(item => item.id === memberId);
   if (!member) return;
   if (state.activeConversationMemberId === member.id) {
     if (state.workstreamComposerMode) setWorkstreamComposerMode(false);
     state.activeConversationMemberId = null;
+    state.activeRoleWorkspace = null;
     state.activeTeamMentions = teamMentionsForPrompt(promptInput?.value || "");
     conversation.querySelectorAll(".member-welcome-message").forEach(message => message.remove());
     renderMichlolTeam();
@@ -820,6 +903,7 @@ function selectConversationMember(memberId) {
     setWorkstreamComposerMode(false);
   }
   state.activeConversationMemberId = member.id;
+  void applyRoleWorkspace(member);
   renderMichlolTeam();
   updatePromptPlaceholder();
   appendMemberWelcomeMessage(member);
@@ -1591,15 +1675,16 @@ function nextLayerColor() {
 }
 
 function ensureActiveLayer() {
-  const activeStillExists = state.layers.some(layer => layer.id === state.activeLayerId);
+  const scopedLayers = roleWorkspaceLayers();
+  const activeStillExists = scopedLayers.some(layer => layer.id === state.activeLayerId);
   if (!activeStillExists) {
-    state.activeLayerId = state.layers.find(layer => layer.capabilities.table && layer.visible)?.id
-      || state.layers.find(layer => layer.capabilities.table)?.id
+    state.activeLayerId = scopedLayers.find(layer => layer.capabilities.table && layer.visible)?.id
+      || scopedLayers.find(layer => layer.capabilities.table)?.id
       || null;
   }
-  if (!state.layers.some(layer => layer.id === state.activeLayerId && layer.visible && layer.capabilities.table)) {
-    state.activeLayerId = state.layers.find(layer => layer.capabilities.table && layer.visible)?.id
-      || state.layers.find(layer => layer.capabilities.table)?.id
+  if (!scopedLayers.some(layer => layer.id === state.activeLayerId && layer.visible && layer.capabilities.table)) {
+    state.activeLayerId = scopedLayers.find(layer => layer.capabilities.table && layer.visible)?.id
+      || scopedLayers.find(layer => layer.capabilities.table)?.id
       || null;
   }
 }
@@ -1675,12 +1760,13 @@ function layerColorStyle(layer) {
 }
 
 function visibleLayers(capability = null) {
-  return state.layers.filter(layer => layer.visible && (!capability || layer.capabilities[capability]));
+  return roleWorkspaceLayers().filter(layer => layer.visible && (!capability || layer.capabilities[capability]));
 }
 
 function activeTableLayer() {
-  return state.layers.find(layer => layer.id === state.activeLayerId && layer.capabilities.table)
-    || state.layers.find(layer => layer.capabilities.table)
+  const scopedLayers = roleWorkspaceLayers();
+  return scopedLayers.find(layer => layer.id === state.activeLayerId && layer.capabilities.table)
+    || scopedLayers.find(layer => layer.capabilities.table)
     || null;
 }
 
@@ -2352,6 +2438,7 @@ function setPageView(view, options = {}) {
   if (workspace) workspace.hidden = showingWelcome;
   document.body.classList.toggle("welcome-active", showingWelcome);
   renderDraftInvestigationUi();
+  renderMichlolTeam();
   if (showingWelcome) {
     renderWelcomePage();
     if (options.focus !== false) document.getElementById("welcomeTitle")?.focus?.();
@@ -2742,6 +2829,7 @@ function matchingCatalogLayers() {
   const query = normalizeLayerSearch(state.layerSearchQuery);
   if (!query) return [];
   return state.layerCatalog
+    .filter(layer => roleWorkspaceAllowsCatalogLayer(layer.id))
     .filter(layer => layerSearchText(layer).includes(query))
     .slice(0, 8);
 }
@@ -2811,7 +2899,7 @@ function renderLayerSelector() {
 
 function renderQueryLayersModal() {
   if (!queryLayersModal || !queryLayersList || !queryLayersSubmit || !queryLayersError) return;
-  const openLayers = state.layers.filter(layer => layer.capabilities.table);
+  const openLayers = roleWorkspaceLayers().filter(layer => layer.capabilities.table);
   queryLayersError.hidden = true;
   queryLayersError.textContent = "";
   queryLayersSubmit.disabled = openLayers.length === 0;
@@ -2853,6 +2941,7 @@ async function loadLayerCatalog() {
 }
 
 async function openCatalogLayer(layerId, options = {}) {
+  if (!options.roleDefault && !roleWorkspaceAllowsCatalogLayer(layerId)) return null;
   const layer = state.layerCatalog.find(item => item.id === layerId);
   const filters = options.filters || options.savedLayer?.catalog_filters || {};
   const scopeKey = JSON.stringify(Object.fromEntries(Object.keys(filters).sort().map(key =>
@@ -6553,7 +6642,7 @@ function renderEvidence() {
   const filterPanel = document.getElementById("layerFilterPanel");
   if (!overlay || !tabs || !head || !body) return;
 
-  const tableLayers = state.layers.filter(layer => layer.capabilities.table);
+  const tableLayers = roleWorkspaceLayers().filter(layer => layer.capabilities.table);
   tableLayers.forEach(layer => ensureLayerFilterState(layer));
   if (!tableLayers.length) {
     overlay.hidden = true;
@@ -6879,6 +6968,7 @@ function resetInvestigation(options = {}) {
   state.layerSearchQuery = "";
   state.layerSearchOpen = false;
   state.activeConversationMemberId = null;
+  state.activeRoleWorkspace = null;
   setPromptOptionsOpen(false);
   promptForm.classList.remove("tracking-mode");
   if (workstreamComposerMode) workstreamComposerMode.hidden = true;

@@ -60,6 +60,30 @@ class MemberUiRegressionTests(unittest.TestCase):
         self.assertIn('displayName: "משה"', self.app)
         self.assertIn('id: "moshe-targets-officer"', self.app)
 
+    def test_naama_and_gadi_define_specialist_workspace_defaults(self):
+        self.assertIn('roleLabel: "קצינת סיגינט"', self.app)
+        self.assertIn('roleLabel: "SIGINT Officer"', self.app)
+        self.assertIn('workspaceRole: "sigint"', self.app)
+        self.assertIn('roleLabel: "קצין ויזינט"', self.app)
+        self.assertIn('roleLabel: "VISINT Officer"', self.app)
+        self.assertIn('workspaceRole: "visint"', self.app)
+        self.assertIn('defaultCatalogLayerId: "events:Cellular Calls"', self.app)
+        self.assertIn('defaultCatalogLayerId: "events:Satellite"', self.app)
+        self.assertIn('openDefaultCall: true', self.app)
+
+    def test_specialist_selection_is_limited_to_saved_investigation_workspaces(self):
+        self.assertIn('function roleWorkspaceSelectionAvailable()', self.app)
+        self.assertIn('return state.pageView === "workspace" && !state.draftSessionActive;', self.app)
+        self.assertIn('michlolTeam.hidden = !available;', self.app)
+        self.assertIn('if (!roleWorkspaceSelectionAvailable()) return;', self.app)
+
+    def test_specialist_scope_filters_catalog_and_open_result_layers(self):
+        self.assertIn('function roleWorkspaceAllowsCatalogLayer(layerId)', self.app)
+        self.assertIn('function roleWorkspaceLayers(layers = state.layers)', self.app)
+        self.assertIn('return roleWorkspaceLayers().filter(layer => layer.visible', self.app)
+        self.assertIn('.filter(layer => roleWorkspaceAllowsCatalogLayer(layer.id))', self.app)
+        self.assertIn('if (!options.roleDefault && !roleWorkspaceAllowsCatalogLayer(layerId)) return null;', self.app)
+
     def _superseded_test_at_mention_autocomplete_is_wired(self):
         self.assertIn("function activeMentionRange(textarea)", self.app)
         self.assertIn("function matchingTeamMembers(query)", self.app)
