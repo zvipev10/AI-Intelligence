@@ -6930,13 +6930,15 @@ function enhanceResultsTable(layer) {
     cell.setAttribute("aria-sort", activeSort ? (control.sortDirection === "asc" ? "ascending" : "descending") : "none");
     cell.innerHTML = `
       <div class="result-column-header">
-        <button type="button" class="result-column-sort" data-result-sort="${column}" data-result-layer="${escapeHtml(String(layer.id))}" title="${escapeHtml(activeLocaleText(`מיין לפי ${label}. ${directionLabel}`, `Sort by ${label}. ${directionLabel}`))}">
-          <span>${escapeHtml(label)}</span>
-          <span class="material-symbols-rounded" aria-hidden="true">${activeSort ? (control.sortDirection === "asc" ? "arrow_upward" : "arrow_downward") : "unfold_more"}</span>
-        </button>
-        <button type="button" class="result-column-filter-toggle ${filterValue ? "active" : ""}" data-result-filter-toggle="${column}" data-result-layer="${escapeHtml(String(layer.id))}" title="${escapeHtml(activeLocaleText(`סנן לפי ${label}`, `Filter by ${label}`))}" aria-label="${escapeHtml(activeLocaleText(`סנן לפי ${label}`, `Filter by ${label}`))}" aria-expanded="${filterOpen ? "true" : "false"}">
-          <span class="material-symbols-rounded" aria-hidden="true">filter_alt</span>
-        </button>
+        <span class="result-column-title">${escapeHtml(label)}</span>
+        <span class="result-column-actions">
+          <button type="button" class="result-column-sort" data-result-sort="${column}" data-result-layer="${escapeHtml(String(layer.id))}" title="${escapeHtml(activeLocaleText(`מיין לפי ${label}. ${directionLabel}`, `Sort by ${label}. ${directionLabel}`))}" aria-label="${escapeHtml(activeLocaleText(`מיין לפי ${label}. ${directionLabel}`, `Sort by ${label}. ${directionLabel}`))}">
+            <span class="material-symbols-rounded" aria-hidden="true">${activeSort ? (control.sortDirection === "asc" ? "arrow_upward" : "arrow_downward") : "unfold_more"}</span>
+          </button>
+          <button type="button" class="result-column-filter-toggle ${filterValue ? "active" : ""}" data-result-filter-toggle="${column}" data-result-layer="${escapeHtml(String(layer.id))}" title="${escapeHtml(activeLocaleText(`סנן לפי ${label}`, `Filter by ${label}`))}" aria-label="${escapeHtml(activeLocaleText(`סנן לפי ${label}`, `Filter by ${label}`))}" aria-expanded="${filterOpen ? "true" : "false"}">
+            <span class="material-symbols-rounded" aria-hidden="true">filter_alt</span>
+          </button>
+        </span>
       </div>
       ${filterOpen ? `
         <div class="result-column-filter-popover">
@@ -7344,6 +7346,14 @@ document.addEventListener("input", event => {
 });
 
 document.addEventListener("click", event => {
+  const resultTableControlEntries = state.resultTableControls instanceof Map
+    ? [...state.resultTableControls.entries()]
+    : Object.entries(state.resultTableControls || {});
+  const openResultFilter = resultTableControlEntries.find(([, control]) => Number.isInteger(control.openFilterColumn));
+  if (openResultFilter && !event.target.closest(".result-column-filter-popover, .result-column-filter-toggle")) {
+    openResultFilter[1].openFilterColumn = null;
+    renderEvidence();
+  }
   const memoryDelete = event.target.closest("[data-memory-delete-group][data-memory-delete-id]");
   if (memoryDelete) {
     event.preventDefault();
@@ -7669,6 +7679,14 @@ document.addEventListener("focusin", event => {
 });
 
 document.addEventListener("keydown", event => {
+  const columnFilter = event.target.closest(".result-column-filter[data-result-filter]");
+  if (columnFilter && (event.key === "Enter" || event.key === "Escape")) {
+    event.preventDefault();
+    const control = resultTableControl(columnFilter.dataset.resultLayer);
+    control.openFilterColumn = null;
+    renderEvidence();
+    return;
+  }
   if (state.promptOptionsOpen && event.key === "Escape") {
     setPromptOptionsOpen(false);
     promptOptionsButton?.focus();

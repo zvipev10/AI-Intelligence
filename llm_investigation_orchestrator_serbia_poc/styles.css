@@ -460,9 +460,11 @@ textarea.mention-source::placeholder { color: var(--muted) !important; }
 .raw-events-table th, .raw-events-table td { padding: 7px 8px; background: transparent; }
 .raw-events-table th { background: rgba(15, 19, 27, .24); }
 .raw-events-table th { position: relative; overflow: visible; }
-.result-column-header { min-width: 96px; display: flex; align-items: center; gap: 3px; }
-.result-column-sort { flex: 1 1 auto; min-width: 0; display: flex; align-items: center; justify-content: space-between; gap: 4px; border: 0; background: transparent; color: var(--ink); padding: 1px 0; font: inherit; font-weight: 900; text-align: left; cursor: pointer; }
-.result-column-sort span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.result-column-header { min-width: 96px; display: inline-flex; align-items: center; gap: 5px; }
+.result-column-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 900; }
+.result-column-actions { display: inline-flex; flex: 0 0 auto; align-items: center; gap: 2px; }
+.result-column-sort { flex: 0 0 auto; width: 18px; height: 22px; display: grid; place-items: center; border: 0; border-radius: 5px; background: transparent; color: var(--blue); padding: 0; cursor: pointer; }
+.result-column-sort:hover, .result-column-sort:focus-visible { background: rgba(88, 166, 255, .12); outline: none; }
 .result-column-sort .material-symbols-rounded { flex: 0 0 auto; color: var(--blue); font-size: 14px; }
 .result-column-filter-toggle { position: relative; flex: 0 0 auto; width: 22px; height: 22px; display: grid; place-items: center; border: 0; border-radius: 5px; background: transparent; color: var(--muted); padding: 0; cursor: pointer; }
 .result-column-filter-toggle:hover, .result-column-filter-toggle[aria-expanded="true"] { background: rgba(88, 166, 255, .12); color: var(--blue); }

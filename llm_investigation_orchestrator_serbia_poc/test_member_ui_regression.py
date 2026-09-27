@@ -232,6 +232,10 @@ class MemberUiRegressionTests(unittest.TestCase):
         self.assertIn(".result-column-filter", self.styles)
         self.assertIn(".result-column-filter-toggle", self.styles)
         self.assertIn('data-result-filter-toggle="${column}"', self.app)
+        self.assertIn('class="result-column-title"', self.app)
+        self.assertIn('class="result-column-actions"', self.app)
+        self.assertIn('event.key === "Enter" || event.key === "Escape"', self.app)
+        self.assertIn('!event.target.closest(".result-column-filter-popover, .result-column-filter-toggle")', self.app)
 
     def _superseded_test_moshe_tools_use_readable_shared_activity_labels(self):
         self.assertIn('prepare_target_candidate: "הכנת מועמד מטרה"', self.app)
