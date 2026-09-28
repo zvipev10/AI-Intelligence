@@ -760,3 +760,23 @@ REC-SYR-CELL-CSV-297,2026-09-05T23:00:00Z,Cellular Geolocations,unknown,Supplied
 REC-SYR-CELL-CSV-298,2026-09-05T23:07:00Z,Cellular Geolocations,unknown,Supplied telecom record,reported,,LOC-SYR-CELL-CSV-298,Supplied Voice cellular record at 3106-22361.,supplied_cellular_record,,,,,,,,,,,,,,358452077867720,2026-09-05T23:07:00Z,2026-09-05T23:08:00Z,,,,,,,,,,,,35.0187,36.2864,,,,,,,,,8f093db3-e899-4455-bc78-1136d002e8bf,,,,,,,,CC START TIME (+00:00),,,,,,,,,,,,,,,,,,,,,,8f093db3-e899-4455-bc78-1136d002e8bf,0,Voice,+00:00,2026-09-05T23:07:00Z,2026-09-05T23:08:00Z,2026-09-05T23:07:00Z,2026-09-05T23:08:00Z,0:00:21,,CGI,3106-22361,16,,963948141114,417018935510843,358452077867720,,,,963940827586,417017987986620,,,,,
 REC-SYR-CELL-CSV-299,2026-09-05T23:19:00Z,Cellular Geolocations,unknown,Supplied telecom record,reported,,LOC-SYR-CELL-CSV-299,Supplied SMS cellular record at 3104-21567.,supplied_cellular_record,,,,,,,,,,,,,,352875110662367,2026-09-05T23:19:00Z,2026-09-05T23:19:00Z,,,,,,,,,,,,34.9803,35.9254,,,,,,,,,81999f14-2bdc-4b47-8e79-762471b757c6,,,,,,,,CC START TIME (+00:00),,,,,,,,,,,,,,,,,,,,,,81999f14-2bdc-4b47-8e79-762471b757c6,0,SMS,+00:00,2026-09-05T23:19:00Z,2026-09-05T23:19:00Z,2026-09-05T23:19:00Z,2026-09-05T23:19:00Z,0:00:00,,CGI,3104-21567,,,963946053216,417010388557871,352875110662367,,,,963942698367,417018878079078,,,,963940000500,شو الأخبار؟
 REC-SYR-CELL-CSV-300,2026-09-05T23:51:00Z,Cellular Geolocations,unknown,Supplied telecom record,reported,,LOC-SYR-CELL-CSV-300,Supplied SMS cellular record at 3102-21285.,supplied_cellular_record,,,,,,,,,,,,,,352875110662367,2026-09-05T23:51:00Z,2026-09-05T23:51:00Z,,,,,,,,,,,,35.0168,36.0996,,,,,,,,,81999f14-2bdc-4b47-8e79-762471b757c6,,,,,,,,CC START TIME (+00:00),,,,,,,,,,,,,,,,,,,,,,81999f14-2bdc-4b47-8e79-762471b757c6,1,SMS,+00:00,2026-09-05T23:51:00Z,2026-09-05T23:51:00Z,2026-09-05T23:51:00Z,2026-09-05T23:51:00Z,0:00:00,,CGI,3102-21285,,,963946053216,417010388557871,352875110662367,,,,963945301596,417018599958688,,,,963940000500,الكهربا مقطوعة
+
+"REC-SYR-CALL-002","2026-09-20T09:50:00Z","שיחות סלולר","unknown","Not specified","reported","","LOC-SYR-COAST-005","Call between Arman Rahimi and Omar Al-Khatib: the group will arrive in twenty minutes with fifteen petrol units and asks for the gates to be opened. Supplied recording with original transcript and English translation.","scenario_cellular_call_collection","","","","","","","","","true","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","SYR-SCN-CALL-002","2026-09-20T09:50:00Z","60","353294702931926","SUBSCRIBER-001","LOC-SYR-COAST-005","352099001122338","SUBSCRIBER-002","LOC-SYR-CALL-NORTH-001","IMEI 353294702931926: Whoever hears your voice feels full of life!
+
+Unidentified: Arabic, Arabic!
+
+IMEI 353294702931926: What's up? Where are you?
+
+Unidentified: I'm with the group. We'll arrive in twenty minutes. Open the gates; we have fifteen units of petrol.","/assets/demo/syria/call-media-v1/call-2.mp3","IMEI 353294702931926: Whoever hears your voice feels full of life!
+
+Unidentified: Arabic, Arabic!
+
+IMEI 353294702931926: What's up? Where are you?
+
+Unidentified: I'm with the group. We'll arrive in twenty minutes. Open the gates; we have fifteen units of petrol.","IMEI 353294702931926: هر کی صداتو می‌شنوه، جون می‌گیره!
+
+Unidentified: عربي، عربي!
+
+IMEI 353294702931926: شو الأخبار؟ وينك؟
+
+Unidentified: أنا مع الجماعة، عشرين دقيقة وبنوصل. افتحوا البوابات، معنا خمستعش وحدة بنزين.","Arabic and Persian","User-supplied audio and transcripts; scenario context","/assets/demo/syria/call-media-v1/call-2-transcript-ar.txt","/assets/demo/syria/call-media-v1/call-2-translation-en.txt","353294702931926","8996301746283951072","8996301839572614087","","","","","","","","","","","","","","","","","","","","","","","","","","",""

@@ -45,7 +45,7 @@
       "Homs, Syria (1990–2014)"
     ],
     "connections": [
-      "Arman Rahimi — designated Side A in REC-SYR-CALL-001"
+      "Arman Rahimi — designated Side A in REC-SYR-CALL-001 and REC-SYR-CALL-002"
     ],
     "military_service": "Completed mandatory service in a Syrian logistics unit (2010–2012).",
     "associated_entity_ids": [],
@@ -54,7 +54,7 @@
       "driver_permit_reference": "SYR-DL-10428",
       "imei": "352099001122338",
       "imsi": "418201234567891",
-      "call_record": "REC-SYR-CALL-001 (Side B)"
+      "call_record": "REC-SYR-CALL-001 and REC-SYR-CALL-002 (Side B)"
     },
     "biographical_notes": "Profile prepared for the Syria scenario."
   },
@@ -93,7 +93,7 @@
       "Shiraz, Iran (1987–2008)"
     ],
     "connections": [
-      "Omar Al-Khatib — commercial transport contact and designated Side B in REC-SYR-CALL-001"
+      "Omar Al-Khatib — commercial transport contact and designated Side B in REC-SYR-CALL-001 and REC-SYR-CALL-002"
     ],
     "military_service": "Completed compulsory service in an Iranian transport-support unit (2006–2008).",
     "associated_entity_ids": [
@@ -114,7 +114,7 @@
         "REC-SYR-CELL-CSV-077",
         "REC-SYR-CELL-CSV-101"
       ],
-      "call_record": "REC-SYR-CALL-001 (Side A)"
+      "call_record": "REC-SYR-CALL-001 and REC-SYR-CALL-002 (Side A)"
     },
     "biographical_notes": "Known to coordinate vehicle maintenance, cargo routing and cross-border driver handoffs."
   },

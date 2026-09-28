@@ -44,6 +44,15 @@ class CollectionRequestTests(unittest.TestCase):
                 "target": {"type": "imei", "imei": "123456789012345"},
             })
 
+    def test_ipdr_is_not_requestable(self):
+        with self.assertRaisesRegex(ValueError, "not available"):
+            server.create_collection_request({
+                "investigation_id": "investigation-collection-demo",
+                "role": "general",
+                "collection_type": "ipdr",
+                "target": {"type": "imei", "imei": "123456789012345"},
+            })
+
 
 class CollectionRequestUiTests(unittest.TestCase):
     @classmethod
@@ -54,10 +63,11 @@ class CollectionRequestUiTests(unittest.TestCase):
     def test_submitting_collection_opens_the_matching_layer_in_its_preferred_view(self):
         self.assertIn("const COLLECTION_LAYER_PRESENTATIONS = {", self.app)
         self.assertIn('cellular_calls: { layerId: "events:Cellular Calls", view: "timeline" }', self.app)
-        self.assertIn('ipdr: { layerId: "events:IPDR", view: "table" }', self.app)
+        self.assertNotIn('{ id: "ipdr",', self.app)
+        self.assertNotIn('ipdr: { layerId: "events:IPDR", view: "table" }', self.app)
         self.assertIn('await openRequestedCollectionLayer(type);', self.app)
         self.assertIn('activateView(presentation.view', self.app)
-        self.assertIn('script.src = "./app.js?v=243";', self.bootstrap)
+        self.assertIn('script.src = "./app.js?v=244";', self.bootstrap)
 
 
 if __name__ == "__main__":

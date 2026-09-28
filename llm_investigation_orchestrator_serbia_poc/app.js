@@ -2002,7 +2002,6 @@ function closeMemoryCommentDialog() {
 
 const COLLECTION_TYPES = [
   { id: "adint", he: "ADINT", en: "ADINT", descriptionHe: "איסוף נתוני מכשירים ופרסומות באזור", descriptionEn: "Collect device and advertising observations in the area" },
-  { id: "ipdr", he: "IPDR", en: "IPDR", descriptionHe: "איסוף רשומות שימוש בנתוני רשת", descriptionEn: "Collect network data-session records" },
   { id: "cellular_geolocations", he: "מיקומי סלולר", en: "Cellular geolocations", descriptionHe: "איסוף מיקומי מכשירים", descriptionEn: "Collect device location observations" },
   { id: "cellular_calls", he: "שיחות סלולר", en: "Cellular calls", descriptionHe: "איסוף רשומות שיחות", descriptionEn: "Collect call-detail records" },
   { id: "satellite", he: "לוויין", en: "Satellite", descriptionHe: "בקשת צילום לווייני", descriptionEn: "Request satellite imagery" },
@@ -2010,7 +2009,6 @@ const COLLECTION_TYPES = [
 ];
 const COLLECTION_LAYER_PRESENTATIONS = {
   adint: { layerId: "events:ADINT", view: "map" },
-  ipdr: { layerId: "events:IPDR", view: "table" },
   cellular_geolocations: { layerId: "events:Cellular Geolocations", view: "map" },
   cellular_calls: { layerId: "events:Cellular Calls", view: "timeline" },
   satellite: { layerId: "events:Satellite", view: "map" },
@@ -3797,7 +3795,8 @@ function cellularCallHtml(item) {
     const side = speaker.startsWith("IMEI") ? "a" : speaker ? "b" : "note";
     const translated = translations[index] || "";
     const translation = translated.replace(/^[^:]+:\s*/, "");
-    return `<article class="call-bubble call-bubble-${side}">${speaker ? `<header>${escapeHtml(speaker)}</header>` : ""}<p lang="${item.call_language === 'Arabic' ? 'ar' : 'en'}" dir="auto">${escapeHtml(match ? match[2] : text)}</p>${translation && translation !== (match ? match[2] : text) ? `<p class="call-translation" lang="en" dir="ltr">${escapeHtml(translation)}</p>` : ""}</article>`;
+    const transcriptLanguage = /arabic|persian/i.test(item.call_language || "") ? "ar" : "en";
+    return `<article class="call-bubble call-bubble-${side}">${speaker ? `<header>${escapeHtml(speaker)}</header>` : ""}<p lang="${transcriptLanguage}" dir="auto">${escapeHtml(match ? match[2] : text)}</p>${translation && translation !== (match ? match[2] : text) ? `<p class="call-translation" lang="en" dir="ltr">${escapeHtml(translation)}</p>` : ""}</article>`;
   }).join("");
   const detail = (label,value) => `<div><dt>${escapeHtml(label)}</dt><dd dir="auto">${escapeHtml(value || "—")}</dd></div>`;
   const download = (url,label) => { const safe=safeMediaUrl(url); return safe ? `<a href="${escapeHtml(safe)}" target="_blank" rel="noopener">${escapeHtml(label)}</a>` : ""; };

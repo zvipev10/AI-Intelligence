@@ -1666,7 +1666,7 @@ def create_memory_artifact(request: dict) -> dict:
     return {"saved": item, "memory": saved}
 
 
-COLLECTION_REQUEST_TYPES = {"adint", "ipdr", "cellular_geolocations", "cellular_calls", "satellite", "cctv"}
+COLLECTION_REQUEST_TYPES = {"adint", "cellular_geolocations", "cellular_calls", "satellite", "cctv"}
 COLLECTION_REQUEST_TYPES_BY_ROLE = {
     "general": COLLECTION_REQUEST_TYPES,
     "sigint": {"cellular_geolocations", "cellular_calls"},
