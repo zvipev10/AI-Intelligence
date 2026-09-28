@@ -178,7 +178,7 @@ Rationale:
 The source timestamps already form four chronological groups. A profile flag and strict scenario manifest reuse the same visibility boundary, reset behavior, UI control, and API contract already used by playback.
 
 Impact:
-The presenter advances each slice with Next after narrating the corresponding collection task. The source timestamps remain unchanged, and every investigation uses the existing per-scenario playback state.
+The presenter advances each slice with Next after narrating the corresponding collection task. Opening the Syria investigation resets that staged run to its first baseline, including after browser reload. The source timestamps remain unchanged.
 
 ### 2026-08-09 — Create workstreams from verified evidence without redundant metadata questions
 

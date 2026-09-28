@@ -31,6 +31,12 @@ class SyriaPlaybackManifestTests(unittest.TestCase):
         deployer = (ROOT / "mcp_server" / "remote_deploy_ui.py").read_text(encoding="utf-8")
         self.assertIn('"scenario_manifests",', deployer)
 
+    def test_opening_a_syria_investigation_resets_to_the_first_slice(self):
+        app = (ROOT / "app.js").read_text(encoding="utf-8")
+        self.assertIn('function shouldResetSyriaPlaybackOnInvestigationOpen()', app)
+        self.assertIn('await initializeStagedPlayback({ reset: true });', app)
+        self.assertIn('script.src = "./app.js?v=242";', (ROOT / "demo_bootstrap.js").read_text(encoding="utf-8"))
+
     def test_manifest_splits_the_existing_source_timeline_into_demo_returns(self):
         self.assertEqual(
             ["satellite-lead", "sigint-data-return", "cellular-call-return", "cctv-return"],

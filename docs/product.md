@@ -37,7 +37,7 @@ Cellular Calls default to Timeline even when endpoint coordinates are present. C
 
 ### Syria staged demonstration
 
-Syria uses the shared staged-playback control without changing raw source timestamps or making collection requests an enforcement mechanism. Next cumulatively reveals four existing time windows: Satellite (August 30), ADINT/IPDR/Cellular Geolocations (September 1–5), the Cellular Call (September 20), and CCTV (September 22). The analyst narrates the collection requests between slices; advancing remains a presenter-controlled action.
+Syria uses the shared staged-playback control without changing raw source timestamps or making collection requests an enforcement mechanism. Opening a Syria investigation, including after a browser reload, resets the demo to its Satellite baseline. Next cumulatively reveals four existing time windows: Satellite (August 30), ADINT/IPDR/Cellular Geolocations (September 1–5), the Cellular Call (September 20), and CCTV (September 22). The analyst narrates the collection requests between slices; advancing remains a presenter-controlled action.
 
 ## Geographic context and media
 

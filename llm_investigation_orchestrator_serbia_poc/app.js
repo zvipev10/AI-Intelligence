@@ -2932,7 +2932,19 @@ function selectInvestigation(investigation, options = {}) {
   if (options.focusInput) investigationInput?.focus();
 }
 
+function shouldResetSyriaPlaybackOnInvestigationOpen() {
+  return demoRuntime?.scenario_id === "syria" && demoRuntime?.demo_profile?.features?.playback === true;
+}
+
 async function loadSelectedInvestigation(investigationId) {
+  if (shouldResetSyriaPlaybackOnInvestigationOpen()) {
+    try {
+      await initializeStagedPlayback({ reset: true });
+    } catch (error) {
+      console.error("Failed to reset Syria playback on investigation open", error);
+    }
+  }
+  if (state.investigationId !== investigationId) return;
   await loadWorkstreams();
   if (state.investigationId !== investigationId) return;
   await loadInvestigationMemory({ restoreLayers: true });
