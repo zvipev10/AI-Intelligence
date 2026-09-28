@@ -374,17 +374,17 @@ const TEAM_MENTION_AGENT_INSTRUCTION = [
 
 const MICHLOL_MEMBERS = {
   he: [
-    { id: "moshe-targets-officer", displayName: "משה", roleLabel: "קצין מטרות", memberType: "user", avatar: "./assets/michlol/moshe.png", initial: "מ" },
-    { id: "talia-tama-officer", displayName: "טליה", roleLabel: "קצינת תמא", memberType: "user", avatar: "./assets/michlol/talia.png", initial: "ט" },
     { id: "naama-field-officer", displayName: "נעמה", roleLabel: "קצינת סיגינט", memberType: "user", workspaceRole: "sigint", avatar: "./assets/michlol/naama.png", initial: "נ" },
     { id: "gadi-collection-officer", displayName: "גדי", roleLabel: "קצין ויזינט", memberType: "user", workspaceRole: "visint", avatar: "./assets/michlol/gadi.png", initial: "ג" },
+    { id: "moshe-targets-officer", displayName: "משה", roleLabel: "קצין מטרות", memberType: "user", avatar: "./assets/michlol/moshe.png", initial: "מ" },
+    { id: "talia-tama-officer", displayName: "טליה", roleLabel: "קצינת תמא", memberType: "user", avatar: "./assets/michlol/talia.png", initial: "ט" },
     { id: "yahli-processing-officer", displayName: "יהלי", roleLabel: "קצין עיבוד", memberType: "user", avatar: "./assets/michlol/yahli.png", initial: "י" }
   ],
   en: [
-    { id: "moshe-targets-officer", displayName: "Moshe", roleLabel: "Targets Officer", memberType: "user", avatar: "./assets/michlol/moshe.png", initial: "M" },
-    { id: "talia-tama-officer", displayName: "Talia", roleLabel: "Enemy Assessment Officer", memberType: "user", avatar: "./assets/michlol/talia.png", initial: "T" },
     { id: "naama-field-officer", displayName: "Naama", roleLabel: "SIGINT Officer", memberType: "user", workspaceRole: "sigint", avatar: "./assets/michlol/naama.png", initial: "N" },
     { id: "gadi-collection-officer", displayName: "Gadi", roleLabel: "VISINT Officer", memberType: "user", workspaceRole: "visint", avatar: "./assets/michlol/gadi.png", initial: "G" },
+    { id: "moshe-targets-officer", displayName: "Moshe", roleLabel: "Targets Officer", memberType: "user", avatar: "./assets/michlol/moshe.png", initial: "M" },
+    { id: "talia-tama-officer", displayName: "Talia", roleLabel: "Enemy Assessment Officer", memberType: "user", avatar: "./assets/michlol/talia.png", initial: "T" },
     { id: "yahli-processing-officer", displayName: "Yahli", roleLabel: "Processing Officer", memberType: "user", avatar: "./assets/michlol/yahli.png", initial: "Y" }
   ]
 };

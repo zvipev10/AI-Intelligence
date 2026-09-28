@@ -80,6 +80,12 @@ class MemberUiRegressionTests(unittest.TestCase):
         self.assertIn('defaultCatalogLayerId: "events:Satellite"', self.app)
         self.assertIn('openDefaultCall: true', self.app)
 
+    def test_specialist_members_are_the_first_two_selection_icons(self):
+        for locale in ("he", "en"):
+            roster = self.app.split(f"  {locale}: [", 1)[1].split("\n  ],", 1)[0]
+            self.assertLess(roster.index('workspaceRole: "sigint"'), roster.index('workspaceRole: "visint"'))
+            self.assertLess(roster.index('workspaceRole: "visint"'), roster.index('moshe-targets-officer'))
+
     def test_specialist_selection_is_limited_to_saved_investigation_workspaces(self):
         self.assertIn('function roleWorkspaceSelectionAvailable()', self.app)
         self.assertIn('return state.pageView === "workspace" && !state.draftSessionActive;', self.app)
