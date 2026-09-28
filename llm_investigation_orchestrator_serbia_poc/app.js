@@ -2040,7 +2040,7 @@ function closeCollectionRequestDialog() {
 }
 
 function openPolygonActionMenu(polygon) {
-  if (!polygon?.coordinates || state.draftSessionActive) return;
+  if (!polygon?.coordinates || state.pageView !== "workspace") return;
   pendingPolygonAction = polygon;
   const minimumMargin = 8;
   const menuWidth = 213;
