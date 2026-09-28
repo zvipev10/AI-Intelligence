@@ -2,8 +2,8 @@
   "schema_version": 1,
   "state_schema_version": 1,
   "scenario_id": "syria",
-  "profile_version": "29",
-  "dataset_version": "cellular-records-v6",
+  "profile_version": "30",
+  "dataset_version": "cellular-records-v7",
   "label": {
     "en": "Syria"
   },
@@ -100,8 +100,8 @@
     "assets/demo/syria/persons/arman-rahimi-reference-v1.png": "52a66e6ff4ff7de9683b3b9836fd7b747d3588529e85de01cffcd885cd7f46f5",
     "data/syria_cellular_records_v1/1SMSUpload260901.csv": "5fd32fafc22cc7845a78e3a7687b7734fa5ec7ef774c924c790a2aeb8f24643a",
     "data/syria_cellular_records_v1/ADINT.json": "d20ac68df152bd4532ca69bf576d3fea23446cd38683cfcb609d859d818ed90b",
-    "data/syria_cellular_records_v1/entities.en.json": "3a13ffe2903d3064a3cf03290105f9578af3bf29f72e1fbf58b4140f544b6ac4",
-    "data/syria_cellular_records_v1/entities.json": "3a13ffe2903d3064a3cf03290105f9578af3bf29f72e1fbf58b4140f544b6ac4",
+    "data/syria_cellular_records_v1/entities.en.json": "3947d61f2ef03b45a1181563652b3f60805ea3646cc87a688a6e754c1f7f171d",
+    "data/syria_cellular_records_v1/entities.json": "3947d61f2ef03b45a1181563652b3f60805ea3646cc87a688a6e754c1f7f171d",
     "data/syria_cellular_records_v1/events.csv": "09f3041b05fe439407196713004a553d11ff64f4885737facf07cfa79e59ccf5",
     "data/syria_cellular_records_v1/events.en.csv": "09f3041b05fe439407196713004a553d11ff64f4885737facf07cfa79e59ccf5",
     "data/syria_cellular_records_v1/IPDR-expanded.csv": "4fbc961a4fba1d91d69f0e8bc8f1fb68e9d56bcb43f7708a4a72f45ad281f7e6",

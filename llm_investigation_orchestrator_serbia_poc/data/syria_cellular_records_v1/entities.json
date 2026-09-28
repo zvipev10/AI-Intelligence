@@ -51,10 +51,16 @@
     "associated_entity_ids": [],
     "identifiers": {
       "profile_reference": "SYR-PER-001",
-      "driver_permit_reference": "SYR-DL-10428",
+      "driver_permit_reference": "SYR-DL-10428"
+    },
+    "telecom": {
       "imei": "352099001122338",
       "imsi": "418201234567891",
-      "call_record": "REC-SYR-CALL-001 and REC-SYR-CALL-002 (Side B)"
+      "reference_record_ids": [],
+      "calls": [
+        { "event_id": "REC-SYR-CALL-001", "side": "b", "counterparty_entity_id": "ENT-SYR-PERSON-002" },
+        { "event_id": "REC-SYR-CALL-002", "side": "b", "counterparty_entity_id": "ENT-SYR-PERSON-002" }
+      ]
     },
     "biographical_notes": "Profile prepared for the Syria scenario."
   },
@@ -100,21 +106,25 @@
       "ENT-SYR-PERSON-001"
     ],
     "identifiers": {
-      "profile_reference": "SYR-PER-002",
+      "profile_reference": "SYR-PER-002"
+    },
+    "telecom": {
       "imei": "353294702931926",
+      "msisdn": "9630943700780",
       "imsi": "417011234567890",
-      "ipdr_record_ids": [
-        "REC-SYR-IPDR-1683930569233410",
-        "REC-SYR-IPDR-3495155497992130"
+      "identity_resolution": {
+        "method": "imei_linked_telecom_identity_correlation",
+        "supporting_record_ids": [
+          "REC-SYR-CELL-CSV-013", "REC-SYR-CELL-CSV-021", "REC-SYR-CELL-CSV-024", "REC-SYR-CELL-CSV-026", "REC-SYR-CELL-CSV-030", "REC-SYR-CELL-CSV-037", "REC-SYR-CELL-CSV-043", "REC-SYR-CELL-CSV-047", "REC-SYR-CELL-CSV-052", "REC-SYR-CELL-CSV-067", "REC-SYR-CELL-CSV-072", "REC-SYR-CELL-CSV-075", "REC-SYR-CELL-CSV-077", "REC-SYR-CELL-CSV-084", "REC-SYR-CELL-CSV-089", "REC-SYR-CELL-CSV-093", "REC-SYR-CELL-CSV-099", "REC-SYR-CELL-CSV-101"
+        ]
+      },
+      "reference_record_ids": [
+        "REC-SYR-IPDR-1683930569233410", "REC-SYR-IPDR-3495155497992130", "REC-SYR-CELL-CSV-013", "REC-SYR-CELL-CSV-021", "REC-SYR-CELL-CSV-024", "REC-SYR-CELL-CSV-026", "REC-SYR-CELL-CSV-030", "REC-SYR-CELL-CSV-037", "REC-SYR-CELL-CSV-043", "REC-SYR-CELL-CSV-047", "REC-SYR-CELL-CSV-052", "REC-SYR-CELL-CSV-067", "REC-SYR-CELL-CSV-072", "REC-SYR-CELL-CSV-075", "REC-SYR-CELL-CSV-077", "REC-SYR-CELL-CSV-084", "REC-SYR-CELL-CSV-089", "REC-SYR-CELL-CSV-093", "REC-SYR-CELL-CSV-099", "REC-SYR-CELL-CSV-101"
       ],
-      "cellular_geolocation_record_ids": [
-        "REC-SYR-CELL-CSV-013",
-        "REC-SYR-CELL-CSV-021",
-        "REC-SYR-CELL-CSV-024",
-        "REC-SYR-CELL-CSV-077",
-        "REC-SYR-CELL-CSV-101"
-      ],
-      "call_record": "REC-SYR-CALL-001 and REC-SYR-CALL-002 (Side A)"
+      "calls": [
+        { "event_id": "REC-SYR-CALL-001", "side": "a", "counterparty_entity_id": "ENT-SYR-PERSON-001" },
+        { "event_id": "REC-SYR-CALL-002", "side": "a", "counterparty_entity_id": "ENT-SYR-PERSON-001" }
+      ]
     },
     "biographical_notes": "Known to coordinate vehicle maintenance, cargo routing and cross-border driver handoffs."
   },

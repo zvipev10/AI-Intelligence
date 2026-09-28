@@ -4127,82 +4127,18 @@ function personProfileHtml(item) {
   return `<section class="person-viewer-profile"><div><p class="person-viewer-status">${escapeHtml(status)}</p><h3>${escapeHtml(role)}</h3><p>${escapeHtml(summary)}</p></div></section>`;
 }
 
-function personTelecomIdentifiersHtml(item) {
-  const identifiers = item.identifiers && typeof item.identifiers === "object" ? item.identifiers : {};
-  const imei = String(identifiers.imei || "").trim();
-  const imsi = String(identifiers.imsi || "").trim();
-  if (!imei && !imsi) return "";
-  const identifier = (label, value, action = false) => value
-    ? `<div><dt>${escapeHtml(label)}</dt><dd dir="ltr">${action ? collectionImeiButton(value) : escapeHtml(value)}</dd></div>`
-    : "";
-  return `<section class="person-telecom-identifiers" aria-label="${escapeHtml(activeLocaleText("מזהי תקשורת", "Telecom identifiers"))}">
+function personTelecomDetailsHtml(item) {
+  const telecom = item.telecom && typeof item.telecom === "object" ? item.telecom : {};
+  const identifier = (label, value, action = false) => `<div><dt>${escapeHtml(label)}</dt><dd dir="ltr">${value ? (action ? collectionImeiButton(value) : escapeHtml(value)) : "—"}</dd></div>`;
+  const recordButtons = (telecom.reference_record_ids || []).map(id => `<button type="button" class="object-viewer-open" data-viewer-kind="record" data-viewer-id="${escapeHtml(id)}">${escapeHtml(id)}</button>`).join("");
+  const callButtons = (telecom.calls || []).map(call => `<button type="button" class="object-viewer-open" data-viewer-kind="record" data-viewer-id="${escapeHtml(call.event_id || "")}">${escapeHtml(call.event_id || "")}${call.side ? ` · ${escapeHtml(activeLocaleText(`צד ${call.side.toUpperCase()}`, `Side ${call.side.toUpperCase()}`))}` : ""}</button>`).join("");
+  if (!telecom.imei && !telecom.msisdn && !telecom.imsi && !recordButtons && !callButtons) return "";
+  return `<section class="person-telecom-details" aria-label="${escapeHtml(activeLocaleText("מזהי תקשורת וקישורים", "Telecom identifiers and links"))}">
     <h3><span class="material-symbols-rounded" aria-hidden="true">phonelink</span>${escapeHtml(activeLocaleText("מזהי תקשורת", "Telecom identifiers"))}</h3>
-    <dl>
-      ${identifier("IMEI", imei, true)}
-      ${identifier(activeLocaleText("IMSI בפרופיל", "Profile IMSI"), imsi)}
-    </dl>
+    <dl class="person-telecom-identifier-grid">${identifier("IMEI", telecom.imei, true)}${identifier("MSISDN", telecom.msisdn)}${identifier("IMSI", telecom.imsi)}</dl>
+    ${recordButtons ? `<div class="person-telecom-link-group"><h4>${escapeHtml(activeLocaleText("רשומות ייחוס", "Reference records"))}</h4><div>${recordButtons}</div></div>` : ""}
+    ${callButtons ? `<div class="person-telecom-link-group"><h4>${escapeHtml(activeLocaleText("שיחות", "Calls"))}</h4><div>${callButtons}</div></div>` : ""}
   </section>`;
-}
-
-function personTelecomCorrelation(item) {
-  const imei = String(item?.identifiers?.imei || "").trim();
-  if (!imei) return null;
-  const pairs = new Map();
-  state.events.forEach(event => {
-    if (String(event.target_imei || "").trim() !== imei) return;
-    const msisdn = String(event.target_msisdn || "").trim();
-    const imsi = String(event.target_imsi || "").trim();
-    const recordId = String(event.event_id || event.record_id || "").trim();
-    if (!msisdn || !imsi || !recordId) return;
-    const key = `${msisdn}|${imsi}`;
-    const entry = pairs.get(key) || { imei, msisdn, imsi, recordIds: [] };
-    if (!entry.recordIds.includes(recordId)) entry.recordIds.push(recordId);
-    pairs.set(key, entry);
-  });
-  return [...pairs.values()].sort((a, b) => b.recordIds.length - a.recordIds.length || a.msisdn.localeCompare(b.msisdn))[0] || null;
-}
-
-function approvedPersonTelecomCorrelation(entityId) {
-  const items = state.investigationMemory?.memory?.entity_enrichments;
-  return Array.isArray(items) ? items.find(item => item.entity_id === entityId) || null : null;
-}
-
-function personTelecomCorrelationHtml(item) {
-  const correlation = personTelecomCorrelation(item);
-  const approved = approvedPersonTelecomCorrelation(item.entity_id);
-  const title = activeLocaleText("קורלציית זהות תקשורת על בסיס IMEI", "IMEI-linked telecom identity correlation");
-  if (!correlation) {
-    return `<section class="person-telecom-correlation"><h3><span class="material-symbols-rounded" aria-hidden="true">account_tree</span>${escapeHtml(title)}</h3><p>${escapeHtml(activeLocaleText("לא נמצאו רשומות מיקום סלולריות שמקשרות את ה-IMEI למספר או ל-IMSI.", "No cellular-geolocation records link this IMEI to an MSISDN or IMSI."))}</p></section>`;
-  }
-  const records = correlation.recordIds.slice(0, 8).map(id => `<button type="button" class="object-viewer-open" data-viewer-kind="record" data-viewer-id="${escapeHtml(id)}">${escapeHtml(id)}</button>`).join("");
-  const approval = approved
-    ? `<span class="person-telecom-approved"><span class="material-symbols-rounded" aria-hidden="true">verified</span>${escapeHtml(activeLocaleText("נשמר בישות האדם של החקירה", "Saved to this investigation's person entity"))}</span>`
-    : `<button type="button" class="person-telecom-approve" data-approve-telecom-entity="${escapeHtml(item.entity_id || "")}">${escapeHtml(activeLocaleText("אשר ושמור בישות", "Approve and save to entity"))}</button>`;
-  return `<section class="person-telecom-correlation">
-    <h3><span class="material-symbols-rounded" aria-hidden="true">account_tree</span>${escapeHtml(title)}</h3>
-    <p>${escapeHtml(activeLocaleText(`זוהה באמצעות התאמה עקבית של אותו IMEI ב-${correlation.recordIds.length} רשומות מיקום סלולריות.`, `Derived by consistent matching of this IMEI across ${correlation.recordIds.length} cellular-geolocation records.`))}</p>
-    <dl><div><dt>MSISDN</dt><dd dir="ltr">${escapeHtml(correlation.msisdn)}</dd></div><div><dt>IMSI</dt><dd dir="ltr">${escapeHtml(correlation.imsi)}</dd></div></dl>
-    <div class="person-telecom-correlation-evidence">${records}</div>${approval}
-  </section>`;
-}
-
-async function approvePersonTelecomCorrelation(entityId, trigger) {
-  if (state.draftSessionActive) { openDraftCreateModal(() => approvePersonTelecomCorrelation(entityId, trigger)); return; }
-  if (!state.investigationId || !entityId) return;
-  trigger.disabled = true;
-  try {
-    const response = await fetch("/api/investigation-entity/telecom-correlation/approve", {
-      method: "POST", headers: { "Content-Type": "application/json; charset=utf-8" },
-      body: JSON.stringify({ investigation_id: state.investigationId, name: state.investigationName, entity_id: entityId })
-    });
-    const payload = await response.json();
-    if (!response.ok) throw new Error(payload.error || activeLocaleText("שמירת הקורלציה נכשלה", "Could not save the correlation"));
-    await loadInvestigationMemory();
-    openObjectViewer("person", entityId, trigger);
-  } catch (error) {
-    trigger.disabled = false;
-    trigger.title = error.message || activeLocaleText("שמירת הקורלציה נכשלה", "Could not save the correlation");
-  }
 }
 
 function entityRecordLocationPoints(item) {
@@ -4293,8 +4229,7 @@ function personWorkspaceHtml(item) {
         ${detail(activeLocaleText("שפות", "Languages"), item.languages)}
         ${detail(activeLocaleText("שירות צבאי", "Military service"), item.military_service)}
       </dl>
-      ${personTelecomIdentifiersHtml(item)}
-      ${personTelecomCorrelationHtml(item)}
+      ${personTelecomDetailsHtml(item)}
     </aside>
     <div class="call-main person-workspace-main">
       ${mapPanel}
@@ -7537,12 +7472,6 @@ document.addEventListener("click", event => {
   if (memoryObject) {
     event.preventDefault();
     void saveObjectToInvestigationMemory(memoryObject.dataset.memoryObjectKind, memoryObject.dataset.memoryObjectId, memoryObject);
-    return;
-  }
-  const telecomApproval = event.target.closest("[data-approve-telecom-entity]");
-  if (telecomApproval) {
-    event.preventDefault();
-    void approvePersonTelecomCorrelation(telecomApproval.dataset.approveTelecomEntity, telecomApproval);
     return;
   }
   const imeiCollection = event.target.closest("[data-collection-imei]");

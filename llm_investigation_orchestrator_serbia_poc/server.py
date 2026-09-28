@@ -345,11 +345,8 @@ def localized_recorded_runs_dir(locale: str = "he") -> Path:
 
 
 def load_person_telecom_links(events_path: Path, entities_path: Path) -> list[dict[str, Any]]:
-    """Load optional scenario identity associations without modifying supplied telecom records."""
-    path = events_path.parent / "person-telecom-links.json"
+    """Read person-to-telecom relationships from the entity schema."""
     try:
-        payload = json.loads(path.read_text(encoding="utf-8"))
-        links = payload.get("links", [])
         entities = json.loads(entities_path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
         return []
@@ -357,17 +354,26 @@ def load_person_telecom_links(events_path: Path, entities_path: Path) -> list[di
         str(entity.get("entity_id")): str(entity.get("canonical_name") or entity.get("entity_id"))
         for entity in entities if entity.get("entity_id")
     }
-    return [
-        {**link, "entity_name": names.get(str(link.get("entity_id")), str(link.get("entity_id") or ""))}
-        for link in links if isinstance(link, dict) and link.get("entity_id")
-    ]
+    links = []
+    for entity in entities:
+        entity_id = str(entity.get("entity_id") or "")
+        telecom = entity.get("telecom") if isinstance(entity.get("telecom"), dict) else {}
+        if not entity_id or not telecom:
+            continue
+        links.append({
+            "entity_id": entity_id,
+            "entity_name": names.get(entity_id, entity_id),
+            "reference_record_ids": telecom.get("reference_record_ids") or [],
+            "call_parties": telecom.get("calls") or [],
+        })
+    return links
 
 
 def apply_person_telecom_links(events: list[dict[str, Any]], links: list[dict[str, Any]]) -> None:
     by_id = {str(event.get("event_id")): event for event in events if event.get("event_id")}
     for link in links:
         entity_id = str(link["entity_id"])
-        for event_id in [*(link.get("ipdr_event_ids") or []), *(link.get("cellular_geolocation_event_ids") or [])]:
+        for event_id in link.get("reference_record_ids") or []:
             event = by_id.get(str(event_id))
             if event is not None:
                 event.setdefault("related_entity_ids", []).append(entity_id)
@@ -430,7 +436,7 @@ ENTITY_PROFILE_FIELDS = (
     "age_years", "date_of_birth", "role", "occupation", "affiliations",
     "nationality", "ethnicity", "languages", "residence", "place_of_birth",
     "previous_residences", "connections", "military_service", "associated_entity_ids",
-    "identifiers", "biographical_notes",
+    "identifiers", "telecom", "biographical_notes",
 )
 
 
@@ -1673,8 +1679,8 @@ def telecom_identifier_correlation(entity_id: str, locale: str = "en") -> dict:
     entity = load_ui_entity_db(locale).get(entity_id)
     if not entity:
         raise ValueError("Person entity was not found")
-    identifiers = entity.get("identifiers") if isinstance(entity.get("identifiers"), dict) else {}
-    imei = compact_text(identifiers.get("imei"), 32)
+    telecom = entity.get("telecom") if isinstance(entity.get("telecom"), dict) else {}
+    imei = compact_text(telecom.get("imei"), 32)
     if not imei:
         raise ValueError("Person entity has no IMEI")
     pairs: dict[tuple[str, str], list[str]] = defaultdict(list)

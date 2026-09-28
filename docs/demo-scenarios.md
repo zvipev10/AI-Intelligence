@@ -9,7 +9,7 @@ The bilingual Hebrew/English intelligence workspace has one shared codebase and 
 | Package | Current profile / dataset | Content |
 |---|---|---|
 | Kosovo | profile 1 / `v2.1` | 14,833 records, including 24 simulated cellular calls; preserved investigations and agent state |
-| Syria | profile 29 / `cellular-records-v6` | 726 records: 2 CCTV, 2 Satellite, 120 ADINT, 300 IPDR, 300 Cellular Geolocations, 2 Cellular Calls; 384 locations, 13 entities and 21 catalog definitions |
+| Syria | profile 30 / `cellular-records-v7` | 726 records: 2 CCTV, 2 Satellite, 120 ADINT, 300 IPDR, 300 Cellular Geolocations, 2 Cellular Calls; 384 locations, 13 entities and 21 catalog definitions |
 
 Deployment identity must be checked through `/api/status`; this is an installed-package inventory, not a live status assertion. Syria's initial camera is Damascus (longitude 36.2765, latitude 33.5138), zoom 11. The fictional convoy sites are elsewhere; opening results can fit the map to their geometry. Installed profiles, not this document, are authoritative for future versions.
 
@@ -82,3 +82,5 @@ call-media-v4/profile21 replaces the placeholder SIM labels with synthetic numer
 call-media-v5/profile22 replaces the two placeholder device IDs and SIMs with realistic-format, Luhn-valid synthetic values. Side A: IMEI 353294708462710, SIM 8996301746283951072. Side B: IMEI 358240116593823, SIM 8996301839572614087. The injective mapping in data/syria_call_media_v5/identifier-mapping.json is applied across calls and cellular geolocations in both locales. Imported IMEI 353294702931926 is already format/checksum-valid and remains shared by IPDR and the supplied transcript. Blank identifiers stay blank; distinct identities are not merged. Original historical packages remain unchanged. Formatting does not establish an actual manufacturer, carrier allocation or subscriber.
 
 cellular-records-v6/profile29 restores REC-SYR-CALL-002 with the supplied MP3, source transcript and English translation. It is a 09:50 UTC call between Arman Rahimi (Side A, IMEI 353294702931926) and Omar Al-Khatib (Side B, IMEI 352099001122338). The speakers say their group will arrive in twenty minutes with fifteen petrol units and request that the gates be opened. The transcript contains Arabic and Persian; no per-line timestamps are supplied. The existing time and endpoint locations remain scenario metadata.
+
+cellular-records-v7/profile30 moves telecom identity data and its relationships into each person entity's `telecom` object. Arman's entity records the IMEI, MSISDN, IMSI, 20 reference records, and both call parties; Omar's entity records the IMEI, IMSI, and both call parties. The UI presents these first-class entity relationships without creating an investigation-memory copy.

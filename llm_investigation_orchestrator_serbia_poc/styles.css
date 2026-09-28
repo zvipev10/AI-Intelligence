@@ -615,6 +615,17 @@ textarea.mention-source::placeholder { color: var(--muted) !important; }
 .person-telecom-approve { min-height:32px; border:1px solid rgba(88,166,255,.52); border-radius:7px; background:rgba(88,166,255,.14); color:#b8d4ff; padding:5px 9px; font:inherit; font-size:11px; font-weight:800; cursor:pointer; }
 .person-telecom-approved { display:inline-flex; align-items:center; gap:5px; color:#a9d7af; font-size:11px; font-weight:800; }
 .person-telecom-approved .material-symbols-rounded { font-size:16px; }
+.person-telecom-details { margin-top:16px; padding-top:16px; border-top:1px solid #424940; }
+.person-telecom-details h3 { display:flex; align-items:center; gap:7px; margin:0 0 10px; color:var(--text); font-size:13px; }
+.person-telecom-details h3 .material-symbols-rounded { color:var(--blue); font-size:18px; }
+.person-telecom-identifier-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; margin:0; }
+.person-telecom-identifier-grid div { min-width:0; }
+.person-telecom-identifier-grid dt { color:var(--muted); font-size:10px; font-weight:800; }
+.person-telecom-identifier-grid dd { margin:4px 0 0; overflow-wrap:anywhere; font-size:12px; }
+.person-telecom-link-group { margin-top:14px; }
+.person-telecom-link-group h4 { margin:0 0 7px; color:#c9d0c3; font-size:11px; text-transform:uppercase; letter-spacing:.06em; }
+.person-telecom-link-group > div { display:flex; flex-wrap:wrap; gap:5px; }
+.person-telecom-link-group .object-viewer-open { padding:4px 6px; border:1px solid #4c6580; border-radius:6px; background:#2d4051; color:#c7e3ff; text-decoration:none; font-size:10px; }
 .person-table-identity { display: flex; align-items: center; gap: 9px; min-width: 190px; }
 .person-table-portrait { width: 32px; height: 32px; flex: 0 0 auto; display: grid; place-items: center; overflow: hidden; border: 1px solid rgba(88,166,255,.46); border-radius: 50%; background: rgba(88,166,255,.14); color: var(--blue); font-size: 10px; font-weight: 900; }
 .person-table-portrait img { width: 100%; height: 100%; object-fit: cover; }

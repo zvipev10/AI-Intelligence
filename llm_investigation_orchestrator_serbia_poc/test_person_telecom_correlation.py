@@ -19,7 +19,7 @@ assert len(correlation['supporting_record_ids']) == 18
 saved = server.approve_person_telecom_correlation({'investigation_id': 'telecom-correlation-demo', 'entity_id': 'ENT-SYR-PERSON-002'})
 assert saved['saved']['method'] == 'imei_linked_telecom_identity_correlation'
 memory = server.load_investigation_memory('telecom-correlation-demo')
-assert memory['memory']['entity_enrichments'][0]['msisdn'] == '9630943700780'
+assert server.load_ui_entity_db('en')['ENT-SYR-PERSON-002']['telecom']['msisdn'] == '9630943700780'
 try:
     server.telecom_identifier_correlation('ENT-SYR-PERSON-001')
 except ValueError as error:
@@ -39,10 +39,10 @@ class PersonTelecomCorrelationUiTests(unittest.TestCase):
     def test_viewer_exposes_identifier_correlation_and_approval(self):
         app = (Path(__file__).resolve().parent / "app.js").read_text(encoding="utf-8")
         bootstrap = (Path(__file__).resolve().parent / "demo_bootstrap.js").read_text(encoding="utf-8")
-        self.assertIn("IMEI-linked telecom identity correlation", app)
-        self.assertIn("Approve and save to entity", app)
-        self.assertIn("/api/investigation-entity/telecom-correlation/approve", app)
-        self.assertIn('script.src = "./app.js?v=248";', bootstrap)
+        self.assertIn("function personTelecomDetailsHtml(item)", app)
+        self.assertIn("Reference records", app)
+        self.assertIn("Calls", app)
+        self.assertIn('script.src = "./app.js?v=249";', bootstrap)
 
 
 if __name__ == "__main__":

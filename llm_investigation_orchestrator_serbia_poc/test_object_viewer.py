@@ -105,11 +105,13 @@ class ObjectViewerContractTests(unittest.TestCase):
         self.assertIn('.person-table-identity {', self.styles)
 
     def test_person_workspace_exposes_actionable_telecom_identifiers(self):
-        self.assertIn('function personTelecomIdentifiersHtml(item)', self.app)
-        self.assertIn('const imei = String(identifiers.imei || "").trim();', self.app)
+        self.assertIn('function personTelecomDetailsHtml(item)', self.app)
+        self.assertIn('const telecom = item.telecom', self.app)
         self.assertIn('collectionImeiButton(value)', self.app)
         self.assertIn('Telecom identifiers', self.app)
-        self.assertIn('.person-telecom-identifiers {', self.styles)
+        self.assertIn('.person-telecom-identifier-grid {', self.styles)
+        self.assertIn('Reference records', self.app)
+        self.assertIn('Calls', self.app)
 
     def test_satellite_and_cctv_viewers_use_a_half_screen_drawer(self):
         self.assertIn('function isVisualCollectionRecord(item)', self.app)
