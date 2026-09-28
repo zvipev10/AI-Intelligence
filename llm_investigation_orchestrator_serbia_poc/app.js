@@ -2008,6 +2008,14 @@ const COLLECTION_TYPES = [
   { id: "satellite", he: "לוויין", en: "Satellite", descriptionHe: "בקשת צילום לווייני", descriptionEn: "Request satellite imagery" },
   { id: "cctv", he: "CCTV", en: "CCTV", descriptionHe: "בקשת וידאו ממצלמות", descriptionEn: "Request camera video" }
 ];
+const COLLECTION_LAYER_PRESENTATIONS = {
+  adint: { layerId: "events:ADINT", view: "map" },
+  ipdr: { layerId: "events:IPDR", view: "table" },
+  cellular_geolocations: { layerId: "events:Cellular Geolocations", view: "map" },
+  cellular_calls: { layerId: "events:Cellular Calls", view: "timeline" },
+  satellite: { layerId: "events:Satellite", view: "map" },
+  cctv: { layerId: "events:CCTV", view: "map" }
+};
 const COLLECTION_EXTRACTION_OBJECTS = [
   { id: "convoy", he: "שיירה", en: "Convoy" },
   { id: "vehicles", he: "כלי רכב", en: "Vehicles" },
@@ -2020,6 +2028,14 @@ function collectionTypesForRole() {
   if (state.activeRoleWorkspace === "sigint") return COLLECTION_TYPES.filter(item => ["cellular_geolocations", "cellular_calls"].includes(item.id));
   if (state.activeRoleWorkspace === "visint") return COLLECTION_TYPES.filter(item => ["satellite", "cctv"].includes(item.id));
   return COLLECTION_TYPES;
+}
+
+async function openRequestedCollectionLayer(collectionType) {
+  const presentation = COLLECTION_LAYER_PRESENTATIONS[collectionType];
+  if (!presentation) return null;
+  const layer = await openCatalogLayer(presentation.layerId);
+  if (layer) activateView(presentation.view, { reason: `Collection request: ${layer.label}` });
+  return layer;
 }
 
 function collectionImeiButton(value) {
@@ -2093,7 +2109,8 @@ async function submitCollectionRequest() {
   if (!response.ok) throw new Error(payload.error || activeLocaleText("שליחת בקשת האיסוף נכשלה", "Could not submit collection request"));
   await loadInvestigationMemory();
   closeCollectionRequestDialog();
-  target.trigger?.focus?.();
+  const openedLayer = await openRequestedCollectionLayer(type);
+  if (!openedLayer) target.trigger?.focus?.();
 }
 
 function renderMemoryScreen() {
@@ -2932,19 +2949,7 @@ function selectInvestigation(investigation, options = {}) {
   if (options.focusInput) investigationInput?.focus();
 }
 
-function shouldResetSyriaPlaybackOnInvestigationOpen() {
-  return demoRuntime?.scenario_id === "syria" && demoRuntime?.demo_profile?.features?.playback === true;
-}
-
 async function loadSelectedInvestigation(investigationId) {
-  if (shouldResetSyriaPlaybackOnInvestigationOpen()) {
-    try {
-      await initializeStagedPlayback({ reset: true });
-    } catch (error) {
-      console.error("Failed to reset Syria playback on investigation open", error);
-    }
-  }
-  if (state.investigationId !== investigationId) return;
   await loadWorkstreams();
   if (state.investigationId !== investigationId) return;
   await loadInvestigationMemory({ restoreLayers: true });

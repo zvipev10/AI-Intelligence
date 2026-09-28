@@ -166,20 +166,6 @@ Playback controls show timeframe and Next without a mode selector. UI/data-layer
 Follow-ups:
 Run production smoke with active playback visibility restoration, then complete UX acceptance for the simplified staged control.
 
-### 2026-09-28 — Configure Syria collection demonstration as existing playback slices
-
-Decision:
-Enable the existing staged playback engine for Syria and use four cumulative timestamp windows: Satellite, SIGINT data return (ADINT/IPDR/Cellular Geolocations), Cellular Call, and CCTV return. Collection requests remain narrative actions; they do not gate advancement.
-
-Context:
-The demo needs a controlled reveal of supplied Syria data, but the requested first version should avoid new request-state, result-release, or raw-data-time functionality.
-
-Rationale:
-The source timestamps already form four chronological groups. A profile flag and strict scenario manifest reuse the same visibility boundary, reset behavior, UI control, and API contract already used by playback.
-
-Impact:
-The presenter advances each slice with Next after narrating the corresponding collection task. Opening the Syria investigation resets that staged run to its first baseline, including after browser reload. The source timestamps remain unchanged.
-
 ### 2026-08-09 — Create workstreams from verified evidence without redundant metadata questions
 
 Decision:
