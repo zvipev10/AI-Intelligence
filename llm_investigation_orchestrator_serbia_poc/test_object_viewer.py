@@ -111,6 +111,11 @@ class ObjectViewerContractTests(unittest.TestCase):
         self.assertIn('Telecom identifiers', self.app)
         self.assertIn('.person-telecom-identifiers {', self.styles)
 
+    def test_satellite_and_cctv_viewers_use_a_half_screen_drawer(self):
+        self.assertIn('function isVisualCollectionRecord(item)', self.app)
+        self.assertIn('viewer.classList.toggle("is-visual-collection-viewer", visualCollectionViewer);', self.app)
+        self.assertIn('.is-visual-collection-viewer .object-viewer { width: min(50vw, calc(100vw - 28px)); }', self.styles)
+
     def test_entity_viewers_dock_beside_the_table(self):
         self.assertIn('function setViewerDocked(target = null)', self.app)
         self.assertIn('document.getElementById("rawEventsOverlay")', self.app)

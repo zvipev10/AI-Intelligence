@@ -3765,6 +3765,11 @@ function isCellularCallRecord(item) {
   return item.collection_family === "scenario_cellular_call_collection" || Boolean(item.call_id);
 }
 
+function isVisualCollectionRecord(item) {
+  const source = String(item?.source_type || "").trim().toLowerCase();
+  return source === "satellite" || source === "cctv";
+}
+
 function cellularCallPartyHtml(item, side) {
   const prefix = side === "a" ? "side_a" : "side_b";
   const label = side === "a" ? activeLocaleText("צד א׳", "Side A") : activeLocaleText("צד ב׳", "Side B");
@@ -4420,8 +4425,10 @@ function openObjectViewer(kind, id, trigger = document.activeElement) {
   setViewerDocked(dockTarget);
   document.querySelectorAll(".call-timeline-entry").forEach(row => row.setAttribute("aria-pressed", String(row.dataset.viewerId === id)));
   const cellularCallViewer = kind === "record" && isCellularCallRecord(item);
+  const visualCollectionViewer = kind === "record" && isVisualCollectionRecord(item);
   const personViewer = kind === "person";
   viewer.classList.toggle("is-cellular-viewer", cellularCallViewer);
+  viewer.classList.toggle("is-visual-collection-viewer", visualCollectionViewer);
   viewer.classList.toggle("is-person-viewer", personViewer);
   const mediaHtml = viewerMediaHtml(item);
   const cellularHtml = kind === "record" ? cellularCallHtml(item) : "";

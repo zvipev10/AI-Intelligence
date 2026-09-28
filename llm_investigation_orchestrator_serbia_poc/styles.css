@@ -734,6 +734,7 @@ th { position: sticky; top: 0; z-index: 1; background: #202530; }
 .object-viewer-backdrop { position: fixed; inset: 0; z-index: 1300; display: flex; padding: 0; background: rgba(4,8,14,.24); }
 .object-viewer-backdrop[hidden] { display: none; }
 .object-viewer { width: min(460px, calc(100vw - 28px)); height: 100dvh; margin-inline-start: auto; overflow: hidden; display: grid; grid-template-rows: auto minmax(0,1fr); border-inline-start: 1px solid var(--line); background: #151922; box-shadow: -18px 0 55px rgba(0,0,0,.38); animation: object-viewer-enter .18s ease-out; }
+@media (min-width: 900px) { .is-visual-collection-viewer .object-viewer { width: min(50vw, calc(100vw - 28px)); } }
 [dir="rtl"] .object-viewer { box-shadow: 18px 0 55px rgba(0,0,0,.38); }
 @keyframes object-viewer-enter { from { opacity: .65; transform: translateX(18px); } }
 [dir="rtl"] .object-viewer { animation-name: object-viewer-enter-rtl; }
