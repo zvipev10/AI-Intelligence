@@ -4086,6 +4086,23 @@ function personProfileHtml(item) {
   return `<section class="person-viewer-profile"><div><p class="person-viewer-status">${escapeHtml(status)}</p><h3>${escapeHtml(role)}</h3><p>${escapeHtml(summary)}</p></div></section>`;
 }
 
+function personTelecomIdentifiersHtml(item) {
+  const identifiers = item.identifiers && typeof item.identifiers === "object" ? item.identifiers : {};
+  const imei = String(identifiers.imei || "").trim();
+  const imsi = String(identifiers.imsi || "").trim();
+  if (!imei && !imsi) return "";
+  const identifier = (label, value, action = false) => value
+    ? `<div><dt>${escapeHtml(label)}</dt><dd dir="ltr">${action ? collectionImeiButton(value) : escapeHtml(value)}</dd></div>`
+    : "";
+  return `<section class="person-telecom-identifiers" aria-label="${escapeHtml(activeLocaleText("מזהי תקשורת", "Telecom identifiers"))}">
+    <h3><span class="material-symbols-rounded" aria-hidden="true">phonelink</span>${escapeHtml(activeLocaleText("מזהי תקשורת", "Telecom identifiers"))}</h3>
+    <dl>
+      ${identifier("IMEI", imei, true)}
+      ${identifier("IMSI", imsi)}
+    </dl>
+  </section>`;
+}
+
 function entityRecordLocationPoints(item) {
   const entityId = String(item?.entity_id || "").trim();
   if (!entityId) return [];
@@ -4174,6 +4191,7 @@ function personWorkspaceHtml(item) {
         ${detail(activeLocaleText("שפות", "Languages"), item.languages)}
         ${detail(activeLocaleText("שירות צבאי", "Military service"), item.military_service)}
       </dl>
+      ${personTelecomIdentifiersHtml(item)}
     </aside>
     <div class="call-main person-workspace-main">
       ${mapPanel}

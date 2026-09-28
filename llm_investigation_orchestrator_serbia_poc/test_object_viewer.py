@@ -104,6 +104,13 @@ class ObjectViewerContractTests(unittest.TestCase):
         self.assertIn('.person-workspace {', self.styles)
         self.assertIn('.person-table-identity {', self.styles)
 
+    def test_person_workspace_exposes_actionable_telecom_identifiers(self):
+        self.assertIn('function personTelecomIdentifiersHtml(item)', self.app)
+        self.assertIn('const imei = String(identifiers.imei || "").trim();', self.app)
+        self.assertIn('collectionImeiButton(value)', self.app)
+        self.assertIn('Telecom identifiers', self.app)
+        self.assertIn('.person-telecom-identifiers {', self.styles)
+
     def test_entity_viewers_dock_beside_the_table(self):
         self.assertIn('function setViewerDocked(target = null)', self.app)
         self.assertIn('document.getElementById("rawEventsOverlay")', self.app)
