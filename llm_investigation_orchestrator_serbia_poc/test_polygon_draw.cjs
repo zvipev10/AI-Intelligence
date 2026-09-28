@@ -16,17 +16,18 @@ map.isStyleLoaded=()=>false; draw.start(); click(30,30); draw.cancel(); assert.e
 let selected;
 let sourceData;
 const handlers={};
+const canvasHandlers={};
 const interactiveMap={
   on(event,layer,handler){ handlers[`${event}:${layer}`]=handler; },
   doubleClickZoom:{isEnabled:()=>true,disable(){},enable(){}},
-  getContainer:()=>({classList:{toggle(){}}}), getCanvas:()=>({style:{}}),
+  getContainer:()=>({classList:{toggle(){}}}), getCanvas:()=>({style:{},addEventListener(event,handler){ canvasHandlers[event]=handler; },getBoundingClientRect:()=>({left:100,top:200})}),
   project:p=>({x:p[0],y:p[1]}), isStyleLoaded:()=>true,
-  getSource:()=>null, addSource(_id,value){ sourceData=value.data; }, addLayer(){}
+  getSource:()=>null, addSource(_id,value){ sourceData=value.data; }, addLayer(){}, queryRenderedFeatures:()=>[{properties:{polygonId:interactive.polygonIds[0]}}]
 };
 const interactive=new Draw(interactiveMap,{addEventListener(){},setAttribute(){}},{hidden:true},{onContextMenu:value=>selected=value});
 interactive.start(); interactive.click({lngLat:{lng:0,lat:0},point:{x:0,y:0}}); interactive.click({lngLat:{lng:100,lat:0},point:{x:100,y:0}}); interactive.click({lngLat:{lng:100,lat:100},point:{x:100,y:100}}); interactive.click({lngLat:{lng:0,lat:0},point:{x:0,y:0}});
 assert.equal(sourceData.features[0].properties.polygonId, interactive.polygonIds[0]);
-handlers["contextmenu:draw-polygon-fill"]({features:[{properties:{polygonId:interactive.polygonIds[0]}}],point:{x:50,y:50},originalEvent:{clientX:150,clientY:250,preventDefault(){},stopPropagation(){}}});
+canvasHandlers.contextmenu({clientX:150,clientY:250,preventDefault(){},stopPropagation(){}});
 assert.deepEqual(selected.coordinates,[[0,0],[100,0],[100,100],[0,0]]);
 assert.deepEqual(selected.position,{x:150,y:250});
 console.log("PASS: right-clicking a completed polygon opens its action menu");
