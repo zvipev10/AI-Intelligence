@@ -65,9 +65,10 @@ class CollectionRequestUiTests(unittest.TestCase):
         self.assertIn('cellular_calls: { layerId: "events:Cellular Calls", view: "timeline" }', self.app)
         self.assertNotIn('{ id: "ipdr",', self.app)
         self.assertNotIn('ipdr: { layerId: "events:IPDR", view: "table" }', self.app)
+        self.assertIn('chatPanelCollapsed: demoRuntime?.scenario_id === "syria"', self.app)
         self.assertIn('await openRequestedCollectionLayer(type);', self.app)
         self.assertIn('activateView(presentation.view', self.app)
-        self.assertIn('script.src = "./app.js?v=244";', self.bootstrap)
+        self.assertIn('script.src = "./app.js?v=245";', self.bootstrap)
 
 
 if __name__ == "__main__":

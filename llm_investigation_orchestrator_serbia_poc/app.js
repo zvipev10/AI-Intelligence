@@ -619,7 +619,7 @@ const state = {
   rawOverlayMinimized: false,
   rawOverlayHeight: 28,
   resultTableControls: new Map(),
-  chatPanelCollapsed: false,
+  chatPanelCollapsed: demoRuntime?.scenario_id === "syria",
   queryEdited: false,
   originalQuery: null,
   activeTeamMentions: []
