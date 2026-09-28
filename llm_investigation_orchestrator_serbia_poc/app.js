@@ -3703,6 +3703,7 @@ async function fetchInvestigationPlayback() {
 }
 
 let objectViewerReturnFocus = null;
+let objectViewerDockTarget = null;
 
 function viewerObjects() {
   const objects = new Map();
@@ -4208,11 +4209,38 @@ function setViewerDocked(target = null) {
   const viewer = document.getElementById("objectViewer");
   const timeline = document.getElementById("timelineView");
   const table = document.getElementById("rawEventsOverlay");
+  objectViewerDockTarget = target;
+  viewer.classList.remove("is-maximized");
   const docked = Boolean(target);
   viewer.classList.toggle("is-docked", docked);
   [timeline, table].forEach(container => container?.classList.toggle("has-record-viewer", container === target));
   viewer.querySelector(".object-viewer").setAttribute("aria-modal", String(!docked));
   (target || document.body).appendChild(viewer);
+}
+
+function setViewerMaximized(maximized) {
+  const viewer = document.getElementById("objectViewer");
+  const maximizeButton = document.getElementById("objectViewerMaximize");
+  const timeline = document.getElementById("timelineView");
+  const table = document.getElementById("rawEventsOverlay");
+  if (!viewer || viewer.hidden) return;
+  if (!maximized) {
+    setViewerDocked(objectViewerDockTarget);
+  } else {
+    viewer.classList.remove("is-docked");
+    viewer.classList.add("is-maximized");
+    [timeline, table].forEach(container => container?.classList.remove("has-record-viewer"));
+    viewer.querySelector(".object-viewer").setAttribute("aria-modal", "true");
+    document.body.appendChild(viewer);
+  }
+  const isMaximized = viewer.classList.contains("is-maximized");
+  const label = activeLocaleText(isMaximized ? "שחזר גודל" : "הגדל למסך מלא", isMaximized ? "Restore size" : "Maximize viewer");
+  if (maximizeButton) {
+    maximizeButton.setAttribute("aria-pressed", String(isMaximized));
+    maximizeButton.setAttribute("aria-label", label);
+    maximizeButton.title = label;
+    maximizeButton.querySelector(".material-symbols-rounded").textContent = isMaximized ? "close_fullscreen" : "open_in_full";
+  }
 }
 
 function closeObjectViewer() {
@@ -4223,6 +4251,7 @@ function closeObjectViewer() {
   viewer.querySelectorAll("video,audio").forEach(media => { media.pause(); media.removeAttribute("src"); media.load(); });
   viewer.hidden = true;
   setViewerDocked();
+  objectViewerDockTarget = null;
   document.querySelectorAll(".call-timeline-entry").forEach(row => row.setAttribute("aria-pressed", "false"));
   objectViewerReturnFocus?.focus?.();
   objectViewerReturnFocus = null;
@@ -4263,6 +4292,7 @@ function openObjectViewer(kind, id, trigger = document.activeElement) {
   if (!item) return false;
   objectViewerReturnFocus = trigger;
   const viewer = document.getElementById("objectViewer");
+  viewer.classList.remove("is-maximized");
   const title = kind === "record"
     ? (isUavVideoRecord(item) ? activeLocaleText("תצפית וידאו מכטב״ם", "UAV video observation") : isCellularCallRecord(item) ? activeLocaleText("שיחה סלולרית", "Cellular call") : (item.source_type || activeLocaleText("רשומת מקור", "Source record")))
     : kind === "evidence" ? (item.object_class || item.claim_type || id)
@@ -4303,6 +4333,7 @@ function openObjectViewer(kind, id, trigger = document.activeElement) {
   const entityMapHtml = kind === "organization" ? entityLocationMapHtml(item) : "";
   document.getElementById("objectViewerBody").innerHTML = `${mediaHtml}${cellularHtml}${personViewer ? personWorkspaceHtml(item) : ""}${entityMapHtml}${["record", "evidence", "assessment"].includes(kind) ? `<p class="object-viewer-summary">${escapeHtml(item.event_summary || item.summary || "-")}</p>` : ""}${personViewer ? "" : `<dl class="object-viewer-fields">${fields}</dl>`}${kind === "organization" ? organizationEvidenceHtml(item) : kind === "evidence" ? evidenceProvenanceHtml(item) : kind === "assessment" ? assessmentEvidenceHtml(item) : ""}`;
   viewer.hidden = false;
+  setViewerMaximized(false);
   if (cellularCallViewer) initializeCellularViewer(item);
   if (["person", "organization"].includes(kind)) initializeEntityLocationMap(item);
   if (kind === "record" && isUavVideoRecord(item)) startSimulatedUavStream(item);
@@ -6984,6 +7015,7 @@ function renderEvidence() {
   const overlay = document.getElementById("rawEventsOverlay");
   const viewStack = overlay?.closest(".view-stack");
   const tabs = document.getElementById("rawEventsTabs");
+  const timelineTabs = document.getElementById("timelineLayersTabs");
   const head = document.getElementById("evidenceHead");
   const body = document.getElementById("evidenceRows");
   const filterPanel = document.getElementById("layerFilterPanel");
@@ -6994,6 +7026,7 @@ function renderEvidence() {
   if (!tableLayers.length) {
     overlay.hidden = true;
     tabs.innerHTML = "";
+    if (timelineTabs) timelineTabs.innerHTML = "";
     head.innerHTML = "";
     body.innerHTML = "";
     if (filterPanel) {
@@ -7019,7 +7052,7 @@ function renderEvidence() {
       ? activeLocaleText("הרחב טבלת תוצאות", "Expand results table")
       : activeLocaleText("מזער טבלת תוצאות", "Minimize results table"));
   }
-  tabs.innerHTML = tableLayers.map(layer => {
+  const layerTabsMarkup = tableLayers.map(layer => {
     const filteredCount = itemsForLayerPresentation(layer).length;
     const originalCount = (layer.items || []).length;
     const countLabel = layerHasAppliedFilters(layer)
@@ -7042,6 +7075,8 @@ function renderEvidence() {
       <span class="raw-source-close" data-layer-close="${escapeHtml(layer.id)}" title="${escapeHtml(activeLocaleText("סגור שכבה", "Close layer"))}" aria-label="${escapeHtml(activeLocaleText("סגור שכבה", "Close layer"))}">×</span>
     </button>`;
   }).join("");
+  tabs.innerHTML = layerTabsMarkup;
+  if (timelineTabs) timelineTabs.innerHTML = layerTabsMarkup;
 
   if (!activeLayer) return;
   ensureLayerFilterState(activeLayer);
@@ -7391,6 +7426,10 @@ document.addEventListener("click", event => {
   if (viewerTrigger) {
     event.preventDefault();
     openObjectViewer(viewerTrigger.dataset.viewerKind, viewerTrigger.dataset.viewerId, viewerTrigger);
+    return;
+  }
+  if (event.target.closest("#objectViewerMaximize")) {
+    setViewerMaximized(!document.getElementById("objectViewer").classList.contains("is-maximized"));
     return;
   }
   if (event.target.closest("#objectViewerClose") || event.target.id === "objectViewer") {

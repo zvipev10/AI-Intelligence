@@ -97,14 +97,14 @@
     "assets/demo/syria/persons/arman-rahimi-reference-v1.png": "52a66e6ff4ff7de9683b3b9836fd7b747d3588529e85de01cffcd885cd7f46f5",
     "data/syria_cellular_records_v1/1SMSUpload260901.csv": "5fd32fafc22cc7845a78e3a7687b7734fa5ec7ef774c924c790a2aeb8f24643a",
     "data/syria_cellular_records_v1/ADINT.json": "d20ac68df152bd4532ca69bf576d3fea23446cd38683cfcb609d859d818ed90b",
-    "data/syria_cellular_records_v1/entities.en.json": "084d3d45a3fff6a1adff2c3c100933e36123a982b55b6cc8b783c3b5a3b0dd6a",
-    "data/syria_cellular_records_v1/entities.json": "084d3d45a3fff6a1adff2c3c100933e36123a982b55b6cc8b783c3b5a3b0dd6a",
-    "data/syria_cellular_records_v1/events.csv": "c13944a1274cf52ebe1c34b35a7ed5f2f910960d3083ee7088d7566aebd324ad",
-    "data/syria_cellular_records_v1/events.en.csv": "c13944a1274cf52ebe1c34b35a7ed5f2f910960d3083ee7088d7566aebd324ad",
+    "data/syria_cellular_records_v1/entities.en.json": "f7087a8e8750882a1e5cbb690ff93e8323e07ff08050c86ef0e81a27bd2fd1e1",
+    "data/syria_cellular_records_v1/entities.json": "f7087a8e8750882a1e5cbb690ff93e8323e07ff08050c86ef0e81a27bd2fd1e1",
+    "data/syria_cellular_records_v1/events.csv": "32034b10a01a18430152a136a66caa100d8dfde3b7193cd3e0a2a73a46a4450a",
+    "data/syria_cellular_records_v1/events.en.csv": "32034b10a01a18430152a136a66caa100d8dfde3b7193cd3e0a2a73a46a4450a",
     "data/syria_cellular_records_v1/IPDR-expanded.csv": "4fbc961a4fba1d91d69f0e8bc8f1fb68e9d56bcb43f7708a4a72f45ad281f7e6",
     "data/syria_cellular_records_v1/locations.en.json": "37f47efde4fe2995f05e85cbb5bb4af65a2010fd35d5b1351b114639f8af9808",
     "data/syria_cellular_records_v1/locations.json": "37f47efde4fe2995f05e85cbb5bb4af65a2010fd35d5b1351b114639f8af9808",
     "data/syria_cellular_records_v1/identifier-mapping.json": "dd8d0b9d4d4cb537ac9c088c296c2a845a8da7924bbd55ffe853b72cb3983852",
-    "data/syria_cellular_records_v1/person-telecom-links.json": "4fd2ecd40456deb376a3e00506e643eed8e51877f6b1f8c9aa173d765c6cc469"
+    "data/syria_cellular_records_v1/person-telecom-links.json": "358047a81d9742e11609c5cfad6552f58fde5b1f6fd2931a9c2fec1606c65521"
   }
 }

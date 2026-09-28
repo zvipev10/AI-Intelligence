@@ -111,6 +111,13 @@ class ObjectViewerContractTests(unittest.TestCase):
         self.assertIn('.raw-events-overlay.has-record-viewer', self.styles)
         self.assertIn('> .object-viewer-backdrop.is-docked', self.styles)
 
+    def test_every_item_viewer_can_be_maximized_over_the_active_presentation(self):
+        self.assertIn('id="objectViewerMaximize"', self.index)
+        self.assertIn('function setViewerMaximized(maximized)', self.app)
+        self.assertIn('viewer.classList.add("is-maximized")', self.app)
+        self.assertIn('document.body.appendChild(viewer)', self.app)
+        self.assertIn('.object-viewer-backdrop.is-maximized .object-viewer', self.styles)
+
 
 if __name__ == "__main__":
     unittest.main()

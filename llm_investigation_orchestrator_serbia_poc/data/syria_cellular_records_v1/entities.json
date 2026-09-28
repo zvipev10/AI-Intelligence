@@ -45,13 +45,16 @@
       "Homs, Syria (1990–2014)"
     ],
     "connections": [
-      "Iran — previous commercial logistics work and personal ties"
+      "Arman Rahimi — designated Side A in REC-SYR-CALL-001"
     ],
     "military_service": "Completed mandatory service in a Syrian logistics unit (2010–2012).",
     "associated_entity_ids": [],
     "identifiers": {
       "profile_reference": "SYR-PER-001",
-      "driver_permit_reference": "SYR-DL-10428"
+      "driver_permit_reference": "SYR-DL-10428",
+      "imei": "352099001122338",
+      "imsi": "418201234567891",
+      "call_record": "REC-SYR-CALL-001 (Side B)"
     },
     "biographical_notes": "Profile prepared for the Syria scenario."
   },

@@ -26,12 +26,16 @@ assert person["nationality"] == "Iranian"
 assert person["image_url"] == "/assets/demo/syria/persons/arman-rahimi-reference-v1.png"
 assert person["identity_status"] == "profiled individual"
 assert person["identifiers"]["imei"] == "353294702931926"
+omar = entities["ENT-SYR-PERSON-001"]
+assert omar["identifiers"]["imei"] == "352099001122338"
 assert person["event_count"] == 8
 assert "ENT-SYR-PERSON-002" in by_id["REC-SYR-IPDR-1683930569233410"]["related_entity_ids"]
 assert "ENT-SYR-PERSON-002" in by_id["REC-SYR-CELL-CSV-013"]["related_entity_ids"]
 call = by_id["REC-SYR-CALL-001"]
 assert (call["side_a_entity_id"], call["side_a_entity_name"]) == ("ENT-SYR-PERSON-002", "Arman Rahimi")
 assert (call["side_b_entity_id"], call["side_b_entity_name"]) == ("ENT-SYR-PERSON-001", "Omar Al-Khatib")
+assert call["side_a_imei"] == person["identifiers"]["imei"]
+assert call["side_b_imei"] == omar["identifiers"]["imei"]
 '''
         with tempfile.TemporaryDirectory() as state:
             result = subprocess.run(
