@@ -27,6 +27,10 @@ class SyriaPlaybackManifestTests(unittest.TestCase):
         self.assertTrue(self.profile["features"]["playback"])
         self.assertEqual("cellular-records-v5", self.manifest["scope"]["dataset"])
 
+    def test_ui_deployment_includes_playback_manifests(self):
+        deployer = (ROOT / "mcp_server" / "remote_deploy_ui.py").read_text(encoding="utf-8")
+        self.assertIn('"scenario_manifests",', deployer)
+
     def test_manifest_splits_the_existing_source_timeline_into_demo_returns(self):
         self.assertEqual(
             ["satellite-lead", "sigint-data-return", "cellular-call-return", "cctv-return"],

@@ -66,6 +66,7 @@ FILES = [
 
 DIRS = [
     "demo_profiles",
+    "scenario_manifests",
     "data/syria_empty_v1",
     "data/syria_convoy_v1",
     "data/syria_convoy_v2",
