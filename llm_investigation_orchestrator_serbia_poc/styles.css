@@ -726,7 +726,7 @@ th { position: sticky; top: 0; z-index: 1; background: #202530; }
 .object-viewer-window-button:hover,.object-viewer-window-button:focus-visible { border-color: var(--blue); background: rgba(88,166,255,.14); color: #dbeeff; outline: none; }
 .object-viewer-backdrop.is-maximized { z-index: 1400; background: rgba(4,8,14,.72); }
 .object-viewer-backdrop.is-maximized .object-viewer { width: 100vw; height: 100dvh; margin: 0; border: 0; border-radius: 0; box-shadow: none; animation: none; }
-.object-viewer-backdrop.is-maximized .object-viewer-body { padding: 22px clamp(20px, 4vw, 64px) 34px; }
+.object-viewer-backdrop.is-maximized .object-viewer-body { min-height: 0; padding: 22px clamp(20px, 4vw, 64px) 34px; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; scrollbar-gutter: stable; }
 .object-viewer-title-actions { min-width: 0; flex: 1; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; }
 .object-viewer-title-actions > div { min-width: 0; }
 .object-memory-header-action { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 6px; margin: 0; padding: 5px 8px; border: 1px solid rgba(88,166,255,.42); border-radius: 999px; background: rgba(88,166,255,.08); color: var(--blue); font-size: 11px; font-weight: 800; white-space: nowrap; }

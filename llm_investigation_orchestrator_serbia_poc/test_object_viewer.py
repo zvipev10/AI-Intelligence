@@ -118,6 +118,11 @@ class ObjectViewerContractTests(unittest.TestCase):
         self.assertIn('document.body.appendChild(viewer)', self.app)
         self.assertIn('.object-viewer-backdrop.is-maximized .object-viewer', self.styles)
 
+    def test_maximized_viewer_keeps_a_scrollable_body_for_specialized_viewers(self):
+        fullscreen_body = self.styles.split('.object-viewer-backdrop.is-maximized .object-viewer-body {', 1)[1].split('}', 1)[0]
+        self.assertIn('overflow-y: auto', fullscreen_body)
+        self.assertIn('scrollbar-gutter: stable', fullscreen_body)
+
 
 if __name__ == "__main__":
     unittest.main()
