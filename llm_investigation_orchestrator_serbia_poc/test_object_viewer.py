@@ -116,6 +116,12 @@ class ObjectViewerContractTests(unittest.TestCase):
         self.assertIn('viewer.classList.toggle("is-visual-collection-viewer", visualCollectionViewer);', self.app)
         self.assertIn('.is-visual-collection-viewer .object-viewer { width: min(50vw, calc(100vw - 28px)); }', self.styles)
 
+    def test_satellite_and_cctv_media_can_expand_without_maximizing_the_viewer(self):
+        self.assertIn('data-visual-media-fullscreen', self.app)
+        self.assertIn('function toggleVisualCollectionMediaFullscreen(trigger)', self.app)
+        self.assertIn('media.requestFullscreen()', self.app)
+        self.assertIn('.object-viewer-media:fullscreen', self.styles)
+
     def test_entity_viewers_dock_beside_the_table(self):
         self.assertIn('function setViewerDocked(target = null)', self.app)
         self.assertIn('document.getElementById("rawEventsOverlay")', self.app)

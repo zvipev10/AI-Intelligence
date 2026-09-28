@@ -42,7 +42,7 @@ class PersonTelecomCorrelationUiTests(unittest.TestCase):
         self.assertIn("IMEI-linked telecom identity correlation", app)
         self.assertIn("Approve and save to entity", app)
         self.assertIn("/api/investigation-entity/telecom-correlation/approve", app)
-        self.assertIn('script.src = "./app.js?v=247";', bootstrap)
+        self.assertIn('script.src = "./app.js?v=248";', bootstrap)
 
 
 if __name__ == "__main__":

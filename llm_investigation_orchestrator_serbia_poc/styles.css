@@ -761,9 +761,14 @@ th { position: sticky; top: 0; z-index: 1; background: #202530; }
 .object-viewer-section-heading h3 { margin: 3px 0 0; font-size: 14px; }
 .object-viewer-live-badge { display: inline-flex; align-items: center; gap: 6px; flex: 0 0 auto; padding: 4px 7px; border: 1px solid rgba(242,139,130,.28); border-radius: 999px; color: var(--red); font-size: 10px; font-weight: 800; }
 .object-viewer-live-badge i { width: 6px; height: 6px; border-radius: 50%; background: currentColor; box-shadow: 0 0 0 3px rgba(242,139,130,.1); }
-.object-viewer-media { border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: #070a0f; }
+.object-viewer-media { position:relative; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: #070a0f; }
 .object-viewer-body > .object-viewer-media { margin-bottom: 16px; }
 .object-viewer-media video, .object-viewer-media audio, .object-viewer-media img { display: block; width: 100%; max-height: 280px; object-fit: contain; }
+.visual-media-fullscreen { position:absolute; inset:9px 9px auto auto; z-index:2; display:grid; place-items:center; width:32px; height:32px; border:1px solid rgba(255,255,255,.38); border-radius:7px; background:rgba(4,8,14,.72); color:#f3f7ff; cursor:pointer; }
+.visual-media-fullscreen:hover,.visual-media-fullscreen:focus-visible { border-color:var(--blue); background:rgba(88,166,255,.35); outline:none; }
+.visual-media-fullscreen .material-symbols-rounded { font-size:18px; }
+.object-viewer-media:fullscreen { width:100vw; height:100vh; display:grid; place-items:center; border:0; border-radius:0; background:#020407; }
+.object-viewer-media:fullscreen video,.object-viewer-media:fullscreen img { width:100%; height:100%; max-height:none; object-fit:contain; }
 .object-viewer-simulated-media { position: relative; aspect-ratio: 16 / 9; }
 .object-viewer-simulated-media canvas { display: block; width: 100%; height: 100%; background: #65705c; filter: saturate(.72) contrast(1.08); }
 .uav-simulation-label { position: absolute; inset-inline-end: 8px; bottom: 8px; padding: 3px 6px; border: 1px solid rgba(235,240,220,.46); border-radius: 3px; background: rgba(7,10,7,.52); color: rgba(235,240,220,.92); font: 9px/1.2 Consolas, monospace; letter-spacing: .08em; direction: ltr; }

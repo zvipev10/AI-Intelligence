@@ -3849,11 +3849,14 @@ function viewerMediaHtml(item) {
   if (!Array.isArray(series)) series = [];
   const demoMedia = item.demo_media === true || item.demo_media === "true";
   const disclaimer = demoMedia ? `<p class="object-viewer-media-context">${escapeHtml(activeLocaleText("מדיית הדגמה.", "Demo media."))}</p>` : "";
+  const fullscreenButton = isVisualCollectionRecord(item)
+    ? `<button type="button" class="visual-media-fullscreen" data-visual-media-fullscreen title="${escapeHtml(activeLocaleText("הרחב מדיה למסך מלא", "Expand media to full screen"))}" aria-label="${escapeHtml(activeLocaleText("הרחב מדיה למסך מלא", "Expand media to full screen"))}"><span class="material-symbols-rounded" aria-hidden="true">open_in_full</span></button>`
+    : "";
   const images = series.map(capture => {
     const url = safeMediaUrl(capture?.image_url);
     if (!url) return "";
     const pair = [{url, timestamp: capture.timestamp_utc, location: capture.location_id}];
-    const captures = pair.map(entry => `<div><div class="object-viewer-media"><img loading="lazy" src="${escapeHtml(entry.url)}" alt="${escapeHtml(activeLocaleText("תמונת לוויין", "Satellite capture"))}"></div><small>${escapeHtml(entry.location || "")} · <time>${escapeHtml(entry.timestamp || "")}</time></small></div>`).join("");
+    const captures = pair.map(entry => `<div><div class="object-viewer-media"><img loading="lazy" src="${escapeHtml(entry.url)}" alt="${escapeHtml(activeLocaleText("תמונת לוויין", "Satellite capture"))}">${fullscreenButton}</div><small>${escapeHtml(entry.location || "")} · <time>${escapeHtml(entry.timestamp || "")}</time></small></div>`).join("");
     return `<figure><figcaption><strong>${escapeHtml(capture.pair_id || "")}</strong><p>${escapeHtml(capture.description || "")}</p></figcaption><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px">${captures}</div>${capture.paired_record_id ? `<small>${escapeHtml(activeLocaleText("רשומה תואמת", "Paired record"))}: ${escapeHtml(capture.paired_record_id)}</small>` : ""}</figure>`;
   }).join("");
   if (images) return `<section class="object-viewer-source-media"><h3>${escapeHtml(series.length === 1 ? activeLocaleText("תמונת לוויין", "Satellite image") : activeLocaleText("תמונות לוויין לאורך זמן", "Satellite captures over time"))}</h3>${disclaimer}${images}</section>`;
@@ -3865,7 +3868,7 @@ function viewerMediaHtml(item) {
       : media?.type === "image"
         ? `<img src="${escapeHtml(media.url)}" alt="">`
         : "";
-  if (!isUavVideoRecord(item)) return mediaElement ? `${disclaimer}<div class="object-viewer-media">${mediaElement}</div>` : "";
+  if (!isUavVideoRecord(item)) return mediaElement ? `${disclaimer}<div class="object-viewer-media">${mediaElement}${fullscreenButton}</div>` : "";
 
   const mission = item.mission_id || activeLocaleText("משימה לא מזוהה", "Unidentified mission");
   const segment = item.video_segment_id || activeLocaleText("מקטע לא מזוהה", "Unidentified segment");
@@ -3878,6 +3881,23 @@ function viewerMediaHtml(item) {
     <div class="object-viewer-media-context"><span><b>${escapeHtml(activeLocaleText("משימה", "Mission"))}</b><code dir="ltr">${escapeHtml(mission)}</code></span><span><b>${escapeHtml(activeLocaleText("מקטע", "Segment"))}</b><code dir="ltr">${escapeHtml(segment)}</code></span></div>
     <p>${escapeHtml(activeLocaleText("תצוגה חזותית למשימת האיסוף. הרשומה היא תצפית אנליטית שנגזרה ממקור הווידאו.", "Collection-mission visualization. The record is an analytical observation derived from the video source."))}</p>
   </section>`;
+}
+
+async function toggleVisualCollectionMediaFullscreen(trigger) {
+  const media = trigger.closest(".object-viewer-media");
+  if (!media) return;
+  try {
+    if (document.fullscreenElement === media) {
+      await document.exitFullscreen?.();
+      return;
+    }
+    if (document.fullscreenElement) await document.exitFullscreen?.();
+    if (typeof media.requestFullscreen === "function") await media.requestFullscreen();
+    else if (typeof media.webkitRequestFullscreen === "function") media.webkitRequestFullscreen();
+    else throw new Error("Fullscreen is unavailable");
+  } catch (error) {
+    trigger.title = error.message || activeLocaleText("מסך מלא אינו זמין", "Full screen is unavailable");
+  }
 }
 
 let objectViewerUavAnimation = 0;
@@ -7529,6 +7549,12 @@ document.addEventListener("click", event => {
   if (imeiCollection) {
     event.preventDefault();
     openCollectionRequestDialog({ type: "imei", imei: imeiCollection.dataset.collectionImei }, imeiCollection);
+    return;
+  }
+  const visualMediaFullscreen = event.target.closest("[data-visual-media-fullscreen]");
+  if (visualMediaFullscreen) {
+    event.preventDefault();
+    void toggleVisualCollectionMediaFullscreen(visualMediaFullscreen);
     return;
   }
   const viewerTrigger = event.target.closest("[data-viewer-kind][data-viewer-id]");

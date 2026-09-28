@@ -68,7 +68,7 @@ class CollectionRequestUiTests(unittest.TestCase):
         self.assertIn('chatPanelCollapsed: demoRuntime?.scenario_id === "syria"', self.app)
         self.assertIn('await openRequestedCollectionLayer(type);', self.app)
         self.assertIn('activateView(presentation.view', self.app)
-        self.assertIn('script.src = "./app.js?v=247";', self.bootstrap)
+        self.assertIn('script.src = "./app.js?v=248";', self.bootstrap)
 
 
 if __name__ == "__main__":
