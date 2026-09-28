@@ -602,6 +602,19 @@ textarea.mention-source::placeholder { color: var(--muted) !important; }
 .person-telecom-identifiers dl { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 7px 12px; margin: 0; font-size: 12px; }
 .person-telecom-identifiers dt { color: var(--muted); font-weight: 700; }
 .person-telecom-identifiers dd { min-width: 0; margin: 0; overflow-wrap: anywhere; }
+.person-telecom-correlation { margin-top:12px; padding:12px; border:1px solid rgba(88,166,255,.34); border-radius:9px; background:rgba(88,166,255,.06); }
+.person-telecom-correlation h3 { display:flex; align-items:center; gap:7px; margin:0 0 7px; color:var(--text); font-size:13px; }
+.person-telecom-correlation h3 .material-symbols-rounded { color:var(--blue); font-size:18px; }
+.person-telecom-correlation p { margin:0 0 10px; color:var(--muted); font-size:11px; line-height:1.5; }
+.person-telecom-correlation dl { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; margin:0 0 10px; }
+.person-telecom-correlation dl div { min-width:0; padding:7px; border-radius:6px; background:rgba(0,0,0,.16); }
+.person-telecom-correlation dt { color:var(--muted); font-size:10px; font-weight:800; }
+.person-telecom-correlation dd { margin:3px 0 0; overflow-wrap:anywhere; font-size:12px; }
+.person-telecom-correlation-evidence { display:flex; flex-wrap:wrap; gap:5px; margin-bottom:10px; }
+.person-telecom-correlation-evidence .object-viewer-open { padding:3px 5px; border:1px solid rgba(88,166,255,.35); border-radius:5px; text-decoration:none; font-size:10px; }
+.person-telecom-approve { min-height:32px; border:1px solid rgba(88,166,255,.52); border-radius:7px; background:rgba(88,166,255,.14); color:#b8d4ff; padding:5px 9px; font:inherit; font-size:11px; font-weight:800; cursor:pointer; }
+.person-telecom-approved { display:inline-flex; align-items:center; gap:5px; color:#a9d7af; font-size:11px; font-weight:800; }
+.person-telecom-approved .material-symbols-rounded { font-size:16px; }
 .person-table-identity { display: flex; align-items: center; gap: 9px; min-width: 190px; }
 .person-table-portrait { width: 32px; height: 32px; flex: 0 0 auto; display: grid; place-items: center; overflow: hidden; border: 1px solid rgba(88,166,255,.46); border-radius: 50%; background: rgba(88,166,255,.14); color: var(--blue); font-size: 10px; font-weight: 900; }
 .person-table-portrait img { width: 100%; height: 100%; object-fit: cover; }

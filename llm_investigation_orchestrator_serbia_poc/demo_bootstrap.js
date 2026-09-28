@@ -52,7 +52,7 @@
     };
     setNotice();
     const script = document.createElement("script");
-script.src = "./app.js?v=245";
+    script.src = "./app.js?v=246";
     script.onerror = () => { setNotice("Application could not load. Reload to retry."); };
     document.body.appendChild(script);
     setInterval(async () => {

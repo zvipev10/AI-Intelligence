@@ -1408,7 +1408,8 @@ def empty_investigation_memory(investigation_id: str, name: str = "") -> dict:
             "chat_summaries": [],
             "layers": [],
             "artifacts": [],
-            "collection_requests": []
+            "collection_requests": [],
+            "entity_enrichments": []
         }
     }
 
@@ -1424,6 +1425,7 @@ def investigation_memory_metadata(payload: dict) -> dict:
         "layer_count": len(memory.get("layers") or []),
         "artifact_count": len(memory.get("artifacts") or []),
         "collection_request_count": len(memory.get("collection_requests") or []),
+        "entity_enrichment_count": len(memory.get("entity_enrichments") or []),
     }
 
 
@@ -1666,6 +1668,59 @@ def create_memory_artifact(request: dict) -> dict:
     return {"saved": item, "memory": saved}
 
 
+def telecom_identifier_correlation(entity_id: str, locale: str = "en") -> dict:
+    """Derive one subscriber pair only from geolocation rows sharing an entity IMEI."""
+    entity = load_ui_entity_db(locale).get(entity_id)
+    if not entity:
+        raise ValueError("Person entity was not found")
+    identifiers = entity.get("identifiers") if isinstance(entity.get("identifiers"), dict) else {}
+    imei = compact_text(identifiers.get("imei"), 32)
+    if not imei:
+        raise ValueError("Person entity has no IMEI")
+    pairs: dict[tuple[str, str], list[str]] = defaultdict(list)
+    for event in load_ui_events(locale):
+        if compact_text(event.get("target_imei"), 32) != imei:
+            continue
+        msisdn = compact_text(event.get("target_msisdn"), 32)
+        imsi = compact_text(event.get("target_imsi"), 32)
+        event_id = compact_text(event.get("event_id"), 240)
+        if msisdn and imsi and event_id:
+            pairs[(msisdn, imsi)].append(event_id)
+    if not pairs:
+        raise ValueError("No cellular-geolocation records corroborate subscriber identifiers for this IMEI")
+    (msisdn, imsi), record_ids = max(pairs.items(), key=lambda entry: (len(entry[1]), entry[0]))
+    return {
+        "entity_id": entity_id, "imei": imei, "msisdn": msisdn, "imsi": imsi,
+        "supporting_record_ids": sorted(set(record_ids)),
+        "method": "imei_linked_telecom_identity_correlation",
+    }
+
+
+def approve_person_telecom_correlation(request: dict) -> dict:
+    investigation_id = str(request.get("investigation_id") or "").strip()
+    if not INVESTIGATION_ID_PATTERN.fullmatch(investigation_id):
+        raise ValueError("Invalid investigation id")
+    entity_id = compact_text(request.get("entity_id"), 240)
+    correlation = telecom_identifier_correlation(entity_id)
+    existing = load_investigation_memory(investigation_id)
+    memory = existing.get("memory") if isinstance(existing.get("memory"), dict) else {}
+    enrichments = [item for item in normalize_memory_list(memory.get("entity_enrichments")) if item.get("entity_id") != entity_id]
+    enrichment = {
+        **correlation,
+        "id": f"entity_telecom_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}_{secrets.token_hex(3)}",
+        "kind": "approved_telecom_identifier_correlation",
+        "approved_at_utc": utc_now_iso(),
+        "source": "manual_user_approval",
+    }
+    enrichments.append(enrichment)
+    saved = save_investigation_memory({
+        "investigation_id": investigation_id,
+        "name": request.get("name") or existing.get("name") or investigation_id,
+        "memory": {"entity_enrichments": enrichments},
+    })
+    return {"saved": enrichment, "memory": saved}
+
+
 COLLECTION_REQUEST_TYPES = {"adint", "cellular_geolocations", "cellular_calls", "satellite", "cctv"}
 COLLECTION_REQUEST_TYPES_BY_ROLE = {
     "general": COLLECTION_REQUEST_TYPES,
@@ -1886,6 +1941,7 @@ def normalize_investigation_memory(request: dict) -> dict:
             "layers": normalize_memory_list(memory.get("layers", existing_memory.get("layers"))),
             "artifacts": normalize_memory_list(memory.get("artifacts", existing_memory.get("artifacts"))),
             "collection_requests": normalize_memory_list(memory.get("collection_requests", existing_memory.get("collection_requests"))),
+            "entity_enrichments": normalize_memory_list(memory.get("entity_enrichments", existing_memory.get("entity_enrichments"))),
         }
     }
 
@@ -1915,6 +1971,7 @@ def load_investigation_memory(investigation_id: str) -> dict:
             "layers": normalize_memory_list(memory.get("layers")),
             "artifacts": normalize_memory_list(memory.get("artifacts")),
             "collection_requests": normalize_memory_list(memory.get("collection_requests")),
+            "entity_enrichments": normalize_memory_list(memory.get("entity_enrichments")),
         }
     }
 
@@ -5828,6 +5885,21 @@ class Handler(SimpleHTTPRequestHandler):
                 if not isinstance(request, dict):
                     raise ValueError("Invalid investigation memory artifact payload")
                 self.send_json(201, create_memory_artifact(request))
+            except ValueError as exc:
+                self.send_json(400, {"error": str(exc)})
+            except Exception as exc:
+                self.send_json(502, {"error": str(exc)})
+            return
+        if path == "/api/investigation-entity/telecom-correlation/approve":
+            try:
+                length = int(self.headers.get("Content-Length", "0"))
+                if length > 100_000:
+                    self.send_json(413, {"error": "Entity enrichment payload too large"})
+                    return
+                request = json.loads(self.rfile.read(length).decode("utf-8-sig"))
+                if not isinstance(request, dict):
+                    raise ValueError("Invalid entity enrichment payload")
+                self.send_json(201, approve_person_telecom_correlation(request))
             except ValueError as exc:
                 self.send_json(400, {"error": str(exc)})
             except Exception as exc:
