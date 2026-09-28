@@ -1,0 +1,36 @@
+{
+  "scenario_id": "syria-collection-flow",
+  "version": 1,
+  "title": "Syria collection demonstration",
+  "playback_label": "Syria collection flow",
+  "scope": {
+    "dataset": "cellular-records-v5",
+    "layers": []
+  },
+  "stages": [
+    {
+      "id": "satellite-lead",
+      "label": "Initial lead and satellite review",
+      "from": "2026-08-30T00:00:00Z",
+      "to": "2026-09-01T00:00:00Z"
+    },
+    {
+      "id": "sigint-data-return",
+      "label": "ADINT, IPDR and cellular-location return",
+      "from": "2026-09-01T00:00:00Z",
+      "to": "2026-09-06T00:00:00Z"
+    },
+    {
+      "id": "cellular-call-return",
+      "label": "Cellular call return",
+      "from": "2026-09-20T00:00:00Z",
+      "to": "2026-09-21T00:00:00Z"
+    },
+    {
+      "id": "cctv-return",
+      "label": "CCTV convoy-detection return",
+      "from": "2026-09-22T00:00:00Z",
+      "to": "2026-09-23T00:00:00Z"
+    }
+  ]
+}

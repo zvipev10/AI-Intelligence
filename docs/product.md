@@ -35,6 +35,10 @@ General and specialist presentation instructions recognize all three views. Name
 
 Cellular Calls default to Timeline even when endpoint coordinates are present. Compact entries show time, duration, endpoints and a short summary. Selecting a call opens its existing viewer beside the timeline rather than covering it. The selected entry stays visible, with the endpoint map, bilingual transcript and audio controls in the adjacent viewer. Switching away from Timeline closes the docked viewer and stops its media. On narrow screens the panels stack. Explicit Map/Table choices remain available; mixed-source results keep their existing defaults.
 
+### Syria staged demonstration
+
+Syria uses the shared staged-playback control without changing raw source timestamps or making collection requests an enforcement mechanism. Next cumulatively reveals four existing time windows: Satellite (August 30), ADINT/IPDR/Cellular Geolocations (September 1–5), the Cellular Call (September 20), and CCTV (September 22). The analyst narrates the collection requests between slices; advancing remains a presenter-controlled action.
+
 ## Geographic context and media
 
 Satellite is the default basemap. The compact Street/Satellite selector switches between CARTO streets and Esri imagery with CARTO roads, administrative boundaries and English-preferred labels. Where no English name exists, available source naming is retained. Satellite reference styling does not change investigation markers, routes or MIL-STD symbols. Street restores original styling and is the visible fallback when imagery fails.

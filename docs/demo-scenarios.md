@@ -49,6 +49,10 @@ The convoy fixture generator `build_syria_convoy_demo.py` uses Pillow/imageio-ff
 
 ## Demonstration sequence
 
+### Syria staged playback
+
+Syria profile 29 / `cellular-records-v5` enables the existing staged playback control. The stages are cumulative and preserve source timestamps: Satellite (August 30), ADINT/IPDR/Cellular Geolocations (September 1–5), Cellular Call (September 20), then CCTV (September 22). Collection requests are presenter-narrated between stages; they do not unlock the Next action.
+
 1. Open CCTV and Satellite at Site 1, then Site 2. Each viewer contains only its own site media.
 2. Open each Satellite record: one image, own Satellite site, explicit timestamp basis and accurate image description.
 3. Open ADINT in Table to inspect all 120 observations; Map shows only observations with supplied coordinates.

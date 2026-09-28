@@ -2,7 +2,7 @@
   "schema_version": 1,
   "state_schema_version": 1,
   "scenario_id": "syria",
-  "profile_version": "28",
+  "profile_version": "29",
   "dataset_version": "cellular-records-v5",
   "label": {
     "en": "Syria"
@@ -82,7 +82,7 @@
     "queue_capacity": 8
   },
   "features": {
-    "playback": false
+    "playback": true
   },
   "checksums": {
     "assets/demo/syria/cellular-records-v1/site-1-cctv-1.mp4": "cee6ca713dbb6680e77f0cfc3077ab7dace7794ff5ac6618b551a954845e3e04",
