@@ -4127,17 +4127,14 @@ function personProfileHtml(item) {
   return `<section class="person-viewer-profile"><div><p class="person-viewer-status">${escapeHtml(status)}</p><h3>${escapeHtml(role)}</h3><p>${escapeHtml(summary)}</p></div></section>`;
 }
 
-function approvedTelecomIdentity(entityId) {
-  return normalizeMemoryList(currentSavedMemory().entity_enrichments)
-    .find(item => item.kind === "approved_telecom_identifier_correlation" && item.entity_id === entityId) || null;
-}
-
 function personTelecomDetailsHtml(item) {
   const telecom = item.telecom && typeof item.telecom === "object" ? item.telecom : {};
   const extracted = telecom.extracted_subscriber_identity && typeof telecom.extracted_subscriber_identity === "object"
     ? telecom.extracted_subscriber_identity
     : null;
-  const approved = approvedTelecomIdentity(item.entity_id);
+  const approved = telecom.approved_subscriber_identity && typeof telecom.approved_subscriber_identity === "object"
+    ? telecom.approved_subscriber_identity
+    : null;
   const resolvedMsisdn = approved?.msisdn || telecom.msisdn;
   const resolvedImsi = approved?.imsi || telecom.imsi;
   const identifier = (label, value, action = false) => `<div><dt>${escapeHtml(label)}</dt><dd dir="ltr">${value ? (action ? collectionImeiButton(value) : escapeHtml(value)) : "—"}</dd></div>`;
@@ -4148,9 +4145,9 @@ function personTelecomDetailsHtml(item) {
     <div class="person-telecom-review-heading"><span class="material-symbols-rounded" aria-hidden="true">psychology</span><div><strong>${escapeHtml(activeLocaleText("זהות מנוי שחולצה", "Extracted subscriber identity"))}</strong><span>${escapeHtml(activeLocaleText("נדרש אישור אנליסט", "Analyst review required"))}</span></div></div>
     <dl class="person-telecom-identifier-grid">${identifier("MSISDN", extracted.msisdn)}${identifier("IMSI", extracted.imsi)}</dl>
     <p>${escapeHtml(activeLocaleText("התאמה עקבית ל-IMEI ברשומות מיקום סלולריות.", "Consistently matched to this IMEI across cellular-geolocation records."))}</p>
-    <button type="button" class="person-telecom-approve" data-approve-telecom-entity="${escapeHtml(item.entity_id || "")}"><span class="material-symbols-rounded" aria-hidden="true">verified</span>${escapeHtml(activeLocaleText("אשר ושמור בחקירה", "Approve for this investigation"))}</button>
+    <button type="button" class="person-telecom-approve" data-approve-telecom-entity="${escapeHtml(item.entity_id || "")}"><span class="material-symbols-rounded" aria-hidden="true">verified</span>${escapeHtml(activeLocaleText("אשר", "Approve"))}</button>
   </section>` : "";
-  const approvalStatus = approved ? `<span class="person-telecom-approved"><span class="material-symbols-rounded" aria-hidden="true">verified</span>${escapeHtml(activeLocaleText("אושר בחקירה זו", "Approved in this investigation"))}</span>` : "";
+  const approvalStatus = approved ? `<span class="person-telecom-approved"><span class="material-symbols-rounded" aria-hidden="true">verified</span>${escapeHtml(activeLocaleText("אושר", "Approved"))}</span>` : "";
   if (!telecom.imei && !resolvedMsisdn && !resolvedImsi && !reviewCard && !recordButtons && !callButtons) return "";
   return `<section class="person-telecom-details" aria-label="${escapeHtml(activeLocaleText("מזהי תקשורת וקישורים", "Telecom identifiers and links"))}">
     <h3><span class="material-symbols-rounded" aria-hidden="true">phonelink</span>${escapeHtml(activeLocaleText("מזהי תקשורת", "Telecom identifiers"))}${approvalStatus}</h3>
@@ -4162,23 +4159,18 @@ function personTelecomDetailsHtml(item) {
 }
 
 async function approveExtractedTelecomIdentity(entityId, button) {
-  if (state.draftSessionActive) {
-    openDraftCreateModal(() => approveExtractedTelecomIdentity(entityId, button));
-    return;
-  }
-  if (!state.investigationId || !entityId || button.disabled) return;
+  if (!entityId || button.disabled) return;
   button.disabled = true;
   const original = button.innerHTML;
   button.innerHTML = `<span class="material-symbols-rounded" aria-hidden="true">progress_activity</span>${escapeHtml(activeLocaleText("מאשר...", "Approving..."))}`;
   try {
-    const response = await fetch("/api/investigation-entity/telecom-correlation/approve", {
+    const response = await fetch("/api/entity/telecom-correlation/approve", {
       method: "POST",
       headers: { "Content-Type": "application/json; charset=utf-8" },
-      body: JSON.stringify({ investigation_id: state.investigationId, name: state.investigationName, entity_id: entityId })
+      body: JSON.stringify({ entity_id: entityId })
     });
     const payload = await response.json();
     if (!response.ok) throw new Error(payload.error || activeLocaleText("אישור מזהי התקשורת נכשל", "Could not approve telecom identifiers"));
-    await loadInvestigationMemory();
     openObjectViewer("person", entityId, button);
   } catch (error) {
     button.disabled = false;

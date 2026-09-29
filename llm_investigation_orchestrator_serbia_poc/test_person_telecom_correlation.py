@@ -16,13 +16,14 @@ assert correlation['imei'] == '353294702931926'
 assert correlation['msisdn'] == '9630943700780'
 assert correlation['imsi'] == '417011234567890'
 assert len(correlation['supporting_record_ids']) == 18
-saved = server.approve_person_telecom_correlation({'investigation_id': 'telecom-correlation-demo', 'entity_id': 'ENT-SYR-PERSON-002'})
+saved = server.approve_entity_telecom_correlation({'entity_id': 'ENT-SYR-PERSON-002'})
 assert saved['saved']['method'] == 'imei_linked_telecom_identity_correlation'
-memory = server.load_investigation_memory('telecom-correlation-demo')
 entity_telecom = server.load_ui_entity_db('en')['ENT-SYR-PERSON-002']['telecom']
-assert 'msisdn' not in entity_telecom and 'imsi' not in entity_telecom
-assert entity_telecom['extracted_subscriber_identity']['msisdn'] == '9630943700780'
-assert memory['memory']['entity_enrichments'][0]['imsi'] == '417011234567890'
+assert entity_telecom['msisdn'] == '9630943700780'
+assert entity_telecom['imsi'] == '417011234567890'
+assert entity_telecom['approved_subscriber_identity']['imsi'] == '417011234567890'
+assert 'extracted_subscriber_identity' not in entity_telecom
+assert server.ENTITY_APPROVALS_PATH.exists()
 try:
     server.telecom_identifier_correlation('ENT-SYR-PERSON-001')
 except ValueError as error:
@@ -46,9 +47,11 @@ class PersonTelecomCorrelationUiTests(unittest.TestCase):
         self.assertIn("function approveExtractedTelecomIdentity(entityId, button)", app)
         self.assertIn("Extracted subscriber identity", app)
         self.assertIn("data-approve-telecom-entity", app)
+        self.assertIn('"/api/entity/telecom-correlation/approve"', app)
+        self.assertIn('"Approve"', app)
         self.assertIn("Reference records", app)
         self.assertIn("Calls", app)
-        self.assertIn('script.src = "./app.js?v=251";', bootstrap)
+        self.assertIn('script.src = "./app.js?v=252";', bootstrap)
 
 
 if __name__ == "__main__":

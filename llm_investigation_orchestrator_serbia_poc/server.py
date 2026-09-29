@@ -225,6 +225,8 @@ if DEMO.enabled:
     if not DEMO.profile["features"]["playback"]:
         SCENARIO_MANIFESTS_DIR = DEMO.state / "scenario_manifests"
     DEMO.bind_mcp_environment()
+ENTITY_APPROVALS_PATH = (DEMO.state if DEMO.enabled else ROOT / "entity_approvals" / STATE_SUFFIX) / "entities" / "telecom_approvals.json"
+_ENTITY_APPROVAL_LOCK = threading.Lock()
 TERMINAL_STATUSES = {"completed", "failed", "cancelled"}
 EVENT_ID_PATTERN = re.compile(r"\b(?:REC-(?:V2-)?\d{6}|LOC-(?:V2-)?\d{3})\b")
 SAVED_QUESTION_ID_PATTERN = re.compile(r"^[A-Za-z0-9_.-]+$")
@@ -420,6 +422,39 @@ def load_ui_events(locale: str = "he") -> list[dict[str, Any]]:
     return sorted(events, key=lambda item: str(item.get("timestamp_utc") or ""))
 
 
+def load_entity_telecom_approvals() -> dict[str, dict[str, Any]]:
+    try:
+        payload = json.loads(ENTITY_APPROVALS_PATH.read_text(encoding="utf-8-sig"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    approvals = payload.get("approvals") if isinstance(payload, dict) else {}
+    return {str(entity_id): value for entity_id, value in approvals.items() if isinstance(value, dict)} if isinstance(approvals, dict) else {}
+
+
+def save_entity_telecom_approvals(approvals: dict[str, dict[str, Any]]) -> None:
+    ENTITY_APPROVALS_PATH.parent.mkdir(parents=True, exist_ok=True)
+    payload = {"schema_version": 1, "approvals": approvals}
+    temp_path = ENTITY_APPROVALS_PATH.with_suffix(".json.tmp")
+    temp_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    temp_path.replace(ENTITY_APPROVALS_PATH)
+
+
+def apply_entity_telecom_approval(entity: dict[str, Any], approval: dict[str, Any]) -> dict[str, Any]:
+    telecom = entity.get("telecom") if isinstance(entity.get("telecom"), dict) else {}
+    if not telecom:
+        return entity
+    approved_identity = {
+        key: approval[key] for key in ("msisdn", "imsi", "method", "supporting_record_ids", "approved_at_utc", "source")
+        if approval.get(key) not in (None, "", [])
+    }
+    if not approved_identity.get("msisdn") and not approved_identity.get("imsi"):
+        return entity
+    resolved_telecom = {**telecom, "approved_subscriber_identity": approved_identity}
+    resolved_telecom.update({key: approved_identity[key] for key in ("msisdn", "imsi") if approved_identity.get(key)})
+    resolved_telecom.pop("extracted_subscriber_identity", None)
+    return {**entity, "telecom": resolved_telecom}
+
+
 def load_ui_entity_db(locale: str = "he") -> dict[str, dict[str, Any]]:
     _, _, entities_path = localized_dataset_paths(locale)
     if not entities_path.exists():
@@ -428,7 +463,11 @@ def load_ui_entity_db(locale: str = "he") -> dict[str, dict[str, Any]]:
         loaded = json.loads(entities_path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
         return {}
-    return {item["entity_id"]: item for item in loaded if item.get("entity_id")}
+    approvals = load_entity_telecom_approvals()
+    return {
+        item["entity_id"]: apply_entity_telecom_approval(item, approvals.get(item["entity_id"], {}))
+        for item in loaded if item.get("entity_id")
+    }
 
 
 ENTITY_PROFILE_FIELDS = (
@@ -1702,29 +1741,24 @@ def telecom_identifier_correlation(entity_id: str, locale: str = "en") -> dict:
     }
 
 
-def approve_person_telecom_correlation(request: dict) -> dict:
-    investigation_id = str(request.get("investigation_id") or "").strip()
-    if not INVESTIGATION_ID_PATTERN.fullmatch(investigation_id):
-        raise ValueError("Invalid investigation id")
+def approve_entity_telecom_correlation(request: dict) -> dict:
     entity_id = compact_text(request.get("entity_id"), 240)
+    if not entity_id:
+        raise ValueError("Entity id is required")
     correlation = telecom_identifier_correlation(entity_id)
-    existing = load_investigation_memory(investigation_id)
-    memory = existing.get("memory") if isinstance(existing.get("memory"), dict) else {}
-    enrichments = [item for item in normalize_memory_list(memory.get("entity_enrichments")) if item.get("entity_id") != entity_id]
-    enrichment = {
-        **correlation,
-        "id": f"entity_telecom_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}_{secrets.token_hex(3)}",
-        "kind": "approved_telecom_identifier_correlation",
-        "approved_at_utc": utc_now_iso(),
-        "source": "manual_user_approval",
-    }
-    enrichments.append(enrichment)
-    saved = save_investigation_memory({
-        "investigation_id": investigation_id,
-        "name": request.get("name") or existing.get("name") or investigation_id,
-        "memory": {"entity_enrichments": enrichments},
-    })
-    return {"saved": enrichment, "memory": saved}
+    with _ENTITY_APPROVAL_LOCK:
+        approvals = load_entity_telecom_approvals()
+        previous = approvals.get(entity_id, {})
+        approval = {
+            **correlation,
+            "kind": "approved_telecom_identifier_correlation",
+            "approved_at_utc": previous.get("approved_at_utc") or utc_now_iso(),
+            "source": "manual_user_approval",
+        }
+        approvals[entity_id] = approval
+        save_entity_telecom_approvals(approvals)
+    entity = load_ui_entity_db("en").get(entity_id)
+    return {"saved": approval, "entity": entity}
 
 
 COLLECTION_REQUEST_TYPES = {"adint", "cellular_geolocations", "cellular_calls", "satellite", "cctv"}
@@ -5896,7 +5930,7 @@ class Handler(SimpleHTTPRequestHandler):
             except Exception as exc:
                 self.send_json(502, {"error": str(exc)})
             return
-        if path == "/api/investigation-entity/telecom-correlation/approve":
+        if path == "/api/entity/telecom-correlation/approve":
             try:
                 length = int(self.headers.get("Content-Length", "0"))
                 if length > 100_000:
@@ -5905,7 +5939,7 @@ class Handler(SimpleHTTPRequestHandler):
                 request = json.loads(self.rfile.read(length).decode("utf-8-sig"))
                 if not isinstance(request, dict):
                     raise ValueError("Invalid entity enrichment payload")
-                self.send_json(201, approve_person_telecom_correlation(request))
+                    self.send_json(201, approve_entity_telecom_correlation(request))
             except ValueError as exc:
                 self.send_json(400, {"error": str(exc)})
             except Exception as exc:
