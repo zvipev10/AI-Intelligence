@@ -19,7 +19,10 @@ assert len(correlation['supporting_record_ids']) == 18
 saved = server.approve_person_telecom_correlation({'investigation_id': 'telecom-correlation-demo', 'entity_id': 'ENT-SYR-PERSON-002'})
 assert saved['saved']['method'] == 'imei_linked_telecom_identity_correlation'
 memory = server.load_investigation_memory('telecom-correlation-demo')
-assert server.load_ui_entity_db('en')['ENT-SYR-PERSON-002']['telecom']['msisdn'] == '9630943700780'
+entity_telecom = server.load_ui_entity_db('en')['ENT-SYR-PERSON-002']['telecom']
+assert 'msisdn' not in entity_telecom and 'imsi' not in entity_telecom
+assert entity_telecom['extracted_subscriber_identity']['msisdn'] == '9630943700780'
+assert memory['memory']['entity_enrichments'][0]['imsi'] == '417011234567890'
 try:
     server.telecom_identifier_correlation('ENT-SYR-PERSON-001')
 except ValueError as error:
@@ -40,9 +43,12 @@ class PersonTelecomCorrelationUiTests(unittest.TestCase):
         app = (Path(__file__).resolve().parent / "app.js").read_text(encoding="utf-8")
         bootstrap = (Path(__file__).resolve().parent / "demo_bootstrap.js").read_text(encoding="utf-8")
         self.assertIn("function personTelecomDetailsHtml(item)", app)
+        self.assertIn("function approveExtractedTelecomIdentity(entityId, button)", app)
+        self.assertIn("Extracted subscriber identity", app)
+        self.assertIn("data-approve-telecom-entity", app)
         self.assertIn("Reference records", app)
         self.assertIn("Calls", app)
-        self.assertIn('script.src = "./app.js?v=249";', bootstrap)
+        self.assertIn('script.src = "./app.js?v=251";', bootstrap)
 
 
 if __name__ == "__main__":

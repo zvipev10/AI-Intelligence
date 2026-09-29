@@ -110,9 +110,9 @@
     },
     "telecom": {
       "imei": "353294702931926",
-      "msisdn": "9630943700780",
-      "imsi": "417011234567890",
-      "identity_resolution": {
+      "extracted_subscriber_identity": {
+        "msisdn": "9630943700780",
+        "imsi": "417011234567890",
         "method": "imei_linked_telecom_identity_correlation",
         "supporting_record_ids": [
           "REC-SYR-CELL-CSV-013", "REC-SYR-CELL-CSV-021", "REC-SYR-CELL-CSV-024", "REC-SYR-CELL-CSV-026", "REC-SYR-CELL-CSV-030", "REC-SYR-CELL-CSV-037", "REC-SYR-CELL-CSV-043", "REC-SYR-CELL-CSV-047", "REC-SYR-CELL-CSV-052", "REC-SYR-CELL-CSV-067", "REC-SYR-CELL-CSV-072", "REC-SYR-CELL-CSV-075", "REC-SYR-CELL-CSV-077", "REC-SYR-CELL-CSV-084", "REC-SYR-CELL-CSV-089", "REC-SYR-CELL-CSV-093", "REC-SYR-CELL-CSV-099", "REC-SYR-CELL-CSV-101"
