@@ -109,6 +109,10 @@ class ObjectViewerContractTests(unittest.TestCase):
         self.assertIn('const telecom = item.telecom', self.app)
         self.assertIn('collectionImeiButton(value)', self.app)
         self.assertIn('Telecom identifiers', self.app)
+        self.assertLess(
+            self.app.index('<div class="call-main person-workspace-main">'),
+            self.app.index('${personTelecomDetailsHtml(item)}')
+        )
         self.assertIn('.person-telecom-identifier-grid {', self.styles)
         self.assertIn('Reference records', self.app)
         self.assertIn('Calls', self.app)

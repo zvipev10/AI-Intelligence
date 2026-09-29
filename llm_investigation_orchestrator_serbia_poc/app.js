@@ -4229,9 +4229,9 @@ function personWorkspaceHtml(item) {
         ${detail(activeLocaleText("שפות", "Languages"), item.languages)}
         ${detail(activeLocaleText("שירות צבאי", "Military service"), item.military_service)}
       </dl>
-      ${personTelecomDetailsHtml(item)}
     </aside>
     <div class="call-main person-workspace-main">
+      ${personTelecomDetailsHtml(item)}
       ${mapPanel}
       <section class="call-conversation person-records-panel">
         <header class="call-conversation-heading"><span class="material-symbols-rounded">hub</span><h3>${escapeHtml(activeLocaleText("רשומות מקושרות", "Connected records"))}</h3><span>${escapeHtml(records.length.toLocaleString(currentLocaleTag()))}</span></header>
