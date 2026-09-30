@@ -19,7 +19,7 @@ from functools import wraps
 from collections import Counter, defaultdict
 from datetime import datetime, timezone
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
-from ipdr_evidence import attach_package, record_evidence
+from ipdr_evidence import attach_package
 from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qs, unquote, urlparse
@@ -642,14 +642,19 @@ def load_evidence_catalog(locale: str = "he") -> list[dict[str, Any]]:
         except (OSError, json.JSONDecodeError):
             _EVIDENCE_CATALOG_CACHE[locale] = []
     rows = list(_EVIDENCE_CATALOG_CACHE[locale])
-    rows.extend(record_evidence(event) for event in visible_ui_events(locale) if event.get("evidence_type") == "ipdr_record")
+    rows = [row for row in rows if row.get("evidence_type") != "ipdr_record" and row.get("source_type") != "IPDR"]
+    package = attach_package(load_ui_events(locale), localized_dataset_paths(locale)[0])
+    if package:
+        rows.append({**package, "evidence_id": package["package_id"]})
     timeframe = active_playback_timeframe()
     if timeframe is None:
         return rows
     return [
         row for row in rows
-        if (timestamp := parse_utc(row.get("valid_from"))) is not None
-        and timeframe["_from"] <= timestamp < timeframe["_to"]
+        if row.get("evidence_type") == "ipdr_package" or (
+            (timestamp := parse_utc(row.get("valid_from"))) is not None
+            and timeframe["_from"] <= timestamp < timeframe["_to"]
+        )
     ]
 
 
@@ -691,7 +696,7 @@ def list_ui_layers(locale: str = "he") -> list[dict[str, Any]]:
     events, entities, locations = ui_layer_data(locale)
     targets = load_persisted_attack_targets(entities, locations, locale=locale)
     ipdr_package = attach_package(load_ui_events(locale), localized_dataset_paths(locale)[0])
-    evidence_count = evidence_catalog_count(locale) + sum(event.get("evidence_type") == "ipdr_record" for event in events)
+    evidence_count = evidence_catalog_count(locale) + int(ipdr_package is not None)
     unknown_source = "Unknown source" if locale == "en" else "מקור לא ידוע"
     layers = [
         {
@@ -725,7 +730,7 @@ def list_ui_layers(locale: str = "he") -> list[dict[str, Any]]:
         "family": "evidence",
         "kind": "evidence",
         "count": evidence_count,
-        "capabilities": {"table": True, "map": evidence_catalog_count(locale) > 0, "timeline": True},
+        "capabilities": {"table": True, "map": evidence_catalog_count(locale) > 0, "timeline": evidence_catalog_count(locale) > 0},
     })
     if locale == "en":
         layers[0]["label"] = "Entity layer"
@@ -735,9 +740,9 @@ def list_ui_layers(locale: str = "he") -> list[dict[str, Any]]:
     if ipdr_package:
         layers.append({"id": ipdr_package["catalog_layer_id"],
             "label": "IPDR evidence package" if locale == "en" else "חבילת ראיות IPDR",
-            "family": "evidence", "kind": "events", "source_type": "IPDR",
-            "count": sum(event.get("package_id") == ipdr_package["package_id"] for event in events), "ipdr_package": ipdr_package,
-            "capabilities": {"table": True, "map": False, "timeline": True}})
+            "family": "evidence", "kind": "evidence",
+            "count": 1, "ipdr_package": ipdr_package,
+            "capabilities": {"table": True, "map": False, "timeline": False}})
     source_counts = Counter(event.get("source_type") or unknown_source for event in events)
     if DEMO.enabled:
         for source in DEMO.profile["sources"][locale]:
@@ -771,7 +776,7 @@ def get_ui_layer_rows(layer_id: str, locale: str = "he", filters=None) -> tuple[
     elif layer_id == EVIDENCE_CATALOG_LAYER_ID:
         rows = load_evidence_catalog(locale)
     elif layer_id.startswith("ipdr-package:"):
-        rows = [event for event in events if event.get("package_id") == layer["ipdr_package"]["package_id"]]
+        rows = [{**layer["ipdr_package"], "evidence_id": layer["ipdr_package"]["package_id"]}]
     elif layer_id.startswith("events:"):
         source_type = layer.get("source_type") or layer_id.split(":", 1)[1]
         unknown_source = "Unknown source" if locale == "en" else "מקור לא ידוע"

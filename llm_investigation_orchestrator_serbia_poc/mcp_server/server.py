@@ -3236,12 +3236,9 @@ def resolve_evidence(evidence_id: str) -> dict[str, Any] | None:
     if IPDR_PACKAGE and evidence_id == IPDR_PACKAGE["package_id"]:
         return {**IPDR_PACKAGE, "evidence_id": evidence_id,
                 "source_record_ids": [event["event_id"] for event in EVENTS if event.get("package_id") == evidence_id and event_visible(event)]}
-    if evidence_id.startswith("REC-"):
-        event = visible_event(evidence_id)
-        return project_event(public_event(event)) if event and event.get("source_type") == "IPDR" else None
     if evidence_id.startswith("EVD-REC-"):
         event = visible_event(evidence_id[4:])
-        return project_event(public_event(event)) if event is not None else None
+        return project_event(public_event(event)) if event is not None and event.get("source_type") != "IPDR" else None
     return EVIDENCE_STORE.get(evidence_id)
 
 

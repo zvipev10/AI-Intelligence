@@ -75,7 +75,7 @@ def _batch_fusion(rows: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 def build_catalog(events: list[dict[str, Any]], *, dataset_version: str, locale: str = "he") -> dict[str, Any]:
-    structured = [normalize_evidence_event(row) for row in events]
+    structured = [normalize_evidence_event(row) for row in events if row.get("source_type") != "IPDR"]
     projected = [project_event(row) for row in structured]
     catalog_projected = [
         evidence for evidence, source in zip(projected, structured)

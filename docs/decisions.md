@@ -507,3 +507,7 @@ Decision: expose one canonical IPDR record per existing source row as typed netw
 Rationale: evidence presentation must preserve lineage, existing references and the distinction between observation and identity assertions. Representation migration is separate from a future versioned synthetic enrichment. Original CSV bytes and source values remain unchanged; unknown acquisition details and undocumented field semantics remain explicit.
 
 Impact: additive runtime projections and package UI only. No new person/device/location inference, persisted state migration or production deployment.
+
+### 2026-09-30 — Present only the acquisition package as IPDR evidence
+
+User correction supersedes the earlier record-projection decision: the Evidence layer contains one IPDR package object. Individual sessions remain exclusively in raw IPDR data with unchanged REC identities and native fields. Package detail links open the raw IPDR catalog rather than another evidence-record layer.

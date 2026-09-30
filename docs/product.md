@@ -67,6 +67,4 @@ See [architecture](architecture.md) for interfaces and state ownership. Scenario
 
 ## IPDR evidence packages
 
-Open **IPDR evidence package** in the Evidence catalog to inspect the existing 300 source records in Table. The package card links to metadata, checksum, synthetic classification, source-field limitations, observed coverage and validation totals. Unknown acquisition details remain explicitly unknown. Package membership does not establish a person, device ownership or location.
-
-An IPDR record retains its REC identity, native values and missing identifiers; the viewer exposes its package and original CSV row reference. Timeline entries show both original session times, label invalid/unknown intervals and open the same record. These geometry-free observations do not offer Map placement. The original IPDR source catalog remains available, and source files are preserved unchanged.
+The Evidence layer shows one IPDR package object. Open its package ID to inspect metadata, checksum, synthetic classification, coverage and validation totals. Choose **Open package records** to open the raw IPDR layer. All 300 individual REC records belong only to raw IPDR data; they do not appear as Evidence layer objects. Raw record viewers retain package links and native fields; their Timeline shows session intervals and validation. Package objects are presented in Table and the detail viewer, with no Map or Timeline placement.

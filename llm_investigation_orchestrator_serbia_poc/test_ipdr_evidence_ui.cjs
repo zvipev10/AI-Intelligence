@@ -5,7 +5,7 @@ const source = fs.readFileSync(`${__dirname}/app.js`, 'utf8');
 const row = {event_id:'REC-IPDR-1',source_type:'IPDR',source_record_id:'000123',package_id:'PKG-1',evidence_type:'ipdr_record',imei:'',start_time:'2026-09-01T01:00:00Z',end_time:'2026-09-01T00:00:00Z',validation:{state:'invalid'},source_reference:{data_row:1}};
 const pkg = {package_id:'PKG-1',record_count:300,catalog_layer_id:'ipdr-package:PKG-1'};
 const context = {Set,Map,Date, console, activeLocaleText:(he,en)=>en,escapeHtml:v=>String(v??'').replaceAll('<','&lt;'),
-  state:{events:[],entityMetadata:[],layerCatalog:[{ipdr_package:pkg}],layers:[{kind:'evidence',items:[{...row,evidence_id:row.event_id}]}]},
+  state:{events:[row],entityMetadata:[],layerCatalog:[{ipdr_package:pkg}],layers:[{kind:'evidence',items:[{...pkg,evidence_type:'ipdr_package',evidence_id:pkg.package_id}]}]},
   isAdintRecord:()=>false, activeRoleWorkspaceProfile:()=>({allowedCatalogLayerIds:new Set(['events:IPDR'])})};
 vm.createContext(context);
 vm.runInContext(source.match(/const IPDR_SOURCE_FIELDS = .*;/)[0],context);
@@ -16,6 +16,8 @@ for (const name of ['isIpdrRecord','viewerObjects','viewerFields','isCellularGeo
 const objects=context.viewerObjects();
 assert(objects.has('ipdr_package:PKG-1'));
 assert(objects.has('record:REC-IPDR-1'));
+assert(!objects.has('evidence:REC-IPDR-1'));
+assert.match(context.ipdrPackageLinkHtml(pkg,'ipdr_package'),/data-ipdr-package-open="events:IPDR"/);
 const fields=context.viewerFields(row,'record');
 assert(fields.some(([key,value])=>key==='imei'&&value==='—'));
 assert(fields.some(([key])=>key==='source_reference'));

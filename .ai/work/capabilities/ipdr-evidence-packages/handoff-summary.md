@@ -1,5 +1,4 @@
 # Handoff
-Existing 300 IPDR source rows are now discoverable as a checksum-anchored evidence package. Records retain REC identity and exact source fields; missing IMEIs remain missing (two populated). Package metadata does not invent acquisition/case details or undocumented ip_out semantics.
-Changed areas: shared ipdr_evidence module, source manifest, UI/MCP loaders and evidence resolver, evidence projection, catalog and viewer/Timeline, targeted tests, owning product/architecture/demo/decision docs. No additional storage or state migration.
-Validation: 20 targeted Python tests; 12 foundation tests plus one skip; two JS test scripts and syntax/diff checks pass. Existing catalog-recovery harness failure reproduced on baseline. Browser visual review and deployment remain outstanding.
-Publishing: local review branch prepared; remote publication attempted separately. No main update or production deployment.
+
+Current behavior supersedes the initial implementation: only the acquisition package is an IPDR Evidence object. Evidence catalog counts/rows contain one package, and its viewer opens events:IPDR for the 300 raw REC records. Records retain native values, checksum/row lineage, missing identifiers and validation; no record evidence projections or duplicate EVD objects are created.
+JavaScript syntax checks passed for this revision. Updated Python/UI regression tests have not run: cloud environment startup failed. Previous green tests applied to the superseded behavior. Publish on the existing feature branch; deployment remains pending.

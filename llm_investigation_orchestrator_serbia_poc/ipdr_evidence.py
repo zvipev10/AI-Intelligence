@@ -23,24 +23,6 @@ def interval_validation(start, end):
     return {"state": "valid", "duration_seconds": duration, "issues": []}
 
 
-def record_evidence(event):
-    """An addressable REC observation, independent of identity or presence claims."""
-    record_id = event.get("event_id") or event.get("record_id")
-    if not str(record_id).startswith("REC-"):
-        raise ValueError("IPDR evidence requires an existing REC identity")
-    return {
-        **event, "evidence_id": record_id, "evidence_type": "ipdr_record",
-        "record_type": "network_session", "evidence_status": "observed",
-        "claim_type": "network_session", "subject_entity_ids": [], "location_ids": [],
-        "source_record_ids": [record_id], "supporting_evidence_ids": [],
-        "contradicting_evidence_ids": [], "valid_from": event.get("start_time") or None,
-        "valid_to": event.get("end_time") or None,
-        "validation": interval_validation(event.get("start_time"), event.get("end_time")),
-        "summary": event.get("event_summary", ""), "persisted": False,
-        "created_by_processor": "ipdr-source-view-v1",
-    }
-
-
 def attach_package(events, events_path: Path):
     """Validate native parity before assigning package membership in memory.
 
@@ -74,7 +56,7 @@ def attach_package(events, events_path: Path):
             raise ValueError("IPDR package native field parity failed")
         projected.append((row, {
             "package_id": package["package_id"], "ingest_batch_id": package["ingest_batch_id"],
-            "evidence_type": "ipdr_record", "record_type": "network_session",
+            "record_type": "network_session",
             "source_reference": {"filename": filename, "sha256": package["sha256"], "data_row": source_row},
             "validation": interval_validation(row.get("start_time"), row.get("end_time")),
         }))

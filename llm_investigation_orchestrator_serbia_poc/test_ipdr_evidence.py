@@ -8,7 +8,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from ipdr_evidence import attach_package, interval_validation, record_evidence
+from ipdr_evidence import attach_package, interval_validation
 
 ROOT = Path(__file__).resolve().parent
 DATA = ROOT / "data/syria_cellular_records_v1"
@@ -33,12 +33,6 @@ class IpdrEvidence(unittest.TestCase):
         ipdr = [r for r in rows if r["source_type"] == "IPDR"]
         self.assertEqual(sum(bool(r["imei"]) for r in ipdr), 2)
         self.assertEqual({r["source_reference"]["data_row"] for r in ipdr}, set(range(1, 301)))
-        for row in ipdr:
-            view = record_evidence(row)
-            self.assertEqual(view["evidence_id"], row["event_id"])
-            self.assertEqual(view["claim_type"], "network_session")
-            self.assertEqual(view["subject_entity_ids"], [])
-            self.assertEqual(view["location_ids"], [])
 
     def test_source_and_membership_fail_closed(self):
         for mutation in ("checksum", "value", "duplicate", "count"):
@@ -77,26 +71,24 @@ for locale in ("he", "en"):
     layers = ui.list_ui_layers(locale)
     package = next(layer for layer in layers if layer["id"].startswith("ipdr-package:"))
     metadata, rows = ui.get_ui_layer_rows(package["id"], locale)
-    assert len(rows) == 300 and not metadata["capabilities"]["map"]
-    assert metadata["family"] == "evidence" and metadata["ipdr_package"]["classification"] == "synthetic_demo"
+    assert len(rows) == 1 and package["count"] == 1
+    assert metadata["kind"] == "evidence" and not metadata["capabilities"]["map"] and not metadata["capabilities"]["timeline"]
+    assert rows[0]["evidence_type"] == "ipdr_package" and rows[0]["record_count"] == 300
     raw = ui.get_ui_layer_rows("events:IPDR", locale)[1]
-    assert {r["event_id"] for r in raw} == {r["event_id"] for r in rows}
-    selected = rows[0]["event_id"]
-    assert len(ui.get_ui_layer_rows(package["id"], locale, {"event_ids": [selected]})[1]) == 1
-    evidence = [r for r in ui.load_evidence_catalog(locale) if r.get("evidence_type") == "ipdr_record"]
-    assert len(evidence) == 300 and all(r["evidence_id"] == r["event_id"] for r in evidence)
-    public = mcp.public_event(mcp.EVENT_BY_ID[selected])
-    assert public["package_id"] == rows[0]["package_id"]
-    projected = mcp.get_evidence({"evidence_id": selected})["evidence"]
-    assert projected["evidence_id"] == selected and not projected["subject_entity_ids"]
-    json.dumps(projected)
-    assert len(mcp.get_evidence({"evidence_id": metadata["ipdr_package"]["package_id"]})["evidence"]["source_record_ids"]) == 300
-# Visibility must not cause validation against a partial package or leak rows.
+    assert len(raw) == 300 and sum(bool(r["imei"]) for r in raw) == 2
+    selected = raw[0]["event_id"]
+    assert len(ui.get_ui_layer_rows("events:IPDR", locale, {"event_ids": [selected]})[1]) == 1
+    evidence = ui.load_evidence_catalog(locale)
+    assert len(evidence) == 1 and evidence[0]["evidence_type"] == "ipdr_package"
+    assert not any(r.get("source_type") == "IPDR" for r in evidence)
+    assert mcp.get_evidence({"evidence_id": selected})["evidence"] is None
+    obj = mcp.get_evidence({"evidence_id": rows[0]["package_id"]})["evidence"]
+    assert len(obj["source_record_ids"]) == 300
+    json.dumps(obj)
 ui.active_playback_timeframe = lambda: {"_from": ui.parse_utc("2026-09-01T00:00:00Z"), "_to": ui.parse_utc("2026-09-01T12:00:00Z")}
-package = next(layer for layer in ui.list_ui_layers("en") if layer["id"].startswith("ipdr-package:"))
-rows = ui.get_ui_layer_rows(package["id"], "en")[1]
-assert 0 < len(rows) < 300 and package["count"] == len(rows)
-assert package["ipdr_package"]["record_count"] == 300
+assert len(ui.load_evidence_catalog("en")) == 1
+raw = ui.get_ui_layer_rows("events:IPDR", "en")[1]
+assert 0 < len(raw) < 300
 '''
         with tempfile.TemporaryDirectory() as tmp:
             result = subprocess.run([sys.executable, "-c", code], cwd=ROOT,

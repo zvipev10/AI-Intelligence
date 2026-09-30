@@ -1545,7 +1545,7 @@ function buildCatalogLayer(layer, rows = []) {
   const items = layer.kind === "events"
     ? rows.map(item => ({ ...item, date: new Date(item.timestamp_utc) }))
     : layer.kind === "evidence"
-      ? rows.map(item => ({ ...item, date: new Date(item.valid_from) }))
+      ? rows.map(item => ({ ...item, date: new Date(item.valid_from || 0) }))
     : rows;
   return {
     dataId: layer.id,
@@ -1571,7 +1571,7 @@ function buildTypedResultLayers(result = {}) {
       items: layer.kind === "events"
         ? layer.rows.map(item => ({ ...item, date: new Date(item.timestamp_utc) }))
         : layer.kind === "evidence"
-          ? layer.rows.map(item => ({ ...item, date: new Date(item.valid_from) }))
+          ? layer.rows.map(item => ({ ...item, date: new Date(item.valid_from || 0) }))
         : layer.rows,
       capabilities: layer.capabilities || { table: true, map: false, timeline: false },
       preferredView: layer.recommended_view
@@ -1589,7 +1589,7 @@ function buildEvidenceReferenceLayers(result = {}) {
       items: layer.kind === "events"
         ? layer.rows.map(item => ({ ...item, date: new Date(item.timestamp_utc) }))
         : layer.kind === "evidence"
-          ? layer.rows.map(item => ({ ...item, date: new Date(item.valid_from) }))
+          ? layer.rows.map(item => ({ ...item, date: new Date(item.valid_from || 0) }))
         : layer.rows,
       capabilities: layer.capabilities || { table: true, map: false, timeline: false },
       preferredView: layer.recommended_view
@@ -3734,8 +3734,8 @@ function viewerObjects() {
   state.layers.forEach(layer => {
     if (layer.kind === "events") (layer.items || []).forEach(item => objects.set(`record:${item.record_id || item.event_id}`, item));
     if (layer.kind === "evidence") (layer.items || []).forEach(item => {
-      objects.set(`evidence:${item.evidence_id}`, item);
-      if (isIpdrRecord(item)) objects.set(`record:${item.event_id}`, item);
+      if (item.evidence_type === "ipdr_package") objects.set(`ipdr_package:${item.package_id}`, item);
+      else objects.set(`evidence:${item.evidence_id}`, item);
     });
     if (layer.kind === "assessments") (layer.items || []).forEach(item => objects.set(`assessment:${item.assessment_id}`, item));
     if (["entity_metadata", "person_entities"].includes(layer.kind)) (layer.items || []).forEach(item => {
@@ -3991,7 +3991,7 @@ function viewerFields(item, kind) {
     return ["event_id", "device_id", "timestamp_utc", "brand", "model", "os", "keyboard_language", "ip", "latitude", "longitude", "accuracy_m"].map(key => [key, item[key] == null || item[key] === "" ? "—" : item[key]]);
   }
   if (["record", "evidence"].includes(kind) && isIpdrRecord(item) && item.source_record_id) {
-    const keys = item.package_id ? ["event_id", "evidence_type", "record_type", "package_id", "ingest_batch_id", "source_reference", "validation", ...IPDR_SOURCE_FIELDS] : IPDR_SOURCE_FIELDS;
+    const keys = item.package_id ? ["event_id", "record_type", "package_id", "ingest_batch_id", "source_reference", "validation", ...IPDR_SOURCE_FIELDS] : IPDR_SOURCE_FIELDS;
     return keys.map(key => [key, item[key] == null || item[key] === "" ? "—" : item[key]]);
   }
   const preferred = kind === "person"
@@ -6976,7 +6976,7 @@ function callTimelineEntry(event) {
 
 function ipdrPackageLinkHtml(item, kind) {
   if (kind === "ipdr_package") {
-    return `<section class="object-viewer-summary"><button type="button" class="object-viewer-open" data-viewer-kind="ipdr_package" data-viewer-id="${escapeHtml(item.package_id)}">${escapeHtml(item.package_id)}</button><p>${escapeHtml(activeLocaleText("נתוני הדגמה סינתטיים", "Synthetic demonstration data"))} · ${escapeHtml(item.record_count)} ${escapeHtml(activeLocaleText("רשומות", "records"))}</p><button type="button" data-ipdr-package-open="${escapeHtml(item.catalog_layer_id)}">${escapeHtml(activeLocaleText("פתח רשומות חבילה", "Open package records"))}</button></section>`;
+    return `<section class="object-viewer-summary"><button type="button" class="object-viewer-open" data-viewer-kind="ipdr_package" data-viewer-id="${escapeHtml(item.package_id)}">${escapeHtml(item.package_id)}</button><p>${escapeHtml(activeLocaleText("נתוני הדגמה סינתטיים", "Synthetic demonstration data"))} · ${escapeHtml(item.record_count)} ${escapeHtml(activeLocaleText("רשומות", "records"))}</p><button type="button" data-ipdr-package-open="events:IPDR">${escapeHtml(activeLocaleText("פתח רשומות חבילה", "Open package records"))}</button></section>`;
   }
   if (!isIpdrRecord(item) || !item.package_id) return "";
   return `<section class="object-viewer-summary"><button type="button" class="object-viewer-open" data-viewer-kind="ipdr_package" data-viewer-id="${escapeHtml(item.package_id)}">${escapeHtml(activeLocaleText("חבילת ראיות", "Evidence package"))}: ${escapeHtml(item.package_id)}</button></section>`;
@@ -6997,7 +6997,7 @@ function renderTimeline() {
     .flatMap(layer => itemsForLayerPresentation(layer).map(event => ({ type: "event", layer, event, sort: event.date })));
   const evidenceTimelineItems = visibleLayers("timeline")
     .filter(layer => layer.kind === "evidence")
-    .flatMap(layer => itemsForLayerPresentation(layer).map(event => ({ type: "event", layer, event: {
+    .flatMap(layer => itemsForLayerPresentation(layer).filter(event => event.evidence_type !== "ipdr_package").map(event => ({ type: "event", layer, event: {
       ...event,
       timestamp_utc: event.valid_from,
       event_summary: event.summary,
@@ -7238,7 +7238,14 @@ function renderEvidence() {
     enhanceResultsTable(activeLayer);
     return;
   }
-  if (activeLayer.kind === "evidence" && !(activeLayer.items?.length && activeLayer.items.every(isIpdrRecord))) {
+  if (activeLayer.kind === "evidence" && activeLayer.items?.length && activeLayer.items.every(item => item.evidence_type === "ipdr_package")) {
+    const keys = ["package_id", "filename", "source_system", "record_count", "classification", "validation_state"];
+    head.innerHTML = `<tr>${keys.map(key => `<th>${escapeHtml(viewerFieldLabel(key))}</th>`).join("")}</tr>`;
+    body.innerHTML = activeItems.map(item => `<tr>${keys.map(key => `<td>${key === "package_id" ? `<button type="button" class="object-viewer-open" data-viewer-kind="ipdr_package" data-viewer-id="${escapeHtml(item.package_id)}">${escapeHtml(item.package_id)}</button>` : escapeHtml(item[key] ?? "—")}</td>`).join("")}</tr>`).join("") || `<tr><td colspan="6" class="empty-cell">${escapeHtml(activeLocaleText("אין חבילות להצגה", "No packages to display"))}</td></tr>`;
+    enhanceResultsTable(activeLayer);
+    return;
+  }
+  if (activeLayer.kind === "evidence") {
     head.innerHTML = `<tr><th class="result-map-action-column"></th><th>${escapeHtml(activeLocaleText("ראיה", "Evidence"))}</th><th>${escapeHtml(activeLocaleText("מצב", "Status"))}</th><th>${escapeHtml(activeLocaleText("טענה", "Claim"))}</th><th>${escapeHtml(activeLocaleText("ישות", "Entity"))}</th><th>${escapeHtml(activeLocaleText("מיקום", "Location"))}</th><th>${escapeHtml(activeLocaleText("ביטחון", "Confidence"))}</th><th>${escapeHtml(activeLocaleText("רשומות מקור", "Source records"))}</th></tr>`;
     body.innerHTML = activeItems.length ? activeItems.map(item => {
       const itemId = item.evidence_id;
