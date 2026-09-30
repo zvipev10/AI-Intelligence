@@ -29,6 +29,15 @@ contains commits not merged into `main`, or if `main` is unavailable, stop,
 report the affected branch names and commit relationship, and ask for next
 instructions. Do not enumerate every historical branch unless the user asks.
 
+When a local AI-Intelligence checkout already exists, compare its active `HEAD`
+and the content hash of its `AGENTS.md` with the verified remote `main` commit
+and that commit's `AGENTS.md`. If either differs, report the exact commit and
+instruction-file relationship before using the checkout. Do not clone, pull,
+reset, switch branches, overwrite `AGENTS.md`, or otherwise synchronize it
+automatically. Ask the user whether to keep the local state, update it, or take
+a fresh clone. A local checkout may be treated as authoritative only when both
+its active commit and `AGENTS.md` match the verified remote `main`.
+
 Only after remote `main` is confirmed to be the latest integrated branch, clone
 or update a local checkout when authorized. Then verify that the local
 checkout's `main` resolves to the exact remote `main` commit that was checked.
