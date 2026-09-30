@@ -9,7 +9,7 @@ The bilingual Hebrew/English intelligence workspace has one shared codebase and 
 | Package | Current profile / dataset | Content |
 |---|---|---|
 | Kosovo | profile 1 / `v2.1` | 14,833 records, including 24 simulated cellular calls; preserved investigations and agent state |
-| Syria | profile 32 / `cellular-records-v9` | 726 records: 2 CCTV, 2 Satellite, 120 ADINT, 300 IPDR, 300 Cellular Geolocations, 2 Cellular Calls; 384 locations, 13 entities and 21 catalog definitions |
+| Syria | profile 33 / `cellular-records-v10` | 726 records: 2 CCTV, 2 Satellite, 120 ADINT, 300 IPDR, 300 Cellular Geolocations, 2 Cellular Calls; 384 locations, 13 entities and 21 catalog definitions |
 
 Deployment identity must be checked through `/api/status`; this is an installed-package inventory, not a live status assertion. Syria's initial camera is Damascus (longitude 36.2765, latitude 33.5138), zoom 11. The fictional convoy sites are elsewhere; opening results can fit the map to their geometry. Installed profiles, not this document, are authoritative for future versions.
 
@@ -43,6 +43,7 @@ The imported sessions are dated September 1-6. Records 3001185062876120 and 3495
 | 12 | `satellite-v3` | Swapped the two Satellite images and matching descriptions/counts; coordinates unchanged |
 | 13 | `adint-v3` | Replaced all 120 ADINT records from ADINT2; all IPs populated, locations unchanged |
 | 32 | `cellular-records-v9` | Updated the two dedicated CCTV locations to user-supplied coordinates; Site 2 is labelled as a petrol-station location. Records and media are unchanged. |
+| 33 | `cellular-records-v10` | Transcoded both supplied CCTV videos from 10-bit HEVC to browser-compatible H.264/yuv420p with AAC audio; observations and locations are unchanged. |
 
 Earlier packages and state remain available for controlled recovery. Historical backups include `/opt/demo-runtime/backups/syria-convoy-dd6b362`, `syria-convoy-v2-0ba309b` and `syria-network-c7c3319`. They are evidence/recovery points, not the latest release selector. Inspect `/opt/demo-runtime/control/deployed-release.json`, the installed manifest and capability deployment checkpoints before choosing a restore point.
 

@@ -13,8 +13,8 @@ class SyriaCctvLocations(unittest.TestCase):
         profile = load_profile(ROOT, "syria", verify=True)
         locations = json.loads((ROOT / profile["files"]["locations"]).read_text(encoding="utf-8"))
 
-        self.assertEqual(profile["profile_version"], "32")
-        self.assertEqual(profile["dataset_version"], "cellular-records-v9")
+        self.assertEqual(profile["profile_version"], "33")
+        self.assertEqual(profile["dataset_version"], "cellular-records-v10")
         self.assertEqual(
             (locations["LOC-SYR-001"]["latitude"], locations["LOC-SYR-001"]["longitude"]),
             (35.064595, 36.284253),

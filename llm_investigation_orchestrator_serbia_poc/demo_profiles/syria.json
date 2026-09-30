@@ -2,8 +2,8 @@
   "schema_version": 1,
   "state_schema_version": 1,
   "scenario_id": "syria",
-  "profile_version": "32",
-  "dataset_version": "cellular-records-v9",
+  "profile_version": "33",
+  "dataset_version": "cellular-records-v10",
   "label": {
     "en": "Syria"
   },
@@ -85,8 +85,8 @@
     "playback": false
   },
   "checksums": {
-    "assets/demo/syria/cellular-records-v1/site-1-cctv-1.mp4": "cee6ca713dbb6680e77f0cfc3077ab7dace7794ff5ac6618b551a954845e3e04",
-    "assets/demo/syria/cellular-records-v1/site-2-cctv-1.mp4": "a1227f93698e433020352e2ea4c23597e6d69a6cf8f6ef15b4fd4f55a34e6ee5",
+    "assets/demo/syria/cellular-records-v1/site-1-cctv-1.mp4": "2003c67b9f787b153d4ba8aaa1d03a978a8dd15c9b298321a2b62411d747f8da",
+    "assets/demo/syria/cellular-records-v1/site-2-cctv-1.mp4": "1d89f8c8b976eb22d1a29401dafef1514227d611b310244e0af40de2c9b07777",
     "assets/demo/syria/satellite-v1/satellite-1.jpeg": "530a859c78c9f7d866bf0012c53b1932c4935ec313a0b98e752ab75b676ef3ce",
     "assets/demo/syria/satellite-v1/satellite-2.jpeg": "a7e22e7b46bd1806b95c51207d40cd9f6639c5fd79eb96c538eacbe376fe18ea",
     "assets/demo/syria/call-media-v1/call-1-transcript-ar.txt": "80d9997ae4d8a1ecec67b63bbe419ee393c531ace62ad6ed233acb13fb9721a7",
