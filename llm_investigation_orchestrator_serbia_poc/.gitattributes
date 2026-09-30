@@ -7,5 +7,6 @@ help.html -text
 index.html -text
 scenario_playback.py -text
 server.py -text
+data/syria_cellular_records_v1/IPDR-expanded.csv -text
 styles.css -text
 workstream_artifacts.py -text

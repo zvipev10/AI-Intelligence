@@ -511,3 +511,11 @@ Impact: additive runtime projections and package UI only. No new person/device/l
 ### 2026-09-30 — Present only the acquisition package as IPDR evidence
 
 User correction supersedes the earlier record-projection decision: the Evidence layer contains one IPDR package object. Individual sessions remain exclusively in raw IPDR data with unchanged REC identities and native fields. Package detail links open the raw IPDR catalog rather than another evidence-record layer.
+
+### 2026-09-30 — Keep IPDR packages only in the general Evidence layer
+
+Decision: expose the acquisition package through `evidence:all` only. Remove the separate `ipdr-package:*` catalog layer and its dedicated UI card.
+
+Rationale: the general Evidence layer already provides the package object and detail viewer, so a source-specific evidence layer duplicates the same object without adding analytical value.
+
+Impact: the package remains retrievable as evidence and still opens its 300 package-linked REC sessions in raw `events:IPDR`. Checksum, provenance, validation and raw-record links remain unchanged.

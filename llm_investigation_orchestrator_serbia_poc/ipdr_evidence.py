@@ -76,5 +76,4 @@ def attach_package(events, events_path: Path):
         **package, "evidence_type": "ipdr_package", "validation_state": "verified",
         "session_validation_counts": states,
         "observed_coverage": {"from": min(valid_times).isoformat(), "to": max(valid_times).isoformat()} if valid_times else None,
-        "catalog_layer_id": f"ipdr-package:{package['package_id']}",
     }

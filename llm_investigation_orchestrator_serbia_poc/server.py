@@ -737,12 +737,6 @@ def list_ui_layers(locale: str = "he") -> list[dict[str, Any]]:
         layers[1]["label"] = "Location layer"
         layers[-2]["label"] = "Target candidates"
         layers[-1]["label"] = "Evidence layer"
-    if ipdr_package:
-        layers.append({"id": ipdr_package["catalog_layer_id"],
-            "label": "IPDR evidence package" if locale == "en" else "חבילת ראיות IPDR",
-            "family": "evidence", "kind": "evidence",
-            "count": 1, "ipdr_package": ipdr_package,
-            "capabilities": {"table": True, "map": False, "timeline": False}})
     source_counts = Counter(event.get("source_type") or unknown_source for event in events)
     if DEMO.enabled:
         for source in DEMO.profile["sources"][locale]:
@@ -775,8 +769,6 @@ def get_ui_layer_rows(layer_id: str, locale: str = "he", filters=None) -> tuple[
         rows = load_persisted_attack_targets(entities, locations, locale=locale)
     elif layer_id == EVIDENCE_CATALOG_LAYER_ID:
         rows = load_evidence_catalog(locale)
-    elif layer_id.startswith("ipdr-package:"):
-        rows = [{**layer["ipdr_package"], "evidence_id": layer["ipdr_package"]["package_id"]}]
     elif layer_id.startswith("events:"):
         source_type = layer.get("source_type") or layer_id.split(":", 1)[1]
         unknown_source = "Unknown source" if locale == "en" else "מקור לא ידוע"

@@ -69,10 +69,11 @@ import server as ui
 import mcp_server.server as mcp
 for locale in ("he", "en"):
     layers = ui.list_ui_layers(locale)
-    package = next(layer for layer in layers if layer["id"].startswith("ipdr-package:"))
-    metadata, rows = ui.get_ui_layer_rows(package["id"], locale)
-    assert len(rows) == 1 and package["count"] == 1
-    assert metadata["kind"] == "evidence" and not metadata["capabilities"]["map"] and not metadata["capabilities"]["timeline"]
+    assert not any(layer["id"].startswith("ipdr-package:") for layer in layers)
+    evidence_layer = next(layer for layer in layers if layer["id"] == ui.EVIDENCE_CATALOG_LAYER_ID)
+    metadata, rows = ui.get_ui_layer_rows(evidence_layer["id"], locale)
+    assert len(rows) == 1 and evidence_layer["count"] == 1
+    assert metadata["kind"] == "evidence"
     assert rows[0]["evidence_type"] == "ipdr_package" and rows[0]["record_count"] == 300
     raw = ui.get_ui_layer_rows("events:IPDR", locale)[1]
     assert len(raw) == 300 and sum(bool(r["imei"]) for r in raw) == 2

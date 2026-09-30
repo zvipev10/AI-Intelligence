@@ -504,7 +504,7 @@ function activeRoleWorkspaceProfile() {
 
 function roleWorkspaceAllowsCatalogLayer(layerId) {
   const profile = activeRoleWorkspaceProfile();
-  return !profile || profile.allowedCatalogLayerIds.has(String(layerId || "")) || (String(layerId || "").startsWith("ipdr-package:") && profile.allowedCatalogLayerIds.has("events:IPDR"));
+  return !profile || profile.allowedCatalogLayerIds.has(String(layerId || ""));
 }
 
 function roleWorkspaceAllowsLayer(layer) {
@@ -1555,7 +1555,6 @@ function buildCatalogLayer(layer, rows = []) {
     items,
     capabilities: layer.capabilities || { table: true, map: false, timeline: false },
     catalogLayerId: layer.id,
-    ipdrPackage: layer.ipdr_package || null,
     catalogFilters: layer.catalog_filters || {}
   };
 }
@@ -3723,9 +3722,6 @@ let objectViewerDockTarget = null;
 
 function viewerObjects() {
   const objects = new Map();
-  (state.layerCatalog || []).forEach(layer => {
-    if (layer.ipdr_package) objects.set(`ipdr_package:${layer.ipdr_package.package_id}`, layer.ipdr_package);
-  });
   state.events.forEach(item => objects.set(`record:${item.record_id || item.event_id}`, item));
   state.entityMetadata.forEach(item => {
     const kind = isPersonEntity(item) ? "person" : "organization";
@@ -7163,8 +7159,6 @@ function renderEvidence() {
   const head = document.getElementById("evidenceHead");
   const body = document.getElementById("evidenceRows");
   const filterPanel = document.getElementById("layerFilterPanel");
-  const packageCard = document.getElementById("ipdrPackageCard");
-  if (packageCard) { packageCard.hidden = true; packageCard.innerHTML = ""; }
   if (!overlay || !tabs || !head || !body) return;
 
   const tableLayers = roleWorkspaceLayers().filter(layer => layer.capabilities.table);
@@ -7225,10 +7219,6 @@ function renderEvidence() {
   if (timelineTabs) timelineTabs.innerHTML = layerTabsMarkup;
 
   if (!activeLayer) return;
-  if (packageCard && activeLayer.ipdrPackage) {
-    packageCard.hidden = false;
-    packageCard.innerHTML = ipdrPackageLinkHtml(activeLayer.ipdrPackage, "ipdr_package");
-  }
   ensureLayerFilterState(activeLayer);
   renderLayerFilterPanel(activeLayer);
   const activeItems = activeLayer.visible ? itemsForLayerPresentation(activeLayer) : [];
