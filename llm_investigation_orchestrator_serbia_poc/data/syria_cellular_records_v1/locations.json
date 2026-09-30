@@ -1,23 +1,21 @@
 {
   "LOC-SYR-001": {
-    "name": "Demo Site 1",
-    "latitude": 35.0,
-    "longitude": 38.5,
+    "name": "CCTV Site 1",
+    "latitude": 35.064595,
+    "longitude": 36.284253,
     "country": "Syria",
-    "region": "Central Syria",
-    "type": "demonstration site",
-    "precision": "scenario estimate",
-    "locality": "Site 1"
+    "type": "CCTV location",
+    "precision": "user-supplied coordinates",
+    "locality": "CCTV Site 1"
   },
   "LOC-SYR-002": {
-    "name": "Demo Site 2",
-    "latitude": 35.045,
-    "longitude": 38.5,
+    "name": "CCTV Site 2 — petrol station",
+    "latitude": 35.062769,
+    "longitude": 36.275154,
     "country": "Syria",
-    "region": "Central Syria",
-    "type": "demonstration site",
-    "precision": "scenario estimate",
-    "locality": "Site 2"
+    "type": "petrol station CCTV location",
+    "precision": "user-supplied coordinates",
+    "locality": "Petrol station"
   },
   "LOC-SYR-ADINT-001": {
     "name": "ADINT observation point 001",
