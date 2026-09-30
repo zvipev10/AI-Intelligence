@@ -1,123 +1,75 @@
-# AI Agent Instructions
+# AI Intelligence — Codex project instructions
 
-This repository uses an AI-assisted delivery workflow.
+This folder is the AI Intelligence Codex project. Treat these instructions as
+the single authoritative starting context for a new conversation.
 
-## Always follow
+## Project source and documentation
 
-1. Use `.ai/skills/base-team-workflow/SKILL.md` for every meaningful task.
-2. For new capabilities or meaningful feature changes, use `.ai/skills/end-to-end-feature-delivery/SKILL.md`.
-3. For PR review, checkpoint review, QA planning, validation, or product acceptance, use `.ai/skills/review-and-qa/SKILL.md`.
-4. At the end of meaningful work, use `.ai/skills/context-maintenance/SKILL.md`.
+The current application source is in
+`llm_investigation_orchestrator_serbia_poc/`. Before investigating, planning,
+changing, testing, or deploying it, perform the following remote check **once,
+at the beginning of a new conversation**. Do not repeat it for follow-up
+requests in the same conversation unless the user explicitly asks for a
+refresh. Inspect the remote `AI-Intelligence` repository directly and verify
+that remote `main` contains the tip of every other remote branch: each branch
+tip must be an ancestor of `main`. This is a commit-graph check, not a
+timestamp comparison.
 
-## Context loading rule
+Do this before cloning, fetching into, pulling, or using any local application
+checkout. First use a direct remote comparison method when available. If that
+method cannot prove ancestry for every branch, use this authorized fallback:
+create a disposable bare Git repository in a temporary directory, fetch only
+the remote branch refs into it, and use Git ancestry checks to determine
+whether every branch tip is an ancestor of `main`. This scratch repository is
+only a remote-verification aid; it is not the application clone, must not be
+used for development, and must be removed after the check.
 
-Do not load all docs by default.
+Only report a verification failure after both methods fail. If another branch
+contains commits not merged into `main`, or if `main` is unavailable, stop,
+report the affected branch names and commit relationship, and ask for next
+instructions. Do not enumerate every historical branch unless the user asks.
 
-Start with:
-- the current user request, issue, or PR
-- this `AGENTS.md`
-- the relevant skill file
-- directly relevant source files
-- the active capability artifact under `.ai/work/capabilities/<capability-slug>/` when working on a capability
+Only after remote `main` is confirmed to be the latest integrated branch, clone
+or update a local checkout when authorized. Then verify that the local
+checkout's `main` resolves to the exact remote `main` commit that was checked.
+If it differs because the remote changed, a checkout is stale, or the state
+cannot be verified, stop, report the mismatch, and ask for next instructions.
+Do not automatically pull, reset, or otherwise alter an existing clone. Only
+after a checkout is confirmed to match the remote commit, read:
 
-Only load these docs if needed:
-- `docs/ai-workflow.md`
-- `docs/decisions.md`
-- `docs/product.md`
-- `docs/architecture.md`
-- `docs/glossary.md`
+1. `docs/product-context.md`
+2. `docs/architecture.md`
+3. `docs/product.md`
+4. `docs/operations.md`
+5. `docs/decisions.md`
+6. `docs/demo-scenarios.md` for scenario, dataset, or demonstration work.
 
-If a needed doc does not exist, say so and continue with the available context.
+Those documents are the durable project record. Do not rely on an earlier chat
+transcript, a historical artifact, or remembered VM state. Inspect current
+source and tests as well: documentation defines the intended contract; code
+and tests define executable behavior.
 
-## Capability workspace rule
+## Scope boundary
 
-For every meaningful new capability, create or use:
+For AI Intelligence work, use only files under this repository. Do not infer
+the AI Intelligence architecture, deployment process, data model, or current
+state from files outside this repository.
 
-`.ai/work/capabilities/<capability-slug>/`
+## Production deployment
 
-Use this workspace to store:
-- `capability-brief.md`
-- `developer-review.md`
-- `ux-review.md`
-- `qa-review.md`
-- `execution-plan.md`
-- `checkpoint-001.md`, `checkpoint-002.md`, etc.
-- `handoff-summary.md`
+Before any VM check, deployment, recovery, or scenario activation, read
+`docs/operations.md` in full. For the maintained VM connection and deployment
+helpers, inspect `llm_investigation_orchestrator_serbia_poc/mcp_server/remote_deploy_*.py`.
+Do not guess a host, key, service name, copy procedure, or deployed version.
 
-Do not rely on chat history as the handoff between roles.
+Establish live state from the VM's `/api/status` and its installed release
+manifest before claiming what is deployed. Follow the operations guide's
+separate procedures for UI-only, server/gateway, and dataset/index changes.
+Never commit credentials, private keys, mutable runtime state, or backups.
 
-The handoff from product to development is the saved capability artifact, usually:
-- `capability-brief.md`
-- then `developer-review.md`
-- then `execution-plan.md`
+## Working conventions
 
-## Publishing rule
-
-Shared artifacts must not remain only in a local workspace when they are needed for another role.
-
-After creating or updating any capability artifact, checkpoint artifact, handoff artifact, repo workflow doc, issue template, or PR template:
-1. Run `git status --short`.
-2. Identify files changed by the current task.
-3. Identify unrelated dirty files.
-4. Stage only files related to the current task.
-5. Commit the intended files with a clear message.
-6. Push the commit to a shared branch.
-7. Prefer a draft PR for reviewable work; update the PR description with links or paths to the relevant artifacts.
-
-Do not stage unrelated files unless explicitly instructed.
-
-Do not push directly to `main` unless explicitly instructed.
-
-If publishing is blocked by missing credentials, permissions, remote configuration, or human approval, say so clearly and provide the exact files that still need to be published.
-
-## Execution rule
-
-For meaningful capabilities, do not implement everything in one hidden pass.
-
-Create:
-1. capability brief
-2. role reviews as needed
-3. execution plan
-4. execution slices
-5. checkpoint summaries
-6. final handoff
-
-Stop for human review when the change affects:
-- product behavior
-- UX
-- API/interface
-- data model
-- architecture
-- security
-- permissions
-- performance
-- release scope
-
-## Scope rule
-
-Keep changes focused on the task.
-
-Do not:
-- make unrelated refactors
-- change public behavior without saying so
-- add dependencies without explaining why
-- silently ignore failing tests
-- invent product requirements
-- change architecture without a checkpoint
-- implement product code during capability definition or role-review phases
-
-## Output rule
-
-Every meaningful session must end with:
-- summary
-- changed files
-- tests/checks run
-- publishing status
-- assumptions
-- risks
-- next step
-- suggested docs updates
-
-## Documentation ownership
-
-Keep one authoritative home per fact: `docs/product.md` for analyst behavior, `docs/architecture.md` for implementation contracts, `docs/demo-scenarios.md` for dataset narratives/versions, `docs/operations.md` for procedures, and `docs/decisions.md` for rationale. README and handoff entry points link to these guides instead of copying them. Contributor workflow, glossary and quality fixtures remain supporting references. Capability artifacts preserve task history; they do not override current guides. Inspect live status/release manifests instead of copying volatile deployment snapshots into multiple documents. When consolidating, preserve superseded source material and record its destination.
+Check the active source repository's `git status` and recent history at the
+start of a task. Preserve unrelated changes. When work changes a durable
+product, architecture, data, deployment, or operational decision, update the
+relevant document in `docs/` in the same change.
