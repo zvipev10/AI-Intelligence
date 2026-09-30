@@ -24,11 +24,6 @@ whether every branch tip is an ancestor of `main`. This scratch repository is
 only a remote-verification aid; it is not the application clone, must not be
 used for development, and must be removed after the check.
 
-Only report a verification failure after both methods fail. If another branch
-contains commits not merged into `main`, or if `main` is unavailable, stop,
-report the affected branch names and commit relationship, and ask for next
-instructions. Do not enumerate every historical branch unless the user asks.
-
 When a local AI-Intelligence checkout already exists, compare its active `HEAD`
 and the content hash of its `AGENTS.md` with the verified remote `main` commit
 and that commit's `AGENTS.md`. If either differs, report the exact commit and
@@ -37,6 +32,14 @@ reset, switch branches, overwrite `AGENTS.md`, or otherwise synchronize it
 automatically. Ask the user whether to keep the local state, update it, or take
 a fresh clone. A local checkout may be treated as authoritative only when both
 its active commit and `AGENTS.md` match the verified remote `main`.
+
+Collect the remote-branch result and local-alignment result before responding.
+If another branch contains commits not merged into `main`, `main` is
+unavailable, a local checkout differs, or verification fails, stop and give
+one concise report covering every detected condition. Include affected branch
+names and commit relationships, but do not enumerate every historical branch
+unless the user asks. Ask the user for one decision: keep the local state,
+update it, take a fresh clone, or proceed despite the reported branch state.
 
 Only after remote `main` is confirmed to be the latest integrated branch, clone
 or update a local checkout when authorized. Then verify that the local
