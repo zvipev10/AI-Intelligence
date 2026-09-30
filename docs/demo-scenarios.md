@@ -86,3 +86,7 @@ cellular-records-v6/profile29 restores REC-SYR-CALL-002 with the supplied MP3, s
 cellular-records-v7/profile30 moves telecom identity data and its relationships into each person entity's `telecom` object. Arman's entity records the IMEI, MSISDN, IMSI, 20 reference records, and both call parties; Omar's entity records the IMEI, IMSI, and both call parties.
 
 cellular-records-v8/profile31 distinguishes the device identifier from a subscriber identity extracted through IMEI-linked cellular-geolocation correlation. Arman's candidate MSISDN and IMSI remain in the entity as `extracted_subscriber_identity`, with their evidence links and calls. An analyst can explicitly approve that candidate; approval is preserved as an entity-level runtime overlay for the active Syria dataset, so future openings show the identifiers as approved without an investigation-specific approval step or a source-data rewrite.
+
+### IPDR acquisition metadata
+
+The existing 300-row `IPDR-expanded.csv` in `syria_cellular_records_v1` is now described by `ipdr-package.json`. Package `IPDRPKG-HOSHENTEL-4FBC961A4FBA` is anchored to the preserved source checksum, not a replacement dataset. Only the two source-supplied IMEIs remain populated; no deterministic IMEI/MAC enrichment is added. `ip_out` values remain untouched and its meaning is marked undocumented; the proposed enriched NAT-flow package's semantics are not assumed for this file. Acquisition/case metadata is unavailable and remains unknown. Dataset/profile identities and original checksummed data are unchanged.

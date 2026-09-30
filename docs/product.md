@@ -64,3 +64,9 @@ Saved questions restore complete answers, steps and result presentation without 
 Scenario selection preserves Kosovo work and does not copy its example investigations or learned memory into Syria. Locale isolation continues inside scenario state. Agents serve the active scenario only; concurrent scenario runtimes are outside the accepted scope. One bounded application execution slot and offline semantic-index builds accommodate the constrained VM. Shared messaging integrations can briefly pause during a switch, as accepted by the user.
 
 See [architecture](architecture.md) for interfaces and state ownership. Scenario metadata is demonstration data. Supplied media retains its stated provenance; its authenticity is not independently established. Evaluator truth stays offline and must never enter runtime retrieval, prompts, evidence creation or user-facing layers.
+
+## IPDR evidence packages
+
+Open **IPDR evidence package** in the Evidence catalog to inspect the existing 300 source records in Table. The package card links to metadata, checksum, synthetic classification, source-field limitations, observed coverage and validation totals. Unknown acquisition details remain explicitly unknown. Package membership does not establish a person, device ownership or location.
+
+An IPDR record retains its REC identity, native values and missing identifiers; the viewer exposes its package and original CSV row reference. Timeline entries show both original session times, label invalid/unknown intervals and open the same record. These geometry-free observations do not offer Map placement. The original IPDR source catalog remains available, and source files are preserved unchanged.

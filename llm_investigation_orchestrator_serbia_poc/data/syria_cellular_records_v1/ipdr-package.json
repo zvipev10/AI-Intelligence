@@ -1,0 +1,32 @@
+{
+  "schema_version": "ipdr-package-v1",
+  "package_id": "IPDRPKG-HOSHENTEL-4FBC961A4FBA",
+  "ingest_batch_id": "IPDRBATCH-4FBC961A4FBA",
+  "provider": null,
+  "source_system": "HOSHENTEL",
+  "filename": "IPDR-expanded.csv",
+  "sha256": "4fbc961a4fba1d91d69f0e8bc8f1fb68e9d56bcb43f7708a4a72f45ad281f7e6",
+  "record_count": 300,
+  "classification": "synthetic_demo",
+  "acquired_at": null,
+  "imported_at": null,
+  "authority_case_reference": null,
+  "requested_scope": null,
+  "chain_of_custody_note": "Original supplied CSV preserved byte-for-byte. Earlier acquisition and custody details are unavailable.",
+  "field_semantics": {
+    "start_time": "Source session start with explicit timezone",
+    "end_time": "Source session end with explicit timezone",
+    "ip_out": "Source meaning undocumented; values preserved without interpretation",
+    "imei": "Source-provided identifier; missing values remain blank",
+    "mac": "Source-provided identifier; missing values remain blank"
+  },
+  "transformations": [
+    "Header whitespace trimmed in canonical projection; source values unchanged.",
+    "Native record_id exposed as source_record_id; existing REC identity retained."
+  ],
+  "limitations": [
+    "No subscriber, ownership, payload or location asserted.",
+    "No synthetic identifier enrichment added.",
+    "Package scope is unknown; observed coverage is derived separately."
+  ]
+}

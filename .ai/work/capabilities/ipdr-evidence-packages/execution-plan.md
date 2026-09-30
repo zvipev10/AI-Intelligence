@@ -1,0 +1,2 @@
+# Execution plan
+Reviewed scope explicitly authorized for implementation. Slice 1: manifest and shared validated package/projection module, integrate UI and MCP loaders. Slice 2: evidence catalog package entry, source-compatible Table/Timeline/viewer and package links. Slice 3: integration/regression checks, owning docs and handoff. Reversible additive metadata only; rollback code/catalog exposure without changing original datasets or state. Keep historical raw catalog IDs supported. No fabricated acquisition or field semantics.

@@ -19,6 +19,7 @@ from pathlib import Path
 from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from ipdr_evidence import attach_package
 from demo_runtime import DemoRuntime
 DEMO = DemoRuntime(Path(__file__).resolve().parent.parent)
 DEMO.bind_mcp_environment()
@@ -196,6 +197,7 @@ def parse_time(value: str | None) -> datetime | None:
 def load_events() -> list[dict[str, Any]]:
     with DATA_PATH.open(encoding="utf-8-sig", newline="") as handle:
         events = list(csv.DictReader(handle))
+    attach_package(events, DATA_PATH)
     for event in events:
         location = LOCATIONS.get(event["location_id"], {})
         event["location_name"] = location.get("name", event["location_id"])
@@ -206,6 +208,7 @@ def load_events() -> list[dict[str, Any]]:
 
 
 EVENTS = load_events()
+IPDR_PACKAGE = attach_package(EVENTS, DATA_PATH)
 EVENT_BY_ID = {event["event_id"]: event for event in EVENTS}
 EVENTS_BY_ID = {event["event_id"]: event for event in EVENTS}
 FUSION_EVENTS_BY_CONTEXT: dict[tuple[str, str], list[dict[str, Any]]] = defaultdict(list)
@@ -538,6 +541,7 @@ def public_event(event: dict[str, Any]) -> dict[str, Any]:
     entity_id = event_entity_id(event)
     entity = ENTITY_PRESENTATIONS.get(entity_id or "", {})
     return {
+        **{key: event[key] for key in ("evidence_type", "record_type", "package_id", "ingest_batch_id", "source_reference", "validation") if key in event},
         "event_id": event["event_id"],
         "timestamp_utc": event["timestamp_utc"],
         "timestamp_basis": event.get("timestamp_basis", ""),
@@ -3229,6 +3233,12 @@ def _fusion_events(event_ids: list[str]) -> list[dict[str, Any]]:
 def resolve_evidence(evidence_id: str) -> dict[str, Any] | None:
     """Resolve an on-demand projected observation or a persisted fused object."""
     evidence_id = str(evidence_id or "").strip()
+    if IPDR_PACKAGE and evidence_id == IPDR_PACKAGE["package_id"]:
+        return {**IPDR_PACKAGE, "evidence_id": evidence_id,
+                "source_record_ids": [event["event_id"] for event in EVENTS if event.get("package_id") == evidence_id and event_visible(event)]}
+    if evidence_id.startswith("REC-"):
+        event = visible_event(evidence_id)
+        return project_event(public_event(event)) if event and event.get("source_type") == "IPDR" else None
     if evidence_id.startswith("EVD-REC-"):
         event = visible_event(evidence_id[4:])
         return project_event(public_event(event)) if event is not None else None

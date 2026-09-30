@@ -19,6 +19,7 @@ from functools import wraps
 from collections import Counter, defaultdict
 from datetime import datetime, timezone
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
+from ipdr_evidence import attach_package, record_evidence
 from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qs, unquote, urlparse
@@ -402,6 +403,7 @@ def load_ui_events(locale: str = "he") -> list[dict[str, Any]]:
         return []
     with events_path.open(encoding="utf-8-sig", newline="") as handle:
         events = list(csv.DictReader(handle))
+    attach_package(events, events_path)
     apply_person_telecom_links(events, load_person_telecom_links(events_path, entities_path))
     for event in events:
         if locale == "en":
@@ -639,7 +641,8 @@ def load_evidence_catalog(locale: str = "he") -> list[dict[str, Any]]:
             _EVIDENCE_CATALOG_CACHE[locale] = rows if isinstance(rows, list) else []
         except (OSError, json.JSONDecodeError):
             _EVIDENCE_CATALOG_CACHE[locale] = []
-    rows = _EVIDENCE_CATALOG_CACHE[locale]
+    rows = list(_EVIDENCE_CATALOG_CACHE[locale])
+    rows.extend(record_evidence(event) for event in visible_ui_events(locale) if event.get("evidence_type") == "ipdr_record")
     timeframe = active_playback_timeframe()
     if timeframe is None:
         return rows
@@ -687,7 +690,8 @@ def list_ui_layers(locale: str = "he") -> list[dict[str, Any]]:
     locale = normalize_locale(locale)
     events, entities, locations = ui_layer_data(locale)
     targets = load_persisted_attack_targets(entities, locations, locale=locale)
-    evidence_count = evidence_catalog_count(locale)
+    ipdr_package = attach_package(load_ui_events(locale), localized_dataset_paths(locale)[0])
+    evidence_count = evidence_catalog_count(locale) + sum(event.get("evidence_type") == "ipdr_record" for event in events)
     unknown_source = "Unknown source" if locale == "en" else "מקור לא ידוע"
     layers = [
         {
@@ -721,13 +725,19 @@ def list_ui_layers(locale: str = "he") -> list[dict[str, Any]]:
         "family": "evidence",
         "kind": "evidence",
         "count": evidence_count,
-        "capabilities": {"table": True, "map": True, "timeline": True},
+        "capabilities": {"table": True, "map": evidence_catalog_count(locale) > 0, "timeline": True},
     })
     if locale == "en":
         layers[0]["label"] = "Entity layer"
         layers[1]["label"] = "Location layer"
         layers[-2]["label"] = "Target candidates"
         layers[-1]["label"] = "Evidence layer"
+    if ipdr_package:
+        layers.append({"id": ipdr_package["catalog_layer_id"],
+            "label": "IPDR evidence package" if locale == "en" else "חבילת ראיות IPDR",
+            "family": "evidence", "kind": "events", "source_type": "IPDR",
+            "count": sum(event.get("package_id") == ipdr_package["package_id"] for event in events), "ipdr_package": ipdr_package,
+            "capabilities": {"table": True, "map": False, "timeline": True}})
     source_counts = Counter(event.get("source_type") or unknown_source for event in events)
     if DEMO.enabled:
         for source in DEMO.profile["sources"][locale]:
@@ -760,6 +770,8 @@ def get_ui_layer_rows(layer_id: str, locale: str = "he", filters=None) -> tuple[
         rows = load_persisted_attack_targets(entities, locations, locale=locale)
     elif layer_id == EVIDENCE_CATALOG_LAYER_ID:
         rows = load_evidence_catalog(locale)
+    elif layer_id.startswith("ipdr-package:"):
+        rows = [event for event in events if event.get("package_id") == layer["ipdr_package"]["package_id"]]
     elif layer_id.startswith("events:"):
         source_type = layer.get("source_type") or layer_id.split(":", 1)[1]
         unknown_source = "Unknown source" if locale == "en" else "מקור לא ידוע"

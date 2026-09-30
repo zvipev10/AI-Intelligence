@@ -504,7 +504,7 @@ function activeRoleWorkspaceProfile() {
 
 function roleWorkspaceAllowsCatalogLayer(layerId) {
   const profile = activeRoleWorkspaceProfile();
-  return !profile || profile.allowedCatalogLayerIds.has(String(layerId || ""));
+  return !profile || profile.allowedCatalogLayerIds.has(String(layerId || "")) || (String(layerId || "").startsWith("ipdr-package:") && profile.allowedCatalogLayerIds.has("events:IPDR"));
 }
 
 function roleWorkspaceAllowsLayer(layer) {
@@ -1555,6 +1555,7 @@ function buildCatalogLayer(layer, rows = []) {
     items,
     capabilities: layer.capabilities || { table: true, map: false, timeline: false },
     catalogLayerId: layer.id,
+    ipdrPackage: layer.ipdr_package || null,
     catalogFilters: layer.catalog_filters || {}
   };
 }
@@ -3722,6 +3723,9 @@ let objectViewerDockTarget = null;
 
 function viewerObjects() {
   const objects = new Map();
+  (state.layerCatalog || []).forEach(layer => {
+    if (layer.ipdr_package) objects.set(`ipdr_package:${layer.ipdr_package.package_id}`, layer.ipdr_package);
+  });
   state.events.forEach(item => objects.set(`record:${item.record_id || item.event_id}`, item));
   state.entityMetadata.forEach(item => {
     const kind = isPersonEntity(item) ? "person" : "organization";
@@ -3729,7 +3733,10 @@ function viewerObjects() {
   });
   state.layers.forEach(layer => {
     if (layer.kind === "events") (layer.items || []).forEach(item => objects.set(`record:${item.record_id || item.event_id}`, item));
-    if (layer.kind === "evidence") (layer.items || []).forEach(item => objects.set(`evidence:${item.evidence_id}`, item));
+    if (layer.kind === "evidence") (layer.items || []).forEach(item => {
+      objects.set(`evidence:${item.evidence_id}`, item);
+      if (isIpdrRecord(item)) objects.set(`record:${item.event_id}`, item);
+    });
     if (layer.kind === "assessments") (layer.items || []).forEach(item => objects.set(`assessment:${item.assessment_id}`, item));
     if (["entity_metadata", "person_entities"].includes(layer.kind)) (layer.items || []).forEach(item => {
       const kind = isPersonEntity(item) ? "person" : "organization";
@@ -3976,14 +3983,16 @@ function isPersonEntity(item) {
 }
 
 function viewerFields(item, kind) {
+  if (kind === "ipdr_package") return ["package_id", "classification", "provider", "source_system", "filename", "sha256", "record_count", "validation_state", "session_validation_counts", "observed_coverage", "requested_scope", "acquired_at", "imported_at", "ingest_batch_id", "authority_case_reference", "chain_of_custody_note", "field_semantics", "transformations", "limitations"].map(key => [key, item[key] ?? activeLocaleText("לא ידוע", "Unknown")]);
   if (kind === "record" && isCellularGeolocationRecord(item)) return ["event_id", "timestamp_utc", "imei", "sim", "location_name"].map(key => [key, item[key] || (key === "location_name" ? item.location_id : "") || "—"]);
   const hidden = new Set(["event_summary", "canonical_name", "media", "image_series", "video_url", "audio_url", "image_url", "raw_data_references", "call_started_at_utc", "call_duration_seconds", "side_a_imei", "side_a_number", "side_a_location_id", "side_a_location_name", "side_b_imei", "side_b_number", "side_b_location_id", "side_b_location_name", "call_transcript", "call_transcript_en", "demo_media"]);
   if (kind === "record" && isIpdrRecord(item)) ["entity_name", "location_name", "location_accuracy_m"].forEach(key => hidden.add(key));
   if (kind === "record" && isAdintRecord(item) && item.device_id) {
     return ["event_id", "device_id", "timestamp_utc", "brand", "model", "os", "keyboard_language", "ip", "latitude", "longitude", "accuracy_m"].map(key => [key, item[key] == null || item[key] === "" ? "—" : item[key]]);
   }
-  if (kind === "record" && isIpdrRecord(item) && item.source_record_id) {
-    return IPDR_SOURCE_FIELDS.map(key => [key, item[key] == null || item[key] === "" ? "—" : item[key]]);
+  if (["record", "evidence"].includes(kind) && isIpdrRecord(item) && item.source_record_id) {
+    const keys = item.package_id ? ["event_id", "evidence_type", "record_type", "package_id", "ingest_batch_id", "source_reference", "validation", ...IPDR_SOURCE_FIELDS] : IPDR_SOURCE_FIELDS;
+    return keys.map(key => [key, item[key] == null || item[key] === "" ? "—" : item[key]]);
   }
   const preferred = kind === "person"
     ? ["identity_status", "given_name", "family_name", "gender", "age_years", "date_of_birth", "place_of_birth", "nationality", "ethnicity", "occupation", "residence", "previous_residences", "role", "affiliations", "connections", "military_service", "languages", "associated_entity_ids", "identifiers", "aliases", "event_count", "top_locations", "top_sources", "biographical_notes"]
@@ -3999,6 +4008,28 @@ function viewerFields(item, kind) {
 
 function viewerFieldLabel(key) {
   const labels = {
+    package_id: ["חבילת ראיות", "Evidence package"],
+    evidence_type: ["סוג ראיה", "Evidence type"],
+    record_type: ["סוג רשומה", "Record type"],
+    ingest_batch_id: ["אצוות קליטה", "Ingest batch"],
+    source_reference: ["הפניה למקור", "Source reference"],
+    validation: ["בדיקת זמנים", "Session validation"],
+    provider: ["ספק", "Provider"],
+    filename: ["קובץ מקור", "Source file"],
+    sha256: ["חתימת SHA-256", "SHA-256 checksum"],
+    record_count: ["מספר רשומות", "Record count"],
+    classification: ["סיווג", "Classification"],
+    validation_state: ["מצב אימות", "Validation state"],
+    session_validation_counts: ["בדיקות זמן", "Session validation counts"],
+    observed_coverage: ["טווח נצפה", "Observed coverage"],
+    requested_scope: ["היקף מבוקש", "Requested scope"],
+    acquired_at: ["זמן קבלה", "Acquisition time"],
+    imported_at: ["זמן קליטה", "Import time"],
+    authority_case_reference: ["אסמכתת תיק", "Authority/case reference"],
+    chain_of_custody_note: ["שרשרת משמורת", "Chain of custody"],
+    field_semantics: ["משמעות שדות", "Field semantics"],
+    transformations: ["עיבוד", "Transformations"],
+    limitations: ["מגבלות", "Limitations"],
     start_time: ["תחילת חיבור", "Start time"],
     end_time: ["סיום חיבור", "End time"],
     ip_source: ["IP מקור", "Source IP"],
@@ -4381,7 +4412,7 @@ async function savePolygonToInvestigationMemory(polygon, comment = "", confirmed
 }
 
 function openObjectViewer(kind, id, trigger = document.activeElement) {
-  if (!['record', 'organization', 'person', 'evidence', 'assessment'].includes(kind)) return false;
+  if (!['record', 'organization', 'person', 'evidence', 'assessment', 'ipdr_package'].includes(kind)) return false;
   const item = viewerObjects().get(`${kind}:${id}`);
   if (!item) return false;
   objectViewerReturnFocus = trigger;
@@ -4389,10 +4420,11 @@ function openObjectViewer(kind, id, trigger = document.activeElement) {
   viewer.classList.remove("is-maximized");
   const title = kind === "record"
     ? (isUavVideoRecord(item) ? activeLocaleText("תצפית וידאו מכטב״ם", "UAV video observation") : isCellularCallRecord(item) ? activeLocaleText("שיחה סלולרית", "Cellular call") : (item.source_type || activeLocaleText("רשומת מקור", "Source record")))
+    : kind === "ipdr_package" ? activeLocaleText("חבילת ראיות IPDR", "IPDR evidence package")
     : kind === "evidence" ? (item.object_class || item.claim_type || id)
     : kind === "assessment" ? (item.title || id)
     : (item.canonical_name || id);
-  document.getElementById("objectViewerKind").textContent = kind === "record" ? activeLocaleText("רשומה גולמית", "Raw record") : kind === "person" ? activeLocaleText("אדם", "Person") : kind === "evidence" ? activeLocaleText("אובייקט ראיה", "Evidence object") : kind === "assessment" ? activeLocaleText("הערכת אויב", "Enemy assessment") : activeLocaleText("ישות", "Entity");
+  document.getElementById("objectViewerKind").textContent = kind === "ipdr_package" ? activeLocaleText("חבילת ראיות", "Evidence package") : kind === "record" ? (isIpdrRecord(item) && item.evidence_type ? activeLocaleText("ראיית IPDR", "IPDR evidence") : activeLocaleText("רשומה גולמית", "Raw record")) : kind === "person" ? activeLocaleText("אדם", "Person") : kind === "evidence" ? activeLocaleText("אובייקט ראיה", "Evidence object") : kind === "assessment" ? activeLocaleText("הערכת אויב", "Enemy assessment") : activeLocaleText("ישות", "Entity");
   document.getElementById("objectViewerTitle").textContent = title;
   document.getElementById("objectViewerId").textContent = id;
   const objectMemoryAction = document.getElementById("objectMemoryAction");
@@ -4427,7 +4459,7 @@ function openObjectViewer(kind, id, trigger = document.activeElement) {
   const cellularHtml = kind === "record" ? cellularCallHtml(item) : "";
   const fields = viewerFields(item, kind).map(([key,value]) => `<div class="object-viewer-field"><dt>${escapeHtml(viewerFieldLabel(key))}</dt><dd>${escapeHtml(viewerValue(value))}</dd></div>`).join("");
   const entityMapHtml = kind === "organization" ? entityLocationMapHtml(item) : "";
-  document.getElementById("objectViewerBody").innerHTML = `${mediaHtml}${cellularHtml}${personViewer ? personWorkspaceHtml(item) : ""}${entityMapHtml}${["record", "evidence", "assessment"].includes(kind) ? `<p class="object-viewer-summary">${escapeHtml(item.event_summary || item.summary || "-")}</p>` : ""}${personViewer ? "" : `<dl class="object-viewer-fields">${fields}</dl>`}${kind === "organization" ? organizationEvidenceHtml(item) : kind === "evidence" ? evidenceProvenanceHtml(item) : kind === "assessment" ? assessmentEvidenceHtml(item) : ""}`;
+  document.getElementById("objectViewerBody").innerHTML = `${mediaHtml}${cellularHtml}${ipdrPackageLinkHtml(item, kind)}${personViewer ? personWorkspaceHtml(item) : ""}${entityMapHtml}${["record", "evidence", "assessment"].includes(kind) ? `<p class="object-viewer-summary">${escapeHtml(item.event_summary || item.summary || "-")}</p>` : ""}${personViewer ? "" : `<dl class="object-viewer-fields">${fields}</dl>`}${kind === "organization" ? organizationEvidenceHtml(item) : kind === "evidence" ? evidenceProvenanceHtml(item) : kind === "assessment" ? assessmentEvidenceHtml(item) : ""}`;
   viewer.hidden = false;
   setViewerMaximized(false);
   if (cellularCallViewer) initializeCellularViewer(item);
@@ -6942,6 +6974,22 @@ function callTimelineEntry(event) {
   </button>`;
 }
 
+function ipdrPackageLinkHtml(item, kind) {
+  if (kind === "ipdr_package") {
+    return `<section class="object-viewer-summary"><button type="button" class="object-viewer-open" data-viewer-kind="ipdr_package" data-viewer-id="${escapeHtml(item.package_id)}">${escapeHtml(item.package_id)}</button><p>${escapeHtml(activeLocaleText("נתוני הדגמה סינתטיים", "Synthetic demonstration data"))} · ${escapeHtml(item.record_count)} ${escapeHtml(activeLocaleText("רשומות", "records"))}</p><button type="button" data-ipdr-package-open="${escapeHtml(item.catalog_layer_id)}">${escapeHtml(activeLocaleText("פתח רשומות חבילה", "Open package records"))}</button></section>`;
+  }
+  if (!isIpdrRecord(item) || !item.package_id) return "";
+  return `<section class="object-viewer-summary"><button type="button" class="object-viewer-open" data-viewer-kind="ipdr_package" data-viewer-id="${escapeHtml(item.package_id)}">${escapeHtml(activeLocaleText("חבילת ראיות", "Evidence package"))}: ${escapeHtml(item.package_id)}</button></section>`;
+}
+
+function ipdrTimelineEntry(event) {
+  const id = event.event_id || event.record_id;
+  const times = `${event.start_time || activeLocaleText("לא ידוע", "Unknown")} → ${event.end_time || activeLocaleText("לא ידוע", "Unknown")}`;
+  const state = event.validation?.state || "unknown";
+  const validation = state === "valid" ? activeLocaleText("מרווח תקין", "Valid interval") : state === "invalid" ? activeLocaleText("מרווח לא תקין", "Invalid interval") : activeLocaleText("מרווח לא ידוע", "Unknown interval");
+  return `<button type="button" class="call-timeline-entry" data-viewer-kind="record" data-viewer-id="${escapeHtml(id)}"><span dir="ltr">${escapeHtml(times)}</span><strong dir="ltr">${escapeHtml(event.ip_source || "—")} → ${escapeHtml(event.ip_target || "—")}</strong><span>${escapeHtml(validation)}</span><span dir="ltr">${escapeHtml(id)}</span></button>`;
+}
+
 function renderTimeline() {
   const timeline = document.getElementById("timeline");
   const eventTimelineItems = visibleLayers("timeline")
@@ -6970,7 +7018,7 @@ function renderTimeline() {
       <div class="timeline-title">${escapeHtml(layer.label)} · ${escapeHtml(activeLocaleText(`${item.count.toLocaleString("he-IL")} אירועים`, `${item.count.toLocaleString("en-US")} events`))}</div>
       <div class="timeline-summary">${escapeHtml(item.summary)}</div>
     </article>`).join("");
-  const eventHtml = eventTimelineItems.sort((a, b) => a.sort - b.sort).map(({ layer, event }) => isCellularCallRecord(event) ? callTimelineEntry(event) : `
+  const eventHtml = eventTimelineItems.sort((a, b) => a.sort - b.sort).map(({ layer, event }) => isIpdrRecord(event) ? ipdrTimelineEntry(event) : isCellularCallRecord(event) ? callTimelineEntry(event) : `
     <article class="timeline-item" style="${layerColorStyle(layer)}">
       <span class="timeline-dot"></span>
       <div class="timeline-time">${escapeHtml(String(event.timestamp_utc || "").replace("T", " ").replace("Z", ""))}</div>
@@ -7115,6 +7163,8 @@ function renderEvidence() {
   const head = document.getElementById("evidenceHead");
   const body = document.getElementById("evidenceRows");
   const filterPanel = document.getElementById("layerFilterPanel");
+  const packageCard = document.getElementById("ipdrPackageCard");
+  if (packageCard) { packageCard.hidden = true; packageCard.innerHTML = ""; }
   if (!overlay || !tabs || !head || !body) return;
 
   const tableLayers = roleWorkspaceLayers().filter(layer => layer.capabilities.table);
@@ -7175,6 +7225,10 @@ function renderEvidence() {
   if (timelineTabs) timelineTabs.innerHTML = layerTabsMarkup;
 
   if (!activeLayer) return;
+  if (packageCard && activeLayer.ipdrPackage) {
+    packageCard.hidden = false;
+    packageCard.innerHTML = ipdrPackageLinkHtml(activeLayer.ipdrPackage, "ipdr_package");
+  }
   ensureLayerFilterState(activeLayer);
   renderLayerFilterPanel(activeLayer);
   const activeItems = activeLayer.visible ? itemsForLayerPresentation(activeLayer) : [];
@@ -7184,7 +7238,7 @@ function renderEvidence() {
     enhanceResultsTable(activeLayer);
     return;
   }
-  if (activeLayer.kind === "evidence") {
+  if (activeLayer.kind === "evidence" && !(activeLayer.items?.length && activeLayer.items.every(isIpdrRecord))) {
     head.innerHTML = `<tr><th class="result-map-action-column"></th><th>${escapeHtml(activeLocaleText("ראיה", "Evidence"))}</th><th>${escapeHtml(activeLocaleText("מצב", "Status"))}</th><th>${escapeHtml(activeLocaleText("טענה", "Claim"))}</th><th>${escapeHtml(activeLocaleText("ישות", "Entity"))}</th><th>${escapeHtml(activeLocaleText("מיקום", "Location"))}</th><th>${escapeHtml(activeLocaleText("ביטחון", "Confidence"))}</th><th>${escapeHtml(activeLocaleText("רשומות מקור", "Source records"))}</th></tr>`;
     body.innerHTML = activeItems.length ? activeItems.map(item => {
       const itemId = item.evidence_id;
@@ -7534,6 +7588,12 @@ document.addEventListener("click", event => {
   if (viewerTrigger) {
     event.preventDefault();
     openObjectViewer(viewerTrigger.dataset.viewerKind, viewerTrigger.dataset.viewerId, viewerTrigger);
+    return;
+  }
+  const packageOpen = event.target.closest("[data-ipdr-package-open]");
+  if (packageOpen) {
+    closeObjectViewer();
+    void openCatalogLayer(packageOpen.dataset.ipdrPackageOpen);
     return;
   }
   if (event.target.closest("#objectViewerMaximize")) {

@@ -42,6 +42,9 @@ def projected_evidence_id(record_id: str) -> str:
 
 def project_event(event: dict[str, Any]) -> dict[str, Any]:
     """Project one immutable source record into a normalized evidence object."""
+    if event.get("source_type") == "IPDR":
+        from ipdr_evidence import record_evidence
+        return record_evidence(event)
     event = normalize_evidence_event(event)
     record_id = _text(event.get("event_id") or event.get("record_id"))
     if not record_id.startswith("REC-"):

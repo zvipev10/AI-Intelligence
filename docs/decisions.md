@@ -499,3 +499,11 @@ Context: the cumulative handoff and package READMEs duplicated current behavior 
 Rationale: keep changes discoverable and avoid contradictory operating instructions. Historical capability artifacts and immutable pre-consolidation snapshots retain provenance without competing with current guidance. Compatibility pages preserve old file links.
 
 Impact: future changes update the owning guide and link from other entry points; live release identity comes from status/manifests. See the [migration map](../.ai/work/capabilities/documentation-hierarchy/migration-map.md) for preservation evidence.
+
+### 2026-09-30 — Preserve REC identity when presenting IPDR as evidence
+
+Decision: expose one canonical IPDR record per existing source row as typed network-session evidence, with acquisition metadata in a separate checksum-anchored package. Keep existing REC identities and raw catalog compatibility; do not create EVD copies or enrich source identifiers.
+
+Rationale: evidence presentation must preserve lineage, existing references and the distinction between observation and identity assertions. Representation migration is separate from a future versioned synthetic enrichment. Original CSV bytes and source values remain unchanged; unknown acquisition details and undocumented field semantics remain explicit.
+
+Impact: additive runtime projections and package UI only. No new person/device/location inference, persisted state migration or production deployment.

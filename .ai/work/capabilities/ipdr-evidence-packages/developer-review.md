@@ -1,0 +1,2 @@
+# Developer recommendations
+Implementation authorized by user after scope discussion. Extend evidence projection with network_session semantics and canonical REC identity; attach package/provenance metadata in memory, not duplicated persisted rows. Validate the active rows against the preserved CSV before exposing package membership. Reuse catalog/events rendering and existing REC references. No schema migration of mutable stores.
