@@ -3,7 +3,7 @@ import unittest
 from unittest.mock import patch
 from pathlib import Path
 
-from agent_result_pipeline import catalog_layer_actions_from_audit
+from agent_result_pipeline import catalog_layer_actions_from_audit, object_viewer_actions_from_audit
 
 
 ROOT = Path(__file__).resolve().parent
@@ -54,13 +54,32 @@ class CatalogLayerActionTests(unittest.TestCase):
         ]
         self.assertEqual(catalog_layer_actions_from_audit(audit), [{"catalog_layer_id": "new"}])
 
+    def test_object_viewer_action_is_canonical_and_audited(self):
+        event = self.mcp.EVENTS[0]
+        with patch.object(self.mcp, "load_ui_catalog", return_value=self.gateway.list_ui_layers("he")):
+            result = self.mcp.open_object_viewer({
+                "object_kind": "record", "object_id": event["event_id"], "locale": "he",
+            })
+        action = result["object_viewer_actions"][0]
+        self.assertEqual(action["object_kind"], "record")
+        self.assertEqual(action["object_id"], event.get("record_id") or event["event_id"])
+        self.assertEqual(action["catalog_layer_id"], f"events:{event['source_type']}")
+        self.assertEqual(object_viewer_actions_from_audit([
+            {"tool": "open_object_viewer", "result": {"object_viewer_actions": [{"object_id": "old"}]}},
+            {"tool": "open_object_viewer", "is_error": True, "result": {}},
+            {"tool": "open_object_viewer", "result": {"object_viewer_actions": [action]}},
+        ]), [action])
+
     def test_tool_is_exposed_and_browser_consumes_it(self):
         tool_names = {item["name"] for item in self.mcp.TOOLS}
         self.assertIn("open_catalog_layers", tool_names)
+        self.assertIn("open_object_viewer", tool_names)
         self.assertIn("open_catalog_layers", self.mcp.TOOL_HANDLERS)
+        self.assertIn("open_object_viewer", self.mcp.TOOL_HANDLERS)
         app = (ROOT / "app.js").read_text(encoding="utf-8")
         self.assertIn("await openCatalogLayer(action.catalog_layer_id", app)
         self.assertIn("catalog_layer_action_errors", app)
+        self.assertIn("executeObjectViewerActions", app)
 
 
 if __name__ == "__main__":

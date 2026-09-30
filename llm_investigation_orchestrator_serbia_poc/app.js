@@ -5218,10 +5218,31 @@ async function executeCatalogLayerActions(result = {}) {
   return opened;
 }
 
+async function executeObjectViewerActions(result = {}) {
+  const errors = Array.isArray(result.object_viewer_action_errors) ? [...result.object_viewer_action_errors] : [];
+  const opened = [];
+  for (const action of Array.isArray(result.object_viewer_actions) ? result.object_viewer_actions : []) {
+    if (action?.action !== "open" || !action.catalog_layer_id || !action.object_kind || !action.object_id) continue;
+    const layer = await openCatalogLayer(action.catalog_layer_id, { silent: true });
+    if (!layer) {
+      errors.push({ object_id: action.object_id, error: state.layerCatalogError || "catalog_layer_open_failed" });
+      continue;
+    }
+    if (!openObjectViewer(action.object_kind, action.object_id)) {
+      errors.push({ object_id: action.object_id, error: "object_viewer_open_failed" });
+      continue;
+    }
+    opened.push({ object_id: action.object_id, object_kind: action.object_kind, catalog_layer_id: action.catalog_layer_id });
+  }
+  result.object_viewer_outcomes = { opened, errors };
+  return opened;
+}
+
 async function presentFinalAgentResult(result, prompt, options = {}) {
   const typedLayers = buildTypedResultLayers(result);
   const openedCatalogLayers = await executeCatalogLayerActions(result);
-  const actionView = (result.catalog_layer_actions || []).find(item => ["map", "timeline", "table", "evidence"].includes(item?.view))?.view;
+  const actionView = [...(result.object_viewer_actions || []), ...(result.catalog_layer_actions || [])]
+    .find(item => ["map", "timeline", "table", "evidence"].includes(item?.view))?.view;
   const requestedView = resolveFinalResultView({ ...result, recommended_view: actionView || result.recommended_view }, [...typedLayers, ...openedCatalogLayers]);
   state.queryContext = buildFinalQueryContext(result, prompt);
   const addedLayers = addResultLayers({
@@ -5245,6 +5266,7 @@ async function presentFinalAgentResult(result, prompt, options = {}) {
     reason: result.view_reason || activeLocaleText("הנתונים נבחרו כתשובה לבקשת המשתמש", "Data selected as the answer to the user's request")
   });
   renderAllViews();
+  await executeObjectViewerActions(result);
   renderQueryInspector();
   const outcomes = result.catalog_layer_outcomes;
   if (outcomes?.errors.length) {
@@ -5253,6 +5275,10 @@ async function presentFinalAgentResult(result, prompt, options = {}) {
   } else if (outcomes?.opened.length) {
     showResult(activeLocaleText("שכבה נפתחה", "Layer opened"), outcomes.opened.map(item =>
       `${item.label}: ${item.count.toLocaleString()} ${activeLocaleText("רשומות נטענו", "records loaded")}`).join("; "));
+  }
+  if (result.object_viewer_outcomes?.errors.length) {
+    showResult(activeLocaleText("פתיחת פריט נכשלה", "Item opening failed"), result.object_viewer_outcomes.errors.map(item =>
+      `${item.object_id || "?"}: ${item.error}`).join("; "));
   }
 
   return addedLayers;

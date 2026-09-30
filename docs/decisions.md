@@ -519,3 +519,11 @@ Decision: expose the acquisition package through `evidence:all` only. Remove the
 Rationale: the general Evidence layer already provides the package object and detail viewer, so a source-specific evidence layer duplicates the same object without adding analytical value.
 
 Impact: the package remains retrievable as evidence and still opens its 300 package-linked REC sessions in raw `events:IPDR`. Checksum, provenance, validation and raw-record links remain unchanged.
+
+### 2026-09-30 — Support catalog-backed object viewer actions from chat
+
+Decision: add a read-only `open_object_viewer` action for one exact retrieved raw record, evidence/package, or entity. The action resolves a canonical ID and owning catalog layer, is revalidated by the UI gateway, and opens the already-existing viewer only after the browser loads the permitted layer.
+
+Rationale: analysts can ask chat to inspect a known object without manually finding it in a table, while catalog ownership and role-layer access remain enforced.
+
+Impact: this adds no new object storage or viewer representation. Failed validation, unavailable catalog data, blocked role access, and pending browser work must not be reported as a successful viewer open.

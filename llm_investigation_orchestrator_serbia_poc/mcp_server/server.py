@@ -3107,6 +3107,52 @@ def open_catalog_layers(arguments: dict[str, Any]) -> dict[str, Any]:
             "message": "Canonical layer actions validated and queued for the UI. This is not confirmation that the browser opened them. Preserve these filters; the UI reports loading success or failure."}
 
 
+def open_object_viewer(arguments: dict[str, Any]) -> dict[str, Any]:
+    """Validate one canonical object and queue its catalog-backed viewer action."""
+    object_kind = str(arguments.get("object_kind") or "").strip()
+    object_id = str(arguments.get("object_id") or "").strip()
+    locale = str(arguments.get("locale") or "he")
+    if object_kind not in {"record", "evidence", "entity"}:
+        raise ValueError("object_kind must be record, evidence, or entity")
+    if not object_id:
+        raise ValueError("object_id is required")
+    if locale not in {"he", "en"}:
+        raise ValueError("unsupported catalog locale")
+    try:
+        catalog = load_ui_catalog(locale)
+    except Exception:
+        return {"status": "catalog_unavailable", "object_viewer_actions": [],
+                "message": "Cannot validate the live catalog. No object viewer was queued."}
+
+    if object_kind == "record":
+        event = visible_event(object_id) or next((item for item in EVENTS if item.get("record_id") == object_id and event_visible(item)), None)
+        if event is None:
+            return {"status": "not_found", "object_viewer_actions": [], "message": "The requested raw record is not available in the active dataset."}
+        layer = next((item for item in catalog if item.get("kind") == "events" and item.get("source_type") == event.get("source_type")), None)
+        viewer_kind, viewer_id = "record", event.get("record_id") or event["event_id"]
+    elif object_kind == "evidence":
+        evidence = resolve_evidence(object_id)
+        if evidence is None:
+            return {"status": "not_found", "object_viewer_actions": [], "message": "The requested evidence object is not available in the active dataset."}
+        layer = next((item for item in catalog if item.get("id") == "evidence:all"), None)
+        viewer_kind = "ipdr_package" if evidence.get("evidence_type") == "ipdr_package" else "evidence"
+        viewer_id = evidence.get("package_id") if viewer_kind == "ipdr_package" else evidence.get("evidence_id") or object_id
+    else:
+        entity = scoped_entity_presentation(object_id)
+        if entity is None:
+            return {"status": "not_found", "object_viewer_actions": [], "message": "The requested entity is not available in the active dataset."}
+        layer = next((item for item in catalog if item.get("id") == "entity-metadata:all"), None)
+        viewer_kind = "person" if entity.get("entity_type") == "person" else "organization"
+        viewer_id = entity["entity_id"]
+    if not layer:
+        return {"status": "catalog_unavailable", "object_viewer_actions": [], "message": "The object's UI layer is not available."}
+    view = "timeline" if layer.get("source_type") == "Cellular Calls" else ("map" if layer.get("capabilities", {}).get("map") else "table")
+    action = {"action": "open", "object_kind": viewer_kind, "object_id": viewer_id,
+              "catalog_layer_id": layer["id"], "view": view}
+    return {"status": "pending_ui", "object_viewer_actions": [action],
+            "message": "The object viewer was queued after canonical object and catalog validation. This is not confirmation that the browser opened it."}
+
+
 def validate_target_references(candidate: dict[str, Any], evidence: list[dict[str, Any]] | None = None) -> None:
     location_id = str(candidate.get("location_id") or "").strip()
     if location_id not in LOCATIONS:
@@ -3913,6 +3959,22 @@ TOOLS = [
         "annotations": {"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": False},
     },
     {
+        "name": "open_object_viewer",
+        "title": "Open a specific object in the item viewer",
+        "description": "Open one exact active-dataset object in the browser item viewer. Use a canonical record ID, evidence ID/package ID, or entity ID already retrieved in this conversation. The action validates the object and its live UI catalog layer; pending_ui means queued, not proof that the browser opened it.",
+        "inputSchema": with_step_bridge({
+            "type": "object",
+            "properties": {
+                "object_kind": {"type": "string", "enum": ["record", "evidence", "entity"]},
+                "object_id": {"type": "string", "minLength": 1},
+                "locale": {"type": "string", "enum": ["he", "en"]},
+            },
+            "required": ["object_kind", "object_id", "locale"],
+            "additionalProperties": False,
+        }),
+        "annotations": {"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": False},
+    },
+    {
         "name": "prepare_target_candidate",
         "title": "Prepare a fused target candidate",
         "description": "Starting from visible seed evidence, retrieves and ranks nearby independent public corroboration, selects the strongest evidence pair, groups sources, reconciles quantity, builds compact evidence snapshots, and reports whether medium/high-confidence persistence is allowed. Returns pair scores, reasons, alternatives, and an ambiguity margin. It does not save anything.",
@@ -4354,6 +4416,7 @@ TOOL_HANDLERS = {
     "present_requested_results": present_requested_results,
     "present_saved_memory_layers": present_saved_memory_layers,
     "open_catalog_layers": open_catalog_layers,
+    "open_object_viewer": open_object_viewer,
     "prepare_target_candidate": prepare_target_candidate,
     "find_duplicate_target_candidates": find_duplicate_target_candidates,
     "search_target_candidates": search_target_candidates,

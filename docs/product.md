@@ -68,3 +68,5 @@ See [architecture](architecture.md) for interfaces and state ownership. Scenario
 ## IPDR evidence packages
 
 The general Evidence layer shows one IPDR package object; there is no additional IPDR-specific evidence layer. Open its package ID to inspect metadata, checksum, synthetic classification, coverage and validation totals. Choose **Open package records** to open the raw IPDR layer. All 300 individual REC records belong only to raw IPDR data; they do not appear as Evidence layer objects. Raw record viewers retain package links and native fields; their Timeline shows session intervals and validation. Package objects are presented in Table and the detail viewer, with no Map or Timeline placement.
+
+Chat can open a specific retrieved raw record, evidence/package, or entity directly in its item viewer. The requested canonical ID is validated against the active dataset and its owning layer before the browser opens it; a queued action is not confirmation that the viewer opened.

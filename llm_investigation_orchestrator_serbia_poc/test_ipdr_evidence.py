@@ -85,6 +85,10 @@ for locale in ("he", "en"):
     assert mcp.get_evidence({"evidence_id": selected})["evidence"] is None
     obj = mcp.get_evidence({"evidence_id": rows[0]["package_id"]})["evidence"]
     assert len(obj["source_record_ids"]) == 300
+    mcp.load_ui_catalog = lambda requested_locale: ui.list_ui_layers(requested_locale)
+    action = mcp.open_object_viewer({"object_kind": "evidence", "object_id": rows[0]["package_id"], "locale": locale})["object_viewer_actions"]
+    validated, errors = ui.validate_object_viewer_actions(action, locale)
+    assert not errors and validated[0]["object_kind"] == "ipdr_package" and validated[0]["catalog_layer_id"] == ui.EVIDENCE_CATALOG_LAYER_ID
     json.dumps(obj)
 ui.active_playback_timeframe = lambda: {"_from": ui.parse_utc("2026-09-01T00:00:00Z"), "_to": ui.parse_utc("2026-09-01T12:00:00Z")}
 assert len(ui.load_evidence_catalog("en")) == 1

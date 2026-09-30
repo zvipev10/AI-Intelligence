@@ -344,6 +344,18 @@ def catalog_layer_actions_from_audit(audit_records: Any) -> list[dict[str, Any]]
     return []
 
 
+def object_viewer_actions_from_audit(audit_records: Any) -> list[dict[str, Any]]:
+    """Return the latest successful structured item-viewer action."""
+    for record in reversed(audit_records if isinstance(audit_records, list) else []):
+        if record.get("tool") != "open_object_viewer" or record.get("is_error"):
+            continue
+        result = record.get("result") if isinstance(record.get("result"), dict) else {}
+        actions = result.get("object_viewer_actions")
+        if isinstance(actions, list):
+            return [item for item in actions if isinstance(item, dict)]
+    return []
+
+
 def build_agent_result(
     payload: dict[str, Any],
     *,

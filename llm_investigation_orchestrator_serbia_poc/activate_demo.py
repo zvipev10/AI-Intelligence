@@ -141,6 +141,7 @@ class Activator:
                 if isinstance(include, list):
                     for common in [
                         "open_catalog_layers",
+                        "open_object_viewer",
                         "demo_runtime_status",
                         "describe_active_data",
                         "discover_record_correlations",

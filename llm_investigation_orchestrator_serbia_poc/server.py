@@ -27,6 +27,7 @@ from urllib.parse import parse_qs, unquote, urlparse
 from agent_result_pipeline import (
     build_agent_result,
     catalog_layer_actions_from_audit,
+    object_viewer_actions_from_audit,
     evidence_reference_layers_from_audit,
     memory_layer_actions_from_audit,
     presentation_view_from_audit,
@@ -818,6 +819,43 @@ def validate_catalog_layer_actions(actions: Any, locale: str) -> tuple[list[dict
     return ([] if errors else valid), errors
 
 
+def validate_object_viewer_actions(actions: Any, locale: str) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    catalog = {layer["id"]: layer for layer in list_ui_layers(locale)}
+    events, entities, _ = ui_layer_data(locale)
+    evidence = {str(item.get("evidence_id") or item.get("package_id") or ""): item for item in load_evidence_catalog(locale)}
+    valid, errors = [], []
+    for action in actions if isinstance(actions, list) else []:
+        if not isinstance(action, dict):
+            continue
+        kind, object_id = str(action.get("object_kind") or ""), str(action.get("object_id") or "")
+        layer_id = str(action.get("catalog_layer_id") or "")
+        layer = catalog.get(layer_id)
+        if kind not in {"record", "evidence", "ipdr_package", "person", "organization"} or not object_id or layer is None:
+            errors.append({"object_id": object_id, "error": "invalid_object_viewer_action"})
+            continue
+        if kind == "record":
+            item = next((event for event in events if object_id in {str(event.get("event_id") or ""), str(event.get("record_id") or "")}), None)
+            expected_layer = f"events:{item.get('source_type')}" if item else ""
+            expected_kind = "record"
+        elif kind in {"evidence", "ipdr_package"}:
+            item = evidence.get(object_id)
+            expected_layer = EVIDENCE_CATALOG_LAYER_ID
+            expected_kind = "ipdr_package" if item and item.get("evidence_type") == "ipdr_package" else "evidence"
+        else:
+            item = entities.get(object_id)
+            expected_layer = "entity-metadata:all"
+            expected_kind = "person" if item and item.get("entity_type") == "person" else "organization"
+        if item is None or layer_id != expected_layer or kind != expected_kind:
+            errors.append({"object_id": object_id, "error": "object_not_in_catalog_layer"})
+            continue
+        normalized = {"action": "open", "object_kind": kind, "object_id": object_id,
+                      "catalog_layer_id": layer_id,
+                      "view": action.get("view") if action.get("view") in {"map", "timeline", "table"} else "table"}
+        if normalized not in valid:
+            valid.append(normalized)
+    return ([] if errors else valid), errors
+
+
 def load_hermes_config() -> dict:
     return json.loads(CONFIG_PATH.read_text(encoding="utf-8-sig"))
 
@@ -1391,6 +1429,7 @@ def build_english_agent_instructions(
         "Use prepare_evidence for neutral reported/observed objects and prepare_fused_evidence for correlation. Persist fused evidence only when it is explicitly needed and the tool validates persistence_eligible=true; raw REC records remain immutable.",
         "When the user asks to present a saved layer, use only present_saved_memory_layers for that presentation; after it succeeds, do not call present_requested_results for the same request.",
         "When the user directly asks to open a whole named UI catalog layer without filters, call open_catalog_layers with the exact ID from the catalog list below. Do not search first and do not use present_saved_memory_layers.",
+        "When the user asks to open one specific retrieved raw record, evidence/package, or entity in its item viewer, call open_object_viewer with its canonical ID and locale. Do not claim it opened while its status is pending_ui.",
         "For a named raw catalog layer with location/entity/time constraints, call open_catalog_layers with filters and the current locale. Carry forward prior conversation filters, including on follow-up requests. For other constraints retrieve records and pass their event_ids as filters, or use present_requested_results. Never replace a filtered request with the entire catalog. A pending_ui status means queued, not opened; do not claim browser success. On clarification_required ask the analyst to choose among candidates; never guess.",
         "For all other requests, call present_requested_results exactly once before the final answer whenever there are concrete data objects or evidence layers worth presenting in the UI.",
         "End with exactly one final line in the format 'Recommended view: VIEW | REASON'. VIEW must be one of map, timeline, or table. Choose table for raw records, identifier correlation, and records without geometry; map for spatial questions; timeline for chronology. Cellular Calls default to timeline even when endpoints have locations; use map or table only when the analyst explicitly requests it. Never discard records because they lack geometry. REASON must be short.",
@@ -4222,6 +4261,7 @@ class HermesClient:
             " מאגר המטרות תומך באיתור ישיר לפי מזהה רשומה גולמית באמצעות search_target_candidates עם record_id."
             " הכלי זמין למשה בלבד; הסוכן הכללי אינו טוען שביצע חיפוש כזה ואינו מנתב למשה ללא אזכור מפורש של @משה."
             " כאשר המשתמש מבקש לפתוח שכבת קטלוג שלמה בשם וללא מסננים, השתמש ב-open_catalog_layers עם המזהה המדויק מרשימת הקטלוג שבהוראות; אל תחפש תחילה ואל תשתמש ב-present_saved_memory_layers."
+            " כאשר המשתמש מבקש לפתוח רשומה גולמית, ראיה/חבילה או ישות ספציפית שאותרה, בחלון הפריט שלה, השתמש ב-open_object_viewer עם המזהה הקנוני והשפה; pending_ui אינו אישור שהחלון נפתח."
             " לפתיחת שכבת גלם עם מסננים השתמש ב-open_catalog_layers עם filters ו-locale. שמור מסננים מההקשר הקודם. למסננים אחרים השתמש בשליפה והעבר event_ids. אין להחליף תת-קבוצה בשכבה שלמה. pending_ui אינו אישור פתיחה; במקרה של עמימות בקש הבהרה."
             " כאשר המשתמש מבקש להציג שכבה שמורה, השתמש רק ב-present_saved_memory_layers להצגת השכבה; לאחר הצלחתו אל תקרא ל-present_requested_results עבור אותה בקשה."
             " בכל בקשה אחרת, לפני התשובה הסופית, כאשר קיימים נתונים מבוקשים להצגה או ראיות מהותיות לניווט, חובה לקרוא פעם אחת ל-present_requested_results."
@@ -4560,6 +4600,9 @@ class HermesClient:
                 catalog_layer_actions, catalog_layer_action_errors = validate_catalog_layer_actions(
                     catalog_layer_actions_from_audit(audit_records), locale
                 )
+                object_viewer_actions, object_viewer_action_errors = validate_object_viewer_actions(
+                    object_viewer_actions_from_audit(audit_records), locale
+                )
                 return build_agent_result({
                     "run_id": run_id,
                     "answer": clean_output,
@@ -4574,6 +4617,8 @@ class HermesClient:
                     "memory_layer_actions": memory_layer_actions,
                     "catalog_layer_actions": catalog_layer_actions,
                     "catalog_layer_action_errors": catalog_layer_action_errors,
+                    "object_viewer_actions": object_viewer_actions,
+                    "object_viewer_action_errors": object_viewer_action_errors,
                     **collaboration,
                 }, responding_agent=responding_agent, session_id=session_id, mission_run_id=mission_run_id,
                     requested_result_layers=requested_layers,
@@ -6084,6 +6129,9 @@ class Handler(SimpleHTTPRequestHandler):
                 )
                 memory_layer_actions = memory_layer_actions_from_audit(calls)
                 catalog_layer_actions = catalog_layer_actions_from_audit(calls)
+                object_viewer_actions, object_viewer_action_errors = validate_object_viewer_actions(
+                    object_viewer_actions_from_audit(calls), locale
+                )
                 answer = openai_result["answer"]
                 view_match = re.search(
                     r"(?im)^\s*(?:תצוגה מומלצת|Recommended view)\s*:\s*"
@@ -6107,6 +6155,8 @@ class Handler(SimpleHTTPRequestHandler):
                     "investigation_steps": steps,
                     "memory_layer_actions": memory_layer_actions,
                     "catalog_layer_actions": catalog_layer_actions,
+                    "object_viewer_actions": object_viewer_actions,
+                    "object_viewer_action_errors": object_viewer_action_errors,
                     "usage": {**(openai_result.get("usage") or {}), "runtime": "openai_general_experimental"},
                 }, responding_agent=OPENAI_GENERAL_AGENT_ID, session_id=openai_result["openai_session_id"],
                     requested_result_layers=requested_layers,

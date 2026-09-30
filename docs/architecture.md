@@ -176,6 +176,7 @@ Agent-to-UI catalog action contract:
 - The result exposes `catalog_layer_actions` and `catalog_layer_action_errors`.
 - The browser awaits `openCatalogLayer`, activates the layer, selects a supported view, and redraws.
 - Supported location/entity/event/time constraints travel in `open_catalog_layers.filters`, preserving scope through loading, saved reconstruction and refresh. Other predicates use retrieval plus explicit result IDs/`present_requested_results`; saved layers remain `present_saved_memory_layers`.
+- `open_object_viewer` is the parallel action for one exact retrieved raw record, evidence/package, or entity. MCP resolves the canonical object and its owning catalog layer; the gateway revalidates both against active UI data. The browser opens that permitted layer first and then invokes the existing item viewer. `pending_ui` means queued, not confirmed open.
 
 ## Saved-question and recording interfaces
 

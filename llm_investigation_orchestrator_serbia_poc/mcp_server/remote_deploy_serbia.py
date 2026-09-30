@@ -38,6 +38,7 @@ TOOLS = [
     "present_requested_results",
     "present_saved_memory_layers",
     "open_catalog_layers",
+    "open_object_viewer",
     "classify_question_intent",
     "plan_next_investigation_step",
     "search_events",
