@@ -16,13 +16,22 @@ tip must be an ancestor of `main`. This is a commit-graph check, not a
 timestamp comparison.
 
 Do this before cloning, fetching into, pulling, or using any local application
-checkout. First use a direct remote comparison method when available. If that
-method cannot prove ancestry for every branch, use this authorized fallback:
-create a disposable bare Git repository in a temporary directory, fetch only
-the remote branch refs into it, and use Git ancestry checks to determine
-whether every branch tip is an ancestor of `main`. This scratch repository is
-only a remote-verification aid; it is not the application clone, must not be
-used for development, and must be removed after the check.
+checkout. The authoritative live branch inventory is:
+
+`git ls-remote --heads https://github.com/zvipev10/AI-Intelligence.git`
+
+Use only its `refs/heads/*` output to decide which branches exist. Never infer
+the live remote namespace from local branches, remote-tracking refs, tags, or
+cached bare-repository refs. If it lists only `main`, there are no other branch
+tips to compare.
+
+If ancestry comparison is required and a direct remote comparison method cannot
+prove it, use this authorized fallback: create a fresh disposable bare Git
+repository in a temporary directory, fetch exactly the live branch refs listed
+by `git ls-remote --heads`, and use Git ancestry checks. Do not reuse cached
+refs; the scratch repository must be removed after the check. It is only a
+remote-verification aid, not the application clone, and must not be used for
+development.
 
 When a local AI-Intelligence checkout already exists, compare its active `HEAD`
 and the content hash of its `AGENTS.md` with the verified remote `main` commit
