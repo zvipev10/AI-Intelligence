@@ -4445,6 +4445,27 @@ function evidenceProvenanceHtml(item) {
   return `<section class="object-viewer-evidence"><h3>${escapeHtml(activeLocaleText("מקור וייחוס", "Provenance"))}</h3><div class="object-viewer-evidence-links">${links}</div></section>`;
 }
 
+function recordLinkedEntitiesHtml(item) {
+  const links = Array.isArray(item.observed_entity_links) ? item.observed_entity_links : [];
+  if (!links.length) return "";
+  const ruleLabel = rule => ({
+    event_entity_id_v1: activeLocaleText("מזהה ישות קנוני ברשומה", "Canonical entity ID in record"),
+    adint_device_entity_v1: activeLocaleText("מזהה מכשיר", "Device identifier"),
+    entity_imei_to_ipdr_imei_v1: "IMEI",
+    entity_imei_to_cellular_target_imei_v1: "IMEI",
+    entity_imei_to_call_party_v1: activeLocaleText("IMEI של צד א׳", "Side A IMEI"),
+    entity_imei_to_call_speaker_imei_v1: activeLocaleText("IMEI דובר בתמליל", "Transcript speaker IMEI")
+  }[rule] || activeLocaleText("התאמת שדה", "Field match"));
+  const rows = links.map(link => {
+    const entityId = String(link.entity_id || "");
+    const kind = String(link.entity_type || "").toLowerCase() === "person" ? "person" : "organization";
+    const name = link.entity_name || entityId;
+    const fields = `${link.record_field || "record"} = ${link.entity_field || "entity"}`;
+    return `<li><button type="button" class="object-viewer-open" data-viewer-kind="${escapeHtml(kind)}" data-viewer-id="${escapeHtml(entityId)}">${escapeHtml(name)}</button><span>${escapeHtml(ruleLabel(link.rule_id))} · <code dir="ltr">${escapeHtml(fields)}</code> · <code dir="ltr">${escapeHtml(link.matched_value || "—")}</code></span></li>`;
+  }).join("");
+  return `<section class="object-viewer-evidence record-entity-links"><h3>${escapeHtml(activeLocaleText("ישויות מקושרות", "Linked entities"))}</h3><ul>${rows}</ul></section>`;
+}
+
 function assessmentEvidenceHtml(item) {
   const available = viewerObjects();
   const ids = item.evidence_ids || [];
@@ -4584,7 +4605,7 @@ function openObjectViewer(kind, id, trigger = document.activeElement) {
   const cellularHtml = kind === "record" ? cellularCallHtml(item) : "";
   const fields = viewerFields(item, kind).map(([key,value]) => `<div class="object-viewer-field"><dt>${escapeHtml(viewerFieldLabel(key))}</dt><dd>${escapeHtml(viewerValue(value))}</dd></div>`).join("");
   const entityMapHtml = kind === "organization" ? entityLocationMapHtml(item) : "";
-  document.getElementById("objectViewerBody").innerHTML = `${mediaHtml}${cellularHtml}${ipdrPackageLinkHtml(item, kind)}${personViewer ? personWorkspaceHtml(item) : ""}${entityMapHtml}${["record", "evidence", "assessment"].includes(kind) ? `<p class="object-viewer-summary">${escapeHtml(item.event_summary || item.summary || "-")}</p>` : ""}${personViewer ? "" : `<dl class="object-viewer-fields">${fields}</dl>`}${kind === "organization" ? organizationEvidenceHtml(item) : kind === "evidence" ? evidenceProvenanceHtml(item) : kind === "assessment" ? assessmentEvidenceHtml(item) : ""}`;
+  document.getElementById("objectViewerBody").innerHTML = `${mediaHtml}${cellularHtml}${ipdrPackageLinkHtml(item, kind)}${personViewer ? personWorkspaceHtml(item) : ""}${entityMapHtml}${["record", "evidence", "assessment"].includes(kind) ? `<p class="object-viewer-summary">${escapeHtml(item.event_summary || item.summary || "-")}</p>` : ""}${personViewer ? "" : `<dl class="object-viewer-fields">${fields}</dl>`}${kind === "record" ? recordLinkedEntitiesHtml(item) : kind === "organization" ? organizationEvidenceHtml(item) : kind === "evidence" ? evidenceProvenanceHtml(item) : kind === "assessment" ? assessmentEvidenceHtml(item) : ""}`;
   viewer.hidden = false;
   setViewerMaximized(false);
   if (cellularCallViewer) initializeCellularViewer(item);

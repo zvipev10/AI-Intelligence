@@ -47,6 +47,8 @@ class PersonTelecomCorrelationUiTests(unittest.TestCase):
         app = (Path(__file__).resolve().parent / "app.js").read_text(encoding="utf-8")
         bootstrap = (Path(__file__).resolve().parent / "demo_bootstrap.js").read_text(encoding="utf-8")
         self.assertIn("function personTelecomDetailsHtml(item)", app)
+        self.assertIn("function recordLinkedEntitiesHtml(item)", app)
+        self.assertIn("Linked entities", app)
         self.assertIn("function approveExtractedTelecomIdentity(entityId, button)", app)
         self.assertIn("Extracted subscriber identity", app)
         self.assertIn("data-approve-telecom-entity", app)

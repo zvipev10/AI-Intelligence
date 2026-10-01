@@ -67,6 +67,7 @@ def build_links(events: list[dict[str, Any]], entities: dict[str, dict[str, Any]
         record_id = _text(event.get("event_id"))
         if not record_id:
             continue
+        source_type = _text(event.get("source_type"))
         entity_id = _text(event.get("entity_id"))
         if entity_id in entities:
             links.append(_link("event_entity_id_v1", "raw_record", record_id, "entity_id", "entity", entity_id, "entity_id", entity_id))
@@ -79,12 +80,14 @@ def build_links(events: list[dict[str, Any]], entities: dict[str, dict[str, Any]
             if device_id and device_entity_id:
                 links.append(_link("adint_device_entity_v1", "raw_record", record_id, "device_id", "entity", device_entity_id, "canonical_name", device_id))
         # Side B is intentionally omitted: current data has no asserted Side-B identity.
-        for field, rule_id in (
-            ("imei", "entity_imei_to_ipdr_imei_v1"),
-            ("target_imei", "entity_imei_to_cellular_target_imei_v1"),
-            ("side_a_imei", "entity_imei_to_call_party_v1"),
-            ("call_transcript_speaker_imei", "entity_imei_to_call_speaker_imei_v1"),
+        for field, rule_id, allowed_sources in (
+            ("imei", "entity_imei_to_ipdr_imei_v1", {"IPDR"}),
+            ("target_imei", "entity_imei_to_cellular_target_imei_v1", {"Cellular Geolocations"}),
+            ("side_a_imei", "entity_imei_to_call_party_v1", {"Cellular Calls", "שיחות סלולר"}),
+            ("call_transcript_speaker_imei", "entity_imei_to_call_speaker_imei_v1", {"Cellular Calls", "שיחות סלולר"}),
         ):
+            if source_type not in allowed_sources:
+                continue
             value = _text(event.get(field))
             for matched_entity_id in entity_identifiers.get(value, []):
                 links.append(_link(rule_id, "raw_record", record_id, field, "entity", matched_entity_id, "telecom.imei", value))

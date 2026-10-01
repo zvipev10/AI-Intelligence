@@ -38,6 +38,10 @@ assert omar["telecom"]["imei"] == "352099001122338"
 assert person["event_count"] == 22
 assert "ENT-SYR-PERSON-002" in by_id["REC-SYR-IPDR-1683930569233410"]["related_entity_ids"]
 assert "ENT-SYR-PERSON-002" in by_id["REC-SYR-CELL-CSV-013"]["related_entity_ids"]
+ipdr_link = by_id["REC-SYR-IPDR-1683930569233410"]["observed_entity_links"][0]
+assert (ipdr_link["entity_id"], ipdr_link["record_field"], ipdr_link["entity_field"]) == ("ENT-SYR-PERSON-002", "imei", "telecom.imei")
+cell_link = by_id["REC-SYR-CELL-CSV-013"]["observed_entity_links"][0]
+assert (cell_link["entity_id"], cell_link["record_field"], cell_link["entity_field"]) == ("ENT-SYR-PERSON-002", "target_imei", "telecom.imei")
 call = by_id["REC-SYR-CALL-001"]
 assert (call["side_a_entity_id"], call["side_a_entity_name"]) == ("ENT-SYR-PERSON-002", "Arman Rahimi")
 assert (call.get("side_b_entity_id"), call.get("side_b_entity_name")) == (None, None)

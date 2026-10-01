@@ -419,12 +419,29 @@ def apply_graph_entity_links(events: list[dict[str, Any]], locale: str = "he") -
         if event is None or (link.get("to") or {}).get("object_type") != "entity":
             continue
         event.setdefault("related_entity_ids", []).append(entity_id)
+        entity = entities.get(entity_id, {})
+        event.setdefault("observed_entity_links", []).append({
+            "link_id": link.get("link_id"),
+            "entity_id": entity_id,
+            "entity_name": entity.get("canonical_name", entity_id),
+            "entity_type": entity.get("entity_type", ""),
+            "rule_id": link.get("rule_id"),
+            "record_field": link.get("from", {}).get("field"),
+            "entity_field": link.get("to", {}).get("field"),
+            "matched_value": link.get("matched_value"),
+        })
         if link.get("from", {}).get("field") == "side_a_imei":
             event["side_a_entity_id"] = entity_id
             event["side_a_entity_name"] = entities.get(entity_id, {}).get("canonical_name", entity_id)
         for field in ("related_entity_ids",):
             if isinstance(event.get(field), list):
                 event[field] = list(dict.fromkeys(event[field]))
+        if isinstance(event.get("observed_entity_links"), list):
+            seen = set()
+            event["observed_entity_links"] = [
+                item for item in event["observed_entity_links"]
+                if not ((key := (item.get("link_id"), item.get("rule_id"), item.get("entity_id"), item.get("record_field"))) in seen or seen.add(key))
+            ]
 
 
 def load_ui_events(locale: str = "he") -> list[dict[str, Any]]:

@@ -30,7 +30,7 @@ class LinkGraphTests(unittest.TestCase):
         self.assertIsNone(derive_subscriber_identity(tie, build_links(tie, self.entities, self.locations), "ENT-PERSON"))
 
     def test_blank_side_b_never_creates_a_person_link(self):
-        events = [{"event_id": "REC-CALL", "side_a_imei": "353294702931926", "side_b_imei": ""}]
+        events = [{"event_id": "REC-CALL", "source_type": "Cellular Calls", "side_a_imei": "353294702931926", "side_b_imei": ""}]
         links = build_links(events, self.entities, self.locations)
         self.assertEqual(["entity_imei_to_call_party_v1"], [item["rule_id"] for item in links])
 
