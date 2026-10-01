@@ -49,6 +49,8 @@ Use the translucent polygon icon at the bottom-right of Map to place vertices. C
 
 Submitting a collection request automatically opens the corresponding raw-data layer in its preferred presentation: Map for ADINT, Cellular Geolocations, Satellite and CCTV; Table for IPDR; and Timeline for Cellular Calls. The request remains recorded in investigation Memory.
 
+For the convoy demonstration, the existing collection-source selection dialog remains the entry point and has no comments field. Selecting ADINT for a completed map polygon then opens the dedicated ADINT task screen; selecting a cellular source for an IMEI opens the SIGINT task screen. Submitting ADINT or sending SIGINT for approval opens the matching existing results layer in its preferred presentation without sending an external request, approval, scheduler, or data mutation.
+
 ## Saved work and additive results
 
 ### Investigation memory

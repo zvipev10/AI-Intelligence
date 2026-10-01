@@ -708,10 +708,15 @@ const collectionRequestForm = document.getElementById("collectionRequestForm");
 const collectionRequestTarget = document.getElementById("collectionRequestTarget");
 const collectionRequestTypes = document.getElementById("collectionRequestTypes");
 const collectionExtractionObjects = document.getElementById("collectionExtractionObjects");
-const collectionRequestNote = document.getElementById("collectionRequestNote");
 const collectionRequestError = document.getElementById("collectionRequestError");
+const adintTaskModal = document.getElementById("adintTaskModal");
+const sigintTaskModal = document.getElementById("sigintTaskModal");
 let pendingPolygonAction = null;
 let pendingCollectionRequest = null;
+let collectionTaskReturnFocus = null;
+let adintTaskMap = null;
+let pendingAdintTaskTarget = null;
+let pendingDemoCollectionType = null;
 const queryLayerName = document.getElementById("queryLayerName");
 const queryToolName = document.getElementById("queryToolName");
 const queryModal = document.getElementById("queryModal");
@@ -2053,6 +2058,112 @@ function closeCollectionRequestDialog() {
   collectionRequestError.hidden = true;
 }
 
+function updateCollectionSourceSelectionAction() {
+  const submit = document.getElementById("collectionRequestSubmit");
+  const type = collectionRequestForm?.querySelector('input[name="collectionType"]:checked')?.value;
+  const target = pendingCollectionRequest;
+  const opensDemoTask = (target?.type === "polygon" && type === "adint") || (target?.type === "imei" && ["cellular_geolocations", "cellular_calls"].includes(type));
+  if (submit) submit.textContent = activeLocaleText(opensDemoTask ? "המשך" : "שלח בקשה", opensDemoTask ? "Continue" : "Submit request");
+}
+
+function closeCollectionTaskDialog(modal) {
+  if (!modal) return;
+  if (modal === adintTaskModal) {
+    adintTaskMap?.remove();
+    adintTaskMap = null;
+    pendingAdintTaskTarget = null;
+  }
+  modal.hidden = true;
+  collectionTaskReturnFocus?.focus?.();
+  collectionTaskReturnFocus = null;
+  pendingDemoCollectionType = null;
+}
+
+async function completeDemoCollectionTask(modal, fallbackType) {
+  const type = pendingDemoCollectionType || fallbackType;
+  closeCollectionTaskDialog(modal);
+  await openRequestedCollectionLayer(type);
+}
+
+function polygonTaskSummary(coordinates) {
+  const ring = Array.isArray(coordinates) ? coordinates : [];
+  const points = ring.length > 1 && ring[0]?.[0] === ring.at(-1)?.[0] && ring[0]?.[1] === ring.at(-1)?.[1] ? ring.slice(0, -1) : ring;
+  if (points.length < 3) return "No drawn location";
+  const [lon, lat] = points.reduce((total, point) => [total[0] + Number(point[0] || 0), total[1] + Number(point[1] || 0)], [0, 0]).map(total => total / points.length);
+  return `${points.length} vertices · centroid ${lon.toFixed(4)}, ${lat.toFixed(4)}`;
+}
+
+function renderAdintLocationMap(coordinates) {
+  const container = document.getElementById("adintLocationMap");
+  adintTaskMap?.remove();
+  adintTaskMap = null;
+  if (!container || typeof maplibregl === "undefined") return;
+  const ring = (Array.isArray(coordinates) ? coordinates : []).filter(point => Array.isArray(point) && Number.isFinite(Number(point[0])) && Number.isFinite(Number(point[1])));
+  const points = ring.length > 1 && ring[0][0] === ring.at(-1)[0] && ring[0][1] === ring.at(-1)[1] ? ring.slice(0, -1) : ring;
+  if (points.length < 3) { container.textContent = "Location map unavailable"; return; }
+  container.textContent = "";
+  const map = new maplibregl.Map({
+    container,
+    style: "https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json",
+    center: points[0],
+    zoom: 10,
+    interactive: false,
+    attributionControl: false
+  });
+  adintTaskMap = map;
+  map.on("load", () => {
+    if (map !== adintTaskMap) return;
+    if (state.basemapMode !== "street") {
+      const baseLayers = map.getStyle().layers.map(layer => JSON.parse(JSON.stringify(layer)));
+      const firstLabel = baseLayers.find(layer => layer.type === "symbol")?.id;
+      map.addSource("task-satellite-imagery", {
+        type: "raster",
+        tiles: ["https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"],
+        tileSize: 256,
+        maxzoom: 19,
+        attribution: "Imagery © Esri, Vantor, Earthstar Geographics"
+      });
+      map.addLayer({ id: "task-satellite-imagery", type: "raster", source: "task-satellite-imagery" }, firstLabel);
+      for (const layer of baseLayers) {
+        if (!map.getLayer(layer.id)) continue;
+        if (satelliteReferenceLayer(layer)) {
+          map.setPaintProperty(layer.id, "line-color", layer["source-layer"] === "boundary" ? "rgba(255,255,255,0.82)" : "rgba(255,215,112,0.82)");
+          map.setPaintProperty(layer.id, "line-opacity", layer["source-layer"] === "boundary" ? 0.72 : 0.68);
+        } else if (layer.type !== "symbol") {
+          map.setLayoutProperty(layer.id, "visibility", "none");
+        } else if (layer.layout?.["text-field"]) {
+          map.setPaintProperty(layer.id, "text-color", "#ffffff");
+          map.setPaintProperty(layer.id, "text-halo-color", "#202b35");
+          map.setPaintProperty(layer.id, "text-halo-width", 1.5);
+        }
+      }
+    }
+    const bounds = new maplibregl.LngLatBounds();
+    points.forEach(point => bounds.extend(point));
+    map.addSource("drawn-collection-area", { type: "geojson", data: { type: "Feature", properties: {}, geometry: { type: "Polygon", coordinates: [[...points, points[0]]] } } });
+    map.addLayer({ id: "drawn-collection-area-fill", type: "fill", source: "drawn-collection-area", paint: { "fill-color": "#8ab4f8", "fill-opacity": 0.24 } });
+    map.addLayer({ id: "drawn-collection-area-outline", type: "line", source: "drawn-collection-area", paint: { "line-color": "#8ab4f8", "line-width": 2.5 } });
+    map.fitBounds(bounds, { padding: 22, maxZoom: 13, duration: 0 });
+    map.resize();
+  });
+}
+
+function openAdintTaskDialog(target, trigger = document.activeElement) {
+  collectionTaskReturnFocus = trigger;
+  pendingAdintTaskTarget = target;
+  const summary = document.getElementById("adintLocationSummary");
+  if (summary) summary.textContent = polygonTaskSummary(target?.coordinates);
+  adintTaskModal.hidden = false;
+  requestAnimationFrame(() => renderAdintLocationMap(pendingAdintTaskTarget?.coordinates));
+  adintTaskModal.querySelector("button")?.focus();
+}
+
+function openSigintTaskDialog(trigger = document.activeElement) {
+  collectionTaskReturnFocus = trigger;
+  sigintTaskModal.hidden = false;
+  sigintTaskModal.querySelector("button")?.focus();
+}
+
 function openPolygonActionMenu(polygon) {
   if (!polygon?.coordinates || state.pageView !== "workspace") return;
   pendingPolygonAction = polygon;
@@ -2075,13 +2186,14 @@ function openCollectionRequestDialog(target, trigger = document.activeElement) {
     ? `IMEI: ${target.imei}`
     : activeLocaleText("אזור מסומן במפה", "Marked area on the map");
   const types = collectionTypesForRole();
-  collectionRequestTypes.innerHTML = `<legend>${escapeHtml(activeLocaleText("סוג איסוף", "Collection type"))}</legend>${types.map((item, index) => `<label class="collection-option"><input type="radio" name="collectionType" value="${item.id}" ${index === 0 ? "checked" : ""}><span><strong>${escapeHtml(activeLocaleText(item.he, item.en))}</strong><small>${escapeHtml(activeLocaleText(item.descriptionHe, item.descriptionEn))}</small></span></label>`).join("")}`;
+  const defaultType = target.type === "imei" ? "cellular_geolocations" : "adint";
+  collectionRequestTypes.innerHTML = `<legend>${escapeHtml(activeLocaleText("סוג איסוף", "Collection type"))}</legend>${types.map((item, index) => `<label class="collection-option"><input type="radio" name="collectionType" value="${item.id}" ${item.id === defaultType || (index === 0 && !types.some(option => option.id === defaultType)) ? "checked" : ""}><span><strong>${escapeHtml(activeLocaleText(item.he, item.en))}</strong><small>${escapeHtml(activeLocaleText(item.descriptionHe, item.descriptionEn))}</small></span></label>`).join("")}`;
   const visint = state.activeRoleWorkspace === "visint";
   collectionExtractionObjects.hidden = !visint;
   collectionExtractionObjects.innerHTML = visint ? `<legend>${escapeHtml(activeLocaleText("אובייקטים לחילוץ", "Objects to extract"))}</legend>${COLLECTION_EXTRACTION_OBJECTS.map((item, index) => `<label class="collection-option"><input type="checkbox" name="collectionObject" value="${item.id}" ${index === 0 ? "checked" : ""}><span><strong>${escapeHtml(activeLocaleText(item.he, item.en))}</strong></span></label>`).join("")}` : "";
-  collectionRequestNote.value = "";
   collectionRequestError.hidden = true;
   collectionRequestModal.hidden = false;
+  updateCollectionSourceSelectionAction();
   collectionRequestTypes.querySelector("input")?.focus();
 }
 
@@ -2089,6 +2201,20 @@ async function submitCollectionRequest() {
   const target = pendingCollectionRequest;
   const type = collectionRequestForm.querySelector('input[name="collectionType"]:checked')?.value;
   if (!target || !type) return;
+  if (target.type === "polygon" && type === "adint") {
+    const trigger = target.trigger;
+    pendingDemoCollectionType = type;
+    closeCollectionRequestDialog();
+    openAdintTaskDialog(target, trigger);
+    return;
+  }
+  if (target.type === "imei" && ["cellular_geolocations", "cellular_calls"].includes(type)) {
+    const trigger = target.trigger;
+    pendingDemoCollectionType = type;
+    closeCollectionRequestDialog();
+    openSigintTaskDialog(trigger);
+    return;
+  }
   const objects = [...collectionRequestForm.querySelectorAll('input[name="collectionObject"]:checked')].map(input => input.value);
   const response = await fetch("/api/collection-request", {
     method: "POST",
@@ -2100,7 +2226,7 @@ async function submitCollectionRequest() {
       target: target.type === "imei" ? { type: "imei", imei: target.imei } : { type: "polygon", geometry: { type: "Polygon", coordinates: [target.coordinates] } },
       collection_type: type,
       extraction_objects: objects,
-      instructions: memoryCommentValue(collectionRequestNote.value)
+      instructions: ""
     })
   });
   const payload = await response.json();
@@ -8106,6 +8232,7 @@ document.getElementById("polygonRequestCollection")?.addEventListener("click", (
 document.getElementById("collectionRequestClose")?.addEventListener("click", closeCollectionRequestDialog);
 document.getElementById("collectionRequestCancel")?.addEventListener("click", closeCollectionRequestDialog);
 collectionRequestModal?.addEventListener("click", event => { if (event.target === collectionRequestModal) closeCollectionRequestDialog(); });
+collectionRequestTypes?.addEventListener("change", updateCollectionSourceSelectionAction);
 collectionRequestForm?.addEventListener("submit", async event => {
   event.preventDefault();
   const submit = document.getElementById("collectionRequestSubmit");
@@ -8114,6 +8241,64 @@ collectionRequestForm?.addEventListener("submit", async event => {
   try { await submitCollectionRequest(); }
   catch (error) { collectionRequestError.textContent = error.message || activeLocaleText("שליחת בקשת האיסוף נכשלה", "Could not submit collection request"); collectionRequestError.hidden = false; }
   finally { submit.disabled = false; }
+});
+document.querySelectorAll("[data-close-task-modal]").forEach(button => button.addEventListener("click", () => {
+  closeCollectionTaskDialog(document.getElementById(button.dataset.closeTaskModal));
+}));
+[adintTaskModal, sigintTaskModal].forEach(modal => {
+  modal?.addEventListener("click", event => { if (event.target === modal) closeCollectionTaskDialog(modal); });
+});
+document.querySelectorAll("[data-exclusive-chips], [data-task-segment]").forEach(group => group.addEventListener("click", event => {
+  const button = event.target.closest("button");
+  if (!button) return;
+  group.querySelectorAll("button").forEach(item => item.classList.toggle("selected", item === button));
+}));
+document.querySelectorAll("[data-multi-chips]").forEach(group => group.addEventListener("click", event => {
+  const button = event.target.closest("button");
+  if (button) button.classList.toggle("selected");
+}));
+function validateAdintTaskForm() {
+  const from = document.getElementById("adintDateFrom");
+  const to = document.getElementById("adintDateTo");
+  if (!from || !to) return true;
+  to.min = from.value;
+  to.setCustomValidity(from.value && to.value && from.value > to.value ? "The end date must be on or after the start date." : "");
+  return to.checkValidity();
+}
+function validateSigintIdentifiers() {
+  const imei = document.getElementById("sigintImei");
+  const msisdn = document.getElementById("sigintMsisdn");
+  const imsi = document.getElementById("sigintImsi");
+  const stateLabel = document.getElementById("sigintImeiState");
+  const values = [imei, msisdn, imsi].map(input => String(input?.value || "").trim());
+  const imeiValid = !values[0] || /^\d{15}$/.test(values[0]);
+  if (imei) imei.setCustomValidity(imeiValid ? "" : "IMEI must contain 15 digits.");
+  [msisdn, imsi].forEach(input => input?.setCustomValidity(values.some(Boolean) ? "" : "Enter at least one identifier."));
+  if (stateLabel) { stateLabel.textContent = imeiValid && values[0] ? "✓ valid" : "Enter a 15-digit IMEI"; stateLabel.classList.toggle("invalid", !imeiValid); }
+  return imeiValid && values.some(Boolean);
+}
+document.getElementById("adintDateFrom")?.addEventListener("change", validateAdintTaskForm);
+document.getElementById("adintDateTo")?.addEventListener("change", validateAdintTaskForm);
+["sigintImei", "sigintMsisdn", "sigintImsi"].forEach(id => document.getElementById(id)?.addEventListener("input", validateSigintIdentifiers));
+document.getElementById("sigintCircles")?.addEventListener("change", () => {
+  ["sigintMainCircle", "sigintSubCircle"].forEach(id => { const field = document.getElementById(id); if (field) field.disabled = false; });
+  const caseField = document.getElementById("sigintCaseSelect"); if (caseField) caseField.disabled = true;
+});
+document.getElementById("sigintCase")?.addEventListener("change", () => {
+  ["sigintMainCircle", "sigintSubCircle"].forEach(id => { const field = document.getElementById(id); if (field) field.disabled = true; });
+  const caseField = document.getElementById("sigintCaseSelect"); if (caseField) caseField.disabled = false;
+});
+document.getElementById("adintEditMap")?.addEventListener("click", () => {
+  closeCollectionTaskDialog(adintTaskModal);
+  document.getElementById("polygonDrawButton")?.click();
+});
+document.getElementById("adintTaskForm")?.addEventListener("submit", async event => {
+  if (!validateAdintTaskForm() || !event.currentTarget.checkValidity()) { event.preventDefault(); event.currentTarget.reportValidity(); return; }
+  event.preventDefault(); await completeDemoCollectionTask(adintTaskModal, "adint");
+});
+document.getElementById("sigintTaskForm")?.addEventListener("submit", async event => {
+  if (!validateSigintIdentifiers() || !event.currentTarget.checkValidity()) { event.preventDefault(); event.currentTarget.reportValidity(); return; }
+  event.preventDefault(); await completeDemoCollectionTask(sigintTaskModal, "cellular_geolocations");
 });
 document.getElementById("memoryCommentClose")?.addEventListener("click", closeMemoryCommentDialog);
 document.getElementById("memoryCommentCancel")?.addEventListener("click", closeMemoryCommentDialog);
@@ -8182,6 +8367,16 @@ document.addEventListener("keydown", event => {
   if (event.key === "Escape" && collectionRequestModal && !collectionRequestModal.hidden) {
     event.preventDefault();
     closeCollectionRequestDialog();
+    return;
+  }
+  if (event.key === "Escape" && adintTaskModal && !adintTaskModal.hidden) {
+    event.preventDefault();
+    closeCollectionTaskDialog(adintTaskModal);
+    return;
+  }
+  if (event.key === "Escape" && sigintTaskModal && !sigintTaskModal.hidden) {
+    event.preventDefault();
+    closeCollectionTaskDialog(sigintTaskModal);
     return;
   }
   if (event.key === "Escape" && polygonActionMenu && !polygonActionMenu.hidden) {

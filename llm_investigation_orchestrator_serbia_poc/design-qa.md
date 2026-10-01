@@ -1,45 +1,31 @@
-# Design QA — Chat Panel Collapse
+# Collection task screens — design QA
 
-## Evidence
-- Source visual truth: `C:\Users\user\AppData\Local\Temp\codex-clipboard-77903825-d73e-4be7-88e1-2805bcd1076d.png`
-- Expanded implementation: `chat-expanded.png`
-- Collapsed implementation: `chat-collapsed.png`
-- Polished implementation: `chat-polish.png`
-- Focused comparison: `chat-divider-comparison.png`
-- Viewport: 2000 × 1200 CSS pixels, device scale factor 1
-- Source pixels: 43 × 925; the source is a narrow location reference rather than a complete component design
-- Implementation pixels: 2000 × 1200; focused crop 80 × 1132
-- State: desktop expanded, desktop collapsed, desktop restored, and mobile breakpoint
+The supplied task screenshots define the requested content and flow, but the
+application's existing dark workspace is the visual authority. The ADINT and
+SIGINT dialogs therefore use the same panel surfaces, borders, typography,
+field treatment, selection colours, and button hierarchy as the rest of the
+application. Numbered mockup badges are intentionally omitted.
 
-## Full-view comparison evidence
-The expanded view places the 28px circular control at the upper end of the existing divider without covering the chat or map controls. In the collapsed view the result panel expands from 1467px to 1936px, the chat remains mounted and becomes hidden, and the restore control remains fully visible at the right edge.
+## Verified ADINT flow
 
-## Focused comparison evidence
-The combined focused image confirms the control occupies the upper divider location indicated by the source crop. Exact scrollbar styling was intentionally not copied because the source shows the desired location, while the requested component is a new minimize control.
+In the English Kosovo runtime, a polygon was drawn on the live workspace map,
+then opened with **Request collection**. The rendered dialog showed:
 
-## Required fidelity surfaces
-- Fonts and typography: existing Material Symbols and product typography are preserved.
-- Spacing and layout rhythm: control is centered on the divider with an 8px top offset; the divider line begins below it.
-- Colors and visual tokens: existing panel, line, blue-focus, muted-text, and shadow tokens are reused.
-- Image and icon fidelity: a standard Material Symbols chevron is used; no custom image asset is required.
-- Copy and content: Hebrew labels change between `מזער שיחה` and `הצג שיחה`.
+- the exact three-vertex geometry that was drawn, fitted inside the task map;
+- its derived centroid in the read-only location summary;
+- the same Satellite/Street basemap mode as the parent workspace;
+- native date and time pickers, selectable bid and recurrence controls, and a
+  fixed footer within the scrollable dialog.
 
-## Interaction and responsive checks
-- Collapse: passed.
-- Restore: passed; chat returned to its exact previous width.
-- Chat DOM preservation: passed.
-- Accessible label and expanded state: passed.
-- Mobile breakpoint: passed; divider and control are hidden in the stacked layout.
-- Browser console errors: none.
-- Keyboard semantics: native button semantics are present; browser automation did not synthesize activation through its limited `press` helper, so this remains a manual assistive-technology follow-up rather than a visual blocker.
+The location preview is a disposable MapLibre instance sourced from the actual
+polygon coordinates. It is not a generated thumbnail or a static approximation.
 
-## Findings
-No actionable P0, P1, or P2 findings.
+## SIGINT coverage
 
-## Comparison history
-Initial implementation passed the visual comparison without requiring a P0/P1/P2 correction.
+The SIGINT screen uses the same integrated task-dialog components. Identifier
+validation, native date controls, select menus, chip choices, the add-identifier
+toggle, and case/circle enablement are covered by `test_collection_request.py`.
+The currently running Kosovo fixture has no IPDR/IMEI entry point, so no
+scenario switch was made solely for a second visual capture.
 
-Polish pass: the enclosing result-panel frame was removed and the divider control was reduced to 20px. Computed layout confirms the button ends exactly at the chat boundary with no overlap; result border and radius are both 0px.
-
-## Final result
-final result: passed
+final result: ADINT visually verified; SIGINT interaction covered by tests
