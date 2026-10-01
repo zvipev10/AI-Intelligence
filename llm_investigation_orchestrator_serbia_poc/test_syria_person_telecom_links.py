@@ -12,9 +12,9 @@ ROOT = Path(__file__).resolve().parent
 
 
 class SyriaPersonTelecomLinks(unittest.TestCase):
-    def test_iranian_person_links_to_existing_telecom_records_and_call_parties(self):
+    def test_iranian_person_links_to_existing_telecom_records_without_call_party_identity(self):
         profile = load_profile(ROOT, "syria", verify=True)
-        self.assertEqual(profile["dataset_version"], "cellular-records-v8")
+        self.assertEqual(profile["dataset_version"], "cellular-records-v11")
         code = r'''
 import server
 
@@ -38,12 +38,13 @@ assert "ENT-SYR-PERSON-002" in by_id["REC-SYR-IPDR-1683930569233410"]["related_e
 assert "ENT-SYR-PERSON-002" in by_id["REC-SYR-CELL-CSV-013"]["related_entity_ids"]
 call = by_id["REC-SYR-CALL-001"]
 assert (call["side_a_entity_id"], call["side_a_entity_name"]) == ("ENT-SYR-PERSON-002", "Arman Rahimi")
-assert (call["side_b_entity_id"], call["side_b_entity_name"]) == ("ENT-SYR-PERSON-001", "Omar Al-Khatib")
+assert (call.get("side_b_entity_id"), call.get("side_b_entity_name")) == (None, None)
 assert call["side_a_imei"] == person["telecom"]["imei"]
-assert call["side_b_imei"] == omar["telecom"]["imei"]
+assert call["side_b_imei"] == ""
 call2 = by_id["REC-SYR-CALL-002"]
 assert (call2["side_a_entity_id"], call2["side_a_entity_name"]) == ("ENT-SYR-PERSON-002", "Arman Rahimi")
-assert (call2["side_b_entity_id"], call2["side_b_entity_name"]) == ("ENT-SYR-PERSON-001", "Omar Al-Khatib")
+assert (call2.get("side_b_entity_id"), call2.get("side_b_entity_name")) == (None, None)
+assert call2["side_b_imei"] == ""
 assert call2["audio_url"] == "/assets/demo/syria/call-media-v1/call-2.mp3"
 '''
         with tempfile.TemporaryDirectory() as state:

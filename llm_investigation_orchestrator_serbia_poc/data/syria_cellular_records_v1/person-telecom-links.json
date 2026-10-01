@@ -19,29 +19,11 @@
       "call_parties": [
         {
           "event_id": "REC-SYR-CALL-001",
-          "side": "a",
-          "counterparty_entity_id": "ENT-SYR-PERSON-001"
+          "side": "a"
         },
         {
           "event_id": "REC-SYR-CALL-002",
-          "side": "a",
-          "counterparty_entity_id": "ENT-SYR-PERSON-001"
-        }
-      ]
-    },
-    {
-      "entity_id": "ENT-SYR-PERSON-001",
-      "imei": "352099001122338",
-      "call_parties": [
-        {
-          "event_id": "REC-SYR-CALL-001",
-          "side": "b",
-          "counterparty_entity_id": "ENT-SYR-PERSON-002"
-        },
-        {
-          "event_id": "REC-SYR-CALL-002",
-          "side": "b",
-          "counterparty_entity_id": "ENT-SYR-PERSON-002"
+          "side": "a"
         }
       ]
     }

@@ -44,9 +44,7 @@
       "Tehran, Iran (2014–2018)",
       "Homs, Syria (1990–2014)"
     ],
-    "connections": [
-      "Arman Rahimi — designated Side A in REC-SYR-CALL-001 and REC-SYR-CALL-002"
-    ],
+    "connections": [],
     "military_service": "Completed mandatory service in a Syrian logistics unit (2010–2012).",
     "associated_entity_ids": [],
     "identifiers": {
@@ -57,10 +55,7 @@
       "imei": "352099001122338",
       "imsi": "418201234567891",
       "reference_record_ids": [],
-      "calls": [
-        { "event_id": "REC-SYR-CALL-001", "side": "b", "counterparty_entity_id": "ENT-SYR-PERSON-002" },
-        { "event_id": "REC-SYR-CALL-002", "side": "b", "counterparty_entity_id": "ENT-SYR-PERSON-002" }
-      ]
+      "calls": []
     },
     "biographical_notes": "Profile prepared for the Syria scenario."
   },
@@ -98,13 +93,9 @@
       "Damascus, Syria (2018–2022)",
       "Shiraz, Iran (1987–2008)"
     ],
-    "connections": [
-      "Omar Al-Khatib — commercial transport contact and designated Side B in REC-SYR-CALL-001 and REC-SYR-CALL-002"
-    ],
+    "connections": [],
     "military_service": "Completed compulsory service in an Iranian transport-support unit (2006–2008).",
-    "associated_entity_ids": [
-      "ENT-SYR-PERSON-001"
-    ],
+    "associated_entity_ids": [],
     "identifiers": {
       "profile_reference": "SYR-PER-002"
     },
@@ -122,8 +113,8 @@
         "REC-SYR-IPDR-1683930569233410", "REC-SYR-IPDR-3495155497992130", "REC-SYR-CELL-CSV-013", "REC-SYR-CELL-CSV-021", "REC-SYR-CELL-CSV-024", "REC-SYR-CELL-CSV-026", "REC-SYR-CELL-CSV-030", "REC-SYR-CELL-CSV-037", "REC-SYR-CELL-CSV-043", "REC-SYR-CELL-CSV-047", "REC-SYR-CELL-CSV-052", "REC-SYR-CELL-CSV-067", "REC-SYR-CELL-CSV-072", "REC-SYR-CELL-CSV-075", "REC-SYR-CELL-CSV-077", "REC-SYR-CELL-CSV-084", "REC-SYR-CELL-CSV-089", "REC-SYR-CELL-CSV-093", "REC-SYR-CELL-CSV-099", "REC-SYR-CELL-CSV-101"
       ],
       "calls": [
-        { "event_id": "REC-SYR-CALL-001", "side": "a", "counterparty_entity_id": "ENT-SYR-PERSON-001" },
-        { "event_id": "REC-SYR-CALL-002", "side": "a", "counterparty_entity_id": "ENT-SYR-PERSON-001" }
+        { "event_id": "REC-SYR-CALL-001", "side": "a" },
+        { "event_id": "REC-SYR-CALL-002", "side": "a" }
       ]
     },
     "biographical_notes": "Known to coordinate vehicle maintenance, cargo routing and cross-border driver handoffs."
