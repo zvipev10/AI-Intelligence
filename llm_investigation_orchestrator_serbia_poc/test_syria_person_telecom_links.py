@@ -27,8 +27,10 @@ assert person["image_url"] == "/assets/demo/syria/persons/arman-rahimi-reference
 assert person["identity_status"] == "profiled individual"
 assert person["telecom"]["imei"] == "353294702931926"
 assert "msisdn" not in person["telecom"] and "imsi" not in person["telecom"]
-assert person["telecom"]["extracted_subscriber_identity"]["msisdn"] == "9630943700780"
-assert person["telecom"]["extracted_subscriber_identity"]["imsi"] == "417011234567890"
+derivation = person["telecom"]["subscriber_identity_derivation"]
+assert derivation["claim"]["value"]["msisdn"] == "9630943700780"
+assert derivation["claim"]["value"]["imsi"] == "417011234567890"
+assert derivation["status"] == "candidate"
 assert len(person["telecom"]["reference_record_ids"]) == 20
 assert [call["event_id"] for call in person["telecom"]["calls"]] == ["REC-SYR-CALL-001", "REC-SYR-CALL-002"]
 omar = entities["ENT-SYR-PERSON-001"]

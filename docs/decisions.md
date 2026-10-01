@@ -527,3 +527,11 @@ Decision: add a read-only `open_object_viewer` action for one exact retrieved ra
 Rationale: analysts can ask chat to inspect a known object without manually finding it in a table, while catalog ownership and role-layer access remain enforced.
 
 Impact: this adds no new object storage or viewer representation. Failed validation, unavailable catalog data, blocked role access, and pending browser work must not be reported as a successful viewer open.
+
+### 2026-10-01 — Separate field links from derived information
+
+Decision: create deterministic, provenance-bearing links only from approved raw/object field pairs, then run derivation rules over those links. Derived values are reviewable claims, not source-entity mutations.
+
+Rationale: a field equality such as an entity IMEI matching a raw cellular record establishes traceable connectivity, but does not by itself establish a subscriber identity. Keeping the layers separate prevents a candidate MSISDN/IMSI from being misrepresented as a direct raw-data link or permanent entity fact.
+
+Impact: the subscriber-identity rule requires a unique most-supported non-empty MSISDN/IMSI pair across at least two IMEI-linked cellular records. Analyst approval is stored in scenario state as a derivation review. Generic same-value correlation, blank Side-B call linkage, undocumented IPDR `ip_out` interpretation, and time-unqualified IP links are prohibited.

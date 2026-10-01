@@ -20,6 +20,7 @@ from collections import Counter, defaultdict
 from datetime import datetime, timezone
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from ipdr_evidence import attach_package
+from link_graph import build_links, derive_subscriber_identity
 from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qs, unquote, urlparse
@@ -227,8 +228,10 @@ if DEMO.enabled:
     if not DEMO.profile["features"]["playback"]:
         SCENARIO_MANIFESTS_DIR = DEMO.state / "scenario_manifests"
     DEMO.bind_mcp_environment()
-ENTITY_APPROVALS_PATH = (DEMO.state if DEMO.enabled else ROOT / "entity_approvals" / STATE_SUFFIX) / "entities" / "telecom_approvals.json"
-_ENTITY_APPROVAL_LOCK = threading.Lock()
+DERIVATION_REVIEWS_PATH = (DEMO.state if DEMO.enabled else ROOT / "entity_approvals" / STATE_SUFFIX) / "derivations" / "reviews.json"
+# Compatibility name for callers/tests during the state-file migration.
+ENTITY_APPROVALS_PATH = DERIVATION_REVIEWS_PATH
+_DERIVATION_REVIEW_LOCK = threading.Lock()
 TERMINAL_STATUSES = {"completed", "failed", "cancelled"}
 EVENT_ID_PATTERN = re.compile(r"\b(?:REC-(?:V2-)?\d{6}|LOC-(?:V2-)?\d{3})\b")
 SAVED_QUESTION_ID_PATTERN = re.compile(r"^[A-Za-z0-9_.-]+$")
@@ -396,6 +399,34 @@ def apply_person_telecom_links(events: list[dict[str, Any]], links: list[dict[st
             event["related_entity_ids"] = list(dict.fromkeys(event["related_entity_ids"]))
 
 
+def runtime_links(events: list[dict[str, Any]], locale: str = "he") -> list[dict[str, Any]]:
+    """Return field-backed links for the currently selected immutable dataset."""
+    return build_links(events, load_ui_entity_db(locale), load_locations_db(locale))
+
+
+def apply_graph_entity_links(events: list[dict[str, Any]], locale: str = "he") -> None:
+    """Compatibility projection for existing record/entity viewers.
+
+    ``related_entity_ids`` remains a view field only; the link graph is the
+    source of the relationship and entity source data is not mutated.
+    """
+    by_id = {str(event.get("event_id")): event for event in events if event.get("event_id")}
+    entities = load_ui_entity_db(locale)
+    for link in runtime_links(events, locale):
+        record_id = str((link.get("from") or {}).get("object_id") or "")
+        entity_id = str((link.get("to") or {}).get("object_id") or "")
+        event = by_id.get(record_id)
+        if event is None or (link.get("to") or {}).get("object_type") != "entity":
+            continue
+        event.setdefault("related_entity_ids", []).append(entity_id)
+        if link.get("from", {}).get("field") == "side_a_imei":
+            event["side_a_entity_id"] = entity_id
+            event["side_a_entity_name"] = entities.get(entity_id, {}).get("canonical_name", entity_id)
+        for field in ("related_entity_ids",):
+            if isinstance(event.get(field), list):
+                event[field] = list(dict.fromkeys(event[field]))
+
+
 def load_ui_events(locale: str = "he") -> list[dict[str, Any]]:
     events_path, _, entities_path = localized_dataset_paths(locale)
     locale = normalize_locale(locale)
@@ -405,7 +436,7 @@ def load_ui_events(locale: str = "he") -> list[dict[str, Any]]:
     with events_path.open(encoding="utf-8-sig", newline="") as handle:
         events = list(csv.DictReader(handle))
     attach_package(events, events_path)
-    apply_person_telecom_links(events, load_person_telecom_links(events_path, entities_path))
+    apply_graph_entity_links(events, locale)
     for event in events:
         if locale == "en":
             event["source_type"] = translate_plain(event.get("source_type", ""))
@@ -425,18 +456,43 @@ def load_ui_events(locale: str = "he") -> list[dict[str, Any]]:
     return sorted(events, key=lambda item: str(item.get("timestamp_utc") or ""))
 
 
-def load_entity_telecom_approvals() -> dict[str, dict[str, Any]]:
+def load_derivation_reviews() -> dict[str, dict[str, Any]]:
     try:
         payload = json.loads(ENTITY_APPROVALS_PATH.read_text(encoding="utf-8-sig"))
     except (OSError, json.JSONDecodeError):
         return {}
+    reviews = payload.get("reviews") if isinstance(payload, dict) else None
+    if isinstance(reviews, dict):
+        return {str(derivation_id): review for derivation_id, review in reviews.items() if isinstance(review, dict)}
     approvals = payload.get("approvals") if isinstance(payload, dict) else {}
-    return {str(entity_id): value for entity_id, value in approvals.items() if isinstance(value, dict)} if isinstance(approvals, dict) else {}
+    return {f"legacy-{entity_id}": value for entity_id, value in approvals.items() if isinstance(value, dict)} if isinstance(approvals, dict) else {}
+
+
+def load_entity_telecom_approvals() -> dict[str, dict[str, Any]]:
+    approved = {}
+    for review in load_derivation_reviews().values():
+        if review.get("review_state") != "approved":
+            continue
+        entity_id = str((review.get("subject") or {}).get("object_id") or review.get("entity_id") or "")
+        value = (review.get("claim") or {}).get("value") or review
+        if entity_id and isinstance(value, dict):
+            approved[entity_id] = {
+                "msisdn": value.get("msisdn"), "imsi": value.get("imsi"),
+                "method": review.get("rule_id") or review.get("method"),
+                "supporting_record_ids": review.get("supporting_record_ids") or [],
+                "approved_at_utc": review.get("reviewed_at_utc") or review.get("approved_at_utc"),
+                "source": "analyst_derivation_review",
+            }
+    return approved
 
 
 def save_entity_telecom_approvals(approvals: dict[str, dict[str, Any]]) -> None:
     ENTITY_APPROVALS_PATH.parent.mkdir(parents=True, exist_ok=True)
-    payload = {"schema_version": 1, "approvals": approvals}
+    reviews = load_derivation_reviews()
+    for entity_id, approval in approvals.items():
+        derivation_id = str(approval.get("derivation_id") or f"legacy-{entity_id}")
+        reviews[derivation_id] = approval
+    payload = {"schema_version": 2, "reviews": reviews}
     temp_path = ENTITY_APPROVALS_PATH.with_suffix(".json.tmp")
     temp_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
     temp_path.replace(ENTITY_APPROVALS_PATH)
@@ -467,10 +523,17 @@ def load_ui_entity_db(locale: str = "he") -> dict[str, dict[str, Any]]:
     except (OSError, json.JSONDecodeError):
         return {}
     approvals = load_entity_telecom_approvals()
-    return {
-        item["entity_id"]: apply_entity_telecom_approval(item, approvals.get(item["entity_id"], {}))
-        for item in loaded if item.get("entity_id")
-    }
+    entities = {}
+    for item in loaded:
+        if not item.get("entity_id"):
+            continue
+        copied = dict(item)
+        telecom = copied.get("telecom") if isinstance(copied.get("telecom"), dict) else {}
+        # Older data packages may contain a precomputed candidate. Candidates
+        # are now produced only by the derivation layer.
+        copied["telecom"] = {key: value for key, value in telecom.items() if key != "extracted_subscriber_identity"}
+        entities[copied["entity_id"]] = apply_entity_telecom_approval(copied, approvals.get(copied["entity_id"], {}))
+    return entities
 
 
 ENTITY_PROFILE_FIELDS = (
@@ -496,6 +559,7 @@ def event_supports_presence(event: dict[str, Any]) -> bool:
 def build_ui_entity_layers(events: list[dict[str, Any]], locale: str = "he") -> dict[str, dict[str, Any]]:
     entity_db = load_ui_entity_db(locale)
     locations_db = load_locations_db(locale)
+    links = build_links(events, entity_db, locations_db)
     presentations: dict[str, dict[str, Any]] = {}
     for entity_id, base in sorted(entity_db.items()):
         entity_events = [
@@ -546,6 +610,12 @@ def build_ui_entity_layers(events: list[dict[str, Any]], locale: str = "he") -> 
             field: base[field] for field in ENTITY_PROFILE_FIELDS
             if base.get(field) not in (None, "", [], {})
         })
+        derivation = derive_subscriber_identity(events, links, entity_id)
+        if derivation and not (presentation.get("telecom") or {}).get("approved_subscriber_identity"):
+            presentation["telecom"] = {
+                **(presentation.get("telecom") or {}),
+                "subscriber_identity_derivation": derivation,
+            }
         presentations[entity_id] = presentation
     return presentations
 
@@ -1762,51 +1832,49 @@ def create_memory_artifact(request: dict) -> dict:
 
 
 def telecom_identifier_correlation(entity_id: str, locale: str = "en") -> dict:
-    """Derive one subscriber pair only from geolocation rows sharing an entity IMEI."""
-    entity = load_ui_entity_db(locale).get(entity_id)
-    if not entity:
+    """Compatibility wrapper around the graph-backed derivation rule."""
+    if entity_id not in load_ui_entity_db(locale):
         raise ValueError("Person entity was not found")
-    telecom = entity.get("telecom") if isinstance(entity.get("telecom"), dict) else {}
-    imei = compact_text(telecom.get("imei"), 32)
-    if not imei:
-        raise ValueError("Person entity has no IMEI")
-    pairs: dict[tuple[str, str], list[str]] = defaultdict(list)
-    for event in load_ui_events(locale):
-        if compact_text(event.get("target_imei"), 32) != imei:
-            continue
-        msisdn = compact_text(event.get("target_msisdn"), 32)
-        imsi = compact_text(event.get("target_imsi"), 32)
-        event_id = compact_text(event.get("event_id"), 240)
-        if msisdn and imsi and event_id:
-            pairs[(msisdn, imsi)].append(event_id)
-    if not pairs:
+    events = load_ui_events(locale)
+    derivation = derive_subscriber_identity(events, runtime_links(events, locale), entity_id)
+    if derivation is None:
         raise ValueError("No cellular-geolocation records corroborate subscriber identifiers for this IMEI")
-    (msisdn, imsi), record_ids = max(pairs.items(), key=lambda entry: (len(entry[1]), entry[0]))
+    value = derivation["claim"]["value"]
+    telecom = load_ui_entity_db(locale)[entity_id].get("telecom") or {}
     return {
-        "entity_id": entity_id, "imei": imei, "msisdn": msisdn, "imsi": imsi,
-        "supporting_record_ids": sorted(set(record_ids)),
-        "method": "imei_linked_telecom_identity_correlation",
+        "entity_id": entity_id, "imei": telecom.get("imei"), "msisdn": value["msisdn"], "imsi": value["imsi"],
+        "supporting_record_ids": derivation["supporting_record_ids"],
+        "supporting_link_ids": derivation["supporting_link_ids"],
+        "derivation_id": derivation["derivation_id"],
+        "method": derivation["rule_id"], "derivation": derivation,
     }
 
 
-def approve_entity_telecom_correlation(request: dict) -> dict:
+def review_subscriber_identity_derivation(request: dict) -> dict:
     entity_id = compact_text(request.get("entity_id"), 240)
     if not entity_id:
         raise ValueError("Entity id is required")
+    action = compact_text(request.get("action") or "approve", 20).lower()
+    if action not in {"approve", "reject"}:
+        raise ValueError("Derivation review action must be approve or reject")
     correlation = telecom_identifier_correlation(entity_id)
-    with _ENTITY_APPROVAL_LOCK:
-        approvals = load_entity_telecom_approvals()
-        previous = approvals.get(entity_id, {})
-        approval = {
-            **correlation,
-            "kind": "approved_telecom_identifier_correlation",
-            "approved_at_utc": previous.get("approved_at_utc") or utc_now_iso(),
-            "source": "manual_user_approval",
+    with _DERIVATION_REVIEW_LOCK:
+        previous = load_entity_telecom_approvals().get(entity_id, {})
+        derivation = correlation["derivation"]
+        review = {
+            **derivation,
+            "review_state": "approved" if action == "approve" else "rejected",
+            "reviewed_at_utc": previous.get("approved_at_utc") or utc_now_iso(),
+            "reviewed_by": "analyst",
         }
-        approvals[entity_id] = approval
-        save_entity_telecom_approvals(approvals)
+        save_entity_telecom_approvals({entity_id: review})
     entity = load_ui_entity_db("en").get(entity_id)
-    return {"saved": approval, "entity": entity}
+    return {"saved": {**review, "method": review["rule_id"]}, "entity": entity}
+
+
+def approve_entity_telecom_correlation(request: dict) -> dict:
+    """Compatibility endpoint for the former entity-embedded approval flow."""
+    return review_subscriber_identity_derivation({**request, "action": "approve"})
 
 
 COLLECTION_REQUEST_TYPES = {"adint", "cellular_geolocations", "cellular_calls", "satellite", "cctv"}
@@ -5293,6 +5361,24 @@ class Handler(SimpleHTTPRequestHandler):
                 "dataset_rows": len(load_ui_events(locale)),
             })
             return
+        if path.path == "/api/links":
+            events = load_ui_events(locale)
+            object_id = str((query.get("object_id") or query.get("record_id") or [""])[0]).strip()
+            links = runtime_links(events, locale)
+            if object_id:
+                links = [item for item in links if object_id in {str((item.get("from") or {}).get("object_id") or ""), str((item.get("to") or {}).get("object_id") or "")}]
+            self.send_json(200, {"schema_version": 1, "links": links})
+            return
+        if path.path == "/api/derivations":
+            entity_id = str((query.get("subject_id") or query.get("entity_id") or [""])[0]).strip()
+            events = load_ui_events(locale)
+            derivations = []
+            if entity_id:
+                derivation = derive_subscriber_identity(events, runtime_links(events, locale), entity_id)
+                if derivation:
+                    derivations.append(derivation)
+            self.send_json(200, {"schema_version": 1, "derivations": derivations})
+            return
         if DEMO.enabled and path.path in {"/api/dataset/events", "/api/dataset/locations"}:
             events, locations, _ = localized_dataset_paths(locale)
             selected = events if path.path.endswith("events") else locations
@@ -5984,7 +6070,7 @@ class Handler(SimpleHTTPRequestHandler):
             except Exception as exc:
                 self.send_json(502, {"error": str(exc)})
             return
-        if path == "/api/entity/telecom-correlation/approve":
+        if path in {"/api/entity/telecom-correlation/approve", "/api/derivations/review"}:
             try:
                 length = int(self.headers.get("Content-Length", "0"))
                 if length > 100_000:
@@ -5993,7 +6079,8 @@ class Handler(SimpleHTTPRequestHandler):
                 request = json.loads(self.rfile.read(length).decode("utf-8-sig"))
                 if not isinstance(request, dict):
                     raise ValueError("Invalid entity enrichment payload")
-                    self.send_json(201, approve_entity_telecom_correlation(request))
+                result = review_subscriber_identity_derivation(request) if path == "/api/derivations/review" else approve_entity_telecom_correlation(request)
+                self.send_json(201, result)
             except ValueError as exc:
                 self.send_json(400, {"error": str(exc)})
             except Exception as exc:

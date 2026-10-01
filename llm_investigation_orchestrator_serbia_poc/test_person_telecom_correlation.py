@@ -16,8 +16,11 @@ assert correlation['imei'] == '353294702931926'
 assert correlation['msisdn'] == '9630943700780'
 assert correlation['imsi'] == '417011234567890'
 assert len(correlation['supporting_record_ids']) == 18
+rejected = server.review_subscriber_identity_derivation({'entity_id': 'ENT-SYR-PERSON-002', 'action': 'reject'})
+assert rejected['saved']['review_state'] == 'rejected'
+assert 'msisdn' not in server.load_ui_entity_db('en')['ENT-SYR-PERSON-002']['telecom']
 saved = server.approve_entity_telecom_correlation({'entity_id': 'ENT-SYR-PERSON-002'})
-assert saved['saved']['method'] == 'imei_linked_telecom_identity_correlation'
+assert saved['saved']['method'] == 'subscriber_identity_from_imei_linked_records_v1'
 entity_telecom = server.load_ui_entity_db('en')['ENT-SYR-PERSON-002']['telecom']
 assert entity_telecom['msisdn'] == '9630943700780'
 assert entity_telecom['imsi'] == '417011234567890'
@@ -47,7 +50,7 @@ class PersonTelecomCorrelationUiTests(unittest.TestCase):
         self.assertIn("function approveExtractedTelecomIdentity(entityId, button)", app)
         self.assertIn("Extracted subscriber identity", app)
         self.assertIn("data-approve-telecom-entity", app)
-        self.assertIn('"/api/entity/telecom-correlation/approve"', app)
+        self.assertIn('"/api/derivations/review"', app)
         self.assertIn('"Approve"', app)
         self.assertIn("Reference records", app)
         self.assertIn("Calls", app)

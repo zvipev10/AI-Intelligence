@@ -4282,8 +4282,11 @@ function personProfileHtml(item) {
 
 function personTelecomDetailsHtml(item) {
   const telecom = item.telecom && typeof item.telecom === "object" ? item.telecom : {};
-  const extracted = telecom.extracted_subscriber_identity && typeof telecom.extracted_subscriber_identity === "object"
-    ? telecom.extracted_subscriber_identity
+  const derivation = telecom.subscriber_identity_derivation && typeof telecom.subscriber_identity_derivation === "object"
+    ? telecom.subscriber_identity_derivation
+    : null;
+  const extracted = derivation && derivation.claim && typeof derivation.claim.value === "object"
+    ? { ...derivation.claim.value, supporting_record_ids: derivation.supporting_record_ids || [] }
     : null;
   const approved = telecom.approved_subscriber_identity && typeof telecom.approved_subscriber_identity === "object"
     ? telecom.approved_subscriber_identity
@@ -4317,10 +4320,10 @@ async function approveExtractedTelecomIdentity(entityId, button) {
   const original = button.innerHTML;
   button.innerHTML = `<span class="material-symbols-rounded" aria-hidden="true">progress_activity</span>${escapeHtml(activeLocaleText("מאשר...", "Approving..."))}`;
   try {
-    const response = await fetch("/api/entity/telecom-correlation/approve", {
+    const response = await fetch("/api/derivations/review", {
       method: "POST",
       headers: { "Content-Type": "application/json; charset=utf-8" },
-      body: JSON.stringify({ entity_id: entityId })
+      body: JSON.stringify({ entity_id: entityId, action: "approve" })
     });
     const payload = await response.json();
     if (!response.ok) throw new Error(payload.error || activeLocaleText("אישור מזהי התקשורת נכשל", "Could not approve telecom identifiers"));

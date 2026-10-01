@@ -195,3 +195,9 @@ Investigation memory is an atomic JSON payload with additive `chat_summaries`, `
 ## IPDR package evidence and raw records
 
 The checksum-anchored acquisition package appears once in the general `evidence:all` layer; there is no source-specific IPDR evidence catalog layer. It is an `ipdr_package` object, not a session row, and its viewer links to `events:IPDR`, where all 300 immutable REC records remain available in Table and Timeline. Package objects have no Map or Timeline capability. Raw record IDs, native values, source references and validation metadata are preserved. No separate record evidence projection or EVD copy is created; IPDR record projection is rejected by the evidence projector. `get_evidence` resolves the package, while raw records remain accessible through event retrieval. Unknown acquisition details remain unknown and original file checksums/membership are verified before presentation.
+
+## Field-link graph and derived claims
+
+The runtime builds deterministic, versioned field-equality links from immutable records, entities, locations and evidence packages. A link records its approved rule, both object/field endpoints, the matched string value and source-record provenance; it does not add a property to either endpoint. Only an explicit rule registry may create links. It excludes blank call Side B fields, IPDR `ip_out`, and unqualified IP coincidence.
+
+Derivation rules consume links rather than source files directly. The subscriber-identity rule follows an entity's known IMEI only through cellular `target_imei` links, groups non-empty MSISDN/IMSI tuples, and returns a candidate only for a unique most-supported pair with at least two distinct records. A candidate is not an entity-field mutation. Analyst approval is a scenario/dataset-scoped derivation review that overlays the approved claim only at presentation time. Raw records and versioned entity files remain unchanged.
