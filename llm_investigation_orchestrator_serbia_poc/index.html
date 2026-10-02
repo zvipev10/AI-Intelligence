@@ -6,7 +6,7 @@
   <title>סביבת מודיעין</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="./vendor/maplibre-gl.css">
-  <link rel="stylesheet" href="./styles.css?v=172">
+  <link rel="stylesheet" href="./styles.css?v=173">
 </head>
 <body class="welcome-active">
   <a class="help-button" href="./help.html" target="_blank" rel="noopener" aria-label="פתח עזרה" data-i18n-aria-he="פתח עזרה" data-i18n-aria-en="Open help">?</a>
@@ -215,6 +215,13 @@
     </section>
   </div>
 
+  <div id="visualMediaOverlay" class="visual-media-overlay" hidden>
+    <section class="visual-media-overlay-dialog" role="dialog" aria-modal="true" aria-label="Expanded source media">
+      <div id="visualMediaOverlayContent" class="visual-media-overlay-content"></div>
+      <button id="visualMediaOverlayClose" class="visual-media-overlay-close" type="button" aria-label="Close expanded media" title="Close expanded media"><span class="material-symbols-rounded" aria-hidden="true">close</span></button>
+    </section>
+  </div>
+
   <div id="memoryModal" class="modal-backdrop memory-modal" hidden>
     <section class="memory-modal-panel" role="dialog" aria-modal="true" aria-labelledby="memoryModalTitle">
       <header class="memory-modal-header"><div><span class="eyebrow" data-i18n-text-he="חקירה פעילה" data-i18n-text-en="Active investigation">חקירה פעילה</span><h2 id="memoryModalTitle" data-i18n-text-he="זיכרון" data-i18n-text-en="Memory">זיכרון</h2></div><button id="memoryModalClose" class="modal-close-button" type="button" aria-label="סגור" data-i18n-aria-he="סגור" data-i18n-aria-en="Close">×</button></header>
@@ -400,6 +407,6 @@
 
   <script src="./vendor/maplibre-gl.js"></script>
   <script src="./polygon_draw.js?v=3"></script>
-  <script src="./demo_bootstrap.js?v=241"></script>
+  <script src="./demo_bootstrap.js?v=242"></script>
 </body>
 </html>

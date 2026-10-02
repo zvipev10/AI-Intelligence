@@ -4012,21 +4012,41 @@ function viewerMediaHtml(item) {
   </section>`;
 }
 
-async function toggleVisualCollectionMediaFullscreen(trigger) {
+let visualMediaOverlayTrigger = null;
+
+function closeVisualCollectionMediaFullscreen({ restoreFocus = true } = {}) {
+  const overlay = document.getElementById("visualMediaOverlay");
+  const content = document.getElementById("visualMediaOverlayContent");
+  if (!overlay || overlay.hidden) return;
+  content?.querySelectorAll("video,audio").forEach(media => media.pause());
+  if (content) content.replaceChildren();
+  overlay.hidden = true;
+  document.body.classList.remove("visual-media-overlay-open");
+  const trigger = visualMediaOverlayTrigger;
+  visualMediaOverlayTrigger = null;
+  if (restoreFocus) trigger?.focus();
+}
+
+function toggleVisualCollectionMediaFullscreen(trigger) {
   const media = trigger.closest(".object-viewer-media");
-  if (!media) return;
-  try {
-    if (document.fullscreenElement === media) {
-      await document.exitFullscreen?.();
-      return;
-    }
-    if (document.fullscreenElement) await document.exitFullscreen?.();
-    if (typeof media.requestFullscreen === "function") await media.requestFullscreen();
-    else if (typeof media.webkitRequestFullscreen === "function") media.webkitRequestFullscreen();
-    else throw new Error("Fullscreen is unavailable");
-  } catch (error) {
-    trigger.title = error.message || activeLocaleText("מסך מלא אינו זמין", "Full screen is unavailable");
-  }
+  const source = media?.querySelector("img,video");
+  const overlay = document.getElementById("visualMediaOverlay");
+  const content = document.getElementById("visualMediaOverlayContent");
+  const closeButton = document.getElementById("visualMediaOverlayClose");
+  if (!source || !overlay || !content || !closeButton) return;
+  const closeLabel = activeLocaleText("סגור מדיה מוגדלת", "Close expanded media");
+  overlay.querySelector(".visual-media-overlay-dialog")?.setAttribute("aria-label", activeLocaleText("מדיית מקור מוגדלת", "Expanded source media"));
+  closeButton.setAttribute("aria-label", closeLabel);
+  closeButton.title = closeLabel;
+  const expandedMedia = source.cloneNode(true);
+  expandedMedia.removeAttribute("id");
+  expandedMedia.removeAttribute("loading");
+  if (expandedMedia.tagName === "VIDEO") expandedMedia.controls = true;
+  content.replaceChildren(expandedMedia);
+  visualMediaOverlayTrigger = trigger;
+  overlay.hidden = false;
+  document.body.classList.add("visual-media-overlay-open");
+  closeButton.focus();
 }
 
 let objectViewerUavAnimation = 0;
@@ -4528,6 +4548,7 @@ function setViewerMaximized(maximized) {
 
 function closeObjectViewer() {
   const viewer = document.getElementById("objectViewer");
+  closeVisualCollectionMediaFullscreen({ restoreFocus: false });
   stopSimulatedUavStream();
   cellularViewerMap?.remove(); cellularViewerMap = null;
   entityViewerMap?.remove(); entityViewerMap = null;
@@ -7770,6 +7791,10 @@ document.addEventListener("click", event => {
     void toggleVisualCollectionMediaFullscreen(visualMediaFullscreen);
     return;
   }
+  if (event.target.closest("#visualMediaOverlayClose") || event.target.id === "visualMediaOverlay") {
+    closeVisualCollectionMediaFullscreen();
+    return;
+  }
   const viewerTrigger = event.target.closest("[data-viewer-kind][data-viewer-id]");
   if (viewerTrigger) {
     event.preventDefault();
@@ -8081,6 +8106,11 @@ document.addEventListener("focusin", event => {
 });
 
 document.addEventListener("keydown", event => {
+  if (event.key === "Escape" && !document.getElementById("visualMediaOverlay")?.hidden) {
+    event.preventDefault();
+    closeVisualCollectionMediaFullscreen();
+    return;
+  }
   const columnFilter = event.target.closest(".result-column-filter[data-result-filter]");
   if (columnFilter && (event.key === "Enter" || event.key === "Escape")) {
     event.preventDefault();

@@ -41,6 +41,8 @@ Satellite is the default basemap. The compact Street/Satellite selector switches
 
 **Satellite basemap imagery is not the Satellite data source.** Basemap imagery provides geographic context, may have different dates/resolution, and is not tied to the demo observation timestamps. Satellite records hold the explicitly dated synthetic convoy images. Source attribution remains visible on the map.
 
+Satellite and CCTV source media can be expanded in an in-app full-viewport overlay, with a visible close control and Escape to restore the record view. This avoids relying on browser-native full-screen support and works on mobile browsers.
+
 Normal operation has no persistent Syria/scenario label at the bottom. Queue, restart and scenario-change notices still appear when needed. Existing investigation guide and capabilities-guide media remain part of the installed application; switching scenarios must preserve these shared assets.
 
 ### Map polygons
