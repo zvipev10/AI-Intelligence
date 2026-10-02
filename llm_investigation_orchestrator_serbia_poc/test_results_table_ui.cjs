@@ -49,7 +49,7 @@ assert.match(nodes.evidenceHead.innerHTML,/Source record ID/);
 assert(nodes.evidenceHead.innerHTML.indexOf('Canonical record ID') < nodes.evidenceHead.innerHTML.indexOf('Source record ID'));
 assert.match(nodes.evidenceRows.innerHTML,/REC-SYR-IPDR-137/);
 assert.match(nodes.evidenceRows.innerHTML,/3495155497992130/);
-assert.match(nodes.evidenceRows.innerHTML,/ipdr-canonical-id-column/);
+assert.doesNotMatch(nodes.evidenceRows.innerHTML,/ipdr-canonical-id-column/);
 const fields = context.viewerFields({...row, entity_name:'placeholder', location_name:'Unknown'},'record');
 assert(!fields.some(([key])=>['entity_name','location_name'].includes(key)));
 assert(fields.some(([key,value])=>key==='imei' && value==='000000000001370'));

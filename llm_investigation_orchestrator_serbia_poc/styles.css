@@ -535,8 +535,6 @@ textarea.mention-source::placeholder { color: var(--muted) !important; }
 .raw-events-table th, .raw-events-table td { padding: 7px 8px; background: transparent; }
 .raw-events-table th { background: rgba(15, 19, 27, .24); }
 .raw-events-table th { position: relative; overflow: visible; }
-.raw-events-table .ipdr-canonical-id-column { position: sticky; inset-inline-start: 0; z-index: 2; min-width: 156px; background: var(--panel); box-shadow: 2px 0 0 rgba(146, 170, 205, .22); }
-.raw-events-table th.ipdr-canonical-id-column { z-index: 3; background: var(--panel-2); }
 .result-column-header { min-width: 96px; display: inline-flex; align-items: center; gap: 5px; }
 .result-column-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 900; }
 .result-column-actions { display: inline-flex; flex: 0 0 auto; align-items: center; gap: 2px; }
