@@ -24,7 +24,7 @@ const context = { console, Set, Map, Date, LOCATIONS:{},
  itemsForLayerPresentation:l=>l.items, layerHasAppliedFilters:()=>false,currentLocaleTag:()=> 'en-US',
  layerColorStyle:()=>'',escapeHtml:v=>String(v??''),validAppliedFilters:()=>[],activeLocaleText:(he,en)=>en,
  renderLayerFilterPanel(){},isCellularCallRecord:()=>false,isMapItemSelected:()=>false,
- mapActionButton:()=>'',collectionImeiButton:value=>String(value || ''),enhanceResultsTable(){},layerId:(kind,label)=>`${kind}:${label}`
+ mapActionButton:()=>'',collectionImeiButton:value=>String(value || ''),recordLinkIndicator:()=>'',enhanceResultsTable(){},layerId:(kind,label)=>`${kind}:${label}`
 };
 vm.createContext(context);
 for (const name of ['activateView','renderEvidence','resolveFinalResultView','isCallsLayer','eventMapCoordinates','buildEventLayers','isIpdrRecord','isAdintRecord','isCellularGeolocationRecord','isCellularCallRecord','viewerFieldLabel','viewerFields','filterFieldsForLayer','filterFieldPathsForValue']) {

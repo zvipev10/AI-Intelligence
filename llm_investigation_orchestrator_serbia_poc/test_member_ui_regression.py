@@ -63,7 +63,17 @@ class MemberUiRegressionTests(unittest.TestCase):
         self.assertIn("width: 20px", toggle_rule)
         self.assertIn("height: 20px", toggle_rule)
         mobile = self.styles.split("@media (max-width: 760px)", 1)[1]
-        self.assertIn(".panel-resizer { display: none; }", mobile)
+        self.assertIn(".panel-resizer { position: absolute;", mobile)
+        self.assertIn(".workspace.chat-panel-collapsed .conversation-panel { display: none; }", mobile)
+        self.assertIn(".chat-panel-toggle { position: static;", mobile)
+
+    def test_mobile_results_table_keeps_intrinsic_column_widths(self):
+        mobile = self.styles.split("@media (max-width: 760px)", 1)[1]
+        self.assertIn(
+            ".raw-events-table table { width: max-content; min-width: max-content; table-layout: auto; }",
+            mobile,
+        )
+        self.assertNotIn(".raw-events-table table { width: 880px; min-width: 880px; table-layout: fixed; }", mobile)
 
     def test_member_roster_includes_moshe(self):
         self.assertIn('displayName: "משה"', self.app)
