@@ -48,6 +48,8 @@ class PersonTelecomCorrelationUiTests(unittest.TestCase):
         bootstrap = (Path(__file__).resolve().parent / "demo_bootstrap.js").read_text(encoding="utf-8")
         self.assertIn("function personTelecomDetailsHtml(item)", app)
         self.assertIn("function recordLinkedEntitiesHtml(item)", app)
+        self.assertIn("function recordLinkIndicator(item)", app)
+        self.assertIn('class="record-link-indicator"', app)
         self.assertIn("Linked entities", app)
         self.assertIn("function approveExtractedTelecomIdentity(entityId, button)", app)
         self.assertIn("Extracted subscriber identity", app)
@@ -56,7 +58,7 @@ class PersonTelecomCorrelationUiTests(unittest.TestCase):
         self.assertIn('"Approve"', app)
         self.assertIn("Reference records", app)
         self.assertIn("Calls", app)
-        self.assertIn('script.src = "./app.js?v=252";', bootstrap)
+        self.assertIn('script.src = "./app.js?v=261";', bootstrap)
 
 
 if __name__ == "__main__":

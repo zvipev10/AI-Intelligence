@@ -4466,6 +4466,12 @@ function recordLinkedEntitiesHtml(item) {
   return `<section class="object-viewer-evidence record-entity-links"><h3>${escapeHtml(activeLocaleText("ישויות מקושרות", "Linked entities"))}</h3><ul>${rows}</ul></section>`;
 }
 
+function recordLinkIndicator(item) {
+  if (!Array.isArray(item?.observed_entity_links) || !item.observed_entity_links.length) return "";
+  const label = activeLocaleText("לרשומה יש קישורים לישויות", "This record has entity links");
+  return `<span class="record-link-indicator" role="img" aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M10.5 13.5a4.25 4.25 0 0 0 6.01.01l2.12-2.12a4.25 4.25 0 0 0-6.01-6.01l-1.21 1.2"></path><path d="M13.5 10.5a4.25 4.25 0 0 0-6.01-.01L5.37 12.6a4.25 4.25 0 1 0 6.01 6.01l1.2-1.2"></path><path d="m8.8 15.2 6.4-6.4"></path></svg></span>`;
+}
+
 function assessmentEvidenceHtml(item) {
   const available = viewerObjects();
   const ids = item.evidence_ids || [];
@@ -7140,7 +7146,7 @@ function callTimelineEntry(event) {
   const duration = Number(event.call_duration_seconds);
   return `<button type="button" class="call-timeline-entry" data-viewer-kind="record" data-viewer-id="${escapeHtml(id)}" aria-pressed="false">
     <span class="call-timeline-time">${escapeHtml(time)}${duration > 0 ? ` · ${duration.toFixed(1)}s` : ""}</span>
-    <strong dir="ltr">${escapeHtml(event.side_a_sim || event.side_a_number || event.side_a_imei || "A")} → ${escapeHtml(event.side_b_sim || event.side_b_number || event.side_b_imei || "B")}</strong>
+    <strong dir="ltr">${escapeHtml(event.side_a_sim || event.side_a_number || event.side_a_imei || "A")} → ${escapeHtml(event.side_b_sim || event.side_b_number || event.side_b_imei || "B")}${recordLinkIndicator(event)}</strong>
     <span class="call-timeline-summary">${escapeHtml(event.event_summary || "")}</span>
     <span class="call-timeline-id">${escapeHtml(id)}</span>
   </button>`;
@@ -7159,7 +7165,7 @@ function ipdrTimelineEntry(event) {
   const times = `${event.start_time || activeLocaleText("לא ידוע", "Unknown")} → ${event.end_time || activeLocaleText("לא ידוע", "Unknown")}`;
   const state = event.validation?.state || "unknown";
   const validation = state === "valid" ? activeLocaleText("מרווח תקין", "Valid interval") : state === "invalid" ? activeLocaleText("מרווח לא תקין", "Invalid interval") : activeLocaleText("מרווח לא ידוע", "Unknown interval");
-  return `<button type="button" class="call-timeline-entry" data-viewer-kind="record" data-viewer-id="${escapeHtml(id)}"><span dir="ltr">${escapeHtml(times)}</span><strong dir="ltr">${escapeHtml(event.ip_source || "—")} → ${escapeHtml(event.ip_target || "—")}</strong><span>${escapeHtml(validation)}</span><span dir="ltr">${escapeHtml(id)}</span></button>`;
+  return `<button type="button" class="call-timeline-entry" data-viewer-kind="record" data-viewer-id="${escapeHtml(id)}"><span dir="ltr">${escapeHtml(times)}</span><strong dir="ltr">${escapeHtml(event.ip_source || "—")} → ${escapeHtml(event.ip_target || "—")}${recordLinkIndicator(event)}</strong><span>${escapeHtml(validation)}</span><span dir="ltr">${escapeHtml(id)}</span></button>`;
 }
 
 function renderTimeline() {
@@ -7194,7 +7200,7 @@ function renderTimeline() {
     <article class="timeline-item" style="${layerColorStyle(layer)}">
       <span class="timeline-dot"></span>
       <div class="timeline-time">${escapeHtml(String(event.timestamp_utc || "").replace("T", " ").replace("Z", ""))}</div>
-      <div class="timeline-title">${escapeHtml(layer.label)} · ${escapeHtml(event.location_name)}</div>
+      <div class="timeline-title">${escapeHtml(layer.label)} · ${escapeHtml(event.location_name)}${recordLinkIndicator(event)}</div>
       <div class="timeline-summary">${escapeHtml(event.event_summary)}</div>
     </article>`).join("");
   timeline.innerHTML = aggregationHtml + eventHtml;
@@ -7554,7 +7560,7 @@ function renderEvidence() {
       const id = String(event.record_id || event.event_id || "");
       return `<tr><td>${mapActionButton(activeLayer.id, "event", id, event)}</td>${columns.map(key => {
         const value = escapeHtml(event[key] || (key === "location_name" ? event.location_id : "") || "—");
-        return key === "event_id" ? `<td><button type="button" class="object-viewer-open" data-viewer-kind="record" data-viewer-id="${escapeHtml(id)}">${value}</button></td>` : `<td dir="ltr">${key === "imei" ? collectionImeiButton(event[key]) : value}</td>`;
+        return key === "event_id" ? `<td><button type="button" class="object-viewer-open" data-viewer-kind="record" data-viewer-id="${escapeHtml(id)}">${value}</button>${recordLinkIndicator(event)}</td>` : `<td dir="ltr">${key === "imei" ? collectionImeiButton(event[key]) : value}</td>`;
       }).join("")}</tr>`;
     }).join("") : `<tr><td colspan="6" class="empty-cell">${escapeHtml(activeLocaleText("השכבה ריקה.", "Layer is empty."))}</td></tr>`;
     enhanceResultsTable(activeLayer);
@@ -7572,7 +7578,7 @@ function renderEvidence() {
       return `<tr class="${selected ? "map-selected-row" : ""}"><td class="result-map-action-cell">${mapActionButton(activeLayer.id, "event", eventId, event)}</td>${columns.map(key => {
         const value = escapeHtml(event[key] == null || event[key] === "" ? "—" : event[key]);
         return key === "event_id"
-          ? `<td dir="ltr"><button type="button" class="object-viewer-open" data-viewer-kind="record" data-viewer-id="${escapeHtml(eventId)}">${value}</button></td>`
+          ? `<td dir="ltr"><button type="button" class="object-viewer-open" data-viewer-kind="record" data-viewer-id="${escapeHtml(eventId)}">${value}</button>${recordLinkIndicator(event)}</td>`
           : `<td dir="ltr">${value}</td>`;
       }).join("")}</tr>`;
     }).join("") : `<tr><td colspan="12" class="empty-cell">${escapeHtml(activeLocaleText("השכבה מוסתרת או ריקה.", "Layer is hidden or empty."))}</td></tr>`;
@@ -7587,7 +7593,7 @@ function renderEvidence() {
     body.innerHTML = activeItems.length ? activeItems.map(event => `<tr>${IPDR_SOURCE_FIELDS.map(key => {
       const value = escapeHtml(event[key] == null || event[key] === "" ? "—" : event[key]);
       return key === "source_record_id"
-        ? `<td dir="ltr"><button type="button" class="object-viewer-open" data-viewer-kind="record" data-viewer-id="${escapeHtml(event.event_id || event.record_id || "")}">${value}</button></td>`
+        ? `<td dir="ltr"><button type="button" class="object-viewer-open" data-viewer-kind="record" data-viewer-id="${escapeHtml(event.event_id || event.record_id || "")}">${value}</button>${recordLinkIndicator(event)}</td>`
         : `<td dir="ltr">${key === "imei" ? collectionImeiButton(event[key]) : value}</td>`;
     }).join("")}</tr>`).join("") : `<tr><td colspan="18" class="empty-cell">${escapeHtml(activeLocaleText("השכבה מוסתרת או ריקה.", "Layer is hidden or empty."))}</td></tr>`;
     enhanceResultsTable(activeLayer);
@@ -7596,7 +7602,7 @@ function renderEvidence() {
   if (ipdrTable) {
     head.innerHTML = `<tr><th>${escapeHtml(activeLocaleText("מזהה רשומה", "Record ID"))}</th><th>${escapeHtml(activeLocaleText("זמן", "Time"))}</th><th>${escapeHtml(activeLocaleText("אמינות", "Reliability"))}</th><th>${escapeHtml(activeLocaleText("ודאות", "Certainty"))}</th><th>${escapeHtml(activeLocaleText("כתובת IP", "IP address"))}</th><th>IMEI</th><th>${escapeHtml(activeLocaleText("תקציר", "Summary"))}</th></tr>`;
     body.innerHTML = activeItems.length ? activeItems.map(event => `
-      <tr><td dir="ltr"><button type="button" class="object-viewer-open" data-viewer-kind="record" data-viewer-id="${escapeHtml(event.record_id || event.event_id || "")}">${escapeHtml(event.record_id || event.event_id || "-")}</button></td>
+      <tr><td dir="ltr"><button type="button" class="object-viewer-open" data-viewer-kind="record" data-viewer-id="${escapeHtml(event.record_id || event.event_id || "")}">${escapeHtml(event.record_id || event.event_id || "-")}</button>${recordLinkIndicator(event)}</td>
       <td dir="ltr">${escapeHtml(event.timestamp_utc || "-")}</td>
       <td>${escapeHtml(event.source_reliability_label || event.source_reliability || "-")}</td>
       <td>${escapeHtml(event.certainty_level || "-")}</td>
@@ -7618,7 +7624,7 @@ function renderEvidence() {
     return `
     <tr class="${selected ? "map-selected-row" : ""}">
       <td class="result-map-action-cell">${mapActionButton(activeLayer.id, "event", eventId, event)}</td>
-      <td dir="ltr"><button type="button" class="object-viewer-open" data-viewer-kind="record" data-viewer-id="${escapeHtml(eventId)}">${escapeHtml(event.record_id || event.event_id || "-")}</button></td>
+      <td dir="ltr"><button type="button" class="object-viewer-open" data-viewer-kind="record" data-viewer-id="${escapeHtml(eventId)}">${escapeHtml(event.record_id || event.event_id || "-")}</button>${recordLinkIndicator(event)}</td>
       <td dir="ltr">${escapeHtml(event.timestamp_utc)}</td>
       <td>${escapeHtml(event.source_reliability_label || event.source_reliability || "-")}</td>
       <td>${escapeHtml(event.certainty_level || "-")}</td>
