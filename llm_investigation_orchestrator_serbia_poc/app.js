@@ -4096,6 +4096,12 @@ function isAdintRecord(item) {
 
 const IPDR_SOURCE_FIELDS = ["start_time", "end_time", "ip_source", "ip_target", "ip_public", "ip_private", "ip_out", "source_record_id", "source_port", "target_port", "public_port", "protocol", "bytes_sent", "bytes_received", "source_system", "imei", "mac", "SUBNETMASK"];
 
+function ipdrTableFieldLabel(key) {
+  if (key === "event_id") return activeLocaleText("מזהה פנימי", "Canonical record ID");
+  if (key === "source_record_id") return activeLocaleText("מזהה מקור", "Source record ID");
+  return viewerFieldLabel(key);
+}
+
 function isIpdrRecord(item) {
   return String(item?.source_type || "").trim().toUpperCase() === "IPDR";
 }
@@ -7589,13 +7595,14 @@ function renderEvidence() {
     ? activeLayer.items.every(isIpdrRecord)
     : activeLayer.catalogLayerId === "events:IPDR";
   if (ipdrTable && (activeLayer.items || []).some(event => event.source_record_id)) {
-    head.innerHTML = `<tr>${IPDR_SOURCE_FIELDS.map(key => `<th>${escapeHtml(viewerFieldLabel(key))}</th>`).join("")}</tr>`;
-    body.innerHTML = activeItems.length ? activeItems.map(event => `<tr>${IPDR_SOURCE_FIELDS.map(key => {
+    const fields = ["event_id", ...IPDR_SOURCE_FIELDS];
+    head.innerHTML = `<tr>${fields.map(key => `<th class="${key === "event_id" ? "ipdr-canonical-id-column" : ""}">${escapeHtml(ipdrTableFieldLabel(key))}</th>`).join("")}</tr>`;
+    body.innerHTML = activeItems.length ? activeItems.map(event => `<tr>${fields.map(key => {
       const value = escapeHtml(event[key] == null || event[key] === "" ? "—" : event[key]);
-      return key === "source_record_id"
-        ? `<td dir="ltr"><button type="button" class="object-viewer-open" data-viewer-kind="record" data-viewer-id="${escapeHtml(event.event_id || event.record_id || "")}">${value}</button>${recordLinkIndicator(event)}</td>`
+      return key === "event_id"
+        ? `<td class="ipdr-canonical-id-column" dir="ltr"><button type="button" class="object-viewer-open" data-viewer-kind="record" data-viewer-id="${escapeHtml(event.event_id || event.record_id || "")}">${value}</button>${recordLinkIndicator(event)}</td>`
         : `<td dir="ltr">${key === "imei" ? collectionImeiButton(event[key]) : value}</td>`;
-    }).join("")}</tr>`).join("") : `<tr><td colspan="18" class="empty-cell">${escapeHtml(activeLocaleText("השכבה מוסתרת או ריקה.", "Layer is hidden or empty."))}</td></tr>`;
+    }).join("")}</tr>`).join("") : `<tr><td colspan="19" class="empty-cell">${escapeHtml(activeLocaleText("השכבה מוסתרת או ריקה.", "Layer is hidden or empty."))}</td></tr>`;
     enhanceResultsTable(activeLayer);
     return;
   }

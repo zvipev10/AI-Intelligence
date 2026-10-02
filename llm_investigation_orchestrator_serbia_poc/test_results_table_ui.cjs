@@ -15,7 +15,7 @@ const tabs = ['map','timeline','table'].map(view => element({dataset:{view}}));
 const panes = ['map','timeline','table'].map(view => element({id:`${view}View`}));
 const row = {event_id:'REC-SYR-IPDR-137', source_type:'IPDR', timestamp_utc:'2026-09-20T08:00:00Z', imei:'000000000001370', ip_address:'192.0.2.10', entity_name:'', location_name:''};
 const layer = {id:'ipdr', kind:'events', label:'IPDR', items:[row], visible:true, capabilities:{table:true,map:false,timeline:true}};
-const context = { console, Set, Map, Date, LOCATIONS:{},
+const context = { console, Set, Map, Date, LOCATIONS:{}, IPDR_SOURCE_FIELDS:['start_time','end_time','ip_source','ip_target','ip_public','ip_private','ip_out','source_record_id','source_port','target_port','public_port','protocol','bytes_sent','bytes_received','source_system','imei','mac','SUBNETMASK'],
  state:{layers:[layer],activeLayerId:'ipdr',rawOverlayMinimized:true,rawOverlayHeight:28},
  document:{getElementById:id=>nodes[id],querySelector:()=>stack,querySelectorAll:q=>q==='.view-tab'?tabs:panes},
  viewLabels:()=>({map:'Map',timeline:'Timeline',table:'Table'}), viewRecommendation:element(),
@@ -27,7 +27,7 @@ const context = { console, Set, Map, Date, LOCATIONS:{},
  mapActionButton:()=>'',collectionImeiButton:value=>String(value || ''),recordLinkIndicator:()=>'',enhanceResultsTable(){},layerId:(kind,label)=>`${kind}:${label}`
 };
 vm.createContext(context);
-for (const name of ['activateView','renderEvidence','resolveFinalResultView','isCallsLayer','eventMapCoordinates','buildEventLayers','isIpdrRecord','isAdintRecord','isCellularGeolocationRecord','isCellularCallRecord','viewerFieldLabel','viewerFields','filterFieldsForLayer','filterFieldPathsForValue']) {
+for (const name of ['activateView','renderEvidence','resolveFinalResultView','isCallsLayer','eventMapCoordinates','buildEventLayers','isIpdrRecord','isAdintRecord','isCellularGeolocationRecord','isCellularCallRecord','viewerFieldLabel','ipdrTableFieldLabel','viewerFields','filterFieldsForLayer','filterFieldPathsForValue']) {
  const start = source.indexOf(`function ${name}(`);
  const next = source.slice(start+1).search(/\n(?:async )?function /);
  vm.runInContext(source.slice(start,start+1+next),context);
@@ -43,6 +43,13 @@ assert.match(nodes.evidenceHead.innerHTML, /IMEI/);
 assert.doesNotMatch(nodes.evidenceHead.innerHTML, /Actor|Location|result-map-action/);
 assert.match(nodes.evidenceRows.innerHTML, /192\.0\.2\.10/);
 assert.match(nodes.evidenceRows.innerHTML, /000000000001370/);
+row.source_record_id='3495155497992130';context.renderEvidence();
+assert.match(nodes.evidenceHead.innerHTML,/Canonical record ID/);
+assert.match(nodes.evidenceHead.innerHTML,/Source record ID/);
+assert(nodes.evidenceHead.innerHTML.indexOf('Canonical record ID') < nodes.evidenceHead.innerHTML.indexOf('Source record ID'));
+assert.match(nodes.evidenceRows.innerHTML,/REC-SYR-IPDR-137/);
+assert.match(nodes.evidenceRows.innerHTML,/3495155497992130/);
+assert.match(nodes.evidenceRows.innerHTML,/ipdr-canonical-id-column/);
 const fields = context.viewerFields({...row, entity_name:'placeholder', location_name:'Unknown'},'record');
 assert(!fields.some(([key])=>['entity_name','location_name'].includes(key)));
 assert(fields.some(([key,value])=>key==='imei' && value==='000000000001370'));
