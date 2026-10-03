@@ -71,10 +71,13 @@ assert.equal(context.resolveFinalResultView({recommended_view:'table'},[layer]),
 assert.equal(context.resolveFinalResultView({recommended_view:'timeline'},[layer]),'timeline');
 assert.equal(context.resolveFinalResultView({recommended_view:'map'},[layer]),'table');
 assert.equal(context.buildEventLayers([row])[0].capabilities.map,false);
-row.source_type='Cellular Geolocations';row.sim='00001234';row.imei='000000000000001';row.location_id='LOC-1';context.renderEvidence();
+row.source_type='Cellular Geolocations';row.sim='00001234';row.imei='000000000000001';row.target_msisdn='9630943700780';row.target_imsi='417011234567890';row.operator_msisdn='963940952424';row.operator_imsi='417015344104770';row.location_id='LOC-1';context.renderEvidence();
 assert.match(nodes.evidenceHead.innerHTML,/SIM/);assert.match(nodes.evidenceHead.innerHTML,/IMEI/);
-assert.doesNotMatch(nodes.evidenceHead.innerHTML,/Actor/);assert.match(nodes.evidenceRows.innerHTML,/00001234/);
+assert.match(nodes.evidenceHead.innerHTML,/Target MSISDN/);assert.match(nodes.evidenceHead.innerHTML,/Target IMSI/);
+assert.match(nodes.evidenceHead.innerHTML,/Operator MSISDN/);assert.match(nodes.evidenceHead.innerHTML,/Operator IMSI/);
+assert.doesNotMatch(nodes.evidenceHead.innerHTML,/Actor/);assert.match(nodes.evidenceRows.innerHTML,/00001234/);assert.match(nodes.evidenceRows.innerHTML,/9630943700780/);assert.match(nodes.evidenceRows.innerHTML,/417011234567890/);
 assert(context.viewerFields(row,'record').some(([k,v])=>k==='sim' && v==='00001234'));
+assert(context.viewerFields(row,'record').some(([k,v])=>k==='target_msisdn' && v==='9630943700780'));
 row.source_type='Cellular Calls';row.call_id='CALL-1';row.side_a_sim='89000000000000000001';row.side_b_sim='89000000000000000002';row.side_a_imei='000000000000001';row.side_b_imei='000000000000002';context.renderEvidence();
 assert.match(nodes.evidenceHead.innerHTML,/Side A IMEI/);assert.match(nodes.evidenceHead.innerHTML,/Side B IMEI/);
 assert.match(nodes.evidenceRows.innerHTML,/000000000000001/);assert.match(nodes.evidenceRows.innerHTML,/000000000000002/);

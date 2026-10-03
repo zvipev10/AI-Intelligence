@@ -29,6 +29,8 @@ Selecting the active member again returns to the general workspace. This is a pr
 
 Table is a standalone tab beside Map and Timeline, using the same component as the table beneath the map. Layer selection, filters, sorting and record opening are shared. Switching views retains table state and the overlay's minimized preference. Geometry-free rows remain accessible; IPDR defaults to Table. IPDR places the canonical `REC-*` ID first, followed by the source record ID; the remaining native fields retain their source order. Older `evidence` view recommendations are interpreted as Table, without renaming evidence objects or the Evidence Layer.
 
+Cellular Geolocations display their native device and subscriber fields: IMEI, SIM, target and operator MSISDN, and target and operator IMSI. These remain raw record values; matching identifiers do not by themselves establish subscriber ownership or identity.
+
 General and specialist presentation instructions recognize all three views. Named catalog requests use the live catalog and preserve filters; a unique close naming match can be recovered, while ambiguous candidates require clarification. A queued action is not proof that the browser opened a layer. Saved layers and explicitly selected result/evidence layers retain their separate presentation contracts.
 
 ### Calls presentation

@@ -4132,7 +4132,7 @@ function isPersonEntity(item) {
 
 function viewerFields(item, kind) {
   if (kind === "ipdr_package") return ["package_id", "classification", "provider", "source_system", "filename", "sha256", "record_count", "validation_state", "session_validation_counts", "observed_coverage", "requested_scope", "acquired_at", "imported_at", "ingest_batch_id", "authority_case_reference", "chain_of_custody_note", "field_semantics", "transformations", "limitations"].map(key => [key, item[key] ?? activeLocaleText("לא ידוע", "Unknown")]);
-  if (kind === "record" && isCellularGeolocationRecord(item)) return ["event_id", "timestamp_utc", "imei", "sim", "location_name"].map(key => [key, item[key] || (key === "location_name" ? item.location_id : "") || "—"]);
+  if (kind === "record" && isCellularGeolocationRecord(item)) return ["event_id", "timestamp_utc", "imei", "sim", "target_msisdn", "target_imsi", "operator_msisdn", "operator_imsi", "location_name"].map(key => [key, item[key] || (key === "location_name" ? item.location_id : "") || "—"]);
   const hidden = new Set(["event_summary", "canonical_name", "media", "image_series", "video_url", "audio_url", "image_url", "raw_data_references", "call_started_at_utc", "call_duration_seconds", "side_a_imei", "side_a_number", "side_a_location_id", "side_a_location_name", "side_b_imei", "side_b_number", "side_b_location_id", "side_b_location_name", "call_transcript", "call_transcript_en", "demo_media"]);
   if (kind === "record" && isIpdrRecord(item)) ["entity_name", "location_name", "location_accuracy_m"].forEach(key => hidden.add(key));
   if (kind === "record" && isAdintRecord(item) && item.device_id) {
@@ -4206,6 +4206,10 @@ function viewerFieldLabel(key) {
     ip_address: ["כתובת IP", "IP address"],
     imei: ["IMEI", "IMEI"],
     sim: ["SIM", "SIM"],
+    target_msisdn: ["MSISDN יעד", "Target MSISDN"],
+    target_imsi: ["IMSI יעד", "Target IMSI"],
+    operator_msisdn: ["MSISDN מפעיל", "Operator MSISDN"],
+    operator_imsi: ["IMSI מפעיל", "Operator IMSI"],
     session_start_utc: ["תחילת חיבור", "Session start (UTC)"],
     session_end_utc: ["סיום חיבור", "Session end (UTC)"],
     source_port: ["פורט מקור", "Source port"],
@@ -7581,7 +7585,7 @@ function renderEvidence() {
     ? activeLayer.items.every(isCellularGeolocationRecord)
     : activeLayer.catalogLayerId === "events:Cellular Geolocations";
   if (cellularGeolocationTable) {
-    const columns = ["event_id", "timestamp_utc", "imei", "sim", "location_name"];
+    const columns = ["event_id", "timestamp_utc", "imei", "sim", "target_msisdn", "target_imsi", "operator_msisdn", "operator_imsi", "location_name"];
     head.innerHTML = `<tr><th class="result-map-action-column" data-result-action-column="true"></th>${columns.map(key => `<th>${escapeHtml(viewerFieldLabel(key))}</th>`).join("")}</tr>`;
     body.innerHTML = activeItems.length ? activeItems.map(event => {
       const id = String(event.record_id || event.event_id || "");

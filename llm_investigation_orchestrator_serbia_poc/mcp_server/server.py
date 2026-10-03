@@ -584,7 +584,7 @@ def public_event(event: dict[str, Any]) -> dict[str, Any]:
         "image_series": event.get("image_series", ""),
         **adint_fields(event),
         **({key: event.get(key, "") for key in ("start_time", "end_time", "ip_source", "ip_target", "ip_public", "ip_private", "ip_out", "source_record_id", "target_port", "public_port", "bytes_sent", "bytes_received", "source_system", "mac", "SUBNETMASK")} if event.get("source_type") == "IPDR" else {}),
-        **{key: event.get(key, "") for key in ("advertising_id", "ip_address", "imei", "sim", "session_start_utc", "session_end_utc", "source_port", "protocol", "bytes_up", "bytes_down", "location_accuracy_m")},
+        **{key: event.get(key, "") for key in ("advertising_id", "ip_address", "imei", "sim", "target_imei", "target_msisdn", "target_imsi", "operator_msisdn", "operator_imsi", "session_start_utc", "session_end_utc", "source_port", "protocol", "bytes_up", "bytes_down", "location_accuracy_m")},
     }
 
 

@@ -20,6 +20,12 @@ assert ipdr['count'] == 300 and ipdr['capabilities']['map'] is False
 assert next(layer for layer in catalog if layer['id'] == 'events:ADINT')['capabilities']['map']
 layer, rows = ui.get_ui_layer_rows('events:IPDR', 'en')
 assert len(rows) == 300 and all(not row.get('location_id') for row in rows)
+cellular_row = next(event for event in mcp.EVENTS if event['event_id'] == 'REC-SYR-CELL-CSV-013')
+public_cellular_row = mcp.public_event(cellular_row)
+assert public_cellular_row['target_msisdn'] == '9630943700780'
+assert public_cellular_row['target_imsi'] == '417011234567890'
+assert public_cellular_row['operator_msisdn'] == '963940952424'
+assert public_cellular_row['operator_imsi'] == '417015344104770'
 for view in ('table', 'evidence'):
  result = mcp.present_requested_results({'layers':[{'kind':'events','ids':[rows[0]['event_id']],'label':'IP match','view':view}], 'evidence_layers':[{'kind':'events','ids':[rows[0]['event_id']],'label':'Supporting IPDR','view':view}]})
  selected = result['requested_result_layers'][0]
