@@ -39,6 +39,8 @@ const rawRecordLink = context.recordLinkedRawRecordsHtml({ observed_record_links
 assert.match(rawRecordLink, /data-linked-record-open="true"/);
 assert.match(rawRecordLink, /data-viewer-kind="record" data-viewer-id="REC-IPDR-1"/);
 assert.match(source, /async function openLinkedRawRecord\(id, trigger\)[\s\S]*?activateView\("table"\)[\s\S]*?openObjectViewer\("record", id, trigger\)/);
+assert.match(source, /function revealViewerRecordInTable\(recordId\)[\s\S]*?scrollIntoView\(\{ block: "center", inline: "nearest" \}\)/);
+assert.match(source, /state\.focusedViewerRecordId = kind === "record" \? String\(id\) : null;[\s\S]*?revealViewerRecordInTable\(id\)/);
 assert.match(context.recordLinkIndicator({ observed_record_links: [{}] }), /record-link-tooltip/);
 assert.doesNotMatch(context.recordLinkIndicator({ observed_record_links: [{}] }), /title=/);
 assert.doesNotMatch(context.entityViewerLinkHtml('ENT-MISSING', 'Missing'), /data-viewer-kind=/);

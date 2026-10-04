@@ -4709,6 +4709,11 @@ function openObjectViewer(kind, id, trigger = document.activeElement) {
   if (!item) return false;
   state.focusedViewerRecordId = kind === "record" ? String(id) : null;
   renderEvidence();
+  if (kind === "record") {
+    const reveal = () => revealViewerRecordInTable(id);
+    if (typeof requestAnimationFrame === "function") requestAnimationFrame(reveal);
+    else reveal();
+  }
   objectViewerReturnFocus = trigger;
   const viewer = document.getElementById("objectViewer");
   viewer.classList.remove("is-maximized");
@@ -7223,6 +7228,15 @@ function isMapItemSelected(layerId, kind, itemId) {
 
 function isViewerRecordSelected(itemId) {
   return String(state.focusedViewerRecordId || "") === String(itemId || "");
+}
+
+function revealViewerRecordInTable(recordId) {
+  const tableView = document.getElementById("tableView");
+  const body = document.getElementById("evidenceRows");
+  if (!tableView?.classList.contains("active") || !body) return;
+  const recordButton = [...body.querySelectorAll('[data-viewer-kind="record"][data-viewer-id]')]
+    .find(button => String(button.dataset.viewerId) === String(recordId));
+  recordButton?.closest("tr")?.scrollIntoView({ block: "center", inline: "nearest" });
 }
 
 function mapItemId(item = {}, kind = "event") {
