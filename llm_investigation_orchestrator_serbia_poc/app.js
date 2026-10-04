@@ -4592,8 +4592,8 @@ function recordLinkedRawRecordsHtml(item) {
   if (!links.length) return "";
   const rows = links.map(link => {
     const fields = `${link.record_field || "record"} = ${link.linked_record_field || "record"}`;
-    const label = link.rule_id === "adint_ip_to_ipdr_target_ip_temporal_v1"
-      ? activeLocaleText("IP תואם בתוך חלון זמן תקין", "Matching IP within a valid session window")
+    const label = link.rule_id === "adint_ip_to_ipdr_target_ip_v1"
+      ? activeLocaleText("כתובת IP תואמת", "Matching IP address")
       : activeLocaleText("התאמת שדה", "Field match");
     return `<li><button type="button" class="object-viewer-open" data-linked-record-open="true" data-viewer-kind="record" data-viewer-id="${escapeHtml(link.record_id || "")}">${escapeHtml(link.record_id || "—")}</button><span>${escapeHtml(label)} · <code dir="ltr">${escapeHtml(fields)}</code> · <code dir="ltr">${escapeHtml(link.matched_value || "—")}</code></span></li>`;
   }).join("");

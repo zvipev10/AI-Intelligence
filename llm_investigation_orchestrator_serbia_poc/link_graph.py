@@ -10,7 +10,6 @@ from __future__ import annotations
 import hashlib
 import json
 from collections import defaultdict
-from datetime import datetime
 from typing import Any
 
 
@@ -48,17 +47,6 @@ def _link(
         "provenance_record_ids": provenance_record_ids if provenance_record_ids is not None else ([source_id] if source_type == "raw_record" else []),
         "status": "observed",
     }
-
-
-def _timestamp(value: Any) -> datetime | None:
-    """Parse a source timestamp without turning invalid source data into a match."""
-    text = _text(value)
-    if not text:
-        return None
-    try:
-        return datetime.fromisoformat(text.replace("Z", "+00:00"))
-    except ValueError:
-        return None
 
 
 def build_links(events: list[dict[str, Any]], entities: dict[str, dict[str, Any]], locations: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
@@ -108,28 +96,27 @@ def build_links(events: list[dict[str, Any]], entities: dict[str, dict[str, Any]
         if package_id:
             links.append(_link("ipdr_package_membership_v1", "raw_record", record_id, "package_id", "evidence", package_id, "package_id", package_id))
 
-    # ``ip_out`` is excluded because its source meaning is undocumented. An
-    # IP equality alone is insufficient without a valid containing interval.
+    # ``ip_out`` is excluded because its source meaning is undocumented.
+    # ADINT/IPDR links are a direct field-equality correlation: time fields
+    # remain source context, but never gate the relationship.
     ipdr_by_target_ip: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for event in events:
         if _text(event.get("source_type")) != "IPDR":
             continue
         target_ip = _text(event.get("ip_target"))
-        start, end = _timestamp(event.get("session_start_utc")), _timestamp(event.get("session_end_utc"))
-        if target_ip and start and end and end >= start:
+        if target_ip:
             ipdr_by_target_ip[target_ip].append(event)
     for event in events:
         if _text(event.get("source_type")) != "ADINT":
             continue
-        record_id, observed_at, ip = _text(event.get("event_id")), _timestamp(event.get("timestamp_utc")), _text(event.get("ip"))
-        if not record_id or not observed_at or not ip:
+        record_id, ip = _text(event.get("event_id")), _text(event.get("ip"))
+        if not record_id or not ip:
             continue
         for ipdr in ipdr_by_target_ip.get(ip, []):
-            start, end = _timestamp(ipdr.get("session_start_utc")), _timestamp(ipdr.get("session_end_utc"))
             ipdr_id = _text(ipdr.get("event_id"))
-            if ipdr_id and start and end and start <= observed_at <= end:
+            if ipdr_id:
                 links.append(_link(
-                    "adint_ip_to_ipdr_target_ip_temporal_v1", "raw_record", record_id, "ip",
+                    "adint_ip_to_ipdr_target_ip_v1", "raw_record", record_id, "ip",
                     "raw_record", ipdr_id, "ip_target", ip,
                     provenance_record_ids=sorted({record_id, ipdr_id}),
                 ))

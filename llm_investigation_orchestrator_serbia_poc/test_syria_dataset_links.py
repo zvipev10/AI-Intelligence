@@ -15,13 +15,14 @@ class SyriaDatasetLinksTests(unittest.TestCase):
         raw_links = [
             (event["event_id"], link["record_id"], link["matched_value"])
             for event in events for link in event.get("observed_record_links") or []
-            if link.get("rule_id") == "adint_ip_to_ipdr_target_ip_temporal_v1"
+            if link.get("rule_id") == "adint_ip_to_ipdr_target_ip_v1"
         ]
-        self.assertEqual(set(raw_links), {
-            ("REC-SYR-ADINT-OBS-04-006", "REC-SYR-IPDR-24735884207980800", "203.0.113.91"),
-            ("REC-SYR-IPDR-24735884207980800", "REC-SYR-ADINT-OBS-04-006", "203.0.113.91"),
-            ("REC-SYR-ADINT-OBS-11-006", "REC-SYR-IPDR-25229854643096800", "203.0.113.20"),
-            ("REC-SYR-IPDR-25229854643096800", "REC-SYR-ADINT-OBS-11-006", "203.0.113.20"),
+        self.assertEqual(len(raw_links), 660)
+        self.assertTrue(all(link[2] for link in raw_links))
+        self.assertEqual({record_id for source_id, record_id, ip in raw_links if source_id == "REC-SYR-ADINT-OBS-01-003"}, {
+            "REC-SYR-IPDR-349608730945890",
+            "REC-SYR-IPDR-565467576585657",
+            "REC-SYR-IPDR-1025303322412050",
         })
 
         ipdr_entity_links = {
