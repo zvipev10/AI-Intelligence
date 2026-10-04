@@ -550,7 +550,7 @@ function applyLocaleAttributes() {
 }
 
 function defaultInvestigationName(locale = currentLocale()) {
-  return normalizeLocale(locale) === "en" ? "New investigation" : "חקירה חדשה";
+  return normalizeLocale(locale) === "en" ? "useless investigation" : "חקירה חדשה";
 }
 
 const state = {
