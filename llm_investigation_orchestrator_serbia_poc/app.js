@@ -4607,7 +4607,7 @@ function recordLinkIndicator(item) {
   const label = rawLinkCount
     ? activeLocaleText("לרשומה יש קישורים מתועדים", "This record has documented links")
     : activeLocaleText("לרשומה יש קישורים לישויות", "This record has entity links");
-  return `<span class="record-link-indicator" role="img" aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M10.5 13.5a4.25 4.25 0 0 0 6.01.01l2.12-2.12a4.25 4.25 0 0 0-6.01-6.01l-1.21 1.2"></path><path d="M13.5 10.5a4.25 4.25 0 0 0-6.01-.01L5.37 12.6a4.25 4.25 0 1 0 6.01 6.01l1.2-1.2"></path><path d="m8.8 15.2 6.4-6.4"></path></svg></span>`;
+  return `<span class="record-link-indicator" role="img" aria-label="${escapeHtml(label)}"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M10.5 13.5a4.25 4.25 0 0 0 6.01.01l2.12-2.12a4.25 4.25 0 0 0-6.01-6.01l-1.21 1.2"></path><path d="M13.5 10.5a4.25 4.25 0 0 0-6.01-.01L5.37 12.6a4.25 4.25 0 1 0 6.01 6.01l1.2-1.2"></path><path d="m8.8 15.2 6.4-6.4"></path></svg><span class="record-link-tooltip" role="tooltip">${escapeHtml(label)}</span></span>`;
 }
 
 function assessmentEvidenceHtml(item) {
