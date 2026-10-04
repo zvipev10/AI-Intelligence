@@ -4668,7 +4668,6 @@ function closeObjectViewer() {
   viewer.hidden = true;
   setViewerDocked();
   objectViewerDockTarget = null;
-  state.focusedViewerRecordId = null;
   renderEvidence();
   document.querySelectorAll(".call-timeline-entry").forEach(row => row.setAttribute("aria-pressed", "false"));
   objectViewerReturnFocus?.focus?.();

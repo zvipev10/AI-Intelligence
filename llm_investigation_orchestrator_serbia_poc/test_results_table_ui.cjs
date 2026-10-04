@@ -52,6 +52,7 @@ assert.match(nodes.evidenceRows.innerHTML,/3495155497992130/);
 assert.doesNotMatch(nodes.evidenceRows.innerHTML,/ipdr-canonical-id-column/);
 context.state.focusedViewerRecordId='REC-SYR-IPDR-137';context.renderEvidence();
 assert.match(nodes.evidenceRows.innerHTML,/viewer-selected-row/);
+assert.match(source, /function closeObjectViewer\(\)[\s\S]*?objectViewerDockTarget = null;\s*renderEvidence\(\);/);
 context.state.focusedViewerRecordId=null;
 const fields = context.viewerFields({...row, entity_name:'placeholder', location_name:'Unknown'},'record');
 assert(!fields.some(([key])=>['entity_name','location_name'].includes(key)));
