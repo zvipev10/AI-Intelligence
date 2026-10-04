@@ -2764,13 +2764,13 @@ const SERBIA_SIMILAR_INVESTIGATIONS = [
 
 const SYRIA_INVITED_INVESTIGATIONS = [
   {
-    id: "damascus-device-correlation",
-    titleHe: "סקירת מתאם מכשירים בדמשק",
-    titleEn: "Damascus device-correlation review",
-    summaryHe: "סקירה משותפת של התאמות בין IMEI, IPDR ומיקומי סלולר באזור דמשק.",
-    summaryEn: "A collaborative review of IMEI, IPDR, and cellular-location matches around Damascus.",
-    reasonHe: "הוזמנת על ידי צוות הסיגינט",
-    reasonEn: "Invited by the SIGINT team",
+    id: "suspicious-military-convoy",
+    titleHe: "שיירה צבאית חשודה",
+    titleEn: "Suspicious military convoy",
+    summaryHe: "חקירה משותפת של תצפיות על שיירה, תנועת כלי רכב ומקורות חזותיים תומכים.",
+    summaryEn: "A collaborative investigation of convoy observations, vehicle movement, and supporting visual sources.",
+    reasonHe: "הוזמנת על ידי צוות הוויזינט",
+    reasonEn: "Invited by the VISINT team",
     participants: 3,
     action: "join",
     invited: true
