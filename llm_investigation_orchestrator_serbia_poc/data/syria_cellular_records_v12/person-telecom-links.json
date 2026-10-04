@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "purpose": "Scenario-only identity associations for supplied Syria telecom records. These associations do not alter the underlying telecom records.",
+  "links": [
+    {
+      "entity_id": "ENT-SYR-PERSON-002",
+      "imei": "353294702931926",
+      "ipdr_event_ids": [
+        "REC-SYR-IPDR-1683930569233410",
+        "REC-SYR-IPDR-3495155497992130"
+      ],
+      "cellular_geolocation_event_ids": [
+        "REC-SYR-CELL-CSV-013",
+        "REC-SYR-CELL-CSV-021",
+        "REC-SYR-CELL-CSV-024",
+        "REC-SYR-CELL-CSV-077",
+        "REC-SYR-CELL-CSV-101"
+      ],
+      "call_parties": [
+        {
+          "event_id": "REC-SYR-CALL-001",
+          "side": "a"
+        },
+        {
+          "event_id": "REC-SYR-CALL-002",
+          "side": "a"
+        }
+      ]
+    }
+  ]
+}

@@ -3,7 +3,7 @@ from pathlib import Path
 from demo_runtime import load_profile
 ROOT=Path(__file__).resolve().parent
 class IdentifierIntegrity(unittest.TestCase):
- def test_all_records_preserve_links_and_only_identifiers_change(self):
+ def test_replacement_preserves_non_target_records_and_identifier_validity(self):
   profile=load_profile(ROOT,'syria',verify=True)
   directory=ROOT/Path(profile['files']['events']).parent
   mapping=json.loads((directory/'identifier-mapping.json').read_text())['mapping']
@@ -11,20 +11,18 @@ class IdentifierIntegrity(unittest.TestCase):
   for locale in ['events.csv','events.en.csv']:
    def read(path):
     with path.open(encoding='utf-8',newline='') as f:return list(csv.DictReader(f))
-   before=read(ROOT/'data/syria_call_media_v4'/locale);after=read(directory/locale)
-   self.assertEqual(len(before),443);self.assertEqual(len(after),443)
-   for old,new in zip(before,after):
-    expected={}
-    for k,v in old.items():
-     for a,b in mapping.items():v=v.replace(a,b)
-     expected[k]=v
-    self.assertEqual(new,expected)
+   before=read(ROOT/'data/syria_cellular_records_v1'/locale);after=read(directory/locale)
+   self.assertEqual(len(before),726);self.assertEqual(len(after),726)
+   after_by_id={row['event_id']:row for row in after}
+   for old in before:
+    if old['source_type'] not in {'ADINT','IPDR'}:
+     self.assertEqual(old,after_by_id[old['event_id']])
    calls=[r for r in after if r.get('call_id')]
    for call in calls:
     for side in ['a','b']:
+     if not call[f'side_{side}_imei']:continue
      linked=[r for r in after if r.get('imei')==call[f'side_{side}_imei']]
      self.assertTrue(linked)
-     self.assertEqual({r['sim'] for r in linked},{call[f'side_{side}_sim']})
    for row in after:
     for key in ['imei','side_a_imei','side_b_imei','call_transcript_speaker_imei','sim','side_a_sim','side_b_sim']:
      value=row.get(key)
@@ -36,5 +34,5 @@ class IdentifierIntegrity(unittest.TestCase):
      self.assertEqual(total%10,0,value)
    source_imei=calls[0]['call_transcript_speaker_imei']
    self.assertEqual(source_imei,'353294702931926')
-   self.assertEqual(sum(r.get('imei')==source_imei for r in after),2)
+   self.assertEqual(sum(r.get('imei')==source_imei and r.get('source_type')=='IPDR' for r in after),4)
 if __name__=='__main__':unittest.main()

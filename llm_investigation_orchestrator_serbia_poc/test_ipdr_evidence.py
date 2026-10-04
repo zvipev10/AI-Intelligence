@@ -9,9 +9,11 @@ import unittest
 from pathlib import Path
 
 from ipdr_evidence import attach_package, interval_validation
+from demo_runtime import load_profile
 
 ROOT = Path(__file__).resolve().parent
-DATA = ROOT / "data/syria_cellular_records_v1"
+DATA = ROOT / load_profile(ROOT, "syria", verify=True)["files"]["events"]
+DATA = DATA.parent
 
 
 class IpdrEvidence(unittest.TestCase):
@@ -31,7 +33,7 @@ class IpdrEvidence(unittest.TestCase):
                 self.assertEqual(old, new)
         self.assertEqual(attach_package(rows, DATA / "events.csv"), package)
         ipdr = [r for r in rows if r["source_type"] == "IPDR"]
-        self.assertEqual(sum(bool(r["imei"]) for r in ipdr), 2)
+        self.assertEqual(sum(bool(r["imei"]) for r in ipdr), 4)
         self.assertEqual({r["source_reference"]["data_row"] for r in ipdr}, set(range(1, 301)))
 
     def test_source_and_membership_fail_closed(self):
@@ -76,7 +78,7 @@ for locale in ("he", "en"):
     assert metadata["kind"] == "evidence"
     assert rows[0]["evidence_type"] == "ipdr_package" and rows[0]["record_count"] == 300
     raw = ui.get_ui_layer_rows("events:IPDR", locale)[1]
-    assert len(raw) == 300 and sum(bool(r["imei"]) for r in raw) == 2
+    assert len(raw) == 300 and sum(bool(r["imei"]) for r in raw) == 4
     selected = raw[0]["event_id"]
     assert len(ui.get_ui_layer_rows("events:IPDR", locale, {"event_ids": [selected]})[1]) == 1
     evidence = ui.load_evidence_catalog(locale)

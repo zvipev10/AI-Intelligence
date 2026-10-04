@@ -15,10 +15,10 @@ class CrossSourceCorrelations(unittest.TestCase):
 import mcp_server.server as server
 
 catalog = server.describe_active_data({})
-assert any(row["name"] == "Cellular Geolocations" and row["record_count"] == 18 for row in catalog["sources"])
+assert any(row["name"] == "Cellular Geolocations" and row["record_count"] == 300 for row in catalog["sources"])
 assert any(field["name"] == "side_a_imei" and field["role"] == "device_identifier" for field in catalog["fields"])
 
-call = server.search_events({"field_filters": [{"field": "call_id", "equals": "SYR-DEMO-CALL-001"}]})
+call = server.search_events({"field_filters": [{"field": "event_id", "equals": "REC-SYR-CALL-001"}]})
 assert call["total"] == 1 and call["event_ids"] == ["REC-SYR-CALL-001"]
 
 correlations = server.discover_record_correlations({"roles": ["device_identifier"]})["correlations"]
