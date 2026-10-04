@@ -535,3 +535,11 @@ Decision: create deterministic, provenance-bearing links only from approved raw/
 Rationale: a field equality such as an entity IMEI matching a raw cellular record establishes traceable connectivity, but does not by itself establish a subscriber identity. Keeping the layers separate prevents a candidate MSISDN/IMSI from being misrepresented as a direct raw-data link or permanent entity fact.
 
 Impact: the subscriber-identity rule requires a unique most-supported non-empty MSISDN/IMSI pair across at least two IMEI-linked cellular records. Analyst approval is stored in scenario state as a derivation review. Generic same-value correlation, blank Side-B call linkage, undocumented IPDR `ip_out` interpretation, and time-unqualified IP links are prohibited.
+
+### 2026-10-04 — Correlate ADINT and IPDR raw records only with an explicit IP role and time window
+
+Decision: add a directional observed link from ADINT `ip` to IPDR `ip_target` only when the IPDR interval is valid and contains the ADINT observation timestamp. Preserve both canonical raw-record IDs as provenance and show the correlation in the raw-record viewer.
+
+Rationale: IP equality alone is not sufficient evidence of a relationship. Restricting the first raw-to-raw rule to a documented IPDR role and a valid time window makes the correlation reviewable without asserting device ownership, identity, location, or activity.
+
+Impact: `ip_out`, blank values, reversed intervals, and temporal non-matches create no link. The link is visible in the ADINT/IPDR raw viewers and through `/api/links`; it does not create a derivation or mutate immutable data.

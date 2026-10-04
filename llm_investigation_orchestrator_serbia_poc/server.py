@@ -416,6 +416,22 @@ def apply_graph_entity_links(events: list[dict[str, Any]], locale: str = "he") -
         record_id = str((link.get("from") or {}).get("object_id") or "")
         entity_id = str((link.get("to") or {}).get("object_id") or "")
         event = by_id.get(record_id)
+        if (link.get("from") or {}).get("object_type") == "raw_record" and (link.get("to") or {}).get("object_type") == "raw_record":
+            for current_id, linked_id, current_field, linked_field in (
+                (record_id, entity_id, (link.get("from") or {}).get("field"), (link.get("to") or {}).get("field")),
+                (entity_id, record_id, (link.get("to") or {}).get("field"), (link.get("from") or {}).get("field")),
+            ):
+                current = by_id.get(current_id)
+                if current is not None:
+                    current.setdefault("observed_record_links", []).append({
+                        "link_id": link.get("link_id"),
+                        "record_id": linked_id,
+                        "rule_id": link.get("rule_id"),
+                        "record_field": current_field,
+                        "linked_record_field": linked_field,
+                        "matched_value": link.get("matched_value"),
+                    })
+            continue
         if event is None or (link.get("to") or {}).get("object_type") != "entity":
             continue
         event.setdefault("related_entity_ids", []).append(entity_id)
@@ -441,6 +457,13 @@ def apply_graph_entity_links(events: list[dict[str, Any]], locale: str = "he") -
             event["observed_entity_links"] = [
                 item for item in event["observed_entity_links"]
                 if not ((key := (item.get("link_id"), item.get("rule_id"), item.get("entity_id"), item.get("record_field"))) in seen or seen.add(key))
+            ]
+    for event in events:
+        if isinstance(event.get("observed_record_links"), list):
+            seen = set()
+            event["observed_record_links"] = [
+                item for item in event["observed_record_links"]
+                if not ((key := (item.get("link_id"), item.get("record_id"))) in seen or seen.add(key))
             ]
 
 

@@ -34,6 +34,20 @@ class LinkGraphTests(unittest.TestCase):
         links = build_links(events, self.entities, self.locations)
         self.assertEqual(["entity_imei_to_call_party_v1"], [item["rule_id"] for item in links])
 
+    def test_adint_ip_links_only_to_a_containing_ipdr_target_session(self):
+        events = [
+            {"event_id": "REC-ADINT", "source_type": "ADINT", "ip": "203.0.113.91", "timestamp_utc": "2026-09-04T10:00:00Z"},
+            {"event_id": "REC-IPDR-MATCH", "source_type": "IPDR", "ip_target": "203.0.113.91", "session_start_utc": "2026-09-04T09:59:00Z", "session_end_utc": "2026-09-04T10:01:00Z"},
+            {"event_id": "REC-IPDR-OUTSIDE", "source_type": "IPDR", "ip_target": "203.0.113.91", "session_start_utc": "2026-09-04T10:02:00Z", "session_end_utc": "2026-09-04T10:03:00Z"},
+            {"event_id": "REC-IPDR-REVERSED", "source_type": "IPDR", "ip_target": "203.0.113.91", "session_start_utc": "2026-09-04T10:01:00Z", "session_end_utc": "2026-09-04T09:59:00Z"},
+            {"event_id": "REC-IPDR-UNDOCUMENTED", "source_type": "IPDR", "ip_out": "203.0.113.91", "session_start_utc": "2026-09-04T09:59:00Z", "session_end_utc": "2026-09-04T10:01:00Z"},
+        ]
+        links = [item for item in build_links(events, self.entities, self.locations) if item["rule_id"] == "adint_ip_to_ipdr_target_ip_temporal_v1"]
+        self.assertEqual(1, len(links))
+        self.assertEqual("REC-ADINT", links[0]["from"]["object_id"])
+        self.assertEqual("REC-IPDR-MATCH", links[0]["to"]["object_id"])
+        self.assertEqual(["REC-ADINT", "REC-IPDR-MATCH"], links[0]["provenance_record_ids"])
+
 
 if __name__ == "__main__":
     unittest.main()

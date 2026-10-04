@@ -30,6 +30,7 @@ FILES = [
     "activate_demo.py",
     "provision_demo.py",
     "server.py",
+    "link_graph.py",
     "openai_general.py",
     "mcp_server/catalog_layers.py",
     "agent_result_pipeline.py",

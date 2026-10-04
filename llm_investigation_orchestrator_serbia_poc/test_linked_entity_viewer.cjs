@@ -28,11 +28,13 @@ const referencesEnd = source.indexOf('function organizationEvidenceHtml', refere
 assert.notEqual(referencesStart, -1, 'entity references must have a renderer');
 vm.runInContext(source.slice(referencesStart, referencesEnd), context);
 loadFunction('recordLinkedEntitiesHtml');
+loadFunction('recordLinkedRawRecordsHtml');
 
 assert.equal(context.viewerObjects().get('person:ENT-PERSON-1').canonical_name, 'Linked person');
 assert.match(context.entityViewerLinkHtml('ENT-PERSON-1', 'Linked person'), /data-viewer-kind="person" data-viewer-id="ENT-PERSON-1"/);
 assert.match(context.viewerFieldValueHtml('associated_entity_ids', ['ENT-PERSON-1']), /data-viewer-kind="person"/);
 assert.match(context.recordLinkedEntitiesHtml({ observed_entity_links: [{ entity_id: 'ENT-PERSON-1', entity_type: 'person', entity_name: 'Linked person', rule_id: 'entity_imei_to_ipdr_imei_v1', record_field: 'imei', entity_field: 'imei', matched_value: '123' }] }), /data-viewer-kind="person" data-viewer-id="ENT-PERSON-1"/);
+assert.match(context.recordLinkedRawRecordsHtml({ observed_record_links: [{ record_id: 'REC-IPDR-1', rule_id: 'adint_ip_to_ipdr_target_ip_temporal_v1', record_field: 'ip', linked_record_field: 'ip_target', matched_value: '203.0.113.91' }] }), /data-viewer-kind="record" data-viewer-id="REC-IPDR-1"/);
 assert.doesNotMatch(context.entityViewerLinkHtml('ENT-MISSING', 'Missing'), /data-viewer-kind=/);
 assert.match(source, /const item = viewerObjects\(\)\.get\(`\$\{kind\}:\$\{id\}`\)/);
 console.log('PASS: linked entity references resolve to openable item viewers');

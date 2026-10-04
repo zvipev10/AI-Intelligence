@@ -573,6 +573,7 @@ const state = {
   focusedEventPopup: null,
   focusedEventMarker: null,
   focusedMapSelection: null,
+  focusedViewerRecordId: null,
   history: [],
   investigationId: createInvestigationId(),
   investigationName: defaultInvestigationName(INITIAL_LOCALE),
@@ -4586,9 +4587,26 @@ function recordLinkedEntitiesHtml(item) {
   return `<section class="object-viewer-evidence record-entity-links"><h3>${escapeHtml(activeLocaleText("ישויות מקושרות", "Linked entities"))}</h3><ul>${rows}</ul></section>`;
 }
 
+function recordLinkedRawRecordsHtml(item) {
+  const links = Array.isArray(item.observed_record_links) ? item.observed_record_links : [];
+  if (!links.length) return "";
+  const rows = links.map(link => {
+    const fields = `${link.record_field || "record"} = ${link.linked_record_field || "record"}`;
+    const label = link.rule_id === "adint_ip_to_ipdr_target_ip_temporal_v1"
+      ? activeLocaleText("IP תואם בתוך חלון זמן תקין", "Matching IP within a valid session window")
+      : activeLocaleText("התאמת שדה", "Field match");
+    return `<li><button type="button" class="object-viewer-open" data-viewer-kind="record" data-viewer-id="${escapeHtml(link.record_id || "")}">${escapeHtml(link.record_id || "—")}</button><span>${escapeHtml(label)} · <code dir="ltr">${escapeHtml(fields)}</code> · <code dir="ltr">${escapeHtml(link.matched_value || "—")}</code></span></li>`;
+  }).join("");
+  return `<section class="object-viewer-evidence record-raw-links"><h3>${escapeHtml(activeLocaleText("רשומות גולמיות מקושרות", "Linked raw records"))}</h3><ul>${rows}</ul></section>`;
+}
+
 function recordLinkIndicator(item) {
-  if (!Array.isArray(item?.observed_entity_links) || !item.observed_entity_links.length) return "";
-  const label = activeLocaleText("לרשומה יש קישורים לישויות", "This record has entity links");
+  const entityLinkCount = Array.isArray(item?.observed_entity_links) ? item.observed_entity_links.length : 0;
+  const rawLinkCount = Array.isArray(item?.observed_record_links) ? item.observed_record_links.length : 0;
+  if (!entityLinkCount && !rawLinkCount) return "";
+  const label = rawLinkCount
+    ? activeLocaleText("לרשומה יש קישורים מתועדים", "This record has documented links")
+    : activeLocaleText("לרשומה יש קישורים לישויות", "This record has entity links");
   return `<span class="record-link-indicator" role="img" aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M10.5 13.5a4.25 4.25 0 0 0 6.01.01l2.12-2.12a4.25 4.25 0 0 0-6.01-6.01l-1.21 1.2"></path><path d="M13.5 10.5a4.25 4.25 0 0 0-6.01-.01L5.37 12.6a4.25 4.25 0 1 0 6.01 6.01l1.2-1.2"></path><path d="m8.8 15.2 6.4-6.4"></path></svg></span>`;
 }
 
@@ -4650,6 +4668,8 @@ function closeObjectViewer() {
   viewer.hidden = true;
   setViewerDocked();
   objectViewerDockTarget = null;
+  state.focusedViewerRecordId = null;
+  renderEvidence();
   document.querySelectorAll(".call-timeline-entry").forEach(row => row.setAttribute("aria-pressed", "false"));
   objectViewerReturnFocus?.focus?.();
   objectViewerReturnFocus = null;
@@ -4688,6 +4708,8 @@ function openObjectViewer(kind, id, trigger = document.activeElement) {
   if (!['record', 'organization', 'person', 'evidence', 'assessment', 'ipdr_package'].includes(kind)) return false;
   const item = viewerObjects().get(`${kind}:${id}`);
   if (!item) return false;
+  state.focusedViewerRecordId = kind === "record" ? String(id) : null;
+  renderEvidence();
   objectViewerReturnFocus = trigger;
   const viewer = document.getElementById("objectViewer");
   viewer.classList.remove("is-maximized");
@@ -4732,7 +4754,7 @@ function openObjectViewer(kind, id, trigger = document.activeElement) {
   const cellularHtml = kind === "record" ? cellularCallHtml(item) : "";
   const fields = viewerFields(item, kind).map(([key,value]) => `<div class="object-viewer-field"><dt>${escapeHtml(viewerFieldLabel(key))}</dt><dd>${viewerFieldValueHtml(key, value)}</dd></div>`).join("");
   const entityMapHtml = kind === "organization" ? entityLocationMapHtml(item) : "";
-  document.getElementById("objectViewerBody").innerHTML = `${mediaHtml}${cellularHtml}${ipdrPackageLinkHtml(item, kind)}${personViewer ? personWorkspaceHtml(item) : ""}${entityMapHtml}${["record", "evidence", "assessment"].includes(kind) ? `<p class="object-viewer-summary">${escapeHtml(item.event_summary || item.summary || "-")}</p>` : ""}${personViewer ? "" : `<dl class="object-viewer-fields">${fields}</dl>`}${kind === "record" ? recordLinkedEntitiesHtml(item) : kind === "organization" ? organizationEvidenceHtml(item) : kind === "evidence" ? evidenceProvenanceHtml(item) : kind === "assessment" ? assessmentEvidenceHtml(item) : ""}`;
+  document.getElementById("objectViewerBody").innerHTML = `${mediaHtml}${cellularHtml}${ipdrPackageLinkHtml(item, kind)}${personViewer ? personWorkspaceHtml(item) : ""}${entityMapHtml}${["record", "evidence", "assessment"].includes(kind) ? `<p class="object-viewer-summary">${escapeHtml(item.event_summary || item.summary || "-")}</p>` : ""}${personViewer ? "" : `<dl class="object-viewer-fields">${fields}</dl>`}${kind === "record" ? `${recordLinkedEntitiesHtml(item)}${recordLinkedRawRecordsHtml(item)}` : kind === "organization" ? organizationEvidenceHtml(item) : kind === "evidence" ? evidenceProvenanceHtml(item) : kind === "assessment" ? assessmentEvidenceHtml(item) : ""}`;
   viewer.hidden = false;
   setViewerMaximized(false);
   if (cellularCallViewer) initializeCellularViewer(item);
@@ -7178,6 +7200,10 @@ function isMapItemSelected(layerId, kind, itemId) {
   return state.focusedMapSelection === mapSelectionKey(layerId, kind, itemId);
 }
 
+function isViewerRecordSelected(itemId) {
+  return String(state.focusedViewerRecordId || "") === String(itemId || "");
+}
+
 function mapItemId(item = {}, kind = "event") {
   if (kind === "target") return String(item.target_id || item.id || "");
   if (kind === "evidence") return String(item.evidence_id || item.id || "");
@@ -7679,7 +7705,7 @@ function renderEvidence() {
     head.innerHTML = `<tr><th class="result-map-action-column" data-result-action-column="true"></th>${columns.map(key => `<th>${escapeHtml(viewerFieldLabel(key))}</th>`).join("")}</tr>`;
     body.innerHTML = activeItems.length ? activeItems.map(event => {
       const id = String(event.record_id || event.event_id || "");
-      return `<tr><td>${mapActionButton(activeLayer.id, "event", id, event)}</td>${columns.map(key => {
+      return `<tr class="${isViewerRecordSelected(id) ? "viewer-selected-row" : ""}"><td>${mapActionButton(activeLayer.id, "event", id, event)}</td>${columns.map(key => {
         const value = escapeHtml(event[key] || (key === "location_name" ? event.location_id : "") || "—");
         return key === "event_id" ? `<td><button type="button" class="object-viewer-open" data-viewer-kind="record" data-viewer-id="${escapeHtml(id)}">${value}</button>${recordLinkIndicator(event)}</td>` : `<td dir="ltr">${key === "imei" ? collectionImeiButton(event[key]) : value}</td>`;
       }).join("")}</tr>`;
@@ -7696,7 +7722,7 @@ function renderEvidence() {
     body.innerHTML = activeItems.length ? activeItems.map(event => {
       const eventId = String(event.record_id || event.event_id || "");
       const selected = isMapItemSelected(activeLayer.id, "event", eventId);
-      return `<tr class="${selected ? "map-selected-row" : ""}"><td class="result-map-action-cell">${mapActionButton(activeLayer.id, "event", eventId, event)}</td>${columns.map(key => {
+      return `<tr class="${[selected ? "map-selected-row" : "", isViewerRecordSelected(eventId) ? "viewer-selected-row" : ""].filter(Boolean).join(" ")}"><td class="result-map-action-cell">${mapActionButton(activeLayer.id, "event", eventId, event)}</td>${columns.map(key => {
         const value = escapeHtml(event[key] == null || event[key] === "" ? "—" : event[key]);
         return key === "event_id"
           ? `<td dir="ltr"><button type="button" class="object-viewer-open" data-viewer-kind="record" data-viewer-id="${escapeHtml(eventId)}">${value}</button>${recordLinkIndicator(event)}</td>`
@@ -7712,7 +7738,7 @@ function renderEvidence() {
   if (ipdrTable && (activeLayer.items || []).some(event => event.source_record_id)) {
     const fields = ["event_id", ...IPDR_SOURCE_FIELDS];
     head.innerHTML = `<tr>${fields.map(key => `<th>${escapeHtml(ipdrTableFieldLabel(key))}</th>`).join("")}</tr>`;
-    body.innerHTML = activeItems.length ? activeItems.map(event => `<tr>${fields.map(key => {
+    body.innerHTML = activeItems.length ? activeItems.map(event => `<tr class="${isViewerRecordSelected(event.event_id || event.record_id || "") ? "viewer-selected-row" : ""}">${fields.map(key => {
       const value = escapeHtml(event[key] == null || event[key] === "" ? "—" : event[key]);
       return key === "event_id"
         ? `<td dir="ltr"><button type="button" class="object-viewer-open" data-viewer-kind="record" data-viewer-id="${escapeHtml(event.event_id || event.record_id || "")}">${value}</button>${recordLinkIndicator(event)}</td>`
@@ -7744,7 +7770,7 @@ function renderEvidence() {
     const eventId = String(event.record_id || event.event_id || "");
     const selected = isMapItemSelected(activeLayer.id, "event", eventId);
     return `
-    <tr class="${selected ? "map-selected-row" : ""}">
+      <tr class="${[selected ? "map-selected-row" : "", isViewerRecordSelected(eventId) ? "viewer-selected-row" : ""].filter(Boolean).join(" ")}">
       <td class="result-map-action-cell">${mapActionButton(activeLayer.id, "event", eventId, event)}</td>
       <td dir="ltr"><button type="button" class="object-viewer-open" data-viewer-kind="record" data-viewer-id="${escapeHtml(eventId)}">${escapeHtml(event.record_id || event.event_id || "-")}</button>${recordLinkIndicator(event)}</td>
       <td dir="ltr">${escapeHtml(event.timestamp_utc)}</td>
