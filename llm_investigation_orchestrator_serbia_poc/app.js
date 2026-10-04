@@ -662,6 +662,7 @@ const appHomeButton = document.getElementById("appHomeButton");
 const welcomePage = document.getElementById("welcomePage");
 const myInvestigationsList = document.getElementById("myInvestigationsList");
 const myInvestigationsCount = document.getElementById("myInvestigationsCount");
+const invitedInvestigationsList = document.getElementById("invitedInvestigationsList");
 const similarInvestigationsList = document.getElementById("similarInvestigationsList");
 const welcomeActionModal = document.getElementById("welcomeActionModal");
 const welcomeActionTitle = document.getElementById("welcomeActionTitle");
@@ -2725,7 +2726,7 @@ function hasCatalogLayerActions(result = {}) {
     action?.action === "open" && action.catalog_layer_id);
 }
 
-const SIMILAR_INVESTIGATIONS = demoRuntime?.scenario_id === "syria" ? [] : [
+const SERBIA_SIMILAR_INVESTIGATIONS = [
   {
     id: "regional-infrastructure",
     titleHe: "תשתיות קריטיות בצפון קוסובו",
@@ -2760,6 +2761,49 @@ const SIMILAR_INVESTIGATIONS = demoRuntime?.scenario_id === "syria" ? [] : [
     action: "request"
   }
 ];
+
+const SYRIA_INVITED_INVESTIGATIONS = [
+  {
+    id: "damascus-device-correlation",
+    titleHe: "סקירת מתאם מכשירים בדמשק",
+    titleEn: "Damascus device-correlation review",
+    summaryHe: "סקירה משותפת של התאמות בין IMEI, IPDR ומיקומי סלולר באזור דמשק.",
+    summaryEn: "A collaborative review of IMEI, IPDR, and cellular-location matches around Damascus.",
+    reasonHe: "הוזמנת על ידי צוות הסיגינט",
+    reasonEn: "Invited by the SIGINT team",
+    participants: 3,
+    action: "join",
+    invited: true
+  }
+];
+
+const SYRIA_PROPOSED_INVESTIGATIONS = [
+  {
+    id: "unidentified-call-counterpart",
+    titleHe: "זיהוי צד לא מזוהה בשיחות סלולר",
+    titleEn: "Unidentified counterpart in cellular calls",
+    summaryHe: "בדיקת דפוסי שיחה, מיקום ומזהי מכשיר סביב הצד הלא מזוהה בשיחות שנאספו.",
+    summaryEn: "Review call, location, and device-identifier patterns around the unidentified party in collected calls.",
+    reasonHe: "חפיפה גבוהה למזהים ולשיחות בחקירה שלך",
+    reasonEn: "High overlap with identifiers and calls in your investigation",
+    participants: 2,
+    action: "request"
+  },
+  {
+    id: "damascus-cellular-movement",
+    titleHe: "תנועת מכשירים סלולריים סביב דמשק",
+    titleEn: "Cellular device movement around Damascus",
+    summaryHe: "השוואת אירועי מיקום סלולריים לאורך זמן כדי לזהות דפוסי תנועה משותפים.",
+    summaryEn: "Compare cellular geolocation events over time to identify shared movement patterns.",
+    reasonHe: "התאמה גבוהה למקור ולמרחב הגאוגרפי",
+    reasonEn: "Strong source and geographic match",
+    participants: 4,
+    action: "join"
+  }
+];
+
+const INVITED_INVESTIGATIONS = demoRuntime?.scenario_id === "syria" ? SYRIA_INVITED_INVESTIGATIONS : [];
+const SIMILAR_INVESTIGATIONS = demoRuntime?.scenario_id === "syria" ? SYRIA_PROPOSED_INVESTIGATIONS : SERBIA_SIMILAR_INVESTIGATIONS;
 
 function welcomeAvatarHtml(member) {
   return `<span class="ribbon-avatar" title="${escapeHtml(`${member.displayName} · ${member.roleLabel}`)}"><span>${escapeHtml(member.initial)}</span><img src="${escapeHtml(member.avatar)}" alt="" onerror="this.remove()"></span>`;
@@ -2813,7 +2857,7 @@ function similarInvestigationRibbonHtml(investigation) {
     <article class="investigation-ribbon similar">
       <div class="ribbon-similar-content">
         <div class="ribbon-primary">
-          <div class="ribbon-title-row"><h3 class="ribbon-title">${escapeHtml(activeLocaleText(investigation.titleHe, investigation.titleEn))}</h3><span class="ribbon-status">${activeLocaleText("מומלצת", "Recommended")}</span></div>
+            <div class="ribbon-title-row"><h3 class="ribbon-title">${escapeHtml(activeLocaleText(investigation.titleHe, investigation.titleEn))}</h3><span class="ribbon-status">${investigation.invited ? activeLocaleText("הוזמנת", "Invited") : activeLocaleText("מומלצת", "Recommended")}</span></div>
           <p class="ribbon-summary">${escapeHtml(activeLocaleText(investigation.summaryHe, investigation.summaryEn))}</p>
           <span class="ribbon-attention"><span class="material-symbols-rounded" aria-hidden="true">auto_awesome</span>${escapeHtml(activeLocaleText(investigation.reasonHe, investigation.reasonEn))}</span>
         </div>
@@ -2828,10 +2872,11 @@ function similarInvestigationRibbonHtml(investigation) {
 }
 
 function renderWelcomePage() {
-  if (!myInvestigationsList || !similarInvestigationsList) return;
+  if (!myInvestigationsList || !invitedInvestigationsList || !similarInvestigationsList) return;
   const investigations = state.investigations.length ? state.investigations : [{ id: state.investigationId, name: state.investigationName }];
   myInvestigationsCount.textContent = investigations.length.toLocaleString(currentLocaleTag());
   myInvestigationsList.innerHTML = investigations.map(ownedInvestigationRibbonHtml).join("");
+  invitedInvestigationsList.innerHTML = INVITED_INVESTIGATIONS.map(similarInvestigationRibbonHtml).join("");
   similarInvestigationsList.innerHTML = SIMILAR_INVESTIGATIONS.map(similarInvestigationRibbonHtml).join("");
 }
 

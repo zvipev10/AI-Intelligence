@@ -12,6 +12,8 @@ Draft exploration is ephemeral until an investigation is created. Saved investig
 
 Team-member selection is available only inside a saved investigation workspace, never on the welcome page or during draft exploration. Naama is the SIGINT Officer and Gadi is the VISINT Officer. Selecting either applies a client-side source workspace: it limits the visible/openable catalog and result layers for that role without deleting other investigation layers.
 
+The welcome page separates the analyst's own investigations from **Investigations that I was invited to join** and **Relevant investigations proposed by the system**. Invitation and proposal ribbons keep the existing join/request interaction; they are scenario demonstration affordances and do not change membership or send notifications.
+
 | Member | Allowed Syria source layers | Default presentation |
 |---|---|---|
 | Naama / SIGINT Officer | ADINT, IPDR, Cellular Geolocations, Cellular Calls | Opens Cellular Calls in Timeline and docks the latest available call viewer. |
