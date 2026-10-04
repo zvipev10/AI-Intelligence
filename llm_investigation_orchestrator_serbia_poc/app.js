@@ -2853,6 +2853,7 @@ function similarInvestigationRibbonHtml(investigation) {
   const actionLabel = investigation.action === "join"
     ? activeLocaleText("הצטרפות", "Join")
     : activeLocaleText("בקשת הצטרפות", "Request to join");
+  const actionIcon = investigation.action === "join" ? "group_add" : "person_add";
   return `
     <article class="investigation-ribbon similar">
       <div class="ribbon-similar-content">
@@ -2867,15 +2868,35 @@ function similarInvestigationRibbonHtml(investigation) {
           <div class="ribbon-metric"><span>${activeLocaleText("גישה", "Access")}</span><strong>${investigation.action === "join" ? activeLocaleText("פתוחה להשתתפות", "Open participation") : activeLocaleText("דורשת אישור בעלים", "Owner approval required")}</strong></div>
         </div>
       </div>
-      <div class="ribbon-actions"><button class="ribbon-action secondary" type="button" data-welcome-action="${investigation.action}" data-investigation-name="${escapeHtml(activeLocaleText(investigation.titleHe, investigation.titleEn))}">${actionLabel}</button></div>
+      <div class="ribbon-actions"><button class="ribbon-action" type="button" data-welcome-action="${investigation.action}" data-invited-investigation="${investigation.invited ? "true" : "false"}" data-invitation-id="${escapeHtml(investigation.id)}" data-investigation-name="${escapeHtml(activeLocaleText(investigation.titleHe, investigation.titleEn))}"><span class="material-symbols-rounded" aria-hidden="true">${actionIcon}</span>${actionLabel}</button></div>
     </article>`;
+}
+
+function isInvitedWelcomeInvestigation(investigation) {
+  const name = typeof investigation === "string" ? investigation : investigation?.name;
+  return INVITED_INVESTIGATIONS.some(invitation => [invitation.titleHe, invitation.titleEn].some(title => investigationNameKey(title) === investigationNameKey(name)));
+}
+
+function invitedInvestigationById(id) {
+  return INVITED_INVESTIGATIONS.find(investigation => investigation.id === id) || null;
+}
+
+function joinInvitedInvestigation(invitation) {
+  if (!invitation || state.busy) return;
+  const name = activeLocaleText(invitation.titleHe, invitation.titleEn);
+  const investigation = ensureInvestigationRecord(name);
+  selectInvestigation(investigation);
+  setPageView("workspace");
 }
 
 function renderWelcomePage() {
   if (!myInvestigationsList || !invitedInvestigationsList || !similarInvestigationsList) return;
   const investigations = state.investigations.length ? state.investigations : [{ id: state.investigationId, name: state.investigationName }];
-  myInvestigationsCount.textContent = investigations.length.toLocaleString(currentLocaleTag());
-  myInvestigationsList.innerHTML = investigations.map(ownedInvestigationRibbonHtml).join("");
+  const ownedInvestigations = investigations.filter(investigation => !isInvitedWelcomeInvestigation(investigation));
+  myInvestigationsCount.textContent = ownedInvestigations.length.toLocaleString(currentLocaleTag());
+  myInvestigationsList.innerHTML = ownedInvestigations.length
+    ? ownedInvestigations.map(ownedInvestigationRibbonHtml).join("")
+    : `<p class="welcome-empty-investigations">${escapeHtml(activeLocaleText("אין חקירות בבעלותך להצגה.", "No owned investigations to show."))}</p>`;
   invitedInvestigationsList.innerHTML = INVITED_INVESTIGATIONS.map(similarInvestigationRibbonHtml).join("");
   similarInvestigationsList.innerHTML = SIMILAR_INVESTIGATIONS.map(similarInvestigationRibbonHtml).join("");
 }
@@ -8471,6 +8492,10 @@ appHomeButton?.addEventListener("click", () => setPageView("welcome"));
 welcomePage?.addEventListener("click", event => {
   const action = event.target.closest("[data-welcome-action]");
   if (action) {
+    if (action.dataset.welcomeAction === "join" && action.dataset.invitedInvestigation === "true") {
+      joinInvitedInvestigation(invitedInvestigationById(action.dataset.invitationId));
+      return;
+    }
     openWelcomeAction(action.dataset.welcomeAction, action.dataset.investigationName || "");
     return;
   }

@@ -154,6 +154,7 @@ body.welcome-active .investigation-switcher { visibility: hidden; pointer-events
 .ribbon-action { min-height: 38px; display: inline-flex; align-items: center; justify-content: center; gap: 7px; border: 1px solid rgba(88,166,255,.48); border-radius: 10px; background: rgba(88,166,255,.1); color: var(--blue); padding: 7px 12px; font-size: 11px; font-weight: 900; white-space: nowrap; }
 .ribbon-action:hover, .ribbon-action:focus-visible { background: rgba(88,166,255,.2); color: #fff; outline: none; }
 .ribbon-action.secondary { border-color: rgba(146,170,205,.28); background: rgba(255,255,255,.035); color: var(--ink); }
+.welcome-empty-investigations { margin: 0; padding: 18px 22px; border: 1px dashed rgba(146,170,205,.28); border-radius: 14px; color: var(--muted); text-align: center; }
 .similar-investigations-section { padding-top: 10px; border-top: 1px solid rgba(146,170,205,.14); }
 .welcome-action-backdrop { z-index: 130; }
 .welcome-action-modal { width: min(440px, calc(100vw - 30px)); display: grid; justify-items: center; gap: 18px; padding: 30px; border: 1px solid var(--line); border-radius: 18px; background: var(--panel); box-shadow: 0 24px 70px rgba(0,0,0,.55); text-align: center; }
