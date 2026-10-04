@@ -99,25 +99,25 @@ def build_links(events: list[dict[str, Any]], entities: dict[str, dict[str, Any]
     # ``ip_out`` is excluded because its source meaning is undocumented.
     # ADINT/IPDR links are a direct field-equality correlation: time fields
     # remain source context, but never gate the relationship.
-    ipdr_by_target_ip: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    ipdr_by_public_ip: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for event in events:
         if _text(event.get("source_type")) != "IPDR":
             continue
-        target_ip = _text(event.get("ip_target"))
-        if target_ip:
-            ipdr_by_target_ip[target_ip].append(event)
+        public_ip = _text(event.get("ip_public"))
+        if public_ip:
+            ipdr_by_public_ip[public_ip].append(event)
     for event in events:
         if _text(event.get("source_type")) != "ADINT":
             continue
         record_id, ip = _text(event.get("event_id")), _text(event.get("ip"))
         if not record_id or not ip:
             continue
-        for ipdr in ipdr_by_target_ip.get(ip, []):
+        for ipdr in ipdr_by_public_ip.get(ip, []):
             ipdr_id = _text(ipdr.get("event_id"))
             if ipdr_id:
                 links.append(_link(
-                    "adint_ip_to_ipdr_target_ip_v1", "raw_record", record_id, "ip",
-                    "raw_record", ipdr_id, "ip_target", ip,
+                    "adint_ip_to_ipdr_public_ip_v1", "raw_record", record_id, "ip",
+                    "raw_record", ipdr_id, "ip_public", ip,
                     provenance_record_ids=sorted({record_id, ipdr_id}),
                 ))
     return sorted(links, key=lambda item: item["link_id"])

@@ -22,7 +22,7 @@ CCTV Site 1 uses `LOC-SYR-001` (35.064595, 36.284253); Site 2 uses `LOC-SYR-002`
 - **ADINT:** 120 observations imported from the supplied replacement `ADINT.json`, September 1–5, 2026, replacing the prior ADINT source file. Native fields: `observation_id`, `device_id`, `timestamp_utc`, `brand`, `model`, `os`, `keyboard_language`, `ip`, `latitude`, `longitude`, `accuracy_m`. Twelve device identities are not identified people. There are 84 distinct coordinate points and 36 geometry-free observations; all 120 IP values are populated and 68 keyboard-language values are null. Missing values are preserved, not inferred. The table/viewer expose these fields; geometry-free records remain accessible in Table.
 - **IPDR:** 300 records from the supplied replacement `IPDR-expanded.csv`, replacing the prior IPDR source file. Native fields: start_time, end_time, ip_source, ip_target, ip_public, ip_private, ip_out, record_id, source_port, target_port, public_port, protocol, bytes_sent, bytes_received, source_system, imei, mac, SUBNETMASK. Four rows supply IMEI; absent values remain blank. No actor or location is asserted. Table/viewer show all source fields and no map action. Internal `source_record_id` retains the original record_id string separately from canonical application event IDs. SUBNETMASK header whitespace is trimmed; source values and original file bytes are retained.
 
-The imported sessions are dated September 1-6. The supplied replacement corrects the formerly reversed end times for records 3001185062876120 and 3495155497992130. ADINT/IPDR raw-record links are created when ADINT `ip` equals IPDR `ip_target`; session time does not limit these field-equality correlations. Do not infer a convoy/device relationship from location sharing.
+The imported sessions are dated September 1-6. The supplied replacement corrects the formerly reversed end times for records 3001185062876120 and 3495155497992130. ADINT/IPDR raw-record links are created when ADINT `ip` equals IPDR `ip_public`; session time does not limit these field-equality correlations. Do not infer a convoy/device relationship from location sharing.
 
 ## Syria package history
 
@@ -56,7 +56,7 @@ The convoy fixture generator `build_syria_convoy_demo.py` uses Pillow/imageio-ff
 1. Open CCTV and Satellite at Site 1, then Site 2. Each viewer contains only its own site media.
 2. Open each Satellite record: one image, own Satellite site, explicit timestamp basis and accurate image description.
 3. Open ADINT in Table to inspect all 120 observations; Map shows only observations with supplied coordinates.
-4. Open IPDR in Table and compare IP values. ADINT/IPDR links use ADINT `ip` and IPDR `ip_target`, without a session-time constraint; session fields remain source context.
+4. Open IPDR in Table and compare IP values. ADINT/IPDR links use ADINT `ip` and IPDR `ip_public`, without a session-time constraint; session fields remain source context.
 5. Switch to Kosovo only through the operator procedure and confirm its own saved state returns.
 
 Kosovo retains the bilingual V2.1 corpus, including 24 synthetic cellular calls. The historical 5,283-row evidence catalog (783 fused objects) belongs to its evidence release, not to Syria. Detailed prior demo scripts and quality results remain in [historical capability records](../.ai/work/capabilities/) and the [documentation archive](../.ai/work/capabilities/documentation-hierarchy/migration-map.md).

@@ -543,3 +543,11 @@ Decision: add a directional observed link from ADINT `ip` to IPDR `ip_target` on
 Rationale: IP equality alone is not sufficient evidence of a relationship. Restricting the first raw-to-raw rule to a documented IPDR role and a valid time window makes the correlation reviewable without asserting device ownership, identity, location, or activity.
 
 Impact: `ip_out`, blank values, reversed intervals, and temporal non-matches create no link. The link is visible in the ADINT/IPDR raw viewers and through `/api/links`; it does not create a derivation or mutate immutable data.
+
+### 2026-10-04 — Match ADINT IP to the IPDR public-IP role without a time gate
+
+Decision: supersede the earlier ADINT/IPDR raw-link condition. Create the observed raw-record link only when a non-empty ADINT `ip` equals a non-empty IPDR `ip_public`. Do not use `ip_target`, `ip_out`, or session time to establish this link.
+
+Rationale: the IPDR field with the intended role for this correlation is the public IP. The relationship is a deterministic field-equality correlation and does not assert device ownership, identity, location, or activity.
+
+Impact: the rule is versioned as `adint_ip_to_ipdr_public_ip_v1`. The current Syria dataset yields 20 ADINT-to-IPDR pairs, projected reciprocally as 40 raw-record viewer links.
