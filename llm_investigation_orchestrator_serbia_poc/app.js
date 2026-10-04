@@ -4595,7 +4595,7 @@ function recordLinkedRawRecordsHtml(item) {
     const label = link.rule_id === "adint_ip_to_ipdr_target_ip_temporal_v1"
       ? activeLocaleText("IP תואם בתוך חלון זמן תקין", "Matching IP within a valid session window")
       : activeLocaleText("התאמת שדה", "Field match");
-    return `<li><button type="button" class="object-viewer-open" data-viewer-kind="record" data-viewer-id="${escapeHtml(link.record_id || "")}">${escapeHtml(link.record_id || "—")}</button><span>${escapeHtml(label)} · <code dir="ltr">${escapeHtml(fields)}</code> · <code dir="ltr">${escapeHtml(link.matched_value || "—")}</code></span></li>`;
+    return `<li><button type="button" class="object-viewer-open" data-linked-record-open="true" data-viewer-kind="record" data-viewer-id="${escapeHtml(link.record_id || "")}">${escapeHtml(link.record_id || "—")}</button><span>${escapeHtml(label)} · <code dir="ltr">${escapeHtml(fields)}</code> · <code dir="ltr">${escapeHtml(link.matched_value || "—")}</code></span></li>`;
   }).join("");
   return `<section class="object-viewer-evidence record-raw-links"><h3>${escapeHtml(activeLocaleText("רשומות גולמיות מקושרות", "Linked raw records"))}</h3><ul>${rows}</ul></section>`;
 }
@@ -4761,6 +4761,28 @@ function openObjectViewer(kind, id, trigger = document.activeElement) {
   if (kind === "record" && isUavVideoRecord(item)) startSimulatedUavStream(item);
   document.getElementById("objectViewerClose").focus();
   return true;
+}
+
+function rawRecordCatalogLayerId(record) {
+  const sourceType = String(record?.source_type || "").trim();
+  if (!sourceType) return "";
+  const directId = `events:${sourceType}`;
+  return state.layerCatalog.find(layer => layer.id === directId)?.id
+    || state.layerCatalog.find(layer => String(layer.source_type || "").trim() === sourceType)?.id
+    || "";
+}
+
+async function openLinkedRawRecord(id, trigger) {
+  const record = viewerObjects().get(`record:${id}`);
+  const catalogLayerId = rawRecordCatalogLayerId(record);
+  if (!record || !catalogLayerId) return false;
+  const layer = await openCatalogLayer(catalogLayerId, { silent: true });
+  if (!layer) return false;
+  state.activeLayerId = layer.id;
+  state.rawOverlayMinimized = false;
+  activateView("table");
+  renderAllViews();
+  return openObjectViewer("record", id, trigger);
 }
 
 function appendAssistantObjectLinks(article) {
@@ -7912,6 +7934,12 @@ document.addEventListener("click", event => {
   }
   if (event.target.closest("#visualMediaOverlayClose") || event.target.id === "visualMediaOverlay") {
     closeVisualCollectionMediaFullscreen();
+    return;
+  }
+  const linkedRecordTrigger = event.target.closest("[data-linked-record-open][data-viewer-id]");
+  if (linkedRecordTrigger) {
+    event.preventDefault();
+    void openLinkedRawRecord(linkedRecordTrigger.dataset.viewerId, linkedRecordTrigger);
     return;
   }
   const viewerTrigger = event.target.closest("[data-viewer-kind][data-viewer-id]");
