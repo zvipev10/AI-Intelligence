@@ -31,6 +31,8 @@ Table is a standalone tab beside Map and Timeline, using the same component as t
 
 Cellular Geolocations display their native device and subscriber fields: IMEI, SIM, target and operator MSISDN, and target and operator IMSI. These remain raw record values; matching identifiers do not by themselves establish subscriber ownership or identity.
 
+Entity references shown in an item viewer resolve against the active dataset's entity directory. A reference is rendered as an opener only when its target entity is available, and opens that entity in the shared item viewer; unresolved identifiers remain plain code rather than inert controls.
+
 General and specialist presentation instructions recognize all three views. Named catalog requests use the live catalog and preserve filters; a unique close naming match can be recovered, while ambiguous candidates require clarification. A queued action is not proof that the browser opened a layer. Saved layers and explicitly selected result/evidence layers retain their separate presentation contracts.
 
 ### Calls presentation

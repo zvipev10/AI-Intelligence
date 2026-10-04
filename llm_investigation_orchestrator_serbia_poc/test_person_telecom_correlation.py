@@ -58,7 +58,7 @@ class PersonTelecomCorrelationUiTests(unittest.TestCase):
         self.assertIn('"Approve"', app)
         self.assertIn("Reference records", app)
         self.assertIn("Calls", app)
-        self.assertIn('script.src = "./app.js?v=261";', bootstrap)
+        self.assertIn('script.src = "./app.js?v=265";', bootstrap)
 
 
 if __name__ == "__main__":

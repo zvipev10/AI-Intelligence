@@ -564,6 +564,7 @@ const state = {
   aggregateGroups: [],
   locationMetadata: [],
   entityMetadata: [],
+  entityDirectory: [],
   map: null,
   mapReady: false,
   markers: [],
@@ -3849,10 +3850,13 @@ let objectViewerDockTarget = null;
 function viewerObjects() {
   const objects = new Map();
   state.events.forEach(item => objects.set(`record:${item.record_id || item.event_id}`, item));
-  state.entityMetadata.forEach(item => {
+  const addEntity = item => {
+    if (!item?.entity_id) return;
     const kind = isPersonEntity(item) ? "person" : "organization";
     objects.set(`${kind}:${item.entity_id}`, item);
-  });
+  };
+  state.entityDirectory.forEach(addEntity);
+  state.entityMetadata.forEach(addEntity);
   state.layers.forEach(layer => {
     if (layer.kind === "events") (layer.items || []).forEach(item => objects.set(`record:${item.record_id || item.event_id}`, item));
     if (layer.kind === "evidence") (layer.items || []).forEach(item => {
@@ -3860,10 +3864,7 @@ function viewerObjects() {
       else objects.set(`evidence:${item.evidence_id}`, item);
     });
     if (layer.kind === "assessments") (layer.items || []).forEach(item => objects.set(`assessment:${item.assessment_id}`, item));
-    if (["entity_metadata", "person_entities"].includes(layer.kind)) (layer.items || []).forEach(item => {
-      const kind = isPersonEntity(item) ? "person" : "organization";
-      objects.set(`${kind}:${item.entity_id}`, item);
-    });
+    if (["entity_metadata", "person_entities"].includes(layer.kind)) (layer.items || []).forEach(addEntity);
   });
   return objects;
 }
@@ -4289,6 +4290,29 @@ function viewerValue(value) {
   return String(value);
 }
 
+const ENTITY_REFERENCE_FIELDS = new Set(["associated_entity_ids", "related_entity_ids", "subject_entity_ids", "entity_ids", "side_a_entity_id", "side_b_entity_id"]);
+
+function entityViewerTarget(entityId, preferredKind = "") {
+  const id = String(entityId || "").trim();
+  if (!id) return null;
+  const objects = viewerObjects();
+  const kinds = [preferredKind, "person", "organization"].filter((kind, index, values) => kind && values.indexOf(kind) === index);
+  return kinds.find(kind => objects.has(`${kind}:${id}`)) || null;
+}
+
+function entityViewerLinkHtml(entityId, label = entityId, preferredKind = "") {
+  const id = String(entityId || "").trim();
+  const kind = entityViewerTarget(id, preferredKind);
+  if (!kind) return `<code dir="ltr">${escapeHtml(label || id || "—")}</code>`;
+  return `<button type="button" class="object-viewer-open" data-viewer-kind="${escapeHtml(kind)}" data-viewer-id="${escapeHtml(id)}">${escapeHtml(label || id)}</button>`;
+}
+
+function viewerFieldValueHtml(key, value) {
+  if (!ENTITY_REFERENCE_FIELDS.has(key)) return escapeHtml(viewerValue(value));
+  const ids = Array.isArray(value) ? value : [value];
+  return ids.map(id => entityViewerLinkHtml(id)).join(" ");
+}
+
 function organizationEvidenceHtml(item) {
   const available = viewerObjects();
   const locations = (item.top_locations || []).filter(location => (location.evidence_record_ids || []).length);
@@ -4491,7 +4515,7 @@ function recordLinkedEntitiesHtml(item) {
     const kind = String(link.entity_type || "").toLowerCase() === "person" ? "person" : "organization";
     const name = link.entity_name || entityId;
     const fields = `${link.record_field || "record"} = ${link.entity_field || "entity"}`;
-    return `<li><button type="button" class="object-viewer-open" data-viewer-kind="${escapeHtml(kind)}" data-viewer-id="${escapeHtml(entityId)}">${escapeHtml(name)}</button><span>${escapeHtml(ruleLabel(link.rule_id))} · <code dir="ltr">${escapeHtml(fields)}</code> · <code dir="ltr">${escapeHtml(link.matched_value || "—")}</code></span></li>`;
+    return `<li>${entityViewerLinkHtml(entityId, name, kind)}<span>${escapeHtml(ruleLabel(link.rule_id))} · <code dir="ltr">${escapeHtml(fields)}</code> · <code dir="ltr">${escapeHtml(link.matched_value || "—")}</code></span></li>`;
   }).join("");
   return `<section class="object-viewer-evidence record-entity-links"><h3>${escapeHtml(activeLocaleText("ישויות מקושרות", "Linked entities"))}</h3><ul>${rows}</ul></section>`;
 }
@@ -4640,7 +4664,7 @@ function openObjectViewer(kind, id, trigger = document.activeElement) {
   viewer.classList.toggle("is-person-viewer", personViewer);
   const mediaHtml = viewerMediaHtml(item);
   const cellularHtml = kind === "record" ? cellularCallHtml(item) : "";
-  const fields = viewerFields(item, kind).map(([key,value]) => `<div class="object-viewer-field"><dt>${escapeHtml(viewerFieldLabel(key))}</dt><dd>${escapeHtml(viewerValue(value))}</dd></div>`).join("");
+  const fields = viewerFields(item, kind).map(([key,value]) => `<div class="object-viewer-field"><dt>${escapeHtml(viewerFieldLabel(key))}</dt><dd>${viewerFieldValueHtml(key, value)}</dd></div>`).join("");
   const entityMapHtml = kind === "organization" ? entityLocationMapHtml(item) : "";
   document.getElementById("objectViewerBody").innerHTML = `${mediaHtml}${cellularHtml}${ipdrPackageLinkHtml(item, kind)}${personViewer ? personWorkspaceHtml(item) : ""}${entityMapHtml}${["record", "evidence", "assessment"].includes(kind) ? `<p class="object-viewer-summary">${escapeHtml(item.event_summary || item.summary || "-")}</p>` : ""}${personViewer ? "" : `<dl class="object-viewer-fields">${fields}</dl>`}${kind === "record" ? recordLinkedEntitiesHtml(item) : kind === "organization" ? organizationEvidenceHtml(item) : kind === "evidence" ? evidenceProvenanceHtml(item) : kind === "assessment" ? assessmentEvidenceHtml(item) : ""}`;
   viewer.hidden = false;
@@ -8526,6 +8550,14 @@ async function boot() {
     const response = await fetch(datasetUrl, { cache: "no-store" });
     if (!response.ok) throw new Error("dataset unavailable");
     state.events = parseCsv(await response.text()).map(enrich);
+    try {
+      const entityResponse = await fetch(buildLocaleApiUrl(`/api/layers/${encodeURIComponent("entity-metadata:all")}/rows`), { cache: "no-store" });
+      const entityPayload = await entityResponse.json();
+      if (!entityResponse.ok) throw new Error(entityPayload.error || "entity directory unavailable");
+      state.entityDirectory = Array.isArray(entityPayload.rows) ? entityPayload.rows : [];
+    } catch (error) {
+      state.entityDirectory = [];
+    }
     const versionLabel = runtimeStatus.dataset_version ? ` · ${runtimeStatus.dataset_version.toUpperCase()}` : "";
     updateSystemStatus("dataset",
       `${state.events.length.toLocaleString("he-IL")} אירועים זמינים במאגר${versionLabel}`,
