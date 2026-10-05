@@ -4067,8 +4067,12 @@ function cellularCallHtml(item) {
     return `<article class="call-bubble call-bubble-${side}">${speaker ? `<header>${escapeHtml(speaker)}</header>` : ""}<p lang="${transcriptLanguage}" dir="auto">${escapeHtml(match ? match[2] : text)}</p>${translation && translation !== (match ? match[2] : text) ? `<p class="call-translation" lang="en" dir="ltr">${escapeHtml(translation)}</p>` : ""}</article>`;
   }).join("");
   const duration = Number(item.call_duration_seconds || 0);
+  const callLocation = cellularCallMapLocation(item, "a");
+  const callLocationLabel = callLocation
+    ? `${callLocation.name} · ${callLocation.lat.toFixed(6)}, ${callLocation.lon.toFixed(6)}`
+    : activeLocaleText("מיקום שיחה לא ידוע", "Call location unavailable");
   return `<section class="call-workspace" aria-label="Cellular call analysis">
-    <div class="call-main"><section class="call-map-panel"><div id="callViewerMap" aria-label="Call endpoint map"></div><div class="call-map-caption"><span class="material-symbols-rounded">location_on</span>Call endpoints · A / B<button type="button" id="callFitMap">Fit both</button></div></section>
+    <div class="call-main"><section class="call-map-panel"><div id="callViewerMap" aria-label="Call location map"></div><div class="call-map-caption"><span class="material-symbols-rounded">location_on</span><span dir="ltr">${escapeHtml(callLocationLabel)}</span><button type="button" id="callFitMap">Fit location</button></div></section>
     <section class="call-conversation"><header class="call-conversation-heading"><span class="material-symbols-rounded">forum</span><h3>Conversation</h3><span class="call-conversation-id" dir="ltr">${escapeHtml(item.event_id || item.record_id)} · ${duration ? `${duration.toFixed(1)}s` : "—"}</span><label><input id="callTranslationToggle" type="checkbox" checked> English translation</label></header>
     <div class="call-transcript-scroll">${bubbles || '<p class="call-empty">No transcript supplied for this call.</p>'}</div><p class="call-timing-note">${paragraphs.length ? 'Transcript order is preserved. Per-line timestamps were not supplied.' : 'Open Call 1 to view its supplied recording and transcripts.'}</p></section></div>
     <footer class="call-player"><div><span class="material-symbols-rounded">graphic_eq</span><strong>${audioUrl ? 'Supplied recording' : 'Recording unavailable'}</strong></div>${audioUrl ? `<audio controls autoplay preload="auto" src="${escapeHtml(audioUrl.endsWith("/call-1.mp3") ? audioUrl.replace(/\.mp3$/, ".wav") : audioUrl)}" aria-label="Call recording"></audio>` : '<p>No audio attached to this record.</p>'}</footer>
@@ -7402,12 +7406,14 @@ function callTimelineEntry(event) {
     const imei = event[`${prefix}_imei`] || "—";
     return `<span class="call-list-party"><strong>${escapeHtml(name || fallback)}</strong><small dir="ltr">SIM ${escapeHtml(number)}</small><small dir="ltr">IMEI ${escapeHtml(imei)}</small></span>`;
   };
-  const location = event.side_a_location_name || event.location_name || event.side_a_location_id || event.location_id || "—";
+  const callLocation = cellularCallMapLocation(event, "a");
+  const location = callLocation?.name || event.side_a_location_name || event.location_name || event.side_a_location_id || event.location_id || "—";
+  const coordinates = callLocation ? `${callLocation.lat.toFixed(6)}, ${callLocation.lon.toFixed(6)}` : "";
   return `<button type="button" class="call-timeline-entry" data-viewer-kind="record" data-viewer-id="${escapeHtml(id)}" aria-pressed="false">
     <span class="call-list-play"><span class="material-symbols-rounded" aria-hidden="true">play_arrow</span></span>
     <span class="call-list-time"><strong>${escapeHtml(time)}</strong><small>${escapeHtml(id)}${duration > 0 ? ` · ${duration.toFixed(1)}s` : ""}</small></span>
     ${party("a", "A")}${party("b", "B")}
-    <span class="call-list-location"><strong>${escapeHtml(location)}</strong><small>${escapeHtml(event.event_summary || "")}${recordLinkIndicator(event)}</small></span>
+    <span class="call-list-location"><strong>${escapeHtml(location)}</strong><small dir="ltr">${escapeHtml(coordinates)}</small><small>${escapeHtml(event.event_summary || "")}${recordLinkIndicator(event)}</small></span>
   </button>`;
 }
 
