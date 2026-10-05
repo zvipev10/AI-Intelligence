@@ -4,7 +4,7 @@ Owns analyst-facing behavior. Dataset details belong to [demo scenarios](demo-sc
 
 ## Workspace and agent roles
 
-One bilingual Hebrew/English application serves one active scenario at a time. General investigates with semantic and deterministic retrieval; Moshe (`@משה` / `@Moshe`) prepares evidence-backed target candidates; Talia (`@טליה` / `@Talia`) maintains enemy assessments and their supporting evidence. Evidence presentation does not authorize target or assessment changes.
+One bilingual Hebrew/English application serves one active scenario at a time. The header provides separate direct Hebrew and English links, each with its own shareable `?lang=` URL; it does not use an in-place language toggle. General investigates with semantic and deterministic retrieval; Moshe (`@משה` / `@Moshe`) prepares evidence-backed target candidates; Talia (`@טליה` / `@Talia`) maintains enemy assessments and their supporting evidence. Evidence presentation does not authorize target or assessment changes.
 
 Draft exploration is ephemeral until an investigation is created. Saved investigation memory, workstreams, targets and assessments retain their own ownership boundaries. Selecting an investigation changes its request context, while staged playback and its cumulative visible timeframe remain global to the active runtime. Next advances available data; later slices may trigger separate memory and workstream updates. Mobile reconnection recovers the same server-side agent run.
 

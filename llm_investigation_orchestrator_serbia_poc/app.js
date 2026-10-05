@@ -658,7 +658,7 @@ const workstreamRailCount = document.getElementById("workstreamRailCount");
 const workstreamRailToggle = document.getElementById("workstreamRailToggle");
 const playbackNextButton = document.getElementById("playbackNextButton");
 const playbackResetButton = document.getElementById("playbackResetButton");
-const languageToggle = document.getElementById("languageToggle");
+const languageLinks = document.querySelectorAll("[data-language-link]");
 const appHomeButton = document.getElementById("appHomeButton");
 const welcomePage = document.getElementById("welcomePage");
 const myInvestigationsList = document.getElementById("myInvestigationsList");
@@ -945,7 +945,10 @@ function selectConversationMember(memberId) {
 function applyLocaleUi() {
   document.documentElement.lang = currentLocale();
   document.documentElement.dir = currentLocale() === "en" ? "ltr" : "rtl";
-  if (languageToggle) languageToggle.checked = currentLocale() === "en";
+  languageLinks.forEach(link => {
+    const isCurrent = link.dataset.languageLink === currentLocale();
+    link.toggleAttribute("aria-current", isCurrent);
+  });
   try {
     const url = new URL(window.location.href);
     url.searchParams.set("lang", currentLocale());
@@ -8643,17 +8646,6 @@ memoryCommentForm?.addEventListener("submit", async event => {
 });
 playbackNextButton?.addEventListener("click", advanceInvestigationPlayback);
 playbackResetButton?.addEventListener("click", resetInvestigationPlayback);
-languageToggle?.addEventListener("change", () => {
-  state.locale = languageToggle.checked ? "en" : "he";
-  try {
-    scenarioStorage.setItem(LOCALE_STORAGE_KEY, state.locale);
-  } catch (error) {
-    // Ignore localStorage failures and still apply the locale for this session.
-  }
-  const url = new URL(window.location.href);
-  url.searchParams.set("lang", state.locale);
-  window.location.assign(url.toString());
-});
 appHomeButton?.addEventListener("click", () => setPageView("welcome"));
 welcomePage?.addEventListener("click", event => {
   const action = event.target.closest("[data-welcome-action]");
