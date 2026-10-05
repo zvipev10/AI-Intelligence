@@ -4070,9 +4070,10 @@ function cellularCallHtml(item) {
   const callLocationLabel = callLocation
     ? `${callLocation.name} · ${callLocation.lat.toFixed(6)}, ${callLocation.lon.toFixed(6)}`
     : activeLocaleText("מיקום שיחה לא ידוע", "Call location unavailable");
+  const summary = String(item.event_summary || "").trim();
   return `<section class="call-workspace" aria-label="Cellular call analysis">
     <div class="call-main"><section class="call-map-panel"><div id="callViewerMap" aria-label="Call location map"></div><div class="call-map-caption"><span class="material-symbols-rounded">location_on</span><span dir="ltr">${escapeHtml(callLocationLabel)}</span><button type="button" id="callFitMap">Fit location</button></div></section>
-    <section class="call-conversation"><header class="call-conversation-heading"><span class="material-symbols-rounded">forum</span><h3>Conversation</h3><span class="call-conversation-id" dir="ltr">${escapeHtml(item.event_id || item.record_id)} · ${duration ? `${duration.toFixed(1)}s` : "—"}</span><label><input id="callTranslationToggle" type="checkbox" checked> English translation</label></header>
+    <section class="call-conversation"><header class="call-conversation-heading"><span class="material-symbols-rounded">forum</span><h3>Conversation</h3><span class="call-conversation-id" dir="ltr">${escapeHtml(item.event_id || item.record_id)} · ${duration ? `${duration.toFixed(1)}s` : "—"}</span><label><input id="callTranslationToggle" type="checkbox" checked> English translation</label></header>${summary ? `<section class="call-summary"><h4>${escapeHtml(activeLocaleText("סיכום שיחה", "Call summary"))}</h4><p>${escapeHtml(summary)}</p></section>` : ""}
     <div class="call-transcript-scroll">${bubbles || '<p class="call-empty">No transcript supplied for this call.</p>'}</div><p class="call-timing-note">${paragraphs.length ? 'Transcript order is preserved. Per-line timestamps were not supplied.' : 'Open Call 1 to view its supplied recording and transcripts.'}</p></section></div>
     <footer class="call-player"><div><span class="material-symbols-rounded">graphic_eq</span><strong>${audioUrl ? 'Supplied recording' : 'Recording unavailable'}</strong></div>${audioUrl ? `<audio controls autoplay preload="auto" src="${escapeHtml(audioUrl.endsWith("/call-1.mp3") ? audioUrl.replace(/\.mp3$/, ".wav") : audioUrl)}" aria-label="Call recording"></audio>` : '<p>No audio attached to this record.</p>'}</footer>
     <p class="call-provenance">${escapeHtml(item.call_media_origin || 'Scenario collection record.')}</p>
@@ -7412,7 +7413,7 @@ function callTimelineEntry(event) {
     <span class="call-list-play"><span class="material-symbols-rounded" aria-hidden="true">play_arrow</span></span>
     <span class="call-list-time"><strong>${escapeHtml(time)}</strong><small>${escapeHtml(id)}${duration > 0 ? ` · ${duration.toFixed(1)}s` : ""}</small></span>
     ${party("a", "A")}${party("b", "B")}
-    <span class="call-list-location"><strong>${escapeHtml(location)}</strong><small dir="ltr">${escapeHtml(coordinates)}</small><small>${escapeHtml(event.event_summary || "")}${recordLinkIndicator(event)}</small></span>
+    <span class="call-list-location"><strong>${escapeHtml(location)}</strong><small dir="ltr">${escapeHtml(coordinates)}</small></span>
   </button>`;
 }
 

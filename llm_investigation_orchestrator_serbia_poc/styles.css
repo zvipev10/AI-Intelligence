@@ -1030,6 +1030,9 @@ body.visual-media-overlay-open { overflow:hidden; }
 .call-conversation { display:flex;flex-direction:column; }
 .call-conversation-heading { padding:12px 14px;border-bottom:1px solid #42463c;flex-wrap:wrap; }
 .call-conversation-heading label { margin-left:auto;display:flex;align-items:center;gap:7px;font-size:11px;color:#c9d0c3; }
+.call-summary { margin:0;padding:10px 14px;border-bottom:1px solid #42463c;background:#20251f; }
+.call-summary h4 { margin:0 0 4px;color:#c9d0c3;font-size:10px;letter-spacing:.06em;text-transform:uppercase; }
+.call-summary p { margin:0;color:#edf1e9;font-size:12px;line-height:1.5; }
 .call-transcript-scroll { padding:18px;display:flex;flex-direction:column;gap:13px;max-height:370px;overflow:auto; }
 .call-bubble { max-width:88%;border:1px solid #465d70;border-radius:11px;padding:12px 15px;background:#2d4051;align-self:flex-start; }
 .call-bubble-b { align-self:flex-end;background:#383d3b;border-color:#637064; }
