@@ -1,12 +1,21 @@
 <!doctype html>
-<html lang="he" dir="rtl">
+<html lang="he" dir="rtl" data-app-ready="false">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script>
+    (() => {
+      if (new URLSearchParams(window.location.search).get("lang") === "en") {
+        document.documentElement.lang = "en";
+        document.documentElement.dir = "ltr";
+      }
+    })();
+  </script>
+  <style>html { background: #0f1115; } html[data-app-ready="false"] body { visibility: hidden; }</style>
   <title>סביבת מודיעין</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="./vendor/maplibre-gl.css">
-  <link rel="stylesheet" href="./styles.css?v=177">
+  <link rel="stylesheet" href="./styles.css?v=178">
 </head>
 <body class="welcome-active">
   <a class="help-button" href="./help.html" target="_blank" rel="noopener" aria-label="פתח עזרה" data-i18n-aria-he="פתח עזרה" data-i18n-aria-en="Open help">?</a>
@@ -14,10 +23,6 @@
     <div class="header-copy">
       <h1><button id="appHomeButton" class="app-home-button" type="button" data-i18n-text-he="סביבת מודיעין" data-i18n-text-en="Intelligence Workspace" aria-label="חזרה לדף הבית" data-i18n-aria-he="חזרה לדף הבית" data-i18n-aria-en="Return to welcome page">סביבת מודיעין</button></h1>
       <div class="intelligence-mode-control">
-        <nav class="language-links" aria-label="Language">
-          <a href="./index.html?lang=he" data-language-link="he" lang="he" hreflang="he" aria-label="עברית">עברית</a>
-          <a href="./index.html?lang=en" data-language-link="en" lang="en" hreflang="en" aria-label="English">English</a>
-        </nav>
         <span id="intelligencePeriod" class="intelligence-period"></span>
         <span id="playbackAgentStatus" class="playback-agent-status" hidden aria-live="polite"></span>
         <button id="playbackNextButton" class="playback-header-button" type="button" hidden aria-label="השלב הבא" data-i18n-aria-he="השלב הבא" data-i18n-aria-en="Next step">

@@ -40,9 +40,6 @@ button { cursor: pointer; }
 .app-header p { margin: 0; color: var(--muted); font-size: 13px; }
 .intelligence-mode-control { display: inline-flex; align-items: center; gap: 7px; min-width: 0; }
 .intelligence-mode-control select { min-height: 30px; border: 1px solid rgba(146,170,205,.42); border-radius: 8px; background: #10141b; color: var(--ink); padding: 3px 9px; font: inherit; font-size: 13px; font-weight: 700; }
-.language-links { display: inline-flex; align-items: center; gap: 2px; direction: ltr; font-size: 12px; font-weight: 800; white-space: nowrap; }
-.language-links a { border: 1px solid transparent; border-radius: 6px; color: var(--muted); padding: 4px 7px; text-decoration: none; }
-.language-links a:hover, .language-links a:focus-visible { border-color: rgba(88,166,255,.45); background: rgba(88,166,255,.12); color: var(--ink); outline: none; }
 .intelligence-period { color: var(--muted); font-size: 12px; font-weight: 700; direction: ltr; white-space: nowrap; }
 .playback-agent-status { color: var(--blue); font-size: 12px; font-weight: 700; white-space: nowrap; }
 .playback-agent-status.failed { color: #f0883e; }

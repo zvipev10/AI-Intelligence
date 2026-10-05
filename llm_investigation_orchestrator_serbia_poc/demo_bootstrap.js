@@ -52,8 +52,8 @@
     };
     setNotice();
     const script = document.createElement("script");
-    script.src = "./app.js?v=273";
-    script.onerror = () => { setNotice("Application could not load. Reload to retry."); };
+    script.src = "./app.js?v=274";
+    script.onerror = () => { document.documentElement.dataset.appReady = "true"; setNotice("Application could not load. Reload to retry."); };
     document.body.appendChild(script);
     setInterval(async () => {
       try {
@@ -76,6 +76,7 @@
       } catch { setNotice("Application restarting. Reload shortly."); }
     }, 5000);
   } catch (error) {
+    document.documentElement.dataset.appReady = "true";
     setNotice(error.message + " / יש לרענן.");
   }
 })();
