@@ -31,4 +31,18 @@ class CallMedia(unittest.TestCase):
   self.assertEqual((locations[c['location_id']]['latitude'],locations[c['location_id']]['longitude']),(35.05008341925823,36.27154430013932))
   self.assertEqual((c2['location_id'],c2['side_a_location_id']),('LOC-SYR-CALL-002','LOC-SYR-CALL-002'))
   self.assertEqual((locations[c2['location_id']]['latitude'],locations[c2['location_id']]['longitude']),(34.9837599416126,35.889327777437586))
+
+ def test_call_timeline_and_viewer_follow_reference_layout(self):
+  app=(ROOT/'app.js').read_text(encoding='utf-8')
+  styles=(ROOT/'styles.css').read_text(encoding='utf-8')
+  self.assertIn('class="call-list-header"',app)
+  self.assertIn('Date &amp; time',app)
+  self.assertIn('class="call-list-party"',app)
+  self.assertIn('class="call-list-location"',app)
+  self.assertIn('function startCellularCallAudio()',app)
+  self.assertIn('<audio controls autoplay preload="auto"',app)
+  self.assertIn('if (cellularCallViewer) startCellularCallAudio();',app)
+  self.assertIn('.timeline.call-list-timeline',styles)
+  self.assertIn('grid-template-columns:minmax(520px,47%) minmax(480px,1fr)',styles)
+  self.assertIn('.is-cellular-viewer .call-workspace { grid-template-columns:minmax(0,1fr); }',styles)
 if __name__=='__main__':unittest.main()

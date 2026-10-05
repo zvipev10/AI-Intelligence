@@ -4066,21 +4066,23 @@ function cellularCallHtml(item) {
     const transcriptLanguage = /arabic|persian/i.test(item.call_language || "") ? "ar" : "en";
     return `<article class="call-bubble call-bubble-${side}">${speaker ? `<header>${escapeHtml(speaker)}</header>` : ""}<p lang="${transcriptLanguage}" dir="auto">${escapeHtml(match ? match[2] : text)}</p>${translation && translation !== (match ? match[2] : text) ? `<p class="call-translation" lang="en" dir="ltr">${escapeHtml(translation)}</p>` : ""}</article>`;
   }).join("");
-  const detail = (label,value) => `<div><dt>${escapeHtml(label)}</dt><dd dir="auto">${escapeHtml(value || "—")}</dd></div>`;
-  const download = (url,label) => { const safe=safeMediaUrl(url); return safe ? `<a href="${escapeHtml(safe)}" target="_blank" rel="noopener">${escapeHtml(label)}</a>` : ""; };
   const duration = Number(item.call_duration_seconds || 0);
   return `<section class="call-workspace" aria-label="Cellular call analysis">
-    <aside class="call-sidebar"><div class="call-section-title"><span class="material-symbols-rounded">call</span><h3>Call details</h3></div>
-    <dl class="call-detail-list">${detail("Record ID",item.event_id || item.record_id)}${detail("Started · UTC",item.call_started_at_utc || item.timestamp_utc)}${detail("Duration",duration ? `${duration.toFixed(1)} seconds` : "")}${detail("Language",item.call_language)}${detail("Source",item.call_media_origin || "Scenario collection")}</dl>
-    <div class="cellular-call-parties">${cellularCallPartyHtml(item,"a")}${cellularCallPartyHtml(item,"b")}</div>
-    ${item.call_transcript_speaker_imei && item.call_transcript_speaker_imei !== item.side_a_imei ? `<p class="call-source-note">Transcript speaker IMEI: <b>${escapeHtml(item.call_transcript_speaker_imei)}</b>. Scenario device ID is shown separately above.</p>` : ""}
-    <div class="call-source-links">${download(item.call_transcript_url,"Arabic source")}${download(item.call_translation_url,"English translation")}</div></aside>
     <div class="call-main"><section class="call-map-panel"><div id="callViewerMap" aria-label="Call endpoint map"></div><div class="call-map-caption"><span class="material-symbols-rounded">location_on</span>Call endpoints · A / B<button type="button" id="callFitMap">Fit both</button></div></section>
-    <section class="call-conversation"><header class="call-conversation-heading"><span class="material-symbols-rounded">forum</span><h3>Conversation</h3><label><input id="callTranslationToggle" type="checkbox" checked> English translation</label></header>
+    <section class="call-conversation"><header class="call-conversation-heading"><span class="material-symbols-rounded">forum</span><h3>Conversation</h3><span class="call-conversation-id" dir="ltr">${escapeHtml(item.event_id || item.record_id)} · ${duration ? `${duration.toFixed(1)}s` : "—"}</span><label><input id="callTranslationToggle" type="checkbox" checked> English translation</label></header>
     <div class="call-transcript-scroll">${bubbles || '<p class="call-empty">No transcript supplied for this call.</p>'}</div><p class="call-timing-note">${paragraphs.length ? 'Transcript order is preserved. Per-line timestamps were not supplied.' : 'Open Call 1 to view its supplied recording and transcripts.'}</p></section></div>
-    <footer class="call-player"><div><span class="material-symbols-rounded">graphic_eq</span><strong>${audioUrl ? 'Supplied recording' : 'Recording unavailable'}</strong></div>${audioUrl ? `<audio controls preload="metadata" src="${escapeHtml(audioUrl.endsWith("/call-1.mp3") ? audioUrl.replace(/\.mp3$/, ".wav") : audioUrl)}" aria-label="Call recording"></audio>` : '<p>No audio attached to this record.</p>'}</footer>
+    <footer class="call-player"><div><span class="material-symbols-rounded">graphic_eq</span><strong>${audioUrl ? 'Supplied recording' : 'Recording unavailable'}</strong></div>${audioUrl ? `<audio controls autoplay preload="auto" src="${escapeHtml(audioUrl.endsWith("/call-1.mp3") ? audioUrl.replace(/\.mp3$/, ".wav") : audioUrl)}" aria-label="Call recording"></audio>` : '<p>No audio attached to this record.</p>'}</footer>
     <p class="call-provenance">${escapeHtml(item.call_media_origin || 'Scenario collection record.')}</p>
   </section>`;
+}
+
+function startCellularCallAudio() {
+  const audio = document.querySelector("#objectViewer .call-player audio");
+  if (!audio) return;
+  const playback = audio.play();
+  if (playback?.catch) playback.catch(() => {
+    audio.dataset.autoplayBlocked = "true";
+  });
 }
 
 function initializeCellularViewer(item) {
@@ -4828,6 +4830,7 @@ function openObjectViewer(kind, id, trigger = document.activeElement) {
   viewer.hidden = false;
   setViewerMaximized(false);
   if (cellularCallViewer) initializeCellularViewer(item);
+  if (cellularCallViewer) startCellularCallAudio();
   if (["person", "organization"].includes(kind)) initializeEntityLocationMap(item);
   if (kind === "record" && isUavVideoRecord(item)) startSimulatedUavStream(item);
   document.getElementById("objectViewerClose").focus();
@@ -7392,11 +7395,19 @@ function callTimelineEntry(event) {
   const id = event.event_id || event.record_id;
   const time = String(event.call_started_at_utc || event.timestamp_utc || "").replace("T", " ").replace("Z", " UTC");
   const duration = Number(event.call_duration_seconds);
+  const party = (side, fallback) => {
+    const prefix = `side_${side}`;
+    const name = event[`${prefix}_entity_name`] || activeLocaleText(`צד ${side === "a" ? "א׳" : "ב׳"}`, `Side ${side.toUpperCase()}`);
+    const number = event[`${prefix}_sim`] || event[`${prefix}_number`] || "—";
+    const imei = event[`${prefix}_imei`] || "—";
+    return `<span class="call-list-party"><strong>${escapeHtml(name || fallback)}</strong><small dir="ltr">SIM ${escapeHtml(number)}</small><small dir="ltr">IMEI ${escapeHtml(imei)}</small></span>`;
+  };
+  const location = event.side_a_location_name || event.location_name || event.side_a_location_id || event.location_id || "—";
   return `<button type="button" class="call-timeline-entry" data-viewer-kind="record" data-viewer-id="${escapeHtml(id)}" aria-pressed="false">
-    <span class="call-timeline-time">${escapeHtml(time)}${duration > 0 ? ` · ${duration.toFixed(1)}s` : ""}</span>
-    <strong dir="ltr">${escapeHtml(event.side_a_sim || event.side_a_number || event.side_a_imei || "A")} → ${escapeHtml(event.side_b_sim || event.side_b_number || event.side_b_imei || "B")}${recordLinkIndicator(event)}</strong>
-    <span class="call-timeline-summary">${escapeHtml(event.event_summary || "")}</span>
-    <span class="call-timeline-id">${escapeHtml(id)}</span>
+    <span class="call-list-play"><span class="material-symbols-rounded" aria-hidden="true">play_arrow</span></span>
+    <span class="call-list-time"><strong>${escapeHtml(time)}</strong><small>${escapeHtml(id)}${duration > 0 ? ` · ${duration.toFixed(1)}s` : ""}</small></span>
+    ${party("a", "A")}${party("b", "B")}
+    <span class="call-list-location"><strong>${escapeHtml(location)}</strong><small>${escapeHtml(event.event_summary || "")}${recordLinkIndicator(event)}</small></span>
   </button>`;
 }
 
@@ -7445,6 +7456,7 @@ function renderTimeline() {
       <div class="timeline-title">${escapeHtml(layer.label)} · ${escapeHtml(activeLocaleText(`${item.count.toLocaleString("he-IL")} אירועים`, `${item.count.toLocaleString("en-US")} events`))}</div>
       <div class="timeline-summary">${escapeHtml(item.summary)}</div>
     </article>`).join("");
+  const callOnly = eventTimelineItems.length > 0 && !aggregateTimelineItems.length && eventTimelineItems.every(({ event }) => isCellularCallRecord(event));
   const eventHtml = eventTimelineItems.sort((a, b) => a.sort - b.sort).map(({ layer, event }) => isIpdrRecord(event) ? ipdrTimelineEntry(event) : isCellularCallRecord(event) ? callTimelineEntry(event) : `
     <article class="timeline-item" style="${layerColorStyle(layer)}">
       <span class="timeline-dot"></span>
@@ -7452,7 +7464,8 @@ function renderTimeline() {
       <div class="timeline-title">${escapeHtml(layer.label)} · ${escapeHtml(event.location_name)}${recordLinkIndicator(event)}</div>
       <div class="timeline-summary">${escapeHtml(event.event_summary)}</div>
     </article>`).join("");
-  timeline.innerHTML = aggregationHtml + eventHtml;
+  timeline.classList.toggle("call-list-timeline", callOnly);
+  timeline.innerHTML = callOnly ? `<div class="call-list-header"><span></span><span>Date &amp; time</span><span>Side A</span><span>Side B</span><span>Location</span></div><div class="call-list-rows">${eventHtml}</div>` : aggregationHtml + eventHtml;
 }
 
 function resultTableControl(layerId) {

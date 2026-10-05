@@ -39,7 +39,7 @@ General and specialist presentation instructions recognize all three views. Name
 
 ### Calls presentation
 
-Cellular Calls default to Timeline even when endpoint coordinates are present. Like Table, Timeline presents only the currently focused open layer; selecting another source tab replaces the Timeline contents instead of combining all visible layers. Compact entries show time, duration, endpoints and a short summary. Selecting a call opens its existing viewer beside the timeline rather than covering it. The selected entry stays visible, with the endpoint map, bilingual transcript and audio controls in the adjacent viewer. Switching away from Timeline closes the docked viewer and stops its media. On narrow screens the panels stack. Explicit Map/Table choices remain available; mixed-source results keep their existing defaults.
+Cellular Calls default to Timeline even when endpoint coordinates are present. Like Table, Timeline presents only the currently focused open layer; selecting another source tab replaces the Timeline contents instead of combining all visible layers. The call presentation is a dense register with aligned Date & time, Side A, Side B and Location columns. Selecting a row keeps it highlighted and opens a map-and-conversation viewer beside the register. The viewer retains the native audio player and requests immediate playback when opened; browser autoplay policy may still require the analyst to press Play. The endpoint map and bilingual transcript remain in the adjacent viewer. Switching away from Timeline closes the docked viewer and stops its media. On narrow screens the panels stack. Explicit Map/Table choices remain available; mixed-source results keep their existing defaults.
 
 ## Geographic context and media
 
