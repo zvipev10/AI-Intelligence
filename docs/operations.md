@@ -99,6 +99,7 @@ Application versions, profile versions, immutable dataset versions and state-sch
 ## Quick acceptance checks
 
 - `/api/status`: expected scenario/dataset/generation, profile and initial map configuration; only one active runtime.
+- Locale URL: open `?lang=en` and confirm the interface first appears in English, without a language selector/indicator or a Hebrew-first frame.
 - Catalog and source rows: Syria 726 total, CCTV 2 / Satellite 2 / ADINT 120 / IPDR 300 / Cellular Geolocations 300 / Cellular Calls 2; original raw sources remain present with zero rows where applicable.
 - Cellular Call locations: the broken-air-conditioner call is at (35.05008341925823, 36.27154430013932); the fifteen-petrol-units call is at (34.9837599416126, 35.889327777437586). Each call uses its own dedicated location ID.
 - Open IPDR: Table view, IP address/IMEI, no actor/location or map action; record links retain all identifiers.
@@ -128,4 +129,4 @@ Saved-question and recorded-run files belong to the selected runtime state direc
 
 Include `polygon_draw.js` with the UI bundle, and update the app/bootstrap/style cache versions when shipping changes. UI-only changes do not require rebuilding a compatible dataset index. Removing a record does: publish a new dataset/profile version, rebuild the Python-engine index offline and retain the prior package/state for rollback.
 
-After release, verify `/api/status` identity and maintenance state, then refresh the browser. Open Cellular Calls and confirm Timeline is selected, the current call count matches the profile, and selecting a call opens its viewer beside the list. Check audio playback and that switching view releases the viewer. On Map, draw three vertices and click the first to close; verify the shape remains without an agent request or result change. Start another polygon and cancel with Escape; the completed shape must remain. Check Street/Satellite switching and control placement above an open results table.
+After release, verify `/api/status` identity and maintenance state, then refresh the browser. Open Cellular Calls and confirm Timeline is selected, the current call count matches the profile, and the Location cell has only the base location label and coordinates—never a call-summary phrase. Select a call and confirm its complete summary appears in the item viewer beside the list. Check audio playback and that switching view releases the viewer. On Map, draw three vertices and click the first to close; verify the shape remains without an agent request or result change. Start another polygon and cancel with Escape; the completed shape must remain. Check Street/Satellite switching and control placement above an open results table.
