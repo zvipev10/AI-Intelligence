@@ -1803,6 +1803,11 @@ function activeTableLayer() {
     || null;
 }
 
+function focusedTimelineLayers() {
+  const layer = activeTableLayer();
+  return layer?.visible && layer.capabilities.timeline ? [layer] : [];
+}
+
 function ensureLayerFilterState(layer) {
   if (!layer) return null;
   if (!Array.isArray(layer.draftFilters)) layer.draftFilters = [];
@@ -7413,10 +7418,11 @@ function ipdrTimelineEntry(event) {
 
 function renderTimeline() {
   const timeline = document.getElementById("timeline");
-  const eventTimelineItems = visibleLayers("timeline")
+  const timelineLayers = focusedTimelineLayers();
+  const eventTimelineItems = timelineLayers
     .filter(layer => layer.kind === "events")
     .flatMap(layer => itemsForLayerPresentation(layer).map(event => ({ type: "event", layer, event, sort: event.date })));
-  const evidenceTimelineItems = visibleLayers("timeline")
+  const evidenceTimelineItems = timelineLayers
     .filter(layer => layer.kind === "evidence")
     .flatMap(layer => itemsForLayerPresentation(layer).filter(event => event.evidence_type !== "ipdr_package").map(event => ({ type: "event", layer, event: {
       ...event,
@@ -7426,7 +7432,7 @@ function renderTimeline() {
       location_id: (event.location_ids || [])[0],
       entity_id: (event.subject_entity_ids || [])[0],
     }, sort: event.date })));
-  const aggregateTimelineItems = visibleLayers("timeline")
+  const aggregateTimelineItems = timelineLayers
     .filter(layer => layer.kind === "time_aggregation")
     .flatMap(layer => itemsForLayerPresentation(layer).map(item => ({ type: "aggregation", layer, item, sort: item.sortKey })));
   eventTimelineItems.push(...evidenceTimelineItems);
@@ -8271,6 +8277,7 @@ document.addEventListener("click", event => {
   if (rawLayerTab) {
     state.activeLayerId = rawLayerTab.dataset.layerId;
     renderEvidence();
+    renderTimeline();
   }
   if (event.target.closest("#rawEventsMinimize")) {
     state.rawOverlayMinimized = !state.rawOverlayMinimized;

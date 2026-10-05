@@ -68,7 +68,7 @@ class CollectionRequestUiTests(unittest.TestCase):
         self.assertIn('chatPanelCollapsed: demoRuntime?.scenario_id === "syria"', self.app)
         self.assertIn('await openRequestedCollectionLayer(type);', self.app)
         self.assertIn('activateView(presentation.view', self.app)
-        self.assertIn('script.src = "./app.js?v=269";', self.bootstrap)
+        self.assertIn('script.src = "./app.js?v=270";', self.bootstrap)
 
     def test_specialized_demo_task_screens_follow_source_selection(self):
         index = (ROOT / "index.html").read_text(encoding="utf-8")
