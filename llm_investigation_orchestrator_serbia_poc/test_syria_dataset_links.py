@@ -9,7 +9,7 @@ from demo_runtime import load_profile
 class SyriaDatasetLinksTests(unittest.TestCase):
     def test_replacement_dataset_projects_raw_and_entity_links(self):
         profile = load_profile(server.ROOT, "syria", verify=True)
-        self.assertEqual(profile["dataset_version"], "cellular-records-v12")
+        self.assertEqual(profile["dataset_version"], "cellular-records-v13")
         events = server.load_ui_events("en")
 
         raw_links = [

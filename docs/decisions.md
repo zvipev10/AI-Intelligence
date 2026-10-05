@@ -551,3 +551,11 @@ Decision: supersede the earlier ADINT/IPDR raw-link condition. Create the observ
 Rationale: the IPDR field with the intended role for this correlation is the public IP. The relationship is a deterministic field-equality correlation and does not assert device ownership, identity, location, or activity.
 
 Impact: the rule is versioned as `adint_ip_to_ipdr_public_ip_v1`. The current Syria dataset yields 20 ADINT-to-IPDR pairs, projected reciprocally as 40 raw-record viewer links.
+
+### 2026-10-05 — Give each supplied Cellular Call its own user-supplied location
+
+Decision: move the fifteen-petrol-units call to (34.9837599416126, 35.889327777437586) and the broken-air-conditioner call to (35.05008341925823, 36.27154430013932). Represent them with dedicated call location IDs rather than changing the shared historical coastal waypoint.
+
+Rationale: the two calls now have distinct user-supplied positions. Dedicated locations preserve the route waypoint and avoid incorrectly moving both calls together.
+
+Impact: Syria profile 36 selects immutable dataset `cellular-records-v13`. Call content, identifiers, timestamps, participants and media remain unchanged.

@@ -99,7 +99,8 @@ Application versions, profile versions, immutable dataset versions and state-sch
 ## Quick acceptance checks
 
 - `/api/status`: expected scenario/dataset/generation, profile and initial map configuration; only one active runtime.
-- Catalog and source rows: Syria 725 total, CCTV 2 / Satellite 2 / ADINT 120 / IPDR 300 / Cellular Geolocations 300 / Cellular Calls 1; original raw sources remain present with zero rows where applicable.
+- Catalog and source rows: Syria 726 total, CCTV 2 / Satellite 2 / ADINT 120 / IPDR 300 / Cellular Geolocations 300 / Cellular Calls 2; original raw sources remain present with zero rows where applicable.
+- Cellular Call locations: the broken-air-conditioner call is at (35.05008341925823, 36.27154430013932); the fifteen-petrol-units call is at (34.9837599416126, 35.889327777437586). Each call uses its own dedicated location ID.
 - Open IPDR: Table view, IP address/IMEI, no actor/location or map action; record links retain all identifiers.
 - ADINT: verify all 120 native observations, 84 mapped points and 36 geometry-free rows. ADINT/IPDR raw links are based solely on ADINT `ip` equal to IPDR `ip_public`; session fields are contextual and do not gate link creation.
 - Open each Satellite record: one supplied image at its own Satellite site, no visit/pair metadata, explicit scenario timestamp basis. Open each CCTV record: supplied video and footage-derived uncertainty labels must be visible.

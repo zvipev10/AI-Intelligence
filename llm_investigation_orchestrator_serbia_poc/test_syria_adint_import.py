@@ -14,14 +14,14 @@ ROOT = Path(__file__).resolve().parent
 class AdintImportTests(unittest.TestCase):
     def test_exact_fields_nulls_and_preserved_sources(self):
         profile = load_profile(ROOT, "syria", verify=True)
-        self.assertEqual(profile["dataset_version"], "cellular-records-v12")
+        self.assertEqual(profile["dataset_version"], "cellular-records-v13")
         folder = ROOT / profile["files"]["events"]
         source = json.loads((folder.parent / "ADINT.json").read_text(encoding="utf-8"))
         rows = list(csv.DictReader(folder.read_text(encoding="utf-8").splitlines()))
         imported = {r["observation_id"]: r for r in rows if r["source_type"] == "ADINT"}
         self.assertEqual(len(rows), 726); self.assertEqual(len(imported), 120)
         locations = json.loads((ROOT / profile["files"]["locations"]).read_text(encoding="utf-8"))
-        self.assertEqual(len(locations), 402)
+        self.assertEqual(len(locations), 404)
         for raw in source:
             row = imported[raw["observation_id"]]
             for key, value in raw.items():
@@ -34,7 +34,7 @@ class AdintImportTests(unittest.TestCase):
         old = list(csv.DictReader((ROOT / "data/syria_cellular_records_v1/events.csv").read_text(encoding="utf-8").splitlines()))
         current = {r["event_id"]: r for r in rows}
         for row in old:
-            if row["source_type"] not in {"ADINT", "IPDR"}:
+            if row["source_type"] not in {"ADINT", "IPDR", "Cellular Calls", "שיחות סלולר"}:
                 self.assertEqual(row, {k: current[row["event_id"]][k] for k in row})
         self.assertEqual(folder.read_bytes(), folder.with_name("events.en.csv").read_bytes())
 
@@ -54,7 +54,7 @@ class AdintImportTests(unittest.TestCase):
         previous = list(csv.DictReader((ROOT / "data/syria_cellular_records_v1/events.csv").read_text(encoding="utf-8").splitlines()))
         by_id = {x["event_id"]: x for x in current}
         for row in previous:
-            if row["source_type"] not in {"ADINT", "IPDR"}:
+            if row["source_type"] not in {"ADINT", "IPDR", "Cellular Calls", "שיחות סלולר"}:
                 self.assertEqual(row, {key: by_id[row["event_id"]][key] for key in row})
         for name in ["entities.json", "entities.en.json"]:
             self.assertEqual((folder / name).read_bytes(), (ROOT / "data/syria_cellular_records_v1" / name).read_bytes())
