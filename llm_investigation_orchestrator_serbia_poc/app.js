@@ -7407,7 +7407,7 @@ function callTimelineEntry(event) {
     return `<span class="call-list-party"><strong>${escapeHtml(name || fallback)}</strong><small dir="ltr">SIM ${escapeHtml(number)}</small><small dir="ltr">IMEI ${escapeHtml(imei)}</small></span>`;
   };
   const callLocation = cellularCallMapLocation(event, "a");
-  const location = callLocation?.name || event.side_a_location_name || event.location_name || event.side_a_location_id || event.location_id || "—";
+  const location = String(callLocation?.name || event.side_a_location_name || event.location_name || event.side_a_location_id || event.location_id || "—").split(" — ")[0];
   const coordinates = callLocation ? `${callLocation.lat.toFixed(6)}, ${callLocation.lon.toFixed(6)}` : "";
   return `<button type="button" class="call-timeline-entry" data-viewer-kind="record" data-viewer-id="${escapeHtml(id)}" aria-pressed="false">
     <span class="call-list-play"><span class="material-symbols-rounded" aria-hidden="true">play_arrow</span></span>
