@@ -714,10 +714,13 @@ const collectionExtractionObjects = document.getElementById("collectionExtractio
 const collectionRequestError = document.getElementById("collectionRequestError");
 const adintTaskModal = document.getElementById("adintTaskModal");
 const sigintTaskModal = document.getElementById("sigintTaskModal");
+const cellularCallsTaskModal = document.getElementById("cellularCallsTaskModal");
+const cctvTaskModal = document.getElementById("cctvTaskModal");
 let pendingPolygonAction = null;
 let pendingCollectionRequest = null;
 let collectionTaskReturnFocus = null;
 let adintTaskMap = null;
+let cctvTaskMap = null;
 let pendingAdintTaskTarget = null;
 let pendingDemoCollectionType = null;
 const queryLayerName = document.getElementById("queryLayerName");
@@ -2065,7 +2068,7 @@ function updateCollectionSourceSelectionAction() {
   const submit = document.getElementById("collectionRequestSubmit");
   const type = collectionRequestForm?.querySelector('input[name="collectionType"]:checked')?.value;
   const target = pendingCollectionRequest;
-  const opensDemoTask = (target?.type === "polygon" && type === "adint") || (target?.type === "imei" && ["cellular_geolocations", "cellular_calls"].includes(type));
+  const opensDemoTask = (target?.type === "polygon" && ["adint", "cctv"].includes(type)) || (target?.type === "imei" && ["cellular_geolocations", "cellular_calls"].includes(type));
   if (submit) submit.textContent = activeLocaleText(opensDemoTask ? "המשך" : "שלח בקשה", opensDemoTask ? "Continue" : "Submit request");
 }
 
@@ -2075,6 +2078,10 @@ function closeCollectionTaskDialog(modal) {
     adintTaskMap?.remove();
     adintTaskMap = null;
     pendingAdintTaskTarget = null;
+  }
+  if (modal === cctvTaskModal) {
+    cctvTaskMap?.remove();
+    cctvTaskMap = null;
   }
   modal.hidden = true;
   collectionTaskReturnFocus?.focus?.();
@@ -2151,6 +2158,29 @@ function renderAdintLocationMap(coordinates) {
   });
 }
 
+function renderCctvLocationMap(coordinates) {
+  const container = document.getElementById("cctvLocationMap");
+  cctvTaskMap?.remove();
+  cctvTaskMap = null;
+  if (!container || typeof maplibregl === "undefined") return;
+  const ring = (Array.isArray(coordinates) ? coordinates : []).filter(point => Array.isArray(point) && Number.isFinite(Number(point[0])) && Number.isFinite(Number(point[1])));
+  const points = ring.length > 1 && ring[0][0] === ring.at(-1)[0] && ring[0][1] === ring.at(-1)[1] ? ring.slice(0, -1) : ring;
+  if (points.length < 3) { container.textContent = "Location map unavailable"; return; }
+  container.textContent = "";
+  const map = new maplibregl.Map({ container, style: "https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json", center: points[0], zoom: 10, interactive: false, attributionControl: false });
+  cctvTaskMap = map;
+  map.on("load", () => {
+    if (map !== cctvTaskMap) return;
+    const bounds = new maplibregl.LngLatBounds();
+    points.forEach(point => bounds.extend(point));
+    map.addSource("cctv-collection-area", { type: "geojson", data: { type: "Feature", properties: {}, geometry: { type: "Polygon", coordinates: [[...points, points[0]]] } } });
+    map.addLayer({ id: "cctv-collection-area-fill", type: "fill", source: "cctv-collection-area", paint: { "fill-color": "#8ab4f8", "fill-opacity": 0.24 } });
+    map.addLayer({ id: "cctv-collection-area-outline", type: "line", source: "cctv-collection-area", paint: { "line-color": "#8ab4f8", "line-width": 2.5 } });
+    map.fitBounds(bounds, { padding: 22, maxZoom: 13, duration: 0 });
+    map.resize();
+  });
+}
+
 function openAdintTaskDialog(target, trigger = document.activeElement) {
   collectionTaskReturnFocus = trigger;
   pendingAdintTaskTarget = target;
@@ -2165,6 +2195,23 @@ function openSigintTaskDialog(trigger = document.activeElement) {
   collectionTaskReturnFocus = trigger;
   sigintTaskModal.hidden = false;
   sigintTaskModal.querySelector("button")?.focus();
+}
+
+function openCellularCallsTaskDialog(target, trigger = document.activeElement) {
+  collectionTaskReturnFocus = trigger;
+  const imei = document.getElementById("cellularCallsImei");
+  if (imei && target?.imei) imei.value = target.imei;
+  cellularCallsTaskModal.hidden = false;
+  cellularCallsTaskModal.querySelector("button")?.focus();
+}
+
+function openCctvTaskDialog(target, trigger = document.activeElement) {
+  collectionTaskReturnFocus = trigger;
+  const summary = document.getElementById("cctvLocationSummary");
+  if (summary) summary.textContent = polygonTaskSummary(target?.coordinates);
+  cctvTaskModal.hidden = false;
+  requestAnimationFrame(() => renderCctvLocationMap(target?.coordinates));
+  cctvTaskModal.querySelector("button")?.focus();
 }
 
 function openPolygonActionMenu(polygon) {
@@ -2211,11 +2258,25 @@ async function submitCollectionRequest() {
     openAdintTaskDialog(target, trigger);
     return;
   }
-  if (target.type === "imei" && ["cellular_geolocations", "cellular_calls"].includes(type)) {
+  if (target.type === "polygon" && type === "cctv") {
+    const trigger = target.trigger;
+    pendingDemoCollectionType = type;
+    closeCollectionRequestDialog();
+    openCctvTaskDialog(target, trigger);
+    return;
+  }
+  if (target.type === "imei" && type === "cellular_geolocations") {
     const trigger = target.trigger;
     pendingDemoCollectionType = type;
     closeCollectionRequestDialog();
     openSigintTaskDialog(trigger);
+    return;
+  }
+  if (target.type === "imei" && type === "cellular_calls") {
+    const trigger = target.trigger;
+    pendingDemoCollectionType = type;
+    closeCollectionRequestDialog();
+    openCellularCallsTaskDialog(target, trigger);
     return;
   }
   const objects = [...collectionRequestForm.querySelectorAll('input[name="collectionObject"]:checked')].map(input => input.value);
@@ -8473,7 +8534,7 @@ collectionRequestForm?.addEventListener("submit", async event => {
 document.querySelectorAll("[data-close-task-modal]").forEach(button => button.addEventListener("click", () => {
   closeCollectionTaskDialog(document.getElementById(button.dataset.closeTaskModal));
 }));
-[adintTaskModal, sigintTaskModal].forEach(modal => {
+[adintTaskModal, sigintTaskModal, cellularCallsTaskModal, cctvTaskModal].forEach(modal => {
   modal?.addEventListener("click", event => { if (event.target === modal) closeCollectionTaskDialog(modal); });
 });
 document.querySelectorAll("[data-exclusive-chips], [data-task-segment]").forEach(group => group.addEventListener("click", event => {
@@ -8520,6 +8581,10 @@ document.getElementById("adintEditMap")?.addEventListener("click", () => {
   closeCollectionTaskDialog(adintTaskModal);
   document.getElementById("polygonDrawButton")?.click();
 });
+document.getElementById("cctvEditMap")?.addEventListener("click", () => {
+  closeCollectionTaskDialog(cctvTaskModal);
+  document.getElementById("polygonDrawButton")?.click();
+});
 document.getElementById("adintTaskForm")?.addEventListener("submit", async event => {
   if (!validateAdintTaskForm() || !event.currentTarget.checkValidity()) { event.preventDefault(); event.currentTarget.reportValidity(); return; }
   event.preventDefault(); await completeDemoCollectionTask(adintTaskModal, "adint");
@@ -8527,6 +8592,14 @@ document.getElementById("adintTaskForm")?.addEventListener("submit", async event
 document.getElementById("sigintTaskForm")?.addEventListener("submit", async event => {
   if (!validateSigintIdentifiers() || !event.currentTarget.checkValidity()) { event.preventDefault(); event.currentTarget.reportValidity(); return; }
   event.preventDefault(); await completeDemoCollectionTask(sigintTaskModal, "cellular_geolocations");
+});
+document.getElementById("cellularCallsTaskForm")?.addEventListener("submit", async event => {
+  if (!event.currentTarget.checkValidity()) { event.preventDefault(); event.currentTarget.reportValidity(); return; }
+  event.preventDefault(); await completeDemoCollectionTask(cellularCallsTaskModal, "cellular_calls");
+});
+document.getElementById("cctvTaskForm")?.addEventListener("submit", async event => {
+  if (!event.currentTarget.checkValidity()) { event.preventDefault(); event.currentTarget.reportValidity(); return; }
+  event.preventDefault(); await completeDemoCollectionTask(cctvTaskModal, "cctv");
 });
 document.getElementById("memoryCommentClose")?.addEventListener("click", closeMemoryCommentDialog);
 document.getElementById("memoryCommentCancel")?.addEventListener("click", closeMemoryCommentDialog);
@@ -8609,6 +8682,16 @@ document.addEventListener("keydown", event => {
   if (event.key === "Escape" && sigintTaskModal && !sigintTaskModal.hidden) {
     event.preventDefault();
     closeCollectionTaskDialog(sigintTaskModal);
+    return;
+  }
+  if (event.key === "Escape" && cellularCallsTaskModal && !cellularCallsTaskModal.hidden) {
+    event.preventDefault();
+    closeCollectionTaskDialog(cellularCallsTaskModal);
+    return;
+  }
+  if (event.key === "Escape" && cctvTaskModal && !cctvTaskModal.hidden) {
+    event.preventDefault();
+    closeCollectionTaskDialog(cctvTaskModal);
     return;
   }
   if (event.key === "Escape" && polygonActionMenu && !polygonActionMenu.hidden) {

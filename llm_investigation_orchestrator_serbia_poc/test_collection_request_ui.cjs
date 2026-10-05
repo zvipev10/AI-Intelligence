@@ -20,5 +20,13 @@ assert.doesNotMatch(polygonDraw, /map\.on\("click","draw-polygon-fill"/);
 assert.match(app, /fetch\("\/api\/collection-request"/);
 assert.match(html, /id="collectionRequestModal"/);
 assert.match(html, /id="polygonActionMenu"/);
+assert.match(html, /id="cctvTaskModal"/);
+assert.match(html, /NEW COLLECTION TASK · CCTV/);
+assert.match(html, /id="cellularCallsTaskModal"/);
+assert.match(html, /NEW COLLECTION TASK · CELLULAR CALLS/);
+assert.match(app, /target\.type === "polygon" && type === "cctv"/);
+assert.match(app, /target\.type === "imei" && type === "cellular_calls"/);
+assert.match(app, /completeDemoCollectionTask\(cctvTaskModal, "cctv"\)/);
+assert.match(app, /completeDemoCollectionTask\(cellularCallsTaskModal, "cellular_calls"\)/);
 
-console.log('PASS: role-aware collection requests are available from polygons and IMEI values');
+console.log('PASS: source-specific collection requests are available from polygons and IMEI values');

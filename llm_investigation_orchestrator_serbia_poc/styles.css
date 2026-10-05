@@ -303,8 +303,9 @@ body.welcome-active .investigation-switcher { visibility: hidden; pointer-events
 .task-modal-footer button { min-height:34px; border:1px solid rgba(146,170,205,.32); border-radius:8px; padding:6px 12px; background:rgba(255,255,255,.04); color:var(--ink); font:inherit; font-size:12px; cursor:pointer; }
 .task-modal-footer .task-primary { border-color:rgba(138,180,248,.65); background:rgba(138,180,248,.18); color:var(--blue); font-weight:800; }
 .task-modal-sigint { width:min(680px,calc(100vw - 28px)); }
-.task-modal-sigint .task-modal-body { gap:15px; }
-.task-modal-sigint textarea { min-height:64px; resize:vertical; line-height:1.4; }
+.task-modal-cctv { width:min(780px,calc(100vw - 28px)); }
+.task-modal-sigint .task-modal-body,.task-modal-cctv .task-modal-body { gap:15px; }
+.task-modal-sigint textarea,.task-modal-cctv textarea { min-height:64px; resize:vertical; line-height:1.4; }
 .task-modal input::placeholder { color:#858e9c; font-style:italic; }
 .task-valid { color:var(--ink); }
 .task-valid>span,.task-valid-state { color:var(--green); font-size:11px; }
