@@ -2912,7 +2912,7 @@ function ownedInvestigationRibbonHtml(investigation, index) {
         </div>
       </button>
       <div class="ribbon-actions">
-        <button class="ribbon-action" type="button" data-welcome-action="invite" data-investigation-name="${escapeHtml(investigation.name)}"><span class="material-symbols-rounded" aria-hidden="true">person_add</span>${activeLocaleText("הזמנה", "Invite")}</button>
+        <button class="ribbon-action" type="button" data-welcome-action="invite" data-investigation-name="${escapeHtml(investigation.name)}"><span class="material-symbols-rounded" aria-hidden="true">person_add</span>${activeLocaleText("הזמנה / הוספה", "Invite / add")}</button>
       </div>
     </article>`;
 }

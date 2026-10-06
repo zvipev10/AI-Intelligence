@@ -52,7 +52,7 @@
     };
     setNotice();
     const script = document.createElement("script");
-    script.src = "./app.js?v=277";
+    script.src = "./app.js?v=278";
     script.onerror = () => { document.documentElement.dataset.appReady = "true"; setNotice("Application could not load. Reload to retry."); };
     document.body.appendChild(script);
     setInterval(async () => {
