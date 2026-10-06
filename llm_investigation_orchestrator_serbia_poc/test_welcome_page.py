@@ -29,6 +29,8 @@ class WelcomePageContractTests(unittest.TestCase):
         self.assertIn("currentMembers().slice(0, Math.min(5, participantCount))", self.app)
         self.assertIn('data-open-investigation=', self.app)
         self.assertIn('data-welcome-action="invite"', self.app)
+        self.assertIn('activeLocaleText("הזמנה", "Invite")', self.app)
+        self.assertNotIn('activeLocaleText("הזמנה / הוספה", "Invite / add")', self.app)
 
     def test_welcome_has_no_new_investigation_action(self):
         welcome_markup = self.index.split('<main id="welcomePage"', 1)[1].split('</main>', 1)[0]

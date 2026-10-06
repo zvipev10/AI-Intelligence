@@ -663,7 +663,9 @@ const welcomePage = document.getElementById("welcomePage");
 const myInvestigationsList = document.getElementById("myInvestigationsList");
 const myInvestigationsCount = document.getElementById("myInvestigationsCount");
 const invitedInvestigationsList = document.getElementById("invitedInvestigationsList");
+const invitedInvestigationsCount = document.getElementById("invitedInvestigationsCount");
 const similarInvestigationsList = document.getElementById("similarInvestigationsList");
+const similarInvestigationsCount = document.getElementById("similarInvestigationsCount");
 const welcomeActionModal = document.getElementById("welcomeActionModal");
 const welcomeActionTitle = document.getElementById("welcomeActionTitle");
 const welcomeActionDescription = document.getElementById("welcomeActionDescription");
@@ -2910,7 +2912,7 @@ function ownedInvestigationRibbonHtml(investigation, index) {
         </div>
       </button>
       <div class="ribbon-actions">
-        <button class="ribbon-action" type="button" data-welcome-action="invite" data-investigation-name="${escapeHtml(investigation.name)}"><span class="material-symbols-rounded" aria-hidden="true">person_add</span>${activeLocaleText("הזמנה / הוספה", "Invite / add")}</button>
+        <button class="ribbon-action" type="button" data-welcome-action="invite" data-investigation-name="${escapeHtml(investigation.name)}"><span class="material-symbols-rounded" aria-hidden="true">person_add</span>${activeLocaleText("הזמנה", "Invite")}</button>
       </div>
     </article>`;
 }
@@ -2956,14 +2958,16 @@ function joinInvitedInvestigation(invitation) {
 }
 
 function renderWelcomePage() {
-  if (!myInvestigationsList || !invitedInvestigationsList || !similarInvestigationsList) return;
+  if (!myInvestigationsList || !myInvestigationsCount || !invitedInvestigationsList || !invitedInvestigationsCount || !similarInvestigationsList || !similarInvestigationsCount) return;
   const investigations = state.investigations.length ? state.investigations : [{ id: state.investigationId, name: state.investigationName }];
   const ownedInvestigations = investigations.filter(investigation => !isInvitedWelcomeInvestigation(investigation));
   myInvestigationsCount.textContent = ownedInvestigations.length.toLocaleString(currentLocaleTag());
   myInvestigationsList.innerHTML = ownedInvestigations.length
     ? ownedInvestigations.map(ownedInvestigationRibbonHtml).join("")
     : `<p class="welcome-empty-investigations">${escapeHtml(activeLocaleText("אין חקירות בבעלותך להצגה.", "No owned investigations to show."))}</p>`;
+  invitedInvestigationsCount.textContent = INVITED_INVESTIGATIONS.length.toLocaleString(currentLocaleTag());
   invitedInvestigationsList.innerHTML = INVITED_INVESTIGATIONS.map(similarInvestigationRibbonHtml).join("");
+  similarInvestigationsCount.textContent = SIMILAR_INVESTIGATIONS.length.toLocaleString(currentLocaleTag());
   similarInvestigationsList.innerHTML = SIMILAR_INVESTIGATIONS.map(similarInvestigationRibbonHtml).join("");
 }
 
