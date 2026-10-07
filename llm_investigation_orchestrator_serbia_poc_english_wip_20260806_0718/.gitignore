@@ -1,6 +1,0 @@
-.hermes-api.json
-__pycache__/
-
-
-saved_questions/*.json
-saved_questions/*.tmp
