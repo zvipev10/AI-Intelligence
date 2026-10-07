@@ -7,7 +7,7 @@
   <title>Intelligence Workspace</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="./vendor/maplibre-gl.css">
-  <link rel="stylesheet" href="./styles.css?v=181">
+  <link rel="stylesheet" href="./styles.css?v=182">
 </head>
 <body class="welcome-active">
   <a class="help-button" href="./help.html" target="_blank" rel="noopener" aria-label="פתח עזרה" data-i18n-aria-he="פתח עזרה" data-i18n-aria-en="Open help">?</a>
@@ -43,14 +43,13 @@
   <main id="welcomePage" class="welcome-page">
     <section class="welcome-intro" aria-labelledby="welcomeTitle">
       <div>
-        <h2 id="welcomeTitle" data-i18n-text-he="ברוכים הבאים" data-i18n-text-en="Welcome back">ברוכים הבאים</h2>
-        <p data-i18n-text-he="חזרו לחקירה פעילה, בדקו הזמנות, או הצטרפו לחקירה שהמערכת הציעה." data-i18n-text-en="Continue an active investigation, review invitations, or join a system-proposed investigation.">חזרו לחקירה פעילה, בדקו הזמנות, או הצטרפו לחקירה שהמערכת הציעה.</p>
+        <h2 id="welcomeTitle" tabindex="-1" data-i18n-text-he="חקירות" data-i18n-text-en="Investigations">חקירות</h2>
+        <p data-i18n-text-he="פתחו חקירה, בדקו הזמנות, או הצטרפו לחקירה שהמערכת הציעה." data-i18n-text-en="Open an investigation, review invitations, or join one the system proposed.">פתחו חקירה, בדקו הזמנות, או הצטרפו לחקירה שהמערכת הציעה.</p>
+      </div>
+      <div class="welcome-actions">
+        <button id="welcomeDraftButton" class="primary-filter-action welcome-draft-button" type="button" data-i18n-text-he="התחל אקספלורציה בחקירת טיוטה" data-i18n-text-en="Start exploring in a draft investigation">התחל אקספלורציה בחקירת טיוטה</button>
       </div>
     </section>
-
-    <div class="welcome-actions">
-      <button id="welcomeDraftButton" class="primary-filter-action welcome-draft-button" type="button" data-i18n-text-he="התחל אקספלורציה בחקירת טיוטה" data-i18n-text-en="Start exploring in a draft investigation">התחל אקספלורציה בחקירת טיוטה</button>
-    </div>
 
     <section class="welcome-section" aria-labelledby="myInvestigationsTitle">
       <div class="welcome-section-heading">
@@ -278,6 +277,6 @@
 
   <script src="./vendor/maplibre-gl.js"></script>
   <script src="./polygon_draw.js?v=3"></script>
-  <script src="./demo_bootstrap.js?v=244"></script>
+  <script src="./demo_bootstrap.js?v=245"></script>
 </body>
 </html>

@@ -599,3 +599,11 @@ Decision: move the fifteen-petrol-units call to (34.9837599416126, 35.8893277774
 Rationale: the two calls now have distinct user-supplied positions. Dedicated locations preserve the route waypoint and avoid incorrectly moving both calls together.
 
 Impact: Syria profile 36 selects immutable dataset `cellular-records-v13`. Call content, identifiers, timestamps, participants and media remain unchanged.
+
+### 2026-10-07 — Present the welcome page as an investigation register and give data its own type
+
+Decision: replace the welcome page's centred hero and card ribbons with a left-aligned register. Each investigation is one row showing name, status, contents or summary, members (initials), access or UTC times, and its action. System proposals state their reason in words ("Proposed because …") with a neutral "Proposed" tag; the sparkle icon and the purple accent are removed. Self-host IBM Plex Sans for text and IBM Plex Mono for identifiers, addresses and timestamps (table cells marked `dir="ltr"`, record IDs, timeline times, and viewer values that look like data). Use short offset shadows only, and a steel-blue accent in place of the borrowed Material and GitHub colours.
+
+Rationale: the earlier welcome page and palette read as generic, generated SaaS UI. Analysts compare identifiers and times column by column, which tabular monospace supports. Self-hosted fonts keep the type on networks without Google Fonts.
+
+Impact: layer colours remain assigned per layer from a retuned 12-colour pool, so the "Close frees its colour" behaviour is unchanged. The bilingual sign-in screen is unchanged. Fonts are in `assets/fonts/` under the SIL Open Font License (`OFL.txt`).

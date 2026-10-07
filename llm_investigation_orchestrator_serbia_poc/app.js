@@ -621,18 +621,18 @@ function viewLabels() {
 }
 
 const LAYER_COLORS = [
-  "#8ab4f8",
-  "#81c995",
-  "#f28b82",
-  "#fdd663",
-  "#c58af9",
-  "#78d9ec",
-  "#ff9f80",
-  "#b3d46f",
-  "#f78fb3",
-  "#a7b7ff",
-  "#c9ab76",
-  "#7fd1ae"
+  "#7aa7d9",
+  "#7fbf9a",
+  "#e8877c",
+  "#e3c26b",
+  "#4fb8b0",
+  "#c39bd3",
+  "#e39a5f",
+  "#a9c46a",
+  "#d98aa6",
+  "#9aa8e0",
+  "#c4a882",
+  "#6fc4d8"
 ];
 
 function layerFamilyLabels() {
@@ -900,7 +900,7 @@ function addResultLayers({ sourceId, sourceLabel, preferredView = "map", layers 
 }
 
 function layerColorStyle(layer) {
-  return `--layer-color:${escapeHtml(layer?.color || "#8ab4f8")}`;
+  return `--layer-color:${escapeHtml(layer?.color || "#7aa7d9")}`;
 }
 
 function visibleLayers(capability = null) {
@@ -1237,8 +1237,8 @@ function renderAdintLocationMap(coordinates) {
     const bounds = new maplibregl.LngLatBounds();
     points.forEach(point => bounds.extend(point));
     map.addSource("drawn-collection-area", { type: "geojson", data: { type: "Feature", properties: {}, geometry: { type: "Polygon", coordinates: [[...points, points[0]]] } } });
-    map.addLayer({ id: "drawn-collection-area-fill", type: "fill", source: "drawn-collection-area", paint: { "fill-color": "#8ab4f8", "fill-opacity": 0.24 } });
-    map.addLayer({ id: "drawn-collection-area-outline", type: "line", source: "drawn-collection-area", paint: { "line-color": "#8ab4f8", "line-width": 2.5 } });
+    map.addLayer({ id: "drawn-collection-area-fill", type: "fill", source: "drawn-collection-area", paint: { "fill-color": "#7aa7d9", "fill-opacity": 0.24 } });
+    map.addLayer({ id: "drawn-collection-area-outline", type: "line", source: "drawn-collection-area", paint: { "line-color": "#7aa7d9", "line-width": 2.5 } });
     map.fitBounds(bounds, { padding: 22, maxZoom: 13, duration: 0 });
     map.resize();
   });
@@ -1260,8 +1260,8 @@ function renderCctvLocationMap(coordinates) {
     const bounds = new maplibregl.LngLatBounds();
     points.forEach(point => bounds.extend(point));
     map.addSource("cctv-collection-area", { type: "geojson", data: { type: "Feature", properties: {}, geometry: { type: "Polygon", coordinates: [[...points, points[0]]] } } });
-    map.addLayer({ id: "cctv-collection-area-fill", type: "fill", source: "cctv-collection-area", paint: { "fill-color": "#8ab4f8", "fill-opacity": 0.24 } });
-    map.addLayer({ id: "cctv-collection-area-outline", type: "line", source: "cctv-collection-area", paint: { "line-color": "#8ab4f8", "line-width": 2.5 } });
+    map.addLayer({ id: "cctv-collection-area-fill", type: "fill", source: "cctv-collection-area", paint: { "fill-color": "#7aa7d9", "fill-opacity": 0.24 } });
+    map.addLayer({ id: "cctv-collection-area-outline", type: "line", source: "cctv-collection-area", paint: { "line-color": "#7aa7d9", "line-width": 2.5 } });
     map.fitBounds(bounds, { padding: 22, maxZoom: 13, duration: 0 });
     map.resize();
   });
@@ -1439,7 +1439,7 @@ function openSavedMemoryPolygon(item, trigger) {
     if (source) source.setData(data);
     else {
       state.map.addSource("memory-polygon-focus", { type: "geojson", data });
-      state.map.addLayer({ id: "memory-polygon-focus-fill", type: "fill", source: "memory-polygon-focus", paint: { "fill-color": "#58a6ff", "fill-opacity": 0.18 } });
+      state.map.addLayer({ id: "memory-polygon-focus-fill", type: "fill", source: "memory-polygon-focus", paint: { "fill-color": "#7aa7d9", "fill-opacity": 0.18 } });
       state.map.addLayer({ id: "memory-polygon-focus-line", type: "line", source: "memory-polygon-focus", paint: { "line-color": "#9adaff", "line-width": 3 } });
     }
     const bounds = new maplibregl.LngLatBounds();
@@ -1801,7 +1801,7 @@ const INVITED_INVESTIGATIONS = demoRuntime?.scenario_id === "syria" ? SYRIA_INVI
 const SIMILAR_INVESTIGATIONS = demoRuntime?.scenario_id === "syria" ? SYRIA_PROPOSED_INVESTIGATIONS : SERBIA_SIMILAR_INVESTIGATIONS;
 
 function welcomeAvatarHtml(member) {
-  return `<span class="ribbon-avatar" title="${escapeHtml(`${member.displayName} · ${member.roleLabel}`)}"><span>${escapeHtml(member.initial)}</span><img src="${escapeHtml(member.avatar)}" alt="" onerror="this.remove()"></span>`;
+  return `<span class="ribbon-avatar" title="${escapeHtml(`${member.displayName} · ${member.roleLabel}`)}"><span>${escapeHtml(member.initial)}</span></span>`;
 }
 
 function welcomeParticipantsHtml(count = currentMembers().length) {
@@ -1809,7 +1809,7 @@ function welcomeParticipantsHtml(count = currentMembers().length) {
   const members = currentMembers().slice(0, Math.min(5, participantCount));
   return `
     <div class="ribbon-participants">
-      <span class="ribbon-label">${activeLocaleText("משתתפים", "Participants")}</span>
+      <span class="ribbon-label">${activeLocaleText("משתתפים", "Members")}</span>
       <div class="ribbon-avatar-row">
         ${members.map(welcomeAvatarHtml).join("")}
         <span class="ribbon-participant-count">${participantCount.toLocaleString(currentLocaleTag())}</span>
@@ -1817,10 +1817,11 @@ function welcomeParticipantsHtml(count = currentMembers().length) {
     </div>`;
 }
 
+// Analysts correlate times across sources, so investigation times are shown in UTC.
 function formatInvestigationTime(value) {
   const date = value ? new Date(value) : null;
   if (!date || Number.isNaN(date.getTime())) return "—";
-  return date.toLocaleString(currentLocaleTag(), { dateStyle: "medium", timeStyle: "short" });
+  return `${date.toISOString().slice(0, 16).replace("T", " ")} UTC`;
 }
 
 function ownedInvestigationRibbonHtml(investigation) {
@@ -1842,12 +1843,12 @@ function ownedInvestigationRibbonHtml(investigation) {
         </div>
         ${welcomeParticipantsHtml()}
         <div class="ribbon-metrics">
-          <div class="ribbon-metric"><span>${activeLocaleText("עודכנה", "Updated")}</span><strong>${escapeHtml(formatInvestigationTime(investigation.updated_at || investigation.created_at))}</strong></div>
-          <div class="ribbon-metric"><span>${activeLocaleText("נוצרה", "Created")}</span><strong>${escapeHtml(formatInvestigationTime(investigation.created_at))}</strong></div>
+          <div class="ribbon-metric"><span>${activeLocaleText("עודכנה", "Updated")}</span><strong class="ribbon-time">${escapeHtml(formatInvestigationTime(investigation.updated_at || investigation.created_at))}</strong></div>
+          <div class="ribbon-metric"><span>${activeLocaleText("נוצרה", "Created")}</span><strong class="ribbon-time">${escapeHtml(formatInvestigationTime(investigation.created_at))}</strong></div>
         </div>
       </button>
       <div class="ribbon-actions">
-        <button class="ribbon-action" type="button" data-welcome-action="invite" data-investigation-name="${escapeHtml(investigation.name)}"><span class="material-symbols-rounded" aria-hidden="true">person_add</span>${activeLocaleText("הזמנה / הוספה", "Invite / add")}</button>
+        <button class="ribbon-action secondary" type="button" data-welcome-action="invite" data-investigation-name="${escapeHtml(investigation.name)}"><span class="material-symbols-rounded" aria-hidden="true">person_add</span>${activeLocaleText("הזמנה / הוספה", "Invite / add")}</button>
       </div>
     </article>`;
 }
@@ -1857,21 +1858,22 @@ function similarInvestigationRibbonHtml(investigation) {
     ? activeLocaleText("הצטרפות", "Join")
     : activeLocaleText("בקשת הצטרפות", "Request to join");
   const actionIcon = investigation.action === "join" ? "group_add" : "person_add";
+  // Proposals state their reason in words; there is no "AI suggestion" ornament.
+  const reasonLabel = investigation.invited ? "" : `<span>${activeLocaleText("הוצעה כי", "Proposed because")}</span> `;
   return `
-    <article class="investigation-ribbon similar">
+    <article class="investigation-ribbon similar${investigation.invited ? " invited" : ""}">
       <div class="ribbon-similar-content">
         <div class="ribbon-primary">
-            <div class="ribbon-title-row"><h3 class="ribbon-title">${escapeHtml(activeLocaleText(investigation.titleHe, investigation.titleEn))}</h3><span class="ribbon-status">${investigation.invited ? activeLocaleText("הוזמנת", "Invited") : activeLocaleText("מומלצת", "Recommended")}</span></div>
+          <div class="ribbon-title-row"><h3 class="ribbon-title">${escapeHtml(activeLocaleText(investigation.titleHe, investigation.titleEn))}</h3><span class="ribbon-status">${investigation.invited ? activeLocaleText("הוזמנת", "Invited") : activeLocaleText("מוצעת", "Proposed")}</span></div>
           <p class="ribbon-summary">${escapeHtml(activeLocaleText(investigation.summaryHe, investigation.summaryEn))}</p>
-          <span class="ribbon-attention"><span class="material-symbols-rounded" aria-hidden="true">auto_awesome</span>${escapeHtml(activeLocaleText(investigation.reasonHe, investigation.reasonEn))}</span>
+          <p class="ribbon-attention">${reasonLabel}${escapeHtml(activeLocaleText(investigation.reasonHe, investigation.reasonEn))}</p>
         </div>
         ${welcomeParticipantsHtml(investigation.participants)}
         <div class="ribbon-metrics">
-          <div class="ribbon-metric"><span>${activeLocaleText("רמת פעילות", "Activity level")}</span><strong>${activeLocaleText("פעילות גבוהה השבוע", "High activity this week")}</strong></div>
           <div class="ribbon-metric"><span>${activeLocaleText("גישה", "Access")}</span><strong>${investigation.action === "join" ? activeLocaleText("פתוחה להשתתפות", "Open participation") : activeLocaleText("דורשת אישור בעלים", "Owner approval required")}</strong></div>
         </div>
       </div>
-      <div class="ribbon-actions"><button class="ribbon-action" type="button" data-welcome-action="${investigation.action}" data-invited-investigation="${investigation.invited ? "true" : "false"}" data-invitation-id="${escapeHtml(investigation.id)}" data-investigation-name="${escapeHtml(activeLocaleText(investigation.titleHe, investigation.titleEn))}"><span class="material-symbols-rounded" aria-hidden="true">${actionIcon}</span>${actionLabel}</button></div>
+      <div class="ribbon-actions"><button class="ribbon-action${investigation.invited ? "" : " secondary"}" type="button" data-welcome-action="${investigation.action}" data-invited-investigation="${investigation.invited ? "true" : "false"}" data-invitation-id="${escapeHtml(investigation.id)}" data-investigation-name="${escapeHtml(activeLocaleText(investigation.titleHe, investigation.titleEn))}"><span class="material-symbols-rounded" aria-hidden="true">${actionIcon}</span>${actionLabel}</button></div>
     </article>`;
 }
 
@@ -1905,7 +1907,7 @@ function renderWelcomePage() {
     ? ownedInvestigations.map(ownedInvestigationRibbonHtml).join("")
     : `<p class="welcome-empty-investigations">${escapeHtml(state.investigationsError
       ? activeLocaleText(`לא ניתן לטעון את החקירות: ${state.investigationsError}`, `Could not load investigations: ${state.investigationsError}`)
-      : activeLocaleText("אין עדיין חקירות. התחילו חקירת טיוטה או צרו חקירה בכפתור + שבכותרת.", "No investigations yet. Start a draft investigation, or create one with the + button in the header."))}</p>`;
+      : activeLocaleText("אין עדיין חקירות. התחילו חקירת טיוטה ותנו לה שם בכפתור יצירת חקירה או בשמירה הראשונה.", "No investigations yet. Start a draft investigation, then name it with Create investigation or when you first save something."))}</p>`;
   invitedInvestigationsCount.textContent = INVITED_INVESTIGATIONS.length.toLocaleString(currentLocaleTag());
   invitedInvestigationsList.innerHTML = INVITED_INVESTIGATIONS.map(similarInvestigationRibbonHtml).join("");
   similarInvestigationsCount.textContent = SIMILAR_INVESTIGATIONS.length.toLocaleString(currentLocaleTag());
@@ -2932,6 +2934,12 @@ function viewerFields(item, kind) {
   return preferred.filter(key => !hidden.has(key) && item[key] != null && item[key] !== "").map(key => [key, item[key]]);
 }
 
+// Identifiers, addresses, times and measurements read in the data face; prose stays in the text face.
+function isDataLikeViewerValue(value) {
+  const text = String(value ?? "").trim();
+  return text.length > 0 && text.length <= 64 && /\d/.test(text) && /^[\w.:\-\/+]+$/.test(text);
+}
+
 function viewerFieldLabel(key) {
   const labels = {
     package_id: ["חבילת ראיות", "Evidence package"],
@@ -3496,7 +3504,7 @@ function openObjectViewer(kind, id, trigger = document.activeElement) {
   viewer.classList.toggle("is-person-viewer", personViewer);
   const mediaHtml = viewerMediaHtml(item);
   const cellularHtml = kind === "record" ? cellularCallHtml(item) : "";
-  const fields = viewerFields(item, kind).map(([key,value]) => `<div class="object-viewer-field"><dt>${escapeHtml(viewerFieldLabel(key))}</dt><dd>${viewerFieldValueHtml(key, value)}</dd></div>`).join("");
+  const fields = viewerFields(item, kind).map(([key,value]) => `<div class="object-viewer-field"><dt>${escapeHtml(viewerFieldLabel(key))}</dt><dd${isDataLikeViewerValue(value) ? ' class="is-data"' : ""}>${viewerFieldValueHtml(key, value)}</dd></div>`).join("");
   const entityMapHtml = kind === "organization" ? entityLocationMapHtml(item) : "";
   document.getElementById("objectViewerBody").innerHTML = `${mediaHtml}${cellularHtml}${ipdrPackageLinkHtml(item, kind)}${personViewer ? personWorkspaceHtml(item) : ""}${entityMapHtml}${["record", "evidence", "assessment"].includes(kind) ? `<p class="object-viewer-summary">${escapeHtml(item.event_summary || item.summary || "-")}</p>` : ""}${personViewer ? "" : `<dl class="object-viewer-fields">${fields}</dl>`}${kind === "record" ? `${recordLinkedEntitiesHtml(item)}${recordLinkedRawRecordsHtml(item)}` : kind === "organization" ? organizationEvidenceHtml(item) : kind === "evidence" ? evidenceProvenanceHtml(item) : kind === "assessment" ? assessmentEvidenceHtml(item) : ""}`;
   viewer.hidden = false;
@@ -3815,7 +3823,7 @@ function renderMap() {
     if (!location) return;
     const element = document.createElement("div");
     element.className = `map-marker`;
-    element.style.setProperty("--layer-color", [...item.colors][0] || "#8ab4f8");
+    element.style.setProperty("--layer-color", [...item.colors][0] || "#7aa7d9");
     element.setAttribute("role", "button");
     element.setAttribute("aria-label", activeLocaleText(`${location.name}: ${item.count.toLocaleString("he-IL")} פריטים`, `${location.name}: ${item.count.toLocaleString("en-US")} items`));
     element.innerHTML = `<span class="map-marker-dot"></span>${item.count > 1 ? `<span class="map-marker-count">${item.count.toLocaleString(currentLocaleTag())}</span>` : ""}`;
@@ -3997,7 +4005,7 @@ function toggleMapItem(layerId, kind, itemId) {
     const markerElement = descriptor ? milStdMarkerElement(descriptor) : document.createElement("div");
     if (!descriptor) {
       markerElement.className = "map-marker focused-map-marker";
-      markerElement.style.setProperty("--layer-color", layer?.color || "#8ab4f8");
+      markerElement.style.setProperty("--layer-color", layer?.color || "#7aa7d9");
       markerElement.innerHTML = '<span class="map-marker-dot"></span>';
     }
     markerElement.classList.add("focused-map-selection-marker");
@@ -4082,7 +4090,7 @@ function renderTimeline() {
   const eventHtml = eventTimelineItems.sort((a, b) => a.sort - b.sort).map(({ layer, event }) => isIpdrRecord(event) ? ipdrTimelineEntry(event) : isCellularCallRecord(event) ? callTimelineEntry(event) : `
     <article class="timeline-item" style="${layerColorStyle(layer)}">
       <span class="timeline-dot"></span>
-      <div class="timeline-time">${escapeHtml(String(event.timestamp_utc || "").replace("T", " ").replace("Z", ""))}</div>
+      <div class="timeline-time">${escapeHtml(String(event.timestamp_utc || "").replace("T", " "))}</div>
       <div class="timeline-title">${escapeHtml(layer.label)} · ${escapeHtml(event.location_name)}${recordLinkIndicator(event)}</div>
       <div class="timeline-summary">${escapeHtml(event.event_summary)}</div>
     </article>`).join("");

@@ -69,10 +69,28 @@ class WelcomePageContractTests(unittest.TestCase):
         self.assertIn('welcomeDraftButton?.addEventListener("click", () => startDraftInvestigation());', self.app)
         self.assertIn('.welcome-draft-button', self.styles)
 
-    def test_welcome_action_is_centered_and_assets_are_versioned(self):
-        self.assertIn(".welcome-actions { display: flex; justify-content: center;", self.styles)
-        self.assertIn('href="./styles.css?v=181"', self.index)
-        self.assertIn('src="./demo_bootstrap.js?v=244"', self.index)
+    def test_welcome_action_sits_in_the_register_header_and_assets_are_versioned(self):
+        intro = self.index.split('<section class="welcome-intro"', 1)[1].split('</section>', 1)[0]
+        self.assertIn('id="welcomeDraftButton"', intro)
+        self.assertIn(".welcome-actions { display: flex; justify-content: flex-end;", self.styles)
+        self.assertIn('href="./styles.css?v=182"', self.index)
+        self.assertIn('src="./demo_bootstrap.js?v=245"', self.index)
+
+    def test_welcome_register_has_no_generated_ui_ornament(self):
+        # Proposals explain themselves in words: no sparkle icon, no purple "AI" accent, no glow.
+        self.assertNotIn("auto_awesome", self.app)
+        self.assertNotIn("#c58af9", self.styles)
+        self.assertNotIn("radial-gradient", self.styles)
+        self.assertNotIn("investigation-ribbon::before", self.styles)
+        self.assertIn('activeLocaleText("הוצעה כי", "Proposed because")', self.app)
+
+    def test_data_values_use_the_self_hosted_mono_face(self):
+        self.assertIn('src: url("./assets/fonts/ibm-plex-mono-latin-400-normal.woff2")', self.styles)
+        self.assertTrue((ROOT / "assets/fonts/ibm-plex-mono-latin-400-normal.woff2").is_file())
+        self.assertTrue((ROOT / "assets/fonts/ibm-plex-sans-latin-400-normal.woff2").is_file())
+        self.assertIn('td[dir="ltr"], td .object-viewer-open[data-viewer-kind="record"]', self.styles)
+        self.assertIn("function isDataLikeViewerValue(value)", self.app)
+        self.assertNotIn("Noto Sans Hebrew", self.styles)
 
     def test_draft_creation_modal_and_memory_save_gate(self):
         self.assertIn('id="draftCreateInvestigationButton"', self.index)
