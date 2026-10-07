@@ -1,0 +1,119 @@
+{
+ "_comment": "Where each UI column comes from in i360. Path expressions are documented in hl/mapping.py. This default matches the fake HL API fixture (every demo column carried as an item tag); replace the expressions with the ingestion team's field list.",
+ "version": 1,
+ "items": {
+  "record_id": "tags[type=event_id].value | item_id",
+  "tag_passthrough": true,
+  "needs_get": true,
+  "get_include": [
+   "parties"
+  ],
+  "fields": {
+   "event_id": "tags[type=event_id].value | item_id",
+   "timestamp_utc": "tags[type=timestamp_utc].value | event_time",
+   "source_type": "tags[type=source_type].value | source_application | item_type",
+   "event_summary": {
+    "he": "tags[type=event_summary].value | text.original | text.english | highlight",
+    "en": "text.english | tags[type=event_summary].value | text.original | highlight"
+   },
+   "latitude": "tags[type=latitude].value | location.point.lat",
+   "longitude": "tags[type=longitude].value | location.point.lon",
+   "call_transcript": {
+    "he": "tags[type=call_transcript].value | text.transcript",
+    "en": "tags[type=call_transcript_en].value | tags[type=call_transcript].value | text.transcript"
+   },
+   "side_a_imei": "tags[type=side_a_imei].value | parties[0].identifiers[type=imei].value",
+   "side_a_number": "tags[type=side_a_number].value | parties[0].identifiers[type=msisdn].value",
+   "side_b_imei": "tags[type=side_b_imei].value | parties[1].identifiers[type=imei].value",
+   "side_b_number": "tags[type=side_b_number].value | parties[1].identifiers[type=msisdn].value"
+  }
+ },
+ "label_fields": [
+  "source_type",
+  "source_reliability",
+  "source_reliability_label",
+  "certainty_level"
+ ],
+ "value_labels": {
+  "en": {
+   "לא מסווגה": "Unrated",
+   "נמוכה": "Low",
+   "בינונית": "Medium",
+   "גבוהה": "High",
+   "חדשות מקומיות": "Local news",
+   "טלגרם": "Telegram",
+   "טיקטוק": "TikTok",
+   "שמועה מקומית": "Local rumor",
+   "קבוצת וואטסאפ": "WhatsApp group",
+   "הודעת דובר": "Spokesperson statement",
+   "בלוג פוליטי": "Political blog",
+   "פייסבוק": "Facebook",
+   "ערוץ חדשות בינלאומי": "International news channel",
+   "שיחות סלולר": "Cellular Calls",
+   "גורם מדווח": "Reporting actor",
+   "מוקד ליבה": "Core hotspot",
+   "ציר": "Route",
+   "מוקד ביטחוני": "Security hotspot",
+   "כפר/יישוב": "Village/locality",
+   "אזרחי/חירום": "Civil/emergency",
+   "אזרחי/ציבורי": "Civil/public",
+   "מדיני": "Governmental",
+   "שטח": "Terrain",
+   "מוסד מדיני": "State institution",
+   "צד סרבי": "Serbian side",
+   "רעש/רקע": "Noise/background",
+   "כפר/ציר": "Village/route",
+   "כפר/שטח": "Village/terrain",
+   "אזרחי": "Civilian",
+   "קוסובו": "Kosovo",
+   "צפון קוסובו": "North Kosovo",
+   "צפון מיטרוביצה": "North Mitrovica",
+   "זבצ׳אן": "Zvečan",
+   "לפוסאביץ׳": "Leposavić",
+   "זובין פוטוק": "Zubin Potok",
+   "פרישטינה": "Pristina",
+   "ראסקה": "Raška",
+   "נובי פאזאר": "Novi Pazar",
+   "בלגרד": "Belgrade",
+   "טירנה": "Tirana",
+   "זגרב": "Zagreb",
+   "בריסל": "Brussels",
+   "פק": "Peć",
+   "פריזרן": "Prizren",
+   "משטרת קוסובו": "Kosovo Police",
+   "יחידה מיוחדת של משטרת קוסובו": "Kosovo Police Special Unit",
+   "צבא סרביה": "Serbian Army",
+   "מפגינים סרבים מקומיים": "Local Serbian protesters",
+   "תושבים מקומיים": "Local residents",
+   "כתבים מקומיים": "Local journalists",
+   "ממשלת קוסובו": "Government of Kosovo",
+   "משרד ההגנה של סרביה": "Serbian Ministry of Defence",
+   "נאט״ו": "NATO",
+   "לא סווגה": "Unrated",
+   "ראשקה": "Raška"
+  }
+ },
+ "entities": {
+  "types": [
+   "DEMO_ENTITY"
+  ],
+  "record_json": "sections.raw.json",
+  "fields": {
+   "entity_id": "sections.main.ref_id",
+   "canonical_name": "sections.main.canonical_name | entity_name",
+   "entity_type": "sections.main.entity_type"
+  }
+ },
+ "locations": {
+  "types": [
+   "DEMO_LOCATION"
+  ],
+  "record_json": "sections.raw.json",
+  "fields": {
+   "location_id": "sections.main.ref_id",
+   "name": "sections.main.name | entity_name",
+   "latitude": "sections.main.position.geoPoint.lat",
+   "longitude": "sections.main.position.geoPoint.lon"
+  }
+ }
+}
