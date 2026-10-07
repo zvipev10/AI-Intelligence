@@ -8,6 +8,8 @@ Fetch remote `main` and inspect unrelated working changes before starting a rele
 
 The UI root is `/opt/serbia-poc-ui` (`serbia-poc-ui.service`, port 8769); the MCP root is `/opt/serbia-poc`. The shared gateway uses port 8642 and `hermes-gateway.service`; `hermes-dashboard.service` uses port 9119. Public guide pages and their videos/posters are shared application assets. Release from the canonical package tree, update asset cache versions when applicable and verify the served asset content. Historical source-capture SHA256 manifests remain in the package deployment directory.
 
+Use `mcp_server/remote_release.py --key <private-key> --scenario syria` for a production release. It derives the immutable UI/MCP file set from the currently pinned release contract, hashes the checked-out source with normalized line endings, takes a private source backup, stages only those immutable files, writes `/opt/demo-runtime/releases/<commit>/release-manifest.json`, verifies both roots, activates the requested scenario against that manifest, and only then atomically updates `control/deployed-release.json`. It never copies runtime state, credentials, recordings, or semantic indexes. Do not use an ad-hoc UI copy as a substitute for this procedure.
+
 ## Local development
 
 From `llm_investigation_orchestrator_serbia_poc/`:
