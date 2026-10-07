@@ -25,6 +25,11 @@ from pathlib import Path
 
 NAMESPACE = uuid.UUID("6f1d3c52-6a54-4d0c-9a37-2b8f0f3d1a10")
 
+# Columns that pointed at demo media files inside the old app. In i360 an item's media are its
+# own files (GET /items/{id}/files), so the fixture does not carry these.
+MEDIA_COLUMNS = {"demo_media", "video_url", "image_series", "audio_url", "call_transcript_url", "call_translation_url"}
+MEDIA_ENTITY_FIELDS = {"image_url"}
+
 ITEM_TYPES = {
     "IPDR": "ip_session", "Cellular Geolocations": "location_report", "ADINT": "ad_event",
     "CCTV": "video", "Satellite": "image", "שיחות סלולר": "call", "Cellular Calls": "call",
@@ -51,7 +56,8 @@ def build(scenario: str, events_path: Path, entities_path: Path, locations_path:
         location = locations.get(row.get("location_id") or "", {})
         lat = row.get("latitude") or location.get("latitude")
         lon = row.get("longitude") or location.get("longitude")
-        tags = [{"type": key, "value": value, "source": "system"} for key, value in row.items() if value not in (None, "")]
+        tags = [{"type": key, "value": value, "source": "system"} for key, value in row.items()
+                if value not in (None, "") and key not in MEDIA_COLUMNS]
         tags.append({"type": "scenario", "value": scenario, "source": "system"})
         parties = []
         for side in ("a", "b"):
@@ -75,6 +81,7 @@ def build(scenario: str, events_path: Path, entities_path: Path, locations_path:
         })
     instances = {"DEMO_ENTITY": [], "DEMO_LOCATION": []}
     for entity in entities:
+        entity = {k: v for k, v in entity.items() if k not in MEDIA_ENTITY_FIELDS}
         instances["DEMO_ENTITY"].append({
             "entity_id": str(uuid.uuid5(NAMESPACE, f"{scenario}:entity:{entity['entity_id']}")),
             "entity_type": "DEMO_ENTITY",

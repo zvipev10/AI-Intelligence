@@ -118,8 +118,11 @@ class Handler(BaseHTTPRequestHandler):
     sys_version = ""
 
     # -- plumbing --------------------------------------------------------------------
+    quiet = False
+
     def log_message(self, fmt, *args):
-        sys.stdout.write("%s %s\n" % (self.log_date_time_string(), fmt % args))
+        if not self.quiet:
+            sys.stdout.write("%s %s\n" % (self.log_date_time_string(), fmt % args))
 
     def _send(self, status: int, body: bytes, content_type: str, extra: dict[str, str] | None = None,
               cookie: str | None = None) -> None:
@@ -193,12 +196,15 @@ class Handler(BaseHTTPRequestHandler):
     # -- static ----------------------------------------------------------------------
     def serve_static(self, path: str) -> bool:
         relative = STATIC_FILES.get(path)
+        allowed_root = ROOT
         if relative is None and path.startswith(STATIC_DIRS):
             relative = unquote(path.lstrip("/"))
+            allowed_root = (ROOT / path.strip("/").split("/", 1)[0]).resolve()
         if relative is None:
             return False
         file_path = (ROOT / relative).resolve()
-        if ROOT not in file_path.parents or not file_path.is_file():
+        # Static directories serve only files inside themselves: no "..", no symlink escapes.
+        if allowed_root not in file_path.parents or not file_path.is_file():
             return False
         content_type = mimetypes.guess_type(str(file_path))[0] or "application/octet-stream"
         if content_type.startswith("text/") or content_type in {"application/javascript", "application/json"}:
@@ -243,8 +249,17 @@ class Handler(BaseHTTPRequestHandler):
         locale = normalize_locale((query.get("lang") or query.get("locale") or ["he"])[0])
         if path == "/api/status":
             token = self.token()
+            user = None
+            cookie = None
+            if token:
+                try:
+                    user = app.client(token).whoami()
+                except AuthExpired:
+                    app.snapshots.drop(token)
+                    token, cookie = None, self.clear_cookie()
             self.send_json(200, {
                 "authenticated": bool(token),
+                "user": user,
                 "scenario_id": app.profile.get("scenario_id") or app.settings.scenario,
                 "dataset_version": app.profile.get("dataset_version") or "i360",
                 "demo_profile": {k: app.profile.get(k) for k in ("scenario_id", "label", "map", "sources")},
@@ -254,7 +269,7 @@ class Handler(BaseHTTPRequestHandler):
                 "backend": "i360",
                 "dataset_url": f"/api/dataset/events?lang={locale}",
                 "locations_url": f"/api/dataset/locations?lang={locale}",
-            })
+            }, cookie=cookie)
             return
         token = self.token()
         if not token:
