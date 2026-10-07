@@ -12,7 +12,8 @@ invoices.db-wal
 # Local Codex/runtime metadata
 .agents/
 .tools/
-.claude/
+.claude/*
+!.claude/skills/
 
 # External repositories checked out beside this project
 environments-configuration/
