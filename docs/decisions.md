@@ -24,6 +24,26 @@ Impact:
 Follow-ups:
 [Any needed actions]
 
+### 2026-10-07 - i360-only branch: English-only UI
+
+Decision:
+On branch `feature/i360-only`, the analyst UI runs in English only. The header language switch (EN / עב) is removed, the page loads `lang="en" dir="ltr"`, and the client always requests `lang=en`. The Hebrew strings stay in the code but are not selectable.
+
+Context:
+The user asked to remove the switch to Hebrew for the LAMBDA deployment.
+
+Rationale:
+Removing only the button would have left Hebrew as the default with no way out; English is the language users work in.
+
+Alternatives considered:
+Remove the button and keep the Hebrew default (rejected: locks users into Hebrew); strip all Hebrew strings (deferred: larger change with no user-visible gain).
+
+Impact:
+`?lang=he` and a stored locale no longer change the UI. Server-side locale handling is unchanged.
+
+Follow-ups:
+None.
+
 ### 2026-10-07 - i360-only branch: platform-hl-api is the only backend
 
 Decision:
