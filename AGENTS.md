@@ -65,6 +65,10 @@ after a checkout is confirmed to match the remote commit, read:
 5. `docs/decisions.md`
 6. `docs/demo-scenarios.md` for scenario, dataset, or demonstration work.
 
+On branch `feature/i360-only`, read `docs/architecture.md` and
+`docs/operations.md` first; AI, playback and VM material in the other
+documents describes `main`.
+
 Those documents are the durable project record. Do not rely on an earlier chat
 transcript, a historical artifact, or remembered VM state. Inspect current
 source and tests as well: documentation defines the intended contract; code
@@ -78,15 +82,16 @@ state from files outside this repository.
 
 ## Production deployment
 
-Before any VM check, deployment, recovery, or scenario activation, read
-`docs/operations.md` in full. For the maintained VM connection and deployment
-helpers, inspect `llm_investigation_orchestrator_serbia_poc/mcp_server/remote_deploy_*.py`.
-Do not guess a host, key, service name, copy procedure, or deployed version.
+On branch `feature/i360-only` the app is a container on the LAMBDA cluster in
+front of platform-hl-api; there is no VM. Read `docs/operations.md` and the
+project's `DEPLOY-GITHUB-CODE-TO-LAMBDA.md` before deploying. Never commit
+credentials, tokens, private keys, mutable runtime state, or backups. Do not
+sign in to i360 on a user's behalf; the user runs `tools/provision_types.py`
+and estate checks with their own login.
 
-Establish live state from the VM's `/api/status` and its installed release
-manifest before claiming what is deployed. Follow the operations guide's
-separate procedures for UI-only, server/gateway, and dataset/index changes.
-Never commit credentials, private keys, mutable runtime state, or backups.
+Run the backend tests against the fake HL API
+(`python3 -m unittest discover -s tests -t .`) and the UI tests before any
+change is proposed.
 
 ## Working conventions
 

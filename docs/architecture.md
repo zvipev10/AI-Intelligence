@@ -1,203 +1,100 @@
-# Architecture Notes
+# Architecture
 
-This document records durable architecture behavior that future implementation work should preserve.
+This branch (`feature/i360-only`) runs the analyst UI on i360. **i360, reached through
+platform-hl-api, is the only backend.** There is no local data, no local state and no AI on
+this branch; the earlier VM, Hermes and file-based architecture is in `main` and in Git history.
 
-## Shared runtime and scenario isolation
+## Shape
 
-One canonical application package serves Kosovo and Syria; no country-specific code forks or simultaneous demo deployments. `demo_runtime.py` loads validated `demo_profiles/<scenario>.json` and binds dataset/store paths before MCP stores are imported. Profiles carry geography, localized file references, checksums, catalog sources and dataset identity. See [demo scenarios](demo-scenarios.md) for the installed profile/dataset inventory.
+```
+browser: index.html · demo_bootstrap.js · app.js · polygon_draw.js · MapLibre
+   │  same-origin /api/*, HttpOnly session cookie (holds only the i360 token)
+   ▼
+app (llm_investigation_orchestrator_serbia_poc/, Python 3.12 standard library, stateless)
+   server.py          routing, static allowlist, /healthz, sign-in guard
+   analysis.py        layers, entity/location summaries, links, saved-item validation (pure)
+   hl/client.py       HL API calls: bearer token, one error type, no blind write retry
+   hl/items.py        per-user snapshot of the scenario's items, entities and locations
+   hl/mapping.py      i360 item / entity → the row shape app.js draws (mapping/*.json)
+   hl/state.py        saved work as i360 entity records
+   link_graph.py      field-equality link rules and the subscriber-identity derivation
+   catalog_filters.py layer filters
+   │  Authorization: Bearer <the signed-in user's token>
+   ▼
+platform-hl-api  (in cluster: http://platform-hl-api:8080)
+```
 
-| Boundary | Ownership / location |
-|---|---|
-| Immutable data and media | Versioned packages referenced by scenario profile; source tree remains shared |
-| Application persistence | `/opt/demo-runtime/state/<scenario>/<dataset>/`: investigations, targets, evidence, assessments, playback, caches and audit |
-| Browser persistence | `<scenario>:<dataset>:` storage prefix installed by `demo_bootstrap.js` before application startup |
-| Agent homes | `/opt/demo-runtime/hermes-homes/<scenario>/<role>/`, selected through `demo-general`, `demo-moshe`, `demo-talia` aliases |
-| Role audit | `<scenario>/<dataset>/audit/<role>.jsonl`; per-run records under `audit/runs/` |
-| Active identity | `scenario_id`, `dataset_version`, `activation_generation`; control files and `active.env` select one runtime |
-| Locale | Existing Hebrew/English data/store/cache isolation inside the selected scenario; omitted locale retains compatibility behavior |
+## Identity
 
-Agent homes are scenario/role scoped, while application data and audits are also dataset scoped. Do not describe an unchanged role home as a fresh dataset-specific agent memory. Provider credentials may be carried between corresponding roles at a stopped scenario transition to avoid stale OAuth tokens; this is distinct from copying conversations or learned scenario memory.
+- `POST /api/login` sends the user's i360 username and password to `POST /api/v1/auth/token`
+  (form-encoded password grant) and puts the returned token in an HttpOnly, SameSite=Strict,
+  Secure cookie that expires with the token. The password is not stored anywhere.
+- Every HL API call carries that token. What a user sees is what i360 lets that user see.
+- A 401 from HL API clears the cookie and the UI shows the sign-in screen again.
+- There is no service account and no shared key.
 
-`activate_demo.py` verifies installed release/profile/state/cache compatibility, locks activation, enters maintenance, drains work, then stops UI, dashboard and gateway. The dashboard owns MCP workers too. Selection updates aliases, environment, gateway tool registry and **each role's audit path**. Readiness checks UI/gateway/catalog and actual role identity/counts before committing current identity and reopening admission. Stale tabs receive HTTP 409 and must reload. Failed readiness restores the prior selection with a fresh generation; boot recovery preserves maintenance until verification.
+## Reading data
 
-The installed Hermes root registry must contain tool definitions bound to the active scenario even though roles use named homes. Updating profile files alone is insufficient. The audit-path update prevents an old dataset directory receiving tool results while the UI reads the new directory.
+`hl/items.py` builds a **snapshot per user** (keyed by a hash of the token, kept for
+`APP_SNAPSHOT_TTL` seconds, rebuilt on `POST /api/refresh`):
 
-A shared reentrant execution gate serializes application agent work, with a queue of eight, cancellation for queued requests and foreground priority with aging. It includes interactive, specialist, optional OpenAI and application background jobs, but does not regulate unrelated messaging integrations. On the constrained VM, semantic indexes are built offline and checksummed; missing/stale caches fail explicitly rather than building during requests. Inactive scenario packages/state remain on disk without a second resident runtime.
+1. `POST /api/v1/items/search` for the scenario (`items_query` in `demo_profiles/<scenario>.json`),
+   sorted by time, `include: ["text"]`, 100 per page. When a search matches more than the
+   estate's `result_window`, the time range is split in halves until each part fits.
+2. `POST /api/v1/items/get` per page of 100, for the parts search does not carry (tags, parties).
+3. `POST /api/v1/entities/{type}/search` for the reference entities and locations named in the mapping.
+4. The user's telecom-identity reviews from `hl/state.py`.
 
-Operational commands and release/rollback rules are in the [operations guide](operations.md).
+`hl/mapping.py` turns each item into a flat row with the columns `app.js` already uses
+(`event_id`, `timestamp_utc`, `source_type`, `location_id`, `target_imei`, `ip_public` ...).
+Where each column comes from is configuration in `mapping/default.json`, written as path
+expressions (`tags[type=imei].value | parties[0].identifiers[type=imei].value`). The default
+mapping matches the development fixture. **When the ingestion team publishes how the demo data
+lands in i360, only the mapping file changes.**
 
-## Result presentation and raw source fields
+`analysis.Dataset` then runs the existing logic on the rows: entity and location summaries,
+the layer catalog, layer filters, field-backed links and the subscriber-identity derivation.
 
-`map`, `timeline` and `table` are valid agent presentation choices for requested results, supporting evidence references and catalog actions. English/Hebrew instructions choose spatial, chronological or record/identifier presentation accordingly. Legacy view `evidence` aliases to Table; evidence object kinds are unchanged.
+The snapshot is only a cache. It holds exactly what that user may see, and any replica can
+rebuild it. It suits the demo datasets (hundreds to tens of thousands of records); for larger
+estates the next step is pushing filters and counts down to `items/search` and `items/aggregate`.
 
-The standalone Table tab reuses the same raw-results table DOM, selected layer, filters, sorting and record viewer as the Map/Timeline overlay. Table mode changes layout rather than cloning the component. Geometry-free records retain their IDs and open-record actions; map capability is derived from available locations for raw catalog/materialized/saved rows. IPDR's source-specific table and viewer expose native IP/IMEI and session fields, not inferred actor/location; identifiers remain strings.
+## Saved work
 
-`present_requested_results` materializes selected canonical rows and their recommended view. `agent_result_pipeline.py` preserves the structured presentation through audit parsing. Whole/filtered catalog actions and saved-memory actions use their own contracts; the browser reports actual loading success/failure. Presentation never implies a target or assessment mutation.
+Three entity types, prefix `APP_TYPE_PREFIX` (default `AII_`), one section `main`, created by
+`tools/provision_types.py` with a dry run and one batch publish:
 
-### Call defaults and viewer docking
+| Type | One record per | Key fields |
+| --- | --- | --- |
+| `AII_INVESTIGATION` | investigation | investigation_key, name, scenario, created/updated |
+| `AII_MEMORY_ITEM` | saved item (layer, object, polygon, collection request) | investigation_key, item_key, group, kind, label, comment, payload (JSON) |
+| `AII_TELECOM_APPROVAL` | reviewed derivation | derivation_id, entity_ref, scenario, review_state, msisdn, imsi, payload |
 
-Call-only results and calls catalog actions default to Timeline when no explicit view is selected. Catalog validation, MCP defaults, restored call layers and agent guidance use the same rule. Explicit Map/Table requests remain supported; mixed-source results keep their existing defaults. Compact timeline entries are keyboard-operable record buttons. The existing viewer DOM is moved into the Timeline grid for calls and becomes nonmodal; other viewer contexts retain their existing behavior. Closing or switching view removes its MapLibre instance and releases media. No record schema change is needed for docking.
+- HL API assigns its own `entity_id`; our keys are fields we search by.
+- `actors` is left out on create, so HL API grants each record to the user who made it and it
+  appears in that user's searches. Investigations are personal; sharing is a later step.
+- Every saved item is its own record: two writers never overwrite each other, and deleting an
+  item is a soft delete of its record (HL API has no delete-link operation).
+- Creates are read back before success is reported. Writes are never retried automatically.
 
-### Local polygon drawing
+## Browser
 
-`polygon_draw.js` owns a page-local MapLibre GeoJSON source (`draw-polygon`) with fill, outline and draft-vertex layers. The main map initializes the control; `index.html` loads the helper before the app, and the deployment bundle includes it. Closing requires at least three distinct vertices and a click within 12 screen pixels of the first point. Escape/button cancellation removes only the unfinished draft. Double-click zoom is restored to its prior state when drawing ends. Completed polygons survive basemap toggles but not page reloads. Clicking a completed polygon invokes the investigation-scoped memory save flow; drawing still does not search, filter, or run an agent.
+- `demo_bootstrap.js` asks `/api/status`. Signed out, it shows the sign-in form and does not load
+  `app.js`. Any later 401 brings the form back.
+- `app.js` loads the user's rows from `/api/dataset/events` (CSV) and locations from
+  `/api/dataset/locations`, and uses the layer, memory, investigation and derivation routes.
+- Media load from HL API signed URLs (`/api/records/{id}/files`).
+- Map tiles still come from the existing external services (CARTO, Esri), fetched by the
+  browser. Users' browsers must reach them.
 
-No drawing operation changes record filters or runs an agent. Marker pointer events are suppressed during drawing; call-route click handlers ignore drawing clicks. Resize/mutation observers keep the control above the raw-results overlay. Existing sources receive updates even while tiles are loading, ensuring cancellation clears draft geometry promptly.
+## Scenarios
 
-## Basemap composition
+`APP_SCENARIO` selects `demo_profiles/<scenario>.json`: camera, labels, the list of known
+sources, and the `items_query` that selects the scenario's items. One deployment serves one
+scenario; run a second deployment for the other.
 
-The MapLibre client keeps basemap references separate from analytical presentation.
+## What this branch does not have
 
-- Satellite is the initial default; Street mode uses the native CARTO Voyager vector style.
-- Name-based labels prefer English at every zoom, falling back to available names where English is missing.
-- Basemap imagery is geographic context, independent of timestamped synthetic Satellite source records; retain provider attribution.
-- Satellite mode places Esri World Imagery below selected CARTO `transportation` and `boundary` line layers and CARTO symbol/label layers.
-- Satellite-specific paint is presentation-only and must be restored from the captured CARTO layer definitions when Street mode is selected.
-- Application-created operational layers, result routes, markers, and MIL-STD symbols are not part of `state.basemapLayers` and must not be hidden or restyled by basemap switching.
-- Satellite-source failure must fail visibly and restore Street mode.
-- Scenario profiles own the initial camera. The Syria `network-v1` profile uses Damascus `[36.2765, 33.5138]` at zoom `11`; data presentation remains free to fit the camera to result geometry.
-
-## Locale-isolated runtime state
-
-Hebrew and English remain separate runtime contexts within the selected scenario. The v2.1 paths below describe the Kosovo implementation; resolve scenario roots through `DemoRuntime`, rather than hard-coding Kosovo paths for Syria.
-
-- Immutable runtime data is selected by locale and dataset version.
-- MCP runtime bundles are locale-specific and fail closed if English assets are missing or invalid.
-- Semantic caches are isolated by locale, dataset version, and source checksum identity.
-- Mutable target persistence uses separate Hebrew and English SQLite databases.
-- Mutable workstream persistence uses separate Hebrew and English roots:
-  - `workstreams/v2_1/he/`
-  - `workstreams/v2_1/en/`
-- Legacy untagged/shared workstream records are treated as Hebrew-owned fallback data.
-- English persisted presentation/evidence/workstream fields reject Hebrew characters before write.
-
-Hebrew remains the compatibility default for omitted locale values. New English flows must pass explicit locale and must not fall back to Hebrew data.
-
-## Unified staged playback
-
-Playback uses one staged flow. The previous user-facing distinction between historical mode and real-time mode has been removed.
-
-Runtime contract:
-
-- `/api/playback` reports `mode: "real_time"` for the unified staged flow.
-- `/api/playback/mode` accepts older `mode: "historical"` payloads as compatibility input, but routes them to staged playback.
-- The first baseline window starts at the dataset beginning and ends at the first scenario slice boundary.
-- The current Brnjak v2.1 first visible window is:
-  - from `2026-09-12T04:25:50.096250Z`
-  - to `2026-09-17T06:00:00Z`
-- Pressing Next advances the cumulative `visible_timeframe`.
-- Moshe reevaluation is skipped when the baseline is created.
-- Moshe reevaluation can run only after a later slice arrives and active workstreams exist.
-- A separate general-agent memory update can run after a later slice when the
-  selected investigation has non-empty saved memory.
-- General memory updates are revision-scoped background jobs and receive only
-  saved investigation memory plus playback timeframe context; they do not
-  receive workstreams, Moshe assessments, or target-bank state.
-- General memory-update lifecycle and output are exposed through the playback
-  status payload and rendered only in chat.
-
-Visibility contract:
-
-- UI data-layer queries must filter rows by the active playback `visible_timeframe`.
-- MCP/data queries must respect `active_visibility.json` when active.
-- The active playback run and visibility policy are global for the deployed UI/MCP process.
-- Investigation selection changes request and UI context only; it does not select or create a separate playback run.
-- `/api/playback`, `/api/playback/mode`, and `/api/playback/next` resolve the same active global run across investigations.
-- Production smoke or diagnostics that alter `active_visibility.json` must restore the previous policy before completion.
-
-UX contract:
-
-- The UI shows staged playback as one control state.
-- The timeframe remains visible.
-- The Next button remains available while there is a next slice.
-- The UI must not reintroduce a historical-vs-real-time mode selector without a new product/architecture decision.
-
-MIL-STD presentation contract:
-
-- The canonical entity layer adds location-level `presence_claim`,
-  `presence_evidence_count`, `assessment_status`, `confidence`,
-  `latest_timestamp_utc`, and bounded `evidence_record_ids` fields.
-- The client maps the approved 12 organization IDs and four UAV object classes
-  through a versioned `MIL_STD_*` registry.
-- Organization presences and normalized evidence observations/fusions are
-  presentation descriptors; raw event layers use neutral location markers and
-  raw records remain the provenance source and storage unit.
-- Affiliation is independent from confidence. Reported claims use a separate
-  uncertainty indicator and label; the affiliation frame retains its meaning.
-- UAV entity association does not establish ownership, so initial UAV symbols
-  use unknown affiliation.
-- This demo profile does not perform persistent object correlation or claim
-  external conformance certification.
-
-Evidence contract:
-
-- A raw `REC-*` record remains immutable provenance. It can be projected on
-  demand into a normalized `reported` or `observed` `EVD-*` object without
-  creating a second stored copy of every raw record.
-- Neutral fusion creates a stable `EVD-FUSED-*` identity from its sorted source
-  records and preserves both supporting and contradicting evidence links.
-- Fused evidence may be persisted only after deterministic validation: one
-  canonical subject, location, and structured object class, plus at least two
-  independent supporting source groups and the existing temporal/confidence
-  fusion checks.
-- Evidence and raw layers remain demand-driven. Evidence uses the existing
-  map, table, timeline, and object-viewer presentation paths; it does not imply
-  target status or an enemy assessment.
-- Target preparation delegates its neutral correlation work to the evidence
-  fusion path, then applies Moshe's separate target-authorization boundary.
-- For the fixed v2.1 demo dataset, UI deployment builds a versioned evidence
-  catalog artifact for Hebrew and English. The layer catalog advertises it as
-  `evidence:all`; presentation remains demand-driven and requires no live
-  semantic search or fusion. The Hebrew catalog is also the read seed of the
-  MCP evidence repository, while SQLite is its writable overlay, so Talia and
-  the UI resolve the same deterministic fused evidence IDs.
-- All raw rows are processed, but the catalog does not duplicate every
-  unstructured public report as a symbol. It contains UAV observations, exact
-  structured public extractions, and validated fused evidence; other reports
-  remain accessible through their raw source layers.
-- Evidence preparation preserves structured object classes and resolves a
-  missing class through the same semantic concept vocabulary used by semantic
-  event retrieval. Deployment-time fusion applies this normalization and
-  groups records by canonical location, entity, normalized object class, and
-  an eight-hour rolling window. Fused rows still require the existing source
-  grouping and persistence checks.
-- The layer manifest supplies catalog counts without loading the roughly 4 MB
-  row artifact. Rows are loaded only when the evidence layer is opened and are
-  filtered by the active playback timeframe.
-- Evidence map rendering coalesces equivalent location/symbol/affiliation
-  descriptors and renders at most 400 evidence symbols at once. This bound
-  affects only the map; the full catalog remains available in table, timeline,
-  viewer, and provenance paths.
-
-Agent-to-UI catalog action contract:
-
-- Named catalog opening uses MCP `open_catalog_layers`; the live resolver returns canonical IDs for exact/unique close matches, requests clarification for ambiguity and fails closed when the catalog is unavailable.
-- The gateway extracts the latest successful action and validates it against `list_ui_layers(locale)`.
-- The result exposes `catalog_layer_actions` and `catalog_layer_action_errors`.
-- The browser awaits `openCatalogLayer`, activates the layer, selects a supported view, and redraws.
-- Supported location/entity/event/time constraints travel in `open_catalog_layers.filters`, preserving scope through loading, saved reconstruction and refresh. Other predicates use retrieval plus explicit result IDs/`present_requested_results`; saved layers remain `present_saved_memory_layers`.
-- `open_object_viewer` is the parallel action for one exact retrieved raw record, evidence/package, or entity. MCP resolves the canonical object and its owning catalog layer; the gateway revalidates both against active UI data. The browser opens that permitted layer first and then invokes the existing item viewer. `pending_ui` means queued, not confirmed open.
-
-## Saved-question and recording interfaces
-
-Runtime directories resolve from `DEMO.state`: `saved_questions/`, `recorded_runs/` and `recorded_runs_en/`. Saved questions use `GET /api/saved-questions`, `GET /api/saved-question?id=<id>`, `POST /api/saved-question`, and `DELETE /api/saved-question?id=<id>`. Recordings use `GET /api/recorded-questions` and `GET /api/recorded-run?id=<id>`.
-
-Saved payloads retain ID/schema, title, question, saved timestamp, source run and full result. Writes validate IDs and use atomic temporary-file replacement; listings skip malformed rows. Loading restores the answer, steps and result layers through the normal presentation path without a new Hermes call. Recorded responses retain full live output and replay steps before the final answer; follow-ups are live.
-
-## Additive layer identity
-
-## Investigation-memory annotations
-
-Investigation memory is an atomic JSON payload with additive `chat_summaries`, `layers`, and `artifacts` arrays. `POST /api/investigation-memory/chat-summary` and `POST /api/investigation-memory/layer` accept a validated optional `comment`; `POST /api/investigation-memory/artifact` accepts a validated object or one closed Polygon ring plus the same comment. `POST /api/investigation-memory/delete` validates the investigation, group, and item identifier and rewrites only the requested array through the existing atomic memory write path. Artifact writes retain all existing groups, validate bounded text and finite geographic coordinates, and use the same atomic path. Saved layers retain their Map/Timeline/Table presentation choice. The browser keeps Memory as an investigation-scoped modal screen, while Map/Timeline/Table stay presentations: layer links restore their filtered presentation, object links open their existing viewers, and polygon links draw/focus a transient map overlay. The prompt adapter includes saved comments and compact artifact metadata; polygons retain their geometry but only their labels/comments are rendered in the initial Memory UI.
-
-`sourceId` identifies the originating final result or step and `dataId` identifies content. Their combined identity prevents duplicate layers while allowing independent sources. Layer visibility applies to Map, Timeline and Table; closing releases layer state/color and showing again recreates it. Selected-layer filters do not redefine unrelated layer metadata. Event layers require usable geometry for Map; location layers support Map/Table, time aggregations Timeline/Table, and generic grouped results Table.
-
-## IPDR package evidence and raw records
-
-The checksum-anchored acquisition package appears once in the general `evidence:all` layer; there is no source-specific IPDR evidence catalog layer. It is an `ipdr_package` object, not a session row, and its viewer links to `events:IPDR`, where all 300 immutable REC records remain available in Table and Timeline. Package objects have no Map or Timeline capability. Raw record IDs, native values, source references and validation metadata are preserved. No separate record evidence projection or EVD copy is created; IPDR record projection is rejected by the evidence projector. `get_evidence` resolves the package, while raw records remain accessible through event retrieval. Unknown acquisition details remain unknown and original file checksums/membership are verified before presentation.
-
-## Field-link graph and derived claims
-
-The runtime builds deterministic, versioned field-equality links from immutable records, entities, locations and evidence packages. A link records its approved rule, both object/field endpoints, the matched string value and source-record provenance; it does not add a property to either endpoint. Only an explicit rule registry may create links. It excludes blank call Side B fields, IPDR `ip_out`, and unqualified IP coincidence. The first raw-to-raw rule links an ADINT record's non-empty `ip` to an IPDR record's non-empty `ip_public`; session time does not gate the match. Both raw IDs are provenance for that link; it is an observed correlation, not a device, person, location or activity claim.
-
-Derivation rules consume links rather than source files directly. The subscriber-identity rule follows an entity's known IMEI only through cellular `target_imei` links, groups non-empty MSISDN/IMSI tuples, and returns a candidate only for a unique most-supported pair with at least two distinct records. A candidate is not an entity-field mutation. Analyst approval is a scenario/dataset-scoped derivation review that overlays the approved claim only at presentation time. Raw records and versioned entity files remain unchanged.
+AI agents and chat, saved and recorded questions, workstreams, playback, the evidence catalog,
+target bank and assessments. User file upload is not possible (HL API has no upload), and the
+app is not told about changes as they happen (it rebuilds the snapshot on refresh or expiry).

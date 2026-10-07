@@ -1,5 +1,7 @@
 # Product guide
 
+> **Branch `feature/i360-only`:** users sign in with their i360 account and the data comes from i360. AI agents, chat, saved/recorded questions, workstreams, playback and the evidence layer are not on this branch; the sections below that describe them refer to `main`. See [architecture](architecture.md).
+
 Owns analyst-facing behavior. Dataset details belong to [demo scenarios](demo-scenarios.md); runtime commands belong to [operations](operations.md).
 
 ## Workspace and agent roles

@@ -24,6 +24,26 @@ Impact:
 Follow-ups:
 [Any needed actions]
 
+### 2026-10-07 - i360-only branch: platform-hl-api is the only backend
+
+Decision:
+On branch `feature/i360-only`, the analyst UI reads data from i360 items and entities and stores saved work as i360 entity records, all through platform-hl-api with the signed-in user's own token. Local datasets, file and SQLite state, the VM runtime, AI agents and playback are removed from the branch, with no backward compatibility.
+
+Context:
+The app is moving to the LAMBDA cluster, where the deployment guide expects a UI in front of platform-hl-api. The demo data will be ingested into i360.
+
+Rationale:
+One backend, the platform's own identity and permissions, and a stateless container that can run several replicas. AI and playback are out of scope for this phase.
+
+Alternatives considered:
+Keeping local files behind the same interfaces as a fallback (rejected: no backward compatibility wanted); a persistent volume for state (rejected: HL API stores records and handles permissions).
+
+Impact:
+Users sign in with i360 accounts. Investigations are per user. The app reads a per-user snapshot (search + get) and maps items to the existing row shape through `mapping/*.json`. Saved items are one entity record each. Development and CI use `devtools/fake_hlapi.py`.
+
+Follow-ups:
+Fill `mapping/default.json` and `items_query` from the ingestion field list; provision the entity types on the estate; push filters to HL API if datasets grow; AI and playback in a later phase.
+
 ### 2026-07-18 - Preserve V2 and add evaluator-grounded V2.1 fusion evidence
 
 Decision:

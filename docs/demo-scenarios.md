@@ -1,5 +1,7 @@
 # Demo scenarios
 
+> **Branch `feature/i360-only`:** the datasets are no longer in the app. They are to be ingested into i360; the app selects a scenario with `items_query` in `demo_profiles/<scenario>.json`. The development fixture `devtools/fixtures/syria.json.gz` is built from the Syria package described below.
+
 Owns versioned dataset contents, fixtures and narratives. For activation, migration and recovery, use [operations](operations.md). Installed profiles remain authoritative as packages evolve.
 
 ## One application, two demo packages

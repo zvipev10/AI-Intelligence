@@ -1,17 +1,15 @@
 # AI Intelligence
 
-One shared bilingual intelligence-analysis application, with isolated Kosovo and Syria demo packages and one active scenario at a time. General, Moshe and Talia roles share the application while retaining their authorization and memory boundaries.
+Bilingual (Hebrew/English) intelligence-analysis UI with Kosovo and Syria demo scenarios.
 
-## Documentation
+**Branch `feature/i360-only`:** the app runs on i360. Users sign in with their i360 account, data is read from i360 and saved work is stored in i360, all through platform-hl-api with the user's own token. There is no local data, local state or AI on this branch.
 
 | Guide | Owns |
 |---|---|
-| [Product](docs/product.md) | Analyst workflows, agent roles, results and media behavior |
-| [Architecture](docs/architecture.md) | Services, state ownership and interface contracts |
-| [Demo scenarios](docs/demo-scenarios.md) | Dataset versions, contents and demonstration narratives |
-| [Operations](docs/operations.md) | Setup, deployment, switching, verification and rollback |
+| [Architecture](docs/architecture.md) | Shape, identity, reading data, saved work |
+| [Operations](docs/operations.md) | Configuration, local run with the fake HL API, tests, first use on an estate, LAMBDA deployment |
+| [Product](docs/product.md) | Analyst workflows |
+| [Demo scenarios](docs/demo-scenarios.md) | Dataset contents and narratives |
 | [Decisions](docs/decisions.md) | Accepted decisions and their rationale |
 
-The [application package](llm_investigation_orchestrator_serbia_poc/) is the canonical implementation. Check `/api/status` and the installed release manifest for live deployment identity. All demonstration data is synthetic; evaluator truth stays offline and out of runtime retrieval and prompts.
-
-Contributors start with [AGENTS.md](AGENTS.md) and the [AI workflow](docs/ai-workflow.md). Task-specific reviews, checkpoints and handoffs live under [.ai/work/capabilities/](.ai/work/capabilities/). These are implementation history, not competing current guides. The [migration map](.ai/work/capabilities/documentation-hierarchy/migration-map.md) provides the complete pre-consolidation archive.
+The application is in [llm_investigation_orchestrator_serbia_poc/](llm_investigation_orchestrator_serbia_poc/). Contributors start with [AGENTS.md](AGENTS.md).
