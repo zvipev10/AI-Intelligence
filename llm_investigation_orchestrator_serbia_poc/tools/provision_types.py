@@ -3,8 +3,8 @@
 
 Run it yourself, signed in with your i360 building login (not an admin account):
 
-    HL_API_URL=https://<platform-hl-api host> python tools/provision_types.py            # dry run
-    HL_API_URL=https://<platform-hl-api host> python tools/provision_types.py --apply    # one publish
+    HL_API_URL=https://<platform-hl-api host> python tools/provision_types.py --grant-profile <profile>            # dry run
+    HL_API_URL=https://<platform-hl-api host> python tools/provision_types.py --grant-profile <profile> --apply    # one publish
 
 Steps, as the HL API skill prescribes: look before you create (``GET /entity-types``), dry run
 first, then ONE batch publish. A publish restarts platform services for everyone on the estate,
@@ -41,7 +41,8 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--apply", action="store_true", help="publish (default is a dry run)")
     parser.add_argument("--prefix", default=os.environ.get("APP_TYPE_PREFIX", "AII_"))
-    parser.add_argument("--grant-profile", default=None, help="permission profile to grant the types in")
+    parser.add_argument("--grant-profile", required=True,
+                        help="permission profile your analysts are in (HL API defaults to Superuser, which most users are not in)")
     parser.add_argument("--username", default=os.environ.get("I360_USER"))
     parser.add_argument("--yes", action="store_true", help="do not ask before publishing")
     args = parser.parse_args()
@@ -57,9 +58,9 @@ def main() -> int:
     print(f"Signed in as {client.whoami().get('user_name')}")
 
     definitions = type_definitions(args.prefix)
-    if args.grant_profile:
-        for definition in definitions:
-            definition["grant_profile"] = args.grant_profile
+    for definition in definitions:
+        definition["grant_profile"] = args.grant_profile
+        definition["create_sample_instance"] = False
     present = existing_types(client)
     missing = [d for d in definitions if d["type"] not in present]
     for definition in definitions:

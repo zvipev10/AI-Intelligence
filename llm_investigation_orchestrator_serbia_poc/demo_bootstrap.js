@@ -104,7 +104,7 @@
     signOut.addEventListener("click", async () => {
       signOut.disabled = true;
       try {
-        const response = await nativeFetch("/api/logout", { method: "POST" });
+        const response = await nativeFetch("/api/logout", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
         await response.text().catch(() => "");
       } catch {
         // Reloading shows the sign-in screen when the cookie is gone; otherwise the user can retry.

@@ -17,6 +17,7 @@ import csv
 import io
 import json
 import mimetypes
+import re
 import sys
 import time
 from http import cookies
@@ -34,6 +35,10 @@ from hl.mapping import Mapping, load_mapping
 from hl.state import MEMORY_GROUPS, StateStore
 
 SESSION_COOKIE = "aii_session"
+# With Secure cookies the "__Host-" prefix pins the cookie to this exact host (no Domain, Path=/),
+# so a sibling subdomain cannot plant a session.
+SECURE_SESSION_COOKIE = "__Host-aii_session"
+TOKEN_PATTERN = re.compile(r"^[A-Za-z0-9._~+/=-]{1,4096}$")
 MAX_BODY = 2_000_000
 
 STATIC_FILES = {
@@ -86,6 +91,15 @@ class App:
             return Snapshot(items=items, entities=entities, locations=locations, reviews=reviews,
                             fetched_at=time.time(), truncated=reader.truncated, warnings=reader.warnings)
         return self.snapshots.get(token, build, refresh=refresh)
+
+    def reload_reviews(self, token: str) -> None:
+        """After a review, re-read only the reviews and drop the assembled datasets."""
+        snap = self.snapshot(token)
+        reviews = self.state(token).load_reviews()
+        with snap.lock:
+            snap.reviews = reviews
+            for key in [k for k in snap.derived if k.startswith("dataset:")]:
+                snap.derived.pop(key, None)
 
     def rows(self, snap: Snapshot, locale: str) -> list[dict[str, str]]:
         return snap.memo(f"rows:{locale}", lambda: [self.mapping.item_to_row(item, locale) for item in snap.items])
@@ -148,34 +162,52 @@ class Handler(BaseHTTPRequestHandler):
                    "application/json; charset=utf-8", cookie=cookie)
 
     def read_json(self, limit: int = MAX_BODY) -> dict[str, Any]:
-        length = int(self.headers.get("Content-Length", "0") or 0)
-        if length > limit:
-            raise ValueError("Request too large")
+        try:
+            length = int(self.headers.get("Content-Length", "0") or 0)
+        except ValueError:
+            raise ValueError("Invalid Content-Length") from None
+        if length < 0 or length > limit:
+            raise ValueError("Request too large or malformed")
         value = json.loads(self.rfile.read(length).decode("utf-8-sig") or "{}")
         if not isinstance(value, dict):
             raise ValueError("Invalid request body")
         return value
 
+    @property
+    def cookie_name(self) -> str:
+        return SECURE_SESSION_COOKIE if self.app.settings.cookie_secure else SESSION_COOKIE
+
     def token(self) -> str | None:
-        jar = cookies.SimpleCookie()
-        try:
-            jar.load(self.headers.get("Cookie") or "")
-        except cookies.CookieError:
-            return None
-        morsel = jar.get(SESSION_COOKIE)
-        return morsel.value if morsel and morsel.value else None
+        # Parse by hand: SimpleCookie silently drops every cookie after one it cannot parse,
+        # and other apps on the same host may set such cookies.
+        for part in (self.headers.get("Cookie") or "").split(";"):
+            name, _, value = part.strip().partition("=")
+            if name == self.cookie_name and TOKEN_PATTERN.fullmatch(value.strip()):
+                return value.strip()
+        return None
 
     def session_cookie(self, token: str, max_age: int) -> str:
-        parts = [f"{SESSION_COOKIE}={token}", "Path=/", "HttpOnly", "SameSite=Strict", f"Max-Age={max(60, max_age)}"]
+        if not TOKEN_PATTERN.fullmatch(token):
+            raise HlError(502, "unexpected_token", "i360 returned a token this app cannot store")
+        parts = [f"{self.cookie_name}={token}", "Path=/", "HttpOnly", "SameSite=Strict", f"Max-Age={max(60, max_age)}"]
         if self.app.settings.cookie_secure:
             parts.append("Secure")
         return "; ".join(parts)
 
     def clear_cookie(self) -> str:
-        parts = [f"{SESSION_COOKIE}=", "Path=/", "HttpOnly", "SameSite=Strict", "Max-Age=0"]
+        parts = [f"{self.cookie_name}=", "Path=/", "HttpOnly", "SameSite=Strict", "Max-Age=0"]
         if self.app.settings.cookie_secure:
             parts.append("Secure")
         return "; ".join(parts)
+
+    def same_origin_json(self) -> bool:
+        """Writes must be JSON from this origin: blocks form-based cross-site and same-site posts."""
+        if not (self.headers.get("Content-Type") or "").lower().startswith("application/json"):
+            return False
+        origin = self.headers.get("Origin")
+        if origin is None:
+            return True  # non-browser clients; browsers always send Origin on POST
+        return urlparse(origin).netloc == (self.headers.get("X-Forwarded-Host") or self.headers.get("Host") or "")
 
     def handle_error_response(self, exc: Exception) -> None:
         if isinstance(exc, AuthExpired):
@@ -195,6 +227,12 @@ class Handler(BaseHTTPRequestHandler):
 
     # -- static ----------------------------------------------------------------------
     def serve_static(self, path: str) -> bool:
+        try:
+            return self._serve_static(path)
+        except (ValueError, OSError):
+            return False
+
+    def _serve_static(self, path: str) -> bool:
         relative = STATIC_FILES.get(path)
         allowed_root = ROOT
         if relative is None and path.startswith(STATIC_DIRS):
@@ -233,6 +271,9 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         path = urlparse(self.path).path
+        if not self.same_origin_json():
+            self.send_json(403, {"error": "cross_origin_or_not_json"})
+            return
         try:
             self.route_post(path)
         except Exception as exc:  # noqa: BLE001
@@ -447,7 +488,7 @@ class Handler(BaseHTTPRequestHandler):
             user = app.client(token).whoami()
             review = analysis.subscriber_identity_review(data, entity_id, action, previous, str(user.get("user_name") or "analyst"))
             state.save_review(review, str(user.get("user_name") or "analyst"))
-            snap = app.snapshot(token, refresh=True)
+            app.reload_reviews(token)
             entity = app.dataset(token, "en").entities.get(entity_id)
             self.send_json(201, {"saved": {**review, "method": review.get("rule_id")}, "entity": entity})
             return

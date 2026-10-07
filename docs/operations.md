@@ -55,8 +55,8 @@ The Dockerfile runs all three during the image build.
 1. Get an i360 login for building apps (not an admin account) and note its permission profile.
 2. Create the entity types, signed in as that user:
    ```bash
-   HL_API_URL=https://<platform-hl-api host> python3 tools/provision_types.py            # dry run
-   HL_API_URL=https://<platform-hl-api host> python3 tools/provision_types.py --apply    # one publish
+   HL_API_URL=https://<platform-hl-api host> python3 tools/provision_types.py --grant-profile <profile>            # dry run
+   HL_API_URL=https://<platform-hl-api host> python3 tools/provision_types.py --grant-profile <profile> --apply    # one publish
    ```
    A publish restarts platform services for everyone on the estate (about 80 seconds plus two
    minutes of rolling restarts). Agree a time with the LAMBDA owner.

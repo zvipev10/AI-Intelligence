@@ -88,10 +88,14 @@ class ItemReader:
         return self.client.search_items(body)
 
     def _collect_window(self, window: tuple[str, str], out: list[dict[str, Any]], depth: int = 0) -> None:
+        if len(out) >= self.max_rows:
+            self.truncated = True
+            return
         first = self._query(window, 1)
         total = int(first.get("total") or 0)
         fetchable = int(first.get("total_pages") or 1) * PAGE_SIZE
-        if total > fetchable and depth < 24:
+        # Halving ~60 years reaches 1 ms after ~41 levels; the guard below ends it there.
+        if total > fetchable and depth < 64:
             start, end = _parse(window[0]), _parse(window[1])
             middle = start + (end - start) / 2
             if middle - start > timedelta(seconds=1):
@@ -192,11 +196,13 @@ class SnapshotCache:
             lock = self._locks.setdefault(key, threading.Lock())
             self._evict()
         with lock:
-            cached = self._items.get(key)
+            with self._guard:
+                cached = self._items.get(key)
             if cached and not refresh and time.time() - cached.fetched_at < self.ttl:
                 return cached
             snapshot = build()
-            self._items[key] = snapshot
+            with self._guard:
+                self._items[key] = snapshot
             return snapshot
 
     def drop(self, token: str) -> None:
@@ -206,7 +212,10 @@ class SnapshotCache:
                 self._items.pop(key, None)
 
     def _evict(self) -> None:
+        """Called with ``_guard`` held. Locks are removed only when nobody holds them."""
         now = time.time()
         for key in [key for key, snap in self._items.items() if now - snap.fetched_at > self.ttl * 4]:
             self._items.pop(key, None)
-            self._locks.pop(key, None)
+        for key in [key for key in self._locks if key not in self._items]:
+            if not self._locks[key].locked():
+                self._locks.pop(key, None)

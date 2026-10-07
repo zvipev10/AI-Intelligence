@@ -107,7 +107,8 @@ class HlClient:
                     continue
                 raise error from None
             except (urllib.error.URLError, socket.timeout, ConnectionError) as exc:
-                last = Unreachable(503, "hl_api_unreachable", f"platform-hl-api is not reachable: {exc}")
+                last = Unreachable(503, "hl_api_unreachable", "platform-hl-api is not reachable")
+                last.__cause__ = exc
                 if read and attempt + 1 < attempts:
                     time.sleep(0.4 * (attempt + 1))
                     continue

@@ -33,6 +33,8 @@ class Browser:
         self.opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(self.jar))
 
     def call(self, method, path, body=None, raw=False):
+        if method == "POST" and body is None:
+            body = {}
         data = json.dumps(body).encode() if body is not None else None
         request = urllib.request.Request(self.base + path, data=data, method=method,
                                          headers={"Content-Type": "application/json"} if data else {})
@@ -122,6 +124,36 @@ class ApiTests(unittest.TestCase):
         status, body = browser.call("GET", "/api/status")
         self.assertFalse(body["authenticated"])
         self.assertEqual(401, browser.call("GET", "/api/investigations")[0])
+
+    def test_writes_must_be_same_origin_json(self):
+        browser = self.signed_in()
+        for headers in ({"Content-Type": "text/plain"}, {"Content-Type": "application/json", "Origin": "https://evil.example"}):
+            request = urllib.request.Request(self.base + "/api/investigations", method="POST", headers=headers,
+                                             data=json.dumps({"investigation_id": "x", "name": "x"}).encode())
+            with self.assertRaises(urllib.error.HTTPError) as caught:
+                browser.opener.open(request, timeout=10)
+            self.assertEqual(403, caught.exception.code)
+        host = self.base.split("//", 1)[1]
+        request = urllib.request.Request(self.base + "/api/investigations", method="POST",
+                                         headers={"Content-Type": "application/json", "Origin": f"http://{host}"},
+                                         data=json.dumps({"investigation_id": "inv_origin", "name": "ok"}).encode())
+        self.assertEqual(200, browser.opener.open(request, timeout=10).status)
+
+    def test_malformed_requests_do_not_hang_or_crash(self):
+        import socket
+        host, port = self.app.server_address
+        with socket.create_connection((host, port), timeout=5) as sock:
+            sock.sendall(b"POST /api/login HTTP/1.1\r\nHost: x\r\nContent-Type: application/json\r\nContent-Length: -1\r\n\r\n")
+            self.assertIn(b" 400 ", sock.recv(200))
+        self.assertEqual(404, Browser(self.base).call("GET", "/assets/%00x", raw=True)[0])
+
+    def test_unparseable_neighbour_cookie_does_not_hide_the_session(self):
+        browser = self.signed_in()
+        token = next(iter(browser.jar)).value
+        request = urllib.request.Request(self.base + "/api/status",
+                                         headers={"Cookie": f'other={{"a":1}}; x=a b; aii_session={token}'})
+        with urllib.request.urlopen(request, timeout=10) as response:
+            self.assertTrue(json.loads(response.read())["authenticated"])
 
     def test_logout(self):
         browser = self.signed_in()
