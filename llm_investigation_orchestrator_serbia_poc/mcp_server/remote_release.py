@@ -147,8 +147,15 @@ def main() -> int:
         pointer = get_json(client, f"cat {CONTROL}/deployed-release.json")
         baseline = get_json(client, f"cat {shlex.quote(pointer['release_manifest'])}")
         manifest = build_manifest(baseline, commit)
-        staging = upload(client, manifest, commit)
-        backup, manifest_path = install(client, staging, manifest, commit)
+        manifest_path = f"{RELEASES}/{commit}/release-manifest.json"
+        code, existing, _ = run(client, f"cat {shlex.quote(manifest_path)}", timeout=30, check=False)
+        if code == 0:
+            if json.loads(existing) != manifest:
+                raise RuntimeError("Existing release manifest differs from the checked-out source")
+            backup = None
+        else:
+            staging = upload(client, manifest, commit)
+            backup, manifest_path = install(client, staging, manifest, commit)
         verify_hashes(client, manifest, commit, manifest_path)
         _, activation, _ = run(client, f"/home/ubuntu/.hermes/hermes-agent/venv/bin/python {UI_ROOT}/activate_demo.py {args.scenario} --release {shlex.quote(manifest_path)}", timeout=240)
         status = json.loads(activation)
