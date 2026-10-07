@@ -1,21 +1,13 @@
 <!doctype html>
-<html lang="he" dir="rtl" data-app-ready="false">
+<html lang="en" dir="ltr" data-app-ready="false">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <script>
-    (() => {
-      if (new URLSearchParams(window.location.search).get("lang") === "en") {
-        document.documentElement.lang = "en";
-        document.documentElement.dir = "ltr";
-      }
-    })();
-  </script>
   <style>html { background: #0f1115; } html[data-app-ready="false"] body { visibility: hidden; }</style>
-  <title>סביבת מודיעין</title>
+  <title>Intelligence Workspace</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="./vendor/maplibre-gl.css">
-  <link rel="stylesheet" href="./styles.css?v=180">
+  <link rel="stylesheet" href="./styles.css?v=181">
 </head>
 <body class="welcome-active">
   <a class="help-button" href="./help.html" target="_blank" rel="noopener" aria-label="פתח עזרה" data-i18n-aria-he="פתח עזרה" data-i18n-aria-en="Open help">?</a>
@@ -40,7 +32,6 @@
         <span class="material-symbols-rounded status-icon" aria-hidden="true">database</span><span class="status-state-mark" aria-hidden="true"></span>
         <span id="datasetStatusTooltip" class="status-tooltip" role="tooltip"><strong data-i18n-text-he="מאגר הנתונים" data-i18n-text-en="Dataset">מאגר הנתונים</strong><span id="datasetStatus">טוען נתונים</span></span>
       </button>
-      <button id="localeToggle" class="locale-toggle" type="button" lang="en" aria-label="Switch to English" data-i18n-aria-he="Switch to English" data-i18n-aria-en="החלפה לעברית">EN</button>
       <div id="sessionControls" class="session-controls" hidden>
         <span class="material-symbols-rounded" aria-hidden="true">account_circle</span>
         <span id="sessionUserName" class="session-user-name" dir="ltr"></span>
@@ -287,6 +278,6 @@
 
   <script src="./vendor/maplibre-gl.js"></script>
   <script src="./polygon_draw.js?v=3"></script>
-  <script src="./demo_bootstrap.js?v=243"></script>
+  <script src="./demo_bootstrap.js?v=244"></script>
 </body>
 </html>

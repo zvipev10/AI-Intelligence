@@ -18,12 +18,11 @@ class WelcomePageContractTests(unittest.TestCase):
         self.assertIn('setPageView("welcome", { focus: false });', self.app)
         self.assertIn('state.map?.resize();', self.app)
 
-    def test_language_switch_reloads_in_the_selected_locale(self):
-        self.assertEqual(self.index.count('id="localeToggle"'), 1)
-        self.assertIn('localeToggle?.addEventListener("click", () => switchLocale(currentLocale() === "en" ? "he" : "en"));', self.app)
-        switch = self.app.split("function switchLocale(locale)", 1)[1].split("\n}", 1)[0]
-        self.assertIn("scenarioStorage.setItem(LOCALE_STORAGE_KEY, next);", switch)
-        self.assertIn('url.searchParams.set("lang", next);', switch)
+    def test_app_is_english_only_without_a_language_switch(self):
+        self.assertNotIn('id="localeToggle"', self.index)
+        self.assertNotIn("switchLocale", self.app)
+        self.assertIn('const INITIAL_LOCALE = "en";', self.app)
+        self.assertIn('<html lang="en" dir="ltr"', self.index)
         self.assertIn('renderWelcomePage();', self.app)
         self.assertIn('data-i18n-text-he="החקירות שלי" data-i18n-text-en="My investigations"', self.index)
 
@@ -72,8 +71,8 @@ class WelcomePageContractTests(unittest.TestCase):
 
     def test_welcome_action_is_centered_and_assets_are_versioned(self):
         self.assertIn(".welcome-actions { display: flex; justify-content: center;", self.styles)
-        self.assertIn('href="./styles.css?v=180"', self.index)
-        self.assertIn('src="./demo_bootstrap.js?v=243"', self.index)
+        self.assertIn('href="./styles.css?v=181"', self.index)
+        self.assertIn('src="./demo_bootstrap.js?v=244"', self.index)
 
     def test_draft_creation_modal_and_memory_save_gate(self):
         self.assertIn('id="draftCreateInvestigationButton"', self.index)

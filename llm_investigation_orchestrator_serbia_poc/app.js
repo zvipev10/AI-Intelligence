@@ -351,8 +351,6 @@ function createInvestigationId() {
   return `investigation-${random}`;
 }
 
-const LOCALE_STORAGE_KEY = "serbia-poc-locale-v1";
-const DEFAULT_LOCALE = "he";
 // The investigation list lives on the server (GET/POST /api/investigations). The browser only
 // remembers which investigation was active last; the old local registries are discarded.
 const ACTIVE_INVESTIGATION_STORAGE_KEY = "serbia-poc-active-investigation-v1";
@@ -413,30 +411,13 @@ function resolveCatalogLayerId(layerId) {
     || layerId;
 }
 
-function requestedLocaleFromUrl() {
-  try {
-    const params = new URLSearchParams(window.location.search);
-    const lang = params.get("lang");
-    return lang == null ? null : normalizeLocale(lang);
-  } catch (error) {
-    return null;
-  }
-}
-
 function normalizeLocale(value) {
   const locale = String(value || "").trim().toLowerCase();
   return locale === "en" ? "en" : "he";
 }
 
-const INITIAL_LOCALE = normalizeLocale((() => {
-  const requested = requestedLocaleFromUrl();
-  if (requested) return requested;
-  try {
-    return scenarioStorage.getItem(LOCALE_STORAGE_KEY);
-  } catch (error) {
-    return DEFAULT_LOCALE;
-  }
-})());
+// The app runs in English only; the Hebrew strings remain in the code but are no longer selectable.
+const INITIAL_LOCALE = "en";
 
 function currentLocale() {
   return state.locale === "en" ? "en" : "he";
@@ -577,7 +558,6 @@ const welcomeActionClose = document.getElementById("welcomeActionClose");
 const welcomeDraftButton = document.getElementById("welcomeDraftButton");
 const datasetStatus = document.getElementById("datasetStatus");
 const datasetStatusIndicator = document.getElementById("datasetStatusIndicator");
-const localeToggle = document.getElementById("localeToggle");
 const layerSelectorSearch = document.getElementById("layerSelectorSearch");
 const layerSelectorList = document.getElementById("layerSelectorList");
 const layerSelectorStatus = document.getElementById("layerSelectorStatus");
@@ -773,33 +753,12 @@ function applyLocaleUi() {
     investigationAddButton.title = activeLocaleText("צור חקירה חדשה", "Create a new investigation");
     investigationAddButton.setAttribute("aria-label", investigationAddButton.title);
   }
-  if (localeToggle) {
-    const target = currentLocale() === "en" ? "he" : "en";
-    localeToggle.textContent = target === "en" ? "EN" : "עב";
-    localeToggle.lang = target;
-    localeToggle.setAttribute("aria-label", target === "en" ? "Switch to English" : "החלפה לעברית");
-    localeToggle.title = localeToggle.getAttribute("aria-label");
-  }
   renderMichlolTeam();
   renderInvestigationSelector();
   renderDraftInvestigationUi();
   renderWelcomePage();
   renderAllViews();
   document.documentElement.dataset.appReady = "true";
-}
-
-// Layer ids, labels and rows come from the server in the selected language, so switching
-// locale reloads the page; the open investigation and its saved layers are restored on load.
-function switchLocale(locale) {
-  const next = normalizeLocale(locale);
-  try {
-    scenarioStorage.setItem(LOCALE_STORAGE_KEY, next);
-  } catch (error) {
-    // The URL parameter below still selects the locale.
-  }
-  const url = new URL(window.location.href);
-  url.searchParams.set("lang", next);
-  window.location.assign(url.toString());
 }
 
 function parseCsv(text) {
@@ -4936,7 +4895,6 @@ document.addEventListener("pointerdown", event => {
 });
 
 welcomeDraftButton?.addEventListener("click", () => startDraftInvestigation());
-localeToggle?.addEventListener("click", () => switchLocale(currentLocale() === "en" ? "he" : "en"));
 
 investigationInput?.addEventListener("focus", () => {
   state.investigationSearchQuery = "";

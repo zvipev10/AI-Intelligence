@@ -901,8 +901,6 @@ body.visual-media-overlay-open { overflow:hidden; }
 .welcome-draft-button:hover, .welcome-draft-button:focus-visible { border-color: var(--blue); background: rgba(88,166,255,.22); color: #fff; outline: none; }
 
 /* Header: locale switch and signed-in user */
-.locale-toggle { min-width: 34px; height: 34px; padding: 0 8px; border: 1px solid rgba(146,170,205,.3); border-radius: 999px; background: rgba(255,255,255,.035); color: var(--ink); font: inherit; font-size: 12px; font-weight: 800; }
-.locale-toggle:hover, .locale-toggle:focus-visible { border-color: rgba(138,180,248,.65); background: rgba(88,166,255,.12); outline: none; }
 .session-controls { display: inline-flex; align-items: center; gap: 6px; min-width: 0; color: var(--muted); font-size: 12px; }
 .session-controls[hidden] { display: none; }
 .session-controls > .material-symbols-rounded { font-size: 20px; }
