@@ -27,7 +27,7 @@ const context = { console, Set, Map, Date, LOCATIONS:{}, IPDR_SOURCE_FIELDS:['st
  mapActionButton:()=>'',collectionImeiButton:value=>String(value || ''),recordLinkIndicator:()=>'',enhanceResultsTable(){},layerId:(kind,label)=>`${kind}:${label}`
 };
 vm.createContext(context);
-for (const name of ['activateView','renderEvidence','resolveFinalResultView','isCallsLayer','eventMapCoordinates','buildEventLayers','isIpdrRecord','isAdintRecord','isCellularGeolocationRecord','isCellularCallRecord','isViewerRecordSelected','viewerFieldLabel','ipdrTableFieldLabel','viewerFields','filterFieldsForLayer','filterFieldPathsForValue']) {
+for (const name of ['activateView','renderEvidence','isCallsLayer','eventMapCoordinates','isIpdrRecord','isAdintRecord','isCellularGeolocationRecord','isCellularCallRecord','isViewerRecordSelected','viewerFieldLabel','ipdrTableFieldLabel','viewerFields','filterFieldsForLayer','filterFieldPathsForValue']) {
  const start = source.indexOf(`function ${name}(`);
  const next = source.slice(start+1).search(/\n(?:async )?function /);
  vm.runInContext(source.slice(start,start+1+next),context);
@@ -70,11 +70,7 @@ assert(nodes.rawEventsOverlay.classList.contains('minimized'));
 context.activateView('evidence');
 assert(stack.classList.contains('table-mode'),'legacy saved recommendation maps to Table');
 assert.equal(nodes.evidenceRows,sharedBody,'same table component across modes');
-assert.equal(context.resolveFinalResultView({},[layer]),'table');
-assert.equal(context.resolveFinalResultView({recommended_view:'table'},[layer]),'table');
-assert.equal(context.resolveFinalResultView({recommended_view:'timeline'},[layer]),'timeline');
-assert.equal(context.resolveFinalResultView({recommended_view:'map'},[layer]),'table');
-assert.equal(context.buildEventLayers([row])[0].capabilities.map,false);
+assert.equal(context.isCallsLayer(layer),false);
 row.source_type='Cellular Geolocations';row.sim='00001234';row.imei='000000000000001';row.target_msisdn='9630943700780';row.target_imsi='417011234567890';row.operator_msisdn='963940952424';row.operator_imsi='417015344104770';row.location_id='LOC-1';context.renderEvidence();
 assert.match(nodes.evidenceHead.innerHTML,/SIM/);assert.match(nodes.evidenceHead.innerHTML,/IMEI/);
 assert.match(nodes.evidenceHead.innerHTML,/Target MSISDN/);assert.match(nodes.evidenceHead.innerHTML,/Target IMSI/);
@@ -87,13 +83,12 @@ assert.match(nodes.evidenceHead.innerHTML,/Side A IMEI/);assert.match(nodes.evid
 assert.match(nodes.evidenceRows.innerHTML,/000000000000001/);assert.match(nodes.evidenceRows.innerHTML,/000000000000002/);
 context.state.layers=[];context.renderEvidence();
 assert(nodes.rawEventsOverlay.hidden,'empty table exposes its placeholder');
-console.log('PASS: shared table, geometry-free record links, recommendation, legacy restore, empty state and minimization');
+console.log('PASS: shared table, geometry-free record links, legacy restore, empty state and minimization');
 
 const callsLayer={kind:'events',items:[{call_id:'CALL-1'}],capabilities:{map:true,timeline:true,table:true}};
-assert.equal(context.resolveFinalResultView({},[callsLayer]),'timeline');
-assert.equal(context.resolveFinalResultView({recommended_view:'map'},[callsLayer]),'map');
-assert.equal(context.resolveFinalResultView({recommended_view:'table'},[callsLayer]),'table');
-assert.equal(context.resolveFinalResultView({},[callsLayer,{kind:'events',items:[{}],capabilities:{map:true}}]),'map');
-console.log('PASS: calls default to Timeline; explicit views and mixed sources preserved');
+assert.equal(context.isCallsLayer(callsLayer),true,'calls layers open in Timeline');
+assert.equal(context.isCallsLayer({kind:'events',label:'שיחות סלולר',items:[{call_id:'CALL-2'}]}),true,'localized calls layer is recognised by its rows');
+assert.match(source,/preferredView: isCallsLayer\(openedLayer\) \? "timeline"/);
+console.log('PASS: calls layers are recognised and open in Timeline');
 
 context.state.layers=[layer];context.renderEvidence();assert.match(nodes.evidenceHead.innerHTML,/Side A SIM/);assert.match(nodes.evidenceRows.innerHTML,/89000000000000000001/);

@@ -18,56 +18,68 @@ class WelcomePageContractTests(unittest.TestCase):
         self.assertIn('setPageView("welcome", { focus: false });', self.app)
         self.assertIn('state.map?.resize();', self.app)
 
-    def test_existing_language_switch_is_reused(self):
-        self.assertEqual(self.index.count('id="languageToggle"'), 1)
-        self.assertIn('languageToggle?.addEventListener("change"', self.app)
+    def test_language_switch_reloads_in_the_selected_locale(self):
+        self.assertEqual(self.index.count('id="localeToggle"'), 1)
+        self.assertIn('localeToggle?.addEventListener("click", () => switchLocale(currentLocale() === "en" ? "he" : "en"));', self.app)
+        switch = self.app.split("function switchLocale(locale)", 1)[1].split("\n}", 1)[0]
+        self.assertIn("scenarioStorage.setItem(LOCALE_STORAGE_KEY, next);", switch)
+        self.assertIn('url.searchParams.set("lang", next);', switch)
         self.assertIn('renderWelcomePage();', self.app)
         self.assertIn('data-i18n-text-he="החקירות שלי" data-i18n-text-en="My investigations"', self.index)
 
     def test_real_investigation_and_members_are_rendered_from_state(self):
-        self.assertIn("investigations.map(ownedInvestigationRibbonHtml)", self.app)
+        self.assertIn("ownedInvestigations.map(ownedInvestigationRibbonHtml)", self.app)
         self.assertIn("currentMembers().slice(0, Math.min(5, participantCount))", self.app)
         self.assertIn('data-open-investigation=', self.app)
         self.assertIn('data-welcome-action="invite"', self.app)
         self.assertIn('activeLocaleText("הזמנה / הוספה", "Invite / add")', self.app)
+        ribbon = self.app.split("function ownedInvestigationRibbonHtml(investigation)", 1)[1].split("\nfunction ", 1)[0]
+        self.assertIn("investigation.layer_count", ribbon)
+        self.assertIn("investigation.collection_request_count", ribbon)
+        self.assertNotIn("2 items need attention", ribbon)
+
+    def test_investigation_list_comes_from_the_server(self):
+        load = self.app.split("async function loadInvestigations()", 1)[1].split("\n}", 1)[0]
+        self.assertIn('fetch(buildLocaleApiUrl("/api/investigations")', load)
+        self.assertIn(".map(investigationFromServer)", load)
+        self.assertIn("LEGACY_INVESTIGATIONS_STORAGE_KEYS.forEach(key => scenarioStorage.removeItem(key));", load)
+        self.assertNotIn("INVESTIGATIONS_STORAGE_KEY,", self.app)
+        self.assertNotIn("function saveInvestigationRegistry", self.app)
+        create = self.app.split("async function createInvestigation(name, id = createInvestigationId())", 1)[1].split("\n}", 1)[0]
+        self.assertIn("await registerInvestigationRecord({ id, name: safeName })", create)
+        self.assertIn('fetch("/api/investigations", {', self.app)
+        self.assertIn("await loadInvestigations();", self.app)
 
     def test_welcome_has_no_new_investigation_action(self):
         welcome_markup = self.index.split('<main id="welcomePage"', 1)[1].split('</main>', 1)[0]
         self.assertNotIn('investigationAddButton', welcome_markup)
         self.assertNotIn('New investigation', welcome_markup)
 
-    def test_welcome_prompt_starts_a_draft_investigation(self):
+    def test_welcome_action_starts_a_draft_investigation(self):
         welcome_markup = self.index.split('<main id="welcomePage"', 1)[1].split('</main>', 1)[0]
-        self.assertIn('id="welcomePromptForm" class="prompt-form welcome-prompt-form"', welcome_markup)
-        self.assertIn('data-i18n-placeholder-he="התחל אקספלורציה בחקירת טיוטה..."', welcome_markup)
-        self.assertIn('data-i18n-placeholder-en="Start exploring in a draft investigation..."', welcome_markup)
-        self.assertIn('id="welcomePromptOptionsButton"', welcome_markup)
-        self.assertIn('function startDraftInvestigation(prompt)', self.app)
+        self.assertIn('id="welcomeDraftButton"', welcome_markup)
+        self.assertIn('data-i18n-text-en="Start exploring in a draft investigation"', welcome_markup)
+        self.assertNotIn('welcomePromptForm', welcome_markup)
+        self.assertIn('function startDraftInvestigation()', self.app)
         self.assertIn('state.draftSessionActive = true;', self.app)
         self.assertIn('state.investigationId = createInvestigationId();', self.app)
-        start_draft = self.app.split('function startDraftInvestigation(prompt)', 1)[1].split('\n}', 1)[0]
+        start_draft = self.app.split('function startDraftInvestigation()', 1)[1].split('\n}', 1)[0]
         self.assertNotIn('ensureInvestigationRecord', start_draft)
         self.assertNotIn('registerInvestigationRecord', start_draft)
-        self.assertIn('setPageView("workspace", { focus: false });', self.app)
-        self.assertIn('runPrompt(text);', self.app)
-        self.assertIn('welcomePromptOptionsButton?.addEventListener("click"', self.app)
-        self.assertIn('.welcome-prompt-form', self.styles)
+        self.assertIn('setPageView("workspace", { focus: false });', start_draft)
+        self.assertIn('welcomeDraftButton?.addEventListener("click", () => startDraftInvestigation());', self.app)
+        self.assertIn('.welcome-draft-button', self.styles)
 
-    def test_welcome_prompt_overrides_generic_form_margins_to_stay_centered(self):
-        generic_form_rule = self.styles.index(".prompt-form {")
-        centered_welcome_rule = self.styles.index(".prompt-form.welcome-prompt-form {")
-        self.assertLess(centered_welcome_rule, generic_form_rule)
-        self.assertIn(
-            ".prompt-form.welcome-prompt-form { width: min(720px, 100%); margin: -10px auto 42px; }",
-            self.styles,
-        )
-        self.assertIn('href="./styles.css?v=151"', self.index)
+    def test_welcome_action_is_centered_and_assets_are_versioned(self):
+        self.assertIn(".welcome-actions { display: flex; justify-content: center;", self.styles)
+        self.assertIn('href="./styles.css?v=180"', self.index)
+        self.assertIn('src="./demo_bootstrap.js?v=243"', self.index)
 
     def test_draft_creation_modal_and_memory_save_gate(self):
         self.assertIn('id="draftCreateInvestigationButton"', self.index)
         self.assertIn('id="draftCreateModal"', self.index)
         self.assertIn('id="draftInvestigationName"', self.index)
-        modal_markup = self.index.split('id="draftCreateModal"', 1)[1].split('id="stepInjectModal"', 1)[0]
+        modal_markup = self.index.split('id="draftCreateModal"', 1)[1].split('</div>\n  </div>', 1)[0]
         self.assertNotIn('id="draftCreateDescription"', modal_markup)
         self.assertNotIn('<label for="draftInvestigationName"', modal_markup)
         self.assertIn('data-i18n-aria-en="Investigation name"', modal_markup)
@@ -75,11 +87,11 @@ class WelcomePageContractTests(unittest.TestCase):
         self.assertIn('grid-template-columns: repeat(2, minmax(0, 1fr))', self.styles)
         self.assertNotIn('id="draftCreateParticipants"', self.index)
         self.assertIn('function createInvestigationFromDraft()', self.app)
-        self.assertIn('const duplicate = state.investigations.some', self.app)
-        self.assertIn('id: state.investigationId, name,', self.app)
+        self.assertIn('const duplicate = Boolean(findInvestigationByName(name));', self.app)
+        self.assertIn('await createInvestigation(name, state.investigationId);', self.app)
         self.assertNotIn('draftCreateParticipants', self.app)
-        self.assertIn('src="./app.js?v=196"', self.index)
-        self.assertEqual(self.app.count('if (state.draftSessionActive) {\n    openDraftCreateModal('), 2)
+        # Saving a layer, object or polygon, or requesting collection, first asks for an investigation name.
+        self.assertEqual(self.app.count('openDraftCreateModal(() => '), 4)
         self.assertIn('const pendingAction = state.pendingDraftMemoryAction;', self.app)
         self.assertIn('if (pendingAction) await pendingAction();', self.app)
 
@@ -94,9 +106,8 @@ class WelcomePageContractTests(unittest.TestCase):
         self.assertIn('justify-content: center', self.styles)
 
     def test_similar_investigations_and_demo_actions_are_explicit(self):
-        declaration = 'const SIMILAR_INVESTIGATIONS = demoRuntime?.scenario_id === "syria" ? [] : ['
-        self.assertIn(declaration, self.app)
-        similar_data = self.app.split(declaration, 1)[1].split("];", 1)[0]
+        self.assertIn('const SIMILAR_INVESTIGATIONS = demoRuntime?.scenario_id === "syria" ? SYRIA_PROPOSED_INVESTIGATIONS : SERBIA_SIMILAR_INVESTIGATIONS;', self.app)
+        similar_data = self.app.split("const SERBIA_SIMILAR_INVESTIGATIONS = [", 1)[1].split("];", 1)[0]
         participant_counts = [line.strip() for line in similar_data.splitlines() if "participants:" in line]
         self.assertEqual(["participants: 2,", "participants: 3,", "participants: 6,"], participant_counts)
         self.assertIn("slice(0, Math.min(5, participantCount))", self.app)

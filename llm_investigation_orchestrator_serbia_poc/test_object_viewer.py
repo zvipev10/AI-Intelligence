@@ -27,15 +27,30 @@ class ObjectViewerContractTests(unittest.TestCase):
         self.assertIn('objectMemoryAction.dataset.memoryObjectId = id;', self.app)
         self.assertIn('.object-memory-header-action {', self.styles)
 
+    def test_missing_media_falls_back_to_record_files(self):
+        self.assertIn("fetch(`/api/records/${encodeURIComponent(id)}/files`", self.app)
+        fallback = self.app.split("function initializeViewerMediaFallback(item, recordId)", 1)[1].split("\nlet visualMediaOverlayTrigger", 1)[0]
+        self.assertIn('element.addEventListener("error"', fallback)
+        self.assertIn("const file = files[index] || files[0];", fallback)
+        self.assertIn("showMissingMedia(element, item);", fallback)
+        self.assertIn('if (kind === "record") initializeViewerMediaFallback(item, id);', self.app)
+        self.assertIn("Recording unavailable", self.app)
+
+    def test_approving_a_derivation_refreshes_the_entity(self):
+        approve = self.app.split("async function approveExtractedTelecomIdentity(entityId, button)", 1)[1].split("\n}", 1)[0]
+        self.assertIn('fetch("/api/derivations/review"', approve)
+        self.assertIn("await refreshEntityAfterReview(entityId, payload.entity);", approve)
+
     def test_records_organizations_and_evidence_are_supported(self):
-        self.assertIn("if (!['record', 'organization', 'person', 'evidence', 'assessment'].includes(kind)) return false;", self.app)
+        self.assertIn("if (!['record', 'organization', 'person', 'evidence', 'assessment', 'ipdr_package'].includes(kind)) return false;", self.app)
         self.assertIn('data-viewer-kind="evidence"', self.app)
         self.assertNotIn('data-viewer-kind="target"', self.app)
 
     def test_grid_and_assistant_open_controls_exist(self):
         self.assertIn('data-viewer-kind="record"', self.app)
-        self.assertIn('data-viewer-kind="organization"', self.app)
-        self.assertIn("appendAssistantObjectLinks(article)", self.app)
+        self.assertIn('data-viewer-kind="${escapeHtml(kind)}"', self.app)
+        self.assertIn('const kind = isPersonEntity(item) ? "person" : "organization";', self.app)
+        self.assertNotIn("appendAssistantObjectLinks", self.app)
 
     def test_map_opens_only_a_single_item(self):
         self.assertIn("viewerRefs.length === 1 && item.viewerEligible", self.app)
@@ -77,7 +92,6 @@ class ObjectViewerContractTests(unittest.TestCase):
         self.assertIn("function cellularCallPartyHtml(item, side)", self.app)
         self.assertIn("function cellularCallHtml(item)", self.app)
         self.assertIn('activeLocaleText("שיחה סלולרית", "Cellular call")', self.app)
-        self.assertIn('Call details', self.app)
         self.assertIn('Conversation', self.app)
         self.assertIn('"side_a_imei"', self.app)
         self.assertIn('"side_b_imei"', self.app)
@@ -96,8 +110,6 @@ class ObjectViewerContractTests(unittest.TestCase):
         self.assertIn('id="entityFitMap"', self.app)
 
     def test_people_use_a_dedicated_table_and_workspace_viewer(self):
-        self.assertIn('function buildEntityMetadataLayers(items)', self.app)
-        self.assertIn('kind: "person_entities"', self.app)
         self.assertIn('if (activeLayer.kind === "person_entities")', self.app)
         self.assertIn('function personWorkspaceHtml(item)', self.app)
         self.assertIn('viewer.classList.toggle("is-person-viewer", personViewer)', self.app)

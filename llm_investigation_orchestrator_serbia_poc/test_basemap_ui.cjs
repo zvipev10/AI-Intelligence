@@ -4,14 +4,14 @@ const buttons=['street','satellite'].map(mode=>({dataset:{basemap:mode},disabled
 const status={hidden:true};const events={};let options;const sources={},layouts=[],paints=[];
 const base=[{id:'land',type:'fill',layout:{visibility:'visible'}},{id:'hidden',type:'line',layout:{visibility:'none'}},{id:'road_pri_fill',type:'line','source-layer':'transportation',paint:{'line-color':'#ddd','line-opacity':1}},{id:'boundary_state',type:'line','source-layer':'boundary',paint:{'line-color':'#aaa','line-opacity':.5}},{id:'place_city',type:'symbol',layout:{'text-field':{stops:[[8,'{name_en}'],[13,'{name}']]}},paint:{'text-color':'#333','text-halo-color':'#fff','text-halo-width':1}},{id:'house',type:'symbol',layout:{'text-field':'{housenumber}'}}];
 const layers=structuredClone(base),marker={id:'record-marker'};
-const context={state:{markers:[marker]},console,demoRuntime:{demo_profile:{map:{center:[38.5,35],zoom:10,minZoom:6,maxBounds:[[36,32],[42,38]]}}},activeLocaleText:(he,en)=>en,document:{querySelectorAll:()=>buttons,getElementById:()=>status},renderMap(){},maplibregl:{NavigationControl:class{},Map:class{
+const context={state:{markers:[marker]},console,PolygonDrawControl:class{constructor(map,button,hint,options){this.options=options;}},ResizeObserver:class{observe(){}},MutationObserver:class{observe(){}},getComputedStyle:()=>({display:'block'}),openPolygonActionMenu(){},demoRuntime:{demo_profile:{map:{center:[38.5,35],zoom:10,minZoom:6,maxBounds:[[36,32],[42,38]]}}},activeLocaleText:(he,en)=>en,document:{querySelectorAll:()=>buttons,getElementById:()=>status},renderMap(){},maplibregl:{NavigationControl:class{},Map:class{
  constructor(o){options=o;}addControl(){}on(n,fn){events[n]=fn;}getStyle(){return {layers};}getLayer(id){return layers.find(l=>l.id===id);}addSource(id,s){sources[id]=s;}
  addLayer(layer,before){layers.splice(layers.findIndex(l=>l.id===before),0,layer);}moveLayer(id,before){const from=layers.findIndex(l=>l.id===id);const [layer]=layers.splice(from,1);layers.splice(layers.findIndex(l=>l.id===before),0,layer);}
  setLayoutProperty(...args){layouts.push(args);}setPaintProperty(...args){paints.push(args);}
 }}};
 vm.createContext(context);
 for(const name of ['satelliteReferenceLayer','setMapBasemap','initMap']){
- const start=source.indexOf(`function ${name}(`);const end=name==='initMap'?source.indexOf('\nconst CONVERSATION_BOTTOM',start):source.indexOf('\nfunction ',start+1);
+ const start=source.indexOf(`function ${name}(`);const end=source.indexOf('\nfunction ',start+1);
  vm.runInContext(source.slice(start,end),context);
 }
 context.initMap();events['style.load']();
