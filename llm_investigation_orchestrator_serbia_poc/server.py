@@ -473,8 +473,14 @@ class Handler(BaseHTTPRequestHandler):
                 group, item = "layers", analysis.layer_memory_item(request)
             else:
                 group, item = "artifacts", analysis.artifact_memory_item(request)
-            state.add_memory_item(investigation_id, group, item, request.get("name"))
-            self.send_json(201, {"saved": item, "memory": state.load_memory(investigation_id)})
+                if item.get("object_kind") == "record":
+                    # The record's i360 item id, for attaching it to an i360 investigation.
+                    data = app.dataset(token, "he")
+                    row = next((r for r in data.events if item["object_id"] in {r.get("record_id"), r.get("event_id"), r.get("i360_item_id")}), None)
+                    if row and row.get("i360_item_id"):
+                        item["i360_item_id"] = row["i360_item_id"]
+            saved = state.add_memory_item(investigation_id, group, item, request.get("name"))
+            self.send_json(201, {"saved": saved, "memory": state.load_memory(investigation_id)})
             return
         if path == "/api/collection-request":
             request = self.read_json(200_000)

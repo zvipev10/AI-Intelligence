@@ -78,5 +78,71 @@ class ExternalInvestigationTests(unittest.TestCase):
         self.assertEqual(([], []), (client.created, client.patched))
 
 
+class RelatedClient(FakeClient):
+    def __init__(self):
+        super().__init__()
+        self.related = {}
+        self.calls = []
+
+    def add_related_objects(self, entity_type, entity_id, item_ids, relation_type="associated"):
+        self.calls.append(("add", entity_type, entity_id, tuple(item_ids)))
+        results = []
+        for item_id in item_ids:
+            outcome = "already_linked" if item_id in self.related.get(entity_id, set()) else "linked"
+            self.related.setdefault(entity_id, set()).add(item_id)
+            results.append({"item_id": item_id, "outcome": outcome})
+        return {"results": results}
+
+    def remove_related_objects(self, entity_type, entity_id, item_ids):
+        self.calls.append(("remove", entity_type, entity_id, tuple(item_ids)))
+        held = self.related.get(entity_id, set())
+        results = [{"item_id": i, "outcome": "unlinked" if i in held else "not_linked"} for i in item_ids]
+        held.difference_update(item_ids)
+        return {"results": results}
+
+    def search_items(self, body):
+        ids = (body.get("related_to") or {}).get("ids") or []
+        items = [{"item_id": i, "item_type": "image", "source_application": "EO optical (fictional)",
+                  "event_time": "2026-08-31T07:18:00Z", "text": {"transcript": "3x cargo truck"}}
+                 for entity_id in ids for i in sorted(self.related.get(entity_id, set()))]
+        return {"items": items, "total_pages": 1}
+
+
+class AttachItemsToInvestigationTests(unittest.TestCase):
+    RECORD = {"kind": "object", "object_kind": "record", "object_id": "rec-1", "i360_item_id": "item-1",
+              "label": "rec-1", "id": "artifact-x"}
+
+    def test_saving_a_record_attaches_the_item_to_the_i360_investigation(self):
+        client = RelatedClient()
+        saved = store(client).add_memory_item("inv-1", "artifacts", dict(self.RECORD))
+        self.assertEqual([("add", "INTELLIGENCE_INVESTIGATION", "inv-1", ("item-1",))], client.calls)
+        self.assertEqual("i360:item-1", saved["id"])
+        self.assertEqual([], client.created)  # no AII_MEMORY_ITEM record
+
+    def test_memory_lists_what_i360_reports_as_related(self):
+        client = RelatedClient()
+        s = store(client)
+        s.add_memory_item("inv-1", "artifacts", dict(self.RECORD))
+        artifacts = s.load_memory("inv-1")["memory"]["artifacts"]
+        self.assertEqual(["i360:item-1"], [a["id"] for a in artifacts])
+        self.assertEqual(("record", "item-1", "3x cargo truck"),
+                         (artifacts[0]["object_kind"], artifacts[0]["object_id"], artifacts[0]["summary"]))
+
+    def test_removing_detaches_it(self):
+        client = RelatedClient()
+        s = store(client)
+        s.add_memory_item("inv-1", "artifacts", dict(self.RECORD))
+        self.assertTrue(s.delete_memory_item("inv-1", "artifacts", "i360:item-1"))
+        self.assertEqual([], s.load_memory("inv-1")["memory"]["artifacts"])
+
+    def test_a_refused_attach_is_an_error(self):
+        class Refusing(RelatedClient):
+            def add_related_objects(self, *args, **kwargs):
+                return {"results": [{"item_id": "item-1", "outcome": "failed", "error": "write_not_permitted"}]}
+
+        with self.assertRaises(HlError):
+            store(Refusing()).add_memory_item("inv-1", "artifacts", dict(self.RECORD))
+
+
 if __name__ == "__main__":
     unittest.main()
