@@ -2166,7 +2166,8 @@ async function loadInvestigations() {
     state.investigationsError = error.message || activeLocaleText("טעינת החקירות נכשלה", "Failed to load investigations");
   }
   const remembered = storedActiveInvestigationId();
-  const active = state.investigations.find(item => item.id === remembered) || state.investigations[0] || null;
+  const owned = state.investigations.filter(item => !isInvitedWelcomeInvestigation(item));
+  const active = owned.find(item => item.id === remembered) || owned[0] || null;
   state.investigationId = active?.id || "";
   state.investigationName = active?.name || "";
   state.draftSessionActive = false;
@@ -2174,10 +2175,13 @@ async function loadInvestigations() {
   renderWelcomePage();
 }
 
+// The Active investigation box lists only the user's own investigations (the welcome page's
+// "My investigations"), not invitations or recommendations.
 function matchingInvestigations(query) {
   const key = investigationNameKey(query);
-  if (!key) return state.investigations;
-  return state.investigations.filter(item => investigationNameKey(item.name).includes(key));
+  const owned = state.investigations.filter(item => !isInvitedWelcomeInvestigation(item));
+  if (!key) return owned;
+  return owned.filter(item => investigationNameKey(item.name).includes(key));
 }
 
 function renderInvestigationSelector() {
