@@ -127,6 +127,22 @@ class AllFieldsTests(unittest.TestCase):
         self.assertNotIn("i360.parties", fields)
         self.assertNotIn("i360._layer", fields)
 
+    def test_fields_keeps_only_the_named_paths(self):
+        class Client(RecordingClient):
+            def search_items(self, body):
+                self.bodies.append(body)
+                return {"total": 1, "total_pages": 1, "items": [{
+                    "item_id": "a", "item_type": "location_update", "source_application": "ADINT",
+                    "location": {"point": {"lat": 1.5, "lon": 2.5}, "accuracy": "gps"}, "item_idx": "no"}]}
+
+        client = Client()
+        rows = ItemReader(client, mapping(), {"source_applications": ["ADINT"], "limit": 5, "layer": "ADINT",
+                                              "fields": ["item_id", "location"]}, 100).rows("en")
+        i360 = sorted(k for k in rows[0] if k.startswith("i360."))
+        self.assertEqual(["i360.item_id", "i360.location.accuracy", "i360.location.point.lat", "i360.location.point.lon"], i360)
+        self.assertNotIn("fields", client.bodies[0])
+        self.assertEqual("ADINT", rows[0]["source_type"])
+
     def test_a_query_with_all_fields_puts_them_on_its_rows(self):
         class Client(RecordingClient):
             def search_items(self, body):

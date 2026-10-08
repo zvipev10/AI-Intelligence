@@ -142,7 +142,7 @@ class ItemReader:
         self.truncated = False
 
     @staticmethod
-    def _spec(query: dict[str, Any]) -> tuple[int, int, dict[str, Any], str, bool]:
+    def _spec(query: dict[str, Any]) -> tuple[int, int, dict[str, Any], str, Any]:
         query = dict(query or {})
         # "recent_days" is ours, not HL API's: it narrows the scan to the last N days of event time.
         recent_days = int(query.pop("recent_days", 0) or 0)
@@ -150,8 +150,13 @@ class ItemReader:
         limit = max(0, int(query.pop("limit", 0) or 0))
         # "layer" is ours too: the layer (source_type) these items are shown in.
         layer = str(query.pop("layer", "") or "")
-        # "all_fields" is ours too: rows carry every populated item field as i360.<path>.
-        everything = bool(query.pop("all_fields", False))
+        # "all_fields" is ours too: rows carry every populated item field as i360.<path>;
+        # "fields" (a list of paths such as ["item_id", "location"]) keeps only those fields.
+        everything = query.pop("all_fields", False)
+        only = query.pop("fields", None)
+        if only:
+            everything = [str(path) for path in only]
+        everything = everything if isinstance(everything, list) else bool(everything)
         return recent_days, limit, {k: v for k, v in query.items() if v not in (None, [], {})}, layer, everything
 
     def _query(self, window: tuple[str, str], page: int, page_size: int = PAGE_SIZE) -> dict[str, Any]:
@@ -214,7 +219,7 @@ class ItemReader:
             if self.layer or self.all_fields:
                 mark = {"_layer": self.layer} if self.layer else {}
                 if self.all_fields:
-                    mark["_all_fields"] = True
+                    mark["_all_fields"] = self.all_fields
                 found = [{**hit, **mark} for hit in found]
             self.query_stats.append({
                 "layer": self.layer, "query": {k: v for k, v in self.base_query.items() if k != "time"},
@@ -249,7 +254,12 @@ class ItemReader:
         if item.get("_layer"):
             row["source_type"] = str(item["_layer"])
         if item.get("_all_fields"):
-            row.update(item_fields(item))
+            fields = item_fields(item)
+            only = item["_all_fields"] if isinstance(item["_all_fields"], list) else None
+            if only:
+                keep = tuple(ALL_FIELDS_PREFIX + path for path in only)
+                fields = {k: v for k, v in fields.items() if any(k == p or k.startswith(p + ".") for p in keep)}
+            row.update(fields)
         return row
 
     def rows(self, locale: str) -> list[dict[str, str]]:
