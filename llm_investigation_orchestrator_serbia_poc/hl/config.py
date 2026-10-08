@@ -36,6 +36,9 @@ class Settings:
     cookie_secure: bool
     request_timeout_seconds: int
     build: str
+    # An existing i360 type to use as the investigation list (e.g. INTELLIGENCE_INVESTIGATION).
+    # Empty: the app's own <prefix>INVESTIGATION records.
+    external_investigation_type: str = ""
 
     @property
     def investigation_type(self) -> str:
@@ -65,4 +68,5 @@ def load_settings() -> Settings:
         cookie_secure=_bool("APP_COOKIE_SECURE", True),
         request_timeout_seconds=_int("HL_API_TIMEOUT", 30),
         build=os.environ.get("APP_BUILD", "dev"),
+        external_investigation_type=os.environ.get("APP_INVESTIGATION_TYPE", "").strip(),
     )

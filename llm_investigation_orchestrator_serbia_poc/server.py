@@ -75,7 +75,7 @@ class App:
         s = self.settings
         return StateStore(self.client(token), investigation_type=s.investigation_type,
                           memory_item_type=s.memory_item_type, approval_type=s.approval_type,
-                          scenario=s.scenario)
+                          scenario=s.scenario, external_investigation_type=s.external_investigation_type)
 
     def known_sources(self, locale: str) -> list[str]:
         return list(((self.profile.get("sources") or {}).get(locale)) or [])
