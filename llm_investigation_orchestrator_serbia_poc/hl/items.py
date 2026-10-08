@@ -87,6 +87,8 @@ class ItemReader:
         self.recent_days, self.limit, self.base_query, self.layer = self.specs[0]
         self.max_rows = max_rows
         self.warnings: list[str] = []
+        # One entry per profile query: what was asked, what HL API reported and what came back.
+        self.query_stats: list[dict[str, Any]] = []
         self.truncated = False
 
     @staticmethod
@@ -137,6 +139,7 @@ class ItemReader:
         for self.recent_days, self.limit, self.base_query, self.layer in self.specs:
             start = _iso(now - timedelta(days=self.recent_days)) if self.recent_days > 0 else EARLIEST
             found: list[dict[str, Any]] = []
+            reported_total = None
             if self.limit:
                 # Newest first, a page at a time, until the limit or the end of the results.
                 page = 1
@@ -146,6 +149,9 @@ class ItemReader:
                     body.update({"page_number": page, "page_size": min(PAGE_SIZE, self.limit),
                                  "include": ["text"], "sort": "time", "order": "desc"})
                     response = self.client.search_items(body)
+                    if page == 1:
+                        reported_total = response.get("total")
+                        self.warnings.extend(f"{self.layer or 'query'}: {w}" for w in response.get("warnings") or [])
                     batch = response.get("items") or []
                     found.extend(batch[: self.limit - len(found)])
                     if len(batch) < body["page_size"] or page >= int(response.get("total_pages") or page):
@@ -155,6 +161,12 @@ class ItemReader:
                 self._collect_window((start, end), found)
             if self.layer:
                 found = [{**hit, "_layer": self.layer} for hit in found]
+            self.query_stats.append({
+                "layer": self.layer, "query": {k: v for k, v in self.base_query.items() if k != "time"},
+                "reported_total": reported_total, "returned": len(found),
+                "with_location": sum(1 for hit in found if (hit.get("location") or {}).get("point")),
+                "sources": sorted({str(hit.get("source_application")) for hit in found if hit.get("source_application")})[:8],
+            })
             hits.extend(found)
         seen: set[str] = set()
         unique = []

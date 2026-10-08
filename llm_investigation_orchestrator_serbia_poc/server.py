@@ -88,6 +88,10 @@ class App:
             entities = reader.entities()
             locations = reader.locations()
             reviews = self.state(token).load_reviews()
+            for stats in reader.query_stats:
+                print(f"snapshot query: {json.dumps(stats, ensure_ascii=False)}", flush=True)
+            for warning in reader.warnings:
+                print(f"snapshot warning: {warning}", flush=True)
             return Snapshot(items=items, entities=entities, locations=locations, reviews=reviews,
                             fetched_at=time.time(), truncated=reader.truncated, warnings=reader.warnings)
         return self.snapshots.get(token, build, refresh=refresh)
