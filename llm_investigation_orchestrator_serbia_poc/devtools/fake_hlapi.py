@@ -371,6 +371,15 @@ class FakeHandler(BaseHTTPRequestHandler):
                                    "publish": {"state": state}} for n in names],
                         "publish": {"state": state}, "publishes_performed": 0 if dry_run else 1,
                         "dry_run": dry_run, "plan": {"create": names} if dry_run else None})
+                if path.startswith("/api/v1/entity-types/") and path.endswith("/grants") and method == "POST":
+                    name = unquote(path[len("/api/v1/entity-types/"):-len("/grants")])
+                    if name not in estate.types:
+                        raise ApiError(404, "entity_type_not_found", f"No entity type {name}.")
+                    body = self._body()
+                    if not body.get("profile") or not body.get("permissions"):
+                        raise ApiError(422, "invalid_grant", "Send `profile` and `permissions`.")
+                    estate.types[name].setdefault("grants", []).append(body)
+                    return self._json(200, {"type": name, "granted": body})
                 if path.startswith("/api/v1/entity-types/") and method == "GET":
                     name = unquote(path[len("/api/v1/entity-types/"):])
                     if name not in estate.types:

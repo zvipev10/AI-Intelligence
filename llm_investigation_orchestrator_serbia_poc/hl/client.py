@@ -174,6 +174,9 @@ class HlClient:
     def get_entity_type(self, type_name: str) -> dict[str, Any]:
         return self.get(f"/api/v1/entity-types/{urllib.parse.quote(type_name, safe='')}")
 
+    def grant_entity_type(self, type_name: str, body: dict) -> dict[str, Any]:
+        return self.post(f"/api/v1/entity-types/{urllib.parse.quote(type_name, safe='')}/grants", body)
+
     def batch_create_entity_types(self, body: dict, dry_run: bool = True) -> dict[str, Any]:
         return self._request("POST", "/api/v1/entity-types/batch", json_body=body,
                              params={"dry_run": "true" if dry_run else "false"})

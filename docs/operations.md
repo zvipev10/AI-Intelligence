@@ -60,6 +60,12 @@ The Dockerfile runs all three during the image build.
    ```
    A publish restarts platform services for everyone on the estate (about 80 seconds plus two
    minutes of rolling restarts). Agree a time with the LAMBDA owner.
+   To let a profile read a type that already exists (e.g. `INTELLIGENCE_INVESTIGATION`), add
+   `--grant-existing <TYPE> [--permission VIEW --permission CREATE ...]`. The dry run prints HL
+   API's access-control docs and the exact `POST /entity-types/<TYPE>/grants` request and sends
+   nothing; `--apply` sends it. It changes who can see records on the shared estate and may
+   publish, so agree it with the LAMBDA owner too. A granted type is still compartmentalized:
+   users see only records assigned to them.
 3. Point `items_query` in `demo_profiles/<scenario>.json` and `mapping/default.json` at how the
    demo data was ingested (item types, field names). Check every layer and viewer.
    A profile may name its own mapping file (`"mapping": "<file>.json"`) and bound the snapshot:
