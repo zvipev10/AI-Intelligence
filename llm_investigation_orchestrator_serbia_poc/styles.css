@@ -409,6 +409,9 @@ h3 { margin: 0; font-size: 14px; }
 .layer-filter-close:hover { background: rgba(242,139,130,.12); color: var(--red); }
 .layer-filter-section { display: grid; gap: 7px; padding: 10px 0; border-bottom: 1px solid rgba(146, 170, 205, .16); }
 .layer-filter-label, .layer-filter-section-title { color: var(--muted); font-size: 10px; font-weight: 900; }
+/* Native dropdown lists follow the app's dark theme, in the table's colours. */
+select { color-scheme: dark; }
+select option, select optgroup { background: var(--panel); color: var(--ink); }
 .layer-filter-select { width: 100%; min-width: 0; height: 30px; border: 1px solid rgba(146, 170, 205, .3); border-radius: 6px; background: rgba(15, 19, 27, .3); color: var(--ink); padding: 0 8px; font-size: 11px; }
 .filter-draft-list, .filter-chip-list { display: grid; gap: 6px; }
 .filter-draft-row { min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) 22px; gap: 6px; align-items: center; padding: 6px; border: 1px solid rgba(146, 170, 205, .2); border-radius: 6px; background: rgba(255,255,255,.04); font-size: 10px; }
