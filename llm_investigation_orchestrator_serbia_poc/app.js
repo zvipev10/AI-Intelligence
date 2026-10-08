@@ -3702,14 +3702,21 @@ function renderMap() {
       const grouped = new Map();
       items.forEach((event, index) => {
         if (isCellularCallRecord(event) && addCellularCallMapPresentation(event, layer, index, bounds)) return;
-        if (!event.location_id) return;
-        const current = grouped.get(event.location_id) || { count: 0, first: null };
+        // A record with no location object is drawn at its own coordinates (e.g. raw GPS updates).
+        const lat = Number(event.latitude);
+        const lon = Number(event.longitude);
+        const ownPoint = !event.location_id && event.latitude !== "" && event.longitude !== ""
+          && Number.isFinite(lat) && Number.isFinite(lon);
+        const key = event.location_id || (ownPoint ? `point:${lat.toFixed(5)},${lon.toFixed(5)}` : "");
+        if (!key) return;
+        const current = grouped.get(key) || { count: 0, first: null, point: null };
         current.count += 1;
         current.first ||= event;
-        grouped.set(event.location_id, current);
+        if (ownPoint) current.point ||= { location_name: `${lat.toFixed(5)}, ${lon.toFixed(5)}`, latitude: lat, longitude: lon };
+        grouped.set(key, current);
       });
       grouped.forEach((group, locationId) => {
-        addLocationCount(locationId, group.count, layer.label, null, layer.color, group.count === 1 ? { kind: "record", id: group.first.record_id || group.first.event_id } : null);
+        addLocationCount(locationId, group.count, layer.label, group.point, layer.color, group.count === 1 ? { kind: "record", id: group.first.record_id || group.first.event_id } : null);
       });
     } else if (layer.kind === "locations") {
       items.forEach(item => addLocationCount(item.location_id, item.count || 1, layer.label, item, layer.color));
