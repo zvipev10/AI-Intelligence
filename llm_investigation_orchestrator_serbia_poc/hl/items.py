@@ -77,14 +77,24 @@ class ItemReader:
         self.client = client
         self.mapping = mapping
         query = dict(base_query or {})
-        # "recent_days" is ours, not HL API's: it narrows the scan to the last N days of event time.
-        self.recent_days = int(query.pop("recent_days", 0) or 0)
-        # "limit" is ours too: keep only the newest N items (at most one page), for small test datasets.
-        self.limit = max(0, min(int(query.pop("limit", 0) or 0), PAGE_SIZE))
-        self.base_query = {k: v for k, v in query.items() if v not in (None, [], {})}
+        # A profile may list several queries ("queries"); each one is read on its own and may name the
+        # layer its items appear in ("layer"). A plain items_query is one query, as before.
+        self.specs = [self._spec(q) for q in (query.pop("queries", None) or [query])]
+        self.recent_days, self.limit, self.base_query, self.layer = self.specs[0]
         self.max_rows = max_rows
         self.warnings: list[str] = []
         self.truncated = False
+
+    @staticmethod
+    def _spec(query: dict[str, Any]) -> tuple[int, int, dict[str, Any], str]:
+        query = dict(query or {})
+        # "recent_days" is ours, not HL API's: it narrows the scan to the last N days of event time.
+        recent_days = int(query.pop("recent_days", 0) or 0)
+        # "limit" is ours too: keep only the newest N items (at most one page), for small test datasets.
+        limit = max(0, min(int(query.pop("limit", 0) or 0), PAGE_SIZE))
+        # "layer" is ours too: the layer (source_type) these items are shown in.
+        layer = str(query.pop("layer", "") or "")
+        return recent_days, limit, {k: v for k, v in query.items() if v not in (None, [], {})}, layer
 
     def _query(self, window: tuple[str, str], page: int, page_size: int = PAGE_SIZE) -> dict[str, Any]:
         body = dict(self.base_query)
@@ -119,15 +129,20 @@ class ItemReader:
     def items(self) -> list[dict[str, Any]]:
         hits: list[dict[str, Any]] = []
         now = datetime.now(timezone.utc)
-        start = _iso(now - timedelta(days=self.recent_days)) if self.recent_days > 0 else EARLIEST
         end = _iso(now + timedelta(days=3650))
-        if self.limit:
-            body = dict(self.base_query)
-            body["time"] = {**(body.get("time") or {}), "from": start, "to": end, "field": "event"}
-            body.update({"page_number": 1, "page_size": self.limit, "include": ["text"], "sort": "time", "order": "desc"})
-            hits.extend(self.client.search_items(body).get("items") or [])
-        else:
-            self._collect_window((start, end), hits)
+        for self.recent_days, self.limit, self.base_query, self.layer in self.specs:
+            start = _iso(now - timedelta(days=self.recent_days)) if self.recent_days > 0 else EARLIEST
+            found: list[dict[str, Any]] = []
+            if self.limit:
+                body = dict(self.base_query)
+                body["time"] = {**(body.get("time") or {}), "from": start, "to": end, "field": "event"}
+                body.update({"page_number": 1, "page_size": self.limit, "include": ["text"], "sort": "time", "order": "desc"})
+                found.extend(self.client.search_items(body).get("items") or [])
+            else:
+                self._collect_window((start, end), found)
+            if self.layer:
+                found = [{**hit, "_layer": self.layer} for hit in found]
+            hits.extend(found)
         seen: set[str] = set()
         unique = []
         for hit in hits:
@@ -149,8 +164,14 @@ class ItemReader:
             complete.extend(_merge(hit, by_id.get(str(hit["item_id"]))) for hit in batch)
         return complete
 
+    @staticmethod
+    def _with_layer(row: dict[str, str], item: dict[str, Any]) -> dict[str, str]:
+        if item.get("_layer"):
+            row["source_type"] = str(item["_layer"])
+        return row
+
     def rows(self, locale: str) -> list[dict[str, str]]:
-        return [self.mapping.item_to_row(item, locale) for item in self.items()]
+        return [self._with_layer(self.mapping.item_to_row(item, locale), item) for item in self.items()]
 
     def _instances(self, entity_type: str) -> list[dict[str, Any]]:
         out: list[dict[str, Any]] = []

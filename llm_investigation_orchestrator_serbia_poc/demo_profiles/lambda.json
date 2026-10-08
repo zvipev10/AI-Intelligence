@@ -1,7 +1,7 @@
 {
  "scenario_id": "lambda",
  "label": {
-  "en": "LAMBDA location updates"
+  "en": "LAMBDA location updates and images"
  },
  "map": {
   "center": [
@@ -25,21 +25,35 @@
   "he": [
    "TrackLocation",
    "ankle_bracelet",
-   "gps_location"
+   "gps_location",
+   "image"
   ],
   "en": [
    "TrackLocation",
    "ankle_bracelet",
-   "gps_location"
+   "gps_location",
+   "image"
   ]
  },
  "dataset_version": "i360",
  "items_query": {
-  "item_types": [
-   "location_update"
-  ],
-  "recent_days": 365,
-  "limit": 50
+  "queries": [
+   {
+    "item_types": [
+     "location_update"
+    ],
+    "recent_days": 365,
+    "limit": 50
+   },
+   {
+    "item_types": [
+     "image"
+    ],
+    "recent_days": 365,
+    "limit": 50,
+    "layer": "image"
+   }
+  ]
  },
- "_comment": "Test scenario for LAMBDA: the newest 50 location_update items (sources TrackLocation, ankle_bracelet, gps_location) from the last 365 days, each drawn from its own location.point. recent_days and limit are read by hl/items.py and not sent to HL API (limit is capped at 100). No location entities exist on LAMBDA, so the Location layer stays empty."
+ "_comment": "Test scenario for LAMBDA. Two queries: the newest 50 location_update items (one layer per source: TrackLocation, ankle_bracelet, gps_location; drawn from their own location.point) and the newest 50 image items, shown together in a layer named \"image\". recent_days, limit and layer are read by hl/items.py and not sent to HL API (limit is capped at 100). No location entities exist on LAMBDA, so the Location layer stays empty."
 }

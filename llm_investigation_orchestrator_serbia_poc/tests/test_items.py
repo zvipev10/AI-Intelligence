@@ -42,6 +42,24 @@ class RecentDaysTests(unittest.TestCase):
         self.assertNotIn("limit", body)
         self.assertEqual((50, "desc", 1), (body["page_size"], body["order"], body["page_number"]))
 
+    def test_each_query_is_read_and_can_name_its_layer(self):
+        class Client(RecordingClient):
+            def search_items(self, body):
+                self.bodies.append(body)
+                kind = body["item_types"][0]
+                return {"total": 1, "total_pages": 1, "items": [
+                    {"item_id": f"{kind}-1", "item_type": kind, "source_application": "Telegram"}]}
+
+        client = Client()
+        reader = ItemReader(client, Mapping({"version": 1, "items": {"record_id": "item_id", "needs_get": False,
+                                                                     "fields": {"source_type": "source_application"}}}),
+                            {"queries": [{"item_types": ["location_update"], "limit": 5},
+                                         {"item_types": ["image"], "limit": 5, "layer": "image"}]}, 100)
+        rows = reader.rows("en")
+        self.assertEqual([["location_update"], ["image"]], [body["item_types"] for body in client.bodies])
+        self.assertTrue(all("layer" not in body and "queries" not in body for body in client.bodies))
+        self.assertEqual(["Telegram", "image"], [row["source_type"] for row in rows])
+
 
 class ForbiddenEntitiesClient(RecordingClient):
     def search_entities(self, entity_type, body):
