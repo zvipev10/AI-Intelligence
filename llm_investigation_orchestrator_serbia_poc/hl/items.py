@@ -79,6 +79,8 @@ class ItemReader:
         query = dict(base_query or {})
         # "recent_days" is ours, not HL API's: it narrows the scan to the last N days of event time.
         self.recent_days = int(query.pop("recent_days", 0) or 0)
+        # "limit" is ours too: keep only the newest N items (at most one page), for small test datasets.
+        self.limit = max(0, min(int(query.pop("limit", 0) or 0), PAGE_SIZE))
         self.base_query = {k: v for k, v in query.items() if v not in (None, [], {})}
         self.max_rows = max_rows
         self.warnings: list[str] = []
@@ -118,7 +120,14 @@ class ItemReader:
         hits: list[dict[str, Any]] = []
         now = datetime.now(timezone.utc)
         start = _iso(now - timedelta(days=self.recent_days)) if self.recent_days > 0 else EARLIEST
-        self._collect_window((start, _iso(now + timedelta(days=3650))), hits)
+        end = _iso(now + timedelta(days=3650))
+        if self.limit:
+            body = dict(self.base_query)
+            body["time"] = {**(body.get("time") or {}), "from": start, "to": end, "field": "event"}
+            body.update({"page_number": 1, "page_size": self.limit, "include": ["text"], "sort": "time", "order": "desc"})
+            hits.extend(self.client.search_items(body).get("items") or [])
+        else:
+            self._collect_window((start, end), hits)
         seen: set[str] = set()
         unique = []
         for hit in hits:

@@ -34,6 +34,14 @@ class RecentDaysTests(unittest.TestCase):
         ItemReader(client, mapping(), {"filters": [{"field": "scenario", "values": ["syria"]}]}, 100).items()
         self.assertEqual(EARLIEST, client.bodies[0]["time"]["from"])
 
+    def test_limit_asks_for_one_page_of_the_newest_items(self):
+        client = RecordingClient()
+        ItemReader(client, mapping(), {"item_types": ["location_update"], "limit": 50}, 30000).items()
+        self.assertEqual(1, len(client.bodies))
+        body = client.bodies[0]
+        self.assertNotIn("limit", body)
+        self.assertEqual((50, "desc", 1), (body["page_size"], body["order"], body["page_number"]))
+
 
 class ForbiddenEntitiesClient(RecordingClient):
     def search_entities(self, entity_type, body):

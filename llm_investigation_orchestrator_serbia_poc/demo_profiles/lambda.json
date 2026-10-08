@@ -38,7 +38,8 @@
   "item_types": [
    "location_update"
   ],
-  "recent_days": 120
+  "recent_days": 365,
+  "limit": 50
  },
- "_comment": "Test scenario for LAMBDA: raw GPS points from location_update items (sources TrackLocation, ankle_bracelet, gps_location), each drawn from its own location.point. recent_days narrows the scan to the last N days of event time; the snapshot keeps at most APP_SNAPSHOT_MAX_ROWS rows. No location entities exist on LAMBDA, so the Location layer stays empty."
+ "_comment": "Test scenario for LAMBDA: the newest 50 location_update items (sources TrackLocation, ankle_bracelet, gps_location) from the last 365 days, each drawn from its own location.point. recent_days and limit are read by hl/items.py and not sent to HL API (limit is capped at 100). No location entities exist on LAMBDA, so the Location layer stays empty."
 }
