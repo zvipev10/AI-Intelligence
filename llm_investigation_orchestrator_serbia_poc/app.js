@@ -2846,7 +2846,9 @@ function initializeViewerMediaFallback(item, recordId) {
     const media = type === "video"
       ? `<video controls preload="metadata" src="${escapeHtml(file.url)}"></video>`
       : type === "audio" ? `<audio controls preload="metadata" src="${escapeHtml(file.url)}"></audio>` : `<img src="${escapeHtml(file.url)}" alt="">`;
-    body.insertAdjacentHTML("afterbegin", `<div class="object-viewer-media">${media}</div>`);
+    const expandLabel = escapeHtml(activeLocaleText("הרחב מדיה למסך מלא", "Expand media to full screen"));
+    const fullscreenButton = type === "audio" ? "" : `<button type="button" class="visual-media-fullscreen" data-visual-media-fullscreen title="${expandLabel}" aria-label="${expandLabel}"><span class="material-symbols-rounded" aria-hidden="true">open_in_full</span></button>`;
+    body.insertAdjacentHTML("afterbegin", `<div class="object-viewer-media">${media}${fullscreenButton}</div>`);
   });
 }
 
