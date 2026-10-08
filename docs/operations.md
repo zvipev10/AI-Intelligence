@@ -62,9 +62,10 @@ The Dockerfile runs all three during the image build.
    minutes of rolling restarts). Agree a time with the LAMBDA owner.
 3. Point `items_query` in `demo_profiles/<scenario>.json` and `mapping/default.json` at how the
    demo data was ingested (item types, field names). Check every layer and viewer.
-   A profile may name its own mapping (`"mapping": "lambda.json"`) and bound the snapshot with
-   `"items_window": {"from": ..., "to": ...}` when the estate holds more than
-   `APP_SNAPSHOT_MAX_ROWS` matching items; without a window the reader starts at the oldest item.
+   A profile may name its own mapping file (`"mapping": "<file>.json"`) and bound the snapshot:
+   `items_window` (`{"from": ..., "to": ...}`), `items_query.recent_days` (last N days), or
+   `items_query.limit` (only the newest N items, at most 100, in one search). Without these the
+   reader starts at the oldest item and stops at `APP_SNAPSHOT_MAX_ROWS`.
 4. Run the app against the estate and verify as a normal user: sign in, layers load, viewers
    open, a saved item survives a reload.
 

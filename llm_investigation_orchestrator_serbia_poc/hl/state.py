@@ -115,7 +115,14 @@ class StateStore:
             body: dict[str, Any] = {"page_number": page, "page_size": PAGE_SIZE}
             if conditions:
                 body["fields"] = conditions
-            response = self.client.search_entities(entity_type, body)
+            try:
+                response = self.client.search_entities(entity_type, body)
+            except HlError as exc:
+                # Before tools/provision_types.py has run, the app's types do not exist: nothing saved yet.
+                # Writes still fail loudly, so a missing type cannot hide lost work.
+                if exc.status == 404 or (exc.status == 400 and "invalid entity type" in str(exc).lower()):
+                    return out
+                raise
             hits = list_hits(response)
             out.extend(hit for hit in hits if not hit.get("deleted"))
             if not hits or page >= total_pages(response):

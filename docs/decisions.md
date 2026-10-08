@@ -46,11 +46,11 @@ None.
 
 ### 2026-10-08 - i360-only branch: LAMBDA test profile, points only
 
-Decision: add a `lambda` profile (`APP_SCENARIO=lambda`) that reads the LAMBDA estate's `location_update` and `voice_call` items and shows them as two event layers, "Location updates" and "Voice calls", each item drawn as a map point from its own `location.point`. No location or entity objects are derived from the GPS points. A profile can now name its mapping file and an `items_window`; the lambda profile reads 2026-08-01 to 2026-08-08, because the estate holds about 280,000 such items (June to August 2026), well above the 30,000-row snapshot cap.
+Decision: add a `lambda` profile (`APP_SCENARIO=lambda`) that reads the newest 50 `location_update` items on the LAMBDA estate, shown as one event layer per tracker source (TrackLocation, ankle_bracelet, gps_location). An event without a location object is drawn on the map at its own latitude/longitude; events at the same point share one marker. No location objects are derived from the GPS points. Profiles gain `items_query.limit` (newest N, at most 100, one search), `items_query.recent_days`, an optional `items_window` and an optional `mapping` file name.
 
-Rationale: the user asked to try the app on LAMBDA's own located items without touching the Syria profile. Points only is the smallest change that shows them; grouping points into places is a later step.
+Rationale: the user asked to try the app on LAMBDA's own located items with tens of records, without touching the Syria profile. The estate holds about 280,000 located items, so the full-snapshot design cannot read them all; per-layer on-demand querying is the path for real volumes and is not built.
 
-Impact: the Syria and Kosovo profiles are unchanged. `mapping/lambda.json` reads fields from search hits only (no per-item get), so caller and callee numbers are not shown yet.
+Impact: the Syria and Kosovo profiles are unchanged. Until the AII_ types are provisioned on an estate, saved work reads as empty and saving fails visibly; an entity type the user may not read (403) is skipped with a warning.
 
 ### 2026-10-07 - i360-only branch: platform-hl-api is the only backend
 
