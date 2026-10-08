@@ -1,4 +1,4 @@
-"""The LAMBDA test profile: satellite (EO optical) images, drawn as map points from their own location."""
+"""The LAMBDA test profile: satellite (EO optical) images and ADINT items, drawn as map points from their own location."""
 import json
 import os
 import tempfile
@@ -23,6 +23,7 @@ def item(item_id, item_type, days_ago, lat=None, lon=None, source="EO optical (f
 ITEMS = [
     item("SAT-1", "image", 30, 35.0806, 36.2963),
     item("SAT-2", "image", 31, 35.07, 36.30),
+    item("AD-1", "location_update", 3, 35.10, 36.25, source="ADINT"),
     item("TG-1", "image", 1, source="Telegram"),  # another source: not in the layer
     item("LU-1", "location_update", 2, 32.08, 34.78, source="TrackLocation"),  # another item type
 ]
@@ -67,11 +68,11 @@ class LambdaProfileTests(unittest.TestCase):
         status, body = Browser(self.base).call("GET", "/api/status")
         self.assertEqual((200, "lambda"), (status, body["scenario_id"]))
 
-    def test_only_the_satellite_layer(self):
+    def test_satellite_and_adint_layers(self):
         status, body = self.browser().call("GET", "/api/layers?lang=en")
         self.assertEqual(200, status, body)
         events = {layer["id"]: layer["count"] for layer in body["layers"] if layer["id"].startswith("events:")}
-        self.assertEqual({"events:Satellite": 2}, events)
+        self.assertEqual({"events:Satellite": 2, "events:ADINT": 1}, events)
 
     def test_rows_carry_coordinates(self):
         status, body = self.browser().call("GET", "/api/layers/events:Satellite/rows?lang=en")
