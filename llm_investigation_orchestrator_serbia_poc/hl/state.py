@@ -7,7 +7,8 @@ Three types (names carry ``APP_TYPE_PREFIX``, default ``AII_``), all with one se
 - ``AII_TELECOM_APPROVAL``  one per reviewed subscriber-identity derivation
 
 Rules from the HL API docs that shape this module:
-- the platform assigns its own ``entity_id``; we keep our own key in a field and search by it;
+- HL API requires the caller to supply ``entity_id`` on create (``general.entity_id`` is mandatory);
+  we send a fresh UUID, keep our own key in a field and search by it;
 - ``actors`` is left out on create, so HL API grants the record to the signed-in user and it
   appears in that user's searches;
 - every saved item is its own record, so two writers never overwrite each other and
@@ -17,6 +18,7 @@ Rules from the HL API docs that shape this module:
 from __future__ import annotations
 
 import json
+import uuid
 from datetime import datetime, timezone
 from typing import Any
 
@@ -170,6 +172,7 @@ class StateStore:
 
     def _create(self, entity_type: str, name: str, fields: dict[str, Any]) -> dict[str, Any]:
         response = self.client.create_entity(entity_type, {
+            "entity_id": str(uuid.uuid4()),
             "entity_name": name[:240] or entity_type,
             "sections": {SECTION: {key: value for key, value in fields.items() if value is not None}},
         })
@@ -253,9 +256,9 @@ class StateStore:
             if external_investigation_header(existing)["name"] != name:
                 self.client.patch_entity(entity_type, entity_id_of(existing), {"entity_name": name})
             return {**external_investigation_header(existing), "name": name}
-        # A new investigation gets the platform's entity_id; the browser switches to it.
-        response = self.client.create_entity(entity_type, {"entity_name": name[:240]})
-        entity_id = entity_id_of(response)
+        # HL API wants the caller's entity_id; the browser's own id keeps the investigation's key stable.
+        response = self.client.create_entity(entity_type, {"entity_id": investigation_key, "entity_name": name[:240]})
+        entity_id = entity_id_of(response) or investigation_key
         if not entity_id:
             raise HlError(502, "create_without_id", f"HL API accepted the {entity_type} write but returned no entity_id")
         return external_investigation_header(self.client.get_entity(entity_type, entity_id))

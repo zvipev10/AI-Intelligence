@@ -32,8 +32,8 @@ class FakeClient:
 
     def create_entity(self, entity_type, body):
         self.created.append((entity_type, body))
-        self.records["inv-2"] = {"entity_id": "inv-2", "entity_name": body["entity_name"]}
-        return {"entity_id": "inv-2"}
+        self.records[body["entity_id"]] = {"entity_id": body["entity_id"], "entity_name": body["entity_name"]}
+        return {"entity_id": body["entity_id"]}
 
     def patch_entity(self, entity_type, entity_id, body):
         self.patched.append((entity_type, entity_id, body))
@@ -62,8 +62,9 @@ class ExternalInvestigationTests(unittest.TestCase):
     def test_create_makes_an_i360_record_and_returns_its_id(self):
         client = FakeClient()
         created = store(client).register_investigation("investigation-local-123", "New case")
-        self.assertEqual([("INTELLIGENCE_INVESTIGATION", {"entity_name": "New case"})], client.created)
-        self.assertEqual("inv-2", created["investigation_id"])
+        self.assertEqual([("INTELLIGENCE_INVESTIGATION",
+                           {"entity_id": "investigation-local-123", "entity_name": "New case"})], client.created)
+        self.assertEqual("investigation-local-123", created["investigation_id"])
 
     def test_renaming_an_existing_one_patches_only_its_name(self):
         client = FakeClient()
