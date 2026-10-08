@@ -1,0 +1,44 @@
+{
+ "scenario_id": "lambda",
+ "label": {
+  "en": "LAMBDA location updates"
+ },
+ "map": {
+  "center": [
+   34.8,
+   32.08
+  ],
+  "zoom": 10,
+  "minZoom": 4,
+  "maxBounds": [
+   [
+    30,
+    28
+   ],
+   [
+    40,
+    38
+   ]
+  ]
+ },
+ "sources": {
+  "he": [
+   "TrackLocation",
+   "ankle_bracelet",
+   "gps_location"
+  ],
+  "en": [
+   "TrackLocation",
+   "ankle_bracelet",
+   "gps_location"
+  ]
+ },
+ "dataset_version": "i360",
+ "items_query": {
+  "item_types": [
+   "location_update"
+  ],
+  "recent_days": 120
+ },
+ "_comment": "Test scenario for LAMBDA: raw GPS points from location_update items (sources TrackLocation, ankle_bracelet, gps_location), each drawn from its own location.point. recent_days narrows the scan to the last N days of event time; the snapshot keeps at most APP_SNAPSHOT_MAX_ROWS rows. No location entities exist on LAMBDA, so the Location layer stays empty."
+}

@@ -76,7 +76,10 @@ class ItemReader:
     def __init__(self, client: HlClient, mapping: Mapping, base_query: dict[str, Any], max_rows: int):
         self.client = client
         self.mapping = mapping
-        self.base_query = {k: v for k, v in (base_query or {}).items() if v not in (None, [], {})}
+        query = dict(base_query or {})
+        # "recent_days" is ours, not HL API's: it narrows the scan to the last N days of event time.
+        self.recent_days = int(query.pop("recent_days", 0) or 0)
+        self.base_query = {k: v for k, v in query.items() if v not in (None, [], {})}
         self.max_rows = max_rows
         self.warnings: list[str] = []
         self.truncated = False
@@ -113,8 +116,9 @@ class ItemReader:
 
     def items(self) -> list[dict[str, Any]]:
         hits: list[dict[str, Any]] = []
-        now = datetime.now(timezone.utc) + timedelta(days=3650)
-        self._collect_window((EARLIEST, _iso(now)), hits)
+        now = datetime.now(timezone.utc)
+        start = _iso(now - timedelta(days=self.recent_days)) if self.recent_days > 0 else EARLIEST
+        self._collect_window((start, _iso(now + timedelta(days=3650))), hits)
         seen: set[str] = set()
         unique = []
         for hit in hits:
