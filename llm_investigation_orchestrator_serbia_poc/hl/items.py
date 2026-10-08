@@ -153,7 +153,8 @@ class ItemReader:
                 self.warnings.append(f"entity search is not available on this estate ({entity_type})")
                 return out
             except HlError as exc:
-                if exc.status in {400, 404, 422}:
+                # 403: the type exists but this user may not read it (e.g. demo types on another estate).
+                if exc.status in {400, 403, 404, 422}:
                     self.warnings.append(f"entity type {entity_type} is not readable here: {exc.code}")
                     return out
                 raise

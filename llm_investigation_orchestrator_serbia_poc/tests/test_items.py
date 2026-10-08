@@ -1,6 +1,7 @@
 import unittest
 from datetime import datetime, timedelta, timezone
 
+from hl.client import HlError
 from hl.items import EARLIEST, ItemReader, _parse
 from hl.mapping import Mapping
 
@@ -32,6 +33,19 @@ class RecentDaysTests(unittest.TestCase):
         client = RecordingClient()
         ItemReader(client, mapping(), {"filters": [{"field": "scenario", "values": ["syria"]}]}, 100).items()
         self.assertEqual(EARLIEST, client.bodies[0]["time"]["from"])
+
+
+class ForbiddenEntitiesClient(RecordingClient):
+    def search_entities(self, entity_type, body):
+        raise HlError(403, "ems", "Action not allowed")
+
+
+class UnreadableEntityTypeTests(unittest.TestCase):
+    def test_a_forbidden_entity_type_is_a_warning_not_a_failure(self):
+        reader = ItemReader(ForbiddenEntitiesClient(), Mapping({"version": 1, "items": {"fields": {}},
+                                                               "entities": {"types": ["DEMO_ENTITY"], "fields": {}}}), {}, 100)
+        self.assertEqual([], reader.entities())
+        self.assertTrue(any("DEMO_ENTITY" in warning for warning in reader.warnings))
 
 
 if __name__ == "__main__":
