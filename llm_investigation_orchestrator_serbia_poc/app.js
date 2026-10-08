@@ -1697,7 +1697,11 @@ function investigationFromServer(item) {
     updated_at: item?.updated_at_utc || "",
     layer_count: Number(item?.layer_count || 0),
     artifact_count: Number(item?.artifact_count || 0),
-    collection_request_count: Number(item?.collection_request_count || 0)
+    collection_request_count: Number(item?.collection_request_count || 0),
+    status: String(item?.status || "").trim(),
+    activity_level: String(item?.activity_level || "").trim(),
+    research_question: String(item?.research_question || "").trim(),
+    next_milestone: String(item?.next_milestone || "").trim()
   };
 }
 
@@ -1867,7 +1871,7 @@ function similarInvestigationRibbonHtml(investigation) {
         </div>
         ${welcomeParticipantsHtml(investigation.participants)}
         <div class="ribbon-metrics">
-          <div class="ribbon-metric"><span>${activeLocaleText("רמת פעילות", "Activity level")}</span><strong>${activeLocaleText("פעילות גבוהה השבוע", "High activity this week")}</strong></div>
+          <div class="ribbon-metric"><span>${activeLocaleText("רמת פעילות", "Activity level")}</span><strong>${escapeHtml(investigation.activityLevel || activeLocaleText("פעילות גבוהה השבוע", "High activity this week"))}</strong></div>
           <div class="ribbon-metric"><span>${activeLocaleText("גישה", "Access")}</span><strong>${investigation.action === "join" ? activeLocaleText("פתוחה להשתתפות", "Open participation") : activeLocaleText("דורשת אישור בעלים", "Owner approval required")}</strong></div>
         </div>
       </div>
@@ -1875,17 +1879,70 @@ function similarInvestigationRibbonHtml(investigation) {
     </article>`;
 }
 
+// When the investigations come from an i360 type (APP_INVESTIGATION_TYPE), its status field picks the
+// welcome section: "invited" and "recommended" go to their sections, anything else is the user's own.
+// Without i360 statuses the scenario's built-in demo lists are shown, as before.
+const WELCOME_STATUS_SECTIONS = { invited: "invited", recommended: "recommended" };
+
+function welcomeStatusSection(investigation) {
+  return WELCOME_STATUS_SECTIONS[String(investigation?.status || "").trim().toLowerCase()] || "";
+}
+
+function welcomeSectionsFromI360() {
+  return state.investigations.some(investigation => investigation.status);
+}
+
+function welcomeRibbonFromI360(investigation, section) {
+  const summary = investigation.research_question || activeLocaleText("אין שאלת מחקר", "No research question");
+  const reason = investigation.next_milestone
+    ? activeLocaleText(`אבן הדרך הבאה: ${investigation.next_milestone}`, `Next milestone: ${investigation.next_milestone}`)
+    : activeLocaleText("מתוך i360", "From i360");
+  return {
+    id: investigation.id,
+    titleHe: investigation.name,
+    titleEn: investigation.name,
+    summaryHe: summary,
+    summaryEn: summary,
+    reasonHe: reason,
+    reasonEn: reason,
+    activityLevel: investigation.activity_level,
+    participants: 2,
+    action: section === "invited" ? "join" : "request",
+    invited: section === "invited",
+    fromI360: true
+  };
+}
+
+function welcomeInvitedInvestigations() {
+  if (!welcomeSectionsFromI360()) return INVITED_INVESTIGATIONS;
+  return state.investigations.filter(item => welcomeStatusSection(item) === "invited").map(item => welcomeRibbonFromI360(item, "invited"));
+}
+
+function welcomeSimilarInvestigations() {
+  if (!welcomeSectionsFromI360()) return SIMILAR_INVESTIGATIONS;
+  return state.investigations.filter(item => welcomeStatusSection(item) === "recommended").map(item => welcomeRibbonFromI360(item, "recommended"));
+}
+
 function isInvitedWelcomeInvestigation(investigation) {
+  if (welcomeSectionsFromI360() && typeof investigation === "object") return Boolean(welcomeStatusSection(investigation));
   const name = typeof investigation === "string" ? investigation : investigation?.name;
   return INVITED_INVESTIGATIONS.some(invitation => [invitation.titleHe, invitation.titleEn].some(title => investigationNameKey(title) === investigationNameKey(name)));
 }
 
 function invitedInvestigationById(id) {
-  return INVITED_INVESTIGATIONS.find(investigation => investigation.id === id) || null;
+  return welcomeInvitedInvestigations().find(investigation => investigation.id === id) || null;
 }
 
 async function joinInvitedInvestigation(invitation) {
   if (!invitation) return;
+  if (invitation.fromI360) {
+    const existing = state.investigations.find(item => item.id === invitation.id);
+    if (existing) {
+      selectInvestigation(existing);
+      setPageView("workspace");
+      return;
+    }
+  }
   const name = activeLocaleText(invitation.titleHe, invitation.titleEn);
   try {
     const investigation = await ensureInvestigationRecord(name);
@@ -1906,10 +1963,12 @@ function renderWelcomePage() {
     : `<p class="welcome-empty-investigations">${escapeHtml(state.investigationsError
       ? activeLocaleText(`לא ניתן לטעון את החקירות: ${state.investigationsError}`, `Could not load investigations: ${state.investigationsError}`)
       : activeLocaleText("אין עדיין חקירות. התחילו חקירת טיוטה או צרו חקירה בכפתור + שבכותרת.", "No investigations yet. Start a draft investigation, or create one with the + button in the header."))}</p>`;
-  invitedInvestigationsCount.textContent = INVITED_INVESTIGATIONS.length.toLocaleString(currentLocaleTag());
-  invitedInvestigationsList.innerHTML = INVITED_INVESTIGATIONS.map(similarInvestigationRibbonHtml).join("");
-  similarInvestigationsCount.textContent = SIMILAR_INVESTIGATIONS.length.toLocaleString(currentLocaleTag());
-  similarInvestigationsList.innerHTML = SIMILAR_INVESTIGATIONS.map(similarInvestigationRibbonHtml).join("");
+  const invitedInvestigations = welcomeInvitedInvestigations();
+  const similarInvestigations = welcomeSimilarInvestigations();
+  invitedInvestigationsCount.textContent = invitedInvestigations.length.toLocaleString(currentLocaleTag());
+  invitedInvestigationsList.innerHTML = invitedInvestigations.map(similarInvestigationRibbonHtml).join("");
+  similarInvestigationsCount.textContent = similarInvestigations.length.toLocaleString(currentLocaleTag());
+  similarInvestigationsList.innerHTML = similarInvestigations.map(similarInvestigationRibbonHtml).join("");
 }
 
 function renderDraftInvestigationUi() {
@@ -2772,7 +2831,8 @@ function initializeViewerMediaFallback(item, recordId) {
       else showMissingMedia(element, item);
     });
   });
-  if (elements.length || !(isCellularCallRecord(item) || isVisualCollectionRecord(item))) return;
+  const hasI360Media = Boolean(item["i360.media.kind"] || item["i360.media.file_count"]);
+  if (elements.length || !(isCellularCallRecord(item) || isVisualCollectionRecord(item) || hasI360Media)) return;
   void recordFileUrls(recordId).then(files => {
     if (!files.length || !stillOpen()) return;
     const file = files[0];
@@ -2786,7 +2846,9 @@ function initializeViewerMediaFallback(item, recordId) {
     const media = type === "video"
       ? `<video controls preload="metadata" src="${escapeHtml(file.url)}"></video>`
       : type === "audio" ? `<audio controls preload="metadata" src="${escapeHtml(file.url)}"></audio>` : `<img src="${escapeHtml(file.url)}" alt="">`;
-    body.insertAdjacentHTML("afterbegin", `<div class="object-viewer-media">${media}</div>`);
+    const expandLabel = escapeHtml(activeLocaleText("הרחב מדיה למסך מלא", "Expand media to full screen"));
+    const fullscreenButton = type === "audio" ? "" : `<button type="button" class="visual-media-fullscreen" data-visual-media-fullscreen title="${expandLabel}" aria-label="${expandLabel}"><span class="material-symbols-rounded" aria-hidden="true">open_in_full</span></button>`;
+    body.insertAdjacentHTML("afterbegin", `<div class="object-viewer-media">${media}${fullscreenButton}</div>`);
   });
 }
 
@@ -2909,6 +2971,11 @@ function isPersonEntity(item) {
 }
 
 function viewerFields(item, kind) {
+  // Rows from a profile query with "all_fields" carry every i360 item field as "i360.<path>": show them all.
+  const i360Keys = Object.keys(item || {}).filter(key => key.startsWith("i360.") && item[key] != null && item[key] !== "").sort((a, b) => a.localeCompare(b, "en"));
+  if (kind === "record" && i360Keys.length) {
+    return ["record_id", "source_type", ...i360Keys].filter(key => item[key] != null && item[key] !== "").map(key => [key, item[key]]);
+  }
   if (kind === "ipdr_package") return ["package_id", "classification", "provider", "source_system", "filename", "sha256", "record_count", "validation_state", "session_validation_counts", "observed_coverage", "requested_scope", "acquired_at", "imported_at", "ingest_batch_id", "authority_case_reference", "chain_of_custody_note", "field_semantics", "transformations", "limitations"].map(key => [key, item[key] ?? activeLocaleText("לא ידוע", "Unknown")]);
   if (kind === "record" && isCellularGeolocationRecord(item)) return ["event_id", "timestamp_utc", "imei", "sim", "target_msisdn", "target_imsi", "operator_msisdn", "operator_imsi", "location_name"].map(key => [key, item[key] || (key === "location_name" ? item.location_id : "") || "—"]);
   const hidden = new Set(["event_summary", "canonical_name", "media", "image_series", "video_url", "audio_url", "image_url", "raw_data_references", "call_started_at_utc", "call_duration_seconds", "side_a_imei", "side_a_number", "side_a_location_id", "side_a_location_name", "side_b_imei", "side_b_number", "side_b_location_id", "side_b_location_name", "call_transcript", "call_transcript_en", "demo_media"]);
@@ -3058,6 +3125,7 @@ function viewerFieldLabel(key) {
     ,revision: ["גרסה", "Revision"]
     ,updated_at: ["עודכן", "Updated"]
   };
+  if (!labels[key] && String(key).startsWith("i360.")) return String(key).slice("i360.".length).replaceAll("_", " ");
   return labels[key] ? activeLocaleText(...labels[key]) : key.replaceAll("_", " ");
 }
 
@@ -4444,6 +4512,27 @@ function renderEvidence() {
         <td dir="ltr">${escapeHtml(item.first_event_id || item.first_event_time || "-")}</td>
         <td dir="ltr">${escapeHtml(item.last_event_id || item.last_event_time || "-")}</td>
       </tr>`).join("") : `<tr><td colspan="5" class="empty-cell">${escapeHtml(activeLocaleText("השכבה מוסתרת או ריקה.", "Layer is hidden or empty."))}</td></tr>`;
+    enhanceResultsTable(activeLayer);
+    return;
+  }
+  const i360KeysOf = item => Object.keys(item || {}).filter(key => key.startsWith("i360.") && item[key] != null && item[key] !== "");
+  if (activeLayer.kind === "events" && activeLayer.items?.length && activeLayer.items.every(item => i360KeysOf(item).length)) {
+    // Every i360 field the layer's items carry, except the image/media ones (the viewer shows those).
+    const keys = [...new Set(activeLayer.items.flatMap(i360KeysOf))].sort((a, b) => a.localeCompare(b, "en"))
+      .filter(key => !/^i360\.(media|thumbnail|image|files?)(\.|$)/.test(key));
+    const first = ["i360.item_id", "i360.event_time", "i360.item_type", "i360.sub_type", "i360.source_application"].filter(key => keys.includes(key));
+    const columns = [...first, ...keys.filter(key => !first.includes(key))];
+    head.innerHTML = `<tr><th class="result-map-action-column" data-result-action-column="true"></th>${columns.map(key => `<th>${escapeHtml(viewerFieldLabel(key))}</th>`).join("")}</tr>`;
+    body.innerHTML = activeItems.length ? activeItems.map(event => {
+      const eventId = String(event.record_id || event.event_id || "");
+      const selected = isMapItemSelected(activeLayer.id, "event", eventId);
+      return `<tr class="${[selected ? "map-selected-row" : "", isViewerRecordSelected(eventId) ? "viewer-selected-row" : ""].filter(Boolean).join(" ")}"><td class="result-map-action-cell">${mapActionButton(activeLayer.id, "event", eventId, event)}</td>${columns.map(key => {
+        const value = escapeHtml(event[key] == null || event[key] === "" ? "—" : event[key]);
+        return key === "i360.item_id"
+          ? `<td dir="ltr"><button type="button" class="object-viewer-open" data-viewer-kind="record" data-viewer-id="${escapeHtml(eventId)}">${value}</button>${recordLinkIndicator(event)}</td>`
+          : `<td>${value}</td>`;
+      }).join("")}</tr>`;
+    }).join("") : `<tr><td colspan="${columns.length + 1}" class="empty-cell">${escapeHtml(activeLocaleText("השכבה מוסתרת או ריקה.", "Layer is hidden or empty."))}</td></tr>`;
     enhanceResultsTable(activeLayer);
     return;
   }

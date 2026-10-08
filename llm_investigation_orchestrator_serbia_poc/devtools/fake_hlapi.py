@@ -217,7 +217,12 @@ class FakeEstate:
         store = self._type(type_name)
         if not self.types[type_name].get("canBeCreated"):
             raise ApiError(403, "type_not_writable", f"{type_name} is platform-owned.")
-        entity_id = str(uuid.uuid4())
+        # Like the real HL API: the caller supplies entity_id (general.entity_id is mandatory).
+        entity_id = str(body.get("entity_id") or "").strip()
+        if not entity_id:
+            raise ApiError(422, "validation_error", "entity_id: Field required")
+        if entity_id in store:
+            raise ApiError(409, "conflict", f"{type_name} {entity_id} already exists")
         store[entity_id] = {
             "entity_id": entity_id, "entity_type": type_name, "entity_name": body.get("entity_name") or "",
             "sections": copy.deepcopy(body.get("sections") or {}), "deleted": False,

@@ -17,7 +17,6 @@ import csv
 import io
 import json
 import mimetypes
-import os
 import re
 import sys
 import time
@@ -60,16 +59,35 @@ def load_profile(settings: Settings) -> dict[str, Any]:
     return profile
 
 
+def normalize_record_files(files: Any, origin: str) -> list[dict[str, Any]]:
+    """HL API file entries -> what the viewer reads: absolute url/thumbnail_url, the media file first.
+
+    HL API returns signed links as ``urls.primary`` / ``urls.thumbnail`` paths on its own origin, and lists
+    a record's source grab (raw JSON) next to its media; the viewer shows the first file.
+    """
+    out = []
+    for entry in files if isinstance(files, list) else []:
+        if not isinstance(entry, dict):
+            continue
+        entry = dict(entry)
+        urls = entry.get("urls") if isinstance(entry.get("urls"), dict) else {}
+        entry.setdefault("url", urls.get("primary"))
+        entry.setdefault("thumbnail_url", urls.get("thumbnail"))
+        for key in ("url", "signed_url", "thumbnail_url"):
+            value = entry.get(key)
+            if isinstance(value, str) and value.startswith("/"):
+                entry[key] = origin + value
+        out.append(entry)
+    return sorted(out, key=lambda e: (e.get("role") != "media", e.get("raw_type") == "rawdata"))
+
+
 class App:
     """Process-wide objects. Nothing here holds user data except the snapshot cache."""
 
     def __init__(self, settings: Settings):
         self.settings = settings
+        self.mapping: Mapping = load_mapping(str(settings.mapping_path))
         self.profile = load_profile(settings)
-        mapping_path = settings.mapping_path
-        if not os.environ.get("APP_MAPPING") and self.profile.get("mapping"):
-            mapping_path = ROOT / "mapping" / str(self.profile["mapping"])
-        self.mapping: Mapping = load_mapping(str(mapping_path))
         self.snapshots = SnapshotCache(settings.snapshot_ttl_seconds)
 
     def client(self, token: str | None = None) -> HlClient:
@@ -79,7 +97,7 @@ class App:
         s = self.settings
         return StateStore(self.client(token), investigation_type=s.investigation_type,
                           memory_item_type=s.memory_item_type, approval_type=s.approval_type,
-                          scenario=s.scenario)
+                          scenario=s.scenario, external_investigation_type=s.external_investigation_type)
 
     def known_sources(self, locale: str) -> list[str]:
         return list(((self.profile.get("sources") or {}).get(locale)) or [])
@@ -87,11 +105,15 @@ class App:
     def snapshot(self, token: str, refresh: bool = False) -> Snapshot:
         def build() -> Snapshot:
             reader = ItemReader(self.client(token), self.mapping, self.profile.get("items_query") or {},
-                                self.settings.snapshot_max_rows, self.profile.get("items_window"))
+                                self.settings.snapshot_max_rows, self.settings.items_per_type)
             items = reader.items()
             entities = reader.entities()
             locations = reader.locations()
             reviews = self.state(token).load_reviews()
+            for stats in reader.query_stats:
+                print(f"snapshot query: {json.dumps(stats)}", flush=True)  # ASCII-escaped: Windows consoles are not UTF-8
+            for warning in reader.warnings:
+                print(f"snapshot warning: {json.dumps(warning)}", flush=True)
             return Snapshot(items=items, entities=entities, locations=locations, reviews=reviews,
                             fetched_at=time.time(), truncated=reader.truncated, warnings=reader.warnings)
         return self.snapshots.get(token, build, refresh=refresh)
@@ -106,7 +128,7 @@ class App:
                 snap.derived.pop(key, None)
 
     def rows(self, snap: Snapshot, locale: str) -> list[dict[str, str]]:
-        return snap.memo(f"rows:{locale}", lambda: [self.mapping.item_to_row(item, locale) for item in snap.items])
+        return snap.memo(f"rows:{locale}", lambda: [ItemReader._with_layer(self.mapping.item_to_row(item, locale), item) for item in snap.items])
 
     def dataset(self, token: str, locale: str) -> Dataset:
         snap = self.snapshot(token)
@@ -395,13 +417,8 @@ class Handler(BaseHTTPRequestHandler):
         if row is None:
             raise HlError(404, "record_not_found", "Record not found")
         response = self.app.client(token).item_files(row.get("i360_item_id") or record_id, signed_urls=True)
-        origin = self.app.settings.hl_api_public_origin
-        files = response.get("files") if isinstance(response, dict) else None
-        for entry in files or []:
-            for key in ("url", "signed_url", "thumbnail_url"):
-                value = entry.get(key)
-                if isinstance(value, str) and value.startswith("/"):
-                    entry[key] = origin + value
+        if isinstance(response, dict):
+            response["files"] = normalize_record_files(response.get("files"), self.app.settings.hl_api_public_origin)
         return response
 
     # -- POST routes -----------------------------------------------------------------

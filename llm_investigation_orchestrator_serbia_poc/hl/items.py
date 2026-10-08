@@ -13,6 +13,7 @@ thousands of records). Pushing filters down to HL API is the next step for large
 from __future__ import annotations
 
 import hashlib
+import json
 import threading
 import time
 from dataclasses import dataclass, field
@@ -24,6 +25,54 @@ from .mapping import Mapping
 
 PAGE_SIZE = 100
 EARLIEST = "1970-01-01T00:00:00Z"
+
+ALL_FIELDS_PREFIX = "i360."
+_SKIP_KEYS = {"urls", "found", "parent_ids"}
+
+
+def _cell(value: Any) -> str:
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    return str(value)
+
+
+def item_fields(item: dict[str, Any]) -> dict[str, str]:
+    """Every populated field of an i360 item as ``i360.<path>`` -> text, for "show all fields" layers.
+
+    Nested objects become dotted paths; a list of scalars is joined; a list of annotations (dicts with
+    ``value``) becomes "type: value" lines; tags become "type=value"; anything else is compact JSON.
+    """
+    out: dict[str, str] = {}
+
+    def walk(value: Any, path: str, depth: int) -> None:
+        if value in (None, "", [], {}):
+            return
+        if isinstance(value, dict):
+            if depth >= 3:
+                out[path] = json.dumps(value, ensure_ascii=False, separators=(",", ":"))
+                return
+            for key, child in value.items():
+                if key not in _SKIP_KEYS and not str(key).startswith("_"):
+                    walk(child, f"{path}.{key}" if path else str(key), depth + 1)
+            return
+        if isinstance(value, list):
+            if all(not isinstance(v, (dict, list)) for v in value):
+                out[path] = "; ".join(_cell(v) for v in value if v not in (None, ""))
+            elif all(isinstance(v, dict) and "value" in v for v in value):
+                key = "value"
+                if path.endswith("tags"):
+                    out[path] = "; ".join(f"{v.get('type')}={_cell(v.get(key))}" for v in value)
+                else:
+                    out[path] = "\n".join(f"{v.get('type')}: {_cell(v.get(key))}" if v.get("type") else _cell(v.get(key))
+                                           for v in value)
+            else:
+                out[path] = json.dumps(value, ensure_ascii=False, separators=(",", ":"))
+            return
+        out[path] = _cell(value)
+
+    walk(item, "", 0)
+    return {ALL_FIELDS_PREFIX + key: value for key, value in out.items() if value}
+
 
 
 @dataclass
@@ -74,20 +123,36 @@ def _merge(hit: dict[str, Any], full: dict[str, Any] | None) -> dict[str, Any]:
 
 class ItemReader:
     def __init__(self, client: HlClient, mapping: Mapping, base_query: dict[str, Any], max_rows: int,
-                 window: dict[str, str] | None = None):
+                 items_per_query: int = 0):
         self.client = client
         self.mapping = mapping
         query = dict(base_query or {})
-        # "recent_days" is ours, not HL API's: it narrows the scan to the last N days of event time.
-        self.recent_days = int(query.pop("recent_days", 0) or 0)
-        # "limit" is ours too: keep only the newest N items (at most one page), for small test datasets.
-        self.limit = max(0, min(int(query.pop("limit", 0) or 0), PAGE_SIZE))
-        self.base_query = {k: v for k, v in query.items() if v not in (None, [], {})}
-        # A profile may bound the snapshot to a time window when the estate holds more than max_rows.
-        self.window = (window or {}).get("from") or None, (window or {}).get("to") or None
+        # A profile may list several queries ("queries"); each one is read on its own and may name the
+        # layer its items appear in ("layer"). A plain items_query is one query, as before.
+        self.specs = [self._spec(q) for q in (query.pop("queries", None) or [query])]
+        # APP_ITEMS_PER_TYPE overrides every query's "limit" (one query per item type in a profile).
+        if items_per_query > 0:
+            self.specs = [(days, items_per_query, base, layer, everything)
+                          for days, _, base, layer, everything in self.specs]
+        self.recent_days, self.limit, self.base_query, self.layer, self.all_fields = self.specs[0]
         self.max_rows = max_rows
         self.warnings: list[str] = []
+        # One entry per profile query: what was asked, what HL API reported and what came back.
+        self.query_stats: list[dict[str, Any]] = []
         self.truncated = False
+
+    @staticmethod
+    def _spec(query: dict[str, Any]) -> tuple[int, int, dict[str, Any], str, bool]:
+        query = dict(query or {})
+        # "recent_days" is ours, not HL API's: it narrows the scan to the last N days of event time.
+        recent_days = int(query.pop("recent_days", 0) or 0)
+        # "limit" is ours too: keep only the newest N items, for small test datasets.
+        limit = max(0, int(query.pop("limit", 0) or 0))
+        # "layer" is ours too: the layer (source_type) these items are shown in.
+        layer = str(query.pop("layer", "") or "")
+        # "all_fields" is ours too: rows carry every populated item field as i360.<path>.
+        everything = bool(query.pop("all_fields", False))
+        return recent_days, limit, {k: v for k, v in query.items() if v not in (None, [], {})}, layer, everything
 
     def _query(self, window: tuple[str, str], page: int, page_size: int = PAGE_SIZE) -> dict[str, Any]:
         body = dict(self.base_query)
@@ -122,15 +187,42 @@ class ItemReader:
     def items(self) -> list[dict[str, Any]]:
         hits: list[dict[str, Any]] = []
         now = datetime.now(timezone.utc)
-        start = self.window[0] or (_iso(now - timedelta(days=self.recent_days)) if self.recent_days > 0 else EARLIEST)
-        end = self.window[1] or _iso(now + timedelta(days=3650))
-        if self.limit:
-            body = dict(self.base_query)
-            body["time"] = {**(body.get("time") or {}), "from": start, "to": end, "field": "event"}
-            body.update({"page_number": 1, "page_size": self.limit, "include": ["text"], "sort": "time", "order": "desc"})
-            hits.extend(self.client.search_items(body).get("items") or [])
-        else:
-            self._collect_window((start, end), hits)
+        end = _iso(now + timedelta(days=3650))
+        for self.recent_days, self.limit, self.base_query, self.layer, self.all_fields in self.specs:
+            start = _iso(now - timedelta(days=self.recent_days)) if self.recent_days > 0 else EARLIEST
+            found: list[dict[str, Any]] = []
+            reported_total = None
+            if self.limit:
+                # Newest first, a page at a time, until the limit or the end of the results.
+                page = 1
+                while len(found) < self.limit:
+                    body = dict(self.base_query)
+                    body["time"] = {**(body.get("time") or {}), "from": start, "to": end, "field": "event"}
+                    body.update({"page_number": page, "page_size": min(PAGE_SIZE, self.limit),
+                                 "include": ["text"], "sort": "time", "order": "desc"})
+                    response = self.client.search_items(body)
+                    if page == 1:
+                        reported_total = response.get("total")
+                        self.warnings.extend(f"{self.layer or 'query'}: {w}" for w in response.get("warnings") or [])
+                    batch = response.get("items") or []
+                    found.extend(batch[: self.limit - len(found)])
+                    if len(batch) < body["page_size"] or page >= int(response.get("total_pages") or page):
+                        break
+                    page += 1
+            else:
+                self._collect_window((start, end), found)
+            if self.layer or self.all_fields:
+                mark = {"_layer": self.layer} if self.layer else {}
+                if self.all_fields:
+                    mark["_all_fields"] = True
+                found = [{**hit, **mark} for hit in found]
+            self.query_stats.append({
+                "layer": self.layer, "query": {k: v for k, v in self.base_query.items() if k != "time"},
+                "reported_total": reported_total, "returned": len(found),
+                "with_location": sum(1 for hit in found if (hit.get("location") or {}).get("point")),
+                "sources": sorted({str(hit.get("source_application")) for hit in found if hit.get("source_application")})[:8],
+            })
+            hits.extend(found)
         seen: set[str] = set()
         unique = []
         for hit in hits:
@@ -152,8 +244,16 @@ class ItemReader:
             complete.extend(_merge(hit, by_id.get(str(hit["item_id"]))) for hit in batch)
         return complete
 
+    @staticmethod
+    def _with_layer(row: dict[str, str], item: dict[str, Any]) -> dict[str, str]:
+        if item.get("_layer"):
+            row["source_type"] = str(item["_layer"])
+        if item.get("_all_fields"):
+            row.update(item_fields(item))
+        return row
+
     def rows(self, locale: str) -> list[dict[str, str]]:
-        return [self.mapping.item_to_row(item, locale) for item in self.items()]
+        return [self._with_layer(self.mapping.item_to_row(item, locale), item) for item in self.items()]
 
     def _instances(self, entity_type: str) -> list[dict[str, Any]]:
         out: list[dict[str, Any]] = []

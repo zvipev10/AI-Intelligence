@@ -1,14 +1,14 @@
 {
  "scenario_id": "lambda",
  "label": {
-  "en": "LAMBDA location updates"
+  "en": "LAMBDA satellite images"
  },
  "map": {
   "center": [
-   34.8,
-   32.08
+   36.2963,
+   35.0806
   ],
-  "zoom": 10,
+  "zoom": 11,
   "minZoom": 4,
   "maxBounds": [
    [
@@ -23,23 +23,28 @@
  },
  "sources": {
   "he": [
-   "TrackLocation",
-   "ankle_bracelet",
-   "gps_location"
+   "Satellite"
   ],
   "en": [
-   "TrackLocation",
-   "ankle_bracelet",
-   "gps_location"
+   "Satellite"
   ]
  },
  "dataset_version": "i360",
  "items_query": {
-  "item_types": [
-   "location_update"
-  ],
-  "recent_days": 365,
-  "limit": 50
+  "queries": [
+   {
+    "item_types": [
+     "image"
+    ],
+    "source_applications": [
+     "EO optical (fictional)"
+    ],
+    "recent_days": 365,
+    "limit": 200,
+    "layer": "Satellite",
+    "all_fields": true
+   }
+  ]
  },
- "_comment": "Test scenario for LAMBDA: the newest 50 location_update items (sources TrackLocation, ankle_bracelet, gps_location) from the last 365 days, each drawn from its own location.point. recent_days and limit are read by hl/items.py and not sent to HL API (limit is capped at 100). No location entities exist on LAMBDA, so the Location layer stays empty."
+ "_comment": "Test scenario for LAMBDA: images from the source \"EO optical (fictional)\" (the Syria convoy demo, with locations) in a layer named \"Satellite\", drawn from their own location.point. recent_days, limit and layer are read by hl/items.py and not sent to HL API; APP_ITEMS_PER_TYPE overrides limit. No location entities exist on LAMBDA, so the Location layer stays empty. all_fields: every populated i360 item field is shown (table without media fields, viewer with everything)."
 }

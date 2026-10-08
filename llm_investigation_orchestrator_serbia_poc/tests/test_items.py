@@ -42,6 +42,102 @@ class RecentDaysTests(unittest.TestCase):
         self.assertNotIn("limit", body)
         self.assertEqual((50, "desc", 1), (body["page_size"], body["order"], body["page_number"]))
 
+    def test_a_limit_above_one_page_reads_further_pages(self):
+        class Client(RecordingClient):
+            def search_items(self, body):
+                self.bodies.append(body)
+                start = (body["page_number"] - 1) * body["page_size"]
+                return {"total": 1000, "total_pages": 10,
+                        "items": [{"item_id": f"i{n}"} for n in range(start, start + body["page_size"])]}
+
+        client = Client()
+        items = ItemReader(client, mapping(), {"item_types": ["image"], "limit": 50}, 30000, items_per_query=200).items()
+        self.assertEqual(200, len(items))
+        self.assertEqual([1, 2], [body["page_number"] for body in client.bodies])
+
+    def test_each_query_is_read_and_can_name_its_layer(self):
+        class Client(RecordingClient):
+            def search_items(self, body):
+                self.bodies.append(body)
+                kind = body["item_types"][0]
+                return {"total": 1, "total_pages": 1, "items": [
+                    {"item_id": f"{kind}-1", "item_type": kind, "source_application": "Telegram"}]}
+
+        client = Client()
+        reader = ItemReader(client, Mapping({"version": 1, "items": {"record_id": "item_id", "needs_get": False,
+                                                                     "fields": {"source_type": "source_application"}}}),
+                            {"queries": [{"item_types": ["location_update"], "limit": 5},
+                                         {"item_types": ["image"], "limit": 5, "layer": "image"}]}, 100)
+        rows = reader.rows("en")
+        self.assertEqual([["location_update"], ["image"]], [body["item_types"] for body in client.bodies])
+        self.assertTrue(all("layer" not in body and "queries" not in body for body in client.bodies))
+        self.assertEqual(["Telegram", "image"], [row["source_type"] for row in rows])
+
+
+class ServerRowsTests(unittest.TestCase):
+    def test_the_server_keeps_the_layer_name_of_cached_items(self):
+        from types import SimpleNamespace
+
+        from hl.items import Snapshot
+        from server import App
+
+        app = SimpleNamespace(mapping=Mapping({"version": 1, "items": {"record_id": "item_id",
+                                                                       "fields": {"source_type": "source_application"}}}))
+        snap = Snapshot(items=[{"item_id": "a", "source_application": "Telegram"},
+                               {"item_id": "b", "source_application": "Telegram", "_layer": "image"}],
+                        entities=[], locations={}, reviews={}, fetched_at=0.0)
+        self.assertEqual(["Telegram", "image"], [row["source_type"] for row in App.rows(app, snap, "en")])
+
+
+class RecordFilesTests(unittest.TestCase):
+    def test_signed_links_become_absolute_and_media_comes_first(self):
+        from server import normalize_record_files
+
+        files = normalize_record_files([
+            {"file_id": "1", "role": "source_grab", "raw_type": "rawdata", "content_type": "application/json",
+             "urls": {"primary": "/api/v1/items/x/files/1?variant=primary&token=a"}},
+            {"file_id": "2", "role": "media", "raw_type": "image", "content_type": "image/png",
+             "urls": {"primary": "/api/v1/items/x/files/2?variant=primary&token=b",
+                      "thumbnail": "/api/v1/items/x/files/2?variant=thumbnail&token=c"}},
+        ], "https://hl.example")
+        self.assertEqual(["2", "1"], [f["file_id"] for f in files])
+        self.assertEqual("https://hl.example/api/v1/items/x/files/2?variant=primary&token=b", files[0]["url"])
+        self.assertTrue(files[0]["thumbnail_url"].startswith("https://hl.example/"))
+
+
+class AllFieldsTests(unittest.TestCase):
+    def test_item_fields_flattens_everything_populated(self):
+        from hl.items import item_fields
+
+        fields = item_fields({
+            "item_id": "x", "item_type": "image", "name": None, "location": {"point": {"lat": 35.08, "lon": 36.29}},
+            "text": {"transcript": "3x cargo truck", "english": None},
+            "insights": [{"type": "transcription", "value": "a"}, {"type": "post_comment", "value": "b"}],
+            "tags": [{"type": "object_recognition", "value": "weapon"}], "flags": ["HasContent"],
+            "media": {"kind": "image", "file_count": 1}, "parties": [], "_layer": "Satellite",
+        })
+        self.assertEqual("image", fields["i360.item_type"])
+        self.assertEqual("35.08", fields["i360.location.point.lat"])
+        self.assertEqual("3x cargo truck", fields["i360.text.transcript"])
+        self.assertEqual("transcription: a\npost_comment: b", fields["i360.insights"])
+        self.assertEqual("object_recognition=weapon", fields["i360.tags"])
+        self.assertEqual("HasContent", fields["i360.flags"])
+        self.assertEqual("image", fields["i360.media.kind"])
+        self.assertNotIn("i360.name", fields)
+        self.assertNotIn("i360.parties", fields)
+        self.assertNotIn("i360._layer", fields)
+
+    def test_a_query_with_all_fields_puts_them_on_its_rows(self):
+        class Client(RecordingClient):
+            def search_items(self, body):
+                self.bodies.append(body)
+                return {"total": 1, "total_pages": 1, "items": [{"item_id": "a", "item_type": "image", "sub_type": "file_image"}]}
+
+        client = Client()
+        rows = ItemReader(client, mapping(), {"item_types": ["image"], "limit": 5, "all_fields": True}, 100).rows("en")
+        self.assertNotIn("all_fields", client.bodies[0])
+        self.assertEqual("file_image", rows[0]["i360.sub_type"])
+
 
 class ForbiddenEntitiesClient(RecordingClient):
     def search_entities(self, entity_type, body):

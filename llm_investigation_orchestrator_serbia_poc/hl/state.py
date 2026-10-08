@@ -7,7 +7,8 @@ Three types (names carry ``APP_TYPE_PREFIX``, default ``AII_``), all with one se
 - ``AII_TELECOM_APPROVAL``  one per reviewed subscriber-identity derivation
 
 Rules from the HL API docs that shape this module:
-- the platform assigns its own ``entity_id``; we keep our own key in a field and search by it;
+- HL API requires the caller to supply ``entity_id`` on create (``general.entity_id`` is mandatory);
+  we send a fresh UUID, keep our own key in a field and search by it;
 - ``actors`` is left out on create, so HL API grants the record to the signed-in user and it
   appears in that user's searches;
 - every saved item is its own record, so two writers never overwrite each other and
@@ -17,6 +18,7 @@ Rules from the HL API docs that shape this module:
 from __future__ import annotations
 
 import json
+import uuid
 from datetime import datetime, timezone
 from typing import Any
 
@@ -58,6 +60,44 @@ def _payload(instance: dict[str, Any]) -> dict[str, Any]:
 
 
 # The model provisioned by tools/provision_types.py (CreateEntityTypeRequest shape, contract 252).
+def _first(*values: Any) -> Any:
+    for value in values:
+        if value not in (None, "", [], {}):
+            return value
+    return None
+
+
+def _iso_time(value: Any) -> Any:
+    if isinstance(value, (int, float)) and value > 10**11:  # epoch milliseconds
+        return datetime.fromtimestamp(value / 1000, timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    return value
+
+
+def external_investigation_header(instance: dict[str, Any]) -> dict[str, Any]:
+    """An investigation record that i360 owns (e.g. INTELLIGENCE_INVESTIGATION), in the app's shape."""
+    sections = instance.get("sections") if isinstance(instance.get("sections"), dict) else {}
+    general = _first(sections.get("general"), instance.get("general")) or {}
+    details = _first(sections.get("investigation_details"), instance.get("investigation_details")) or {}
+    metadata = instance.get("metadata") if isinstance(instance.get("metadata"), dict) else {}
+    creator = general.get("creator") if isinstance(general.get("creator"), dict) else {}
+    entity_id = entity_id_of(instance) or str(general.get("entity_id") or "")
+    created = _iso_time(_first(general.get("creation_time"), instance.get("creation_time"), metadata.get("creation_time")))
+    updated = _iso_time(_first(general.get("user_modification_time"), general.get("last_modification_time"),
+                               instance.get("last_modification_time"), metadata.get("user_modification_time"))) or created
+    return {
+        "investigation_id": entity_id,
+        "name": str(_first(instance.get("entity_name"), general.get("entity_name"), instance.get("name"), entity_id) or "Investigation"),
+        "created_at_utc": created,
+        "updated_at_utc": updated,
+        "i360_entity_id": entity_id,
+        "status": _first(details.get("status"), general.get("entity_status")),
+        "activity_level": details.get("activity_level"),
+        "research_question": details.get("research_question"),
+        "next_milestone": _first(details.get("next_milstone"), details.get("next_milestone")),
+        "created_by": _first(instance.get("creator_user_display"), creator.get("name")),
+    }
+
+
 def type_definitions(prefix: str) -> list[dict[str, Any]]:
     def text(name: str, searchable: bool = False) -> dict[str, Any]:
         field = {"name": name, "type": "TEXT"}
@@ -100,9 +140,10 @@ def type_definitions(prefix: str) -> list[dict[str, Any]]:
 
 class StateStore:
     def __init__(self, client: HlClient, *, investigation_type: str, memory_item_type: str,
-                 approval_type: str, scenario: str):
+                 approval_type: str, scenario: str, external_investigation_type: str = ""):
         self.client = client
         self.investigation_type = investigation_type
+        self.external_investigation_type = external_investigation_type
         self.memory_item_type = memory_item_type
         self.approval_type = approval_type
         self.scenario = scenario
@@ -131,6 +172,7 @@ class StateStore:
 
     def _create(self, entity_type: str, name: str, fields: dict[str, Any]) -> dict[str, Any]:
         response = self.client.create_entity(entity_type, {
+            "entity_id": str(uuid.uuid4()),
             "entity_name": name[:240] or entity_type,
             "sections": {SECTION: {key: value for key, value in fields.items() if value is not None}},
         })
@@ -142,13 +184,22 @@ class StateStore:
 
     # -- investigations -----------------------------------------------------------------
     def _investigation_instance(self, investigation_key: str) -> dict[str, Any] | None:
+        if self.external_investigation_type:
+            # External investigations are keyed by their i360 entity_id.
+            try:
+                return self.client.get_entity(self.external_investigation_type, investigation_key)
+            except HlError as exc:
+                if exc.status in {400, 404}:
+                    return None
+                raise
         hits = self._search_all(self.investigation_type, [
             {"field": f"{SECTION}.investigation_key", "values": [investigation_key]},
         ])
         return hits[0] if hits else None
 
-    @staticmethod
-    def _investigation_header(instance: dict[str, Any]) -> dict[str, Any]:
+    def _investigation_header(self, instance: dict[str, Any]) -> dict[str, Any]:
+        if self.external_investigation_type:
+            return external_investigation_header(instance)
         fields = fields_of(instance)
         return {
             "investigation_id": fields.get("investigation_key") or "",
@@ -159,9 +210,12 @@ class StateStore:
         }
 
     def list_investigations(self) -> list[dict[str, Any]]:
-        instances = self._search_all(self.investigation_type, [
-            {"field": f"{SECTION}.scenario", "values": [self.scenario]},
-        ])
+        if self.external_investigation_type:
+            instances = self._search_all(self.external_investigation_type, [])
+        else:
+            instances = self._search_all(self.investigation_type, [
+                {"field": f"{SECTION}.scenario", "values": [self.scenario]},
+            ])
         items = [self._investigation_header(instance) for instance in instances]
         counts: dict[str, dict[str, int]] = {}
         for item in self._search_all(self.memory_item_type, []):
@@ -180,6 +234,8 @@ class StateStore:
         return sorted(items, key=lambda x: str(x.get("updated_at_utc") or ""), reverse=True)
 
     def register_investigation(self, investigation_key: str, name: str) -> dict[str, Any]:
+        if self.external_investigation_type:
+            return self._register_external_investigation(investigation_key, name)
         existing = self._investigation_instance(investigation_key)
         now = utc_now_iso()
         if existing:
@@ -193,11 +249,27 @@ class StateStore:
         })
         return self._investigation_header(created)
 
+    def _register_external_investigation(self, investigation_key: str, name: str) -> dict[str, Any]:
+        entity_type = self.external_investigation_type
+        existing = self._investigation_instance(investigation_key)
+        if existing:
+            if external_investigation_header(existing)["name"] != name:
+                self.client.patch_entity(entity_type, entity_id_of(existing), {"entity_name": name})
+            return {**external_investigation_header(existing), "name": name}
+        # HL API wants the caller's entity_id; the browser's own id keeps the investigation's key stable.
+        response = self.client.create_entity(entity_type, {"entity_id": investigation_key, "entity_name": name[:240]})
+        entity_id = entity_id_of(response) or investigation_key
+        if not entity_id:
+            raise HlError(502, "create_without_id", f"HL API accepted the {entity_type} write but returned no entity_id")
+        return external_investigation_header(self.client.get_entity(entity_type, entity_id))
+
     def touch_investigation(self, investigation_key: str, name: str | None = None) -> None:
         existing = self._investigation_instance(investigation_key)
         if existing is None:
             self.register_investigation(investigation_key, name or investigation_key)
             return
+        if self.external_investigation_type:
+            return  # i360 keeps its own modification time; the app does not rewrite those records
         self.client.patch_entity(self.investigation_type, entity_id_of(existing), {
             "sections": {SECTION: {"updated_at_utc": utc_now_iso()}},
         })

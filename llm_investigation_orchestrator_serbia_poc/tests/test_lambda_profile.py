@@ -1,8 +1,9 @@
-"""The LAMBDA test profile: the newest tracker location updates, one layer per source, drawn as map points."""
+"""The LAMBDA test profile: satellite (EO optical) images, drawn as map points from their own location."""
 import json
 import os
 import tempfile
 import unittest
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from devtools.fake_hlapi import FakeEstate, make_server
@@ -10,21 +11,20 @@ from hl.state import type_definitions
 from tests.test_api import Browser, start
 
 
-def item(item_id, item_type, when, lat=None, lon=None, text=None, source="TrackLocation"):
-    record = {"item_id": item_id, "item_type": item_type, "event_time": when, "source_application": source}
+def item(item_id, item_type, days_ago, lat=None, lon=None, source="EO optical (fictional)"):
+    when = (datetime.now(timezone.utc) - timedelta(days=days_ago)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    record = {"item_id": item_id, "item_type": item_type, "event_time": when, "source_application": source,
+              "text": {"transcript": "3x cargo truck"}}
     if lat is not None:
-        record["location"] = {"point": {"lat": lat, "lon": lon}, "city": None, "country": None,
-                              "address": None, "accuracy": "gps"}
-    if text:
-        record["text"] = {"english": text}
+        record["location"] = {"point": {"lat": lat, "lon": lon}, "accuracy": "gps"}
     return record
 
 
 ITEMS = [
-    item("LU-1", "location_update", "2026-08-02T10:00:00Z", 32.08, 34.78),
-    item("LU-2", "location_update", "2026-08-03T11:30:00Z", 32.06, 34.80),
-    item("LU-3", "location_update", "2026-08-04T09:15:00Z", 32.10, 34.85, source="ankle_bracelet"),
-    item("VC-1", "voice_call", "2026-08-04T09:15:00Z", 25.20, 55.27, "call about a meeting"),  # another item type
+    item("SAT-1", "image", 30, 35.0806, 36.2963),
+    item("SAT-2", "image", 31, 35.07, 36.30),
+    item("TG-1", "image", 1, source="Telegram"),  # another source: not in the layer
+    item("LU-1", "location_update", 2, 32.08, 34.78, source="TrackLocation"),  # another item type
 ]
 
 
@@ -67,19 +67,17 @@ class LambdaProfileTests(unittest.TestCase):
         status, body = Browser(self.base).call("GET", "/api/status")
         self.assertEqual((200, "lambda"), (status, body["scenario_id"]))
 
-    def test_one_event_layer_per_source(self):
+    def test_only_the_satellite_layer(self):
         status, body = self.browser().call("GET", "/api/layers?lang=en")
         self.assertEqual(200, status, body)
-        counts = {layer["id"]: layer["count"] for layer in body["layers"]}
-        self.assertEqual(2, counts["events:TrackLocation"])
-        self.assertEqual(1, counts["events:ankle_bracelet"])
-        self.assertNotIn("events:voice_call", counts)
+        events = {layer["id"]: layer["count"] for layer in body["layers"] if layer["id"].startswith("events:")}
+        self.assertEqual({"events:Satellite": 2}, events)
 
     def test_rows_carry_coordinates(self):
-        status, body = self.browser().call("GET", "/api/layers/events:TrackLocation/rows?lang=en")
+        status, body = self.browser().call("GET", "/api/layers/events:Satellite/rows?lang=en")
         self.assertEqual(200, status, body)
         points = {row["event_id"]: (float(row["latitude"]), float(row["longitude"])) for row in body["rows"]}
-        self.assertEqual({"LU-1": (32.08, 34.78), "LU-2": (32.06, 34.80)}, points)
+        self.assertEqual({"SAT-1": (35.0806, 36.2963), "SAT-2": (35.07, 36.30)}, points)
 
 
 if __name__ == "__main__":

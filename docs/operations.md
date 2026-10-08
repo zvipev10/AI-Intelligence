@@ -13,6 +13,8 @@ Branch `feature/i360-only`. The app is one stateless container that talks to pla
 | `APP_SCENARIO` | `syria` | `syria`, `kosovo` or `lambda` (`demo_profiles/<scenario>.json`) |
 | `APP_MAPPING` | profile's `mapping`, else `mapping/default.json` | item → row mapping; when set it overrides the profile |
 | `APP_TYPE_PREFIX` | `AII_` | prefix of the app's entity types |
+| `APP_INVESTIGATION_TYPE` | (empty) | an existing i360 type to use as the investigation list, e.g. `INTELLIGENCE_INVESTIGATION`; empty uses the app's own `AII_INVESTIGATION` |
+| `APP_ITEMS_PER_TYPE` | `0` | when set, overrides every profile query's `limit` (newest N items per query) |
 | `APP_SNAPSHOT_TTL` | `300` | seconds a user's snapshot is reused |
 | `APP_SNAPSHOT_MAX_ROWS` | `30000` | safety cap on items read per snapshot |
 | `APP_COOKIE_SECURE` | `true` | set `false` only for plain-HTTP local runs |
@@ -68,10 +70,10 @@ The Dockerfile runs all three during the image build.
    users see only records assigned to them.
 3. Point `items_query` in `demo_profiles/<scenario>.json` and `mapping/default.json` at how the
    demo data was ingested (item types, field names). Check every layer and viewer.
-   A profile may name its own mapping file (`"mapping": "<file>.json"`) and bound the snapshot:
-   `items_window` (`{"from": ..., "to": ...}`), `items_query.recent_days` (last N days), or
-   `items_query.limit` (only the newest N items, at most 100, in one search). Without these the
-   reader starts at the oldest item and stops at `APP_SNAPSHOT_MAX_ROWS`.
+   A profile's `items_query` may hold `queries`, each read on its own, with `recent_days` (last N
+   days), `limit` (only the newest N items, paged 100 at a time), `layer` (the layer name its items
+   go into) and `all_fields` (rows carry every populated i360 field as `i360.<path>`). Without a
+   limit the reader starts at the oldest item and stops at `APP_SNAPSHOT_MAX_ROWS`.
 4. Run the app against the estate and verify as a normal user: sign in, layers load, viewers
    open, a saved item survives a reload.
 

@@ -44,13 +44,13 @@ Impact:
 Follow-ups:
 None.
 
-### 2026-10-08 - i360-only branch: LAMBDA test profile, points only
+### 2026-10-08 - i360-only branch: LAMBDA test profile and i360 investigations
 
-Decision: add a `lambda` profile (`APP_SCENARIO=lambda`) that reads the newest 50 `location_update` items on the LAMBDA estate, shown as one event layer per tracker source (TrackLocation, ankle_bracelet, gps_location). An event without a location object is drawn on the map at its own latitude/longitude; events at the same point share one marker. No location objects are derived from the GPS points. Profiles gain `items_query.limit` (newest N, at most 100, one search), `items_query.recent_days`, an optional `items_window` and an optional `mapping` file name.
+Decision: add a `lambda` profile (`APP_SCENARIO=lambda`). After trying location updates, Telegram images and other layers with the user, it now reads one layer, "Satellite": `image` items whose source is "EO optical (fictional)" (the Syria convoy demo data ingested into LAMBDA; 2 items, both located near Homs). The table shows every populated i360 field except media; the viewer shows every field plus the picture, with full screen. Events without a location object are drawn at their own latitude/longitude. With `APP_INVESTIGATION_TYPE=INTELLIGENCE_INVESTIGATION`, the investigation list, welcome sections (by `investigation_details.status`) and Create investigation use that existing i360 type; the app writes only the name and supplies the `entity_id`. `APP_ITEMS_PER_TYPE` caps each profile query.
 
-Rationale: the user asked to try the app on LAMBDA's own located items with tens of records, without touching the Syria profile. The estate holds about 280,000 located items, so the full-snapshot design cannot read them all; per-layer on-demand querying is the path for real volumes and is not built.
+Rationale: the user wants to see real i360 records in the app, a few hundred at most, rather than the full estate (about 1.9 million items), and wants investigations to live in i360's own type.
 
-Impact: the Syria and Kosovo profiles are unchanged. Until the AII_ types are provisioned on an estate, saved work reads as empty and saving fails visibly; an entity type the user may not read (403) is skipped with a warning.
+Impact: the Syria and Kosovo profiles are unchanged. Opening an investigation does not yet load its linked items. Until the AII_ types are provisioned, saved layers and objects cannot be saved; reading saved work returns nothing, and an entity type the user may not read (403) is skipped with a warning.
 
 ### 2026-10-07 - i360-only branch: platform-hl-api is the only backend
 
