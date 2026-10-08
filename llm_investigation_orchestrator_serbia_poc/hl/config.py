@@ -41,6 +41,14 @@ class Settings:
     external_investigation_type: str = ""
     # Items read per profile query (one query per item type); 0 keeps each query's own "limit".
     items_per_type: int = 0
+    # The i360 chat service (analytics/i360-chat, http://i360-chat:4020 on LAMBDA). Empty: the chat is off.
+    chat_service_url: str = ""
+    # Model id the i360 chat is asked to use; empty keeps the service's own default.
+    chat_model: str = ""
+    # The app's own small assistant over HL API /llm/chat. Empty model: the first of GET /llm/models.
+    llm_enabled: bool = True
+    llm_model: str = ""
+    chat_idle_timeout_seconds: int = 300
 
     @property
     def investigation_type(self) -> str:
@@ -72,4 +80,9 @@ def load_settings() -> Settings:
         build=os.environ.get("APP_BUILD", "dev"),
         external_investigation_type=os.environ.get("APP_INVESTIGATION_TYPE", "").strip(),
         items_per_type=_int("APP_ITEMS_PER_TYPE", 0),
+        chat_service_url=os.environ.get("CHAT_SERVICE_URL", "").strip().rstrip("/"),
+        chat_model=os.environ.get("CHAT_MODEL", "").strip(),
+        llm_enabled=_bool("APP_CHAT_ASSISTANT", True),
+        llm_model=os.environ.get("APP_CHAT_ASSISTANT_MODEL", "").strip(),
+        chat_idle_timeout_seconds=_int("CHAT_IDLE_TIMEOUT", 300),
     )
