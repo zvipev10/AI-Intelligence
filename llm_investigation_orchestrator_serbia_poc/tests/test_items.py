@@ -74,6 +74,21 @@ class RecentDaysTests(unittest.TestCase):
         self.assertEqual(["Telegram", "image"], [row["source_type"] for row in rows])
 
 
+class ServerRowsTests(unittest.TestCase):
+    def test_the_server_keeps_the_layer_name_of_cached_items(self):
+        from types import SimpleNamespace
+
+        from hl.items import Snapshot
+        from server import App
+
+        app = SimpleNamespace(mapping=Mapping({"version": 1, "items": {"record_id": "item_id",
+                                                                       "fields": {"source_type": "source_application"}}}))
+        snap = Snapshot(items=[{"item_id": "a", "source_application": "Telegram"},
+                               {"item_id": "b", "source_application": "Telegram", "_layer": "image"}],
+                        entities=[], locations={}, reviews={}, fetched_at=0.0)
+        self.assertEqual(["Telegram", "image"], [row["source_type"] for row in App.rows(app, snap, "en")])
+
+
 class ForbiddenEntitiesClient(RecordingClient):
     def search_entities(self, entity_type, body):
         raise HlError(403, "ems", "Action not allowed")

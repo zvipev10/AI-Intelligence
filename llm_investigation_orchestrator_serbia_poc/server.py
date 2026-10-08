@@ -102,7 +102,7 @@ class App:
                 snap.derived.pop(key, None)
 
     def rows(self, snap: Snapshot, locale: str) -> list[dict[str, str]]:
-        return snap.memo(f"rows:{locale}", lambda: [self.mapping.item_to_row(item, locale) for item in snap.items])
+        return snap.memo(f"rows:{locale}", lambda: [ItemReader._with_layer(self.mapping.item_to_row(item, locale), item) for item in snap.items])
 
     def dataset(self, token: str, locale: str) -> Dataset:
         snap = self.snapshot(token)
