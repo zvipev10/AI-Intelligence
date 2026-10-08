@@ -40,6 +40,8 @@ def main() -> int:
         response = client.get_items(args.item_ids, ["text", "parties"])
     except HlError as exc:
         print(f"items/get failed: {exc.status} {exc}")
+        Path(args.out).write_text(json.dumps({"items_get_error": exc.to_dict()}, indent=2, ensure_ascii=False), encoding="utf-8")
+        print(f"\nFull answer: {Path(args.out).resolve()}")
         return 1
     by_id = {str(item.get("item_id")): item for item in response.get("items") or []}
     report = {"warnings": response.get("warnings"), "items": {}}
