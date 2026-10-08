@@ -1,0 +1,32 @@
+{
+ "_comment": "LAMBDA test estate: tracker location updates and voice calls drawn as map points. Search hits already carry location, so no per-item get is needed. No entity or location types are read.",
+ "version": 1,
+ "items": {
+  "record_id": "item_id",
+  "needs_get": false,
+  "fields": {
+   "event_id": "item_id",
+   "timestamp_utc": "event_time",
+   "source_type": "item_type",
+   "event_summary": "text.english | text.synopsis | text.summary | highlight | source_application",
+   "latitude": "location.point.lat",
+   "longitude": "location.point.lon",
+   "source_application": "source_application"
+  }
+ },
+ "label_fields": [
+  "source_type"
+ ],
+ "value_labels": {
+  "en": {
+   "location_update": "Location updates",
+   "voice_call": "Voice calls"
+  }
+ },
+ "entities": {
+  "types": []
+ },
+ "locations": {
+  "types": []
+ }
+}

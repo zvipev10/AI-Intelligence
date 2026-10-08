@@ -73,10 +73,13 @@ def _merge(hit: dict[str, Any], full: dict[str, Any] | None) -> dict[str, Any]:
 
 
 class ItemReader:
-    def __init__(self, client: HlClient, mapping: Mapping, base_query: dict[str, Any], max_rows: int):
+    def __init__(self, client: HlClient, mapping: Mapping, base_query: dict[str, Any], max_rows: int,
+                 window: dict[str, str] | None = None):
         self.client = client
         self.mapping = mapping
         self.base_query = {k: v for k, v in (base_query or {}).items() if v not in (None, [], {})}
+        # A profile may bound the snapshot to a time window when the estate holds more than max_rows.
+        self.window = (window or {}).get("from") or EARLIEST, (window or {}).get("to") or None
         self.max_rows = max_rows
         self.warnings: list[str] = []
         self.truncated = False
@@ -113,8 +116,8 @@ class ItemReader:
 
     def items(self) -> list[dict[str, Any]]:
         hits: list[dict[str, Any]] = []
-        now = datetime.now(timezone.utc) + timedelta(days=3650)
-        self._collect_window((EARLIEST, _iso(now)), hits)
+        end = self.window[1] or _iso(datetime.now(timezone.utc) + timedelta(days=3650))
+        self._collect_window((self.window[0], end), hits)
         seen: set[str] = set()
         unique = []
         for hit in hits:

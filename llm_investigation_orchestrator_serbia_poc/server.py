@@ -17,6 +17,7 @@ import csv
 import io
 import json
 import mimetypes
+import os
 import re
 import sys
 import time
@@ -64,8 +65,11 @@ class App:
 
     def __init__(self, settings: Settings):
         self.settings = settings
-        self.mapping: Mapping = load_mapping(str(settings.mapping_path))
         self.profile = load_profile(settings)
+        mapping_path = settings.mapping_path
+        if not os.environ.get("APP_MAPPING") and self.profile.get("mapping"):
+            mapping_path = ROOT / "mapping" / str(self.profile["mapping"])
+        self.mapping: Mapping = load_mapping(str(mapping_path))
         self.snapshots = SnapshotCache(settings.snapshot_ttl_seconds)
 
     def client(self, token: str | None = None) -> HlClient:
@@ -83,7 +87,7 @@ class App:
     def snapshot(self, token: str, refresh: bool = False) -> Snapshot:
         def build() -> Snapshot:
             reader = ItemReader(self.client(token), self.mapping, self.profile.get("items_query") or {},
-                                self.settings.snapshot_max_rows)
+                                self.settings.snapshot_max_rows, self.profile.get("items_window"))
             items = reader.items()
             entities = reader.entities()
             locations = reader.locations()

@@ -1,0 +1,43 @@
+{
+ "scenario_id": "lambda",
+ "label": {
+  "en": "LAMBDA test"
+ },
+ "mapping": "lambda.json",
+ "map": {
+  "center": [
+   34.8,
+   32.08
+  ],
+  "zoom": 11,
+  "minZoom": 2,
+  "maxBounds": [
+   [
+    -180,
+    -85
+   ],
+   [
+    180,
+    85
+   ]
+  ]
+ },
+ "sources": {
+  "en": [
+   "Location updates",
+   "Voice calls"
+  ]
+ },
+ "dataset_version": "i360",
+ "items_query": {
+  "item_types": [
+   "location_update",
+   "voice_call"
+  ]
+ },
+ "items_window": {
+  "from": "2026-08-01T00:00:00Z",
+  "to": "2026-08-08T00:00:00Z"
+ },
+ "_comment": "Points-only test on the LAMBDA estate. The estate holds ~280k such items (Jun-Aug 2026), more than APP_SNAPSHOT_MAX_ROWS, so items_window bounds the snapshot to one week; widen or move it to see other dates."
+}

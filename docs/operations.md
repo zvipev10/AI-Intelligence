@@ -10,8 +10,8 @@ Branch `feature/i360-only`. The app is one stateless container that talks to pla
 | `HL_API_PUBLIC_ORIGIN` | `HL_API_URL` | origin the browser uses for signed media URLs |
 | `PORT` | `8080` | listen port |
 | `APP_HOST` | `0.0.0.0` | bind address |
-| `APP_SCENARIO` | `syria` | `syria` or `kosovo` (`demo_profiles/<scenario>.json`) |
-| `APP_MAPPING` | `mapping/default.json` | item → row mapping |
+| `APP_SCENARIO` | `syria` | `syria`, `kosovo` or `lambda` (`demo_profiles/<scenario>.json`) |
+| `APP_MAPPING` | profile's `mapping`, else `mapping/default.json` | item → row mapping; when set it overrides the profile |
 | `APP_TYPE_PREFIX` | `AII_` | prefix of the app's entity types |
 | `APP_SNAPSHOT_TTL` | `300` | seconds a user's snapshot is reused |
 | `APP_SNAPSHOT_MAX_ROWS` | `30000` | safety cap on items read per snapshot |
@@ -62,6 +62,9 @@ The Dockerfile runs all three during the image build.
    minutes of rolling restarts). Agree a time with the LAMBDA owner.
 3. Point `items_query` in `demo_profiles/<scenario>.json` and `mapping/default.json` at how the
    demo data was ingested (item types, field names). Check every layer and viewer.
+   A profile may name its own mapping (`"mapping": "lambda.json"`) and bound the snapshot with
+   `"items_window": {"from": ..., "to": ...}` when the estate holds more than
+   `APP_SNAPSHOT_MAX_ROWS` matching items; without a window the reader starts at the oldest item.
 4. Run the app against the estate and verify as a normal user: sign in, layers load, viewers
    open, a saved item survives a reload.
 
