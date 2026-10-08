@@ -44,7 +44,7 @@ MAX_BODY = 2_000_000
 
 STATIC_FILES = {
     "/": "index.html", "/index.html": "index.html", "/app.js": "app.js", "/styles.css": "styles.css",
-    "/polygon_draw.js": "polygon_draw.js", "/demo_bootstrap.js": "demo_bootstrap.js", "/chat.js": "chat.js",
+    "/polygon_draw.js": "polygon_draw.js", "/demo_bootstrap.js": "demo_bootstrap.js", "/chat.js": "chat.js", "/chat.css": "chat.css",
     "/help.html": "help.html", "/investigation-user-flow.html": "investigation-user-flow.html",
     "/system-capabilities-guide.html": "system-capabilities-guide.html",
 }
@@ -565,6 +565,14 @@ class Handler(BaseHTTPRequestHandler):
             return
         if path == "/api/chat/ask":
             self.chat_ask(token, self.read_json(400_000))
+            return
+        if path == "/api/chat/items":
+            request = self.read_json(100_000)
+            ids = [str(i) for i in request.get("ids") or [] if isinstance(i, str) and i.strip()][:100]
+            if not ids:
+                raise ValueError("Missing ids")
+            locale = normalize_locale(str(request.get("locale") or "en"))
+            self.send_json(200, {"groups": app.item_layers(token, ids, locale)})
             return
         if path == "/api/chat/action":
             self.send_json(200, self.chat_action(token, self.read_json(100_000)))

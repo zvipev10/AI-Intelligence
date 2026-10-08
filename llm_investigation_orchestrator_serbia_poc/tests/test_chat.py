@@ -196,6 +196,12 @@ class ChatApiTests(unittest.TestCase):
         self.assertEqual("c1", self.chat.actions[-1]["conversation_id"])
         self.assertEqual(400, self.signed_in().call("POST", "/api/chat/action", {"action": {"kind": "delete"}})[0])
 
+    def test_cited_items_are_read_for_the_viewer(self):
+        item_id = next(iter(self.estate.items))
+        status, body = self.signed_in().call("POST", "/api/chat/items", {"ids": [item_id, "missing"]})
+        self.assertEqual(200, status)
+        self.assertEqual([item_id], [r["i360_item_id"] for g in body["groups"] for r in g["rows"]])
+
     def test_guards(self):
         self.assertEqual(401, Browser(self.base).call("POST", "/api/chat/ask", {"message": "x"})[0])
         self.assertEqual(400, self.signed_in().call("POST", "/api/chat/ask", {"message": ""})[0])
