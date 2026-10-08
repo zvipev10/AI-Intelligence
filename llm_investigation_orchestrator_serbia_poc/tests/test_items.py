@@ -56,5 +56,29 @@ class UnreadableEntityTypeTests(unittest.TestCase):
         self.assertTrue(any("DEMO_ENTITY" in warning for warning in reader.warnings))
 
 
+class UnprovisionedTypesClient:
+    def search_entities(self, entity_type, body):
+        raise HlError(400, "ems_error", f"ems -> HTTP 400: Invalid entity type: /entities/entities/{entity_type}/search")
+
+
+class UnprovisionedStateTests(unittest.TestCase):
+    def test_reads_before_provisioning_return_nothing(self):
+        from hl.state import StateStore
+        store = StateStore(UnprovisionedTypesClient(), investigation_type="AII_INVESTIGATION",
+                           memory_item_type="AII_MEMORY_ITEM", approval_type="AII_TELECOM_APPROVAL", scenario="lambda")
+        self.assertEqual([], store._search_all("AII_TELECOM_APPROVAL", []))
+
+    def test_other_bad_requests_still_fail(self):
+        from hl.state import StateStore
+
+        class BadRequest:
+            def search_entities(self, entity_type, body):
+                raise HlError(400, "bad_request", "page_size too large")
+
+        store = StateStore(BadRequest(), investigation_type="A", memory_item_type="B", approval_type="C", scenario="x")
+        with self.assertRaises(HlError):
+            store._search_all("C", [])
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -218,6 +218,7 @@ class Handler(BaseHTTPRequestHandler):
                            cookie=self.clear_cookie())
         elif isinstance(exc, HlError):
             status = exc.status if exc.status in {400, 403, 404, 409, 422, 501} else 502
+            self.log_message("HL API error on %s: %s %s %s", self.path.split("?")[0], exc.status, exc.code, exc)
             self.send_json(status, exc.to_dict())
         elif isinstance(exc, (ValueError, json.JSONDecodeError)):
             self.send_json(400, {"error": str(exc)})
