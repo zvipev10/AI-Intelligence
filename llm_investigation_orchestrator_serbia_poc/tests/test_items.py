@@ -42,6 +42,19 @@ class RecentDaysTests(unittest.TestCase):
         self.assertNotIn("limit", body)
         self.assertEqual((50, "desc", 1), (body["page_size"], body["order"], body["page_number"]))
 
+    def test_a_limit_above_one_page_reads_further_pages(self):
+        class Client(RecordingClient):
+            def search_items(self, body):
+                self.bodies.append(body)
+                start = (body["page_number"] - 1) * body["page_size"]
+                return {"total": 1000, "total_pages": 10,
+                        "items": [{"item_id": f"i{n}"} for n in range(start, start + body["page_size"])]}
+
+        client = Client()
+        items = ItemReader(client, mapping(), {"item_types": ["image"], "limit": 50}, 30000, items_per_query=200).items()
+        self.assertEqual(200, len(items))
+        self.assertEqual([1, 2], [body["page_number"] for body in client.bodies])
+
     def test_each_query_is_read_and_can_name_its_layer(self):
         class Client(RecordingClient):
             def search_items(self, body):

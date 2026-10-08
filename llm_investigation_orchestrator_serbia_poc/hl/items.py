@@ -73,13 +73,17 @@ def _merge(hit: dict[str, Any], full: dict[str, Any] | None) -> dict[str, Any]:
 
 
 class ItemReader:
-    def __init__(self, client: HlClient, mapping: Mapping, base_query: dict[str, Any], max_rows: int):
+    def __init__(self, client: HlClient, mapping: Mapping, base_query: dict[str, Any], max_rows: int,
+                 items_per_query: int = 0):
         self.client = client
         self.mapping = mapping
         query = dict(base_query or {})
         # A profile may list several queries ("queries"); each one is read on its own and may name the
         # layer its items appear in ("layer"). A plain items_query is one query, as before.
         self.specs = [self._spec(q) for q in (query.pop("queries", None) or [query])]
+        # APP_ITEMS_PER_TYPE overrides every query's "limit" (one query per item type in a profile).
+        if items_per_query > 0:
+            self.specs = [(days, items_per_query, base, layer) for days, _, base, layer in self.specs]
         self.recent_days, self.limit, self.base_query, self.layer = self.specs[0]
         self.max_rows = max_rows
         self.warnings: list[str] = []
@@ -90,8 +94,8 @@ class ItemReader:
         query = dict(query or {})
         # "recent_days" is ours, not HL API's: it narrows the scan to the last N days of event time.
         recent_days = int(query.pop("recent_days", 0) or 0)
-        # "limit" is ours too: keep only the newest N items (at most one page), for small test datasets.
-        limit = max(0, min(int(query.pop("limit", 0) or 0), PAGE_SIZE))
+        # "limit" is ours too: keep only the newest N items, for small test datasets.
+        limit = max(0, int(query.pop("limit", 0) or 0))
         # "layer" is ours too: the layer (source_type) these items are shown in.
         layer = str(query.pop("layer", "") or "")
         return recent_days, limit, {k: v for k, v in query.items() if v not in (None, [], {})}, layer
@@ -134,10 +138,19 @@ class ItemReader:
             start = _iso(now - timedelta(days=self.recent_days)) if self.recent_days > 0 else EARLIEST
             found: list[dict[str, Any]] = []
             if self.limit:
-                body = dict(self.base_query)
-                body["time"] = {**(body.get("time") or {}), "from": start, "to": end, "field": "event"}
-                body.update({"page_number": 1, "page_size": self.limit, "include": ["text"], "sort": "time", "order": "desc"})
-                found.extend(self.client.search_items(body).get("items") or [])
+                # Newest first, a page at a time, until the limit or the end of the results.
+                page = 1
+                while len(found) < self.limit:
+                    body = dict(self.base_query)
+                    body["time"] = {**(body.get("time") or {}), "from": start, "to": end, "field": "event"}
+                    body.update({"page_number": page, "page_size": min(PAGE_SIZE, self.limit),
+                                 "include": ["text"], "sort": "time", "order": "desc"})
+                    response = self.client.search_items(body)
+                    batch = response.get("items") or []
+                    found.extend(batch[: self.limit - len(found)])
+                    if len(batch) < body["page_size"] or page >= int(response.get("total_pages") or page):
+                        break
+                    page += 1
             else:
                 self._collect_window((start, end), found)
             if self.layer:

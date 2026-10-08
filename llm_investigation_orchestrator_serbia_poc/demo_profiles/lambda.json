@@ -43,17 +43,17 @@
      "location_update"
     ],
     "recent_days": 365,
-    "limit": 50
+    "limit": 200
    },
    {
     "item_types": [
      "image"
     ],
     "recent_days": 365,
-    "limit": 50,
+    "limit": 200,
     "layer": "image"
    }
   ]
  },
- "_comment": "Test scenario for LAMBDA. Two queries: the newest 50 location_update items (one layer per source: TrackLocation, ankle_bracelet, gps_location; drawn from their own location.point) and the newest 50 image items, shown together in a layer named \"image\". recent_days, limit and layer are read by hl/items.py and not sent to HL API (limit is capped at 100). No location entities exist on LAMBDA, so the Location layer stays empty."
+ "_comment": "Test scenario for LAMBDA. Two queries: the newest 200 location_update items (one layer per source: TrackLocation, ankle_bracelet, gps_location; drawn from their own location.point) and the newest 200 image items, shown together in a layer named \"image\". recent_days, limit and layer are read by hl/items.py and not sent to HL API (APP_ITEMS_PER_TYPE overrides limit). No location entities exist on LAMBDA, so the Location layer stays empty."
 }

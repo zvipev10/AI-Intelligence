@@ -83,7 +83,7 @@ class App:
     def snapshot(self, token: str, refresh: bool = False) -> Snapshot:
         def build() -> Snapshot:
             reader = ItemReader(self.client(token), self.mapping, self.profile.get("items_query") or {},
-                                self.settings.snapshot_max_rows)
+                                self.settings.snapshot_max_rows, self.settings.items_per_type)
             items = reader.items()
             entities = reader.entities()
             locations = reader.locations()
