@@ -148,7 +148,7 @@
       return result;
     };
     const script = document.createElement("script");
-    script.src = "./app.js?v=284";
+    script.src = "./app.js?v=285";
     script.onerror = () => {
       root.dataset.appReady = "true";
       setNotice(text("לא ניתן לטעון את היישום. יש לרענן.", "Application could not load. Reload to retry."));

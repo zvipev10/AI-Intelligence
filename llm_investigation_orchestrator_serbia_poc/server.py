@@ -30,7 +30,7 @@ import analysis
 from analysis import Dataset, normalize_locale, require_investigation_id
 from hl.client import AuthExpired, HlClient, HlError
 from hl.config import ROOT, Settings, load_settings
-from hl.items import ItemReader, Snapshot, SnapshotCache
+from hl.items import ItemReader, Snapshot, SnapshotCache, item_fields
 from hl.mapping import Mapping, load_mapping
 from hl.state import MEMORY_GROUPS, StateStore
 
@@ -98,6 +98,30 @@ class App:
         return StateStore(self.client(token), investigation_type=s.investigation_type,
                           memory_item_type=s.memory_item_type, approval_type=s.approval_type,
                           scenario=s.scenario, external_investigation_type=s.external_investigation_type)
+
+    def item_layer_label(self, item: dict[str, Any]) -> str:
+        """The layer an item belongs to: the first profile query it matches that names a layer, else its source."""
+        query = self.profile.get("items_query") or {}
+        for spec in query.get("queries") or [query]:
+            if not spec.get("layer"):
+                continue
+            if spec.get("item_types") and item.get("item_type") not in spec["item_types"]:
+                continue
+            if spec.get("source_applications") and item.get("source_application") not in spec["source_applications"]:
+                continue
+            return str(spec["layer"])
+        return str(item.get("source_application") or item.get("item_type") or "i360")
+
+    def investigation_item_layers(self, token: str, investigation_id: str, locale: str) -> list[dict[str, Any]]:
+        """Items attached to an i360 investigation, as rows with every field, grouped by layer."""
+        groups: dict[str, list[dict[str, str]]] = {}
+        for item in self.state(token).attached_items(investigation_id, self.mapping.get_include):
+            label = self.item_layer_label(item)
+            row = self.mapping.item_to_row(item, locale)
+            row["source_type"] = label
+            row.update(item_fields(item))
+            groups.setdefault(label, []).append(row)
+        return [{"label": label, "rows": rows} for label, rows in groups.items()]
 
     def known_sources(self, locale: str) -> list[str]:
         return list(((self.profile.get("sources") or {}).get(locale)) or [])
@@ -397,6 +421,10 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/investigation-memory":
             investigation_id = require_investigation_id((query.get("id") or [""])[0])
             self.send_json(200, app.state(token).load_memory(investigation_id))
+            return
+        if path == "/api/investigation-items":
+            investigation_id = require_investigation_id((query.get("id") or [""])[0])
+            self.send_json(200, {"layers": app.investigation_item_layers(token, investigation_id, locale)})
             return
         if path.startswith("/api/investigation-memory/layers/") and path.endswith("/presentation"):
             memory_layer_id = unquote(path[len("/api/investigation-memory/layers/"):-len("/presentation")].rstrip("/"))

@@ -1561,6 +1561,7 @@ async function loadInvestigationMemory(options = {}) {
     if (token !== state.investigationMemoryLoadToken) return null;
     state.investigationMemory = payload;
     if (options.restoreLayers) await restoreMemorySavedLayers(payload, token);
+    await loadInvestigationItemLayers(token);
     if (!memoryModal?.hidden) renderMemoryScreen();
     return payload;
   } catch (error) {
@@ -1574,6 +1575,42 @@ async function loadInvestigationMemory(options = {}) {
       state.investigationMemoryLoading = false;
     }
   }
+}
+
+// Items attached to an i360 investigation (its memory) open by themselves, one tab per layer.
+// They are rebuilt whenever the memory loads, so saving or removing an item updates them.
+async function loadInvestigationItemLayers(token) {
+  if (!state.investigationId) return;
+  let groups = [];
+  try {
+    const response = await fetch(buildLocaleApiUrl(`/api/investigation-items?id=${encodeURIComponent(state.investigationId)}`), { cache: "no-store" });
+    const payload = await response.json().catch(() => ({}));
+    if (response.ok) groups = Array.isArray(payload.layers) ? payload.layers : [];
+  } catch (error) {
+    groups = [];
+  }
+  if (token !== state.investigationMemoryLoadToken) return;
+  const previous = state.layers.filter(layer => layer.investigationItemsLayer);
+  const wasActive = previous.some(layer => layer.id === state.activeLayerId);
+  state.layers = state.layers.filter(layer => !layer.investigationItemsLayer);
+  groups.forEach(group => {
+    const rows = Array.isArray(group.rows) ? group.rows : [];
+    if (!rows.length) return;
+    const label = `${group.label} · ${activeLocaleText("זיכרון", "memory")}`;
+    const meta = {
+      id: `investigation-items:${group.label}`, label, kind: "events", source_type: group.label,
+      capabilities: { table: true, timeline: true, map: rows.some(row => row.latitude || row.location_id) }
+    };
+    const layer = buildCatalogLayer(meta, rows);
+    layer.investigationItemsLayer = true;
+    const [added] = addResultLayers({ sourceId: `investigation-items:${state.investigationId}`, sourceLabel: label,
+      preferredView: meta.capabilities.map ? "map" : "table", layers: [layer] });
+    if (added) added.investigationItemsLayer = true;
+  });
+  if (wasActive && !state.layers.some(layer => layer.id === state.activeLayerId)) state.activeLayerId = state.layers.find(layer => layer.visible)?.id || null;
+  if (!state.activeLayerId) state.activeLayerId = state.layers.find(layer => layer.investigationItemsLayer)?.id || state.activeLayerId;
+  renderAllViews();
+  renderLayerSelector();
 }
 
 function layerMemoryPayload(layer) {

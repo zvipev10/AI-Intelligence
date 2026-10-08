@@ -317,6 +317,25 @@ class StateStore:
             })
         return out
 
+    def attached_items(self, investigation_key: str, include: list[str] | None = None) -> list[dict[str, Any]]:
+        """The items attached to an external investigation, in full (items/get), newest first."""
+        if not self.external_investigation_type:
+            return []
+        hits = list_hits(self.client.search_items({
+            "related_to": {"ids": [investigation_key]},
+            "time": {"from": "1970-01-01T00:00:00Z", "to": "2100-01-01T00:00:00Z", "field": "event"},
+            "page_number": 1, "page_size": 100, "include": ["text"], "sort": "time", "order": "desc",
+        }))
+        ids = [str(hit["item_id"]) for hit in hits if hit.get("item_id")]
+        if not ids:
+            return []
+        full = {str(item.get("item_id")): item for item in self.client.get_items(ids, include or []).get("items") or []}
+        out = []
+        for hit in hits:
+            item = full.get(str(hit.get("item_id")))
+            out.append({**hit, **item} if item and item.get("found") is not False else hit)
+        return out
+
     def _detach_item(self, investigation_key: str, item_key: str) -> bool:
         item_id = item_key[len(self.RELATED_PREFIX):]
         response = self.client.remove_related_objects(self.external_investigation_type, investigation_key, [item_id])

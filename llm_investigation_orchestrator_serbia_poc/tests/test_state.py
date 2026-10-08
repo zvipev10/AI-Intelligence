@@ -135,6 +135,19 @@ class AttachItemsToInvestigationTests(unittest.TestCase):
         self.assertTrue(s.delete_memory_item("inv-1", "artifacts", "i360:item-1"))
         self.assertEqual([], s.load_memory("inv-1")["memory"]["artifacts"])
 
+    def test_attached_items_come_back_in_full(self):
+        class Full(RelatedClient):
+            def get_items(self, ids, include):
+                return {"items": [{"item_id": i, "found": True, "location": {"point": {"lat": 35.08, "lon": 36.29}}} for i in ids]}
+
+        client = Full()
+        s = store(client)
+        s.add_memory_item("inv-1", "artifacts", dict(self.RECORD))
+        items = s.attached_items("inv-1", ["parties"])
+        self.assertEqual(["item-1"], [i["item_id"] for i in items])
+        self.assertEqual(35.08, items[0]["location"]["point"]["lat"])
+        self.assertEqual("EO optical (fictional)", items[0]["source_application"])
+
     def test_a_refused_attach_is_an_error(self):
         class Refusing(RelatedClient):
             def add_related_objects(self, *args, **kwargs):
