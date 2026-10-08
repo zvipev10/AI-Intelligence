@@ -507,7 +507,8 @@ class Handler(BaseHTTPRequestHandler):
             raise ValueError("Invalid action")
         # The chat service's POST /chat/actions: {kind: tag|annotate, ids (at most 50), type, value}.
         body = {"kind": kind, "ids": [str(i) for i in ids], "type": action.get("type"),
-                "value": action.get("value") if action.get("value") is not None else action.get("text")}
+                "value": action.get("value") if action.get("value") is not None else action.get("text"),
+                "text": action.get("text")}
         body["conversation_id"] = str(request.get("conversation_id") or "") or None
         return ChatServiceClient(settings.chat_service_url, token, settings.request_timeout_seconds).call("POST", "/actions", body)
 

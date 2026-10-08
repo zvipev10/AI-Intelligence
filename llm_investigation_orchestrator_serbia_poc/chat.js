@@ -14,7 +14,7 @@
 
   const CHAT = {
     on: false, busy: false, controller: null, turnCounter: 0,
-    history: [], citations: [], i360ConversationId: "", investigationId: null,
+    history: [], citations: [], i360ConversationId: "", i360LastTurns: [], investigationId: null,
     scope: "investigation", openedLayerKey: "chat:opened-records",
   };
   const MAX_SOURCES = 8;
@@ -362,8 +362,10 @@
         renderStreaming(turn);
       } else if (inner === "answer") {
         renderAnswer(turn, payload);
+      } else if (inner === "action" && ["tag", "annotate"].includes(payload.kind)) {
+        turn.body.appendChild(i360ActionCard(payload));  // a proposed write: only the user's click runs it
       } else if (inner === "error") {
-        turn.errors.push(`i360: ${payload.message || "error"}`);
+        turn.errors.push(payload.code === "model_unavailable" ? "The i360 chat is offline for the night." : `i360: ${payload.message || "error"}`);
       }
     } else if (event === "action") {
       await runAction(turn, data || {});
@@ -373,6 +375,7 @@
       turn.errors.push(data?.message || "The chat failed.");
     } else if (event === "done") {
       CHAT.i360ConversationId = data?.i360_conversation_id || CHAT.i360ConversationId;
+      if (Array.isArray(data?.i360_last_turns)) CHAT.i360LastTurns = data.i360_last_turns;
       if (Array.isArray(data?.citations)) CHAT.citations = data.citations;
     }
   }
@@ -388,6 +391,7 @@
     CHAT.history = [];
     CHAT.citations = [];
     CHAT.i360ConversationId = "";
+    CHAT.i360LastTurns = [];
     CHAT.investigationId = state.investigationId || null;
     $("conversation").innerHTML = "";
     if (message) appendMessage("assistant", `<p class="chat-welcome">${esc(message)}</p>`);
@@ -409,6 +413,7 @@
       investigation_name: state.investigationName || "",
       scope: state.investigationId ? CHAT.scope : "all",
       i360_conversation_id: CHAT.i360ConversationId,
+      i360_last_turns: CHAT.i360LastTurns,
       previous_citations: CHAT.citations,
       open_layers: state.layers.filter(layer => layer.visible).map(layer => layer.label).slice(0, 40),
       tz: (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone; } catch { return ""; } })(),

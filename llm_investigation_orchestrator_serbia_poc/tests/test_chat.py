@@ -149,7 +149,7 @@ class ChatApiTests(unittest.TestCase):
         self.assertEqual(len(cited), len(done["citations"]))
         self.assertIn("Showed", [d for e, d in events if e == "note"][0]["text"])
         ask = self.chat.asks[-1]
-        self.assertEqual(("convoy trucks", "ai-intelligence", "Asia/Jerusalem"), (ask["question"], ask["origin"], ask["tz"]))
+        self.assertEqual(("convoy trucks", "app", "Asia/Jerusalem"), (ask["question"], ask["origin"], ask["tz"]))
         self.assertNotIn("focus", ask)  # no investigation open
 
     def test_open_investigation_is_the_focus(self):
@@ -167,6 +167,7 @@ class ChatApiTests(unittest.TestCase):
                                     "i360_conversation_id": done["i360_conversation_id"]})
         opened = self.actions(events, "open_item")
         self.assertEqual(done["citations"][1]["id"], opened[0]["row"]["i360_item_id"])
+        self.assertTrue(done["i360_last_turns"][0].startswith("AICHAT_MSG_"))
         self.assertEqual([], [e for e, d in events if e == "i360"])  # a command does not ask i360
 
     def test_command_opens_a_catalog_layer(self):
@@ -199,6 +200,14 @@ class ChatApiTests(unittest.TestCase):
         self.assertIn("gave no answer", [d for e, d in events if e == "step"][0]["text"])
         self.assertEqual(1, len(self.actions(events, "show_items")))
 
+    def test_follow_up_question_sends_last_turns(self):
+        browser = self.signed_in()
+        done = [d for e, d in self.ask(browser, {"message": "convoy trucks"}) if e == "done"][0]
+        self.ask(browser, {"message": "convoy again", "i360_conversation_id": done["i360_conversation_id"],
+                           "i360_last_turns": done["i360_last_turns"]})
+        ask = self.chat.asks[-1]
+        self.assertEqual((done["i360_conversation_id"], done["i360_last_turns"]), (ask["conversation_id"], ask["last_turns"]))
+
     def test_i360_error_is_reported(self):
         events = self.ask(self.signed_in(), {"message": "please fail now"})
         self.assertIn(("i360", {"event": "error", "data": {"message": "model unavailable"}}), events)
@@ -214,7 +223,8 @@ class ChatApiTests(unittest.TestCase):
         status, body = self.signed_in().call("POST", "/api/chat/action", {
             "action": {"kind": "note", "ids": ["a"], "value": "seen twice"}})
         self.assertEqual((200, "Annotated 1 records."), (status, body["line"]))
-        self.assertEqual({"kind": "annotate", "ids": ["a"], "type": None, "value": "seen twice", "conversation_id": None},
+        self.assertEqual({"kind": "annotate", "ids": ["a"], "type": None, "value": "seen twice", "text": None,
+                          "conversation_id": None},
                          self.chat.actions[-1])
         self.assertEqual(400, self.signed_in().call("POST", "/api/chat/action", {
             "action": {"kind": "tag", "ids": [str(i) for i in range(51)], "type": "flag", "value": "x"}})[0])

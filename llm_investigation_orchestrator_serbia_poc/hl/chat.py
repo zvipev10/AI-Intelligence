@@ -273,6 +273,7 @@ class TurnContext:
     investigation_type: str = ""
     scope: str = "investigation"
     i360_conversation_id: str = ""
+    i360_last_turns: list[str] = field(default_factory=list)
     previous_citations: list[dict[str, str]] = field(default_factory=list)
     open_layers: list[str] = field(default_factory=list)
     timezone: str = ""
@@ -297,6 +298,7 @@ class TurnContext:
             investigation_name=str(request.get("investigation_name") or "")[:240],
             scope=scope if scope in {"investigation", "all"} else "investigation",
             i360_conversation_id=str(request.get("i360_conversation_id") or "")[:240],
+            i360_last_turns=strings(request.get("i360_last_turns"), 6),
             previous_citations=cited_items(request.get("previous_citations")),
             open_layers=strings(request.get("open_layers"), 40),
             timezone=str(request.get("tz") or "")[:64],
@@ -331,6 +333,7 @@ class ChatTurn:
         self.cited_this_turn: list[str] = []
         self.has_places = False
         self.i360_conversation_id = context.i360_conversation_id
+        self.i360_last_turns = list(context.i360_last_turns)
         self.catalog_cache: list[dict[str, Any]] | None = None
 
     # -- the loop ---------------------------------------------------------------------------
@@ -376,7 +379,8 @@ class ChatTurn:
                 note = "I stopped after several steps; tell me what is still missing."
             if note:
                 self.emit("note", {"text": note})
-        self.emit("done", {"i360_conversation_id": self.i360_conversation_id, "citations": self.cited[:500]})
+        self.emit("done", {"i360_conversation_id": self.i360_conversation_id,
+                           "i360_last_turns": self.i360_last_turns[-6:], "citations": self.cited[:500]})
 
     def fallback(self, reason: str) -> None:
         """No model: ask i360 directly and show what it cited (the plan's option 1)."""
@@ -436,9 +440,11 @@ class ChatTurn:
         question = str(args.get("question") or self.ctx.message).strip()[:4000]
         scope = args.get("scope") if args.get("scope") in {"investigation", "all"} else self.ctx.scope
         body: dict[str, Any] = {"request_id": "aii-" + uuid.uuid4().hex[:12], "question": question,
-                                "origin": "ai-intelligence", "medium": "auto"}
+                                "origin": "app", "medium": "auto"}
         if self.i360_conversation_id:
             body["conversation_id"] = self.i360_conversation_id
+            if self.i360_last_turns:
+                body["last_turns"] = self.i360_last_turns[-6:]
         if scope == "investigation" and self.ctx.investigation_id:
             body["focus"] = {"kind": "entity", "id": self.ctx.investigation_id, "name": self.ctx.investigation_name,
                              "type": self.ctx.investigation_type, "label": "Investigation"}
@@ -456,8 +462,12 @@ class ChatTurn:
                 answer = data
             elif event == "error":
                 error = str((data or {}).get("message") or "error") if isinstance(data, dict) else "error"
+                if isinstance(data, dict) and data.get("code") == "model_unavailable":
+                    error = "the i360 chat is offline for the night"
             elif event == "done" and isinstance(data, dict) and data.get("conversation_id"):
                 self.i360_conversation_id = str(data["conversation_id"])
+        if answer is not None and answer.get("turn_id"):
+            self.i360_last_turns.append(str(answer["turn_id"]))
         if answer is None:
             return {"error": f"i360 gave no answer ({error or 'empty stream'})"}
         citations = list({c["id"]: c for c in cited_items(answer.get("citations"))}.values())

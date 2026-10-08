@@ -20,7 +20,7 @@ Branch `feature/i360-only`. The app is one stateless container that talks to pla
 | `APP_COOKIE_SECURE` | `true` | set `false` only for plain-HTTP local runs |
 | `HL_API_TIMEOUT` | `30` | seconds per HL API call |
 | `APP_BUILD` | `dev` | build label shown in `/healthz` and `/api/status` |
-| `CHAT_SERVICE_URL` | (empty) | i360 chat service (`analytics/i360-chat`). In cluster: `http://i360-chat:4020`. Empty turns the chat panel off |
+| `CHAT_SERVICE_URL` | (empty) | i360 chat service (`analytics/i360-chat`). In cluster: `http://i360-chat:4020`; from a laptop on the company network: `https://i360-chat.intel360.lambda.projects.e-bitbox.com`. Empty turns the chat panel off. The chat saves conversations only for users holding the `Vibe Coder` profile |
 | `CHAT_MODEL` | (empty) | model the i360 chat is asked to use; empty keeps the service's default |
 | `APP_CHAT_ASSISTANT` | `true` | the small assistant over HL API `/api/v1/llm/chat` that drives the app (open layers, records, memory). `false` sends every message straight to the i360 chat |
 | `APP_CHAT_ASSISTANT_MODEL` | first of `GET /api/v1/llm/models` | model id for that assistant |
