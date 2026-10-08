@@ -89,6 +89,22 @@ class ServerRowsTests(unittest.TestCase):
         self.assertEqual(["Telegram", "image"], [row["source_type"] for row in App.rows(app, snap, "en")])
 
 
+class RecordFilesTests(unittest.TestCase):
+    def test_signed_links_become_absolute_and_media_comes_first(self):
+        from server import normalize_record_files
+
+        files = normalize_record_files([
+            {"file_id": "1", "role": "source_grab", "raw_type": "rawdata", "content_type": "application/json",
+             "urls": {"primary": "/api/v1/items/x/files/1?variant=primary&token=a"}},
+            {"file_id": "2", "role": "media", "raw_type": "image", "content_type": "image/png",
+             "urls": {"primary": "/api/v1/items/x/files/2?variant=primary&token=b",
+                      "thumbnail": "/api/v1/items/x/files/2?variant=thumbnail&token=c"}},
+        ], "https://hl.example")
+        self.assertEqual(["2", "1"], [f["file_id"] for f in files])
+        self.assertEqual("https://hl.example/api/v1/items/x/files/2?variant=primary&token=b", files[0]["url"])
+        self.assertTrue(files[0]["thumbnail_url"].startswith("https://hl.example/"))
+
+
 class ForbiddenEntitiesClient(RecordingClient):
     def search_entities(self, entity_type, body):
         raise HlError(403, "ems", "Action not allowed")
