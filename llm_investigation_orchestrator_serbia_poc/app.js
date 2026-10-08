@@ -3702,14 +3702,17 @@ function renderMap() {
       const grouped = new Map();
       items.forEach((event, index) => {
         if (isCellularCallRecord(event) && addCellularCallMapPresentation(event, layer, index, bounds)) return;
-        if (!event.location_id) return;
-        const current = grouped.get(event.location_id) || { count: 0, first: null };
+        // An event without a location object is drawn at its own coordinates (e.g. a GPS location update).
+        const point = event.location_id ? null : eventOwnPoint(event);
+        const key = event.location_id || point?.location_id;
+        if (!key) return;
+        const current = grouped.get(key) || { count: 0, first: null, point };
         current.count += 1;
         current.first ||= event;
-        grouped.set(event.location_id, current);
+        grouped.set(key, current);
       });
       grouped.forEach((group, locationId) => {
-        addLocationCount(locationId, group.count, layer.label, null, layer.color, group.count === 1 ? { kind: "record", id: group.first.record_id || group.first.event_id } : null);
+        addLocationCount(locationId, group.count, layer.label, group.point, layer.color, group.count === 1 ? { kind: "record", id: group.first.record_id || group.first.event_id } : null);
       });
     } else if (layer.kind === "locations") {
       items.forEach(item => addLocationCount(item.location_id, item.count || 1, layer.label, item, layer.color));
@@ -3893,6 +3896,16 @@ function renderMap() {
     });
   });
   if (!bounds.isEmpty()) state.map.fitBounds(bounds, { padding: 110, maxZoom: 10.2, duration: 450 });
+}
+
+function eventOwnPoint(event = {}) {
+  const lat = Number(event.latitude ?? event.lat);
+  const lon = Number(event.longitude ?? event.lon);
+  if (String(event.latitude ?? event.lat ?? "").trim() === "" || String(event.longitude ?? event.lon ?? "").trim() === "") return null;
+  if (!Number.isFinite(lat) || !Number.isFinite(lon) || Math.abs(lat) > 90 || Math.abs(lon) > 180) return null;
+  // Points within ~1 m share one marker with a count.
+  const key = `geo:${lat.toFixed(5)},${lon.toFixed(5)}`;
+  return { location_id: key, location_name: `${lat.toFixed(5)}, ${lon.toFixed(5)}`, latitude: lat, longitude: lon };
 }
 
 function eventMapCoordinates(event = {}) {
