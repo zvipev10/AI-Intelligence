@@ -53,7 +53,7 @@ async function boot({ status, responses = {} }) {
   const screen = signedOut.body.children.find(child => child.id === 'loginScreen');
   assert.ok(screen, 'login screen is shown');
   assert.match(screen.innerHTML, /type="password"/);
-  assert.match(screen.innerHTML, /כניסה למערכת/);
+  assert.doesNotMatch(screen.innerHTML, /[֐-׿]/, 'the login screen is English only');
   assert.match(screen.innerHTML, /Sign in/);
   assert.ok(!signedOut.body.children.some(child => child.tagName === 'SCRIPT'), 'app.js is not loaded while signed out');
   assert.equal(signedOut.root.dataset.appReady, 'true');

@@ -743,7 +743,11 @@ function applyLocaleUi() {
   const helpButton = document.querySelector(".help-button");
   helpButton?.setAttribute("aria-label", activeLocaleText("פתח עזרה", "Open help"));
   if (helpButton) helpButton.href = `./help.html?lang=${currentLocale()}`;
-  if (appHomeButton) appHomeButton.textContent = activeLocaleText("סביבת מודיעין", "Intelligence Workspace");
+  // The header shows the i360 logo; the name stays as its tooltip and accessible label.
+  if (appHomeButton) {
+    appHomeButton.title = activeLocaleText("סביבת מודיעין", "Intelligence Workspace");
+    appHomeButton.setAttribute("aria-label", activeLocaleText("סביבת מודיעין: חזרה לדף הבית", "Intelligence Workspace: return to welcome page"));
+  }
   const investigationLabel = document.querySelector('.investigation-switcher label[for="investigationInput"]');
   if (investigationLabel) investigationLabel.textContent = activeLocaleText("חקירה פעילה", "Active investigation");
   if (investigationInput) {
@@ -1561,6 +1565,7 @@ async function loadInvestigationMemory(options = {}) {
     if (token !== state.investigationMemoryLoadToken) return null;
     state.investigationMemory = payload;
     if (options.restoreLayers) await restoreMemorySavedLayers(payload, token);
+    await loadInvestigationItemLayers(token);
     if (!memoryModal?.hidden) renderMemoryScreen();
     return payload;
   } catch (error) {
@@ -1574,6 +1579,42 @@ async function loadInvestigationMemory(options = {}) {
       state.investigationMemoryLoading = false;
     }
   }
+}
+
+// Items attached to an i360 investigation (its memory) open by themselves, one tab per layer.
+// They are rebuilt whenever the memory loads, so saving or removing an item updates them.
+async function loadInvestigationItemLayers(token) {
+  if (!state.investigationId) return;
+  let groups = [];
+  try {
+    const response = await fetch(buildLocaleApiUrl(`/api/investigation-items?id=${encodeURIComponent(state.investigationId)}`), { cache: "no-store" });
+    const payload = await response.json().catch(() => ({}));
+    if (response.ok) groups = Array.isArray(payload.layers) ? payload.layers : [];
+  } catch (error) {
+    groups = [];
+  }
+  if (token !== state.investigationMemoryLoadToken) return;
+  const previous = state.layers.filter(layer => layer.investigationItemsLayer);
+  const wasActive = previous.some(layer => layer.id === state.activeLayerId);
+  state.layers = state.layers.filter(layer => !layer.investigationItemsLayer);
+  groups.forEach(group => {
+    const rows = Array.isArray(group.rows) ? group.rows : [];
+    if (!rows.length) return;
+    const label = `${group.label} · ${activeLocaleText("זיכרון", "memory")}`;
+    const meta = {
+      id: `investigation-items:${group.label}`, label, kind: "events", source_type: group.label,
+      capabilities: { table: true, timeline: true, map: rows.some(row => row.latitude || row.location_id) }
+    };
+    const layer = buildCatalogLayer(meta, rows);
+    layer.investigationItemsLayer = true;
+    const [added] = addResultLayers({ sourceId: `investigation-items:${state.investigationId}`, sourceLabel: label,
+      preferredView: meta.capabilities.map ? "map" : "table", layers: [layer] });
+    if (added) added.investigationItemsLayer = true;
+  });
+  if (wasActive && !state.layers.some(layer => layer.id === state.activeLayerId)) state.activeLayerId = state.layers.find(layer => layer.visible)?.id || null;
+  if (!state.activeLayerId) state.activeLayerId = state.layers.find(layer => layer.investigationItemsLayer)?.id || state.activeLayerId;
+  renderAllViews();
+  renderLayerSelector();
 }
 
 function layerMemoryPayload(layer) {
@@ -2125,7 +2166,8 @@ async function loadInvestigations() {
     state.investigationsError = error.message || activeLocaleText("טעינת החקירות נכשלה", "Failed to load investigations");
   }
   const remembered = storedActiveInvestigationId();
-  const active = state.investigations.find(item => item.id === remembered) || state.investigations[0] || null;
+  const owned = state.investigations.filter(item => !isInvitedWelcomeInvestigation(item));
+  const active = owned.find(item => item.id === remembered) || owned[0] || null;
   state.investigationId = active?.id || "";
   state.investigationName = active?.name || "";
   state.draftSessionActive = false;
@@ -2133,10 +2175,13 @@ async function loadInvestigations() {
   renderWelcomePage();
 }
 
+// The Active investigation box lists only the user's own investigations (the welcome page's
+// "My investigations"), not invitations or recommendations.
 function matchingInvestigations(query) {
   const key = investigationNameKey(query);
-  if (!key) return state.investigations;
-  return state.investigations.filter(item => investigationNameKey(item.name).includes(key));
+  const owned = state.investigations.filter(item => !isInvitedWelcomeInvestigation(item));
+  if (!key) return owned;
+  return owned.filter(item => investigationNameKey(item.name).includes(key));
 }
 
 function renderInvestigationSelector() {

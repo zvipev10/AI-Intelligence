@@ -33,15 +33,17 @@
     screen.className = "login-screen";
     screen.innerHTML = `
       <form class="login-panel" id="loginForm" novalidate aria-labelledby="loginTitle">
-        <h1 id="loginTitle"><span lang="he" dir="rtl">כניסה למערכת</span><span lang="en" dir="ltr">Sign in</span></h1>
-        <p class="login-subtitle"><span lang="he" dir="rtl">סביבת מודיעין</span> · <span lang="en" dir="ltr">Intelligence Workspace</span></p>
-        <p class="login-expired" role="status" ${expired ? "" : "hidden"}><span lang="he" dir="rtl">פג תוקף ההתחברות. יש להתחבר מחדש.</span> <span lang="en" dir="ltr">Your session has expired. Sign in again.</span></p>
-        <label for="loginUsername"><span lang="he" dir="rtl">שם משתמש</span> / <span lang="en" dir="ltr">Username</span></label>
+        <div class="login-brand">
+          <img class="login-logo" src="./assets/i360-logo.png" alt="i360">
+          <h1 id="loginTitle">Intelligence Workspace</h1>
+        </div>
+        <p class="login-expired" role="status" ${expired ? "" : "hidden"}>Your session has expired. Sign in again.</p>
+        <label for="loginUsername">Username</label>
         <input id="loginUsername" name="username" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" required dir="ltr">
-        <label for="loginPassword"><span lang="he" dir="rtl">סיסמה</span> / <span lang="en" dir="ltr">Password</span></label>
+        <label for="loginPassword">Password</label>
         <input id="loginPassword" name="password" type="password" autocomplete="current-password" required dir="ltr">
         <p id="loginError" class="login-error" role="alert" hidden></p>
-        <button id="loginSubmit" type="submit"><span lang="he" dir="rtl">כניסה</span> / <span lang="en" dir="ltr">Sign in</span></button>
+        <button id="loginSubmit" type="submit">Sign in</button>
       </form>`;
     document.body.appendChild(screen);
     const form = screen.querySelector("#loginForm");
@@ -49,17 +51,9 @@
     const password = screen.querySelector("#loginPassword");
     const error = screen.querySelector("#loginError");
     const submit = screen.querySelector("#loginSubmit");
+    // The login screen is English only; callers still pass a Hebrew text first, which is not shown.
     const showError = (he, en) => {
-      error.innerHTML = "";
-      const heSpan = document.createElement("span");
-      heSpan.lang = "he";
-      heSpan.dir = "rtl";
-      heSpan.textContent = he;
-      const enSpan = document.createElement("span");
-      enSpan.lang = "en";
-      enSpan.dir = "ltr";
-      enSpan.textContent = en;
-      error.append(heSpan, " ", enSpan);
+      error.textContent = en;
       error.hidden = false;
     };
     form.addEventListener("submit", async event => {
@@ -156,7 +150,7 @@
       return result;
     };
     const script = document.createElement("script");
-    script.src = "./app.js?v=284";
+    script.src = "./app.js?v=287";
     script.onerror = () => {
       root.dataset.appReady = "true";
       setNotice(text("לא ניתן לטעון את היישום. יש לרענן.", "Application could not load. Reload to retry."));

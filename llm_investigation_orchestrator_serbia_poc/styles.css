@@ -34,6 +34,9 @@ button { cursor: pointer; }
 .app-header h1 { flex: 0 0 auto; margin: 0; font-size: 22px; white-space: nowrap; }
 .app-home-button { border: 0; background: transparent; color: inherit; padding: 0; font: inherit; font-weight: inherit; cursor: pointer; }
 .app-home-button:hover { color: var(--blue); }
+.app-home-button { display: inline-flex; align-items: center; }
+.app-home-logo { display: block; height: 40px; width: auto; border-radius: 6px; }
+.app-home-button:hover .app-home-logo { filter: brightness(1.15); }
 .app-home-button:focus-visible { outline: 2px solid var(--blue); outline-offset: 5px; border-radius: 3px; }
 .app-header p { margin: 0; color: var(--muted); font-size: 13px; }
 .investigation-switcher { min-width: 0; justify-self: center; width: min(560px, 100%); display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 10px; }
@@ -406,6 +409,9 @@ h3 { margin: 0; font-size: 14px; }
 .layer-filter-close:hover { background: rgba(242,139,130,.12); color: var(--red); }
 .layer-filter-section { display: grid; gap: 7px; padding: 10px 0; border-bottom: 1px solid rgba(146, 170, 205, .16); }
 .layer-filter-label, .layer-filter-section-title { color: var(--muted); font-size: 10px; font-weight: 900; }
+/* Native dropdown lists follow the app's dark theme, in the table's colours. */
+select { color-scheme: dark; }
+select option, select optgroup { background: var(--panel); color: var(--ink); }
 .layer-filter-select { width: 100%; min-width: 0; height: 30px; border: 1px solid rgba(146, 170, 205, .3); border-radius: 6px; background: rgba(15, 19, 27, .3); color: var(--ink); padding: 0 8px; font-size: 11px; }
 .filter-draft-list, .filter-chip-list { display: grid; gap: 6px; }
 .filter-draft-row { min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) 22px; gap: 6px; align-items: center; padding: 6px; border: 1px solid rgba(146, 170, 205, .2); border-radius: 6px; background: rgba(255,255,255,.04); font-size: 10px; }
@@ -913,7 +919,9 @@ body.visual-media-overlay-open { overflow:hidden; }
 body.auth-required > :not(#loginScreen):not(.bootstrap-notice) { visibility: hidden; }
 .login-screen { position: fixed; inset: 0; z-index: 100000; display: grid; place-items: center; padding: 16px; overflow: auto; background: radial-gradient(circle at 20% 0%, rgba(88,166,255,.14), transparent 40%), var(--bg); visibility: visible; }
 .login-panel { width: min(400px, 100%); display: grid; gap: 10px; padding: 26px 24px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); box-shadow: 0 24px 70px rgba(0,0,0,.5); color: var(--ink); }
-.login-panel h1 { display: flex; justify-content: space-between; gap: 12px; margin: 0; font-size: 22px; }
+.login-panel h1 { margin: 0; font-size: 22px; }
+.login-brand { display: grid; justify-items: center; gap: 10px; margin-bottom: 8px; text-align: center; }
+.login-logo { display: block; height: 64px; width: auto; border-radius: 10px; }
 .login-subtitle { margin: 0 0 6px; color: var(--muted); font-size: 13px; }
 .login-panel label { margin-top: 4px; color: var(--muted); font-size: 12px; font-weight: 800; }
 .login-panel input { width: 100%; min-height: 40px; padding: 8px 11px; border: 1px solid rgba(146,170,205,.38); border-radius: 9px; background: #10141b; color: var(--ink); font: inherit; font-size: 14px; }

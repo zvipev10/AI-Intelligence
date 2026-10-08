@@ -71,8 +71,8 @@ class WelcomePageContractTests(unittest.TestCase):
 
     def test_welcome_action_is_centered_and_assets_are_versioned(self):
         self.assertIn(".welcome-actions { display: flex; justify-content: center;", self.styles)
-        self.assertIn('href="./styles.css?v=181"', self.index)
-        self.assertIn('src="./demo_bootstrap.js?v=245"', self.index)
+        self.assertIn('href="./styles.css?v=183"', self.index)
+        self.assertIn('src="./demo_bootstrap.js?v=246"', self.index)
 
     def test_draft_creation_modal_and_memory_save_gate(self):
         self.assertIn('id="draftCreateInvestigationButton"', self.index)

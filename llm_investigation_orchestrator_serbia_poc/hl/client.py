@@ -148,6 +148,17 @@ class HlClient:
     def aggregate_items(self, body: dict) -> dict[str, Any]:
         return self.post("/api/v1/items/aggregate", body, read=True)
 
+    def add_related_objects(self, entity_type: str, entity_id: str, item_ids: list[str],
+                            relation_type: str = "associated") -> dict[str, Any]:
+        """Name an existing entity on items (1-25) as a person's relation; read back by HL API."""
+        return self.post("/api/v1/items/related-objects", {
+            "entity": {"type": entity_type, "id": entity_id}, "item_ids": item_ids, "relation_type": relation_type})
+
+    def remove_related_objects(self, entity_type: str, entity_id: str, item_ids: list[str]) -> dict[str, Any]:
+        """Remove a person's relation between items and an entity (guarded by ?confirm=<entity id>)."""
+        return self._request("DELETE", "/api/v1/items/related-objects", params={"confirm": entity_id},
+                             json_body={"entity": {"type": entity_type, "id": entity_id}, "item_ids": item_ids})
+
     def item_files(self, item_id: str, signed_urls: bool = True) -> dict[str, Any]:
         return self.get(f"/api/v1/items/{urllib.parse.quote(item_id, safe='')}/files",
                         params={"signed_urls": "true" if signed_urls else None})

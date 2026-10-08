@@ -122,6 +122,9 @@ class FakeEstate:
             return False
         if body.get("exclude_ids") and item["item_id"] in body["exclude_ids"]:
             return False
+        related = (body.get("related_to") or {}).get("ids") or []
+        if related and not {str(o.get("id")) for o in item.get("related_objects") or []} & set(map(str, related)):
+            return False
         for condition in body.get("filters") or []:
             values = self._field_value(item, str(condition.get("field") or ""))
             if condition.get("values") is not None:
@@ -138,6 +141,38 @@ class FakeEstate:
             if needle not in haystack:
                 return False
         return True
+
+    def related_objects(self, method: str, body: dict[str, Any], query: dict[str, list[str]]) -> dict[str, Any]:
+        """Like HL API's related-objects door: a person's (manual) relation from items to an entity."""
+        entity = body.get("entity") or {}
+        entity_id, entity_type = str(entity.get("id") or ""), str(entity.get("type") or "")
+        if not entity_id or not entity_type or not body.get("item_ids"):
+            raise ApiError(422, "validation_error", "entity and item_ids are required")
+        if method == "DELETE" and (query.get("confirm") or [""])[0] != entity_id:
+            raise ApiError(409, "confirm_required", "confirm must be the entity id")
+        if method == "POST" and entity_id not in self._type(entity_type):
+            raise ApiError(404, "entity_not_found", f"No {entity_type} {entity_id}.")
+        results = []
+        for item_id in dict.fromkeys(map(str, body["item_ids"])):
+            item = self.items.get(item_id)
+            if item is None:
+                results.append({"item_id": item_id, "outcome": "item_not_found"})
+                continue
+            held = item.setdefault("related_objects", [])
+            mine = [o for o in held if str(o.get("id")) == entity_id and o.get("source") == "manual"]
+            if method == "POST":
+                if mine:
+                    outcome = "already_linked"
+                else:
+                    held.append({"id": entity_id, "type": entity_type, "source": "manual",
+                                 "relation_type": body.get("relation_type") or "associated"})
+                    outcome = "linked"
+            else:
+                item["related_objects"] = [o for o in held if o not in mine]
+                outcome = "unlinked" if mine else "not_linked"
+            results.append({"item_id": item_id, "outcome": outcome, "verified": True, "held": []})
+        ok = sum(r["outcome"] in {"linked", "already_linked", "unlinked", "not_linked"} for r in results)
+        return {"entity": entity, "succeeded": ok, "not_applied": 0, "failed": len(results) - ok, "results": results}
 
     def search_items(self, body: dict[str, Any]) -> dict[str, Any]:
         if not any(body.get(k) for k in ("text", "semantic", "time", "location", "item_types", "source_applications",
@@ -348,6 +383,8 @@ class FakeHandler(BaseHTTPRequestHandler):
                     return self._json(200, {"contract_version": CONTRACT_VERSION, "generation": "fake", "fake": True})
                 if path == "/api/v1/items/search" and method == "POST":
                     return self._json(200, estate.search_items(self._body()))
+                if path == "/api/v1/items/related-objects" and method in {"POST", "DELETE"}:
+                    return self._json(200, estate.related_objects(method, self._body(), query))
                 if path == "/api/v1/items/get" and method == "POST":
                     return self._json(200, estate.get_items(self._body()))
                 if path.startswith("/api/v1/items/") and path.endswith("/files"):
