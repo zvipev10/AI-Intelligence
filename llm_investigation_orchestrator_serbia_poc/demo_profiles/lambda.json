@@ -1,7 +1,7 @@
 {
  "scenario_id": "lambda",
  "label": {
-  "en": "LAMBDA location updates and images"
+  "en": "LAMBDA location updates and satellite images"
  },
  "map": {
   "center": [
@@ -26,15 +26,13 @@
    "TrackLocation",
    "ankle_bracelet",
    "gps_location",
-   "image",
-   "EO optical"
+   "Satellite"
   ],
   "en": [
    "TrackLocation",
    "ankle_bracelet",
    "gps_location",
-   "image",
-   "EO optical"
+   "Satellite"
   ]
  },
  "dataset_version": "i360",
@@ -51,22 +49,14 @@
     "item_types": [
      "image"
     ],
-    "recent_days": 365,
-    "limit": 200,
-    "layer": "image"
-   },
-   {
-    "item_types": [
-     "image"
-    ],
     "source_applications": [
      "EO optical (fictional)"
     ],
     "recent_days": 365,
     "limit": 200,
-    "layer": "EO optical"
+    "layer": "Satellite"
    }
   ]
  },
- "_comment": "Test scenario for LAMBDA. Three queries: the newest 200 location_update items (one layer per source: TrackLocation, ankle_bracelet, gps_location; drawn from their own location.point) and the newest 200 image items, shown together in a layer named \"image\". recent_days, limit and layer are read by hl/items.py and not sent to HL API (APP_ITEMS_PER_TYPE overrides limit). No location entities exist on LAMBDA, so the Location layer stays empty. A third query reads images from the source \"EO optical (fictional)\" (the Syria convoy demo, with locations) into a layer named \"EO optical\"."
+ "_comment": "Test scenario for LAMBDA. Two queries: the newest location_update items (one layer per source: TrackLocation, ankle_bracelet, gps_location; drawn from their own location.point), and images from the source \"EO optical (fictional)\" (the Syria convoy demo, with locations) in a layer named \"Satellite\". recent_days, limit and layer are read by hl/items.py and not sent to HL API; APP_ITEMS_PER_TYPE overrides limit. No location entities exist on LAMBDA, so the Location layer stays empty."
 }
