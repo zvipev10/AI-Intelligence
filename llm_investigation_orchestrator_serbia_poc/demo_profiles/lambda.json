@@ -41,9 +41,10 @@
     ],
     "recent_days": 365,
     "limit": 200,
-    "layer": "Satellite"
+    "layer": "Satellite",
+    "all_fields": true
    }
   ]
  },
- "_comment": "Test scenario for LAMBDA: images from the source \"EO optical (fictional)\" (the Syria convoy demo, with locations) in a layer named \"Satellite\", drawn from their own location.point. recent_days, limit and layer are read by hl/items.py and not sent to HL API; APP_ITEMS_PER_TYPE overrides limit. No location entities exist on LAMBDA, so the Location layer stays empty."
+ "_comment": "Test scenario for LAMBDA: images from the source \"EO optical (fictional)\" (the Syria convoy demo, with locations) in a layer named \"Satellite\", drawn from their own location.point. recent_days, limit and layer are read by hl/items.py and not sent to HL API; APP_ITEMS_PER_TYPE overrides limit. No location entities exist on LAMBDA, so the Location layer stays empty. all_fields: every populated i360 item field is shown (table without media fields, viewer with everything)."
 }

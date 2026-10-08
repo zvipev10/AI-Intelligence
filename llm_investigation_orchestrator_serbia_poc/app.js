@@ -2831,7 +2831,8 @@ function initializeViewerMediaFallback(item, recordId) {
       else showMissingMedia(element, item);
     });
   });
-  if (elements.length || !(isCellularCallRecord(item) || isVisualCollectionRecord(item))) return;
+  const hasI360Media = Boolean(item["i360.media.kind"] || item["i360.media.file_count"]);
+  if (elements.length || !(isCellularCallRecord(item) || isVisualCollectionRecord(item) || hasI360Media)) return;
   void recordFileUrls(recordId).then(files => {
     if (!files.length || !stillOpen()) return;
     const file = files[0];
@@ -2968,6 +2969,11 @@ function isPersonEntity(item) {
 }
 
 function viewerFields(item, kind) {
+  // Rows from a profile query with "all_fields" carry every i360 item field as "i360.<path>": show them all.
+  const i360Keys = Object.keys(item || {}).filter(key => key.startsWith("i360.") && item[key] != null && item[key] !== "").sort((a, b) => a.localeCompare(b, "en"));
+  if (kind === "record" && i360Keys.length) {
+    return ["record_id", "source_type", ...i360Keys].filter(key => item[key] != null && item[key] !== "").map(key => [key, item[key]]);
+  }
   if (kind === "ipdr_package") return ["package_id", "classification", "provider", "source_system", "filename", "sha256", "record_count", "validation_state", "session_validation_counts", "observed_coverage", "requested_scope", "acquired_at", "imported_at", "ingest_batch_id", "authority_case_reference", "chain_of_custody_note", "field_semantics", "transformations", "limitations"].map(key => [key, item[key] ?? activeLocaleText("לא ידוע", "Unknown")]);
   if (kind === "record" && isCellularGeolocationRecord(item)) return ["event_id", "timestamp_utc", "imei", "sim", "target_msisdn", "target_imsi", "operator_msisdn", "operator_imsi", "location_name"].map(key => [key, item[key] || (key === "location_name" ? item.location_id : "") || "—"]);
   const hidden = new Set(["event_summary", "canonical_name", "media", "image_series", "video_url", "audio_url", "image_url", "raw_data_references", "call_started_at_utc", "call_duration_seconds", "side_a_imei", "side_a_number", "side_a_location_id", "side_a_location_name", "side_b_imei", "side_b_number", "side_b_location_id", "side_b_location_name", "call_transcript", "call_transcript_en", "demo_media"]);
@@ -3117,6 +3123,7 @@ function viewerFieldLabel(key) {
     ,revision: ["גרסה", "Revision"]
     ,updated_at: ["עודכן", "Updated"]
   };
+  if (!labels[key] && String(key).startsWith("i360.")) return String(key).slice("i360.".length).replaceAll("_", " ");
   return labels[key] ? activeLocaleText(...labels[key]) : key.replaceAll("_", " ");
 }
 
@@ -4497,6 +4504,27 @@ function renderEvidence() {
         <td dir="ltr">${escapeHtml(item.first_event_id || item.first_event_time || "-")}</td>
         <td dir="ltr">${escapeHtml(item.last_event_id || item.last_event_time || "-")}</td>
       </tr>`).join("") : `<tr><td colspan="5" class="empty-cell">${escapeHtml(activeLocaleText("השכבה מוסתרת או ריקה.", "Layer is hidden or empty."))}</td></tr>`;
+    enhanceResultsTable(activeLayer);
+    return;
+  }
+  const i360KeysOf = item => Object.keys(item || {}).filter(key => key.startsWith("i360.") && item[key] != null && item[key] !== "");
+  if (activeLayer.kind === "events" && activeLayer.items?.length && activeLayer.items.every(item => i360KeysOf(item).length)) {
+    // Every i360 field the layer's items carry, except the image/media ones (the viewer shows those).
+    const keys = [...new Set(activeLayer.items.flatMap(i360KeysOf))].sort((a, b) => a.localeCompare(b, "en"))
+      .filter(key => !/^i360\.(media|thumbnail|image|files?)(\.|$)/.test(key));
+    const first = ["i360.item_id", "i360.event_time", "i360.item_type", "i360.sub_type", "i360.source_application"].filter(key => keys.includes(key));
+    const columns = [...first, ...keys.filter(key => !first.includes(key))];
+    head.innerHTML = `<tr><th class="result-map-action-column" data-result-action-column="true"></th>${columns.map(key => `<th>${escapeHtml(viewerFieldLabel(key))}</th>`).join("")}</tr>`;
+    body.innerHTML = activeItems.length ? activeItems.map(event => {
+      const eventId = String(event.record_id || event.event_id || "");
+      const selected = isMapItemSelected(activeLayer.id, "event", eventId);
+      return `<tr class="${[selected ? "map-selected-row" : "", isViewerRecordSelected(eventId) ? "viewer-selected-row" : ""].filter(Boolean).join(" ")}"><td class="result-map-action-cell">${mapActionButton(activeLayer.id, "event", eventId, event)}</td>${columns.map(key => {
+        const value = escapeHtml(event[key] == null || event[key] === "" ? "—" : event[key]);
+        return key === "i360.item_id"
+          ? `<td dir="ltr"><button type="button" class="object-viewer-open" data-viewer-kind="record" data-viewer-id="${escapeHtml(eventId)}">${value}</button>${recordLinkIndicator(event)}</td>`
+          : `<td>${value}</td>`;
+      }).join("")}</tr>`;
+    }).join("") : `<tr><td colspan="${columns.length + 1}" class="empty-cell">${escapeHtml(activeLocaleText("השכבה מוסתרת או ריקה.", "Layer is hidden or empty."))}</td></tr>`;
     enhanceResultsTable(activeLayer);
     return;
   }

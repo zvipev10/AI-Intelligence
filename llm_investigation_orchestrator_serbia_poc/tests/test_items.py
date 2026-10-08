@@ -105,6 +105,40 @@ class RecordFilesTests(unittest.TestCase):
         self.assertTrue(files[0]["thumbnail_url"].startswith("https://hl.example/"))
 
 
+class AllFieldsTests(unittest.TestCase):
+    def test_item_fields_flattens_everything_populated(self):
+        from hl.items import item_fields
+
+        fields = item_fields({
+            "item_id": "x", "item_type": "image", "name": None, "location": {"point": {"lat": 35.08, "lon": 36.29}},
+            "text": {"transcript": "3x cargo truck", "english": None},
+            "insights": [{"type": "transcription", "value": "a"}, {"type": "post_comment", "value": "b"}],
+            "tags": [{"type": "object_recognition", "value": "weapon"}], "flags": ["HasContent"],
+            "media": {"kind": "image", "file_count": 1}, "parties": [], "_layer": "Satellite",
+        })
+        self.assertEqual("image", fields["i360.item_type"])
+        self.assertEqual("35.08", fields["i360.location.point.lat"])
+        self.assertEqual("3x cargo truck", fields["i360.text.transcript"])
+        self.assertEqual("transcription: a\npost_comment: b", fields["i360.insights"])
+        self.assertEqual("object_recognition=weapon", fields["i360.tags"])
+        self.assertEqual("HasContent", fields["i360.flags"])
+        self.assertEqual("image", fields["i360.media.kind"])
+        self.assertNotIn("i360.name", fields)
+        self.assertNotIn("i360.parties", fields)
+        self.assertNotIn("i360._layer", fields)
+
+    def test_a_query_with_all_fields_puts_them_on_its_rows(self):
+        class Client(RecordingClient):
+            def search_items(self, body):
+                self.bodies.append(body)
+                return {"total": 1, "total_pages": 1, "items": [{"item_id": "a", "item_type": "image", "sub_type": "file_image"}]}
+
+        client = Client()
+        rows = ItemReader(client, mapping(), {"item_types": ["image"], "limit": 5, "all_fields": True}, 100).rows("en")
+        self.assertNotIn("all_fields", client.bodies[0])
+        self.assertEqual("file_image", rows[0]["i360.sub_type"])
+
+
 class ForbiddenEntitiesClient(RecordingClient):
     def search_entities(self, entity_type, body):
         raise HlError(403, "ems", "Action not allowed")
