@@ -37,7 +37,7 @@ def main() -> int:
     print(f"Signed in as {client.whoami().get('user_name')}\n")
 
     try:
-        response = client.get_items(args.item_ids, ["text", "parties"])
+        response = client.get_items(args.item_ids, ["parties", "locations", "source_details"])
     except HlError as exc:
         print(f"items/get failed: {exc.status} {exc}")
         Path(args.out).write_text(json.dumps({"items_get_error": exc.to_dict()}, indent=2, ensure_ascii=False), encoding="utf-8")
