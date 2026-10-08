@@ -64,6 +64,9 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--days", type=int, default=3650, help="how far back to look (default about 10 years)")
     parser.add_argument("--pages", type=int, default=20, help="pages of 100 items to scan (default 20)")
+    parser.add_argument("--item-types", default="",
+                        help="comma-separated item types to scan one by one (e.g. location_update,call_log); "
+                             "default scans the newest items of every type")
     parser.add_argument("--username", default=os.environ.get("I360_USER"))
     parser.add_argument("--out", default="survey_locations.json")
     args = parser.parse_args()
@@ -98,34 +101,46 @@ def main() -> int:
     per_type: dict[str, dict[str, Any]] = defaultdict(lambda: {
         "scanned": 0, "with_location": 0, "sources": set(), "samples": [], "bbox": None, "first": None, "last": None})
     overall_total = None
-    for page in range(1, args.pages + 1):
-        response = safe(client.search_items, {"time": window, "page_number": page, "page_size": 100,
-                                               "sort": "time", "order": "desc"})
-        if "error" in response:
-            report["scan_error"] = response["error"]
-            break
-        overall_total = response.get("total", overall_total)
-        hits = list_hits(response)
-        for hit in hits:
-            entry = per_type[str(hit.get("item_type") or "unknown")]
-            entry["scanned"] += 1
-            if hit.get("source_application"):
-                entry["sources"].add(str(hit["source_application"]))
-            stamp = hit.get("event_time")
-            if stamp:
-                entry["first"] = min(filter(None, [entry["first"], stamp]))
-                entry["last"] = max(filter(None, [entry["last"], stamp]))
-            point = coordinates(hit.get("location"))
-            if not point:
-                continue
-            entry["with_location"] += 1
-            if len(entry["samples"]) < 3:
-                entry["samples"].append({"item_id": hit.get("item_id"), "location": hit.get("location")})
-            lat, lon = point
-            box = entry["bbox"] or [lat, lon, lat, lon]
-            entry["bbox"] = [min(box[0], lat), min(box[1], lon), max(box[2], lat), max(box[3], lon)]
-        if page >= int(response.get("total_pages") or page):
-            break
+    item_types = [t.strip() for t in args.item_types.split(",") if t.strip()]
+    report["type_totals"] = {}
+
+    def scan(extra: dict[str, Any]) -> int | None:
+        total = None
+        for page in range(1, args.pages + 1):
+            response = safe(client.search_items, {"time": window, **extra, "page_number": page, "page_size": 100,
+                                                   "sort": "time", "order": "desc"})
+            if "error" in response:
+                report.setdefault("scan_errors", []).append({"query": extra, "error": response["error"]})
+                break
+            total = response.get("total", total)
+            for hit in list_hits(response):
+                entry = per_type[str(hit.get("item_type") or "unknown")]
+                entry["scanned"] += 1
+                if hit.get("source_application"):
+                    entry["sources"].add(str(hit["source_application"]))
+                stamp = hit.get("event_time")
+                if stamp:
+                    entry["first"] = min(filter(None, [entry["first"], stamp]))
+                    entry["last"] = max(filter(None, [entry["last"], stamp]))
+                point = coordinates(hit.get("location"))
+                if not point:
+                    continue
+                entry["with_location"] += 1
+                if len(entry["samples"]) < 3:
+                    entry["samples"].append({"item_id": hit.get("item_id"), "location": hit.get("location")})
+                lat, lon = point
+                box = entry["bbox"] or [lat, lon, lat, lon]
+                entry["bbox"] = [min(box[0], lat), min(box[1], lon), max(box[2], lat), max(box[3], lon)]
+            if page >= int(response.get("total_pages") or page):
+                break
+        return total
+
+    if item_types:
+        for item_type in item_types:
+            report["type_totals"][item_type] = scan({"item_types": [item_type]})
+            print(f"  {item_type}: {report['type_totals'][item_type]} items in window")
+    else:
+        overall_total = scan({})
 
     report["time_window"] = window
     report["total_items_in_window"] = overall_total
@@ -133,14 +148,16 @@ def main() -> int:
                             for name, entry in sorted(per_type.items(), key=lambda kv: -kv[1]["with_location"])}
     Path(args.out).write_text(json.dumps(report, indent=2, ensure_ascii=False, default=str), encoding="utf-8")
 
-    print(f"\nItems in window: {overall_total}")
+    if overall_total is not None:
+        print(f"\nItems in window: {overall_total}")
     if "error" not in probe:
-        print(f"Items the platform says have a location: {probe.get('total')}")
-    print(f"{'item type':32} {'scanned':>8} {'located':>8}  bbox (lat/lon min .. max)")
+        print(f"'Location exists' filter matched (may be unreliable): {probe.get('total')}")
+    print(f"{'item type':32} {'total':>9} {'scanned':>8} {'located':>8}  bbox (lat/lon min .. max)")
     for name, entry in report["item_types"].items():
         box = entry["bbox"]
         span = f"{box[0]:.3f},{box[1]:.3f} .. {box[2]:.3f},{box[3]:.3f}" if box else "-"
-        print(f"{name[:32]:32} {entry['scanned']:>8} {entry['with_location']:>8}  {span}")
+        total = report["type_totals"].get(name, "")
+        print(f"{name[:32]:32} {str(total):>9} {entry['scanned']:>8} {entry['with_location']:>8}  {span}")
     print(f"\nFull report: {Path(args.out).resolve()}")
     return 0
 
