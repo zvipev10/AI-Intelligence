@@ -5,15 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>html { background: #0f1115; } html[data-app-ready="false"] body { visibility: hidden; }</style>
   <title>Intelligence Workspace</title>
-  <link rel="icon" href="data:,">
+  <link rel="icon" type="image/png" href="./assets/i360-logo.png">
   <link rel="stylesheet" href="./vendor/maplibre-gl.css">
-  <link rel="stylesheet" href="./styles.css?v=181">
+  <link rel="stylesheet" href="./styles.css?v=182">
 </head>
 <body class="welcome-active">
   <a class="help-button" href="./help.html" target="_blank" rel="noopener" aria-label="פתח עזרה" data-i18n-aria-he="פתח עזרה" data-i18n-aria-en="Open help">?</a>
   <header class="app-header">
     <div class="header-copy">
-      <h1><button id="appHomeButton" class="app-home-button" type="button" data-i18n-text-he="סביבת מודיעין" data-i18n-text-en="Intelligence Workspace" aria-label="חזרה לדף הבית" data-i18n-aria-he="חזרה לדף הבית" data-i18n-aria-en="Return to welcome page">סביבת מודיעין</button></h1>
+      <h1><button id="appHomeButton" class="app-home-button" type="button" title="Intelligence Workspace" aria-label="Intelligence Workspace: return to welcome page"><img class="app-home-logo" src="./assets/i360-logo.png" alt=""></button></h1>
     </div>
     <section class="investigation-switcher" aria-label="ניהול חקירות" data-i18n-aria-he="ניהול חקירות" data-i18n-aria-en="Investigation controls">
       <button id="draftCreateInvestigationButton" class="draft-create-investigation-button" type="button" hidden data-i18n-text-he="צור חקירה" data-i18n-text-en="Create investigation">צור חקירה</button>
@@ -278,6 +278,6 @@
 
   <script src="./vendor/maplibre-gl.js"></script>
   <script src="./polygon_draw.js?v=3"></script>
-  <script src="./demo_bootstrap.js?v=245"></script>
+  <script src="./demo_bootstrap.js?v=246"></script>
 </body>
 </html>

@@ -33,8 +33,10 @@
     screen.className = "login-screen";
     screen.innerHTML = `
       <form class="login-panel" id="loginForm" novalidate aria-labelledby="loginTitle">
-        <h1 id="loginTitle">Sign in</h1>
-        <p class="login-subtitle">Intelligence Workspace</p>
+        <div class="login-brand">
+          <img class="login-logo" src="./assets/i360-logo.png" alt="i360">
+          <h1 id="loginTitle">Intelligence Workspace</h1>
+        </div>
         <p class="login-expired" role="status" ${expired ? "" : "hidden"}>Your session has expired. Sign in again.</p>
         <label for="loginUsername">Username</label>
         <input id="loginUsername" name="username" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" required dir="ltr">
@@ -148,7 +150,7 @@
       return result;
     };
     const script = document.createElement("script");
-    script.src = "./app.js?v=285";
+    script.src = "./app.js?v=286";
     script.onerror = () => {
       root.dataset.appReady = "true";
       setNotice(text("לא ניתן לטעון את היישום. יש לרענן.", "Application could not load. Reload to retry."));

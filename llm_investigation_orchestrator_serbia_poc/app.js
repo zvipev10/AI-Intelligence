@@ -743,7 +743,11 @@ function applyLocaleUi() {
   const helpButton = document.querySelector(".help-button");
   helpButton?.setAttribute("aria-label", activeLocaleText("פתח עזרה", "Open help"));
   if (helpButton) helpButton.href = `./help.html?lang=${currentLocale()}`;
-  if (appHomeButton) appHomeButton.textContent = activeLocaleText("סביבת מודיעין", "Intelligence Workspace");
+  // The header shows the i360 logo; the name stays as its tooltip and accessible label.
+  if (appHomeButton) {
+    appHomeButton.title = activeLocaleText("סביבת מודיעין", "Intelligence Workspace");
+    appHomeButton.setAttribute("aria-label", activeLocaleText("סביבת מודיעין: חזרה לדף הבית", "Intelligence Workspace: return to welcome page"));
+  }
   const investigationLabel = document.querySelector('.investigation-switcher label[for="investigationInput"]');
   if (investigationLabel) investigationLabel.textContent = activeLocaleText("חקירה פעילה", "Active investigation");
   if (investigationInput) {
