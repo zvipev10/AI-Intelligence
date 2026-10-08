@@ -15,11 +15,13 @@ class WelcomeInvestigationSectionsTests(unittest.TestCase):
         self.assertIn("const SYRIA_INVITED_INVESTIGATIONS", app)
         self.assertIn("const SYRIA_PROPOSED_INVESTIGATIONS", app)
         self.assertIn("Suspicious military convoy", app)
-        self.assertIn("invitedInvestigationsList.innerHTML = INVITED_INVESTIGATIONS.map", app)
+        self.assertIn("invitedInvestigationsList.innerHTML = invitedInvestigations.map", app)
+        self.assertIn("if (!welcomeSectionsFromI360()) return INVITED_INVESTIGATIONS;", app)
         self.assertIn("function joinInvitedInvestigation(invitation)", app)
         self.assertIn("const ownedInvestigations = investigations.filter", app)
-        self.assertIn("invitedInvestigationsCount.textContent = INVITED_INVESTIGATIONS.length", app)
-        self.assertIn("similarInvestigationsCount.textContent = SIMILAR_INVESTIGATIONS.length", app)
+        self.assertIn("invitedInvestigationsCount.textContent = invitedInvestigations.length", app)
+        self.assertIn("similarInvestigationsCount.textContent = similarInvestigations.length", app)
+        self.assertIn("if (!welcomeSectionsFromI360()) return SIMILAR_INVESTIGATIONS;", app)
         self.assertIn('data-invited-investigation="${investigation.invited ? "true" : "false"}"', app)
 
 

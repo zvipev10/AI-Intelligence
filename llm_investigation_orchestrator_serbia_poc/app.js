@@ -1697,7 +1697,11 @@ function investigationFromServer(item) {
     updated_at: item?.updated_at_utc || "",
     layer_count: Number(item?.layer_count || 0),
     artifact_count: Number(item?.artifact_count || 0),
-    collection_request_count: Number(item?.collection_request_count || 0)
+    collection_request_count: Number(item?.collection_request_count || 0),
+    status: String(item?.status || "").trim(),
+    activity_level: String(item?.activity_level || "").trim(),
+    research_question: String(item?.research_question || "").trim(),
+    next_milestone: String(item?.next_milestone || "").trim()
   };
 }
 
@@ -1867,7 +1871,7 @@ function similarInvestigationRibbonHtml(investigation) {
         </div>
         ${welcomeParticipantsHtml(investigation.participants)}
         <div class="ribbon-metrics">
-          <div class="ribbon-metric"><span>${activeLocaleText("רמת פעילות", "Activity level")}</span><strong>${activeLocaleText("פעילות גבוהה השבוע", "High activity this week")}</strong></div>
+          <div class="ribbon-metric"><span>${activeLocaleText("רמת פעילות", "Activity level")}</span><strong>${escapeHtml(investigation.activityLevel || activeLocaleText("פעילות גבוהה השבוע", "High activity this week"))}</strong></div>
           <div class="ribbon-metric"><span>${activeLocaleText("גישה", "Access")}</span><strong>${investigation.action === "join" ? activeLocaleText("פתוחה להשתתפות", "Open participation") : activeLocaleText("דורשת אישור בעלים", "Owner approval required")}</strong></div>
         </div>
       </div>
@@ -1875,17 +1879,70 @@ function similarInvestigationRibbonHtml(investigation) {
     </article>`;
 }
 
+// When the investigations come from an i360 type (APP_INVESTIGATION_TYPE), its status field picks the
+// welcome section: "invited" and "recommended" go to their sections, anything else is the user's own.
+// Without i360 statuses the scenario's built-in demo lists are shown, as before.
+const WELCOME_STATUS_SECTIONS = { invited: "invited", recommended: "recommended" };
+
+function welcomeStatusSection(investigation) {
+  return WELCOME_STATUS_SECTIONS[String(investigation?.status || "").trim().toLowerCase()] || "";
+}
+
+function welcomeSectionsFromI360() {
+  return state.investigations.some(investigation => investigation.status);
+}
+
+function welcomeRibbonFromI360(investigation, section) {
+  const summary = investigation.research_question || activeLocaleText("אין שאלת מחקר", "No research question");
+  const reason = investigation.next_milestone
+    ? activeLocaleText(`אבן הדרך הבאה: ${investigation.next_milestone}`, `Next milestone: ${investigation.next_milestone}`)
+    : activeLocaleText("מתוך i360", "From i360");
+  return {
+    id: investigation.id,
+    titleHe: investigation.name,
+    titleEn: investigation.name,
+    summaryHe: summary,
+    summaryEn: summary,
+    reasonHe: reason,
+    reasonEn: reason,
+    activityLevel: investigation.activity_level,
+    participants: 2,
+    action: section === "invited" ? "join" : "request",
+    invited: section === "invited",
+    fromI360: true
+  };
+}
+
+function welcomeInvitedInvestigations() {
+  if (!welcomeSectionsFromI360()) return INVITED_INVESTIGATIONS;
+  return state.investigations.filter(item => welcomeStatusSection(item) === "invited").map(item => welcomeRibbonFromI360(item, "invited"));
+}
+
+function welcomeSimilarInvestigations() {
+  if (!welcomeSectionsFromI360()) return SIMILAR_INVESTIGATIONS;
+  return state.investigations.filter(item => welcomeStatusSection(item) === "recommended").map(item => welcomeRibbonFromI360(item, "recommended"));
+}
+
 function isInvitedWelcomeInvestigation(investigation) {
+  if (welcomeSectionsFromI360() && typeof investigation === "object") return Boolean(welcomeStatusSection(investigation));
   const name = typeof investigation === "string" ? investigation : investigation?.name;
   return INVITED_INVESTIGATIONS.some(invitation => [invitation.titleHe, invitation.titleEn].some(title => investigationNameKey(title) === investigationNameKey(name)));
 }
 
 function invitedInvestigationById(id) {
-  return INVITED_INVESTIGATIONS.find(investigation => investigation.id === id) || null;
+  return welcomeInvitedInvestigations().find(investigation => investigation.id === id) || null;
 }
 
 async function joinInvitedInvestigation(invitation) {
   if (!invitation) return;
+  if (invitation.fromI360) {
+    const existing = state.investigations.find(item => item.id === invitation.id);
+    if (existing) {
+      selectInvestigation(existing);
+      setPageView("workspace");
+      return;
+    }
+  }
   const name = activeLocaleText(invitation.titleHe, invitation.titleEn);
   try {
     const investigation = await ensureInvestigationRecord(name);
@@ -1906,10 +1963,12 @@ function renderWelcomePage() {
     : `<p class="welcome-empty-investigations">${escapeHtml(state.investigationsError
       ? activeLocaleText(`לא ניתן לטעון את החקירות: ${state.investigationsError}`, `Could not load investigations: ${state.investigationsError}`)
       : activeLocaleText("אין עדיין חקירות. התחילו חקירת טיוטה או צרו חקירה בכפתור + שבכותרת.", "No investigations yet. Start a draft investigation, or create one with the + button in the header."))}</p>`;
-  invitedInvestigationsCount.textContent = INVITED_INVESTIGATIONS.length.toLocaleString(currentLocaleTag());
-  invitedInvestigationsList.innerHTML = INVITED_INVESTIGATIONS.map(similarInvestigationRibbonHtml).join("");
-  similarInvestigationsCount.textContent = SIMILAR_INVESTIGATIONS.length.toLocaleString(currentLocaleTag());
-  similarInvestigationsList.innerHTML = SIMILAR_INVESTIGATIONS.map(similarInvestigationRibbonHtml).join("");
+  const invitedInvestigations = welcomeInvitedInvestigations();
+  const similarInvestigations = welcomeSimilarInvestigations();
+  invitedInvestigationsCount.textContent = invitedInvestigations.length.toLocaleString(currentLocaleTag());
+  invitedInvestigationsList.innerHTML = invitedInvestigations.map(similarInvestigationRibbonHtml).join("");
+  similarInvestigationsCount.textContent = similarInvestigations.length.toLocaleString(currentLocaleTag());
+  similarInvestigationsList.innerHTML = similarInvestigations.map(similarInvestigationRibbonHtml).join("");
 }
 
 function renderDraftInvestigationUi() {
