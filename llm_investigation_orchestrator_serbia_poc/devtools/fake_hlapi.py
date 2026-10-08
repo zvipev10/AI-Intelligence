@@ -61,6 +61,7 @@ class FakeEstate:
         self.types: dict[str, dict[str, Any]] = {}
         self.instances: dict[str, dict[str, dict[str, Any]]] = {}
         self.llm_off = False
+        self.llm_empty = False  # answer like a model that spent max_tokens thinking
         self.llm_requests: list[dict[str, Any]] = []
         self.lock = threading.RLock()
         self.calls: list[tuple[str, str]] = []
@@ -392,14 +393,20 @@ class FakeHandler(BaseHTTPRequestHandler):
                 if path == "/api/v1/items/get" and method == "POST":
                     return self._json(200, estate.get_items(self._body()))
                 if path == "/api/v1/llm/models":
-                    return self._json(200, {"object": "list", "data": [{"id": "fake-model", "object": "model"}]})
+                    return self._json(200, {"models": [{"id": "fake-model"}]})
                 if path == "/api/v1/llm/chat" and method == "POST":
                     if estate.llm_off:
                         raise ApiError(503, "llm_unavailable", "The model servers are off.", "Try again during the day.")
                     from devtools.fake_chat import scripted_completion
                     body = self._body()
                     estate.llm_requests.append(body)
-                    return self._json(200, scripted_completion(body))
+                    if estate.llm_empty:
+                        return self._json(200, {"model": body.get("model"), "content": "", "tool_calls": None,
+                                                "finish_reason": "length", "usage": {}})
+                    choice = scripted_completion(body)["choices"][0]  # HL API reduces the completion
+                    return self._json(200, {"model": body.get("model"), "content": choice["message"].get("content"),
+                                            "tool_calls": choice["message"].get("tool_calls"),
+                                            "finish_reason": choice["finish_reason"], "usage": {}})
                 if path.startswith("/api/v1/items/") and path.endswith("/files"):
                     item_id = unquote(path[len("/api/v1/items/"):-len("/files")])
                     if item_id not in estate.items:

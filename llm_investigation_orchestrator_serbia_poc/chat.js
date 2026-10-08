@@ -160,7 +160,7 @@
       }
       turn.body.appendChild(sources);
     }
-    if (answer.action && ["tag", "note"].includes(answer.action.kind)) turn.body.appendChild(i360ActionCard(answer.action));
+    if (answer.action && ["tag", "note", "annotate"].includes(answer.action.kind)) turn.body.appendChild(i360ActionCard(answer.action));
     const followUps = (answer.follow || []).filter(f => typeof f === "string").slice(0, 4);
     if (followUps.length) {
       const box = document.createElement("div");

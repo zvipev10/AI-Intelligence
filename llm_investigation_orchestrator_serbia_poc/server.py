@@ -501,9 +501,13 @@ class Handler(BaseHTTPRequestHandler):
         if not settings.chat_service_url:
             raise HlError(501, "chat_off", "The chat is not configured on this deployment.")
         action = request.get("action") if isinstance(request.get("action"), dict) else {}
-        if action.get("kind") not in {"tag", "note"} or not isinstance(action.get("ids"), list):
+        kind = {"tag": "tag", "note": "annotate", "annotate": "annotate"}.get(str(action.get("kind")))
+        ids = action.get("ids")
+        if not kind or not isinstance(ids, list) or not 0 < len(ids) <= 50:
             raise ValueError("Invalid action")
-        body = {k: action.get(k) for k in ("kind", "ids", "type", "value", "text")}
+        # The chat service's POST /chat/actions: {kind: tag|annotate, ids (at most 50), type, value}.
+        body = {"kind": kind, "ids": [str(i) for i in ids], "type": action.get("type"),
+                "value": action.get("value") if action.get("value") is not None else action.get("text")}
         body["conversation_id"] = str(request.get("conversation_id") or "") or None
         return ChatServiceClient(settings.chat_service_url, token, settings.request_timeout_seconds).call("POST", "/actions", body)
 

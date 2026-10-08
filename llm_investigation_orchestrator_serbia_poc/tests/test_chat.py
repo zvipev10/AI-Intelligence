@@ -37,6 +37,15 @@ class ChatUnitTests(unittest.TestCase):
             {"id": "c1", "type": "function", "function": {"name": "ask_i360", "arguments": "{\"question\": \"q\"}"}}]}}]})
         self.assertEqual([{"id": "c1", "name": "ask_i360", "arguments": {"question": "q"}}], message["tool_calls"])
 
+    def test_hl_api_reduced_answer(self):
+        message = assistant_message({"model": "m", "content": None, "finish_reason": "tool_calls", "usage": {},
+                                     "tool_calls": [{"id": "c1", "type": "function",
+                                                     "function": {"name": "open_layer", "arguments": "{not json"}}]})
+        self.assertEqual([{"id": "c1", "name": "open_layer", "arguments": {}}], message["tool_calls"])
+        self.assertEqual("tool_calls", message["finish_reason"])
+        empty = assistant_message({"content": "", "tool_calls": None, "finish_reason": "length"})
+        self.assertEqual(("", [], "length"), (empty["content"], empty["tool_calls"], empty["finish_reason"]))
+
     def test_context_is_validated(self):
         with self.assertRaises(ValueError):
             TurnContext.from_request({"message": "  "})
@@ -102,6 +111,7 @@ class ChatApiTests(unittest.TestCase):
 
     def setUp(self):
         self.estate.llm_off = False
+        self.estate.llm_empty = False
         self.chat.asks.clear()
 
     def signed_in(self, base=None):
@@ -183,6 +193,12 @@ class ChatApiTests(unittest.TestCase):
         self.assertEqual(1, len(self.actions(events, "show_items")))
         self.assertEqual("done", events[-1][0])
 
+    def test_empty_model_answer_falls_back_to_i360(self):
+        self.estate.llm_empty = True
+        events = self.ask(self.signed_in(), {"message": "convoy trucks"})
+        self.assertIn("gave no answer", [d for e, d in events if e == "step"][0]["text"])
+        self.assertEqual(1, len(self.actions(events, "show_items")))
+
     def test_i360_error_is_reported(self):
         events = self.ask(self.signed_in(), {"message": "please fail now"})
         self.assertIn(("i360", {"event": "error", "data": {"message": "model unavailable"}}), events)
@@ -195,6 +211,13 @@ class ChatApiTests(unittest.TestCase):
         self.assertEqual((200, "Tagged 2 records."), (status, body["line"]))
         self.assertEqual("c1", self.chat.actions[-1]["conversation_id"])
         self.assertEqual(400, self.signed_in().call("POST", "/api/chat/action", {"action": {"kind": "delete"}})[0])
+        status, body = self.signed_in().call("POST", "/api/chat/action", {
+            "action": {"kind": "note", "ids": ["a"], "value": "seen twice"}})
+        self.assertEqual((200, "Annotated 1 records."), (status, body["line"]))
+        self.assertEqual({"kind": "annotate", "ids": ["a"], "type": None, "value": "seen twice", "conversation_id": None},
+                         self.chat.actions[-1])
+        self.assertEqual(400, self.signed_in().call("POST", "/api/chat/action", {
+            "action": {"kind": "tag", "ids": [str(i) for i in range(51)], "type": "flag", "value": "x"}})[0])
 
     def test_cited_items_are_read_for_the_viewer(self):
         item_id = next(iter(self.estate.items))

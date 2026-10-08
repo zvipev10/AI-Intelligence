@@ -118,7 +118,9 @@ class ChatServiceClient:
 # The model behind HL API
 # --------------------------------------------------------------------------------------------
 class LlmClient:
-    """``POST /api/v1/llm/chat``: OpenAI chat format; tool calls are returned, never run."""
+    """``POST /api/v1/llm/chat``: an OpenAI-style request; HL API answers a reduced
+    ``{model, content, tool_calls, finish_reason, usage}`` (unknown request fields are a 422). Tool calls
+    are returned, never run."""
 
     def __init__(self, client: HlClient, model: str = "", path: str = "/api/v1/llm/chat"):
         self.client = client
@@ -153,15 +155,22 @@ def assistant_message(response: Any) -> dict[str, Any]:
     returning them; those are lifted into ``tool_calls`` so the loop works either way.
     """
     message: dict[str, Any] = {}
+    finish_reason = ""
     if isinstance(response, dict):
         choices = response.get("choices") or []
-        if choices and isinstance(choices[0], dict):
+        if choices and isinstance(choices[0], dict):  # a raw OpenAI completion
             message = choices[0].get("message") or {}
+            finish_reason = choices[0].get("finish_reason") or ""
         elif isinstance(response.get("message"), dict):
             message = response["message"]
+        else:  # HL API's reduced answer: content and tool_calls at the top level
+            message = response
+        finish_reason = str(response.get("finish_reason") or finish_reason or "")
     content = message.get("content") or ""
     calls = []
     for index, call in enumerate(message.get("tool_calls") or []):
+        if not isinstance(call, dict):
+            continue
         function = call.get("function") or {}
         calls.append({"id": str(call.get("id") or f"call_{index}"), "name": str(function.get("name") or ""),
                       "arguments": _arguments(function.get("arguments"))})
@@ -175,7 +184,8 @@ def assistant_message(response: Any) -> dict[str, Any]:
                           "arguments": _arguments(parsed.get("arguments"))})
         if calls:
             content = TOOL_CALL_TEXT.sub("", content).strip()
-    return {"content": content if isinstance(content, str) else "", "tool_calls": calls}
+    return {"content": content if isinstance(content, str) else "", "tool_calls": calls,
+            "finish_reason": finish_reason}
 
 
 def _arguments(value: Any) -> dict[str, Any]:
@@ -344,6 +354,13 @@ class ChatTurn:
                     note = "The assistant stopped before finishing; what is shown above is complete."
                     break
                 calls = reply["tool_calls"]
+                if not calls and not reply["content"].strip():
+                    # Nothing usable, e.g. the model spent its token budget thinking (finish_reason "length").
+                    if round_number == 0:
+                        self.fallback("The assistant gave no answer; asking i360 directly.")
+                    else:
+                        note = "The assistant stopped before finishing; what is shown above is complete."
+                    break
                 if not calls:
                     note = reply["content"].strip()
                     break

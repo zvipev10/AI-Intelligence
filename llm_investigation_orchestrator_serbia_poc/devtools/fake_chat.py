@@ -152,7 +152,8 @@ class FakeChatHandler(BaseHTTPRequestHandler):
             return
         if self.path == "/chat/actions":
             self.service.actions.append(body)
-            return self._json(200, {"line": f"Tagged {len(body.get('ids') or [])} records."})
+            verb = "Tagged" if body.get("kind") == "tag" else "Annotated"
+            return self._json(200, {"ok": True, "line": f"{verb} {len(body.get('ids') or [])} records.", "result": {}})
         return self._json(404, {"error": "not_found"})
 
 
