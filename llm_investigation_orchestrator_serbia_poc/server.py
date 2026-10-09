@@ -31,7 +31,7 @@ from analysis import Dataset, normalize_locale, require_investigation_id
 from hl.chat import ChatServiceClient, ChatTurn, ClientGone, LlmClient, TurnContext
 from hl.client import AuthExpired, HlClient, HlError
 from hl.config import ROOT, Settings, load_settings
-from hl.items import ItemReader, Snapshot, SnapshotCache, item_fields
+from hl.items import ItemReader, Snapshot, SnapshotCache, item_fields, layers_search
 from hl.mapping import Mapping, load_mapping
 from hl.state import MEMORY_GROUPS, StateStore
 
@@ -663,6 +663,15 @@ class AppToolHost:
 
     def item_layers(self, item_ids: list[str]) -> list[dict[str, Any]]:
         return self.app.item_layers(self.token, item_ids, self.locale)
+
+    def layers_scope(self) -> dict[str, Any] | None:
+        """Our layers as the i360 chat's ``scope``: the profile's queries merged into one search."""
+        request, exact = layers_search(self.app.profile.get("items_query") or {})
+        if request is None:
+            return None
+        ids = [str(item.get("item_id")) for item in self.app.snapshot(self.token).items if item.get("item_id")]
+        return {"kind": "results", "name": "Our layers", "query": "the app's layers", "ids": ids[:100],
+                "total": len(ids), "request": request, "exact": exact}
 
     def memory_layers(self, investigation_id: str) -> list[dict[str, Any]]:
         try:

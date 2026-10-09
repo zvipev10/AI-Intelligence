@@ -411,7 +411,7 @@
       history: CHAT.history.slice(-12),
       investigation_id: state.investigationId || "",
       investigation_name: state.investigationName || "",
-      scope: state.investigationId ? CHAT.scope : "all",
+      scope: state.investigationId ? CHAT.scope : "layers",
       i360_conversation_id: CHAT.i360ConversationId,
       i360_last_turns: CHAT.i360LastTurns,
       previous_citations: CHAT.citations,
@@ -459,10 +459,10 @@
   // -- panel --------------------------------------------------------------------------------
   function renderScope() {
     const hasInvestigation = Boolean(state.investigationId);
-    const scope = hasInvestigation ? CHAT.scope : "all";
+    const scope = hasInvestigation ? CHAT.scope : "layers";
     $("chatScopeInvestigation").disabled = !hasInvestigation;
     $("chatScopeInvestigation").setAttribute("aria-pressed", String(scope === "investigation"));
-    $("chatScopeAll").setAttribute("aria-pressed", String(scope === "all"));
+    $("chatScopeAll").setAttribute("aria-pressed", String(scope === "layers"));
   }
 
   function bindResizer() {
@@ -509,7 +509,7 @@
     $("chatStop").addEventListener("click", () => CHAT.controller?.abort());
     $("chatNew").addEventListener("click", () => resetConversation("New conversation."));
     $("chatScopeInvestigation").addEventListener("click", () => { CHAT.scope = "investigation"; renderScope(); });
-    $("chatScopeAll").addEventListener("click", () => { CHAT.scope = "all"; renderScope(); });
+    $("chatScopeAll").addEventListener("click", () => { CHAT.scope = "layers"; renderScope(); });
     $("chatPanelToggle").addEventListener("click", () => {
       const collapsed = workspace.classList.toggle("chat-panel-collapsed");
       $("chatPanelToggle").setAttribute("aria-expanded", String(!collapsed));

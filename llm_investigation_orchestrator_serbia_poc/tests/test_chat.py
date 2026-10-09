@@ -13,6 +13,7 @@ FIXTURE = ROOT / "devtools" / "fixtures" / "syria.json.gz"
 from devtools.fake_chat import make_chat_server  # noqa: E402
 from devtools.fake_hlapi import FakeEstate, make_server  # noqa: E402
 from hl.chat import ChatTurn, TurnContext, assistant_message, parse_sse  # noqa: E402
+from hl.items import layers_search  # noqa: E402
 from hl.state import type_definitions  # noqa: E402
 from tests.test_api import Browser, start  # noqa: E402
 
@@ -45,6 +46,25 @@ class ChatUnitTests(unittest.TestCase):
         self.assertEqual("tool_calls", message["finish_reason"])
         empty = assistant_message({"content": "", "tool_calls": None, "finish_reason": "length"})
         self.assertEqual(("", [], "length"), (empty["content"], empty["tool_calls"], empty["finish_reason"]))
+
+    def test_layers_merge_into_one_search(self):
+        from datetime import datetime, timezone
+        now = datetime(2026, 10, 9, tzinfo=timezone.utc)
+        lambda_profile = {"queries": [
+            {"item_types": ["image"], "source_applications": ["EO optical (fictional)"], "recent_days": 365,
+             "limit": 200, "layer": "Satellite", "all_fields": True},
+            {"source_applications": ["ADINT"], "recent_days": 365, "limit": 200, "layer": "ADINT",
+             "fields": ["item_id", "location"]}]}
+        body, exact = layers_search(lambda_profile, now)
+        self.assertEqual(["EO optical (fictional)", "ADINT"], body["source_applications"])
+        self.assertNotIn("item_types", body)  # only Satellite filters on type: dropping it keeps ADINT
+        self.assertTrue(body["time"]["from"].startswith("2025-10-09"))
+        self.assertFalse(exact)
+        body, exact = layers_search({"queries": [{"source_applications": ["A"], "recent_days": 30},
+                                                 {"source_applications": ["B"], "recent_days": 30}]}, now)
+        self.assertEqual((["A", "B"], True), (body["source_applications"], exact))
+        body, exact = layers_search({"filters": [{"field": "scenario", "values": ["syria"]}]}, now)
+        self.assertEqual(({"filters": [{"field": "scenario", "values": ["syria"]}]}, True), (body, exact))
 
     def test_context_is_validated(self):
         with self.assertRaises(ValueError):
@@ -151,13 +171,21 @@ class ChatApiTests(unittest.TestCase):
         ask = self.chat.asks[-1]
         self.assertEqual(("convoy trucks", "app", "Asia/Jerusalem"), (ask["question"], ask["origin"], ask["tz"]))
         self.assertNotIn("focus", ask)  # no investigation open
+        self.assertEqual({"kind": "results", "name": "Our layers", "query": "the app's layers",
+                          "request": {"filters": [{"field": "scenario", "values": ["syria"]}]}},
+                         {k: v for k, v in ask["scope"].items() if k not in {"ids", "total"}})
+        self.assertEqual(min(100, ask["scope"]["total"]), len(ask["scope"]["ids"]))
 
     def test_open_investigation_is_the_focus(self):
         self.ask(self.signed_in(), {"message": "convoy", "investigation_id": "INV-1", "investigation_name": "Convoy"})
         self.assertEqual({"kind": "entity", "id": "INV-1", "name": "Convoy", "type": "AII_INVESTIGATION",
                           "label": "Investigation"}, self.chat.asks[-1]["focus"])
+        self.ask(self.signed_in(), {"message": "convoy", "investigation_id": "INV-1", "scope": "layers"})
+        self.assertNotIn("focus", self.chat.asks[-1])
+        self.assertEqual("results", self.chat.asks[-1]["scope"]["kind"])
         self.ask(self.signed_in(), {"message": "convoy", "investigation_id": "INV-1", "scope": "all"})
         self.assertNotIn("focus", self.chat.asks[-1])
+        self.assertNotIn("scope", self.chat.asks[-1])
 
     def test_follow_up_opens_a_cited_record(self):
         browser = self.signed_in()

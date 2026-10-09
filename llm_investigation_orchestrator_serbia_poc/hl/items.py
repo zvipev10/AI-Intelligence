@@ -121,6 +121,40 @@ def _merge(hit: dict[str, Any], full: dict[str, Any] | None) -> dict[str, Any]:
     return merged
 
 
+def layers_search(items_query: dict[str, Any], now: datetime | None = None) -> tuple[dict[str, Any] | None, bool]:
+    """The profile's layer queries as one HL API ``items/search`` body, for the i360 chat's ``scope``.
+
+    A list filter (``item_types``, ``source_applications``, ...) becomes the union of its values when every
+    query has it and is dropped when some query does not; any other filter is kept only when all queries
+    agree. So the body covers at least every layer's items. ``limit`` (newest N) cannot be said in a search
+    and is left out. Returns ``(body, exact)``: ``exact`` is false when the body may match more than the
+    layers' queries (before their limits).
+    """
+    specs = [ItemReader._spec(q) for q in ((items_query or {}).get("queries") or [items_query or {}])]
+    filters = [base for _, _, base, _, _ in specs]
+    days = [d for d, _, _, _, _ in specs]
+    body: dict[str, Any] = {}
+    for key in sorted({k for f in filters for k in f}):
+        values = [f.get(key) for f in filters]
+        if any(v is None for v in values):
+            continue
+        if all(isinstance(v, list) for v in values):
+            body[key] = []
+            for v in values:
+                body[key] += [x for x in v if x not in body[key]]
+        elif all(v == values[0] for v in values):
+            body[key] = values[0]
+    if all(d > 0 for d in days):
+        now = now or datetime.now(timezone.utc)
+        body["time"] = {**(body.get("time") or {}), "from": _iso(now - timedelta(days=max(days))),
+                        "to": _iso(now + timedelta(days=3650)), "field": "event"}
+    # Exact when the queries differ in at most one filter (a union of one list is the same as the OR of
+    # the queries) and share the same window.
+    differing = {k for f in filters for k in f if any(g.get(k) != f.get(k) for g in filters)}
+    exact = len(differing) <= 1 and all(k in body for k in differing) and len(set(days)) == 1
+    return body, exact
+
+
 class ItemReader:
     def __init__(self, client: HlClient, mapping: Mapping, base_query: dict[str, Any], max_rows: int,
                  items_per_query: int = 0):

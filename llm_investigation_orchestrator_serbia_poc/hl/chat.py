@@ -216,8 +216,10 @@ TOOLS = [
         "times, connections). It searches i360 and answers with cited items. Use it for every question about "
         "the data; never answer such a question yourself.",
         {"question": {"type": "string", "description": "The question, in the user's words plus anything from the conversation it needs"},
-         "scope": {"type": "string", "enum": ["investigation", "all"],
-                   "description": "investigation: only the open investigation's saved items; all: all data the user can see"}},
+         "scope": {"type": "string", "enum": ["investigation", "layers", "all"],
+                   "description": "investigation: only the open investigation's saved items; layers: the data of the "
+                                  "app's layers (the default without an investigation); all: everything in i360, only "
+                                  "when the user asks for it"}},
         ["question"]),
     _fn("show_items",
         "Show records as a new layer in the app. Use the ids i360 cited (from_last_answer=true takes all of them).",
@@ -261,6 +263,10 @@ class ToolHost(Protocol):
     def catalog_layers(self) -> list[dict[str, Any]]: ...
     def item_layers(self, item_ids: list[str]) -> list[dict[str, Any]]: ...
     def memory_layers(self, investigation_id: str) -> list[dict[str, Any]]: ...
+    def layers_scope(self) -> dict[str, Any] | None: ...
+
+
+SCOPES = {"investigation", "layers", "all"}
 
 
 @dataclass
@@ -296,7 +302,7 @@ class TurnContext:
             message=message, history=history,
             investigation_id=str(request.get("investigation_id") or "")[:240],
             investigation_name=str(request.get("investigation_name") or "")[:240],
-            scope=scope if scope in {"investigation", "all"} else "investigation",
+            scope=scope if scope in SCOPES else "investigation",
             i360_conversation_id=str(request.get("i360_conversation_id") or "")[:240],
             i360_last_turns=strings(request.get("i360_last_turns"), 6),
             previous_citations=cited_items(request.get("previous_citations")),
@@ -398,7 +404,8 @@ class ChatTurn:
             lines.append(f"Open investigation: {self.ctx.investigation_name or self.ctx.investigation_id}. "
                          f"ask_i360 scope defaults to '{self.ctx.scope}'.")
         else:
-            lines.append("No investigation is open; ask_i360 searches all data and show_memory/save_to_memory are unavailable.")
+            lines.append(f"No investigation is open; ask_i360 scope defaults to '{self.ctx.scope}' and "
+                         "show_memory/save_to_memory are unavailable.")
         layers = [f"{l['id']} ({l.get('label') or ''})" for l in self.catalog()][:40]
         if layers:
             lines.append("Layers the app can open: " + "; ".join(layers))
@@ -438,7 +445,9 @@ class ChatTurn:
 
     def ask_i360(self, args: dict[str, Any]) -> dict[str, Any]:
         question = str(args.get("question") or self.ctx.message).strip()[:4000]
-        scope = args.get("scope") if args.get("scope") in {"investigation", "all"} else self.ctx.scope
+        scope = args.get("scope") if args.get("scope") in SCOPES else self.ctx.scope
+        if scope == "investigation" and not self.ctx.investigation_id:
+            scope = "layers"
         body: dict[str, Any] = {"request_id": "aii-" + uuid.uuid4().hex[:12], "question": question,
                                 "origin": "app", "medium": "auto"}
         if self.i360_conversation_id:
@@ -450,9 +459,19 @@ class ChatTurn:
                              "type": self.ctx.investigation_type, "label": "Investigation"}
         if self.ctx.timezone:
             body["tz"] = self.ctx.timezone
+        if scope == "layers":
+            layers = self.host.layers_scope()
+            if layers:
+                exact = layers.pop("exact", True)
+                body["scope"] = layers
+                where = " (our layers)" if exact else " (our layers' sources and dates)"
+            else:
+                where = " (all data)"
+        else:
+            where = " (this investigation)" if body.get("focus") else " (all data)"
         if self.chat_model:
             body["model"] = self.chat_model
-        self.emit("step", {"text": "Asking i360" + (" (this investigation)" if body.get("focus") else " (all data)"),
+        self.emit("step", {"text": "Asking i360" + where,
                            "tool": "ask_i360"})
         answer: dict[str, Any] | None = None
         error = ""
