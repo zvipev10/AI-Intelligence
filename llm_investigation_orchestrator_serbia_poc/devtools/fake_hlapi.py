@@ -14,6 +14,8 @@ shapes and its documented behaviour (contract 252):
 - entity instances: create (platform-assigned id), read (``deleted`` flag), patch (merge),
   soft delete, per-type search with ``fields`` exact matches; records a user creates are
   visible to that user only, as with HL API's default grant
+- ``GET /api/v1/llm/models`` and ``POST /api/v1/llm/chat``: a scripted stand-in for the model
+  (``devtools/fake_chat.py``), never a model; ``--chat-port`` also starts a fake i360 chat service
 - one error envelope ``{"error": {"code", "message", "hint"}}``
 
 It is not the real API. Recorded responses from a real estate are the check on it.
@@ -58,6 +60,9 @@ class FakeEstate:
         self.items: dict[str, dict[str, Any]] = {}
         self.types: dict[str, dict[str, Any]] = {}
         self.instances: dict[str, dict[str, dict[str, Any]]] = {}
+        self.llm_off = False
+        self.llm_empty = False  # answer like a model that spent max_tokens thinking
+        self.llm_requests: list[dict[str, Any]] = []
         self.lock = threading.RLock()
         self.calls: list[tuple[str, str]] = []
 
@@ -387,6 +392,21 @@ class FakeHandler(BaseHTTPRequestHandler):
                     return self._json(200, estate.related_objects(method, self._body(), query))
                 if path == "/api/v1/items/get" and method == "POST":
                     return self._json(200, estate.get_items(self._body()))
+                if path == "/api/v1/llm/models":
+                    return self._json(200, {"models": [{"id": "fake-model"}]})
+                if path == "/api/v1/llm/chat" and method == "POST":
+                    if estate.llm_off:
+                        raise ApiError(503, "llm_unavailable", "The model servers are off.", "Try again during the day.")
+                    from devtools.fake_chat import scripted_completion
+                    body = self._body()
+                    estate.llm_requests.append(body)
+                    if estate.llm_empty:
+                        return self._json(200, {"model": body.get("model"), "content": "", "tool_calls": None,
+                                                "finish_reason": "length", "usage": {}})
+                    choice = scripted_completion(body)["choices"][0]  # HL API reduces the completion
+                    return self._json(200, {"model": body.get("model"), "content": choice["message"].get("content"),
+                                            "tool_calls": choice["message"].get("tool_calls"),
+                                            "finish_reason": choice["finish_reason"], "usage": {}})
                 if path.startswith("/api/v1/items/") and path.endswith("/files"):
                     item_id = unquote(path[len("/api/v1/items/"):-len("/files")])
                     if item_id not in estate.items:
@@ -477,6 +497,7 @@ def main() -> None:
     parser.add_argument("--prefix", default="AII_")
     parser.add_argument("--result-window", type=int, default=10000)
     parser.add_argument("--verbose", action="store_true")
+    parser.add_argument("--chat-port", type=int, default=0, help="also run a fake i360 chat service on this port")
     args = parser.parse_args()
     users = dict(entry.split(":", 1) for entry in (args.user or ["analyst:analyst"]))
     estate = FakeEstate(users, result_window=args.result_window)
@@ -486,6 +507,11 @@ def main() -> None:
         from hl.state import type_definitions
         estate.provision(type_definitions(args.prefix))
     server = make_server(args.host, args.port, estate, args.verbose)
+    if args.chat_port:
+        from devtools.fake_chat import make_chat_server
+        chat_server, _ = make_chat_server(args.host, args.chat_port, estate)
+        threading.Thread(target=chat_server.serve_forever, daemon=True).start()
+        print(f"fake i360 chat service on http://{args.host}:{args.chat_port}", flush=True)
     print(f"fake platform-hl-api on http://{args.host}:{args.port} ({len(estate.items)} items, users: {', '.join(users)})", flush=True)
     server.serve_forever()
 

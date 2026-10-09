@@ -8,6 +8,7 @@
   <link rel="icon" type="image/png" href="./assets/i360-logo.png">
   <link rel="stylesheet" href="./vendor/maplibre-gl.css">
   <link rel="stylesheet" href="./styles.css?v=183">
+  <link rel="stylesheet" href="./chat.css?v=1">
 </head>
 <body class="welcome-active">
   <a class="help-button" href="./help.html" target="_blank" rel="noopener" aria-label="פתח עזרה" data-i18n-aria-he="פתח עזרה" data-i18n-aria-en="Open help">?</a>
@@ -84,6 +85,37 @@
   </main>
 
   <main class="workspace" hidden>
+    <aside id="conversationPanel" class="conversation-panel" aria-label="Chat" hidden>
+      <header class="chat-head">
+        <h2>Chat</h2>
+        <div class="chat-scope" role="group" aria-label="What the chat searches">
+          <button id="chatScopeInvestigation" type="button" aria-pressed="true" title="Only the items saved to this investigation">This investigation</button>
+          <button id="chatScopeAll" type="button" aria-pressed="false" title="The data of the app's layers (their sources and dates)">Our layers</button>
+        </div>
+        <button id="chatNew" class="chat-new" type="button" title="Start a new conversation">New</button>
+      </header>
+      <div id="conversation" class="conversation" aria-live="polite">
+        <article class="message assistant-message chat-welcome">
+          <div class="message-label">Assistant</div>
+          <p>Ask about the data, for example "Who called this number last week?", or tell me what to show: "open location updates for last night on the map".</p>
+        </article>
+      </div>
+      <div id="suggestions" class="suggestions"></div>
+      <form id="promptForm" class="prompt-form">
+        <textarea id="promptInput" rows="2" aria-label="Question" placeholder="Ask a question or give a command..."></textarea>
+        <div class="prompt-actions">
+          <button id="sendButton" class="prompt-icon-button send-icon-button" type="submit" title="Send" aria-label="Send">↑</button>
+          <button id="chatStop" class="chat-stop" type="button" title="Stop" aria-label="Stop" hidden>■</button>
+        </div>
+      </form>
+    </aside>
+
+    <div class="panel-resizer" data-resizer="left" role="separator" aria-label="Resize the chat" hidden>
+      <button id="chatPanelToggle" class="chat-panel-toggle" type="button" title="Collapse the chat" aria-label="Collapse the chat" aria-controls="conversationPanel" aria-expanded="true">
+        <span class="material-symbols-rounded" aria-hidden="true">chevron_left</span>
+      </button>
+    </div>
+
     <section class="result-panel">
       <nav class="view-tabs" aria-label="תצוגות תוצאה" data-i18n-aria-he="תצוגות תוצאה" data-i18n-aria-en="Result views">
         <div class="view-tab-list">
@@ -279,5 +311,6 @@
   <script src="./vendor/maplibre-gl.js"></script>
   <script src="./polygon_draw.js?v=3"></script>
   <script src="./demo_bootstrap.js?v=246"></script>
+  <script src="./chat.js?v=1"></script>
 </body>
 </html>

@@ -20,6 +20,11 @@ Branch `feature/i360-only`. The app is one stateless container that talks to pla
 | `APP_COOKIE_SECURE` | `true` | set `false` only for plain-HTTP local runs |
 | `HL_API_TIMEOUT` | `30` | seconds per HL API call |
 | `APP_BUILD` | `dev` | build label shown in `/healthz` and `/api/status` |
+| `CHAT_SERVICE_URL` | (empty) | i360 chat service (`analytics/i360-chat`). In cluster: `http://i360-chat:4020`; from a laptop on the company network: `https://i360-chat.intel360.lambda.projects.e-bitbox.com`. Empty turns the chat panel off. The chat saves conversations only for users holding the `Vibe Coder` profile |
+| `CHAT_MODEL` | (empty) | model the i360 chat is asked to use; empty keeps the service's default |
+| `APP_CHAT_ASSISTANT` | `true` | the small assistant over HL API `/api/v1/llm/chat` that drives the app (open layers, records, memory). `false` sends every message straight to the i360 chat |
+| `APP_CHAT_ASSISTANT_MODEL` | first of `GET /api/v1/llm/models` | model id for that assistant |
+| `CHAT_IDLE_TIMEOUT` | `300` | seconds the app waits on a silent chat stream before giving up |
 
 No secrets. The app holds no password, key or service account.
 
@@ -35,6 +40,7 @@ No secrets. The app holds no password, key or service account.
 cd llm_investigation_orchestrator_serbia_poc
 python3 devtools/fake_hlapi.py --port 9100 --fixture devtools/fixtures/syria.json.gz --provision &
 HL_API_URL=http://127.0.0.1:9100 PORT=8080 APP_COOKIE_SECURE=false python3 server.py
+# with the chat: add --chat-port 9200 to the fake, and CHAT_SERVICE_URL=http://127.0.0.1:9200 to the app
 # open http://localhost:8080 and sign in as analyst / analyst
 ```
 
