@@ -638,9 +638,6 @@ const resultTitle = document.getElementById("resultTitle");
 const resultSubtitle = document.getElementById("resultSubtitle");
 const resultCount = document.getElementById("resultCount");
 const sendButton = document.getElementById("sendButton");
-function renderSendButtonIcon() {
-  if (sendButton) sendButton.innerHTML = '<span class="material-symbols-rounded" aria-hidden="true">arrow_upward</span>';
-}
 const investigationInput = document.getElementById("investigationInput");
 const investigationAddButton = document.getElementById("investigationAddButton");
 const investigationList = document.getElementById("investigationList");
@@ -699,7 +696,6 @@ const layerSelectorList = document.getElementById("layerSelectorList");
 const layerSelectorStatus = document.getElementById("layerSelectorStatus");
 const workspace = document.querySelector(".workspace");
 const chatPanelToggle = document.getElementById("chatPanelToggle");
-const mobileChatToggle = document.getElementById("mobileChatToggle");
 const memoryButton = document.getElementById("memoryButton");
 const memoryModal = document.getElementById("memoryModal");
 const memoryModalBody = document.getElementById("memoryModalBody");
@@ -772,8 +768,18 @@ function layerQueryLabels() {
 }
 
 const LAYER_COLORS = [
-  "#c7d3cb", "#7fd1b9", "#e3b866", "#d9893b", "#9fb8e0", "#c9a0d6",
-  "#e08f7a", "#b3c97a", "#8fc6d6"
+  "#8ab4f8",
+  "#81c995",
+  "#f28b82",
+  "#fdd663",
+  "#c58af9",
+  "#78d9ec",
+  "#ff9f80",
+  "#b3d46f",
+  "#f78fb3",
+  "#a7b7ff",
+  "#c9ab76",
+  "#7fd1ae"
 ];
 
 function layerFamilyLabels() {
@@ -2114,7 +2120,7 @@ function renderAdintLocationMap(coordinates) {
   container.textContent = "";
   const map = new maplibregl.Map({
     container,
-    style: "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json",
+    style: "https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json",
     center: points[0],
     zoom: 10,
     interactive: false,
@@ -2167,7 +2173,7 @@ function renderCctvLocationMap(coordinates) {
   const points = ring.length > 1 && ring[0][0] === ring.at(-1)[0] && ring[0][1] === ring.at(-1)[1] ? ring.slice(0, -1) : ring;
   if (points.length < 3) { container.textContent = "Location map unavailable"; return; }
   container.textContent = "";
-  const map = new maplibregl.Map({ container, style: "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json", center: points[0], zoom: 10, interactive: false, attributionControl: false });
+  const map = new maplibregl.Map({ container, style: "https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json", center: points[0], zoom: 10, interactive: false, attributionControl: false });
   cctvTaskMap = map;
   map.on("load", () => {
     if (map !== cctvTaskMap) return;
@@ -3629,7 +3635,7 @@ function setMapBasemap(mode) {
 function initMap() {
   state.map = new maplibregl.Map({
     container: "map",
-    style: "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json",
+    style: "https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json",
     center: demoRuntime?.demo_profile?.map.center || [20.82, 42.92],
     zoom: demoRuntime?.demo_profile?.map.zoom ?? 8.4,
     minZoom: demoRuntime?.demo_profile?.map.minZoom ?? 6.0,
@@ -4694,12 +4700,11 @@ function setViewerDocked(target = null) {
   const viewer = document.getElementById("objectViewer");
   const timeline = document.getElementById("timelineView");
   const table = document.getElementById("rawEventsOverlay");
-  const map = document.getElementById("mapView");
   objectViewerDockTarget = target;
   viewer.classList.remove("is-maximized");
   const docked = Boolean(target);
   viewer.classList.toggle("is-docked", docked);
-  [timeline, table, map].forEach(container => container?.classList.toggle("has-record-viewer", container === target));
+  [timeline, table].forEach(container => container?.classList.toggle("has-record-viewer", container === target));
   viewer.querySelector(".object-viewer").setAttribute("aria-modal", String(!docked));
   (target || document.body).appendChild(viewer);
 }
@@ -4709,14 +4714,13 @@ function setViewerMaximized(maximized) {
   const maximizeButton = document.getElementById("objectViewerMaximize");
   const timeline = document.getElementById("timelineView");
   const table = document.getElementById("rawEventsOverlay");
-  const map = document.getElementById("mapView");
   if (!viewer || viewer.hidden) return;
   if (!maximized) {
     setViewerDocked(objectViewerDockTarget);
   } else {
     viewer.classList.remove("is-docked");
     viewer.classList.add("is-maximized");
-    [timeline, table, map].forEach(container => container?.classList.remove("has-record-viewer"));
+    [timeline, table].forEach(container => container?.classList.remove("has-record-viewer"));
     viewer.querySelector(".object-viewer").setAttribute("aria-modal", "true");
     document.body.appendChild(viewer);
   }
@@ -4817,7 +4821,7 @@ function openObjectViewer(kind, id, trigger = document.activeElement) {
     ? timeline
     : ["person", "organization"].includes(kind) && document.getElementById("tableView").classList.contains("active")
       ? table
-      : document.getElementById("mapView").classList.contains("active") ? document.getElementById("mapView") : null;
+      : null;
   setViewerDocked(dockTarget);
   document.querySelectorAll(".call-timeline-entry").forEach(row => row.setAttribute("aria-pressed", String(row.dataset.viewerId === id)));
   const cellularCallViewer = kind === "record" && isCellularCallRecord(item);
@@ -5887,7 +5891,7 @@ async function submitStepInject() {
 
   state.busy = true;
   sendButton.disabled = true;
-  renderSendButtonIcon();
+  sendButton.textContent = "↑";
 
   // Snapshot only steps up to (and including) the step that triggered the continuation
   const fromStep = parseInt(stepInjectModal.dataset.fromStep, 10) || 0;
@@ -5976,7 +5980,7 @@ async function submitStepInject() {
     if (progressTimer) clearInterval(progressTimer);
     state.busy = false;
     sendButton.disabled = false;
-    renderSendButtonIcon();
+    sendButton.textContent = "↑";
   }
 }
 
@@ -6570,7 +6574,7 @@ async function runSavedQuestion(savedId) {
   state.busy = true;
   sendButton.disabled = true;
   promptOptionsButton.disabled = true;
-  renderSendButtonIcon();
+  sendButton.textContent = "↑";
   try {
     const response = await fetch(`/api/saved-question?id=${encodeURIComponent(savedId)}`, { cache: "no-store" });
     const saved = await response.json();
@@ -6602,7 +6606,7 @@ async function runSavedQuestion(savedId) {
     state.busy = false;
     sendButton.disabled = false;
     promptOptionsButton.disabled = false;
-    renderSendButtonIcon();
+    sendButton.textContent = "↑";
   }
 }
 
@@ -6708,7 +6712,7 @@ async function runPrompt(prompt, options = {}) {
   startAssistantResearchMessage();
   state.busy = true;
   sendButton.disabled = true;
-  renderSendButtonIcon();
+  sendButton.textContent = "↑";
   suggestions.innerHTML = "";
   let liveStepCount = 0;
   let progressTimer = null;
@@ -6825,7 +6829,7 @@ async function runPrompt(prompt, options = {}) {
     if (progressTimer) clearInterval(progressTimer);
     state.busy = false;
     sendButton.disabled = false;
-    renderSendButtonIcon();
+    sendButton.textContent = "↑";
   }
 }
 
@@ -6859,7 +6863,7 @@ function activateView(view, options = {}) {
     ? document.getElementById("timelineView")
     : safeView === "table"
       ? document.getElementById("rawEventsOverlay")
-      : document.getElementById("mapView");
+      : null;
   if (dockedViewer?.classList.contains("is-docked") && dockedViewer.parentElement !== expectedDockParent) closeObjectViewer();
   document.querySelector(".view-stack")?.classList.toggle("timeline-mode", safeView === "timeline");
   document.querySelectorAll(".view-tab").forEach(button => button.classList.toggle("active", button.dataset.view === safeView));
@@ -6891,28 +6895,19 @@ function setPanelWidths(chatWidth, resultWidth) {
 function setChatPanelCollapsed(collapsed) {
   state.chatPanelCollapsed = Boolean(collapsed);
   workspace.classList.toggle("chat-panel-collapsed", state.chatPanelCollapsed);
-  document.body.classList.toggle("chat-panel-collapsed", state.chatPanelCollapsed);
-  [chatPanelToggle, mobileChatToggle].filter(Boolean).forEach(toggle => {
-    const label = state.chatPanelCollapsed
-      ? activeLocaleText("הצג שיחה", "Show chat")
-      : activeLocaleText("הסתר שיחה", "Hide chat");
-    toggle.title = label;
-    toggle.setAttribute("aria-label", label);
-    toggle.setAttribute("aria-expanded", state.chatPanelCollapsed ? "false" : "true");
-    const icon = toggle.querySelector(".material-symbols-rounded");
+  if (chatPanelToggle) {
+    const label = state.chatPanelCollapsed ? "Show chat" : "Collapse chat";
+    chatPanelToggle.title = label;
+    chatPanelToggle.setAttribute("aria-label", label);
+    chatPanelToggle.setAttribute("aria-expanded", state.chatPanelCollapsed ? "false" : "true");
+    const icon = chatPanelToggle.querySelector(".material-symbols-rounded");
     if (icon) {
-      const desktopDividerToggle = toggle === chatPanelToggle && !window.matchMedia("(max-width: 760px)").matches;
-      icon.textContent = desktopDividerToggle
-        ? (state.chatPanelCollapsed ? "chevron_right" : "chevron_left")
-        : (state.chatPanelCollapsed ? "chat" : "close");
+      const pointsLeft = currentLocale() === "he"
+        ? state.chatPanelCollapsed
+        : !state.chatPanelCollapsed;
+      icon.textContent = pointsLeft ? "chevron_left" : "chevron_right";
     }
-    const toggleLabel = toggle.querySelector(".chat-panel-toggle-label");
-    if (toggleLabel) {
-      toggleLabel.textContent = state.chatPanelCollapsed
-        ? activeLocaleText("שיחה", "Chat")
-        : label;
-    }
-  });
+  }
   if (state.map) {
     setTimeout(() => {
       state.map.resize();
@@ -6964,11 +6959,11 @@ function initPanelResizers() {
       window.addEventListener("pointerup", onUp);
     });
   });
-  [chatPanelToggle, mobileChatToggle].filter(Boolean).forEach(toggle => toggle.addEventListener("click", event => {
+  chatPanelToggle?.addEventListener("click", event => {
     event.preventDefault();
     event.stopPropagation();
     setChatPanelCollapsed(!state.chatPanelCollapsed);
-  }));
+  });
 }
 
 function clearMarkers() {

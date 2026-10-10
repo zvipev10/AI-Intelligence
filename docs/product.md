@@ -14,10 +14,6 @@ Team-member selection is available only inside a saved investigation workspace, 
 
 The welcome page separates the analyst's own investigations from **Investigations you invited to join** and **Similar investigations to join**. Invitation and proposal ribbons use the same button treatment as Invite/Add. Joining an invitation opens that investigation's workspace immediately; **Suspicious military convoy** is invitation-only and is excluded from My investigations. Request-to-join remains a scenario demonstration affordance and does not send a notification.
 
-### Workspace visual language
-
-The Field-map visual language uses a dark street map, self-hosted Barlow typography, an ochre accent and line-separated investigation rows. The landing screen has no map preview; the active workspace stays map-first without shortcut source controls layered on the map. Street mode uses CARTO Dark Matter and Satellite stays Esri World Imagery. Map, Timeline, Table, the raw-results overlay and record viewers retain their existing behavior and provenance boundaries.
-
 | Member | Allowed Syria source layers | Default presentation |
 |---|---|---|
 | Naama / SIGINT Officer | ADINT, IPDR, Cellular Geolocations, Cellular Calls | Opens Cellular Calls in Timeline and docks the latest available call viewer. |

@@ -2,12 +2,6 @@
 
 Use this file for durable product and technical decisions.
 
-## 2026-10-09 — Field-map visual language
-
-Decision: adopt a dark field-map palette, self-hosted Barlow / Barlow Condensed type, CARTO Dark Matter Street mode, and an ochre-only interaction accent. The welcome surface is intentionally map-free and source selection remains in its existing controls.
-
-Context: this supersedes the rejected compact source-chip and welcome-map treatment without changing server APIs, scenario data, or saved-memory behavior.
-
 ## Format
 
 ### YYYY-MM-DD — Decision title

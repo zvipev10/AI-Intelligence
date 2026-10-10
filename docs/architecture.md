@@ -48,7 +48,7 @@ No drawing operation changes record filters or runs an agent. Marker pointer eve
 
 The MapLibre client keeps basemap references separate from analytical presentation.
 
-- Satellite is the initial default; Street mode uses the native CARTO Dark Matter vector style. Self-hosted Barlow and Barlow Condensed webfonts are served from `assets/fonts/`; Hebrew remains a system-font fallback.
+- Satellite is the initial default; Street mode uses the native CARTO Voyager vector style.
 - Name-based labels prefer English at every zoom, falling back to available names where English is missing.
 - Basemap imagery is geographic context, independent of timestamped synthetic Satellite source records; retain provider attribution.
 - Satellite mode places Esri World Imagery below selected CARTO `transportation` and `boundary` line layers and CARTO symbol/label layers.
