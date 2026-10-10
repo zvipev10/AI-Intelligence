@@ -15,7 +15,7 @@
   <title>סביבת מודיעין</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="./vendor/maplibre-gl.css">
-  <link rel="stylesheet" href="./styles.css?v=179">
+  <link rel="stylesheet" href="./styles.css?v=192">
 </head>
 <body class="welcome-active">
   <a class="help-button" href="./help.html" target="_blank" rel="noopener" aria-label="פתח עזרה" data-i18n-aria-he="פתח עזרה" data-i18n-aria-en="Open help">?</a>
@@ -54,22 +54,18 @@
         <span class="material-symbols-rounded status-icon" aria-hidden="true">smart_toy</span><span class="status-state-mark" aria-hidden="true"></span>
         <span id="agentStatusTooltip" class="status-tooltip" role="tooltip"><strong>Hermes</strong><span id="agentStatus">בודק חיבור לסוכן</span></span>
       </button>
+      <button id="mobileChatToggle" class="status-indicator mobile-chat-toggle" type="button" title="פתח שיחה" aria-label="פתח שיחה" data-i18n-title-he="פתח שיחה" data-i18n-title-en="Open chat" data-i18n-aria-he="פתח שיחה" data-i18n-aria-en="Open chat" aria-controls="conversationPanel" aria-expanded="false">
+        <span class="material-symbols-rounded status-icon" aria-hidden="true">chat</span>
+      </button>
     </div>
   </header>
 
   <main id="welcomePage" class="welcome-page">
-    <section class="welcome-intro" aria-labelledby="welcomeTitle">
-      <div>
-        <h2 id="welcomeTitle" data-i18n-text-he="ברוכים הבאים" data-i18n-text-en="Welcome back">ברוכים הבאים</h2>
-        <p data-i18n-text-he="חזרו לחקירה פעילה, בדקו הזמנות, או הצטרפו לחקירה שהמערכת הציעה." data-i18n-text-en="Continue an active investigation, review invitations, or join a system-proposed investigation.">חזרו לחקירה פעילה, בדקו הזמנות, או הצטרפו לחקירה שהמערכת הציעה.</p>
-      </div>
-    </section>
-
     <form id="welcomePromptForm" class="prompt-form welcome-prompt-form">
       <textarea id="welcomePromptInput" rows="2" aria-label="התחלת אקספלורציה בחקירת טיוטה" data-i18n-aria-he="התחלת אקספלורציה בחקירת טיוטה" data-i18n-aria-en="Start exploring in a draft investigation" placeholder="התחל אקספלורציה בחקירת טיוטה..." data-i18n-placeholder-he="התחל אקספלורציה בחקירת טיוטה..." data-i18n-placeholder-en="Start exploring in a draft investigation..."></textarea>
       <div class="prompt-actions">
         <button id="welcomePromptOptionsButton" class="prompt-icon-button prompt-options-button" type="button" title="הוסף" aria-label="הוסף" data-i18n-title-he="הוסף" data-i18n-title-en="Add" data-i18n-aria-he="הוסף" data-i18n-aria-en="Add">+</button>
-        <button id="welcomeSendButton" class="prompt-icon-button send-icon-button" type="submit" title="שלח" aria-label="שלח" data-i18n-title-he="שלח" data-i18n-title-en="Send" data-i18n-aria-he="שלח" data-i18n-aria-en="Send">↑</button>
+        <button id="welcomeSendButton" class="prompt-icon-button send-icon-button" type="submit" title="שלח" aria-label="שלח" data-i18n-title-he="שלח" data-i18n-title-en="Send" data-i18n-aria-he="שלח" data-i18n-aria-en="Send"><span class="material-symbols-rounded" aria-hidden="true">arrow_upward</span></button>
       </div>
     </form>
 
@@ -136,14 +132,15 @@
             <span id="selectedLayersSummary" class="selected-layers-summary"></span>
             <span id="selectedLayersClear" class="selected-layers-clear" role="button" tabindex="0" title="הסר שכבות מהשאילתה" aria-label="הסר שכבות מהשאילתה" data-i18n-title-he="הסר שכבות מהשאילתה" data-i18n-title-en="Remove layers from the query" data-i18n-aria-he="הסר שכבות מהשאילתה" data-i18n-aria-en="Remove layers from the query">×</span>
           </button>
-          <button id="sendButton" class="prompt-icon-button send-icon-button" type="submit" title="שלח" aria-label="שלח" data-i18n-title-he="שלח" data-i18n-title-en="Send" data-i18n-aria-he="שלח" data-i18n-aria-en="Send">↑</button>
+          <button id="sendButton" class="prompt-icon-button send-icon-button" type="submit" title="שלח" aria-label="שלח" data-i18n-title-he="שלח" data-i18n-title-en="Send" data-i18n-aria-he="שלח" data-i18n-aria-en="Send"><span class="material-symbols-rounded" aria-hidden="true">arrow_upward</span></button>
         </div>
       </form>
     </aside>
 
     <div class="panel-resizer" data-resizer="left" role="separator" aria-label="שינוי רוחב שיחה ותצוגה" data-i18n-aria-he="שינוי רוחב שיחה ותצוגה" data-i18n-aria-en="Resize conversation and results panels">
       <button id="chatPanelToggle" class="chat-panel-toggle" type="button" title="מזער שיחה" aria-label="מזער שיחה" data-i18n-title-he="מזער שיחה" data-i18n-title-en="Collapse conversation" data-i18n-aria-he="מזער שיחה" data-i18n-aria-en="Collapse conversation" aria-controls="conversationPanel" aria-expanded="true">
-        <span class="material-symbols-rounded" aria-hidden="true">chevron_right</span>
+        <span class="material-symbols-rounded" aria-hidden="true">chevron_left</span>
+        <span class="chat-panel-toggle-label" aria-hidden="true">Hide chat</span>
       </button>
     </div>
 

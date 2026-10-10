@@ -53,15 +53,11 @@ class WelcomePageContractTests(unittest.TestCase):
         self.assertIn('welcomePromptOptionsButton?.addEventListener("click"', self.app)
         self.assertIn('.welcome-prompt-form', self.styles)
 
-    def test_welcome_prompt_overrides_generic_form_margins_to_stay_centered(self):
-        generic_form_rule = self.styles.index(".prompt-form {")
-        centered_welcome_rule = self.styles.index(".prompt-form.welcome-prompt-form {")
-        self.assertLess(centered_welcome_rule, generic_form_rule)
-        self.assertIn(
-            ".prompt-form.welcome-prompt-form { width: min(720px, 100%); margin: -10px auto 42px; }",
-            self.styles,
-        )
-        self.assertIn('href="./styles.css?v=151"', self.index)
+    def test_welcome_uses_field_map_rows_without_a_map_preview(self):
+        welcome_markup = self.index.split('<main id="welcomePage"', 1)[1].split('</main>', 1)[0]
+        self.assertNotIn('welcome-map-preview', welcome_markup)
+        self.assertIn('font-family: "Barlow Condensed"', self.styles)
+        self.assertIn('href="./styles.css?v=182"', self.index)
 
     def test_draft_creation_modal_and_memory_save_gate(self):
         self.assertIn('id="draftCreateInvestigationButton"', self.index)
@@ -78,20 +74,17 @@ class WelcomePageContractTests(unittest.TestCase):
         self.assertIn('const duplicate = state.investigations.some', self.app)
         self.assertIn('id: state.investigationId, name,', self.app)
         self.assertNotIn('draftCreateParticipants', self.app)
-        self.assertIn('src="./app.js?v=196"', self.index)
+        self.assertIn('src="./app.js?v=280"', (ROOT / "demo_bootstrap.js").read_text(encoding="utf-8"))
         self.assertEqual(self.app.count('if (state.draftSessionActive) {\n    openDraftCreateModal('), 2)
         self.assertIn('const pendingAction = state.pendingDraftMemoryAction;', self.app)
         self.assertIn('if (pendingAction) await pendingAction();', self.app)
 
-    def test_welcome_uses_centered_content_without_blue_kickers_or_open_hint(self):
+    def test_welcome_uses_left_aligned_field_map_intro(self):
         welcome_markup = self.index.split('<main id="welcomePage"', 1)[1].split('</main>', 1)[0]
-        self.assertNotIn('class="welcome-eyebrow"', welcome_markup)
-        self.assertNotIn('מרחב החקירות שלך', welcome_markup)
-        self.assertNotIn('אפשרויות לשיתוף פעולה', welcome_markup)
-        self.assertNotIn('העבודה שלי', welcome_markup)
+        self.assertIn('class="welcome-eyebrow"', welcome_markup)
         self.assertNotIn('לחצו על הסרט לפתיחה', self.app)
         self.assertNotIn('ribbon-open-hint', self.app)
-        self.assertIn('justify-content: center', self.styles)
+        self.assertIn('.welcome-intro { max-width: 1176px; margin-bottom: 32px; display: block; text-align: start; }', self.styles)
 
     def test_similar_investigations_and_demo_actions_are_explicit(self):
         declaration = 'const SIMILAR_INVESTIGATIONS = demoRuntime?.scenario_id === "syria" ? [] : ['
