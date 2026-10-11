@@ -66,35 +66,36 @@ class ChatUnitTests(unittest.TestCase):
         body, exact = layers_search({"filters": [{"field": "scenario", "values": ["syria"]}]}, now)
         self.assertEqual(({"filters": [{"field": "scenario", "values": ["syria"]}]}, True), (body, exact))
 
-    def test_memory_shows_saved_records(self):
+    def test_memory_is_only_displayed(self):
         events = []
 
         class Host:
-            def memory_items(self, investigation_id):
-                return [{"label": "Satellite", "rows": [{"i360_item_id": "img-1", "timestamp_utc": "2026-08-31T07:18:00Z"}]}]
-
-            def memory_layers(self, investigation_id):
-                return []
-
             def item_layers(self, ids):
-                return [{"label": "Satellite", "rows": [{"i360_item_id": i} for i in ids]}]
+                raise AssertionError("show_memory must not read i360")
 
-        ctx = TurnContext.from_request({"message": "what do we have", "investigation_id": "INV-1"})
+        ctx = TurnContext.from_request({"message": "show the memory", "investigation_id": "INV-1"})
         turn = ChatTurn(None, None, Host(), lambda e, d: events.append((e, d)), ctx)
-        result = turn.show_memory({})
-        self.assertEqual(["img-1"], [r["id"] for r in result["saved_records"]])
-        self.assertIn(("action", {"kind": "show_memory_items"}), events)
-        again = turn.show_items({"item_ids": ["img-1"], "label": "saved", "view": "map"})
-        self.assertEqual(1, again["already_on_screen"])  # show_memory already put it on screen
-        self.assertEqual([], [d for e, d in events if e == "action" and d["kind"] == "show_items"])
-        self.assertIn("nothing else", turn.open_item({"item_id": "img-1"})["note"])
+        result = turn.show_memory({"layers": ["all"]})
+        self.assertIn("ask_i360", result["note"])
+        self.assertNotIn("saved_records", result)
+        self.assertEqual([("action", {"kind": "show_memory", "layers": []})], [e for e in events if e[0] == "action"])
+        turn.show_memory({"layers": ["Trucks"]})
+        self.assertEqual(["Trucks"], [d for e, d in events if e == "action"][-1]["layers"])
+        no_investigation = TurnContext.from_request({"message": "show the memory"})
+        self.assertIn("error", ChatTurn(None, None, Host(), lambda e, d: None, no_investigation).show_memory({}))
 
-        class Empty(Host):
-            def memory_items(self, investigation_id):
-                return []
+    def test_open_item_returns_no_record_fields(self):
+        class Host:
+            def item_layers(self, ids):
+                return [{"label": "Satellite", "rows": [{"i360_item_id": i, "text": "3x cargo truck"} for i in ids]}]
 
-        empty = ChatTurn(None, None, Empty(), lambda e, d: None, ctx)
-        self.assertIn("nothing is saved", empty.show_memory({})["error"])
+        ctx = TurnContext.from_request({"message": "open it", "previous_citations": ["img-1"]})
+        turn = ChatTurn(None, None, Host(), lambda e, d: None, ctx)
+        result = turn.open_item({"item_id": "img-1"})
+        self.assertEqual("img-1", result["opened"])
+        self.assertNotIn("record", result)
+        self.assertNotIn("3x cargo truck", json.dumps(result))
+        self.assertEqual(1, turn.show_items({"item_ids": ["img-1"], "label": "x", "view": "map"})["already_on_screen"])
 
     def test_context_is_validated(self):
         with self.assertRaises(ValueError):

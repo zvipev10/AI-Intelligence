@@ -223,7 +223,7 @@ TOOLS = [
                                   "when the user asks for it"}},
         ["question"]),
     _fn("show_items",
-        "Show records as a new layer in the app. Use the ids i360 cited (from_last_answer=true takes all of them).",
+        "Show records i360 cited as a new layer in the app (from_last_answer=true takes all of them).",
         {"from_last_answer": {"type": "boolean"},
          "item_ids": {"type": "array", "items": {"type": "string"}, "maxItems": MAX_SHOWN_ITEMS},
          "label": {"type": "string", "description": "A short layer name a reader understands, e.g. 'Calls of 050-1234567, last week'"},
@@ -241,10 +241,10 @@ TOOLS = [
         "Never make up an id.",
         {"item_id": {"type": "string"}}, ["item_id"]),
     _fn("show_memory",
-        "Show what is saved in the open investigation's memory: the records saved to it (shown as '<layer> · memory' "
-        "tabs) and any saved layers (names from the context, or 'all'). Returns the saved records, so you can "
-        "describe them or open one with open_item.",
-        {"layers": {"type": "array", "items": {"type": "string"}}}),
+        "Put the open investigation's memory on screen: the records saved to it (as '<layer> · memory' tabs) and "
+        "its saved layers (all of them, or the ones named). It only displays; it tells you nothing about what is "
+        "saved. Questions about what is saved go to ask_i360 with scope investigation.",
+        {"layers": {"type": "array", "items": {"type": "string"}, "description": "Saved layer names; omit for all"}}),
     _fn("save_to_memory",
         "Propose saving a layer shown in the app to the open investigation's memory. The user must confirm; "
         "nothing is saved until they do.",
@@ -253,14 +253,15 @@ TOOLS = [
 
 SYSTEM_PROMPT = """You are the assistant inside AI-Intelligence, an analyst map application on i360.
 Use the fewest tool calls that fulfil the request, then stop and answer in one or two short sentences.
-- Questions about the data (records, people, phones, places, times, connections): you do not know the
-  data, the i360 chat does. Call ask_i360, then show what it cited with show_items (from_last_answer=true,
-  a clear label, and the view that fits: map when places matter, timeline for sequences and calls, table
-  otherwise).
-- Commands about the app (open a layer, open a record, show the investigation's memory, save a layer):
-  use the app tool directly, without ask_i360. Use open_layer only when the user asks for a layer.
+- You never read data yourself. Every question about the data (records, people, phones, places, times,
+  connections, what the investigation holds or has saved, what a record says) goes to ask_i360. Then show
+  what it cited with show_items (from_last_answer=true, a clear label, and the view that fits: map when
+  places matter, timeline for sequences and calls, table otherwise).
+- The other tools only display. For a display command (open a layer, open a cited record or the one in
+  the viewer, show the investigation's memory, save a layer) use the tool directly, without ask_i360.
+  Use open_layer only when the user asks for a layer.
 - What a tool has put on screen (memory tabs, the record viewer, a chat layer) is done: never show it
-  again with another tool. To describe a record you already have, use the fields the tool returned.
+  again with another tool.
 - The conversation lives in i360: you see only the current message, the last answer's cited items and
   what the app shows. Anything about earlier turns goes to ask_i360.
 Never invent ids, layer names or facts. If a request is ambiguous, ask one short question instead.
@@ -272,8 +273,6 @@ class ToolHost(Protocol):
 
     def catalog_layers(self) -> list[dict[str, Any]]: ...
     def item_layers(self, item_ids: list[str]) -> list[dict[str, Any]]: ...
-    def memory_layers(self, investigation_id: str) -> list[dict[str, Any]]: ...
-    def memory_items(self, investigation_id: str) -> list[dict[str, Any]]: ...
     def layers_scope(self) -> dict[str, Any] | None: ...
 
 
@@ -344,7 +343,6 @@ class ChatTurn:
         self.ctx = context
         self.chat_model = chat_model
         self.cited: list[dict[str, str]] = list(context.previous_citations)
-        self.memory_ids: set[str] = set()  # records saved to the investigation, read by show_memory
         self.on_screen: set[str] = set()  # records this turn already put on screen
         self.cited_this_turn: list[str] = []
         self.has_places = False
@@ -521,7 +519,7 @@ class ChatTurn:
         }
 
     def known_ids(self) -> set[str]:
-        return {c["id"] for c in self.cited} | {c["id"] for c in self.ctx.previous_citations} | self.memory_ids
+        return {c["id"] for c in self.cited} | {c["id"] for c in self.ctx.previous_citations}
 
     def show_items(self, args: dict[str, Any]) -> dict[str, Any]:
         if args.get("from_last_answer") or not args.get("item_ids"):
@@ -573,7 +571,9 @@ class ChatTurn:
         item_id = str(args.get("item_id") or "").strip()[:240]
         if not item_id:
             return {"error": "no item_id"}
-        # Any id is checked against i360 with the user's token: a made-up or unreadable one is simply not found.
+        if item_id not in self.known_ids() | self.on_screen | {self.ctx.viewer_item_id} - {""}:
+            return {"error": "open_item takes an id i360 cited or the record in the viewer; ask i360 to find others"}
+        # The record is read only to draw it in the viewer; its fields go to the browser, not to the model.
         groups = self.host.item_layers([item_id])
         row = next((r for g in groups for r in g["rows"]), None)
         if row is None:
@@ -581,45 +581,19 @@ class ChatTurn:
         self.on_screen.add(item_id)
         self.emit("action", {"kind": "open_item", "row": row, "group": groups[0]["label"]})
         self.emit("step", {"text": "Opened the record viewer", "tool": "open_item"})
-        fields = {k: v for k, v in row.items() if isinstance(v, str) and v and not k.startswith("i360.")}
-        return {"opened": item_id, "note": "the record is open in the viewer; nothing else is needed to show it",
-                "record": dict(list(fields.items())[:25])}
+        return {"opened": item_id, "note": "the record is open in the viewer; nothing else is needed to show it"}
 
     def show_memory(self, args: dict[str, Any]) -> dict[str, Any]:
         if not self.ctx.investigation_id:
             return {"error": "no investigation is open"}
-        groups = self.host.memory_items(self.ctx.investigation_id)
-        records = [{"id": r.get("i360_item_id"), "layer": g.get("label"), "time": r.get("timestamp_utc"),
-                    "text": str(r.get("text") or r.get("summary") or r.get("title") or "")[:160]}
-                   for g in groups for r in g.get("rows") or [] if r.get("i360_item_id")]
-        self.memory_ids = {str(r["id"]) for r in records}
-        saved = self.host.memory_layers(self.ctx.investigation_id)
-        if not saved and not records:
-            return {"error": "nothing is saved in this investigation's memory yet"}
-        if records:
-            self.on_screen.update(str(r["id"]) for r in records)
-            self.emit("action", {"kind": "show_memory_items"})
-            self.emit("step", {"text": f"Showed {len(records)} saved record(s)", "tool": "show_memory"})
-        note = "the saved records are on screen in the '· memory' tabs; open one with open_item if asked"
-        if not saved:
-            return {"saved_records": records[:MAX_CITED_FOR_MODEL], "saved_layers": [], "note": note}
-        wanted = [str(n) for n in args.get("layers") or []]
-        if not wanted or any(n.strip().lower() == "all" for n in wanted):
-            chosen = saved
-        else:
-            chosen, problems = [], []
-            for name in wanted:
-                resolution = resolve_layer(name, [{"id": s["id"], "label": s.get("label") or s["id"]} for s in saved])
-                if resolution["status"] == "resolved":
-                    chosen.append(next(s for s in saved if s["id"] == resolution["layer"]["id"]))
-                else:
-                    problems.append({"requested": name, "candidates": resolution.get("candidates", [])})
-            if problems:
-                return {"status": "clarification_required", "problems": problems,
-                        "saved_layers": [s.get("label") for s in saved][:30]}
-        self.emit("action", {"kind": "show_memory", "ids": [s["id"] for s in chosen]})
-        self.emit("step", {"text": f"Opened {len(chosen)} saved layer(s)", "tool": "show_memory"})
-        return {"saved_records": records[:MAX_CITED_FOR_MODEL], "opened": [s.get("label") for s in chosen]}
+        layers = [str(n).strip()[:120] for n in args.get("layers") or [] if str(n).strip()]
+        if any(n.lower() == "all" for n in layers):
+            layers = []
+        # Display only: the browser already holds the investigation's memory and puts it on screen.
+        self.emit("action", {"kind": "show_memory", "layers": layers})
+        self.emit("step", {"text": "Showed the investigation's memory", "tool": "show_memory"})
+        return {"shown": "the investigation's memory",
+                "note": "it is on screen; nothing else is needed to show it. What it contains is a question for ask_i360"}
 
     def save_to_memory(self, args: dict[str, Any]) -> dict[str, Any]:
         if not self.ctx.investigation_id:

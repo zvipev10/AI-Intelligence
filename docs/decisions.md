@@ -607,3 +607,11 @@ Decision: move the fifteen-petrol-units call to (34.9837599416126, 35.8893277774
 Rationale: the two calls now have distinct user-supplied positions. Dedicated locations preserve the route waypoint and avoid incorrectly moving both calls together.
 
 Impact: Syria profile 36 selects immutable dataset `cellular-records-v13`. Call content, identifiers, timestamps, participants and media remain unchanged.
+
+### 2026-10-11 — The chat assistant's tools only present; i360 chat reads the data
+
+Decision: in the chat panel, the i360 chat service is the only path to the data. The assistant over HL API `/api/v1/llm/chat` has one data tool, `ask_i360`, and its other tools (`show_items`, `open_item`, `open_layer`, `show_memory`, `save_to_memory`) only change what the app shows. They act on ids i360 cited, the record in the viewer, or the app's own layers and memory, and they return no record content to the model. `show_memory` puts the investigation's memory on screen from what the browser already holds; what the memory contains is asked of i360 with the investigation as focus.
+
+Rationale: i360 chat already owns search, context and the conversation. Keeping our tools to presentation avoids a second, weaker data path that answers differently from i360.
+
+Impact: the app still reads a cited record by id (items/get) to draw it; that fetch is display, not a search. `open_item` refuses ids that were not cited, shown or in the viewer.
