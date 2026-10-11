@@ -566,6 +566,8 @@ class Handler(BaseHTTPRequestHandler):
             line = f"step{' (error)' if data.get('error') else ''}: {str(data.get('text') or '')[:200]}"
             if data.get("tool") == "ask_i360" and "question" in data:
                 line += f" [focus {data.get('focus') or '-'}, scope {data.get('scope') or '-'}, question {json.dumps(data.get('question'))}]"
+            if data.get("trace"):
+                line += f" [{str(data['trace'])[:800]}]"
         elif event == "action":
             row = data.get("row") or {}
             detail = {"show_items": lambda: f"{sum(len(g.get('rows') or []) for g in data.get('groups') or [])} rows, view {data.get('view')}",

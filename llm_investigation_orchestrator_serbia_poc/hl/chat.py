@@ -34,7 +34,8 @@ from hl.client import AuthExpired, HlClient, HlError, NotOnThisEstate, Unreachab
 MAX_ROUNDS = 6
 MAX_SHOWN_ITEMS = 200
 MAX_CITED_FOR_MODEL = 60
-OVERVIEW_LISTING_QUESTION = "find all items"  # i360 routes this to its search leg (an investigation focus keeps it inside)
+# Questions i360 routes to its search leg (an investigation focus keeps them inside), tried in turn.
+OVERVIEW_LISTING_QUESTIONS = ("find all items", "search all items", "find all records")
 VIEWS = ("map", "timeline", "table")
 
 
@@ -623,14 +624,22 @@ class ChatTurn:
             # overview leg: counts by type, source and place, no item ids). Its search leg lists the records;
             # a plain "find all items" in a fresh conversation with the same focus reaches it.
             listing = {key: body[key] for key in ("origin", "medium", "focus", "tz", "model") if key in body}
-            listing.update({"request_id": "aii-" + uuid.uuid4().hex[:12], "question": OVERVIEW_LISTING_QUESTION})
-            listed = None
-            for event, data in self.chat.ask(listing, None):
-                if event == "answer" and isinstance(data, dict):
-                    listed = data
-            if listed and listed.get("leg") == "search":
-                citations = list({c["id"]: c for c in cited_items(listed.get("citations"))}.values())
-            self.emit("step", {"text": f"i360 listed {len(citations)} record(s) of the investigation", "tool": "ask_i360"})
+            trace: list[str] = []
+            for question_text in OVERVIEW_LISTING_QUESTIONS:
+                listed = None
+                ask = {**listing, "request_id": "aii-" + uuid.uuid4().hex[:12], "question": question_text}
+                for event, data in self.chat.ask(ask, None):
+                    if event == "answer" and isinstance(data, dict):
+                        listed = data
+                    elif event == "error":
+                        trace.append(f"error={json.dumps(data, ensure_ascii=True)[:200]}")
+                trace.append(f"{question_text!r}: leg {(listed or {}).get('leg')}")
+                if listed and listed.get("leg") == "search":
+                    citations = list({c["id"]: c for c in cited_items(listed.get("citations"))}.values())
+                if citations:
+                    break
+            self.emit("step", {"text": f"i360 listed {len(citations)} record(s) of the investigation", "tool": "ask_i360",
+                               "trace": "; ".join(trace)})
         ids = [c["id"] for c in citations]
         self.cited_this_turn = ids
         self.cited = citations

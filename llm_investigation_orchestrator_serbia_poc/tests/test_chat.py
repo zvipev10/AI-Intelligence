@@ -98,7 +98,7 @@ class ChatUnitTests(unittest.TestCase):
         class Chat:
             def ask(self, body, conversation_id):
                 asked.append((body, conversation_id))
-                if len(asked) == 1:
+                if len(asked) <= 2:  # the brief, then a listing i360 also reads as an overview
                     return iter([("answer", {"leg": "overview", "content": "1 image", "citations": [],
                                              "cards": {"case": {"total": 1}}}), ("done", {"conversation_id": "c-1"})])
                 return iter([("answer", {"leg": "search", "citations": [{"id": "img-7", "type": "image"}]})])
@@ -108,8 +108,9 @@ class ChatUnitTests(unittest.TestCase):
         result = turn.ask_i360({"question": "what records are linked", "scope": "investigation"})
         self.assertEqual(["img-7"], [c["id"] for c in result["cited_items"]])
         self.assertEqual(["img-7"], [c["id"] for c in turn.cited])
-        listing, conversation = asked[1]
-        self.assertEqual(("find all items", None, "INV-1"), (listing["question"], conversation, listing["focus"]["id"]))
+        self.assertEqual(["find all items", "search all items"], [body["question"] for body, _ in asked[1:]])
+        self.assertEqual([None, None], [conversation for _, conversation in asked[1:]])
+        self.assertEqual("INV-1", asked[2][0]["focus"]["id"])
         self.assertEqual("1 image", result["answer"])  # the brief stays i360's answer
         self.assertEqual("c-1", turn.i360_conversation_id)  # the listing does not take over the conversation
 
