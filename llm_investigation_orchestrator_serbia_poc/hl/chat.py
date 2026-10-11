@@ -35,8 +35,6 @@ MAX_ROUNDS = 6
 MAX_SHOWN_ITEMS = 200
 MAX_CITED_FOR_MODEL = 60
 # Questions i360 routes to its search leg (an investigation focus keeps them inside), tried in turn.
-WHERE_QUESTION = "Where should I look: in this investigation, in our layers, or in all of i360?"
-WHERE_QUESTION_NO_CASE = "Where should I look: in our layers, or in all of i360?"
 OVERVIEW_LISTING_QUESTIONS = ("find all items", "search all items", "find all records")
 VIEWS = ("map", "timeline", "table")
 
@@ -235,8 +233,7 @@ TOOLS = [
                                   "linked to the open investigation; 'layers' = the data of the app's layers: a layer "
                                   "named in the question (ADINT, IPDR, Satellite, CCTV, Cellular ...), the map, the "
                                   "tables; 'all' = everything in i360, and people or other entities by name. "
-                                  "Omit it when neither the question nor the conversation says where: the user is "
-                                  "then asked"}},
+                                  "When neither the question nor the conversation says where, 'layers'"}},
         ["question"]),
     _fn("show_items",
         "Show records i360 cited as a new layer in the app (from_last_answer=true takes all of them).",
@@ -287,8 +284,7 @@ Use the fewest tool calls that fulfil the request, then stop and answer in one o
   investigation", "linked", "the case"), our layers (a layer by name such as ADINT, IPDR, Satellite, CCTV or
   Cellular, "on the map", "in the layers", "these records"), or all of i360 ("anywhere", "in i360", people and
   entities by name). A follow-up keeps the scope of the question it follows.
-  When neither the question nor the conversation says where, call ask_i360 without a scope: the app then
-  asks the user where to look.
+  When neither the question nor the conversation says where, search our layers; do not ask the user.
 - Name the scope that was searched as it was (this investigation, our layers, or all data).
 - The conversation lives in i360: you see only the current message, the last answer's cited items and
   what the app shows. Anything about earlier turns goes to ask_i360.
@@ -449,7 +445,6 @@ class ChatTurn:
         self.i360_conversation_id = context.i360_conversation_id
         self.i360_last_turns = list(context.i360_last_turns)
         self.i360_scope = context.i360_scope
-        self.question_for_user = ""  # set when the turn must end by asking the user (where to search)
         self.catalog_cache: list[dict[str, Any]] | None = None
 
     # -- the loop ---------------------------------------------------------------------------
@@ -490,9 +485,6 @@ class ChatTurn:
                     result = self.run_tool(call["name"], call["arguments"])
                     messages.append({"role": "tool", "tool_call_id": call["id"],
                                      "content": json.dumps(result, ensure_ascii=False)[:12000]})
-                if self.question_for_user:
-                    note = self.question_for_user
-                    break
             else:
                 note = "I stopped after several steps; tell me what is still missing."
             if note:
@@ -583,11 +575,10 @@ class ChatTurn:
         question = str(args.get("question") or self.ctx.message).strip()[:4000]
         if self.ctx.scope == "auto":
             # No panel choice: the scope is decided from the question, by the model, every time.
-            scope = str(args.get("scope") or "")
+            # The question decides where to search; when it does not say, the app's layers.
+            scope = str(args.get("scope") or "layers")
             if scope not in SCOPES:
-                # The question does not say where: the turn ends by asking the user.
-                self.question_for_user = WHERE_QUESTION if self.ctx.investigation_id else WHERE_QUESTION_NO_CASE
-                return {"error": "the user is asked where to search; stop"}
+                scope = "layers"
             if scope == "investigation" and not self.ctx.investigation_id:
                 return {"error": "no investigation is open: ask the user to open one, or search layers or all"}
         else:

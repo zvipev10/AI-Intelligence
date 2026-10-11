@@ -105,12 +105,9 @@ class ChatUnitTests(unittest.TestCase):
 
         ctx = TurnContext.from_request({"message": "x", "investigation_id": "INV-1", "scope": "auto"})
         turn = ChatTurn(None, Chat(), Host(), lambda e, d: None, ctx)
-        self.assertIn("error", turn.ask_i360({"question": "show the calls"}))  # no scope: ask the user
-        self.assertEqual([], asked)
-        self.assertIn("this investigation, in our layers", turn.question_for_user)
-        turn.question_for_user = ""
-        turn.ask_i360({"question": "on the map", "scope": "layers"})
+        turn.ask_i360({"question": "show the calls"})  # the question does not say where: our layers
         self.assertEqual("results", asked[-1]["scope"]["kind"])
+        self.assertNotIn("focus", asked[-1])
         turn.ask_i360({"question": "linked records", "scope": "investigation"})
         self.assertEqual("INV-1", asked[-1]["focus"]["id"])
         no_case = ChatTurn(None, Chat(), Host(), lambda e, d: None, TurnContext.from_request({"message": "x", "scope": "auto"}))
