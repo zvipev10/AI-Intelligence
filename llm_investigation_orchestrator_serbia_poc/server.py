@@ -762,6 +762,17 @@ class AppToolHost:
         """One entity i360 returned, read by id with the user's token, as the person viewer draws it."""
         return self.app.entity_record(self.token, entity_type, entity_id)
 
+    def investigation_items(self, investigation_id: str) -> list[dict[str, Any]]:
+        """The records attached to an i360 investigation, as chat citations (id, type, time, text)."""
+        out = []
+        for item in self.app.state(self.token).attached_items(investigation_id):
+            text = item.get("text") if isinstance(item.get("text"), dict) else {}
+            line = next((str(text[k]) for k in ("english", "summary", "synopsis", "transcript", "original") if text.get(k)), "")
+            out.append({"id": str(item.get("item_id") or ""), "type": str(item.get("item_type") or ""),
+                        "time": str(item.get("event_time") or ""),
+                        "text": line or f"{item.get('item_type') or 'item'} from {item.get('source_application') or 'i360'}"})
+        return [entry for entry in out if entry["id"]]
+
     def layers_scope(self) -> dict[str, Any] | None:
         """Our layers as the i360 chat's ``scope``: the profile's queries merged into one search."""
         request, exact = layers_search(self.app.profile.get("items_query") or {})

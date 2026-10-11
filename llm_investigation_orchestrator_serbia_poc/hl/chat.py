@@ -293,6 +293,7 @@ class ToolHost(Protocol):
     def item_layers(self, item_ids: list[str]) -> list[dict[str, Any]]: ...
     def layers_scope(self) -> dict[str, Any] | None: ...
     def entity(self, entity_type: str, entity_id: str) -> dict[str, Any] | None: ...
+    def investigation_items(self, investigation_id: str) -> list[dict[str, Any]]: ...
 
 
 SCOPES = {"investigation", "layers", "all"}
@@ -617,6 +618,17 @@ class ChatTurn:
         if answer is None:
             return {"error": f"i360 gave no answer ({error or 'empty stream'})"}
         citations = list({c["id"]: c for c in cited_items(answer.get("citations"))}.values())
+        if not citations and body.get("focus") and self.ctx.investigation_id:
+            # i360 answers "what does this investigation hold" with an overview card (counts by type, source,
+            # place), no item ids. The investigation's attached records are known here (related_to), so they
+            # become the citations: the model can open them and "this record" resolves on the next turn.
+            lister = getattr(self.host, "investigation_items", None)
+            try:
+                citations = cited_items(lister(self.ctx.investigation_id)) if lister else []
+            except HlError:
+                citations = []
+            if citations:
+                self.emit("step", {"text": f"The investigation holds {len(citations)} record(s)", "tool": "ask_i360"})
         ids = [c["id"] for c in citations]
         self.cited_this_turn = ids
         self.cited = citations
