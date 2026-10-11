@@ -23,6 +23,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from tools.auth import signed_in_client  # noqa: E402
 from hl.client import HlClient, HlError  # noqa: E402
 
 DETAILS = "investigation_details"
@@ -78,10 +79,7 @@ def main() -> int:
     if not base_url:
         print("Set HL_API_URL first.", file=sys.stderr)
         return 2
-    username = args.username or input("i360 username: ").strip()
-    password = os.environ.get("I360_PASS") or getpass.getpass("i360 password: ")
-    client = HlClient(base_url, HlClient(base_url).token_exchange(username, password)["access_token"])
-    print(f"Signed in as {client.whoami().get('user_name')}")
+    client = signed_in_client(base_url, args.username)
 
     failures = 0
     for record in DEMO_INVESTIGATIONS:
