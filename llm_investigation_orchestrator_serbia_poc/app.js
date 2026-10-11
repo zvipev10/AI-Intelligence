@@ -1370,24 +1370,7 @@ async function submitCollectionRequest() {
     openCellularCallsTaskDialog(target, trigger);
     return;
   }
-  const objects = [...collectionRequestForm.querySelectorAll('input[name="collectionObject"]:checked')].map(input => input.value);
-  const response = await fetch("/api/collection-request", {
-    method: "POST",
-    headers: { "Content-Type": "application/json; charset=utf-8" },
-    body: JSON.stringify({
-      investigation_id: state.investigationId,
-      name: state.investigationName,
-      role: state.activeRoleWorkspace || "general",
-      target: target.type === "imei" ? { type: "imei", imei: target.imei } : { type: "polygon", geometry: { type: "Polygon", coordinates: [target.coordinates] } },
-      collection_type: type,
-      extraction_objects: objects,
-      instructions: ""
-    })
-  });
-  const payload = await response.json();
-  // Saving the request to the investigation can fail (no memory type on this i360); the demo still opens the layer.
-  if (response.ok) await loadInvestigationMemory();
-  else console.warn(`Collection request not saved: ${payload.error || response.status}`);
+  // A collection request is a demo: it opens the layer the collection feeds and is not saved to the investigation.
   closeCollectionRequestDialog();
   const openedLayer = await openRequestedCollectionLayer(type);
   if (!openedLayer) target.trigger?.focus?.();
