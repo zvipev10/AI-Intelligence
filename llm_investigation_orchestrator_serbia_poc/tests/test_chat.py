@@ -91,6 +91,31 @@ class ChatUnitTests(unittest.TestCase):
         turn.ask_i360({"question": "find him everywhere", "scope": "all"})
         self.assertNotIn("scope", asked[-1])
 
+    def test_auto_scope_comes_from_the_model_every_time(self):
+        asked = []
+
+        class Chat:
+            def ask(self, body, conversation_id):
+                asked.append(body)
+                return iter([("answer", {"content": "x", "citations": []})])
+
+        class Host:
+            def layers_scope(self):
+                return {"kind": "results", "ids": [], "exact": True}
+
+        ctx = TurnContext.from_request({"message": "x", "investigation_id": "INV-1", "scope": "auto"})
+        turn = ChatTurn(None, Chat(), Host(), lambda e, d: None, ctx)
+        self.assertIn("error", turn.ask_i360({"question": "show the calls"}))  # no scope: ask the user
+        self.assertEqual([], asked)
+        self.assertIn("this investigation, in our layers", turn.question_for_user)
+        turn.question_for_user = ""
+        turn.ask_i360({"question": "on the map", "scope": "layers"})
+        self.assertEqual("results", asked[-1]["scope"]["kind"])
+        turn.ask_i360({"question": "linked records", "scope": "investigation"})
+        self.assertEqual("INV-1", asked[-1]["focus"]["id"])
+        no_case = ChatTurn(None, Chat(), Host(), lambda e, d: None, TurnContext.from_request({"message": "x", "scope": "auto"}))
+        self.assertIn("error", no_case.ask_i360({"question": "linked records", "scope": "investigation"}))
+
     def test_investigation_overview_is_listed_by_i360_search(self):
         # i360's overview leg gives counts only; a second ask reaches its search leg, which lists the records.
         asked = []

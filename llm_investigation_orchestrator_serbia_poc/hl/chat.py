@@ -35,6 +35,8 @@ MAX_ROUNDS = 6
 MAX_SHOWN_ITEMS = 200
 MAX_CITED_FOR_MODEL = 60
 # Questions i360 routes to its search leg (an investigation focus keeps them inside), tried in turn.
+WHERE_QUESTION = "Where should I look: in this investigation, in our layers, or in all of i360?"
+WHERE_QUESTION_NO_CASE = "Where should I look: in our layers, or in all of i360?"
 OVERVIEW_LISTING_QUESTIONS = ("find all items", "search all items", "find all records")
 VIEWS = ("map", "timeline", "table")
 
@@ -228,9 +230,13 @@ TOOLS = [
                                                        "own chat notes. Ask about the records linked to the investigation"},
          "entity_id": {"type": "string", "description": "For a question about one entity i360 returned "
                                                         "(his calls, where she was): its id"},
-         "scope": {"type": "string", "enum": ["all"],
-                   "description": "Omit it: the user's panel choice applies. 'all' searches everything in i360, only "
-                                  "when the user asks for all data or for something outside the panel's scope"}},
+         "scope": {"type": "string", "enum": ["investigation", "layers", "all"],
+                   "description": "Where to search, decided from the user's question: 'investigation' = the records "
+                                  "linked to the open investigation; 'layers' = the data of the app's layers: a layer "
+                                  "named in the question (ADINT, IPDR, Satellite, CCTV, Cellular ...), the map, the "
+                                  "tables; 'all' = everything in i360, and people or other entities by name. "
+                                  "Omit it when neither the question nor the conversation says where: the user is "
+                                  "then asked"}},
         ["question"]),
     _fn("show_items",
         "Show records i360 cited as a new layer in the app (from_last_answer=true takes all of them).",
@@ -277,6 +283,12 @@ Use the fewest tool calls that fulfil the request, then stop and answer in one o
   all: the investigation and our layers' scopes hold records, not entities), then open_entity on the entity
   it returned. If it returned several that match, list their names and ask which one. A follow-up about an
   entity i360 already returned goes to ask_i360 with its entity_id.
+- Every ask_i360 names its scope, decided from the question: the investigation's records ("in this
+  investigation", "linked", "the case"), our layers (a layer by name such as ADINT, IPDR, Satellite, CCTV or
+  Cellular, "on the map", "in the layers", "these records"), or all of i360 ("anywhere", "in i360", people and
+  entities by name). A follow-up keeps the scope of the question it follows.
+  When neither the question nor the conversation says where, call ask_i360 without a scope: the app then
+  asks the user where to look.
 - Name the scope that was searched as it was (this investigation, our layers, or all data).
 - The conversation lives in i360: you see only the current message, the last answer's cited items and
   what the app shows. Anything about earlier turns goes to ask_i360.
@@ -332,7 +344,7 @@ class TurnContext:
             message=message,
             investigation_id=str(request.get("investigation_id") or "")[:240],
             investigation_name=str(request.get("investigation_name") or "")[:240],
-            scope=scope if scope in SCOPES else "investigation",
+            scope=scope if scope in SCOPES or scope == "auto" else "investigation",
             i360_conversation_id=str(request.get("i360_conversation_id") or "")[:240],
             i360_scope=str(request.get("i360_scope") or "") if request.get("i360_scope") in SCOPES else "",
             i360_last_turns=strings(request.get("i360_last_turns"), 6),
@@ -437,6 +449,7 @@ class ChatTurn:
         self.i360_conversation_id = context.i360_conversation_id
         self.i360_last_turns = list(context.i360_last_turns)
         self.i360_scope = context.i360_scope
+        self.question_for_user = ""  # set when the turn must end by asking the user (where to search)
         self.catalog_cache: list[dict[str, Any]] | None = None
 
     # -- the loop ---------------------------------------------------------------------------
@@ -477,6 +490,9 @@ class ChatTurn:
                     result = self.run_tool(call["name"], call["arguments"])
                     messages.append({"role": "tool", "tool_call_id": call["id"],
                                      "content": json.dumps(result, ensure_ascii=False)[:12000]})
+                if self.question_for_user:
+                    note = self.question_for_user
+                    break
             else:
                 note = "I stopped after several steps; tell me what is still missing."
             if note:
@@ -488,7 +504,8 @@ class ChatTurn:
     def fallback(self, reason: str) -> None:
         """No model: ask i360 directly and show what it cited (the plan's option 1)."""
         self.emit("step", {"text": reason})
-        result = self.ask_i360({"question": self.ctx.message, "scope": self.ctx.scope})
+        scope = self.ctx.scope if self.ctx.scope != "auto" else ("investigation" if self.ctx.investigation_id else "layers")
+        result = self.ask_i360({"question": self.ctx.message, "scope": scope})
         if self.cited_this_turn:
             self.show_items({"from_last_answer": True, "label": self.ctx.message[:60],
                              "view": "map" if self.has_places else "table"})
@@ -497,7 +514,12 @@ class ChatTurn:
 
     def context_text(self) -> str:
         lines = []
-        if self.ctx.investigation_id:
+        if self.ctx.scope == "auto":
+            lines.append((f"Open investigation: {self.ctx.investigation_name or self.ctx.investigation_id}. "
+                          if self.ctx.investigation_id else "No investigation is open (scope 'investigation' is "
+                          "unavailable and save_to_memory too). ") + "Decide ask_i360's scope from the question"
+                         + (f"; the previous question searched '{self.i360_scope}'." if self.i360_scope else "."))
+        elif self.ctx.investigation_id:
             lines.append(f"Open investigation: {self.ctx.investigation_name or self.ctx.investigation_id}. "
                          f"The user's chosen scope is '{self.ctx.scope}'; ask_i360 searches there.")
         else:
@@ -559,10 +581,20 @@ class ChatTurn:
 
     def ask_i360(self, args: dict[str, Any]) -> dict[str, Any]:
         question = str(args.get("question") or self.ctx.message).strip()[:4000]
-        # The panel's scope wins: the model may widen it (the user asked for all data), never narrow it.
-        scope = self.ctx.scope if self.ctx.scope != "investigation" or self.ctx.investigation_id else "layers"
-        if args.get("scope") in SCOPES and SCOPE_WIDTH[args["scope"]] > SCOPE_WIDTH[scope]:
-            scope = args["scope"]
+        if self.ctx.scope == "auto":
+            # No panel choice: the scope is decided from the question, by the model, every time.
+            scope = str(args.get("scope") or "")
+            if scope not in SCOPES:
+                # The question does not say where: the turn ends by asking the user.
+                self.question_for_user = WHERE_QUESTION if self.ctx.investigation_id else WHERE_QUESTION_NO_CASE
+                return {"error": "the user is asked where to search; stop"}
+            if scope == "investigation" and not self.ctx.investigation_id:
+                return {"error": "no investigation is open: ask the user to open one, or search layers or all"}
+        else:
+            # The panel's scope wins: the model may widen it (the user asked for all data), never narrow it.
+            scope = self.ctx.scope if self.ctx.scope != "investigation" or self.ctx.investigation_id else "layers"
+            if args.get("scope") in SCOPES and SCOPE_WIDTH[args["scope"]] > SCOPE_WIDTH[scope]:
+                scope = args["scope"]
         if self.i360_conversation_id and self.i360_scope and self.i360_scope != scope:
             # A new scope starts a new i360 conversation, so the old scope's evidence cannot leak into the answer.
             self.i360_conversation_id, self.i360_last_turns = "", []
