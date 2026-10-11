@@ -7,14 +7,15 @@
    answer, Show results / Save to memory) and carries the actions out with app.js's own functions:
    addResultLayers, openCatalogLayer, openObjectViewer, openMemoryEntry, saveLayerToInvestigationMemory.
 
-   The server keeps nothing between turns: the history, the i360 conversation id and the previous
-   answer's citations live here and travel with every message. */
+   The conversation is i360's: the server keeps nothing between turns, and this file keeps only the
+   i360 conversation id, its recent answer ids and the previous answer's citations, sent with every
+   message. */
 (function () {
   "use strict";
 
   const CHAT = {
     on: false, busy: false, controller: null, turnCounter: 0,
-    history: [], citations: [], i360ConversationId: "", i360LastTurns: [], investigationId: null,
+    citations: [], i360ConversationId: "", i360LastTurns: [], investigationId: null,
     scope: "investigation", openedLayerKey: "chat:opened-records",
   };
   const MAX_SOURCES = 8;
@@ -388,7 +389,6 @@
 
   function resetConversation(message) {
     CHAT.controller?.abort();
-    CHAT.history = [];
     CHAT.citations = [];
     CHAT.i360ConversationId = "";
     CHAT.i360LastTurns = [];
@@ -408,7 +408,6 @@
     CHAT.controller = new AbortController();
     const body = {
       message,
-      history: CHAT.history.slice(-12),
       investigation_id: state.investigationId || "",
       investigation_name: state.investigationName || "",
       scope: state.investigationId ? CHAT.scope : "layers",
@@ -449,9 +448,6 @@
       finishTurn(turn);
       setBusy(false);
       CHAT.controller = null;
-      const summary = [turn.answer?.content ? `i360 answered: ${String(turn.answer.content).slice(0, 600)}` : "", turn.note]
-        .filter(Boolean).join("\n");
-      CHAT.history.push({ role: "user", content: message }, { role: "assistant", content: summary || "(no answer)" });
       $("promptInput").focus();
     }
   }
