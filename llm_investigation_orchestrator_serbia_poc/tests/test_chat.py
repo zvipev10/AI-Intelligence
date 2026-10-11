@@ -84,7 +84,10 @@ class ChatUnitTests(unittest.TestCase):
         result = turn.show_memory({})
         self.assertEqual(["img-1"], [r["id"] for r in result["saved_records"]])
         self.assertIn(("action", {"kind": "show_memory_items"}), events)
-        self.assertNotIn("error", turn.show_items({"item_ids": ["img-1"], "label": "saved", "view": "map"}))
+        again = turn.show_items({"item_ids": ["img-1"], "label": "saved", "view": "map"})
+        self.assertEqual(1, again["already_on_screen"])  # show_memory already put it on screen
+        self.assertEqual([], [d for e, d in events if e == "action" and d["kind"] == "show_items"])
+        self.assertIn("nothing else", turn.open_item({"item_id": "img-1"})["note"])
 
         class Empty(Host):
             def memory_items(self, investigation_id):

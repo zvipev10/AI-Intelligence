@@ -252,16 +252,19 @@ TOOLS = [
 ]
 
 SYSTEM_PROMPT = """You are the assistant inside AI-Intelligence, an analyst map application on i360.
-You do not know the data. The i360 chat does: for any question about records, people, phones, places,
-times or connections, call ask_i360, then present what it found with show_items (from_last_answer=true,
-a clear label, and the view that fits: map when places matter, timeline for sequences and calls, table
-otherwise). For commands about the app (open a layer, open a record, switch view, show the investigation's memory,
-save a layer) use the app tools directly without asking i360. Use open_layer only when the user asks
-for a layer; to show what an answer is about, use show_items or open_item with record ids. Never invent ids, layer names or facts.
-The conversation lives in i360: you see only the current message, the last answer's cited items and
-what the app shows. Anything about earlier turns goes to ask_i360, which knows the conversation.
-If a request is ambiguous, ask one short question instead of guessing.
-Finish with one or two short sentences saying what you showed; do not repeat i360's answer."""
+Use the fewest tool calls that fulfil the request, then stop and answer in one or two short sentences.
+- Questions about the data (records, people, phones, places, times, connections): you do not know the
+  data, the i360 chat does. Call ask_i360, then show what it cited with show_items (from_last_answer=true,
+  a clear label, and the view that fits: map when places matter, timeline for sequences and calls, table
+  otherwise).
+- Commands about the app (open a layer, open a record, show the investigation's memory, save a layer):
+  use the app tool directly, without ask_i360. Use open_layer only when the user asks for a layer.
+- What a tool has put on screen (memory tabs, the record viewer, a chat layer) is done: never show it
+  again with another tool. To describe a record you already have, use the fields the tool returned.
+- The conversation lives in i360: you see only the current message, the last answer's cited items and
+  what the app shows. Anything about earlier turns goes to ask_i360.
+Never invent ids, layer names or facts. If a request is ambiguous, ask one short question instead.
+Do not repeat i360's answer; it is already shown to the user."""
 
 
 class ToolHost(Protocol):
@@ -342,6 +345,7 @@ class ChatTurn:
         self.chat_model = chat_model
         self.cited: list[dict[str, str]] = list(context.previous_citations)
         self.memory_ids: set[str] = set()  # records saved to the investigation, read by show_memory
+        self.on_screen: set[str] = set()  # records this turn already put on screen
         self.cited_this_turn: list[str] = []
         self.has_places = False
         self.i360_conversation_id = context.i360_conversation_id
@@ -529,14 +533,18 @@ class ChatTurn:
                 return {"error": f"{len(unknown)} ids were not cited by i360 in this conversation; use from_last_answer"}
             ids = requested
         if not ids:
-            return {"error": "nothing to show: i360 cited no items"}
-        ids = ids[:MAX_SHOWN_ITEMS]
+            return {"error": "nothing to show: i360 cited no items in its last answer"}
+        new = [i for i in ids if i not in self.on_screen]
+        if not new:
+            return {"already_on_screen": len(ids), "note": "these records are already on screen; nothing else to do"}
+        ids = new[:MAX_SHOWN_ITEMS]
         label = str(args.get("label") or "Chat results").strip()[:80]
         view = args.get("view") if args.get("view") in VIEWS else ("map" if self.has_places else "table")
         groups = self.host.item_layers(ids)
         shown = sum(len(g["rows"]) for g in groups)
         if not shown:
             return {"error": "none of the cited items could be read"}
+        self.on_screen.update(str(r.get("i360_item_id")) for g in groups for r in g["rows"])
         self.emit("action", {"kind": "show_items", "label": label, "view": view, "groups": groups})
         self.emit("step", {"text": f"Showed {shown} records as '{label}' on the {view}", "tool": "show_items"})
         return {"shown": shown, "layers": [f"Chat: {label} · {g['label']}" if len(groups) > 1 else f"Chat: {label}" for g in groups],
@@ -570,9 +578,12 @@ class ChatTurn:
         row = next((r for g in groups for r in g["rows"]), None)
         if row is None:
             return {"error": f"no readable record with id {item_id}"}
+        self.on_screen.add(item_id)
         self.emit("action", {"kind": "open_item", "row": row, "group": groups[0]["label"]})
         self.emit("step", {"text": "Opened the record viewer", "tool": "open_item"})
-        return {"opened": item_id}
+        fields = {k: v for k, v in row.items() if isinstance(v, str) and v and not k.startswith("i360.")}
+        return {"opened": item_id, "note": "the record is open in the viewer; nothing else is needed to show it",
+                "record": dict(list(fields.items())[:25])}
 
     def show_memory(self, args: dict[str, Any]) -> dict[str, Any]:
         if not self.ctx.investigation_id:
@@ -586,10 +597,12 @@ class ChatTurn:
         if not saved and not records:
             return {"error": "nothing is saved in this investigation's memory yet"}
         if records:
+            self.on_screen.update(str(r["id"]) for r in records)
             self.emit("action", {"kind": "show_memory_items"})
             self.emit("step", {"text": f"Showed {len(records)} saved record(s)", "tool": "show_memory"})
+        note = "the saved records are on screen in the '· memory' tabs; open one with open_item if asked"
         if not saved:
-            return {"saved_records": records[:MAX_CITED_FOR_MODEL], "saved_layers": []}
+            return {"saved_records": records[:MAX_CITED_FOR_MODEL], "saved_layers": [], "note": note}
         wanted = [str(n) for n in args.get("layers") or []]
         if not wanted or any(n.strip().lower() == "all" for n in wanted):
             chosen = saved
