@@ -2507,7 +2507,8 @@ async function openCatalogLayer(layerId, options = {}) {
     const response = await fetch(url.toString(), { cache: "no-store" });
     const payload = await response.json();
     if (!response.ok) throw new Error(payload.error || activeLocaleText("טעינת נתוני השכבה נכשלה", "Failed to load layer data"));
-    const openedLayer = buildCatalogLayer(payload.layer || layer, payload.rows || []);
+    // The catalog entry (from /api/layers) carries extras such as field_labels; keep them.
+    const openedLayer = buildCatalogLayer({ ...layer, ...(payload.layer || {}), field_labels: (payload.layer || {}).field_labels || layer.field_labels }, payload.rows || []);
     openedLayer.catalogFilters = filters;
     openedLayer.catalogScopeKey = scopeKey;
     if (scopeKey !== "{}") {
