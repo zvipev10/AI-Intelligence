@@ -49,6 +49,8 @@ def scripted_completion(body: dict[str, Any]) -> dict[str, Any]:
                 tool_results.append({})
     last = tool_results[-1] if tool_results else None
     if last is None:
+        if text.startswith("what did i ask"):
+            return _completion(None, [_call("read_i360_conversation", {})])
         if text.startswith("save"):
             return _completion(None, [_call("save_to_memory", {"layer": user.split(" ", 1)[-1]})])
         if text.startswith("open the first") or text.startswith("open the second"):
@@ -67,6 +69,9 @@ def scripted_completion(body: dict[str, Any]) -> dict[str, Any]:
             return _completion("i360 found nothing to show.")
         view = "map" if last.get("has_places") else "table"
         return _completion(None, [_call("show_items", {"from_last_answer": True, "label": user[:40], "view": view})])
+    if "turns" in last:
+        asked = [t.get("question") for t in last["turns"] if t.get("question")]
+        return _completion("You asked: " + "; ".join(asked) if asked else "Nothing yet.")
     if "shown" in last:
         return _completion(f"Showed {last['shown']} records on the {last.get('view')}.")
     if last.get("status") == "waiting_for_user_confirmation":
@@ -131,6 +136,22 @@ class FakeChatHandler(BaseHTTPRequestHandler):
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)
+
+    def do_GET(self):
+        try:
+            user = self.service.estate.user(self.headers.get("Authorization"))
+        except Exception:  # noqa: BLE001 - the fake estate's ApiError: no or unknown token
+            user = None
+        if not user:
+            return self._json(401, {"error": "unauthorised"})
+        if self.path.startswith("/chat/conversations/"):
+            conversation = self.path[len("/chat/conversations/"):]
+            questions = self.service.conversations.get(conversation)
+            if questions is None:
+                return self._json(404, {"error": "not_found"})
+            return self._json(200, {"id": conversation, "title": questions[0][:60], "messages":
+                                    [{"role": "user", "question": q, "cards": {"big": "dropped"}} for q in questions]})
+        return self._json(404, {"error": "not_found"})
 
     def do_POST(self):
         try:
