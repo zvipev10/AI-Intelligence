@@ -788,6 +788,10 @@ body.visual-media-overlay-open { overflow:hidden; }
 .person-workspace-main { grid-template-rows:auto minmax(150px,1fr) minmax(180px,1fr); }
 .person-records-panel .call-conversation-heading > span:last-child { margin-inline-start:auto; display:grid; place-items:center; min-width:22px; height:22px; border-radius:999px; background:#3a4138; color:#c4cbbd; font-size:10px; font-weight:900; }
 .person-record-list { padding:16px; display:flex; flex-wrap:wrap; align-content:flex-start; gap:8px; overflow:auto; }
+.person-record-list:has(.person-record-group) { flex-direction:column; flex-wrap:nowrap; gap:14px; }
+.person-record-group h4 { margin:0 0 8px; display:flex; align-items:center; gap:8px; color:#c4cbbd; font-size:11px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; }
+.person-record-group h4 span { display:grid; place-items:center; min-width:20px; height:20px; padding:0 6px; border-radius:999px; background:#3a4138; font-size:10px; }
+.person-record-group-items { display:flex; flex-wrap:wrap; gap:8px; }
 .person-record-list .object-viewer-open { padding:5px 8px; border:1px solid #4c6580; border-radius:7px; background:#2d4051; color:#c7e3ff; text-decoration:none; font-size:11px; }
 .person-map-empty { min-height:0; display:grid; place-items:center; align-content:center; gap:7px; padding:22px; color:#bec6b8; text-align:center; }
 .person-map-empty .material-symbols-rounded { color:#83b9eb; font-size:28px; }

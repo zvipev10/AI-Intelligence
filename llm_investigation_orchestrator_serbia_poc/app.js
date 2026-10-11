@@ -3327,7 +3327,10 @@ function entityRecordLocationPoints(item) {
   });
   const byLocation = new Map();
   related.forEach(event => {
-    const locationId = String(event.location_id || "").trim();
+    // A record without a location object (an i360 call with its own GPS point) is placed at its coordinates.
+    const ownPoint = String(event.latitude ?? "").trim() && String(event.longitude ?? "").trim()
+      ? `geo:${Number(event.latitude).toFixed(5)},${Number(event.longitude).toFixed(5)}` : "";
+    const locationId = String(event.location_id || "").trim() || ownPoint;
     const location = LOCATIONS[locationId] || {};
     const lon = Number(location.lon ?? event.longitude ?? event.lon);
     const lat = Number(location.lat ?? event.latitude ?? event.lat);
@@ -3396,8 +3399,12 @@ function personWorkspaceHtml(item) {
   const mapPanel = points.length
     ? entityLocationMapHtml(item)
     : `<section class="call-map-panel person-map-empty"><span class="material-symbols-rounded">location_off</span><strong>${escapeHtml(activeLocaleText("אין מיקומי רשומות מקושרים", "No connected record locations"))}</strong><p>${escapeHtml(activeLocaleText("יוצגו כאן מיקומים לאחר שייווצרו רשומות המקושרות לאדם.", "Connected record locations will appear here when available."))}</p></section>`;
+  // Grouped by the layer each record belongs to (its source_type), largest group first.
+  const layerOf = id => String(((typeof state !== "undefined" && Array.isArray(state.events) ? state.events : []).find(event => (event.record_id || event.event_id) === id) || {}).source_type || activeLocaleText("אחר", "Other"));
+  const byLayer = new Map();
+  records.forEach(id => byLayer.set(layerOf(id), [...(byLayer.get(layerOf(id)) || []), id]));
   const recordLinks = records.length
-    ? records.map(id => `<button type="button" class="object-viewer-open" data-viewer-kind="record" data-viewer-id="${escapeHtml(id)}">${escapeHtml(id)}</button>`).join("")
+    ? [...byLayer.entries()].sort((a, b) => b[1].length - a[1].length).map(([layer, ids]) => `<div class="person-record-group"><h4>${escapeHtml(layer)} <span>${escapeHtml(ids.length.toLocaleString(currentLocaleTag()))}</span></h4><div class="person-record-group-items">${ids.map(id => `<button type="button" class="object-viewer-open" data-viewer-kind="record" data-viewer-id="${escapeHtml(id)}">${escapeHtml(id)}</button>`).join("")}</div></div>`).join("")
     : `<p class="call-empty">${escapeHtml(activeLocaleText("לא נמצאו רשומות מקושרות.", "No connected records."))}</p>`;
   return `<section class="person-workspace call-workspace" aria-label="${escapeHtml(activeLocaleText("פרופיל אדם", "Person profile"))}">
     <aside class="call-sidebar person-profile-sidebar">
