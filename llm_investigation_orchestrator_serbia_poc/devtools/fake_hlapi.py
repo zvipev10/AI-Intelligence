@@ -361,6 +361,12 @@ class FakeEstate:
             if ok:
                 matched.append(record)
         total = len(matched)
+        if type_name == "LINK":  # like i360: the sides at the top, the id only in general.entity_id
+            return {"items": [{**(r["sections"]), "link_type": r["link_type"],
+                               "general": {"entity_id": r["entity_id"], "entity_type": "LINK"}}
+                              for r in matched[(page - 1) * size: page * size]],
+                    "searchResponseMetadata": {"totalItems": total, "totalPages": max(1, math.ceil(total / size))},
+                    "warnings": sorted(set(warnings))}
         return {"items": [self._public(r) for r in matched[(page - 1) * size: page * size]],
                 "searchResponseMetadata": {"totalItems": total, "totalPages": max(1, math.ceil(total / size))},
                 "warnings": sorted(set(warnings))}
