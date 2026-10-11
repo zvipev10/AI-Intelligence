@@ -113,6 +113,35 @@ class ChatUnitTests(unittest.TestCase):
         no_case = ChatTurn(None, Chat(), Host(), lambda e, d: None, TurnContext.from_request({"message": "x", "scope": "auto"}))
         self.assertIn("error", no_case.ask_i360({"question": "linked records", "scope": "investigation"}))
 
+    def test_a_layer_in_the_investigation_is_filtered_from_i360s_listing(self):
+        # "IPDR" means nothing to i360: the investigation's records it lists are grouped by our layers.
+        asked = []
+
+        class Chat:
+            def ask(self, body, conversation_id):
+                asked.append(body["question"])
+                if len(asked) == 1:  # i360 answers from outside the investigation
+                    return iter([("answer", {"leg": "agent", "content": "none", "citations": [{"id": "outside-1"}]})])
+                return iter([("answer", {"leg": "search", "citations": [{"id": "ipdr-1"}, {"id": "img-1"}]})])
+
+        class Host:
+            def catalog_layers(self):
+                return [{"id": "events:IPDR", "kind": "events", "source_type": "IPDR"},
+                        {"id": "events:Cellular Calls", "kind": "events", "source_type": "Cellular Calls"},
+                        {"id": "events:Calls", "kind": "events", "source_type": "Calls"}]
+
+            def item_layers(self, ids):
+                return [{"label": "IPDR", "rows": [{"i360_item_id": "ipdr-1"}]},
+                        {"label": "Satellite", "rows": [{"i360_item_id": "img-1"}]}]
+
+        ctx = TurnContext.from_request({"message": "x", "investigation_id": "INV-1", "scope": "auto"})
+        turn = ChatTurn(None, Chat(), Host(), lambda e, d: None, ctx)
+        result = turn.ask_i360({"question": "Which IPDR sessions are linked to this investigation?", "scope": "investigation"})
+        self.assertEqual(["ipdr-1"], [c["id"] for c in result["cited_items"]])
+        self.assertIn("1 record(s) of IPDR", result["note"])
+        self.assertEqual(["Cellular Calls"], turn.layers_named("show the cellular calls"))  # not also "Calls"
+        self.assertEqual([], ChatTurn(None, Chat(), Host(), lambda e, d: None, ctx).layers_named("show the IPDRs"))
+
     def test_investigation_overview_is_listed_by_i360_search(self):
         # i360's overview leg gives counts only; a second ask reaches its search leg, which lists the records.
         asked = []

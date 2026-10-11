@@ -273,7 +273,8 @@ Use the fewest tool calls that fulfil the request, then stop and answer in one o
 - The other tools only display. For a display command (open a layer, open a cited record or the one in
   the viewer, save a layer) use the tool directly, without ask_i360. To show what the investigation
   holds, ask i360 and show what it cited.
-  Use open_layer only when the user asks for a layer.
+  Use open_layer only when the user asks for a layer. An opened layer is the whole answer: do not call
+  show_items after it and do not describe its contents (you do not see them).
 - What a tool has put on screen (the record viewer, a chat layer) is done: never show it
   again with another tool.
 - People and other entities come from i360 too. "Open/show <name>" or "who is <name>": ask_i360 (scope
@@ -445,6 +446,7 @@ class ChatTurn:
         self.i360_conversation_id = context.i360_conversation_id
         self.i360_last_turns = list(context.i360_last_turns)
         self.i360_scope = context.i360_scope
+        self.listing_trace: list[str] = []
         self.catalog_cache: list[dict[str, Any]] | None = None
 
     # -- the loop ---------------------------------------------------------------------------
@@ -547,8 +549,9 @@ class ChatTurn:
 
     def catalog(self) -> list[dict[str, Any]]:
         if self.catalog_cache is None:
+            lister = getattr(self.host, "catalog_layers", None)
             try:
-                self.catalog_cache = self.host.catalog_layers()
+                self.catalog_cache = lister() if lister else []
             except HlError:
                 self.catalog_cache = []
         return self.catalog_cache
@@ -642,27 +645,26 @@ class ChatTurn:
         if answer is None:
             return {"error": f"i360 gave no answer ({error or 'empty stream'})"}
         citations = list({c["id"]: c for c in cited_items(answer.get("citations"))}.values())
-        if not citations and body.get("focus") and answer.get("leg") == "overview":
+        layer_note = ""
+        named = self.layers_named(question) if body.get("focus") else []
+        if named:
+            # i360 does not know the app's layer names ("IPDR" is aggregated_ip_session from HOSHENTEL to it) and
+            # then answers from outside the investigation. The investigation's records, listed by i360, are
+            # grouped by the app's layers and the named ones kept.
+            listed = self.investigation_listing(body)
+            groups = self.host.item_layers([c["id"] for c in listed]) if listed else []
+            keep = {str(r.get("i360_item_id")) for g in groups if g.get("label") in named for r in g.get("rows") or []}
+            citations = [c for c in listed if c["id"] in keep]
+            layer_note = (f"The investigation holds {len(citations)} record(s) of {', '.join(named)}"
+                          + (f": {', '.join(c['id'] for c in citations[:20])}" if citations else "")
+                          + ". Report this, even where i360's text differs.")
+            self.emit("step", {"text": f"The investigation holds {len(citations)} {', '.join(named)} record(s)", "tool": "ask_i360"})
+        elif not citations and body.get("focus") and answer.get("leg") == "overview":
             # i360 reads "what records does this investigation hold" as a request for the case brief (the
-            # overview leg: counts by type, source and place, no item ids). Its search leg lists the records;
-            # a plain "find all items" in a fresh conversation with the same focus reaches it.
-            listing = {key: body[key] for key in ("origin", "medium", "focus", "tz", "model") if key in body}
-            trace: list[str] = []
-            for question_text in OVERVIEW_LISTING_QUESTIONS:
-                listed = None
-                ask = {**listing, "request_id": "aii-" + uuid.uuid4().hex[:12], "question": question_text}
-                for event, data in self.chat.ask(ask, None):
-                    if event == "answer" and isinstance(data, dict):
-                        listed = data
-                    elif event == "error":
-                        trace.append(f"error={json.dumps(data, ensure_ascii=True)[:200]}")
-                trace.append(f"{question_text!r}: leg {(listed or {}).get('leg')}")
-                if listed and listed.get("leg") == "search":
-                    citations = list({c["id"]: c for c in cited_items(listed.get("citations"))}.values())
-                if citations:
-                    break
+            # overview leg: counts by type, source and place, no item ids). Its search leg lists the records.
+            citations = self.investigation_listing(body)
             self.emit("step", {"text": f"i360 listed {len(citations)} record(s) of the investigation", "tool": "ask_i360",
-                               "trace": "; ".join(trace)})
+                               "trace": "; ".join(self.listing_trace)})
         ids = [c["id"] for c in citations]
         self.cited_this_turn = ids
         self.cited = citations
@@ -682,7 +684,39 @@ class ChatTurn:
             "cited_items": citations[:MAX_CITED_FOR_MODEL],
             "entities": entities[:30],
             **({"widen": answer["widen"]} if answer.get("widen") else {}),
+            **({"note": layer_note} if layer_note else {}),
         }
+
+    def investigation_listing(self, body: dict[str, Any]) -> list[dict[str, str]]:
+        """The investigation's records as i360's search leg lists them (a fresh conversation, same focus)."""
+        listing = {key: body[key] for key in ("origin", "medium", "focus", "tz", "model") if key in body}
+        self.listing_trace = []
+        for question_text in OVERVIEW_LISTING_QUESTIONS:
+            listed = None
+            ask = {**listing, "request_id": "aii-" + uuid.uuid4().hex[:12], "question": question_text}
+            for event, data in self.chat.ask(ask, None):
+                if event == "answer" and isinstance(data, dict):
+                    listed = data
+                elif event == "error":
+                    self.listing_trace.append(f"error={json.dumps(data, ensure_ascii=True)[:200]}")
+            self.listing_trace.append(f"{question_text!r}: leg {(listed or {}).get('leg')}")
+            if listed and listed.get("leg") == "search":
+                found = list({c["id"]: c for c in cited_items(listed.get("citations"))}.values())
+                if found:
+                    return found
+        return []
+
+    def layers_named(self, question: str) -> list[str]:
+        """The app's record layers the question names (IPDR, Cellular Calls, ...), longest names first."""
+        names = sorted({str(l.get("source_type") or "") for l in self.catalog() if l.get("kind") == "events"} - {""},
+                       key=len, reverse=True)
+        found, text = [], question
+        for name in names:
+            pattern = re.compile(rf"(?<![\w]){re.escape(name)}(?![\w])", re.IGNORECASE)
+            if pattern.search(text):
+                found.append(name)
+                text = pattern.sub(" ", text)  # "Cellular Calls" is not also "Calls"
+        return found
 
     def known_ids(self) -> set[str]:
         return {c["id"] for c in self.cited} | {c["id"] for c in self.ctx.previous_citations}
@@ -697,7 +731,8 @@ class ChatTurn:
                 return {"error": f"{len(unknown)} ids were not cited by i360 in this conversation; use from_last_answer"}
             ids = requested
         if not ids:
-            return {"error": "nothing to show: i360 cited no items in its last answer"}
+            return {"error": "nothing to show: i360 cited no items in its last answer (this says nothing about "
+                             "the layers on screen)"}
         new = [i for i in ids if i not in self.on_screen]
         if not new:
             return {"already_on_screen": len(ids), "note": "these records are already on screen; nothing else to do"}
