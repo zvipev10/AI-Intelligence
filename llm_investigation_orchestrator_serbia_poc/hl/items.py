@@ -36,6 +36,26 @@ def _cell(value: Any) -> str:
     return str(value)
 
 
+def entity_presentation(record: dict[str, Any], entity_type: str) -> dict[str, Any]:
+    """Mapping helper fields -> what the entity viewer reads.
+
+    ``image_file_id`` becomes ``image_url`` (served through /api/entity-files, which adds the user's
+    token); ``telecom_imei`` / ``telecom_msisdn`` become the ``telecom`` block the person viewer shows.
+    """
+    record = dict(record)
+    file_id = record.pop("image_file_id", None)
+    if file_id not in (None, "") and record.get("entity_id"):
+        record["image_url"] = f"/api/entity-files/{entity_type}/{record['entity_id']}/{file_id}"
+    telecom = {key: record.pop(f"telecom_{key}") for key in ("imei", "msisdn", "imsi")
+               if record.get(f"telecom_{key}") not in (None, "", [])}
+    for key in ("imei", "msisdn", "imsi"):
+        record.pop(f"telecom_{key}", None)
+    if telecom:
+        record["telecom"] = {**(record.get("telecom") or {}), **telecom}
+    record.setdefault("i360_entity_type", entity_type)
+    return record
+
+
 def item_fields(item: dict[str, Any]) -> dict[str, str]:
     """Every populated field of an i360 item as ``i360.<path>`` -> text, for "show all fields" layers.
 
@@ -323,7 +343,7 @@ class ItemReader:
         records = []
         for entity_type in self.mapping.entities.get("types") or []:
             for instance in self._instances(entity_type):
-                record = self.mapping.instance_to_entity(instance)
+                record = entity_presentation(self.mapping.instance_to_entity(instance), entity_type)
                 if record.get("entity_id"):
                     records.append(record)
         return records

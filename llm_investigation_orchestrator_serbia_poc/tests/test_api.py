@@ -160,6 +160,15 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(200, browser.call("POST", "/api/logout")[0])
         self.assertEqual(401, browser.call("GET", "/api/layers")[0])
 
+    def test_entity_photo_is_served_through_the_app_with_the_users_token(self):
+        browser = self.signed_in()
+        entity_id = next(iter(self.estate._type("DEMO_ENTITY")))
+        status, body = browser.call("GET", f"/api/entity-files/DEMO_ENTITY/{entity_id}/123", raw=True)
+        self.assertEqual(200, status)
+        self.assertEqual(b"PNG", body[1:4])
+        self.assertEqual(400, browser.call("GET", "/api/entity-files/DEMO_ENTITY/x/../y")[0])
+        self.assertEqual(401, Browser(self.base).call("GET", f"/api/entity-files/DEMO_ENTITY/{entity_id}/123")[0])
+
     # -- data ---------------------------------------------------------------------------
     def test_layers_match_the_dataset(self):
         status, body = self.signed_in().call("GET", "/api/layers")

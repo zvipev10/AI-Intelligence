@@ -3390,6 +3390,10 @@ function personWorkspaceHtml(item) {
     <aside class="call-sidebar person-profile-sidebar">
       ${personProfileHtml(item)}
       <dl class="call-detail-list">
+        ${detail(activeLocaleText("שם פרטי", "Given name"), item.given_name)}
+        ${detail(activeLocaleText("שם משפחה", "Family name"), item.family_name)}
+        ${detail(activeLocaleText("מגדר", "Gender"), item.gender)}
+        ${detail(activeLocaleText("מזהים", "Identifiers"), item.identifiers, "ltr")}
         ${detail(activeLocaleText("גיל", "Age"), item.age_years ? `${item.age_years} ${activeLocaleText("שנים", "years")}` : "")}
         ${detail(activeLocaleText("לאום", "Nationality"), item.nationality)}
         ${detail(activeLocaleText("מגורים", "Residence"), item.residence)}
