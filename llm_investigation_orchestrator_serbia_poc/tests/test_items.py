@@ -246,6 +246,17 @@ class PersonMappingTests(unittest.TestCase):
         self.assertNotIn("image_file_id", person)
 
 
+class VideoFileTests(unittest.TestCase):
+    def test_videos_use_the_browser_friendly_web_preview(self):
+        from server import normalize_record_files
+
+        files = normalize_record_files([
+            {"file_id": "v", "role": "media", "raw_type": "video", "content_type": "video/mp4",
+             "urls": {"primary": "/f/v?variant=primary", "web_preview": "/f/v?variant=web_preview"}}], "https://hl.example")
+        self.assertEqual("https://hl.example/f/v?variant=web_preview", files[0]["url"])
+        self.assertEqual("https://hl.example/f/v?variant=primary", files[0]["original_url"])
+
+
 class ForbiddenEntitiesClient(RecordingClient):
     def search_entities(self, entity_type, body):
         raise HlError(403, "ems", "Action not allowed")

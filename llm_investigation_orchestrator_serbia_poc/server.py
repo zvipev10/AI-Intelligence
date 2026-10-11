@@ -73,9 +73,14 @@ def normalize_record_files(files: Any, origin: str) -> list[dict[str, Any]]:
             continue
         entry = dict(entry)
         urls = entry.get("urls") if isinstance(entry.get("urls"), dict) else {}
+        is_video = str(entry.get("content_type") or "").startswith("video/") or entry.get("raw_type") == "video"
+        # Videos: i360's web_preview is an H.264 copy every browser plays; the original may be H.265/HEVC.
+        if is_video and urls.get("web_preview"):
+            entry.setdefault("original_url", urls.get("primary"))
+            entry.setdefault("url", urls["web_preview"])
         entry.setdefault("url", urls.get("primary"))
         entry.setdefault("thumbnail_url", urls.get("thumbnail"))
-        for key in ("url", "signed_url", "thumbnail_url"):
+        for key in ("url", "signed_url", "thumbnail_url", "original_url"):
             value = entry.get(key)
             if isinstance(value, str) and value.startswith("/"):
                 entry[key] = origin + value
