@@ -159,6 +159,16 @@ class HlClient:
         return self._request("DELETE", "/api/v1/items/related-objects", params={"confirm": entity_id},
                              json_body={"entity": {"type": entity_type, "id": entity_id}, "item_ids": item_ids})
 
+    def create_link(self, entity_type: str, entity_id: str, body: dict) -> dict[str, Any]:
+        """A LINK instance joining this entity (origin_field) to the target (target_field)."""
+        return self.post(f"/api/v1/entities/{urllib.parse.quote(entity_type, safe='')}/{urllib.parse.quote(entity_id, safe='')}/links", body)
+
+    def remove_link(self, entity_type: str, entity_id: str, link_id: str) -> dict[str, Any]:
+        """Remove one link of this entity (guarded by ?confirm=<link id>; permanent)."""
+        return self._request("DELETE", f"/api/v1/entities/{urllib.parse.quote(entity_type, safe='')}/"
+                                       f"{urllib.parse.quote(entity_id, safe='')}/links/{urllib.parse.quote(link_id, safe='')}",
+                             params={"confirm": link_id})
+
     def item_files(self, item_id: str, signed_urls: bool = True) -> dict[str, Any]:
         return self.get(f"/api/v1/items/{urllib.parse.quote(item_id, safe='')}/files",
                         params={"signed_urls": "true" if signed_urls else None})

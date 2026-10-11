@@ -306,6 +306,37 @@ class FakeEstate:
         record["deleted"] = True
         return {"status": "deleted", "deleted": True}
 
+    def create_link(self, origin_type: str, origin_id: str, body: dict[str, Any], user: str) -> dict[str, Any]:
+        """Like HL API's create_link: a LINK record joining two live entities, one side each."""
+        for key in ("link_type", "origin_field", "target_field", "target_entity_type", "target_entity_id"):
+            if not body.get(key):
+                raise ApiError(422, "validation_error", f"{key}: Field required")
+        origin = self.read_instance(origin_type, origin_id, user)
+        target_store = self._type(body["target_entity_type"])
+        target = target_store.get(body["target_entity_id"])
+        if target is None or target.get("deleted"):
+            raise ApiError(404, "target_not_found", "No live target.")
+        self.types.setdefault("LINK", {"type": "LINK", "canBeCreated": False})
+        link_id = str(uuid.uuid4())
+        self.instances.setdefault("LINK", {})[link_id] = {
+            "entity_id": link_id, "entity_type": "LINK", "entity_name": body["link_type"], "deleted": False,
+            "link_type": body["link_type"], "_owner": user,
+            "sections": {body["link_type"]: {
+                body["origin_field"]: {"id": origin_id, "type": origin_type, "name": origin.get("entity_name")},
+                body["target_field"]: {"id": body["target_entity_id"], "type": body["target_entity_type"],
+                                       "name": body.get("target_entity_name") or target.get("entity_name")},
+            }},
+        }
+        return {"link_type": body["link_type"], "entity_id": link_id, "status": "created", "verified": True}
+
+    def remove_link(self, link_id: str, confirm: str) -> dict[str, Any]:
+        if confirm != link_id:
+            raise ApiError(409, "confirm_required", "confirm must be the link id")
+        if link_id not in self.instances.get("LINK", {}):
+            raise ApiError(404, "link_not_found", "No such link.")
+        del self.instances["LINK"][link_id]
+        return {"link_id": link_id, "removed": True}
+
     def search_instances(self, type_name: str, body: dict[str, Any], user: str) -> dict[str, Any]:
         store = self._type(type_name)
         page = max(1, int(body.get("page_number") or 1))
@@ -321,6 +352,8 @@ class FakeEstate:
             for condition in body.get("fields") or []:
                 section, _, name = str(condition.get("field") or "").partition(".")
                 value = (record.get("sections") or {}).get(section, {}).get(name)
+                if isinstance(value, dict):  # a LINK side: {id, type, name}
+                    value = value.get("id")
                 if condition.get("values") is not None and str(value) not in [str(v) for v in condition["values"]]:
                     ok = False
                     if value is None:
@@ -459,6 +492,10 @@ class FakeHandler(BaseHTTPRequestHandler):
                     return self._json(200, estate.types[name])
                 if path.startswith("/api/v1/entities/"):
                     parts = [unquote(p) for p in path[len("/api/v1/entities/"):].split("/")]
+                    if len(parts) == 3 and parts[2] == "links" and method == "POST":
+                        return self._json(200, estate.create_link(parts[0], parts[1], self._body(), user))
+                    if len(parts) == 4 and parts[2] == "links" and method == "DELETE":
+                        return self._json(200, estate.remove_link(parts[3], (query.get("confirm") or [""])[0]))
                     if len(parts) == 4 and parts[2] == "files" and method == "GET":
                         estate.read_instance(parts[0], parts[1], user)  # 404 when the entity is unknown
                         return self._bytes(200, FAKE_PNG, "image/png")
