@@ -91,22 +91,27 @@ class ChatUnitTests(unittest.TestCase):
         turn.ask_i360({"question": "find him everywhere", "scope": "all"})
         self.assertNotIn("scope", asked[-1])
 
-    def test_investigation_overview_cites_the_attached_records(self):
-        # i360's overview leg gives counts only; the attached records become the citations to open next.
+    def test_investigation_overview_is_listed_by_i360_search(self):
+        # i360's overview leg gives counts only; a second ask reaches its search leg, which lists the records.
+        asked = []
+
         class Chat:
             def ask(self, body, conversation_id):
-                return iter([("answer", {"leg": "overview", "content": "1 image", "citations": [],
-                                         "cards": {"case": {"total": 1, "byType": {"image": 1}}}})])
-
-        class Host:
-            def investigation_items(self, investigation_id):
-                return [{"id": "img-7", "type": "image", "time": "2026-10-01T00:00:00Z", "text": "convoy"}]
+                asked.append((body, conversation_id))
+                if len(asked) == 1:
+                    return iter([("answer", {"leg": "overview", "content": "1 image", "citations": [],
+                                             "cards": {"case": {"total": 1}}}), ("done", {"conversation_id": "c-1"})])
+                return iter([("answer", {"leg": "search", "citations": [{"id": "img-7", "type": "image"}]})])
 
         ctx = TurnContext.from_request({"message": "what records are linked", "investigation_id": "INV-1"})
-        turn = ChatTurn(None, Chat(), Host(), lambda e, d: None, ctx)
+        turn = ChatTurn(None, Chat(), object(), lambda e, d: None, ctx)
         result = turn.ask_i360({"question": "what records are linked", "scope": "investigation"})
         self.assertEqual(["img-7"], [c["id"] for c in result["cited_items"]])
         self.assertEqual(["img-7"], [c["id"] for c in turn.cited])
+        listing, conversation = asked[1]
+        self.assertEqual(("find all items", None, "INV-1"), (listing["question"], conversation, listing["focus"]["id"]))
+        self.assertEqual("1 image", result["answer"])  # the brief stays i360's answer
+        self.assertEqual("c-1", turn.i360_conversation_id)  # the listing does not take over the conversation
 
     def test_entities_come_from_i360_and_open_in_the_viewer(self):
         from hl.chat import answer_entities

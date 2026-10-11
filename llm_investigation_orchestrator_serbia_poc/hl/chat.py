@@ -34,6 +34,7 @@ from hl.client import AuthExpired, HlClient, HlError, NotOnThisEstate, Unreachab
 MAX_ROUNDS = 6
 MAX_SHOWN_ITEMS = 200
 MAX_CITED_FOR_MODEL = 60
+OVERVIEW_LISTING_QUESTION = "find all items"  # i360 routes this to its search leg (an investigation focus keeps it inside)
 VIEWS = ("map", "timeline", "table")
 
 
@@ -293,7 +294,6 @@ class ToolHost(Protocol):
     def item_layers(self, item_ids: list[str]) -> list[dict[str, Any]]: ...
     def layers_scope(self) -> dict[str, Any] | None: ...
     def entity(self, entity_type: str, entity_id: str) -> dict[str, Any] | None: ...
-    def investigation_items(self, investigation_id: str) -> list[dict[str, Any]]: ...
 
 
 SCOPES = {"investigation", "layers", "all"}
@@ -618,17 +618,19 @@ class ChatTurn:
         if answer is None:
             return {"error": f"i360 gave no answer ({error or 'empty stream'})"}
         citations = list({c["id"]: c for c in cited_items(answer.get("citations"))}.values())
-        if not citations and body.get("focus") and self.ctx.investigation_id:
-            # i360 answers "what does this investigation hold" with an overview card (counts by type, source,
-            # place), no item ids. The investigation's attached records are known here (related_to), so they
-            # become the citations: the model can open them and "this record" resolves on the next turn.
-            lister = getattr(self.host, "investigation_items", None)
-            try:
-                citations = cited_items(lister(self.ctx.investigation_id)) if lister else []
-            except HlError:
-                citations = []
-            if citations:
-                self.emit("step", {"text": f"The investigation holds {len(citations)} record(s)", "tool": "ask_i360"})
+        if not citations and body.get("focus") and answer.get("leg") == "overview":
+            # i360 reads "what records does this investigation hold" as a request for the case brief (the
+            # overview leg: counts by type, source and place, no item ids). Its search leg lists the records;
+            # a plain "find all items" in a fresh conversation with the same focus reaches it.
+            listing = {key: body[key] for key in ("origin", "medium", "focus", "tz", "model") if key in body}
+            listing.update({"request_id": "aii-" + uuid.uuid4().hex[:12], "question": OVERVIEW_LISTING_QUESTION})
+            listed = None
+            for event, data in self.chat.ask(listing, None):
+                if event == "answer" and isinstance(data, dict):
+                    listed = data
+            if listed and listed.get("leg") == "search":
+                citations = list({c["id"]: c for c in cited_items(listed.get("citations"))}.values())
+            self.emit("step", {"text": f"i360 listed {len(citations)} record(s) of the investigation", "tool": "ask_i360"})
         ids = [c["id"] for c in citations]
         self.cited_this_turn = ids
         self.cited = citations
