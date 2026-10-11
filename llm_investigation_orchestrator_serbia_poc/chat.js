@@ -330,6 +330,14 @@
         if (action.view) activateView(action.view);
       } else if (action.kind === "open_item") {
         openRow(action.row, action.group);
+      } else if (action.kind === "show_memory_items") {
+        if (!state.layers.some(layer => layer.investigationItemsLayer)) await loadInvestigationItemLayers(state.investigationMemoryLoadToken);
+        const memory = state.layers.filter(layer => layer.investigationItemsLayer);
+        if (!memory.length) throw new Error("The saved records could not be shown.");
+        memory.forEach(layer => { layer.visible = true; });
+        state.activeLayerId = memory[0].id;
+        renderAllViews();
+        renderLayerSelector();
       } else if (action.kind === "show_memory") {
         for (const id of action.ids || []) await openMemoryEntry("layers", id);
       } else if (action.kind === "confirm_save") {

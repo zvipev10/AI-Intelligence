@@ -241,8 +241,10 @@ TOOLS = [
         "Never make up an id.",
         {"item_id": {"type": "string"}}, ["item_id"]),
     _fn("show_memory",
-        "Open layers saved in the open investigation's memory (names from the context, or 'all').",
-        {"layers": {"type": "array", "items": {"type": "string"}}}, ["layers"]),
+        "Show what is saved in the open investigation's memory: the records saved to it (shown as '<layer> · memory' "
+        "tabs) and any saved layers (names from the context, or 'all'). Returns the saved records, so you can "
+        "describe them or open one with open_item.",
+        {"layers": {"type": "array", "items": {"type": "string"}}}),
     _fn("save_to_memory",
         "Propose saving a layer shown in the app to the open investigation's memory. The user must confirm; "
         "nothing is saved until they do.",
@@ -253,8 +255,9 @@ SYSTEM_PROMPT = """You are the assistant inside AI-Intelligence, an analyst map 
 You do not know the data. The i360 chat does: for any question about records, people, phones, places,
 times or connections, call ask_i360, then present what it found with show_items (from_last_answer=true,
 a clear label, and the view that fits: map when places matter, timeline for sequences and calls, table
-otherwise). For commands about the app (open a layer, open a record, switch view, show saved layers,
-save a layer) use the app tools directly without asking i360. Never invent ids, layer names or facts.
+otherwise). For commands about the app (open a layer, open a record, switch view, show the investigation's memory,
+save a layer) use the app tools directly without asking i360. Use open_layer only when the user asks
+for a layer; to show what an answer is about, use show_items or open_item with record ids. Never invent ids, layer names or facts.
 The conversation lives in i360: you see only the current message, the last answer's cited items and
 what the app shows. Anything about earlier turns goes to ask_i360, which knows the conversation.
 If a request is ambiguous, ask one short question instead of guessing.
@@ -267,6 +270,7 @@ class ToolHost(Protocol):
     def catalog_layers(self) -> list[dict[str, Any]]: ...
     def item_layers(self, item_ids: list[str]) -> list[dict[str, Any]]: ...
     def memory_layers(self, investigation_id: str) -> list[dict[str, Any]]: ...
+    def memory_items(self, investigation_id: str) -> list[dict[str, Any]]: ...
     def layers_scope(self) -> dict[str, Any] | None: ...
 
 
@@ -337,6 +341,7 @@ class ChatTurn:
         self.ctx = context
         self.chat_model = chat_model
         self.cited: list[dict[str, str]] = list(context.previous_citations)
+        self.memory_ids: set[str] = set()  # records saved to the investigation, read by show_memory
         self.cited_this_turn: list[str] = []
         self.has_places = False
         self.i360_conversation_id = context.i360_conversation_id
@@ -512,7 +517,7 @@ class ChatTurn:
         }
 
     def known_ids(self) -> set[str]:
-        return {c["id"] for c in self.cited} | {c["id"] for c in self.ctx.previous_citations}
+        return {c["id"] for c in self.cited} | {c["id"] for c in self.ctx.previous_citations} | self.memory_ids
 
     def show_items(self, args: dict[str, Any]) -> dict[str, Any]:
         if args.get("from_last_answer") or not args.get("item_ids"):
@@ -572,9 +577,19 @@ class ChatTurn:
     def show_memory(self, args: dict[str, Any]) -> dict[str, Any]:
         if not self.ctx.investigation_id:
             return {"error": "no investigation is open"}
+        groups = self.host.memory_items(self.ctx.investigation_id)
+        records = [{"id": r.get("i360_item_id"), "layer": g.get("label"), "time": r.get("timestamp_utc"),
+                    "text": str(r.get("text") or r.get("summary") or r.get("title") or "")[:160]}
+                   for g in groups for r in g.get("rows") or [] if r.get("i360_item_id")]
+        self.memory_ids = {str(r["id"]) for r in records}
         saved = self.host.memory_layers(self.ctx.investigation_id)
+        if not saved and not records:
+            return {"error": "nothing is saved in this investigation's memory yet"}
+        if records:
+            self.emit("action", {"kind": "show_memory_items"})
+            self.emit("step", {"text": f"Showed {len(records)} saved record(s)", "tool": "show_memory"})
         if not saved:
-            return {"error": "this investigation has no saved layers"}
+            return {"saved_records": records[:MAX_CITED_FOR_MODEL], "saved_layers": []}
         wanted = [str(n) for n in args.get("layers") or []]
         if not wanted or any(n.strip().lower() == "all" for n in wanted):
             chosen = saved
@@ -591,7 +606,7 @@ class ChatTurn:
                         "saved_layers": [s.get("label") for s in saved][:30]}
         self.emit("action", {"kind": "show_memory", "ids": [s["id"] for s in chosen]})
         self.emit("step", {"text": f"Opened {len(chosen)} saved layer(s)", "tool": "show_memory"})
-        return {"opened": [s.get("label") for s in chosen]}
+        return {"saved_records": records[:MAX_CITED_FOR_MODEL], "opened": [s.get("label") for s in chosen]}
 
     def save_to_memory(self, args: dict[str, Any]) -> dict[str, Any]:
         if not self.ctx.investigation_id:

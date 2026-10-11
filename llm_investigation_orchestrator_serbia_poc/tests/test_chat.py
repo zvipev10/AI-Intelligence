@@ -66,6 +66,33 @@ class ChatUnitTests(unittest.TestCase):
         body, exact = layers_search({"filters": [{"field": "scenario", "values": ["syria"]}]}, now)
         self.assertEqual(({"filters": [{"field": "scenario", "values": ["syria"]}]}, True), (body, exact))
 
+    def test_memory_shows_saved_records(self):
+        events = []
+
+        class Host:
+            def memory_items(self, investigation_id):
+                return [{"label": "Satellite", "rows": [{"i360_item_id": "img-1", "timestamp_utc": "2026-08-31T07:18:00Z"}]}]
+
+            def memory_layers(self, investigation_id):
+                return []
+
+            def item_layers(self, ids):
+                return [{"label": "Satellite", "rows": [{"i360_item_id": i} for i in ids]}]
+
+        ctx = TurnContext.from_request({"message": "what do we have", "investigation_id": "INV-1"})
+        turn = ChatTurn(None, None, Host(), lambda e, d: events.append((e, d)), ctx)
+        result = turn.show_memory({})
+        self.assertEqual(["img-1"], [r["id"] for r in result["saved_records"]])
+        self.assertIn(("action", {"kind": "show_memory_items"}), events)
+        self.assertNotIn("error", turn.show_items({"item_ids": ["img-1"], "label": "saved", "view": "map"}))
+
+        class Empty(Host):
+            def memory_items(self, investigation_id):
+                return []
+
+        empty = ChatTurn(None, None, Empty(), lambda e, d: None, ctx)
+        self.assertIn("nothing is saved", empty.show_memory({})["error"])
+
     def test_context_is_validated(self):
         with self.assertRaises(ValueError):
             TurnContext.from_request({"message": "  "})

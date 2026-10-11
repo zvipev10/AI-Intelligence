@@ -696,6 +696,13 @@ class AppToolHost:
         return {"kind": "results", "name": "Our layers", "query": "the app's layers", "ids": ids[:100],
                 "total": len(ids), "request": request, "exact": exact}
 
+    def memory_items(self, investigation_id: str) -> list[dict[str, Any]]:
+        """Records saved to the investigation (linked to it in i360), grouped by layer."""
+        try:
+            return self.app.investigation_item_layers(self.token, investigation_id, self.locale)
+        except HlError:
+            return []
+
     def memory_layers(self, investigation_id: str) -> list[dict[str, Any]]:
         try:
             memory = self.app.state(self.token).load_memory(investigation_id).get("memory") or {}
