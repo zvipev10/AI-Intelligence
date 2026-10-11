@@ -372,8 +372,11 @@ class StateStore:
             sides = self._link_sides(hit, spec["link_type"])
             other = sides.get(spec["entity_side"]) if isinstance(sides.get(spec["entity_side"]), dict) else {}
             mine = sides.get(spec["investigation_side"]) if isinstance(sides.get(spec["investigation_side"]), dict) else {}
-            if other.get("id") and str(mine.get("id") or investigation_key) == investigation_key:
-                out.append({"link_id": entity_id_of(hit), "entity": other})
+            general = hit.get("general") if isinstance(hit.get("general"), dict) else {}
+            # i360's LINK hits carry their id in general.entity_id, not at the top.
+            link_id = entity_id_of(hit) or str(general.get("entity_id") or hit.get("@intelligence360_sort_id") or "")
+            if link_id and other.get("id") and str(mine.get("id") or investigation_key) == investigation_key:
+                out.append({"link_id": link_id, "entity": other, "created": general.get("creation_time")})
         return out
 
     def _link_entity(self, investigation_key: str, item: dict[str, Any], spec: dict[str, Any]) -> dict[str, Any]:
@@ -398,7 +401,8 @@ class StateStore:
                 entity = link["entity"]
                 out.append({"id": self.LINK_PREFIX + link["link_id"], "kind": "object", "object_kind": spec["object_kind"],
                             "object_id": str(entity.get("id")), "label": str(entity.get("name") or entity.get("id")),
-                            "source_type": spec["link_type"], "saved_at_utc": None, "source": "i360_link"})
+                            "source_type": spec["link_type"], "saved_at_utc": _iso_time(link.get("created")),
+                            "source": "i360_link"})
         return out
 
     def load_memory(self, investigation_key: str) -> dict[str, Any]:
@@ -472,7 +476,10 @@ class StateStore:
 
     def delete_memory_item(self, investigation_key: str, group: str, item_key: str) -> bool:
         if self.external_investigation_type and group == "artifacts" and item_key.startswith(self.LINK_PREFIX):
-            self.client.remove_link(self.external_investigation_type, investigation_key, item_key[len(self.LINK_PREFIX):])
+            link_id = item_key[len(self.LINK_PREFIX):]
+            if not link_id:
+                raise ValueError("Missing link id")
+            self.client.remove_link(self.external_investigation_type, investigation_key, link_id)
             return True
         if self.external_investigation_type and group == "artifacts" and item_key.startswith(self.RELATED_PREFIX):
             return self._detach_item(investigation_key, item_key)

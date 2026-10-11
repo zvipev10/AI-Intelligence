@@ -168,7 +168,7 @@ class LinkingClient(RelatedClient):
 
     def create_link(self, entity_type, entity_id, body):
         link_id = f"L{len(self.links) + 1}"
-        self.links[link_id] = {"entity_id": link_id, "entity": {body["link_type"]: {
+        self.links[link_id] = {"general": {"entity_id": link_id}, "entity": {body["link_type"]: {
             body["origin_field"]: {"id": entity_id, "type": entity_type},
             body["target_field"]: {"id": body["target_entity_id"], "type": body["target_entity_type"], "name": "Arman Rahimi"}}}}
         return {"entity_id": link_id, "status": "created"}
