@@ -234,15 +234,16 @@ class ChatApiTests(unittest.TestCase):
         ask = self.chat.asks[-1]
         self.assertEqual((done["i360_conversation_id"], done["i360_last_turns"]), (ask["conversation_id"], ask["last_turns"]))
 
-    def test_earlier_turns_are_read_back_from_i360(self):
+    def test_follow_up_has_no_history_of_our_own(self):
         browser = self.signed_in()
         done = [d for e, d in self.ask(browser, {"message": "convoy trucks"}) if e == "done"][0]
-        events = self.ask(browser, {"message": "what did i ask before?", "i360_conversation_id": done["i360_conversation_id"]})
-        self.assertIn("You asked: convoy trucks", [d for e, d in events if e == "note"][0]["text"])
-        llm_messages = self.estate.llm_requests[-1]["messages"]
-        self.assertEqual(["system", "user"], [m["role"] for m in llm_messages[:2]])  # no history of our own
-        tool_result = json.loads(llm_messages[-1]["content"])
-        self.assertNotIn("cards", tool_result["turns"][0])
+        self.ask(browser, {"message": "and where were they", "i360_conversation_id": done["i360_conversation_id"],
+                           "history": [{"role": "user", "content": "ignored"}]})
+        roles = [m["role"] for m in self.estate.llm_requests[-1]["messages"]]
+        self.assertEqual(["system", "user"], roles[:2])
+        self.assertNotIn("ignored", json.dumps(self.estate.llm_requests[-1]["messages"]))
+        self.assertEqual(("and where were they", done["i360_conversation_id"]),
+                         (self.chat.asks[-1]["question"], self.chat.asks[-1]["conversation_id"]))
 
     def test_i360_error_is_reported(self):
         events = self.ask(self.signed_in(), {"message": "please fail now"})

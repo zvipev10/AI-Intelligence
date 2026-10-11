@@ -3,7 +3,7 @@
 One user message is one turn (``ChatTurn.run``):
 
 1. The message and what the app shows go to the model behind HL API ``POST /api/v1/llm/chat``
-   with seven tools. The model keeps no history of its own: the conversation is i360's. The model returns tool calls; HL API never runs them.
+   with six tools. The model keeps no history of its own: the conversation is i360's. The model returns tool calls; HL API never runs them.
 2. ``ask_i360`` sends a question to the i360 chat service (``analytics/i360-chat``, ``POST /chat/ask``,
    the user's own bearer). Its answer stream is relayed to the browser as it arrives, and the model
    gets back the answer text and the ids of the items it cited.
@@ -15,8 +15,7 @@ One user message is one turn (``ChatTurn.run``):
 If the model cannot be reached, the turn falls back to asking i360 directly and showing what it cited.
 Everything travels with the user's token; nothing is kept between turns on the server. The i360 chat
 service holds the conversation (records on the platform); the browser only sends its conversation id,
-its recent answer ids and the previous answer's cited items. When a command needs what was said
-earlier, ``read_i360_conversation`` reads it back from i360.
+its recent answer ids and the previous answer's cited items.
 """
 from __future__ import annotations
 
@@ -24,7 +23,6 @@ import json
 import re
 import socket
 import urllib.error
-import urllib.parse
 import urllib.request
 import uuid
 from dataclasses import dataclass, field
@@ -36,7 +34,6 @@ from hl.client import AuthExpired, HlClient, HlError, NotOnThisEstate, Unreachab
 MAX_ROUNDS = 6
 MAX_SHOWN_ITEMS = 200
 MAX_CITED_FOR_MODEL = 60
-MAX_CONVERSATION_MESSAGES = 8
 VIEWS = ("map", "timeline", "table")
 
 
@@ -225,9 +222,6 @@ TOOLS = [
                                   "app's layers (the default without an investigation); all: everything in i360, only "
                                   "when the user asks for it"}},
         ["question"]),
-    _fn("read_i360_conversation",
-        "Read the recent turns of the i360 conversation (questions and answers). Use it only when a command "
-        "depends on something said earlier that the context does not show.", {}),
     _fn("show_items",
         "Show records as a new layer in the app. Use the ids i360 cited (from_last_answer=true takes all of them).",
         {"from_last_answer": {"type": "boolean"},
@@ -261,7 +255,7 @@ a clear label, and the view that fits: map when places matter, timeline for sequ
 otherwise). For commands about the app (open a layer, open a record, switch view, show saved layers,
 save a layer) use the app tools directly without asking i360. Never invent ids, layer names or facts.
 The conversation lives in i360: you see only the current message, the last answer's cited items and
-what the app shows. If a command depends on earlier turns, call read_i360_conversation first.
+what the app shows. Anything about earlier turns goes to ask_i360, which knows the conversation.
 If a request is ambiguous, ask one short question instead of guessing.
 Finish with one or two short sentences saying what you showed; do not repeat i360's answer."""
 
@@ -433,8 +427,7 @@ class ChatTurn:
 
     # -- tools ------------------------------------------------------------------------------
     def run_tool(self, name: str, args: dict[str, Any]) -> dict[str, Any]:
-        handler = {"ask_i360": self.ask_i360, "read_i360_conversation": self.read_i360_conversation,
-                   "show_items": self.show_items, "open_layer": self.open_layer,
+        handler = {"ask_i360": self.ask_i360, "show_items": self.show_items, "open_layer": self.open_layer,
                    "open_item": self.open_item, "show_memory": self.show_memory,
                    "save_to_memory": self.save_to_memory}.get(name)
         if handler is None:
@@ -509,21 +502,6 @@ class ChatTurn:
             "has_time_series": bool(agg and not self.has_places),
             "cited_items": citations[:MAX_CITED_FOR_MODEL],
         }
-
-    def read_i360_conversation(self, args: dict[str, Any]) -> dict[str, Any]:
-        if not self.i360_conversation_id:
-            return {"error": "no i360 conversation yet"}
-        self.emit("step", {"text": "Reading the i360 conversation", "tool": "read_i360_conversation"})
-        conversation = self.chat.call("GET", "/conversations/" + urllib.parse.quote(self.i360_conversation_id, safe=""))
-        messages = conversation.get("messages") if isinstance(conversation, dict) else None
-        turns = []
-        for message in (messages if isinstance(messages, list) else [])[-MAX_CONVERSATION_MESSAGES:]:
-            if not isinstance(message, dict):
-                continue
-            # The record shape is i360's; keep the short text fields and drop cards, citations and the rest.
-            turns.append({k: (v[:600] if isinstance(v, str) else v) for k, v in message.items()
-                          if isinstance(v, (str, int, float, bool)) and k not in {"b64", "picture"}})
-        return {"title": (conversation or {}).get("title"), "turns": turns}
 
     def known_ids(self) -> set[str]:
         return {c["id"] for c in self.cited} | {c["id"] for c in self.ctx.previous_citations}
