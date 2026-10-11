@@ -61,7 +61,12 @@
     "layer": "ADINT",
     "fields": [
      "item_id",
-     "location"
+     "event_time",
+     "location",
+     "fe_correlation_ids",
+     "additional_info",
+     "user_agents_data",
+     "ip"
     ]
    },
    {

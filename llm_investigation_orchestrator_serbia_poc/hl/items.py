@@ -60,7 +60,8 @@ def item_fields(item: dict[str, Any]) -> dict[str, str]:
     """Every populated field of an i360 item as ``i360.<path>`` -> text, for "show all fields" layers.
 
     Nested objects become dotted paths; a list of scalars is joined; a list of annotations (dicts with
-    ``value``) becomes "type: value" lines; tags become "type=value"; anything else is compact JSON.
+    ``type`` and ``value``) becomes "type: value" lines; tags become "type=value"; a one-entry list of objects
+    (additional_info, user_agents_data, ip.ip_sessions) is flattened like an object; anything else is compact JSON.
     """
     out: dict[str, str] = {}
 
@@ -78,13 +79,18 @@ def item_fields(item: dict[str, Any]) -> dict[str, str]:
         if isinstance(value, list):
             if all(not isinstance(v, (dict, list)) for v in value):
                 out[path] = "; ".join(_cell(v) for v in value if v not in (None, ""))
-            elif all(isinstance(v, dict) and "value" in v for v in value):
+            elif all(isinstance(v, dict) and "value" in v and "type" in v for v in value):
                 key = "value"
                 if path.endswith("tags"):
                     out[path] = "; ".join(f"{v.get('type')}={_cell(v.get(key))}" for v in value)
                 else:
                     out[path] = "\n".join(f"{v.get('type')}: {_cell(v.get(key))}" if v.get("type") else _cell(v.get(key))
                                            for v in value)
+            elif all(isinstance(v, dict) for v in value) and len(value) == 1:
+                walk(value[0], path, depth)  # e.g. additional_info, user_agents_data, ip.ip_sessions
+            elif all(isinstance(v, dict) for v in value) and len(value) <= 5 and depth < 3:
+                for index, entry in enumerate(value):
+                    walk(entry, f"{path}[{index}]", depth + 1)
             else:
                 out[path] = json.dumps(value, ensure_ascii=False, separators=(",", ":"))
             return

@@ -238,6 +238,9 @@ class FakeEstate:
                 "parties": copy.deepcopy(item.get("parties") or []) if "parties" in include else None,
                 "related_objects": [] if "related_objects" in include else None,
                 "detections": [] if "detections" in include else None,
+                **{part: copy.deepcopy(item.get(part, [] if part != "ip" else None)) if part in include else None
+                   for part in ("additional_info", "user_agents_data", "ip", "context")},
+                "fe_correlation_ids": copy.deepcopy(item.get("fe_correlation_ids") or []),
             })
         return {"items": out, "warnings": []}
 

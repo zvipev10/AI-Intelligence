@@ -127,6 +127,23 @@ class AllFieldsTests(unittest.TestCase):
         self.assertNotIn("i360.parties", fields)
         self.assertNotIn("i360._layer", fields)
 
+    def test_contract_260_parts_are_flattened(self):
+        from hl.items import item_fields
+
+        fields = item_fields({
+            "additional_info": [{"gsd_m": 0.5, "image_id": "RT-1"}],
+            "user_agents_data": [{"device_brand": "Apple", "operating_system_name": "iOS", "value": None, "name": None}],
+            "ip": {"ip_sessions": [{"source_ip": "203.0.113.107", "user_agent": None}]},
+            "fe_correlation_ids": ["ADINT_OBS-01-002"],
+            "context": [{"type": "COVERAGE", "value": "c-1"}]})
+        self.assertEqual("0.5", fields["i360.additional_info.gsd_m"])
+        self.assertEqual("RT-1", fields["i360.additional_info.image_id"])
+        self.assertEqual("Apple", fields["i360.user_agents_data.device_brand"])
+        self.assertEqual("203.0.113.107", fields["i360.ip.ip_sessions.source_ip"])
+        self.assertEqual("ADINT_OBS-01-002", fields["i360.fe_correlation_ids"])
+        self.assertEqual("COVERAGE: c-1", fields["i360.context"])
+        self.assertNotIn("i360.user_agents_data", fields)
+
     def test_parties_are_flattened_by_role(self):
         from hl.items import item_fields
 
