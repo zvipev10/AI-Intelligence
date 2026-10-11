@@ -381,6 +381,19 @@ class StateStore:
             return self._attach_item(investigation_key, item)
         if self._investigation_instance(investigation_key) is None:
             self.register_investigation(investigation_key, name or investigation_key)
+        try:
+            self._create_memory_record(investigation_key, group, item)
+        except HlError as exc:
+            if exc.status == 400 and "invalid entity type" in str(exc).lower():
+                raise ValueError(
+                    "This can't be saved to the investigation yet: the app's own memory type "
+                    f"({self.memory_item_type}) is not set up on this i360. Records can be saved; persons, "
+                    "layers and areas need it.") from None
+            raise
+        self.touch_investigation(investigation_key)
+        return item
+
+    def _create_memory_record(self, investigation_key: str, group: str, item: dict[str, Any]) -> None:
         self._create(self.memory_item_type, str(item.get("label") or item.get("kind") or group), {
             "investigation_key": investigation_key,
             "item_key": str(item.get("id") or ""),
@@ -391,8 +404,6 @@ class StateStore:
             "saved_at_utc": str(item.get("saved_at_utc") or utc_now_iso()),
             "payload": json.dumps(item, ensure_ascii=False),
         })
-        self.touch_investigation(investigation_key)
-        return item
 
     def delete_memory_item(self, investigation_key: str, group: str, item_key: str) -> bool:
         if self.external_investigation_type and group == "artifacts" and item_key.startswith(self.RELATED_PREFIX):

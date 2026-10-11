@@ -157,5 +157,17 @@ class AttachItemsToInvestigationTests(unittest.TestCase):
             store(Refusing()).add_memory_item("inv-1", "artifacts", dict(self.RECORD))
 
 
+class UnprovisionedMemoryTests(unittest.TestCase):
+    def test_saving_a_person_without_the_memory_type_says_why(self):
+        class NoMemoryType(RelatedClient):
+            def create_entity(self, entity_type, body):
+                raise HlError(400, "ems_error", f"ems -> HTTP 400: Invalid entity type: /entities/entities/{entity_type}")
+
+        person = {"kind": "object", "object_kind": "person", "object_id": "p-1", "label": "Arman Rahimi", "id": "a-1"}
+        with self.assertRaises(ValueError) as caught:
+            store(NoMemoryType()).add_memory_item("inv-1", "artifacts", person)
+        self.assertIn("AII_MEMORY_ITEM", str(caught.exception))
+
+
 if __name__ == "__main__":
     unittest.main()
