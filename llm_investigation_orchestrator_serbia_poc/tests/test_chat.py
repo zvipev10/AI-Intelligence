@@ -82,7 +82,7 @@ class ChatUnitTests(unittest.TestCase):
                 return []
 
             def item_layers(self, ids):
-                raise AssertionError("must not read uncited items")
+                return []  # i360 has no such record
 
             def memory_layers(self, investigation_id):
                 return []
@@ -195,6 +195,18 @@ class ChatApiTests(unittest.TestCase):
         self.assertEqual(done["citations"][1]["id"], opened[0]["row"]["i360_item_id"])
         self.assertTrue(done["i360_last_turns"][0].startswith("AICHAT_MSG_"))
         self.assertEqual([], [e for e, d in events if e == "i360"])  # a command does not ask i360
+
+    def test_record_in_the_viewer_can_be_opened_without_a_citation(self):
+        item_id = next(iter(self.estate.items))
+        events = self.ask(self.signed_in(), {"message": "open this record", "viewer_item_id": item_id})
+        self.assertEqual(item_id, self.actions(events, "open_item")[0]["row"]["i360_item_id"])
+        self.assertIn(f"Record open in the viewer now: {item_id}", self.estate.llm_requests[-1]["messages"][0]["content"])
+
+    def test_made_up_record_is_not_opened(self):
+        events = self.ask(self.signed_in(), {"message": "open this record", "viewer_item_id": "no-such-item"})
+        self.assertEqual([], self.actions(events, "open_item"))
+        self.assertIn("open_item: no readable record with id no-such-item",
+                      [d["text"] for e, d in events if e == "step" and d.get("error")])
 
     def test_command_opens_a_catalog_layer(self):
         events = self.ask(self.signed_in(), {"message": "open cctv on the map"})

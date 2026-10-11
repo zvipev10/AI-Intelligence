@@ -295,6 +295,14 @@
     if (!openObjectViewer("record", recordId)) throw new Error("The record viewer could not open this record.");
   }
 
+  // The i360 id of the record in the viewer, so "this record" can be asked about or reopened.
+  function viewerItemId() {
+    const recordId = state.focusedViewerRecordId;
+    if (!recordId || document.getElementById("objectViewer")?.hidden) return "";
+    const item = viewerObjects().get(`record:${recordId}`);
+    return String(item?.i360_item_id || "");
+  }
+
   async function openCited(id) {
     const response = await fetch("/api/chat/items", {
       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ids: [id], locale: "en" }),
@@ -415,6 +423,7 @@
       i360_last_turns: CHAT.i360LastTurns,
       previous_citations: CHAT.citations,
       open_layers: state.layers.filter(layer => layer.visible).map(layer => layer.label).slice(0, 40),
+      viewer_item_id: viewerItemId(),
       tz: (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone; } catch { return ""; } })(),
       locale: "en",
     };

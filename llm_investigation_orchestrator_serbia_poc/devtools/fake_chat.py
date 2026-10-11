@@ -51,6 +51,11 @@ def scripted_completion(body: dict[str, Any]) -> dict[str, Any]:
     if last is None:
         if text.startswith("save"):
             return _completion(None, [_call("save_to_memory", {"layer": user.split(" ", 1)[-1]})])
+        if text.startswith("open this record"):
+            shown = re.search(r"^Record open in the viewer now: (\S+)", messages[0].get("content") or "", re.M)
+            if not shown:
+                return _completion("No record is open in the viewer.")
+            return _completion(None, [_call("open_item", {"item_id": shown.group(1)})])
         if text.startswith("open the first") or text.startswith("open the second"):
             cited = re.findall(r"^\d+\. (\S+) \|", messages[0].get("content") or "", re.M)
             index = 0 if "first" in text else 1

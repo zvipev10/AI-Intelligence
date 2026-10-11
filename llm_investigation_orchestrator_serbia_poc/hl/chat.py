@@ -237,7 +237,8 @@ TOOLS = [
          "end_time": {"type": "string", "description": "ISO 8601, UTC"}},
         ["layer"]),
     _fn("open_item",
-        "Open one record in the record viewer. Only ids i360 cited in this conversation.",
+        "Open one record in the record viewer: an id i360 cited, or the record open in the viewer (from the context). "
+        "Never make up an id.",
         {"item_id": {"type": "string"}}, ["item_id"]),
     _fn("show_memory",
         "Open layers saved in the open investigation's memory (names from the context, or 'all').",
@@ -284,6 +285,7 @@ class TurnContext:
     i360_last_turns: list[str] = field(default_factory=list)
     previous_citations: list[dict[str, str]] = field(default_factory=list)
     open_layers: list[str] = field(default_factory=list)
+    viewer_item_id: str = ""
     timezone: str = ""
 
     @classmethod
@@ -305,6 +307,7 @@ class TurnContext:
             i360_last_turns=strings(request.get("i360_last_turns"), 6),
             previous_citations=cited_items(request.get("previous_citations")),
             open_layers=strings(request.get("open_layers"), 40),
+            viewer_item_id=str(request.get("viewer_item_id") or "")[:240],
             timezone=str(request.get("tz") or "")[:64],
         )
 
@@ -406,6 +409,8 @@ class ChatTurn:
         layers = [f"{l['id']} ({l.get('label') or ''})" for l in self.catalog()][:40]
         if layers:
             lines.append("Layers the app can open: " + "; ".join(layers))
+        if self.ctx.viewer_item_id:
+            lines.append(f"Record open in the viewer now: {self.ctx.viewer_item_id}")
         if self.ctx.open_layers:
             lines.append("Layers on screen now: " + "; ".join(self.ctx.open_layers))
         if self.ctx.previous_citations:
@@ -552,13 +557,14 @@ class ChatTurn:
         return {"opened": layer["id"], "view": view, "filters": filters}
 
     def open_item(self, args: dict[str, Any]) -> dict[str, Any]:
-        item_id = str(args.get("item_id") or "").strip()
-        if item_id not in self.known_ids():
-            return {"error": "that id was not cited by i360 in this conversation"}
+        item_id = str(args.get("item_id") or "").strip()[:240]
+        if not item_id:
+            return {"error": "no item_id"}
+        # Any id is checked against i360 with the user's token: a made-up or unreadable one is simply not found.
         groups = self.host.item_layers([item_id])
         row = next((r for g in groups for r in g["rows"]), None)
         if row is None:
-            return {"error": "the record could not be read"}
+            return {"error": f"no readable record with id {item_id}"}
         self.emit("action", {"kind": "open_item", "row": row, "group": groups[0]["label"]})
         self.emit("step", {"text": "Opened the record viewer", "tool": "open_item"})
         return {"opened": item_id}
