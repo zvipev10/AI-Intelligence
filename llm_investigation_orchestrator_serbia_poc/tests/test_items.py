@@ -119,7 +119,8 @@ class AllFieldsTests(unittest.TestCase):
         self.assertEqual("image", fields["i360.item_type"])
         self.assertEqual("35.08", fields["i360.location.point.lat"])
         self.assertEqual("3x cargo truck", fields["i360.text.transcript"])
-        self.assertEqual("transcription: a\npost_comment: b", fields["i360.insights"])
+        self.assertEqual("a", fields["i360.insights.transcription"])
+        self.assertEqual("b", fields["i360.insights.post_comment"])
         self.assertEqual("object_recognition=weapon", fields["i360.tags"])
         self.assertEqual("HasContent", fields["i360.flags"])
         self.assertEqual("image", fields["i360.media.kind"])
@@ -164,8 +165,10 @@ class AllFieldsTests(unittest.TestCase):
 
     def test_profile_notes_are_not_sent(self):
         client = RecordingClient()
-        ItemReader(client, mapping(), {"item_types": ["x"], "_comment": "a note", "limit": 5}, 100).items()
+        ItemReader(client, mapping(), {"item_types": ["x"], "_comment": "a note", "labels": {"event_time": "t"},
+                                       "limit": 5}, 100).items()
         self.assertNotIn("_comment", client.bodies[0])
+        self.assertNotIn("labels", client.bodies[0])
 
     def test_coverage_facet_filters_reach_hl_api(self):
         client = RecordingClient()

@@ -818,7 +818,8 @@ function buildCatalogLayer(layer, rows = []) {
     items,
     capabilities: layer.capabilities || { table: true, map: false, timeline: false },
     catalogLayerId: layer.id,
-    catalogFilters: layer.catalog_filters || {}
+    catalogFilters: layer.catalog_filters || {},
+    fieldLabels: layer.field_labels || {}
   };
 }
 
@@ -3019,7 +3020,9 @@ function viewerFields(item, kind) {
   // Rows from a profile query with "all_fields" carry every i360 item field as "i360.<path>": show them all.
   const i360Keys = Object.keys(item || {}).filter(key => key.startsWith("i360.") && item[key] != null && item[key] !== "").sort((a, b) => a.localeCompare(b, "en"));
   if (kind === "record" && i360Keys.length) {
-    return ["record_id", "source_type", ...i360Keys].filter(key => item[key] != null && item[key] !== "").map(key => [key, item[key]]);
+    const catalog = typeof state !== "undefined" && Array.isArray(state.layerCatalog) ? state.layerCatalog : [];
+    const named = Object.keys(catalog.find(layer => layer.source_type === item.source_type)?.field_labels || {}).filter(key => i360Keys.includes(key));
+    return ["record_id", "source_type", ...named, ...i360Keys.filter(key => !named.includes(key))].filter(key => item[key] != null && item[key] !== "").map(key => [key, item[key]]);
   }
   if (kind === "ipdr_package") return ["package_id", "classification", "provider", "source_system", "filename", "sha256", "record_count", "validation_state", "session_validation_counts", "observed_coverage", "requested_scope", "acquired_at", "imported_at", "ingest_batch_id", "authority_case_reference", "chain_of_custody_note", "field_semantics", "transformations", "limitations"].map(key => [key, item[key] ?? activeLocaleText("לא ידוע", "Unknown")]);
   if (kind === "record" && isCellularGeolocationRecord(item)) return ["event_id", "timestamp_utc", "imei", "sim", "target_msisdn", "target_imsi", "operator_msisdn", "operator_imsi", "location_name"].map(key => [key, item[key] || (key === "location_name" ? item.location_id : "") || "—"]);
@@ -3613,7 +3616,8 @@ function openObjectViewer(kind, id, trigger = document.activeElement) {
   viewer.classList.toggle("is-person-viewer", personViewer);
   const mediaHtml = viewerMediaHtml(item);
   const cellularHtml = kind === "record" ? cellularCallHtml(item) : "";
-  const fields = viewerFields(item, kind).map(([key,value]) => `<div class="object-viewer-field"><dt>${escapeHtml(viewerFieldLabel(key))}</dt><dd>${viewerFieldValueHtml(key, value)}</dd></div>`).join("");
+  const recordFieldLabels = kind === "record" ? ((state.layerCatalog || []).find(layer => layer.source_type === item.source_type)?.field_labels || {}) : {};
+  const fields = viewerFields(item, kind).map(([key,value]) => `<div class="object-viewer-field"><dt>${escapeHtml(recordFieldLabels[key] || viewerFieldLabel(key))}</dt><dd>${viewerFieldValueHtml(key, value)}</dd></div>`).join("");
   const entityMapHtml = kind === "organization" ? entityLocationMapHtml(item) : "";
   document.getElementById("objectViewerBody").innerHTML = `${mediaHtml}${cellularHtml}${ipdrPackageLinkHtml(item, kind)}${personViewer ? personWorkspaceHtml(item) : ""}${entityMapHtml}${["record", "evidence", "assessment"].includes(kind) ? `<p class="object-viewer-summary">${escapeHtml(item.event_summary || item.summary || "-")}</p>` : ""}${personViewer ? "" : `<dl class="object-viewer-fields">${fields}</dl>`}${kind === "record" ? `${recordLinkedEntitiesHtml(item)}${recordLinkedRawRecordsHtml(item)}` : kind === "organization" ? organizationEvidenceHtml(item) : kind === "evidence" ? evidenceProvenanceHtml(item) : kind === "assessment" ? assessmentEvidenceHtml(item) : ""}`;
   viewer.hidden = false;
@@ -4569,9 +4573,12 @@ function renderEvidence() {
     // Every i360 field the layer's items carry, except the image/media ones (the viewer shows those).
     const keys = [...new Set(activeLayer.items.flatMap(i360KeysOf))].sort((a, b) => a.localeCompare(b, "en"))
       .filter(key => !/^i360\.(media|thumbnail|image|files?)(\.|$)/.test(key));
-    const first = ["i360.item_id", "i360.event_time", "i360.item_type", "i360.sub_type", "i360.source_application"].filter(key => keys.includes(key));
-    const columns = [...first, ...keys.filter(key => !first.includes(key))];
-    head.innerHTML = `<tr><th class="result-map-action-column" data-result-action-column="true"></th>${columns.map(key => `<th>${escapeHtml(viewerFieldLabel(key))}</th>`).join("")}</tr>`;
+    // The layer's own display names (profile "labels", in the mapping's order) come first.
+    const fieldLabels = activeLayer.fieldLabels || {};
+    const named = Object.keys(fieldLabels).filter(key => keys.includes(key));
+    const first = ["i360.item_id", "i360.event_time", "i360.item_type", "i360.sub_type", "i360.source_application"].filter(key => keys.includes(key) && !named.includes(key));
+    const columns = [...named, ...first, ...keys.filter(key => !first.includes(key) && !named.includes(key))];
+    head.innerHTML = `<tr><th class="result-map-action-column" data-result-action-column="true"></th>${columns.map(key => `<th>${escapeHtml(fieldLabels[key] || viewerFieldLabel(key))}</th>`).join("")}</tr>`;
     body.innerHTML = activeItems.length ? activeItems.map(event => {
       const eventId = String(event.record_id || event.event_id || "");
       const selected = isMapItemSelected(activeLayer.id, "event", eventId);

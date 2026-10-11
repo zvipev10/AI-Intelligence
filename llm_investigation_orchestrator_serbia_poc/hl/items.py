@@ -98,7 +98,12 @@ def item_fields(item: dict[str, Any]) -> dict[str, str]:
             value = datetime.fromtimestamp(value / 1000, timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
         out[path] = _cell(value)
 
-    walk({k: v for k, v in item.items() if k != "parties"}, "", 0)
+    walk({k: v for k, v in item.items() if k not in ("parties", "insights")}, "", 0)
+    # Insights by type (insights.post_comment, insights.transcription, ...): each can carry its own name.
+    for insight in item.get("insights") or []:
+        if isinstance(insight, dict) and insight.get("value") not in (None, ""):
+            key = f"insights.{insight.get('type') or 'note'}"
+            out[key] = "\n".join(filter(None, [out.get(key), _cell(insight["value"])]))
     # Call/message parties by role: parties.from.msisdn, parties.to.imei, ... (not raw JSON).
     for party in item.get("parties") or []:
         if not isinstance(party, dict):
@@ -223,6 +228,7 @@ class ItemReader:
         limit = max(0, int(query.pop("limit", 0) or 0))
         # "layer" is ours too: the layer (source_type) these items are shown in.
         layer = str(query.pop("layer", "") or "")
+        query.pop("labels", None)  # display names for the layer's fields; read by the server, not sent
         # "all_fields" is ours too: rows carry every populated item field as i360.<path>;
         # "fields" (a list of paths such as ["item_id", "location"]) keeps only those fields.
         everything = query.pop("all_fields", False)

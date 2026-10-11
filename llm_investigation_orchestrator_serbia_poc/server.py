@@ -107,6 +107,13 @@ class App:
                           scenario=s.scenario, external_investigation_type=s.external_investigation_type,
                           investigation_links=self.profile.get("investigation_links") or [])
 
+    def layer_field_labels(self, layer_name: Any) -> dict[str, str]:
+        """A layer's display names for its i360 fields (profile query "labels": path -> name), as row keys."""
+        query = self.profile.get("items_query") or {}
+        spec = next((q for q in query.get("queries") or [] if q.get("layer") and q.get("layer") == layer_name), None)
+        labels = (spec or {}).get("labels") or {}
+        return {f"i360.{path}": str(name) for path, name in labels.items() if not str(path).startswith("_")}
+
     def item_layer_label(self, item: dict[str, Any]) -> str:
         """The layer an item belongs to: the first profile query it matches that names a layer, else its source."""
         query = self.profile.get("items_query") or {}
@@ -428,7 +435,12 @@ class Handler(BaseHTTPRequestHandler):
                                  "warnings": snap.warnings[:20], "fetched_at": snap.fetched_at})
             return
         if path == "/api/layers":
-            self.send_json(200, {"layers": analysis.list_layers(app.dataset(token, locale), app.known_sources(locale))})
+            layers = analysis.list_layers(app.dataset(token, locale), app.known_sources(locale))
+            for layer in layers:
+                labels = app.layer_field_labels(layer.get("source_type"))
+                if labels:
+                    layer["field_labels"] = labels
+            self.send_json(200, {"layers": layers})
             return
         if path.startswith("/api/layers/") and path.endswith("/rows"):
             layer_id = unquote(path[len("/api/layers/"):-len("/rows")])

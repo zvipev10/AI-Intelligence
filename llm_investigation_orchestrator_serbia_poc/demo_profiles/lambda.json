@@ -50,7 +50,21 @@
     "recent_days": 365,
     "limit": 300,
     "layer": "Satellite",
-    "all_fields": true
+    "all_fields": true,
+    "labels": {
+     "event_time": "acquisition_datetime_utc",
+     "source_application": "sensor_platform",
+     "location.point.lat": "center_lat",
+     "location.point.lon": "center_lon",
+     "additional_info.image_id": "image_id",
+     "additional_info.footprint_radius_km": "footprint_radius_km",
+     "additional_info.gsd_m": "gsd_m",
+     "additional_info.cloud_cover_pct": "cloud_cover_pct",
+     "additional_info.sun_elevation_deg": "sun_elevation_deg",
+     "additional_info.off_nadir_deg": "off_nadir_deg",
+     "insights.post_comment": "analyst_note",
+     "insights.transcription": "detected_objects"
+    }
    },
    {
     "source_applications": [
@@ -62,12 +76,27 @@
     "fields": [
      "item_id",
      "event_time",
+     "source_application",
      "location",
      "fe_correlation_ids",
      "additional_info",
      "user_agents_data",
      "ip"
-    ]
+    ],
+    "labels": {
+     "event_time": "timestamp_utc",
+     "location.point.lat": "latitude",
+     "location.point.lon": "longitude",
+     "fe_correlation_ids": "observation_id",
+     "ip.ip_sessions.source_ip": "ip",
+     "additional_info.accuracy_m": "accuracy_m",
+     "user_agents_data.language_code": "keyboard_language",
+     "user_agents_data.operating_system_name": "os",
+     "user_agents_data.device_model": "model",
+     "user_agents_data.device_brand": "brand",
+     "user_agents_data.device_name": "device_id",
+     "source_application": "source_app"
+    }
    },
    {
     "layer": "Cellular Locations",
@@ -140,7 +169,26 @@
      "fe_correlation_ids",
      "ip",
      "additional_info"
-    ]
+    ],
+    "labels": {
+     "fe_correlation_ids": "record_id",
+     "source_application": "source_system",
+     "ip.ip_sessions.source_ip": "ip_public",
+     "ip.ip_sessions.source_port": "public_port",
+     "ip.ip_sessions.destination_ip": "ip_target",
+     "ip.ip_sessions.destination_port": "target_port",
+     "ip.ip_sessions.protocol": "protocol",
+     "ip.ip_sessions.uploaded_bytes": "bytes_received",
+     "ip.ip_sessions.downloaded_bytes": "bytes_sent",
+     "ip.ip_sessions.start_time": "start_time",
+     "ip.ip_sessions.end_time": "end_time",
+     "additional_info.ip_source": "ip_source",
+     "additional_info.ip_private": "ip_private",
+     "additional_info.ip_out": "ip_out",
+     "additional_info.mac": "mac",
+     "additional_info.SUBNETMASK": "SUBNETMASK",
+     "additional_info.source_port": "source_port"
+    }
    }
   ]
  },
