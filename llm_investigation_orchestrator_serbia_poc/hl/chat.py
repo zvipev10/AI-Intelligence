@@ -239,7 +239,8 @@ TOOLS = [
          "end_time": {"type": "string", "description": "ISO 8601, UTC"}},
         ["layer"]),
     _fn("open_item",
-        "Open one record in the record viewer: an id i360 cited, or the record open in the viewer (from the context). "
+        "Open one record in the record viewer: an id i360 cited, an id the user typed, or the record open in the "
+        "viewer (from the context). "
         "Never make up an id.",
         {"item_id": {"type": "string"}}, ["item_id"]),
     _fn("save_to_memory",
@@ -330,7 +331,9 @@ _MEMORY_WORDS = [(re.compile(r"\b(?:the |this |our |my )?investigation'?s memory
 _WHAT_IS_SAVED = re.compile(r"^\W*(?:what|which)(?:'s|\s+is|\s+are|\s+was|\s+were|\s+has\s+been|\s+have\s+been)?\s+"
                             r"(?:saved|stored|linked|kept|in\s+(?:the\s+|this\s+|our\s+|its\s+)?(?:investigation'?s\s+)?memory)\b"
                             r"(?:\s+(?:in|to|for|with)\s+(?:the|this|our)\s+investigation)?\W*$", re.I)
-INVESTIGATION_RECORDS_QUESTION = "Which records are linked to this investigation?"
+# Checked on LAMBDA: this wording reaches i360's search leg and cites the records; "Which records are linked
+# to this investigation?" reached its overview leg, which answers in prose with no citations.
+INVESTIGATION_RECORDS_QUESTION = "What records are linked in this investigation?"
 
 
 def investigation_wording(question: str) -> str:
@@ -449,6 +452,15 @@ class ChatTurn:
                          "(from_last_answer=true shows them all). In order:")
             lines += [f"{n}. {c['id']} | {c['type']} | {c['time']} | {c['text']}"
                       for n, c in enumerate(self.ctx.previous_citations[:MAX_CITED_FOR_MODEL], 1)]
+        if self.ctx.viewer_item_id:
+            lines.append("'This record' or 'it' means the record open in the viewer.")
+        elif len(self.ctx.previous_citations) == 1:
+            lines.append("'This record' or 'it' means the one item the previous answer cited: open it, do not ask which.")
+        elif self.ctx.previous_citations:
+            lines.append("'The first/second/... record' means that item in the list above.")
+        else:
+            lines.append("No cited items and no record in the viewer: a request about 'this record', 'it' or "
+                         "'them' goes to ask_i360, which holds the conversation. Do not ask the user which one.")
         if self.ctx.timezone:
             lines.append(f"The user's time zone: {self.ctx.timezone}.")
         return "\n".join(lines)
@@ -601,8 +613,10 @@ class ChatTurn:
         item_id = str(args.get("item_id") or "").strip()[:240]
         if not item_id:
             return {"error": "no item_id"}
-        if item_id not in self.known_ids() | self.on_screen | {self.ctx.viewer_item_id} - {""}:
-            return {"error": "open_item takes an id i360 cited or the record in the viewer; ask i360 to find others"}
+        typed = len(item_id) >= 6 and item_id in self.ctx.message  # an id the user gave; reading it below checks their access
+        if not typed and item_id not in self.known_ids() | self.on_screen | {self.ctx.viewer_item_id} - {""}:
+            return {"error": "open_item takes an id i360 cited, the user typed, or the record in the viewer; "
+                             "ask i360 to find others"}
         # The record is read only to draw it in the viewer; its fields go to the browser, not to the model.
         groups = self.host.item_layers([item_id])
         row = next((r for g in groups for r in g["rows"]), None)

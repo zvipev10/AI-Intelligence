@@ -71,6 +71,16 @@ class ChatUnitTests(unittest.TestCase):
         from hl.chat import TOOLS
         self.assertNotIn("show_memory", [t["function"]["name"] for t in TOOLS])
 
+    def test_open_item_takes_an_id_the_user_typed(self):
+        class Host:
+            def item_layers(self, ids):
+                return [{"label": "Satellite", "rows": [{"i360_item_id": i} for i in ids]}]
+
+        ctx = TurnContext.from_request({"message": "open 2a8dbf57-1234"})
+        turn = ChatTurn(None, None, Host(), lambda e, d: None, ctx)
+        self.assertEqual("2a8dbf57-1234", turn.open_item({"item_id": "2a8dbf57-1234"})["opened"])
+        self.assertIn("error", turn.open_item({"item_id": "other-record"}))
+
     def test_open_item_returns_no_record_fields(self):
         class Host:
             def item_layers(self, ids):
@@ -207,7 +217,7 @@ class ChatApiTests(unittest.TestCase):
         browser = self.signed_in()
         first = self.ask(browser, {"message": "What's saved in this investigation?", "investigation_id": "INV-1"})
         # A bare "What's linked" reads to i360 as an entity name, so the whole question is replaced.
-        self.assertEqual("Which records are linked to this investigation?", self.chat.asks[-1]["question"])
+        self.assertEqual("What records are linked in this investigation?", self.chat.asks[-1]["question"])
         self.assertEqual("INV-1", self.chat.asks[-1]["focus"]["id"])
         done = [d for e, d in first if e == "done"][0]
         self.ask(browser, {"message": "convoy", "investigation_id": "INV-1", "scope": "all",
@@ -217,7 +227,7 @@ class ChatApiTests(unittest.TestCase):
     def test_investigation_wording(self):
         from hl.chat import investigation_wording
         for question in ("What is in memory?", "what's stored", "What is linked to this investigation?"):
-            self.assertEqual("Which records are linked to this investigation?", investigation_wording(question))
+            self.assertEqual("What records are linked in this investigation?", investigation_wording(question))
         self.assertEqual("Which linked records mention trucks?", investigation_wording("Which saved records mention trucks?"))
 
     def test_follow_up_opens_a_cited_record(self):
