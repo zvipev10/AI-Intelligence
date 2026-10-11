@@ -216,7 +216,9 @@ TOOLS = [
         "times, connections). It searches i360 and answers with cited items. Use it for every question about "
         "the data; never answer such a question yourself.",
         {"question": {"type": "string", "description": "The user's question in their own words. i360 keeps the conversation, "
-                                                       "so references like 'them' or 'that day' need no rewriting"},
+                                                       "so references like 'them' or 'that day' need no rewriting. "
+                                                       "Never say 'memory' or 'saved' to i360: there they mean the user's "
+                                                       "own chat notes. Ask about the records linked to the investigation"},
          "scope": {"type": "string", "enum": ["investigation", "layers", "all"],
                    "description": "investigation: only the open investigation's saved items; layers: the data of the "
                                   "app's layers (the default without an investigation); all: everything in i360, only "
@@ -243,7 +245,8 @@ TOOLS = [
     _fn("show_memory",
         "Put the open investigation's memory on screen: the records saved to it (as '<layer> · memory' tabs) and "
         "its saved layers (all of them, or the ones named). It only displays; it tells you nothing about what is "
-        "saved. Questions about what is saved go to ask_i360 with scope investigation.",
+        "saved. Questions about what is saved go to ask_i360 with scope investigation, worded as the records "
+        "linked to the investigation.",
         {"layers": {"type": "array", "items": {"type": "string"}, "description": "Saved layer names; omit for all"}}),
     _fn("save_to_memory",
         "Propose saving a layer shown in the app to the open investigation's memory. The user must confirm; "
@@ -264,6 +267,8 @@ Use the fewest tool calls that fulfil the request, then stop and answer in one o
   again with another tool.
 - The conversation lives in i360: you see only the current message, the last answer's cited items and
   what the app shows. Anything about earlier turns goes to ask_i360.
+To i360, what the investigation has saved is "the records linked to this investigation"; never say
+"memory" or "saved" to it, because there they mean the user's own chat notes.
 Never invent ids, layer names or facts. If a request is ambiguous, ask one short question instead.
 Do not repeat i360's answer; it is already shown to the user."""
 
@@ -316,6 +321,19 @@ class TurnContext:
             viewer_item_id=str(request.get("viewer_item_id") or "")[:240],
             timezone=str(request.get("tz") or "")[:64],
         )
+
+
+_MEMORY_WORDS = [(re.compile(r"\b(?:the |this |our |my )?investigation'?s memory\b", re.I), "the records linked to this investigation"),
+                 (re.compile(r"\b(?:the |its |our |my )?memory\b", re.I), "the records linked to this investigation"),
+                 (re.compile(r"\bsaved to\b", re.I), "linked to"),
+                 (re.compile(r"\b(?:saved|stored)\b", re.I), "linked")]
+
+
+def investigation_wording(question: str) -> str:
+    """The question with i360's own words for its per-user notes ('memory', 'saved') replaced by the investigation's links."""
+    for pattern, words in _MEMORY_WORDS:
+        question = pattern.sub(words, question)
+    return question
 
 
 def cited_items(value: Any) -> list[dict[str, str]]:
@@ -469,6 +487,10 @@ class ChatTurn:
         if scope == "investigation" and self.ctx.investigation_id:
             body["focus"] = {"kind": "entity", "id": self.ctx.investigation_id, "name": self.ctx.investigation_name,
                              "type": self.ctx.investigation_type, "label": "Investigation"}
+            # i360 reads "memory"/"saved" as its own per-user notes and then ignores the focus.
+            body["question"] = investigation_wording(question)
+        elif self.i360_conversation_id:
+            body["focus"] = None  # a conversation keeps its focus until it is cleared
         if self.ctx.timezone:
             body["tz"] = self.ctx.timezone
         if scope == "layers":
@@ -483,8 +505,9 @@ class ChatTurn:
             where = " (this investigation)" if body.get("focus") else " (all data)"
         if self.chat_model:
             body["model"] = self.chat_model
-        self.emit("step", {"text": "Asking i360" + where,
-                           "tool": "ask_i360"})
+        self.emit("step", {"text": "Asking i360" + where, "tool": "ask_i360",
+                           "focus": (body.get("focus") or {}).get("id", ""),
+                           "scope": (body.get("scope") or {}).get("kind", ""), "question": body["question"][:200]})
         answer: dict[str, Any] | None = None
         error = ""
         for event, data in self.chat.ask(body, self.i360_conversation_id or None):

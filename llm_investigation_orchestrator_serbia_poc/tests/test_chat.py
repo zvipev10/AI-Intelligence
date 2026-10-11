@@ -216,6 +216,16 @@ class ChatApiTests(unittest.TestCase):
         self.assertNotIn("focus", self.chat.asks[-1])
         self.assertNotIn("scope", self.chat.asks[-1])
 
+    def test_investigation_questions_avoid_i360_memory_words(self):
+        browser = self.signed_in()
+        first = self.ask(browser, {"message": "What's saved in this investigation?", "investigation_id": "INV-1"})
+        self.assertEqual("What's linked in this investigation?", self.chat.asks[-1]["question"])
+        self.assertEqual("INV-1", self.chat.asks[-1]["focus"]["id"])
+        done = [d for e, d in first if e == "done"][0]
+        self.ask(browser, {"message": "convoy", "investigation_id": "INV-1", "scope": "all",
+                           "i360_conversation_id": done["i360_conversation_id"]})
+        self.assertIsNone(self.chat.asks[-1]["focus"])  # the conversation's focus is cleared, not kept
+
     def test_follow_up_opens_a_cited_record(self):
         browser = self.signed_in()
         first = self.ask(browser, {"message": "convoy trucks"})
