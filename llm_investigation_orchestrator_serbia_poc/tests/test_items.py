@@ -155,6 +155,31 @@ class AllFieldsTests(unittest.TestCase):
         self.assertEqual("file_image", rows[0]["i360.sub_type"])
 
 
+class PersonMappingTests(unittest.TestCase):
+    def test_a_person_of_interest_becomes_a_person_with_photo_and_imei(self):
+        import json as _json
+        from pathlib import Path
+
+        profile = _json.loads((Path(__file__).resolve().parent.parent / "demo_profiles" / "lambda.json").read_text(encoding="utf-8"))
+        hit = {"entity_type": "PERSON_OF_INTEREST", "entity_id": "p-1", "entity_name": "Arman Rahimi", "entity": {
+            "details": {"full_name": "Arman Rahimi", "first_name": "Rahimi", "device_imei": "353294702931926"},
+            "identifier": {"poi_id": "89bt", "official_picture": {"id": 1444056121000, "extension": "png"}},
+            "general": {"entity_id": "p-1", "entity_name": "Arman Rahimi"}}}
+
+        class Client:
+            def search_entities(self, entity_type, body):
+                return {"items": [hit], "total_pages": 1}
+
+        m = Mapping({"version": 1, "items": {"fields": {}}, "entities": profile["entity_mapping"]})
+        person = ItemReader(Client(), m, {}, 100).entities()[0]
+        self.assertEqual(("p-1", "Arman Rahimi", "person"), (person["entity_id"], person["canonical_name"], person["entity_type"]))
+        self.assertEqual("Rahimi", person["given_name"])
+        self.assertEqual("/api/entity-files/PERSON_OF_INTEREST/p-1/1444056121000", person["image_url"])
+        self.assertEqual({"imei": "353294702931926"}, person["telecom"])
+        self.assertEqual("89bt", person["identifiers"])
+        self.assertNotIn("image_file_id", person)
+
+
 class ForbiddenEntitiesClient(RecordingClient):
     def search_entities(self, entity_type, body):
         raise HlError(403, "ems", "Action not allowed")
