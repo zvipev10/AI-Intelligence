@@ -90,7 +90,18 @@ def item_fields(item: dict[str, Any]) -> dict[str, str]:
             return
         out[path] = _cell(value)
 
-    walk(item, "", 0)
+    walk({k: v for k, v in item.items() if k != "parties"}, "", 0)
+    # Call/message parties by role: parties.from.msisdn, parties.to.imei, ... (not raw JSON).
+    for party in item.get("parties") or []:
+        if not isinstance(party, dict):
+            continue
+        role = str(party.get("role") or party.get("position") or "party")
+        for ident in party.get("identifiers") or []:
+            if isinstance(ident, dict) and ident.get("type") and ident.get("value") not in (None, ""):
+                key = f"parties.{role}.{ident['type']}"
+                out[key] = "; ".join(filter(None, [out.get(key), _cell(ident["value"])]))
+        if party.get("name"):
+            out[f"parties.{role}.name"] = _cell(party["name"])
     return {ALL_FIELDS_PREFIX + key: value for key, value in out.items() if value}
 
 

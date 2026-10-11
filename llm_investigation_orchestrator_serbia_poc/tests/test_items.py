@@ -127,6 +127,24 @@ class AllFieldsTests(unittest.TestCase):
         self.assertNotIn("i360.parties", fields)
         self.assertNotIn("i360._layer", fields)
 
+    def test_parties_are_flattened_by_role(self):
+        from hl.items import item_fields
+
+        fields = item_fields({"item_id": "c", "parties": [
+            {"role": "from", "identifiers": [{"type": "msisdn", "value": "963094370078"}, {"type": "imei", "value": "353294702931926"}]},
+            {"role": "to", "identifiers": [{"type": "msisdn", "value": "963943636427"}]}]})
+        self.assertEqual("963094370078", fields["i360.parties.from.msisdn"])
+        self.assertEqual("353294702931926", fields["i360.parties.from.imei"])
+        self.assertEqual("963943636427", fields["i360.parties.to.msisdn"])
+        self.assertNotIn("i360.parties", fields)
+
+    def test_coverage_facet_filters_reach_hl_api(self):
+        client = RecordingClient()
+        coverage = [{"group": "coverage", "values": ["f1a50da7"]}]
+        ItemReader(client, mapping(), {"item_types": ["voice_call"], "facet_filters": coverage, "limit": 5,
+                                       "layer": "Cellular Locations", "fields": ["item_id"]}, 100).items()
+        self.assertEqual(coverage, client.bodies[0]["facet_filters"])
+
     def test_fields_keeps_only_the_named_paths(self):
         class Client(RecordingClient):
             def search_items(self, body):
