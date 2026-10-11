@@ -95,8 +95,13 @@ class ChatServiceClient:
                 raise AuthExpired(401, "signed_out", "Sign in again.") from None
             message = raw.decode("utf-8", "replace")[:300]
             raise HlError(exc.code, "chat_service_error", message or f"chat service answered {exc.code}") from None
-        except (urllib.error.URLError, socket.timeout, ConnectionError):
-            raise Unreachable(503, "chat_service_unreachable", "The i360 chat service is not reachable") from None
+        except (socket.timeout, TimeoutError):
+            raise Unreachable(504, "chat_service_timeout",
+                              f"The i360 chat service did not answer within {self.idle_timeout:g} s") from None
+        except (urllib.error.URLError, ConnectionError) as exc:
+            reason = getattr(exc, "reason", exc)
+            raise Unreachable(503, "chat_service_unreachable",
+                              f"The i360 chat service at {self.base_url} is not reachable ({reason})") from None
 
     def ask(self, body: dict[str, Any], conversation_id: str | None = None) -> Iterator[tuple[str, Any]]:
         headers = {"Accept": "text/event-stream"}
