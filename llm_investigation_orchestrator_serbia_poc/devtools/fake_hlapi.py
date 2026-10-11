@@ -40,6 +40,9 @@ from urllib.parse import parse_qs, unquote, urlparse
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 CONTRACT_VERSION = 252
+# Entity attachments are served as this 1x1 PNG (enough to test the photo proxy).
+FAKE_PNG = bytes.fromhex("89504e470d0a1a0a0000000d4948445200000001000000010806000000"
+                         "1f15c4890000000d49444154789c6360000002000154a24f5d0000000049454e44ae426082")
 SEARCH_TEXT_BUCKETS = ("english", "synopsis", "summary")
 
 
@@ -345,6 +348,13 @@ class FakeHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def _bytes(self, status: int, body: bytes, content_type: str) -> None:
+        self.send_response(status)
+        self.send_header("Content-Type", content_type)
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
     def _body(self) -> dict[str, Any]:
         length = int(self.headers.get("Content-Length", "0") or 0)
         raw = self.rfile.read(length) if length else b""
@@ -420,6 +430,9 @@ class FakeHandler(BaseHTTPRequestHandler):
                     return self._json(200, estate.types[name])
                 if path.startswith("/api/v1/entities/"):
                     parts = [unquote(p) for p in path[len("/api/v1/entities/"):].split("/")]
+                    if len(parts) == 4 and parts[2] == "files" and method == "GET":
+                        estate.read_instance(parts[0], parts[1], user)  # 404 when the entity is unknown
+                        return self._bytes(200, FAKE_PNG, "image/png")
                     if len(parts) == 2 and parts[1] == "search" and method == "POST":
                         return self._json(200, estate.search_instances(parts[0], self._body(), user))
                     if len(parts) == 1 and method == "POST":

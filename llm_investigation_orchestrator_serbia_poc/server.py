@@ -13,6 +13,7 @@ no local state and no secret.
 """
 from __future__ import annotations
 
+import copy
 import csv
 import io
 import json
@@ -88,6 +89,11 @@ class App:
         self.settings = settings
         self.mapping: Mapping = load_mapping(str(settings.mapping_path))
         self.profile = load_profile(settings)
+        if isinstance(self.profile.get("entity_mapping"), dict):
+            # The scenario's own entity mapping (e.g. i360 PERSON_OF_INTEREST) replaces the default one,
+            # on a copy: load_mapping() is cached and shared.
+            self.mapping = copy.copy(self.mapping)
+            self.mapping.entities = self.profile["entity_mapping"]
         self.snapshots = SnapshotCache(settings.snapshot_ttl_seconds)
 
     def client(self, token: str | None = None) -> HlClient:
@@ -411,6 +417,19 @@ class Handler(BaseHTTPRequestHandler):
             entity_id = str((query.get("subject_id") or query.get("entity_id") or [""])[0]).strip()
             derivation = analysis.derive_subscriber_identity(data.events, data.links, entity_id) if entity_id else None
             self.send_json(200, {"schema_version": 1, "derivations": [derivation] if derivation else []})
+            return
+        if path.startswith("/api/entity-files/"):
+            parts = [unquote(p) for p in path[len("/api/entity-files/"):].split("/")]
+            if len(parts) != 3 or not all(re.fullmatch(r"[A-Za-z0-9_.:-]{1,200}", p) for p in parts):
+                raise ValueError("Invalid entity file path")
+            entity_type, entity_id, file_id = parts
+            payload, headers = app.client(token)._request(
+                "GET", f"/api/v1/entities/{quote(entity_type, safe='')}/{quote(entity_id, safe='')}/files/{quote(file_id, safe='')}",
+                read=True, raw=True)
+            content_type = headers.get("Content-Type") or "application/octet-stream"
+            if not content_type.split(";")[0].strip().startswith(("image/", "video/")):
+                raise HlError(415, "unsupported_media", "Only image and video attachments are served")
+            self._send(200, payload, content_type)
             return
         if path.startswith("/api/records/") and path.endswith("/files"):
             self.send_json(200, self.record_files(token, unquote(path[len("/api/records/"):-len("/files")])))
