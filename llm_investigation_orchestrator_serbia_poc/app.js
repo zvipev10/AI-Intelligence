@@ -3726,6 +3726,11 @@ function cellularCallMapLocation(event, side) {
   const prefix = side === "a" ? "side_a" : "side_b";
   const locationId = event[`${prefix}_location_id`];
   const canonical = LOCATIONS[locationId];
+  if ((!locationId || !canonical) && side === "a" && event.latitude && event.longitude) {
+    // An i360 call has no location object, only its own point: use it for side A.
+    return { id: "", name: activeLocaleText("מיקום השיחה", "Call location"), lon: Number(event.longitude), lat: Number(event.latitude),
+      number: event[`${prefix}_sim`] || event[`${prefix}_number`] || "-" };
+  }
   if (!locationId || !canonical) return null;
   return {
     id: locationId,

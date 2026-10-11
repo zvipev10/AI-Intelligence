@@ -246,6 +246,26 @@ class PersonMappingTests(unittest.TestCase):
         self.assertNotIn("image_file_id", person)
 
 
+class CallRecordTests(unittest.TestCase):
+    def test_a_call_layer_feeds_the_call_viewer(self):
+        class Client(RecordingClient):
+            def search_items(self, body):
+                self.bodies.append(body)
+                return {"total": 1, "total_pages": 1, "items": [{
+                    "item_id": "c1", "item_type": "voice_call", "event_time": "2026-09-02T14:01:00Z", "duration_ms": 24032.0,
+                    "parties": [{"role": "from", "target_indication": "False", "identifiers": [{"type": "msisdn", "value": "963940952424"}]},
+                                {"role": "to", "target_indication": "True", "identifiers": [{"type": "msisdn", "value": "963094370078"},
+                                                                                            {"type": "imei", "value": "353294702931926"}]}]}]}
+
+        client = Client()
+        row = ItemReader(client, mapping(), {"queries": [{"item_types": ["voice_call"], "limit": 5, "layer": "Calls",
+                                                          "call_record": True}]}, 100).rows("en")[0]
+        self.assertNotIn("call_record", client.bodies[0])
+        self.assertEqual(("c1", "24.0"), (row["call_id"], row["call_duration_seconds"]))
+        self.assertEqual(("963094370078", "353294702931926"), (row["side_a_number"], row["side_a_imei"]))
+        self.assertEqual("963940952424", row["side_b_number"])
+
+
 class VideoFileTests(unittest.TestCase):
     def test_videos_use_the_browser_friendly_web_preview(self):
         from server import normalize_record_files

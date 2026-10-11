@@ -197,7 +197,8 @@
      "location.point.lat": "LATITUDE",
      "location.point.lon": "LONGITUDE",
      "messages.text": "SMS CONTENT"
-    }
+    },
+    "call_record": true
    },
    {
     "layer": "IPDR",

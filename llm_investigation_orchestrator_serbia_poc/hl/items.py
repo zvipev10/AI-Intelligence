@@ -56,6 +56,27 @@ def entity_presentation(record: dict[str, Any], entity_type: str) -> dict[str, A
     return record
 
 
+CALL_LAYERS: set[str] = set()
+
+
+def call_fields(item: dict[str, Any]) -> dict[str, str]:
+    """An i360 call as the app's call viewer reads it: call_id switches the viewer on; side A is the
+    target party (target_indication true), side B the other party."""
+    out = {"call_id": _cell(item.get("item_id") or ""), "call_started_at_utc": _cell(item.get("event_time") or "")}
+    if isinstance(item.get("duration_ms"), (int, float)):
+        out["call_duration_seconds"] = _cell(round(item["duration_ms"] / 1000, 1))
+    parties = [p for p in item.get("parties") or [] if isinstance(p, dict)]
+    target = next((p for p in parties if str(p.get("target_indication")).lower() == "true"), parties[0] if parties else {})
+    other = next((p for p in parties if p is not target), {})
+    for side, party in (("side_a", target), ("side_b", other)):
+        ids = {str(i.get("type")): _cell(i.get("value")) for i in party.get("identifiers") or [] if isinstance(i, dict)}
+        if ids.get("msisdn"):
+            out[f"{side}_number"] = out[f"{side}_sim"] = ids["msisdn"]
+        if ids.get("imei"):
+            out[f"{side}_imei"] = ids["imei"]
+    return out
+
+
 def item_fields(item: dict[str, Any]) -> dict[str, str]:
     """Every populated field of an i360 item as ``i360.<path>`` -> text, for "show all fields" layers.
 
@@ -232,6 +253,8 @@ class ItemReader:
         # "layer" is ours too: the layer (source_type) these items are shown in.
         layer = str(query.pop("layer", "") or "")
         query.pop("labels", None)  # display names for the layer's fields; read by the server, not sent
+        if query.pop("call_record", False) and layer:
+            CALL_LAYERS.add(layer)  # rows get the fields the app's call viewer reads (see call_fields)
         # "all_fields" is ours too: rows carry every populated item field as i360.<path>;
         # "fields" (a list of paths such as ["item_id", "location"]) keeps only those fields.
         everything = query.pop("all_fields", False)
@@ -302,6 +325,8 @@ class ItemReader:
                 self._collect_window((start, end), found)
             if self.layer or self.all_fields:
                 mark = {"_layer": self.layer} if self.layer else {}
+                if self.layer in CALL_LAYERS:
+                    mark["_call_record"] = True
                 if self.all_fields:
                     mark["_all_fields"] = self.all_fields
                 found = [{**hit, **mark} for hit in found]
@@ -337,6 +362,8 @@ class ItemReader:
     def _with_layer(row: dict[str, str], item: dict[str, Any]) -> dict[str, str]:
         if item.get("_layer"):
             row["source_type"] = str(item["_layer"])
+        if item.get("_call_record"):
+            row.update(call_fields(item))
         if item.get("_all_fields"):
             fields = item_fields(item)
             only = item["_all_fields"] if isinstance(item["_all_fields"], list) else None
