@@ -94,6 +94,8 @@ def item_fields(item: dict[str, Any]) -> dict[str, str]:
             else:
                 out[path] = json.dumps(value, ensure_ascii=False, separators=(",", ":"))
             return
+        if path.endswith("_time") and isinstance(value, (int, float)) and value > 10**11:  # epoch ms -> ISO UTC
+            value = datetime.fromtimestamp(value / 1000, timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
         out[path] = _cell(value)
 
     walk({k: v for k, v in item.items() if k != "parties"}, "", 0)

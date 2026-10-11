@@ -144,6 +144,13 @@ class AllFieldsTests(unittest.TestCase):
         self.assertEqual("COVERAGE: c-1", fields["i360.context"])
         self.assertNotIn("i360.user_agents_data", fields)
 
+    def test_epoch_millisecond_times_become_iso(self):
+        from hl.items import item_fields
+
+        fields = item_fields({"ip": {"ip_sessions": [{"start_time": 1788650807000, "destination_port": 443}]}})
+        self.assertEqual("2026-09-05T23:26:47Z", fields["i360.ip.ip_sessions.start_time"])
+        self.assertEqual("443", fields["i360.ip.ip_sessions.destination_port"])
+
     def test_parties_are_flattened_by_role(self):
         from hl.items import item_fields
 

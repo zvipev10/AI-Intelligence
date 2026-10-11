@@ -136,8 +136,10 @@
      "item_id",
      "event_time",
      "item_type",
-     "sub_type",
-     "source_application"
+     "source_application",
+     "fe_correlation_ids",
+     "ip",
+     "additional_info"
     ]
    }
   ]
