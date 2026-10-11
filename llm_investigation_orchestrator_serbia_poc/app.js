@@ -4578,7 +4578,9 @@ function renderEvidence() {
     const fieldLabels = activeLayer.fieldLabels || {};
     const named = Object.keys(fieldLabels).filter(key => keys.includes(key));
     const first = ["i360.item_id", "i360.event_time", "i360.item_type", "i360.sub_type", "i360.source_application"].filter(key => keys.includes(key) && !named.includes(key));
-    const columns = [...named, ...first, ...keys.filter(key => !first.includes(key) && !named.includes(key))];
+    const ordered = [...named, ...first, ...keys.filter(key => !first.includes(key) && !named.includes(key))];
+    // The item id is always the first column, in every layer.
+    const columns = keys.includes("i360.item_id") ? ["i360.item_id", ...ordered.filter(key => key !== "i360.item_id")] : ordered;
     head.innerHTML = `<tr><th class="result-map-action-column" data-result-action-column="true"></th>${columns.map(key => `<th>${escapeHtml(fieldLabels[key] || viewerFieldLabel(key))}</th>`).join("")}</tr>`;
     body.innerHTML = activeItems.length ? activeItems.map(event => {
       const eventId = String(event.record_id || event.event_id || "");
