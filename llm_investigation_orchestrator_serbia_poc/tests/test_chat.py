@@ -206,12 +206,19 @@ class ChatApiTests(unittest.TestCase):
     def test_investigation_questions_avoid_i360_memory_words(self):
         browser = self.signed_in()
         first = self.ask(browser, {"message": "What's saved in this investigation?", "investigation_id": "INV-1"})
-        self.assertEqual("What's linked in this investigation?", self.chat.asks[-1]["question"])
+        # A bare "What's linked" reads to i360 as an entity name, so the whole question is replaced.
+        self.assertEqual("Which records are linked to this investigation?", self.chat.asks[-1]["question"])
         self.assertEqual("INV-1", self.chat.asks[-1]["focus"]["id"])
         done = [d for e, d in first if e == "done"][0]
         self.ask(browser, {"message": "convoy", "investigation_id": "INV-1", "scope": "all",
                            "i360_conversation_id": done["i360_conversation_id"]})
         self.assertIsNone(self.chat.asks[-1]["focus"])  # the conversation's focus is cleared, not kept
+
+    def test_investigation_wording(self):
+        from hl.chat import investigation_wording
+        for question in ("What is in memory?", "what's stored", "What is linked to this investigation?"):
+            self.assertEqual("Which records are linked to this investigation?", investigation_wording(question))
+        self.assertEqual("Which linked records mention trucks?", investigation_wording("Which saved records mention trucks?"))
 
     def test_follow_up_opens_a_cited_record(self):
         browser = self.signed_in()

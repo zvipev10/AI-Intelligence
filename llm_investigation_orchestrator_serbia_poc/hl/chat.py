@@ -262,6 +262,8 @@ Use the fewest tool calls that fulfil the request, then stop and answer in one o
   again with another tool.
 - The conversation lives in i360: you see only the current message, the last answer's cited items and
   what the app shows. Anything about earlier turns goes to ask_i360.
+If i360 says the investigation holds nothing that matches and cites records outside it, do not show
+them and do not call them the investigation's records: say that nothing in the investigation matched.
 To i360, what the investigation has saved is "the records linked to this investigation"; never say
 "memory" or "saved" to it, because there they mean the user's own chat notes.
 Never invent ids, layer names or facts. If a request is ambiguous, ask one short question instead.
@@ -324,8 +326,17 @@ _MEMORY_WORDS = [(re.compile(r"\b(?:the |this |our |my )?investigation'?s memory
                  (re.compile(r"\b(?:saved|stored)\b", re.I), "linked")]
 
 
+# "What's saved/linked/in memory?" as a whole question. A bare "What's linked" reads to i360 as an entity name.
+_WHAT_IS_SAVED = re.compile(r"^\W*(?:what|which)(?:'s|\s+is|\s+are|\s+was|\s+were|\s+has\s+been|\s+have\s+been)?\s+"
+                            r"(?:saved|stored|linked|kept|in\s+(?:the\s+|this\s+|our\s+|its\s+)?(?:investigation'?s\s+)?memory)\b"
+                            r"(?:\s+(?:in|to|for|with)\s+(?:the|this|our)\s+investigation)?\W*$", re.I)
+INVESTIGATION_RECORDS_QUESTION = "Which records are linked to this investigation?"
+
+
 def investigation_wording(question: str) -> str:
     """The question with i360's own words for its per-user notes ('memory', 'saved') replaced by the investigation's links."""
+    if _WHAT_IS_SAVED.match(question):
+        return INVESTIGATION_RECORDS_QUESTION
     for pattern, words in _MEMORY_WORDS:
         question = pattern.sub(words, question)
     return question
@@ -534,6 +545,7 @@ class ChatTurn:
             "has_places": self.has_places,
             "has_time_series": bool(agg and not self.has_places),
             "cited_items": citations[:MAX_CITED_FOR_MODEL],
+            **({"widen": answer["widen"]} if answer.get("widen") else {}),
         }
 
     def known_ids(self) -> set[str]:
