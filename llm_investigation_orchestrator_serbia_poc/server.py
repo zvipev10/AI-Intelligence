@@ -426,7 +426,11 @@ class Handler(BaseHTTPRequestHandler):
             return
         if path == "/api/dataset/events":
             snap = app.snapshot(token)
-            body = rows_to_csv(app.rows(snap, locale))
+            linked = {str(e.get("event_id")): ";".join(e.get("related_entity_ids") or [])
+                      for e in app.dataset(token, locale).events if e.get("related_entity_ids")}
+            rows = [{**row, "related_entity_ids": linked[str(row.get("event_id"))]} if str(row.get("event_id")) in linked else row
+                    for row in app.rows(snap, locale)]
+            body = rows_to_csv(rows)
             self._send(200, body, "text/csv; charset=utf-8",
                        extra={"X-Dataset-Truncated": "true" if snap.truncated else "false"})
             return

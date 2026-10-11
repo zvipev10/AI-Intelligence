@@ -11,7 +11,8 @@
    "user_agents_data",
    "ip",
    "context",
-   "messages"
+   "messages",
+   "related_objects"
   ],
   "fields": {
    "event_id": "tags[type=event_id].value | item_id",

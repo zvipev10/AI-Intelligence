@@ -41,6 +41,7 @@
  },
  "dataset_version": "i360",
  "items_query": {
+  "i360_links": true,
   "queries": [
    {
     "item_types": [
@@ -217,7 +218,8 @@
      "source_application",
      "fe_correlation_ids",
      "ip",
-     "additional_info"
+     "additional_info",
+     "asset_identifier"
     ],
     "labels": {
      "fe_correlation_ids": "record_id",
@@ -236,7 +238,8 @@
      "additional_info.ip_out": "ip_out",
      "additional_info.mac": "mac",
      "additional_info.SUBNETMASK": "SUBNETMASK",
-     "additional_info.source_port": "source_port"
+     "additional_info.source_port": "source_port",
+     "asset_identifier": "imei"
     }
    },
    {

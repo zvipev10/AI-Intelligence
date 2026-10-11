@@ -3386,7 +3386,12 @@ function initializeEntityLocationMap(item) {
 
 function personWorkspaceHtml(item) {
   const points = entityRecordLocationPoints(item);
-  const records = [...new Set(points.flatMap(point => point.records))];
+  // Every connected record, with or without a location (an IPDR session has none).
+  const personId = String(item?.entity_id || "");
+  const splitIds = value => Array.isArray(value) ? value.map(String) : String(value || "").split(/[,;|\s]+/).filter(Boolean);
+  const linkedRecords = (typeof state !== "undefined" && Array.isArray(state.events) ? state.events : []).filter(event => personId && (String(event.entity_id || "") === personId
+    || [event.related_entity_ids, event.side_a_entity_id].some(value => splitIds(value).includes(personId))));
+  const records = [...new Set([...points.flatMap(point => point.records), ...linkedRecords.map(event => event.record_id || event.event_id).filter(Boolean)])];
   const detail = (label, value, direction = "auto") => value ? `<div><dt>${escapeHtml(label)}</dt><dd dir="${direction}">${escapeHtml(viewerValue(value))}</dd></div>` : "";
   const mapPanel = points.length
     ? entityLocationMapHtml(item)
@@ -3440,13 +3445,21 @@ function recordLinkedEntitiesHtml(item) {
     entity_imei_to_ipdr_imei_v1: "IMEI",
     entity_imei_to_cellular_target_imei_v1: "IMEI",
     entity_imei_to_call_party_v1: activeLocaleText("IMEI של צד א׳", "Side A IMEI"),
-    entity_imei_to_call_speaker_imei_v1: activeLocaleText("IMEI דובר בתמליל", "Transcript speaker IMEI")
+    entity_imei_to_call_speaker_imei_v1: activeLocaleText("IMEI דובר בתמליל", "Transcript speaker IMEI"),
+    i360_related_object_v1: "i360 link"
   }[rule] || activeLocaleText("התאמת שדה", "Field match"));
   const rows = links.map(link => {
     const entityId = String(link.entity_id || "");
     const kind = String(link.entity_type || "").toLowerCase() === "person" ? "person" : "organization";
     const name = link.entity_name || entityId;
     const fields = `${link.record_field || "record"} = ${link.entity_field || "entity"}`;
+    if (link.rule_id === "i360_related_object_v1") {
+      // i360 does not record why a record is linked; a shared identifier is the app's own check.
+      const basis = link.matched_value
+        ? `${escapeHtml(activeLocaleText("לפי", "via"))} ${escapeHtml(String(link.entity_field || "").replace("telecom.", "").toUpperCase())} <code dir="ltr">${escapeHtml(link.matched_value)}</code> (<code dir="ltr">${escapeHtml(link.record_field || "")}</code>, ${escapeHtml(activeLocaleText("התאמה של האפליקציה", "matched by the app"))})`
+        : escapeHtml(activeLocaleText("הבסיס לא תועד", "basis not recorded"));
+      return `<li>${entityViewerLinkHtml(entityId, name, kind)}<span>i360 link · ${basis}</span></li>`;
+    }
     return `<li>${entityViewerLinkHtml(entityId, name, kind)}<span>${escapeHtml(ruleLabel(link.rule_id))} · <code dir="ltr">${escapeHtml(fields)}</code> · <code dir="ltr">${escapeHtml(link.matched_value || "—")}</code></span></li>`;
   }).join("");
   return `<section class="object-viewer-evidence record-entity-links"><h3>${escapeHtml(activeLocaleText("ישויות מקושרות", "Linked entities"))}</h3><ul>${rows}</ul></section>`;

@@ -316,3 +316,15 @@ class UnprovisionedStateTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class I360LinkFieldsTests(unittest.TestCase):
+    def test_links_and_identifiers_from_the_item(self):
+        from hl.items import i360_identifiers, i360_links
+        item = {"asset_identifier": "353294702931926",
+                "related_objects": [{"id": "p-1", "type": "PERSON_OF_INTEREST", "relation_type": "associated"}, {"label": "no id"}],
+                "parties": [{"target_indication": "True", "identifiers": [{"type": "imei", "value": "111"}]},
+                            {"role": "from", "identifiers": [{"type": "msisdn", "value": "222"}]}]}
+        self.assertEqual([{"id": "p-1", "type": "PERSON_OF_INTEREST", "relation": "associated"}], i360_links(item))
+        self.assertEqual([["asset_identifier", "353294702931926"], ["parties.target.imei", "111"], ["parties.from.msisdn", "222"]],
+                         i360_identifiers(item))

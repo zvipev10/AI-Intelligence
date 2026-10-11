@@ -27,7 +27,7 @@ PAGE_SIZE = 100
 EARLIEST = "1970-01-01T00:00:00Z"
 
 ALL_FIELDS_PREFIX = "i360."
-_SKIP_KEYS = {"urls", "found", "parent_ids"}
+_SKIP_KEYS = {"urls", "found", "parent_ids", "related_objects"}
 
 
 def _cell(value: Any) -> str:
@@ -74,6 +74,31 @@ def call_fields(item: dict[str, Any]) -> dict[str, str]:
             out[f"{side}_number"] = out[f"{side}_sim"] = ids["msisdn"]
         if ids.get("imei"):
             out[f"{side}_imei"] = ids["imei"]
+    return out
+
+
+def i360_links(item: dict[str, Any]) -> list[dict[str, str]]:
+    """The entities i360 links this item to (its related_objects): id, type, relation."""
+    out = []
+    for obj in item.get("related_objects") or []:
+        if isinstance(obj, dict) and obj.get("id"):
+            out.append({"id": str(obj["id"]), "type": str(obj.get("type") or ""), "relation": str(obj.get("relation_type") or "")})
+    return out
+
+
+def i360_identifiers(item: dict[str, Any]) -> list[list[str]]:
+    """The item's identifier values as [field, value]: asset_identifier and each party's identifiers."""
+    out = []
+    if item.get("asset_identifier") not in (None, ""):
+        out.append(["asset_identifier", str(item["asset_identifier"])])
+    for party in item.get("parties") or []:
+        if not isinstance(party, dict):
+            continue
+        flag = str(party.get("target_indication")).strip().lower()
+        role = "target" if flag == "true" else "other" if flag == "false" else str(party.get("role") or "party")
+        for ident in party.get("identifiers") or []:
+            if isinstance(ident, dict) and ident.get("type") and ident.get("value") not in (None, ""):
+                out.append([f"parties.{role}.{ident['type']}", str(ident["value"])])
     return out
 
 
@@ -229,6 +254,9 @@ class ItemReader:
         self.client = client
         self.mapping = mapping
         query = dict(base_query or {})
+        # "i360_links" (profile-wide): record-to-entity links are i360's own (related_objects), not the app's
+        # field-match rules.
+        self.i360_links = bool(query.pop("i360_links", False))
         # A profile may list several queries ("queries"); each one is read on its own and may name the
         # layer its items appear in ("layer"). A plain items_query is one query, as before.
         self.specs = [self._spec(q) for q in (query.pop("queries", None) or [query])]
@@ -323,8 +351,10 @@ class ItemReader:
                     page += 1
             else:
                 self._collect_window((start, end), found)
-            if self.layer or self.all_fields:
+            if self.layer or self.all_fields or self.i360_links:
                 mark = {"_layer": self.layer} if self.layer else {}
+                if self.i360_links:
+                    mark["_i360_links"] = True
                 if self.layer in CALL_LAYERS:
                     mark["_call_record"] = True
                 if self.all_fields:
@@ -360,6 +390,9 @@ class ItemReader:
 
     @staticmethod
     def _with_layer(row: dict[str, str], item: dict[str, Any]) -> dict[str, str]:
+        if item.get("_i360_links"):
+            row["i360_links"] = json.dumps(i360_links(item), ensure_ascii=False)
+            row["i360_identifiers"] = json.dumps(i360_identifiers(item), ensure_ascii=False)
         if item.get("_layer"):
             row["source_type"] = str(item["_layer"])
         if item.get("_call_record"):
