@@ -224,6 +224,8 @@ TOOLS = [
                                                        "so references like 'them' or 'that day' need no rewriting. "
                                                        "Never say 'memory' or 'saved' to i360: there they mean the user's "
                                                        "own chat notes. Ask about the records linked to the investigation"},
+         "entity_id": {"type": "string", "description": "For a question about one entity i360 returned "
+                                                        "(his calls, where she was): its id"},
          "scope": {"type": "string", "enum": ["all"],
                    "description": "Omit it: the user's panel choice applies. 'all' searches everything in i360, only "
                                   "when the user asks for all data or for something outside the panel's scope"}},
@@ -247,10 +249,10 @@ TOOLS = [
         "viewer (from the context). "
         "Never make up an id.",
         {"item_id": {"type": "string"}}, ["item_id"]),
-    _fn("open_person",
-        "Open a person from the app's people layer in the person viewer, by name. Display only: it reads nothing "
-        "from i360. If the person is not in the app, ask_i360 with scope all.",
-        {"name": {"type": "string", "description": "The person's name as the user wrote it"}}, ["name"]),
+    _fn("open_entity",
+        "Open a person or other entity in the viewer: an entity i360 returned (entities in its answer or the "
+        "context), or an id the user typed. Never make up an id.",
+        {"entity_id": {"type": "string"}}, ["entity_id"]),
     _fn("save_to_memory",
         "Propose saving a layer shown in the app to the open investigation's memory. The user must confirm; "
         "nothing is saved until they do.",
@@ -269,8 +271,10 @@ Use the fewest tool calls that fulfil the request, then stop and answer in one o
   Use open_layer only when the user asks for a layer.
 - What a tool has put on screen (the record viewer, a chat layer) is done: never show it
   again with another tool.
-- People and other entities by name: "open/show <name>" is open_person. A question about a person goes to
-  ask_i360 with scope all, because the investigation and our layers' scopes hold records, not people.
+- People and other entities come from i360 too. "Open/show <name>" or "who is <name>": ask_i360 (scope
+  all: the investigation and our layers' scopes hold records, not entities), then open_entity on the entity
+  it returned. If it returned several that match, list their names and ask which one. A follow-up about an
+  entity i360 already returned goes to ask_i360 with its entity_id.
 - Name the scope that was searched as it was (this investigation, our layers, or all data).
 - The conversation lives in i360: you see only the current message, the last answer's cited items and
   what the app shows. Anything about earlier turns goes to ask_i360.
@@ -288,7 +292,7 @@ class ToolHost(Protocol):
     def catalog_layers(self) -> list[dict[str, Any]]: ...
     def item_layers(self, item_ids: list[str]) -> list[dict[str, Any]]: ...
     def layers_scope(self) -> dict[str, Any] | None: ...
-    def people(self) -> list[dict[str, Any]]: ...
+    def entity(self, entity_type: str, entity_id: str) -> dict[str, Any] | None: ...
 
 
 SCOPES = {"investigation", "layers", "all"}
@@ -307,6 +311,7 @@ class TurnContext:
     i360_scope: str = ""  # the scope the i360 conversation was last asked in
     i360_last_turns: list[str] = field(default_factory=list)
     previous_citations: list[dict[str, str]] = field(default_factory=list)
+    previous_entities: list[dict[str, str]] = field(default_factory=list)
     open_layers: list[str] = field(default_factory=list)
     viewer_item_id: str = ""
     timezone: str = ""
@@ -330,6 +335,11 @@ class TurnContext:
             i360_scope=str(request.get("i360_scope") or "") if request.get("i360_scope") in SCOPES else "",
             i360_last_turns=strings(request.get("i360_last_turns"), 6),
             previous_citations=cited_items(request.get("previous_citations")),
+            previous_entities=[{"id": str(e.get("id") or "")[:240], "type": str(e.get("type") or "")[:80],
+                                "name": str(e.get("name") or "")[:160]}
+                               for e in (request.get("previous_entities") or [])[:100]
+                               if isinstance(e, dict) and str(e.get("id") or "").strip()]
+                              if isinstance(request.get("previous_entities"), list) else [],
             open_layers=strings(request.get("open_layers"), 40),
             viewer_item_id=str(request.get("viewer_item_id") or "")[:240],
             timezone=str(request.get("tz") or "")[:64],
@@ -373,6 +383,39 @@ def cited_items(value: Any) -> list[dict[str, str]]:
     return out
 
 
+_ENTITY_NAME_KEYS = ("entity_name", "canonical_name", "name", "title", "label")
+
+
+def answer_entities(answer: dict[str, Any]) -> list[dict[str, str]]:
+    """Entities an i360 answer returned (lookup lists, entity cards, outside_entities), as id, type and name.
+
+    Records arrive as citations; entities arrive elsewhere in the answer, in shapes that vary by leg, so any
+    object that names an entity (entity_id, or id with entity_type) is taken, once.
+    """
+    found: dict[str, dict[str, str]] = {}
+
+    def visit(value: Any, depth: int) -> None:
+        if depth > 6 or len(found) >= 100:
+            return
+        if isinstance(value, list):
+            for entry in value[:200]:
+                visit(entry, depth + 1)
+        elif isinstance(value, dict):
+            entity_id = value.get("entity_id") or (value.get("id") if value.get("entity_type") or value.get("kind") == "entity" else None)
+            if isinstance(entity_id, (str, int)) and str(entity_id).strip():
+                entity_type = value.get("entity_type") or value.get("type") or ""
+                name = next((value[k] for k in _ENTITY_NAME_KEYS if isinstance(value.get(k), str) and value[k].strip()), "")
+                found.setdefault(str(entity_id)[:240], {"id": str(entity_id)[:240], "type": str(entity_type)[:80],
+                                                        "name": str(name)[:160]})
+            for key, child in value.items():
+                if key not in {"citations", "content", "follow", "claims"}:
+                    visit(child, depth + 1)
+
+    for key in ("entities", "cards", "outside_entities", "lookup", "subject", "entity"):
+        visit(answer.get(key), 0)
+    return [e for e in found.values() if not e["type"].upper().startswith("AICHAT_")]
+
+
 class ChatTurn:
     """One message, start to finish. ``emit(event, data)`` writes to the browser's stream."""
 
@@ -385,6 +428,7 @@ class ChatTurn:
         self.ctx = context
         self.chat_model = chat_model
         self.cited: list[dict[str, str]] = list(context.previous_citations)
+        self.entities: list[dict[str, str]] = list(context.previous_entities)
         self.on_screen: set[str] = set()  # records this turn already put on screen
         self.cited_this_turn: list[str] = []
         self.has_places = False
@@ -436,7 +480,8 @@ class ChatTurn:
             if note:
                 self.emit("note", {"text": note})
         self.emit("done", {"i360_conversation_id": self.i360_conversation_id, "i360_scope": self.i360_scope,
-                           "i360_last_turns": self.i360_last_turns[-6:], "citations": self.cited[:500]})
+                           "i360_last_turns": self.i360_last_turns[-6:], "citations": self.cited[:500],
+                           "entities": self.entities[:100]})
 
     def fallback(self, reason: str) -> None:
         """No model: ask i360 directly and show what it cited (the plan's option 1)."""
@@ -468,6 +513,9 @@ class ChatTurn:
                          "(from_last_answer=true shows them all). In order:")
             lines += [f"{n}. {c['id']} | {c['type']} | {c['time']} | {c['text']}"
                       for n, c in enumerate(self.ctx.previous_citations[:MAX_CITED_FOR_MODEL], 1)]
+        if self.ctx.previous_entities:
+            lines.append("Entities the previous i360 answer returned (id | type | name):")
+            lines += [f"- {e['id']} | {e['type']} | {e['name']}" for e in self.ctx.previous_entities[:30]]
         if self.ctx.viewer_item_id:
             lines.append("'This record' or 'it' means the record open in the viewer.")
         elif len(self.ctx.previous_citations) == 1:
@@ -492,7 +540,7 @@ class ChatTurn:
     # -- tools ------------------------------------------------------------------------------
     def run_tool(self, name: str, args: dict[str, Any]) -> dict[str, Any]:
         handler = {"ask_i360": self.ask_i360, "show_items": self.show_items, "open_layer": self.open_layer,
-                   "open_item": self.open_item, "open_person": self.open_person,
+                   "open_item": self.open_item, "open_entity": self.open_entity,
                    "save_to_memory": self.save_to_memory}.get(name)
         if handler is None:
             return {"error": f"unknown tool {name}"}
@@ -530,6 +578,11 @@ class ChatTurn:
             body["question"] = investigation_wording(question)
         elif self.i360_conversation_id:
             body["focus"] = None  # a conversation keeps its focus until it is cleared
+        about = next((e for e in self.entities if e["id"] == str(args.get("entity_id") or "")), None)
+        if about:
+            body["entity"] = {"id": about["id"], "type": about["type"], "name": about["name"]}
+            if scope == "layers":
+                scope = "all"  # a records scope would hide the entity's links
         if self.ctx.timezone:
             body["tz"] = self.ctx.timezone
         if scope == "layers":
@@ -569,6 +622,9 @@ class ChatTurn:
         self.cited = citations
         cards = answer.get("cards") if isinstance(answer.get("cards"), dict) else {}
         agg = cards.get("agg") if isinstance(cards.get("agg"), dict) else {}
+        entities = answer_entities(answer)
+        if entities:
+            self.entities = entities
         self.has_places = bool(cards.get("place") or agg.get("points") or
                                any(isinstance(b, dict) and "lat" in b for b in agg.get("buckets") or []))
         return {
@@ -578,6 +634,7 @@ class ChatTurn:
             "has_places": self.has_places,
             "has_time_series": bool(agg and not self.has_places),
             "cited_items": citations[:MAX_CITED_FOR_MODEL],
+            "entities": entities[:30],
             **({"widen": answer["widen"]} if answer.get("widen") else {}),
         }
 
@@ -648,25 +705,20 @@ class ChatTurn:
         self.emit("step", {"text": "Opened the record viewer", "tool": "open_item"})
         return {"opened": item_id, "note": "the record is open in the viewer; nothing else is needed to show it"}
 
-    def open_person(self, args: dict[str, Any]) -> dict[str, Any]:
-        wanted = " ".join(str(args.get("name") or "").lower().split())[:120]
-        if not wanted:
-            return {"error": "name the person"}
-        people = [p for p in self.host.people() if p.get("entity_id")]
-        def name(p: dict[str, Any]) -> str:
-            return " ".join(str(p.get("canonical_name") or p.get("entity_name") or "").lower().split())
-        found = [p for p in people if name(p) == wanted] or \
-                [p for p in people if all(word in name(p).split() for word in wanted.split())]
-        if not found:
-            return {"error": f"no person named '{args.get('name')}' in the app's people layer; ask_i360 with scope all"}
-        if len(found) > 1:
-            return {"status": "clarification_required",
-                    "candidates": [p.get("canonical_name") or p.get("entity_name") for p in found][:10]}
-        person = found[0]
-        self.emit("action", {"kind": "open_person", "entity_id": person["entity_id"], "entity": person})
-        self.emit("step", {"text": f"Opened {person.get('canonical_name') or person['entity_id']}", "tool": "open_person"})
-        return {"opened": person.get("canonical_name") or person["entity_id"],
-                "note": "the person is open in the viewer; nothing else is needed to show them"}
+    def open_entity(self, args: dict[str, Any]) -> dict[str, Any]:
+        entity_id = str(args.get("entity_id") or "").strip()[:240]
+        known = next((e for e in self.entities if e["id"] == entity_id), None)
+        typed = len(entity_id) >= 4 and entity_id in self.ctx.message
+        if not known and not typed:
+            return {"error": "open_entity takes an entity i360 returned or an id the user typed; ask i360 first"}
+        # Read only to draw it in the viewer, with the user's token; nothing goes back to the model.
+        entity = self.host.entity(known["type"] if known else "", entity_id)
+        if not entity:
+            return {"error": f"no readable entity with id {entity_id}"}
+        self.emit("action", {"kind": "open_entity", "entity_id": entity_id, "entity": entity})
+        name = (known or {}).get("name") or entity.get("canonical_name") or entity_id
+        self.emit("step", {"text": f"Opened {name}", "tool": "open_entity"})
+        return {"opened": name, "note": "the entity is open in the viewer; nothing else is needed to show it"}
 
     def save_to_memory(self, args: dict[str, Any]) -> dict[str, Any]:
         if not self.ctx.investigation_id:

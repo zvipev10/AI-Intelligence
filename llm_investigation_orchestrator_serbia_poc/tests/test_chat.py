@@ -91,19 +91,38 @@ class ChatUnitTests(unittest.TestCase):
         turn.ask_i360({"question": "find him everywhere", "scope": "all"})
         self.assertNotIn("scope", asked[-1])
 
-    def test_open_person_opens_someone_from_the_people_layer(self):
-        events = []
+    def test_entities_come_from_i360_and_open_in_the_viewer(self):
+        from hl.chat import answer_entities
+        answer = {"leg": "lookup", "citations": [{"id": "item-1", "type": "image"}],
+                  "cards": {"list": {"rows": [{"entity_id": "p-1", "entity_type": "PERSON_OF_INTEREST", "entity_name": "Arman Rahimi"},
+                                              {"id": "p-2", "entity_type": "PERSON_OF_INTEREST", "name": "Lena Rahimi"},
+                                              {"entity_id": "c-1", "entity_type": "AICHAT_ENTRY"}]}}}
+        self.assertEqual([{"id": "p-1", "type": "PERSON_OF_INTEREST", "name": "Arman Rahimi"},
+                          {"id": "p-2", "type": "PERSON_OF_INTEREST", "name": "Lena Rahimi"}], answer_entities(answer))
+        asked, events = [], []
+
+        class Chat:
+            def ask(self, body, conversation_id):
+                asked.append(body)
+                return iter([("answer", answer)])
 
         class Host:
-            def people(self):
-                return [{"entity_id": "p-1", "canonical_name": "Arman Rahimi", "entity_type": "person"},
-                        {"entity_id": "p-2", "canonical_name": "Lena Rahimi", "entity_type": "person"}]
+            def entity(self, entity_type, entity_id):
+                return {"entity_id": entity_id, "entity_type": "person", "canonical_name": "Arman Rahimi"}
 
-        turn = ChatTurn(None, None, Host(), lambda e, d: events.append((e, d)), TurnContext.from_request({"message": "x"}))
-        self.assertEqual("Arman Rahimi", turn.open_person({"name": "arman  Rahimi"})["opened"])
+        turn = ChatTurn(None, Chat(), Host(), lambda e, d: events.append((e, d)),
+                        TurnContext.from_request({"message": "open Arman Rahimi", "scope": "layers"}))
+        self.assertIn("error", turn.open_entity({"entity_id": "p-1"}))  # not returned by i360 yet
+        result = turn.ask_i360({"question": "open Arman Rahimi", "scope": "all"})
+        self.assertEqual(["p-1", "p-2"], [e["id"] for e in result["entities"]])
+        self.assertEqual("Arman Rahimi", turn.open_entity({"entity_id": "p-1"})["opened"])
         self.assertEqual("p-1", [d for e, d in events if e == "action"][-1]["entity_id"])
-        self.assertEqual("clarification_required", turn.open_person({"name": "Rahimi"})["status"])
-        self.assertIn("ask_i360", turn.open_person({"name": "Nobody Here"})["error"])
+        turn.ask_i360({"question": "his calls", "entity_id": "p-1"})
+        self.assertEqual({"id": "p-1", "type": "PERSON_OF_INTEREST", "name": "Arman Rahimi"}, asked[-1]["entity"])
+        self.assertNotIn("scope", asked[-1])  # a records scope would hide his links
+        ctx = TurnContext.from_request({"message": "his calls", "previous_entities": [
+            {"id": "p-1", "type": "PERSON_OF_INTEREST", "name": "Arman Rahimi"}, {"no": "id"}]})
+        self.assertEqual(["p-1"], [e["id"] for e in ctx.previous_entities])
 
     def test_open_item_takes_an_id_the_user_typed(self):
         class Host:

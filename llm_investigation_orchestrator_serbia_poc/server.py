@@ -29,10 +29,10 @@ from urllib.parse import parse_qs, quote, unquote, urlparse
 
 import analysis
 from analysis import Dataset, normalize_locale, require_investigation_id
-from hl.chat import ChatServiceClient, ChatTurn, ClientGone, LlmClient, TurnContext
+from hl.chat import ChatServiceClient, ChatTurn, ClientGone, LlmClient, TurnContext, answer_entities
 from hl.client import AuthExpired, HlClient, HlError
 from hl.config import ROOT, Settings, load_settings
-from hl.items import ItemReader, Snapshot, SnapshotCache, item_fields, layers_search
+from hl.items import ItemReader, Snapshot, SnapshotCache, entity_presentation, item_fields, layers_search
 from hl.mapping import Mapping, load_mapping
 from hl.state import MEMORY_GROUPS, StateStore
 
@@ -134,6 +134,24 @@ class App:
     def investigation_item_layers(self, token: str, investigation_id: str, locale: str) -> list[dict[str, Any]]:
         """Items attached to an i360 investigation, as rows with every field, grouped by layer."""
         return self.item_groups(self.state(token).attached_items(investigation_id, self.mapping.get_include), locale)
+
+    def entity_record(self, token: str, entity_type: str, entity_id: str) -> dict[str, Any] | None:
+        """One entity by id (its type from i360, or else the scenario's entity types), as the viewer draws it."""
+        client = self.client(token)
+        for candidate in [entity_type] if entity_type else list(self.mapping.entities.get("types") or []):
+            try:
+                instance = client.get_entity(candidate, entity_id)
+            except HlError as exc:
+                if exc.status in {400, 403, 404, 422}:
+                    continue
+                raise
+            record = entity_presentation(self.mapping.instance_to_entity(instance), candidate)
+            record["entity_id"] = record.get("entity_id") or entity_id
+            if not record.get("entity_type"):
+                record["entity_type"] = "person" if "PERSON" in candidate.upper() else candidate.lower()
+            record.setdefault("canonical_name", instance.get("entity_name") or (instance.get("general") or {}).get("entity_name") or entity_id)
+            return record
+        return None
 
     def item_layers(self, token: str, item_ids: list[str], locale: str) -> list[dict[str, Any]]:
         """Given i360 items (read in full, in the order asked), grouped by layer; unknown ids are skipped."""
@@ -532,14 +550,20 @@ class Handler(BaseHTTPRequestHandler):
             detail = {"show_items": lambda: f"{sum(len(g.get('rows') or []) for g in data.get('groups') or [])} rows, view {data.get('view')}",
                       "open_item": lambda: f"record {row.get('record_id') or row.get('event_id') or ''} item {row.get('i360_item_id') or ''}",
                       "open_layer": lambda: f"{data.get('layer_id')} view {data.get('view')}",
-                      "open_person": lambda: f"person {data.get('entity_id')}"}.get(str(data.get("kind")), lambda: "")()
+                      "open_entity": lambda: f"entity {data.get('entity_id')}"}.get(str(data.get("kind")), lambda: "")()
             line = f"action {data.get('kind')}: {detail}"
         elif event in {"note", "error"}:
             line = f"{event}: {str(data.get('text') or data.get('message') or '')[:200]}"
         elif event == "i360" and data.get("event") in {"answer", "error"}:
             inner = data.get("data") or {}
-            line = (f"i360 answer: {len(inner.get('citations') or [])} citations, leg {inner.get('leg')}"
+            cards = inner.get("cards") if isinstance(inner.get("cards"), dict) else {}
+            line = (f"i360 answer: {len(inner.get('citations') or [])} citations, {len(answer_entities(inner))} entities, "
+                    f"leg {inner.get('leg')}, keys {sorted(inner)[:20]}, cards {sorted(cards)[:20]}"
                     if data.get("event") == "answer" else f"i360 error: {inner.get('code')} {inner.get('message')}")
+            if data.get("event") == "answer" and inner.get("leg") in {"lookup", "entity", "entities"}:
+                # Entity answers' shapes are still being mapped: log their structure (ids and names, no record text).
+                sample = {k: inner.get(k) for k in ("cards", "outside_entities", "lookup", "subject", "entities") if inner.get(k)}
+                line += f"\n    entity payload: {json.dumps(sample, ensure_ascii=True)[:3000]}"
         else:
             return
         self.log_message("chat %s", line)
@@ -713,9 +737,9 @@ class AppToolHost:
     def item_layers(self, item_ids: list[str]) -> list[dict[str, Any]]:
         return self.app.item_layers(self.token, item_ids, self.locale)
 
-    def people(self) -> list[dict[str, Any]]:
-        """The app's people layer as already loaded for this user (the snapshot), not a new search."""
-        return [e for e in self.app.snapshot(self.token).entities if str(e.get("entity_type") or "").lower() == "person"]
+    def entity(self, entity_type: str, entity_id: str) -> dict[str, Any] | None:
+        """One entity i360 returned, read by id with the user's token, as the person viewer draws it."""
+        return self.app.entity_record(self.token, entity_type, entity_id)
 
     def layers_scope(self) -> dict[str, Any] | None:
         """Our layers as the i360 chat's ``scope``: the profile's queries merged into one search."""

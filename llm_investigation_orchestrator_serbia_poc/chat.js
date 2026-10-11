@@ -328,9 +328,10 @@
         const layer = await openCatalogLayer(action.layer_id, { filters: action.filters || {} });
         if (!layer) throw new Error("The layer could not be opened.");
         if (action.view) activateView(action.view);
-      } else if (action.kind === "open_person") {
-        if (!viewerObjects().has(`person:${action.entity_id}`) && action.entity) state.entityDirectory.push(action.entity);
-        if (!openObjectViewer("person", action.entity_id)) throw new Error("The person could not be opened.");
+      } else if (action.kind === "open_entity") {
+        const kind = isPersonEntity(action.entity) ? "person" : "organization";
+        if (!viewerObjects().has(`${kind}:${action.entity_id}`) && action.entity) state.entityDirectory.push(action.entity);
+        if (!openObjectViewer(kind, action.entity_id)) throw new Error("The entity could not be opened.");
       } else if (action.kind === "open_item") {
         openRow(action.row, action.group);
       } else if (action.kind === "confirm_save") {
@@ -388,6 +389,7 @@
       CHAT.i360Scope = data?.i360_scope || CHAT.i360Scope;
       if (Array.isArray(data?.i360_last_turns)) CHAT.i360LastTurns = data.i360_last_turns;
       if (Array.isArray(data?.citations)) CHAT.citations = data.citations;
+      if (Array.isArray(data?.entities)) CHAT.entities = data.entities;
     }
   }
 
@@ -400,6 +402,7 @@
   function resetConversation(message) {
     CHAT.controller?.abort();
     CHAT.citations = [];
+    CHAT.entities = [];
     CHAT.i360ConversationId = "";
     CHAT.i360Scope = "";
     CHAT.i360LastTurns = [];
@@ -426,6 +429,7 @@
       i360_scope: CHAT.i360Scope || "",
       i360_last_turns: CHAT.i360LastTurns,
       previous_citations: CHAT.citations,
+      previous_entities: CHAT.entities || [],
       open_layers: state.layers.filter(layer => layer.visible).map(layer => layer.label).slice(0, 40),
       viewer_item_id: viewerItemId(),
       tz: (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone; } catch { return ""; } })(),
