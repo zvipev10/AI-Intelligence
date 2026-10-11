@@ -530,7 +530,8 @@ class Handler(BaseHTTPRequestHandler):
             row = data.get("row") or {}
             detail = {"show_items": lambda: f"{sum(len(g.get('rows') or []) for g in data.get('groups') or [])} rows, view {data.get('view')}",
                       "open_item": lambda: f"record {row.get('record_id') or row.get('event_id') or ''} item {row.get('i360_item_id') or ''}",
-                      "open_layer": lambda: f"{data.get('layer_id')} view {data.get('view')}"}.get(str(data.get("kind")), lambda: "")()
+                      "open_layer": lambda: f"{data.get('layer_id')} view {data.get('view')}",
+                      "open_person": lambda: f"person {data.get('entity_id')}"}.get(str(data.get("kind")), lambda: "")()
             line = f"action {data.get('kind')}: {detail}"
         elif event in {"note", "error"}:
             line = f"{event}: {str(data.get('text') or data.get('message') or '')[:200]}"
@@ -710,6 +711,10 @@ class AppToolHost:
 
     def item_layers(self, item_ids: list[str]) -> list[dict[str, Any]]:
         return self.app.item_layers(self.token, item_ids, self.locale)
+
+    def people(self) -> list[dict[str, Any]]:
+        """The app's people layer as already loaded for this user (the snapshot), not a new search."""
+        return [e for e in self.app.snapshot(self.token).entities if str(e.get("entity_type") or "").lower() == "person"]
 
     def layers_scope(self) -> dict[str, Any] | None:
         """Our layers as the i360 chat's ``scope``: the profile's queries merged into one search."""

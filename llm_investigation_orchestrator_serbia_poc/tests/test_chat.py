@@ -91,6 +91,20 @@ class ChatUnitTests(unittest.TestCase):
         turn.ask_i360({"question": "find him everywhere", "scope": "all"})
         self.assertNotIn("scope", asked[-1])
 
+    def test_open_person_opens_someone_from_the_people_layer(self):
+        events = []
+
+        class Host:
+            def people(self):
+                return [{"entity_id": "p-1", "canonical_name": "Arman Rahimi", "entity_type": "person"},
+                        {"entity_id": "p-2", "canonical_name": "Lena Rahimi", "entity_type": "person"}]
+
+        turn = ChatTurn(None, None, Host(), lambda e, d: events.append((e, d)), TurnContext.from_request({"message": "x"}))
+        self.assertEqual("Arman Rahimi", turn.open_person({"name": "arman  Rahimi"})["opened"])
+        self.assertEqual("p-1", [d for e, d in events if e == "action"][-1]["entity_id"])
+        self.assertEqual("clarification_required", turn.open_person({"name": "Rahimi"})["status"])
+        self.assertIn("ask_i360", turn.open_person({"name": "Nobody Here"})["error"])
+
     def test_open_item_takes_an_id_the_user_typed(self):
         class Host:
             def item_layers(self, ids):

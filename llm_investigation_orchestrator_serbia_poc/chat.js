@@ -328,6 +328,9 @@
         const layer = await openCatalogLayer(action.layer_id, { filters: action.filters || {} });
         if (!layer) throw new Error("The layer could not be opened.");
         if (action.view) activateView(action.view);
+      } else if (action.kind === "open_person") {
+        if (!viewerObjects().has(`person:${action.entity_id}`) && action.entity) state.entityDirectory.push(action.entity);
+        if (!openObjectViewer("person", action.entity_id)) throw new Error("The person could not be opened.");
       } else if (action.kind === "open_item") {
         openRow(action.row, action.group);
       } else if (action.kind === "confirm_save") {

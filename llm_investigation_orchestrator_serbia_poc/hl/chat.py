@@ -247,6 +247,10 @@ TOOLS = [
         "viewer (from the context). "
         "Never make up an id.",
         {"item_id": {"type": "string"}}, ["item_id"]),
+    _fn("open_person",
+        "Open a person from the app's people layer in the person viewer, by name. Display only: it reads nothing "
+        "from i360. If the person is not in the app, ask_i360 with scope all.",
+        {"name": {"type": "string", "description": "The person's name as the user wrote it"}}, ["name"]),
     _fn("save_to_memory",
         "Propose saving a layer shown in the app to the open investigation's memory. The user must confirm; "
         "nothing is saved until they do.",
@@ -265,6 +269,9 @@ Use the fewest tool calls that fulfil the request, then stop and answer in one o
   Use open_layer only when the user asks for a layer.
 - What a tool has put on screen (the record viewer, a chat layer) is done: never show it
   again with another tool.
+- People and other entities by name: "open/show <name>" is open_person. A question about a person goes to
+  ask_i360 with scope all, because the investigation and our layers' scopes hold records, not people.
+- Name the scope that was searched as it was (this investigation, our layers, or all data).
 - The conversation lives in i360: you see only the current message, the last answer's cited items and
   what the app shows. Anything about earlier turns goes to ask_i360.
 If i360 says the investigation holds nothing that matches and cites records outside it, do not show
@@ -281,6 +288,7 @@ class ToolHost(Protocol):
     def catalog_layers(self) -> list[dict[str, Any]]: ...
     def item_layers(self, item_ids: list[str]) -> list[dict[str, Any]]: ...
     def layers_scope(self) -> dict[str, Any] | None: ...
+    def people(self) -> list[dict[str, Any]]: ...
 
 
 SCOPES = {"investigation", "layers", "all"}
@@ -484,7 +492,7 @@ class ChatTurn:
     # -- tools ------------------------------------------------------------------------------
     def run_tool(self, name: str, args: dict[str, Any]) -> dict[str, Any]:
         handler = {"ask_i360": self.ask_i360, "show_items": self.show_items, "open_layer": self.open_layer,
-                   "open_item": self.open_item,
+                   "open_item": self.open_item, "open_person": self.open_person,
                    "save_to_memory": self.save_to_memory}.get(name)
         if handler is None:
             return {"error": f"unknown tool {name}"}
@@ -639,6 +647,26 @@ class ChatTurn:
         self.emit("action", {"kind": "open_item", "row": row, "group": groups[0]["label"]})
         self.emit("step", {"text": "Opened the record viewer", "tool": "open_item"})
         return {"opened": item_id, "note": "the record is open in the viewer; nothing else is needed to show it"}
+
+    def open_person(self, args: dict[str, Any]) -> dict[str, Any]:
+        wanted = " ".join(str(args.get("name") or "").lower().split())[:120]
+        if not wanted:
+            return {"error": "name the person"}
+        people = [p for p in self.host.people() if p.get("entity_id")]
+        def name(p: dict[str, Any]) -> str:
+            return " ".join(str(p.get("canonical_name") or p.get("entity_name") or "").lower().split())
+        found = [p for p in people if name(p) == wanted] or \
+                [p for p in people if all(word in name(p).split() for word in wanted.split())]
+        if not found:
+            return {"error": f"no person named '{args.get('name')}' in the app's people layer; ask_i360 with scope all"}
+        if len(found) > 1:
+            return {"status": "clarification_required",
+                    "candidates": [p.get("canonical_name") or p.get("entity_name") for p in found][:10]}
+        person = found[0]
+        self.emit("action", {"kind": "open_person", "entity_id": person["entity_id"], "entity": person})
+        self.emit("step", {"text": f"Opened {person.get('canonical_name') or person['entity_id']}", "tool": "open_person"})
+        return {"opened": person.get("canonical_name") or person["entity_id"],
+                "note": "the person is open in the viewer; nothing else is needed to show them"}
 
     def save_to_memory(self, args: dict[str, Any]) -> dict[str, Any]:
         if not self.ctx.investigation_id:
