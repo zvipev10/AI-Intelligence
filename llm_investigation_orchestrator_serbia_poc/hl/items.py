@@ -108,7 +108,10 @@ def item_fields(item: dict[str, Any]) -> dict[str, str]:
     for party in item.get("parties") or []:
         if not isinstance(party, dict):
             continue
-        role = str(party.get("role") or party.get("position") or "party")
+        # The target party (target_indication true) and the other party (false), as in the raw TARGET/OP columns;
+        # without the flag, by role (from/to).
+        flag = str(party.get("target_indication")).strip().lower()
+        role = "target" if flag == "true" else "other" if flag == "false" else str(party.get("role") or party.get("position") or "party")
         for ident in party.get("identifiers") or []:
             if isinstance(ident, dict) and ident.get("type") and ident.get("value") not in (None, ""):
                 key = f"parties.{role}.{ident['type']}"

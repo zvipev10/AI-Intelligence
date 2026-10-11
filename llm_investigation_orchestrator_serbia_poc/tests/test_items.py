@@ -157,6 +157,17 @@ class AllFieldsTests(unittest.TestCase):
         self.assertEqual("2026-09-05T23:26:47Z", fields["i360.ip.ip_sessions.start_time"])
         self.assertEqual("443", fields["i360.ip.ip_sessions.destination_port"])
 
+    def test_parties_with_a_target_flag_are_target_and_other(self):
+        from hl.items import item_fields
+
+        fields = item_fields({"parties": [
+            {"role": "to", "target_indication": "True", "identifiers": [{"type": "msisdn", "value": "963094370078"}]},
+            {"role": "from", "target_indication": "False", "identifiers": [{"type": "imei", "value": "869123048645329"}]}],
+            "messages": [{"text": "hello", "status": None}]})
+        self.assertEqual("963094370078", fields["i360.parties.target.msisdn"])
+        self.assertEqual("869123048645329", fields["i360.parties.other.imei"])
+        self.assertEqual("hello", fields["i360.messages.text"])
+
     def test_parties_are_flattened_by_role(self):
         from hl.items import item_fields
 

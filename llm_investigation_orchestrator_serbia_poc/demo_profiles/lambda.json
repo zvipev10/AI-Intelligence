@@ -119,13 +119,36 @@
     "fields": [
      "item_id",
      "event_time",
+     "end_time",
      "item_type",
      "call_direction",
      "duration_ms",
      "parties",
-     "location"
+     "location",
+     "messages"
     ],
-    "_comment": "voice_call and sms in coverage Demo tali (f1a50da7-...); about half carry a GPS point"
+    "_comment": "voice_call and sms in coverage Demo tali (f1a50da7-...); about half carry a GPS point",
+    "labels": {
+     "item_type": "SESSION TYPE",
+     "call_direction": "DIRECTION",
+     "event_time": "START SESSION TIME TARGET",
+     "end_time": "END SESSION TIME TARGET",
+     "parties.target.msisdn": "TARGET MSISDN",
+     "parties.target.imsi": "TARGET IMSI",
+     "parties.target.imei": "TARGET IMEI",
+     "parties.target.tmsi": "TARGET TMSI",
+     "parties.target.ip_address": "TARGET IP ADDRESS",
+     "parties.target.alias": "TARGET ALIAS",
+     "parties.target.user_id": "TARGET USER NAME",
+     "parties.other.msisdn": "OP MSISDN",
+     "parties.other.imsi": "OP IMSI",
+     "parties.other.imei": "OP IMEI",
+     "parties.other.tmsi": "OP TMSI",
+     "parties.other.ip_address": "OP IP ADDRESS",
+     "location.point.lat": "LATITUDE",
+     "location.point.lon": "LONGITUDE",
+     "messages.text": "SMS CONTENT"
+    }
    },
    {
     "layer": "Cellular Calls",
@@ -145,13 +168,36 @@
     "fields": [
      "item_id",
      "event_time",
+     "end_time",
      "item_type",
      "call_direction",
      "duration_ms",
      "parties",
-     "location"
+     "location",
+     "messages"
     ],
-    "_comment": "coverage calls (b8cc86ef-..., lower case)"
+    "_comment": "coverage calls (b8cc86ef-..., lower case)",
+    "labels": {
+     "item_type": "SESSION TYPE",
+     "call_direction": "DIRECTION",
+     "event_time": "START SESSION TIME TARGET",
+     "end_time": "END SESSION TIME TARGET",
+     "parties.target.msisdn": "TARGET MSISDN",
+     "parties.target.imsi": "TARGET IMSI",
+     "parties.target.imei": "TARGET IMEI",
+     "parties.target.tmsi": "TARGET TMSI",
+     "parties.target.ip_address": "TARGET IP ADDRESS",
+     "parties.target.alias": "TARGET ALIAS",
+     "parties.target.user_id": "TARGET USER NAME",
+     "parties.other.msisdn": "OP MSISDN",
+     "parties.other.imsi": "OP IMSI",
+     "parties.other.imei": "OP IMEI",
+     "parties.other.tmsi": "OP TMSI",
+     "parties.other.ip_address": "OP IP ADDRESS",
+     "location.point.lat": "LATITUDE",
+     "location.point.lon": "LONGITUDE",
+     "messages.text": "SMS CONTENT"
+    }
    },
    {
     "layer": "IPDR",

@@ -10,7 +10,8 @@
    "additional_info",
    "user_agents_data",
    "ip",
-   "context"
+   "context",
+   "messages"
   ],
   "fields": {
    "event_id": "tags[type=event_id].value | item_id",
