@@ -51,9 +51,14 @@ class RecentDaysTests(unittest.TestCase):
                         "items": [{"item_id": f"i{n}"} for n in range(start, start + body["page_size"])]}
 
         client = Client()
-        items = ItemReader(client, mapping(), {"item_types": ["image"], "limit": 50}, 30000, items_per_query=200).items()
+        items = ItemReader(client, mapping(), {"item_types": ["image"]}, 30000, items_per_query=200).items()
         self.assertEqual(200, len(items))
         self.assertEqual([1, 2], [body["page_number"] for body in client.bodies])
+
+    def test_a_querys_own_limit_wins_over_the_default(self):
+        client = RecordingClient()
+        ItemReader(client, mapping(), {"item_types": ["video"], "limit": 200}, 30000, items_per_query=300).items()
+        self.assertEqual(100, client.bodies[0]["page_size"])  # paged: 200 = 2 pages of 100
 
     def test_each_query_is_read_and_can_name_its_layer(self):
         class Client(RecordingClient):

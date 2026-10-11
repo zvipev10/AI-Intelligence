@@ -1,7 +1,7 @@
 {
  "scenario_id": "lambda",
  "label": {
-  "en": "LAMBDA satellite, ADINT, cellular and IPDR"
+  "en": "LAMBDA satellite, ADINT, cellular, IPDR and CCTV"
  },
  "map": {
   "center": [
@@ -27,14 +27,16 @@
    "ADINT",
    "Cellular Locations",
    "Cellular Calls",
-   "IPDR"
+   "IPDR",
+   "CCTV"
   ],
   "en": [
    "Satellite",
    "ADINT",
    "Cellular Locations",
    "Cellular Calls",
-   "IPDR"
+   "IPDR",
+   "CCTV"
   ]
  },
  "dataset_version": "i360",
@@ -189,10 +191,34 @@
      "additional_info.SUBNETMASK": "SUBNETMASK",
      "additional_info.source_port": "source_port"
     }
+   },
+   {
+    "layer": "CCTV",
+    "item_types": [
+     "video"
+    ],
+    "source_applications": [
+     "cctv"
+    ],
+    "recent_days": 365,
+    "limit": 200,
+    "fields": [
+     "item_id",
+     "event_time",
+     "source_application",
+     "location",
+     "media"
+    ],
+    "labels": {
+     "event_time": "timestamp_utc",
+     "source_application": "source_app",
+     "location.point.lat": "latitude",
+     "location.point.lon": "longitude"
+    }
    }
   ]
  },
- "_comment": "Test scenario for LAMBDA: images from the source \"EO optical (fictional)\" (the Syria convoy demo, with locations) in a layer named \"Satellite\", drawn from their own location.point. recent_days, limit and layer are read by hl/items.py and not sent to HL API; APP_ITEMS_PER_TYPE overrides limit. No location entities exist on LAMBDA, so the Location layer stays empty. all_fields: every populated i360 item field is shown (table without media fields, viewer with everything). A second query reads items whose source_application is ADINT (any item type) into a layer named \"ADINT\", showing only the id and location fields (fields: [item_id, location]). entity_mapping: the Entity layer shows every visible i360 PERSON_OF_INTEREST with the person viewer. Cellular Locations (voice_call and sms in coverage Demo tali), Cellular Calls (voice_call in coverage calls) and IPDR (aggregated_ip_session from HOSHENTEL); coverage filters go to HL API as facet_filters on the coverage group (COVERAGE entity ids). 300 items per query.",
+ "_comment": "Test scenario for LAMBDA: images from the source \"EO optical (fictional)\" (the Syria convoy demo, with locations) in a layer named \"Satellite\", drawn from their own location.point. recent_days, limit and layer are read by hl/items.py and not sent to HL API; APP_ITEMS_PER_TYPE overrides limit. No location entities exist on LAMBDA, so the Location layer stays empty. all_fields: every populated i360 item field is shown (table without media fields, viewer with everything). A second query reads items whose source_application is ADINT (any item type) into a layer named \"ADINT\", showing only the id and location fields (fields: [item_id, location]). entity_mapping: the Entity layer shows every visible i360 PERSON_OF_INTEREST with the person viewer. Cellular Locations (voice_call and sms in coverage Demo tali), Cellular Calls (voice_call in coverage calls) and IPDR (aggregated_ip_session from HOSHENTEL); coverage filters go to HL API as facet_filters on the coverage group (COVERAGE entity ids). 300 items per query. CCTV: video items from source cctv (up to 200), drawn at their GPS point; the viewer plays the MP4 from i360. A query's own limit wins over APP_ITEMS_PER_TYPE.",
  "entity_mapping": {
   "_comment": "Every visible i360 PERSON_OF_INTEREST, shown with the app's person viewer. Paths accept the record nested under entity, at the top, or under sections. image_file_id, telecom_imei and telecom_msisdn are turned into image_url and telecom by hl/items.py.",
   "types": [

@@ -208,10 +208,10 @@ class ItemReader:
         # A profile may list several queries ("queries"); each one is read on its own and may name the
         # layer its items appear in ("layer"). A plain items_query is one query, as before.
         self.specs = [self._spec(q) for q in (query.pop("queries", None) or [query])]
-        # APP_ITEMS_PER_TYPE overrides every query's "limit" (one query per item type in a profile).
+        # APP_ITEMS_PER_TYPE is the default "limit" for queries that do not set their own.
         if items_per_query > 0:
-            self.specs = [(days, items_per_query, base, layer, everything)
-                          for days, _, base, layer, everything in self.specs]
+            self.specs = [(days, limit or items_per_query, base, layer, everything)
+                          for days, limit, base, layer, everything in self.specs]
         self.recent_days, self.limit, self.base_query, self.layer, self.all_fields = self.specs[0]
         self.max_rows = max_rows
         self.warnings: list[str] = []
