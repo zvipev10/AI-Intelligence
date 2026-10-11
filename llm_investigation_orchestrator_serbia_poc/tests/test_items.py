@@ -138,6 +138,11 @@ class AllFieldsTests(unittest.TestCase):
         self.assertEqual("963943636427", fields["i360.parties.to.msisdn"])
         self.assertNotIn("i360.parties", fields)
 
+    def test_profile_notes_are_not_sent(self):
+        client = RecordingClient()
+        ItemReader(client, mapping(), {"item_types": ["x"], "_comment": "a note", "limit": 5}, 100).items()
+        self.assertNotIn("_comment", client.bodies[0])
+
     def test_coverage_facet_filters_reach_hl_api(self):
         client = RecordingClient()
         coverage = [{"group": "coverage", "values": ["f1a50da7"]}]

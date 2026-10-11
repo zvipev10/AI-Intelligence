@@ -222,7 +222,9 @@ class ItemReader:
         if only:
             everything = [str(path) for path in only]
         everything = everything if isinstance(everything, list) else bool(everything)
-        return recent_days, limit, {k: v for k, v in query.items() if v not in (None, [], {})}, layer, everything
+        # Keys starting with "_" are notes in the profile (e.g. "_comment"); HL API refuses unknown fields.
+        base = {k: v for k, v in query.items() if v not in (None, [], {}) and not str(k).startswith("_")}
+        return recent_days, limit, base, layer, everything
 
     def _query(self, window: tuple[str, str], page: int, page_size: int = PAGE_SIZE) -> dict[str, Any]:
         body = dict(self.base_query)
