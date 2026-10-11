@@ -80,5 +80,15 @@
    "image_file_id": "entity.identifier.official_picture.id | identifier.official_picture.id | sections.identifier.official_picture.id",
    "basis": "'i360 person of interest'"
   }
- }
+ },
+ "investigation_links": [
+  {
+   "_comment": "Saving a person to an investigation's memory creates this i360 LINK (HL API create_link).",
+   "object_kind": "person",
+   "entity_type": "PERSON_OF_INTEREST",
+   "link_type": "person_to_int_investigation",
+   "investigation_side": "intelligence_investigation",
+   "entity_side": "person"
+  }
+ ]
 }

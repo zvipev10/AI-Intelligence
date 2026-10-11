@@ -140,10 +140,14 @@ def type_definitions(prefix: str) -> list[dict[str, Any]]:
 
 class StateStore:
     def __init__(self, client: HlClient, *, investigation_type: str, memory_item_type: str,
-                 approval_type: str, scenario: str, external_investigation_type: str = ""):
+                 approval_type: str, scenario: str, external_investigation_type: str = "",
+                 investigation_links: list[dict[str, Any]] | None = None):
         self.client = client
         self.investigation_type = investigation_type
         self.external_investigation_type = external_investigation_type
+        self.investigation_links = [spec for spec in investigation_links or []
+                                    if all(spec.get(k) for k in ("object_kind", "entity_type", "link_type",
+                                                                  "investigation_side", "entity_side"))]
         self.memory_item_type = memory_item_type
         self.approval_type = approval_type
         self.scenario = scenario
@@ -342,6 +346,61 @@ class StateStore:
         outcome = next((r.get("outcome") for r in response.get("results") or [] if r.get("item_id") == item_id), None)
         return outcome in {"unlinked", "not_linked"}
 
+
+    # -- entities linked to an external investigation (HL API LINK records) ---------------
+    # A person (or any object kind configured in the profile's investigation_links) saved to memory
+    # becomes an i360 LINK between the investigation and that entity; the memory lists the links.
+    LINK_PREFIX = "link:"
+
+    def _link_spec(self, object_kind: str) -> dict[str, Any] | None:
+        if not self.external_investigation_type:
+            return None
+        return next((spec for spec in self.investigation_links if spec.get("object_kind") == object_kind), None)
+
+    @staticmethod
+    def _link_sides(hit: dict[str, Any], link_type: str) -> dict[str, Any]:
+        for holder in (hit, hit.get("entity") or {}, hit.get("sections") or {}):
+            if isinstance(holder, dict) and isinstance(holder.get(link_type), dict):
+                return holder[link_type]
+        return {}
+
+    def _links_of(self, investigation_key: str, spec: dict[str, Any]) -> list[dict[str, Any]]:
+        field = f"{spec['link_type']}.{spec['investigation_side']}"
+        hits = self._search_all("LINK", [{"field": field, "values": [investigation_key]}])
+        out = []
+        for hit in hits:
+            sides = self._link_sides(hit, spec["link_type"])
+            other = sides.get(spec["entity_side"]) if isinstance(sides.get(spec["entity_side"]), dict) else {}
+            mine = sides.get(spec["investigation_side"]) if isinstance(sides.get(spec["investigation_side"]), dict) else {}
+            if other.get("id") and str(mine.get("id") or investigation_key) == investigation_key:
+                out.append({"link_id": entity_id_of(hit), "entity": other})
+        return out
+
+    def _link_entity(self, investigation_key: str, item: dict[str, Any], spec: dict[str, Any]) -> dict[str, Any]:
+        entity_id = str(item.get("object_id") or "")
+        existing = next((l for l in self._links_of(investigation_key, spec) if str(l["entity"].get("id")) == entity_id), None)
+        if existing:
+            link_id = existing["link_id"]
+        else:
+            response = self.client.create_link(self.external_investigation_type, investigation_key, {
+                "link_type": spec["link_type"], "origin_field": spec["investigation_side"],
+                "target_field": spec["entity_side"], "target_entity_type": spec["entity_type"],
+                "target_entity_id": entity_id})
+            link_id = str(response.get("entity_id") or "")
+            if not link_id:
+                raise HlError(502, "link_without_id", "i360 accepted the link but returned no id")
+        return {**item, "id": self.LINK_PREFIX + link_id, "source": "i360_link"}
+
+    def _linked_entities(self, investigation_key: str) -> list[dict[str, Any]]:
+        out = []
+        for spec in self.investigation_links:
+            for link in self._links_of(investigation_key, spec):
+                entity = link["entity"]
+                out.append({"id": self.LINK_PREFIX + link["link_id"], "kind": "object", "object_kind": spec["object_kind"],
+                            "object_id": str(entity.get("id")), "label": str(entity.get("name") or entity.get("id")),
+                            "source_type": spec["link_type"], "saved_at_utc": None, "source": "i360_link"})
+        return out
+
     def load_memory(self, investigation_key: str) -> dict[str, Any]:
         header_instance = self._investigation_instance(investigation_key)
         header = self._investigation_header(header_instance) if header_instance else {
@@ -361,6 +420,7 @@ class StateStore:
                 memory[group].append(payload)
         if self.external_investigation_type:
             memory["artifacts"].extend(self._attached_items(investigation_key))
+            memory["artifacts"].extend(self._linked_entities(investigation_key))
         for group in memory:
             memory[group].sort(key=lambda item: str(item.get("saved_at_utc") or ""))
         return {
@@ -375,6 +435,11 @@ class StateStore:
     def add_memory_item(self, investigation_key: str, group: str, item: dict[str, Any], name: str | None = None) -> dict[str, Any]:
         if group not in MEMORY_GROUPS:
             raise ValueError("Invalid memory group")
+        link_spec = self._link_spec(str(item.get("object_kind") or "")) if group == "artifacts" and item.get("kind") == "object" else None
+        if link_spec:
+            if self._investigation_instance(investigation_key) is None:
+                raise ValueError("Investigation not found in i360")
+            return self._link_entity(investigation_key, item, link_spec)
         if self._attaches_items(group, item):
             if self._investigation_instance(investigation_key) is None:
                 raise ValueError("Investigation not found in i360")
@@ -406,6 +471,9 @@ class StateStore:
         })
 
     def delete_memory_item(self, investigation_key: str, group: str, item_key: str) -> bool:
+        if self.external_investigation_type and group == "artifacts" and item_key.startswith(self.LINK_PREFIX):
+            self.client.remove_link(self.external_investigation_type, investigation_key, item_key[len(self.LINK_PREFIX):])
+            return True
         if self.external_investigation_type and group == "artifacts" and item_key.startswith(self.RELATED_PREFIX):
             return self._detach_item(investigation_key, item_key)
         hits = self._search_all(self.memory_item_type, [
