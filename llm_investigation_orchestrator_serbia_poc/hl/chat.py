@@ -433,7 +433,10 @@ class ChatTurn:
         if handler is None:
             return {"error": f"unknown tool {name}"}
         try:
-            return handler(args)
+            result = handler(args)
+            if isinstance(result, dict) and result.get("error"):
+                self.emit("step", {"text": f"{name}: {result['error']}", "error": True, "tool": name})
+            return result
         except (AuthExpired, ClientGone):
             raise
         except (HlError, ValueError) as exc:

@@ -203,6 +203,7 @@ class Handler(BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):
         if not self.quiet:
             sys.stdout.write("%s %s\n" % (self.log_date_time_string(), fmt % args))
+            sys.stdout.flush()
 
     def _send(self, status: int, body: bytes, content_type: str, extra: dict[str, str] | None = None,
               cookie: str | None = None) -> None:
@@ -477,6 +478,7 @@ class Handler(BaseHTTPRequestHandler):
         self.start_stream()
 
         def emit(event: str, data: Any) -> None:
+            self.log_chat_event(event, data)
             self.stream_event(event, data)
 
         llm = LlmClient(self.app.client(token), settings.llm_model) if settings.llm_enabled else None
@@ -494,6 +496,27 @@ class Handler(BaseHTTPRequestHandler):
         except Exception as exc:  # noqa: BLE001 - the stream is already open; report in it
             self.log_message("chat: unhandled error %r", exc)
             self.try_stream_event("error", {"error": "internal_error", "message": "The chat failed."})
+
+    def log_chat_event(self, event: str, data: Any) -> None:
+        """One log line per step, action and closing note of a chat turn (ids and counts, not the records)."""
+        data = data if isinstance(data, dict) else {}
+        if event == "step":
+            line = f"step{' (error)' if data.get('error') else ''}: {str(data.get('text') or '')[:200]}"
+        elif event == "action":
+            row = data.get("row") or {}
+            detail = {"show_items": lambda: f"{sum(len(g.get('rows') or []) for g in data.get('groups') or [])} rows, view {data.get('view')}",
+                      "open_item": lambda: f"record {row.get('record_id') or row.get('event_id') or ''} item {row.get('i360_item_id') or ''}",
+                      "open_layer": lambda: f"{data.get('layer_id')} view {data.get('view')}"}.get(str(data.get("kind")), lambda: "")()
+            line = f"action {data.get('kind')}: {detail}"
+        elif event in {"note", "error"}:
+            line = f"{event}: {str(data.get('text') or data.get('message') or '')[:200]}"
+        elif event == "i360" and data.get("event") in {"answer", "error"}:
+            inner = data.get("data") or {}
+            line = (f"i360 answer: {len(inner.get('citations') or [])} citations, leg {inner.get('leg')}"
+                    if data.get("event") == "answer" else f"i360 error: {inner.get('code')} {inner.get('message')}")
+        else:
+            return
+        self.log_message("chat %s", line)
 
     def chat_action(self, token: str, request: dict[str, Any]) -> Any:
         """A tag or note the i360 answer proposed, confirmed by the user: the chat service writes it."""
