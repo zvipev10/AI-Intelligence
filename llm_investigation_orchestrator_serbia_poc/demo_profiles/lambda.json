@@ -126,14 +126,19 @@
      "duration_ms",
      "parties",
      "location",
-     "messages"
+     "messages",
+     "li",
+     "telephony",
+     "sms",
+     "phone_call",
+     "locations"
     ],
     "_comment": "voice_call and sms in coverage Demo tali (f1a50da7-...); about half carry a GPS point",
     "labels": {
      "item_type": "SESSION TYPE",
      "call_direction": "DIRECTION",
-     "event_time": "START SESSION TIME TARGET",
-     "end_time": "END SESSION TIME TARGET",
+     "event_time": "EVENT TIME",
+     "end_time": "END TIME",
      "parties.target.msisdn": "TARGET MSISDN",
      "parties.target.imsi": "TARGET IMSI",
      "parties.target.imei": "TARGET IMEI",
@@ -148,7 +153,19 @@
      "parties.other.ip_address": "OP IP ADDRESS",
      "location.point.lat": "LATITUDE",
      "location.point.lon": "LONGITUDE",
-     "messages.text": "SMS CONTENT"
+     "messages.text": "SMS CONTENT",
+     "li.liid": "TARGET LIID",
+     "telephony.iri_start_time": "START SESSION TIME TARGET",
+     "telephony.iri_end_time": "END SESSION TIME TARGET",
+     "telephony.cc_start_time": "START CONTENT TIME TARGET",
+     "telephony.cc_end_time": "END CONTENT TIME TARGET",
+     "sms.smsc": "SMSC",
+     "sms.number_of_parts": "SMS NUMBER OF PARTS",
+     "sms.parts": "SMS CONTENT PARTS",
+     "phone_call.release_reason": "CALL RELEASE REASON",
+     "locations.cell_id": "CELL ID",
+     "telephony.cc_duration": "CONTENT DURATION (ms)",
+     "telephony.iri_duration": "SESSION DURATION (ms)"
     }
    },
    {
@@ -175,14 +192,19 @@
      "duration_ms",
      "parties",
      "location",
-     "messages"
+     "messages",
+     "li",
+     "telephony",
+     "sms",
+     "phone_call",
+     "locations"
     ],
     "_comment": "coverage calls (b8cc86ef-..., lower case)",
     "labels": {
      "item_type": "SESSION TYPE",
      "call_direction": "DIRECTION",
-     "event_time": "START SESSION TIME TARGET",
-     "end_time": "END SESSION TIME TARGET",
+     "event_time": "EVENT TIME",
+     "end_time": "END TIME",
      "parties.target.msisdn": "TARGET MSISDN",
      "parties.target.imsi": "TARGET IMSI",
      "parties.target.imei": "TARGET IMEI",
@@ -197,7 +219,19 @@
      "parties.other.ip_address": "OP IP ADDRESS",
      "location.point.lat": "LATITUDE",
      "location.point.lon": "LONGITUDE",
-     "messages.text": "SMS CONTENT"
+     "messages.text": "SMS CONTENT",
+     "li.liid": "TARGET LIID",
+     "telephony.iri_start_time": "START SESSION TIME TARGET",
+     "telephony.iri_end_time": "END SESSION TIME TARGET",
+     "telephony.cc_start_time": "START CONTENT TIME TARGET",
+     "telephony.cc_end_time": "END CONTENT TIME TARGET",
+     "sms.smsc": "SMSC",
+     "sms.number_of_parts": "SMS NUMBER OF PARTS",
+     "sms.parts": "SMS CONTENT PARTS",
+     "phone_call.release_reason": "CALL RELEASE REASON",
+     "locations.cell_id": "CELL ID",
+     "telephony.cc_duration": "CONTENT DURATION (ms)",
+     "telephony.iri_duration": "SESSION DURATION (ms)"
     },
     "call_record": true
    },

@@ -144,7 +144,20 @@ def item_fields(item: dict[str, Any]) -> dict[str, str]:
             value = datetime.fromtimestamp(value / 1000, timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
         out[path] = _cell(value)
 
-    walk({k: v for k, v in item.items() if k not in ("parties", "insights")}, "", 0)
+    flat = {k: v for k, v in item.items() if k not in ("parties", "insights", "locations")}
+    if isinstance(flat.get("sms"), dict):
+        flat["sms"] = {k: v for k, v in flat["sms"].items() if k != "parts"}
+    walk(flat, "", 0)
+    # SMS parts in their order, as one text.
+    parts = (item.get("sms") or {}).get("parts") if isinstance(item.get("sms"), dict) else None
+    if parts:
+        ordered = sorted((p for p in parts if isinstance(p, dict)), key=lambda p: str(p.get("key") or ""))
+        out["sms.parts"] = "\n".join(_cell(p.get("value")) for p in ordered if p.get("value") not in (None, ""))
+    # The cell the record was served by: the value of its cell entries (etsi_cgi, etsi_ecgi, ...); the point is in location.
+    cells = [str(e["value"]) for e in item.get("locations") or []
+             if isinstance(e, dict) and str(e.get("type") or "").startswith("etsi") and e.get("value") not in (None, "")]
+    if cells:
+        out["locations.cell_id"] = "; ".join(dict.fromkeys(cells))
     # Insights by type (insights.post_comment, insights.transcription, ...): each can carry its own name.
     for insight in item.get("insights") or []:
         if isinstance(insight, dict) and insight.get("value") not in (None, ""):

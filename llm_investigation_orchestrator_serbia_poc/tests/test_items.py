@@ -328,3 +328,23 @@ class I360LinkFieldsTests(unittest.TestCase):
         self.assertEqual([{"id": "p-1", "type": "PERSON_OF_INTEREST", "relation": "associated"}], i360_links(item))
         self.assertEqual([["asset_identifier", "353294702931926"], ["parties.target.imei", "111"], ["parties.from.msisdn", "222"]],
                          i360_identifiers(item))
+
+
+class CellularSectionsTests(unittest.TestCase):
+    def test_sms_parts_and_cell_id_become_plain_fields(self):
+        from hl.items import item_fields
+        fields = item_fields({
+            "item_id": "s-1", "li": {"liid": "cov-1", "cin": None},
+            "telephony": {"caller_id": None, "iri_start_time": "2026-07-01T05:24:00Z"},
+            "sms": {"smsc": "963940000500", "number_of_parts": 2, "parts": [{"key": "2", "value": "world"}, {"key": "1", "value": "hello"}]},
+            "phone_call": {"release_reason": "Normal call clearing"},
+            "locations": [{"type": "geo", "point": {"lat": 1, "lon": 2}}, {"type": "etsi_cgi", "value": "3104-21606"}],
+        })
+        self.assertEqual("cov-1", fields["i360.li.liid"])
+        self.assertNotIn("i360.li.cin", fields)  # empty fields are not shown
+        self.assertNotIn("i360.telephony.caller_id", fields)
+        self.assertEqual("963940000500", fields["i360.sms.smsc"])
+        self.assertEqual("hello" + chr(10) + "world", fields["i360.sms.parts"])
+        self.assertEqual("Normal call clearing", fields["i360.phone_call.release_reason"])
+        self.assertEqual("3104-21606", fields["i360.locations.cell_id"])
+        self.assertFalse(any(k.startswith("i360.locations[") for k in fields))
