@@ -85,6 +85,11 @@ class LambdaProfileTests(unittest.TestCase):
         self.assertEqual("observation_id", labels["events:ADINT"]["i360.fe_correlation_ids"])
         self.assertEqual("ip_public", labels["events:IPDR"]["i360.ip.ip_sessions.source_ip"])
 
+    def test_layer_rows_carry_the_display_names_too(self):
+        status, body = self.browser().call("GET", "/api/layers/events:Satellite/rows?lang=en")
+        self.assertEqual(200, status, body)
+        self.assertEqual("acquisition_datetime_utc", body["layer"]["field_labels"]["i360.event_time"])
+
     def test_rows_carry_coordinates(self):
         status, body = self.browser().call("GET", "/api/layers/events:Satellite/rows?lang=en")
         self.assertEqual(200, status, body)

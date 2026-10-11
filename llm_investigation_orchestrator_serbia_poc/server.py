@@ -449,7 +449,11 @@ class Handler(BaseHTTPRequestHandler):
             if result is None:
                 self.send_json(404, {"error": "Layer not found"})
             else:
-                self.send_json(200, {"layer": result[0], "rows": result[1]})
+                layer = dict(result[0])
+                labels = app.layer_field_labels(layer.get("source_type"))
+                if labels:
+                    layer["field_labels"] = labels
+                self.send_json(200, {"layer": layer, "rows": result[1]})
             return
         if path == "/api/links":
             data = app.dataset(token, locale)
