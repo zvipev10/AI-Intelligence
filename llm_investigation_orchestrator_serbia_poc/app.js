@@ -397,7 +397,7 @@ const ROLE_WORKSPACES = {
 };
 
 // Catalog layer ids follow the dataset locale; the calls source has a Hebrew and an English id.
-const CATALOG_LAYER_ALIASES = { "events:שיחות סלולר": "events:Cellular Calls" };
+const CATALOG_LAYER_ALIASES = { "events:שיחות סלולר": "events:Cellular Calls", "events:Cellular Locations": "events:Cellular Geolocations" };
 
 function canonicalCatalogLayerId(layerId) {
   const id = String(layerId || "");
@@ -1385,8 +1385,9 @@ async function submitCollectionRequest() {
     })
   });
   const payload = await response.json();
-  if (!response.ok) throw new Error(payload.error || activeLocaleText("שליחת בקשת האיסוף נכשלה", "Could not submit collection request"));
-  await loadInvestigationMemory();
+  // Saving the request to the investigation can fail (no memory type on this i360); the demo still opens the layer.
+  if (response.ok) await loadInvestigationMemory();
+  else console.warn(`Collection request not saved: ${payload.error || response.status}`);
   closeCollectionRequestDialog();
   const openedLayer = await openRequestedCollectionLayer(type);
   if (!openedLayer) target.trigger?.focus?.();
@@ -2491,7 +2492,9 @@ async function openCatalogLayer(layerId, options = {}) {
     state.layerSearchQuery = "";
     state.layerSearchOpen = false;
     if (options.savedLayer) applySavedFiltersToLayer(existing, options.savedLayer);
-    if (!options.silent && existing.kind === "events" && !existing.capabilities.map) activateView("table");
+    // Each layer opens in its default presentation: calls on the timeline, map layers on the map, the rest as a table.
+    if (!options.silent && isCallsLayer(existing)) activateView("timeline");
+    else if (!options.silent && existing.kind === "events") activateView(existing.capabilities.map ? "map" : "table");
     if (!options.silent) {
       renderAllViews();
       renderLayerSelector();
@@ -2531,6 +2534,7 @@ async function openCatalogLayer(layerId, options = {}) {
     if (!options.silent && isCallsLayer(openedLayer)) activateView("timeline");
     else if (!options.silent && ["entity_metadata", "person_entities"].includes(openedLayer.kind)) activateView("table");
     else if (!options.silent && !openedLayer.capabilities.map) activateView(openedLayer.kind === "events" ? "table" : (openedLayer.capabilities.timeline ? "timeline" : "table"));
+    else if (!options.silent && openedLayer.kind === "events") activateView("map");
     if (!options.silent) renderAllViews();
     return restoredLayer;
   } catch (error) {
