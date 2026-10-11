@@ -411,7 +411,7 @@ def answer_entities(answer: dict[str, Any]) -> list[dict[str, str]]:
                 if key not in {"citations", "content", "follow", "claims"}:
                     visit(child, depth + 1)
 
-    for key in ("entities", "cards", "outside_entities", "lookup", "subject", "entity"):
+    for key in ("entities", "people", "cards", "outside_entities", "lookup", "subject", "entity"):
         visit(answer.get(key), 0)
     return [e for e in found.values() if not e["type"].upper().startswith("AICHAT_")]
 

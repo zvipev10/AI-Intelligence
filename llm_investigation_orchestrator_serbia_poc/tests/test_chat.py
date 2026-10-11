@@ -120,6 +120,13 @@ class ChatUnitTests(unittest.TestCase):
         turn.ask_i360({"question": "his calls", "entity_id": "p-1"})
         self.assertEqual({"id": "p-1", "type": "PERSON_OF_INTEREST", "name": "Arman Rahimi"}, asked[-1]["entity"])
         self.assertNotIn("scope", asked[-1])  # a records scope would hide his links
+        # The shape i360's entity leg returned on LAMBDA (cards.card), and the top-level people list.
+        lambda_answer = {"leg": "entity", "cards": {"card": {
+            "id": "da1cbd3a", "type": "PERSON_OF_INTEREST", "label": "Person", "kind": "entity", "name": "Arman Rahimi",
+            "links": [{"type": "INTELLIGENCE_INVESTIGATION", "id": "aii-demo-military-convoy", "name": "Suspicious military convoy"}],
+            "alts": [{"name": "Arman Rahimi - old", "label": "Person"}]}},
+            "people": [{"id": "p-9", "kind": "entity", "type": "PERSON_OF_INTEREST", "name": "Lena"}]}
+        self.assertEqual(["p-9", "da1cbd3a"], [e["id"] for e in answer_entities(lambda_answer)])
         ctx = TurnContext.from_request({"message": "his calls", "previous_entities": [
             {"id": "p-1", "type": "PERSON_OF_INTEREST", "name": "Arman Rahimi"}, {"no": "id"}]})
         self.assertEqual(["p-1"], [e["id"] for e in ctx.previous_entities])

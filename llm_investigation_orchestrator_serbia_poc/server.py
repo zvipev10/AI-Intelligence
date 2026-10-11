@@ -562,7 +562,7 @@ class Handler(BaseHTTPRequestHandler):
                     if data.get("event") == "answer" else f"i360 error: {inner.get('code')} {inner.get('message')}")
             if data.get("event") == "answer" and inner.get("leg") in {"lookup", "entity", "entities"}:
                 # Entity answers' shapes are still being mapped: log their structure (ids and names, no record text).
-                sample = {k: inner.get(k) for k in ("cards", "outside_entities", "lookup", "subject", "entities") if inner.get(k)}
+                sample = {k: inner.get(k) for k in ("cards", "people", "outside_entities", "lookup", "subject", "entities") if inner.get(k)}
                 line += f"\n    entity payload: {json.dumps(sample, ensure_ascii=True)[:3000]}"
         else:
             return
