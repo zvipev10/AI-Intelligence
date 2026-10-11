@@ -7,7 +7,7 @@ One user message is one turn (``ChatTurn.run``):
 2. ``ask_i360`` sends a question to the i360 chat service (``analytics/i360-chat``, ``POST /chat/ask``,
    the user's own bearer). Its answer stream is relayed to the browser as it arrives, and the model
    gets back the answer text and the ids of the items it cited.
-3. The app tools (``show_items``, ``open_layer``, ``open_item``, ``show_memory``, ``save_to_memory``) are
+3. The app tools (``show_items``, ``open_layer``, ``open_item``, ``save_to_memory``) are
    checked here and sent to the browser as actions; the browser carries them out. ``save_to_memory``
    is only a proposal: the browser asks the user to confirm before anything is written.
 4. The model's last text is the turn's closing note.
@@ -242,12 +242,6 @@ TOOLS = [
         "Open one record in the record viewer: an id i360 cited, or the record open in the viewer (from the context). "
         "Never make up an id.",
         {"item_id": {"type": "string"}}, ["item_id"]),
-    _fn("show_memory",
-        "Put the open investigation's memory on screen: the records saved to it (as '<layer> · memory' tabs) and "
-        "its saved layers (all of them, or the ones named). It only displays; it tells you nothing about what is "
-        "saved. Questions about what is saved go to ask_i360 with scope investigation, worded as the records "
-        "linked to the investigation.",
-        {"layers": {"type": "array", "items": {"type": "string"}, "description": "Saved layer names; omit for all"}}),
     _fn("save_to_memory",
         "Propose saving a layer shown in the app to the open investigation's memory. The user must confirm; "
         "nothing is saved until they do.",
@@ -261,9 +255,10 @@ Use the fewest tool calls that fulfil the request, then stop and answer in one o
   what it cited with show_items (from_last_answer=true, a clear label, and the view that fits: map when
   places matter, timeline for sequences and calls, table otherwise).
 - The other tools only display. For a display command (open a layer, open a cited record or the one in
-  the viewer, show the investigation's memory, save a layer) use the tool directly, without ask_i360.
+  the viewer, save a layer) use the tool directly, without ask_i360. To show what the investigation
+  holds, ask i360 and show what it cited.
   Use open_layer only when the user asks for a layer.
-- What a tool has put on screen (memory tabs, the record viewer, a chat layer) is done: never show it
+- What a tool has put on screen (the record viewer, a chat layer) is done: never show it
   again with another tool.
 - The conversation lives in i360: you see only the current message, the last answer's cited items and
   what the app shows. Anything about earlier turns goes to ask_i360.
@@ -430,7 +425,7 @@ class ChatTurn:
                          f"ask_i360 scope defaults to '{self.ctx.scope}'.")
         else:
             lines.append(f"No investigation is open; ask_i360 scope defaults to '{self.ctx.scope}' and "
-                         "show_memory/save_to_memory are unavailable.")
+                         "save_to_memory is unavailable.")
         layers = [f"{l['id']} ({l.get('label') or ''})" for l in self.catalog()][:40]
         if layers:
             lines.append("Layers the app can open: " + "; ".join(layers))
@@ -458,7 +453,7 @@ class ChatTurn:
     # -- tools ------------------------------------------------------------------------------
     def run_tool(self, name: str, args: dict[str, Any]) -> dict[str, Any]:
         handler = {"ask_i360": self.ask_i360, "show_items": self.show_items, "open_layer": self.open_layer,
-                   "open_item": self.open_item, "show_memory": self.show_memory,
+                   "open_item": self.open_item,
                    "save_to_memory": self.save_to_memory}.get(name)
         if handler is None:
             return {"error": f"unknown tool {name}"}
@@ -605,18 +600,6 @@ class ChatTurn:
         self.emit("action", {"kind": "open_item", "row": row, "group": groups[0]["label"]})
         self.emit("step", {"text": "Opened the record viewer", "tool": "open_item"})
         return {"opened": item_id, "note": "the record is open in the viewer; nothing else is needed to show it"}
-
-    def show_memory(self, args: dict[str, Any]) -> dict[str, Any]:
-        if not self.ctx.investigation_id:
-            return {"error": "no investigation is open"}
-        layers = [str(n).strip()[:120] for n in args.get("layers") or [] if str(n).strip()]
-        if any(n.lower() == "all" for n in layers):
-            layers = []
-        # Display only: the browser already holds the investigation's memory and puts it on screen.
-        self.emit("action", {"kind": "show_memory", "layers": layers})
-        self.emit("step", {"text": "Showed the investigation's memory", "tool": "show_memory"})
-        return {"shown": "the investigation's memory",
-                "note": "it is on screen; nothing else is needed to show it. What it contains is a question for ask_i360"}
 
     def save_to_memory(self, args: dict[str, Any]) -> dict[str, Any]:
         if not self.ctx.investigation_id:

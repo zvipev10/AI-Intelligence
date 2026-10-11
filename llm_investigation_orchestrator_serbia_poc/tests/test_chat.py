@@ -66,23 +66,10 @@ class ChatUnitTests(unittest.TestCase):
         body, exact = layers_search({"filters": [{"field": "scenario", "values": ["syria"]}]}, now)
         self.assertEqual(({"filters": [{"field": "scenario", "values": ["syria"]}]}, True), (body, exact))
 
-    def test_memory_is_only_displayed(self):
-        events = []
-
-        class Host:
-            def item_layers(self, ids):
-                raise AssertionError("show_memory must not read i360")
-
-        ctx = TurnContext.from_request({"message": "show the memory", "investigation_id": "INV-1"})
-        turn = ChatTurn(None, None, Host(), lambda e, d: events.append((e, d)), ctx)
-        result = turn.show_memory({"layers": ["all"]})
-        self.assertIn("ask_i360", result["note"])
-        self.assertNotIn("saved_records", result)
-        self.assertEqual([("action", {"kind": "show_memory", "layers": []})], [e for e in events if e[0] == "action"])
-        turn.show_memory({"layers": ["Trucks"]})
-        self.assertEqual(["Trucks"], [d for e, d in events if e == "action"][-1]["layers"])
-        no_investigation = TurnContext.from_request({"message": "show the memory"})
-        self.assertIn("error", ChatTurn(None, None, Host(), lambda e, d: None, no_investigation).show_memory({}))
+    def test_no_memory_tool(self):
+        # What the investigation holds is asked of i360 and shown from its citations.
+        from hl.chat import TOOLS
+        self.assertNotIn("show_memory", [t["function"]["name"] for t in TOOLS])
 
     def test_open_item_returns_no_record_fields(self):
         class Host:

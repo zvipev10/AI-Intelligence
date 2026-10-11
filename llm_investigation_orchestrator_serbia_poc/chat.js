@@ -330,22 +330,6 @@
         if (action.view) activateView(action.view);
       } else if (action.kind === "open_item") {
         openRow(action.row, action.group);
-      } else if (action.kind === "show_memory") {
-        // The memory as the app already holds it: saved records as '· memory' tabs, then the saved layers.
-        if (!state.layers.some(layer => layer.investigationItemsLayer)) await loadInvestigationItemLayers(state.investigationMemoryLoadToken);
-        const records = state.layers.filter(layer => layer.investigationItemsLayer);
-        records.forEach(layer => { layer.visible = true; });
-        const saved = state.investigationMemory?.memory?.layers || [];
-        const wanted = (action.layers || []).map(name => String(name).toLowerCase());
-        const chosen = wanted.length
-          ? saved.filter(item => wanted.some(name => String(item.label || item.id).toLowerCase().includes(name)))
-          : saved;
-        if (wanted.length && !chosen.length) throw new Error(`No saved layer matches ${action.layers.join(", ")}.`);
-        if (!records.length && !chosen.length) throw new Error("Nothing is saved in this investigation's memory yet.");
-        for (const item of chosen) await openMemoryEntry("layers", item.id);
-        if (records[0] && !chosen.length) state.activeLayerId = records[0].id;
-        renderAllViews();
-        renderLayerSelector();
       } else if (action.kind === "confirm_save") {
         turn.body.hidden = false;
         turn.body.appendChild(confirmCard(`Save the layer <b>${esc(action.layer)}</b> to this investigation's memory?`, async button => {
