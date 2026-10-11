@@ -520,7 +520,6 @@
       }
     });
     $("chatStop").addEventListener("click", () => CHAT.controller?.abort());
-    $("chatNew").addEventListener("click", () => resetConversation("New conversation."));
     $("chatScopeInvestigation").addEventListener("click", () => { CHAT.scope = "investigation"; renderScope(); });
     $("chatScopeAll").addEventListener("click", () => { CHAT.scope = "layers"; renderScope(); });
     $("chatPanelToggle").addEventListener("click", () => {

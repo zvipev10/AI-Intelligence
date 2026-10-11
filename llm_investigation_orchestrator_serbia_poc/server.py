@@ -110,7 +110,8 @@ class App:
         return StateStore(self.client(token), investigation_type=s.investigation_type,
                           memory_item_type=s.memory_item_type, approval_type=s.approval_type,
                           scenario=s.scenario, external_investigation_type=s.external_investigation_type,
-                          investigation_links=self.profile.get("investigation_links") or [])
+                          investigation_links=self.profile.get("investigation_links") or [],
+                          item_layer=self.item_layer_label)
 
     def layer_field_labels(self, layer_name: Any) -> dict[str, str]:
         """A layer's display names for its i360 fields (profile query "labels": path -> name), as row keys."""
