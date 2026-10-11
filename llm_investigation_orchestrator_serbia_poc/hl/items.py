@@ -60,7 +60,8 @@ def item_fields(item: dict[str, Any]) -> dict[str, str]:
     """Every populated field of an i360 item as ``i360.<path>`` -> text, for "show all fields" layers.
 
     Nested objects become dotted paths; a list of scalars is joined; a list of annotations (dicts with
-    ``value``) becomes "type: value" lines; tags become "type=value"; anything else is compact JSON.
+    ``type`` and ``value``) becomes "type: value" lines; tags become "type=value"; a one-entry list of objects
+    (additional_info, user_agents_data, ip.ip_sessions) is flattened like an object; anything else is compact JSON.
     """
     out: dict[str, str] = {}
 
@@ -78,19 +79,42 @@ def item_fields(item: dict[str, Any]) -> dict[str, str]:
         if isinstance(value, list):
             if all(not isinstance(v, (dict, list)) for v in value):
                 out[path] = "; ".join(_cell(v) for v in value if v not in (None, ""))
-            elif all(isinstance(v, dict) and "value" in v for v in value):
+            elif all(isinstance(v, dict) and "value" in v and "type" in v for v in value):
                 key = "value"
                 if path.endswith("tags"):
                     out[path] = "; ".join(f"{v.get('type')}={_cell(v.get(key))}" for v in value)
                 else:
                     out[path] = "\n".join(f"{v.get('type')}: {_cell(v.get(key))}" if v.get("type") else _cell(v.get(key))
                                            for v in value)
+            elif all(isinstance(v, dict) for v in value) and len(value) == 1:
+                walk(value[0], path, depth)  # e.g. additional_info, user_agents_data, ip.ip_sessions
+            elif all(isinstance(v, dict) for v in value) and len(value) <= 5 and depth < 3:
+                for index, entry in enumerate(value):
+                    walk(entry, f"{path}[{index}]", depth + 1)
             else:
                 out[path] = json.dumps(value, ensure_ascii=False, separators=(",", ":"))
             return
+        if path.endswith("_time") and isinstance(value, (int, float)) and value > 10**11:  # epoch ms -> ISO UTC
+            value = datetime.fromtimestamp(value / 1000, timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
         out[path] = _cell(value)
 
-    walk(item, "", 0)
+    walk({k: v for k, v in item.items() if k not in ("parties", "insights")}, "", 0)
+    # Insights by type (insights.post_comment, insights.transcription, ...): each can carry its own name.
+    for insight in item.get("insights") or []:
+        if isinstance(insight, dict) and insight.get("value") not in (None, ""):
+            key = f"insights.{insight.get('type') or 'note'}"
+            out[key] = "\n".join(filter(None, [out.get(key), _cell(insight["value"])]))
+    # Call/message parties by role: parties.from.msisdn, parties.to.imei, ... (not raw JSON).
+    for party in item.get("parties") or []:
+        if not isinstance(party, dict):
+            continue
+        role = str(party.get("role") or party.get("position") or "party")
+        for ident in party.get("identifiers") or []:
+            if isinstance(ident, dict) and ident.get("type") and ident.get("value") not in (None, ""):
+                key = f"parties.{role}.{ident['type']}"
+                out[key] = "; ".join(filter(None, [out.get(key), _cell(ident["value"])]))
+        if party.get("name"):
+            out[f"parties.{role}.name"] = _cell(party["name"])
     return {ALL_FIELDS_PREFIX + key: value for key, value in out.items() if value}
 
 
@@ -204,6 +228,7 @@ class ItemReader:
         limit = max(0, int(query.pop("limit", 0) or 0))
         # "layer" is ours too: the layer (source_type) these items are shown in.
         layer = str(query.pop("layer", "") or "")
+        query.pop("labels", None)  # display names for the layer's fields; read by the server, not sent
         # "all_fields" is ours too: rows carry every populated item field as i360.<path>;
         # "fields" (a list of paths such as ["item_id", "location"]) keeps only those fields.
         everything = query.pop("all_fields", False)
@@ -211,7 +236,9 @@ class ItemReader:
         if only:
             everything = [str(path) for path in only]
         everything = everything if isinstance(everything, list) else bool(everything)
-        return recent_days, limit, {k: v for k, v in query.items() if v not in (None, [], {})}, layer, everything
+        # Keys starting with "_" are notes in the profile (e.g. "_comment"); HL API refuses unknown fields.
+        base = {k: v for k, v in query.items() if v not in (None, [], {}) and not str(k).startswith("_")}
+        return recent_days, limit, base, layer, everything
 
     def _query(self, window: tuple[str, str], page: int, page_size: int = PAGE_SIZE) -> dict[str, Any]:
         body = dict(self.base_query)

@@ -72,7 +72,18 @@ class LambdaProfileTests(unittest.TestCase):
         status, body = self.browser().call("GET", "/api/layers?lang=en")
         self.assertEqual(200, status, body)
         events = {layer["id"]: layer["count"] for layer in body["layers"] if layer["id"].startswith("events:")}
-        self.assertEqual({"events:Satellite": 2, "events:ADINT": 1}, events)
+        # The cellular and IPDR layers have no data in this fixture; they are listed with 0.
+        self.assertEqual({"events:Satellite": 2, "events:ADINT": 1, "events:Cellular Locations": 0,
+                          "events:Cellular Calls": 0, "events:IPDR": 0}, events)
+
+    def test_layers_carry_the_mapping_display_names(self):
+        status, body = self.browser().call("GET", "/api/layers?lang=en")
+        self.assertEqual(200, status, body)
+        labels = {layer["id"]: layer.get("field_labels") or {} for layer in body["layers"]}
+        self.assertEqual("acquisition_datetime_utc", labels["events:Satellite"]["i360.event_time"])
+        self.assertEqual("analyst_note", labels["events:Satellite"]["i360.insights.post_comment"])
+        self.assertEqual("observation_id", labels["events:ADINT"]["i360.fe_correlation_ids"])
+        self.assertEqual("ip_public", labels["events:IPDR"]["i360.ip.ip_sessions.source_ip"])
 
     def test_rows_carry_coordinates(self):
         status, body = self.browser().call("GET", "/api/layers/events:Satellite/rows?lang=en")

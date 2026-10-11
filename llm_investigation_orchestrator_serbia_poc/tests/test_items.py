@@ -119,13 +119,63 @@ class AllFieldsTests(unittest.TestCase):
         self.assertEqual("image", fields["i360.item_type"])
         self.assertEqual("35.08", fields["i360.location.point.lat"])
         self.assertEqual("3x cargo truck", fields["i360.text.transcript"])
-        self.assertEqual("transcription: a\npost_comment: b", fields["i360.insights"])
+        self.assertEqual("a", fields["i360.insights.transcription"])
+        self.assertEqual("b", fields["i360.insights.post_comment"])
         self.assertEqual("object_recognition=weapon", fields["i360.tags"])
         self.assertEqual("HasContent", fields["i360.flags"])
         self.assertEqual("image", fields["i360.media.kind"])
         self.assertNotIn("i360.name", fields)
         self.assertNotIn("i360.parties", fields)
         self.assertNotIn("i360._layer", fields)
+
+    def test_contract_260_parts_are_flattened(self):
+        from hl.items import item_fields
+
+        fields = item_fields({
+            "additional_info": [{"gsd_m": 0.5, "image_id": "RT-1"}],
+            "user_agents_data": [{"device_brand": "Apple", "operating_system_name": "iOS", "value": None, "name": None}],
+            "ip": {"ip_sessions": [{"source_ip": "203.0.113.107", "user_agent": None}]},
+            "fe_correlation_ids": ["ADINT_OBS-01-002"],
+            "context": [{"type": "COVERAGE", "value": "c-1"}]})
+        self.assertEqual("0.5", fields["i360.additional_info.gsd_m"])
+        self.assertEqual("RT-1", fields["i360.additional_info.image_id"])
+        self.assertEqual("Apple", fields["i360.user_agents_data.device_brand"])
+        self.assertEqual("203.0.113.107", fields["i360.ip.ip_sessions.source_ip"])
+        self.assertEqual("ADINT_OBS-01-002", fields["i360.fe_correlation_ids"])
+        self.assertEqual("COVERAGE: c-1", fields["i360.context"])
+        self.assertNotIn("i360.user_agents_data", fields)
+
+    def test_epoch_millisecond_times_become_iso(self):
+        from hl.items import item_fields
+
+        fields = item_fields({"ip": {"ip_sessions": [{"start_time": 1788650807000, "destination_port": 443}]}})
+        self.assertEqual("2026-09-05T23:26:47Z", fields["i360.ip.ip_sessions.start_time"])
+        self.assertEqual("443", fields["i360.ip.ip_sessions.destination_port"])
+
+    def test_parties_are_flattened_by_role(self):
+        from hl.items import item_fields
+
+        fields = item_fields({"item_id": "c", "parties": [
+            {"role": "from", "identifiers": [{"type": "msisdn", "value": "963094370078"}, {"type": "imei", "value": "353294702931926"}]},
+            {"role": "to", "identifiers": [{"type": "msisdn", "value": "963943636427"}]}]})
+        self.assertEqual("963094370078", fields["i360.parties.from.msisdn"])
+        self.assertEqual("353294702931926", fields["i360.parties.from.imei"])
+        self.assertEqual("963943636427", fields["i360.parties.to.msisdn"])
+        self.assertNotIn("i360.parties", fields)
+
+    def test_profile_notes_are_not_sent(self):
+        client = RecordingClient()
+        ItemReader(client, mapping(), {"item_types": ["x"], "_comment": "a note", "labels": {"event_time": "t"},
+                                       "limit": 5}, 100).items()
+        self.assertNotIn("_comment", client.bodies[0])
+        self.assertNotIn("labels", client.bodies[0])
+
+    def test_coverage_facet_filters_reach_hl_api(self):
+        client = RecordingClient()
+        coverage = [{"group": "coverage", "values": ["f1a50da7"]}]
+        ItemReader(client, mapping(), {"item_types": ["voice_call"], "facet_filters": coverage, "limit": 5,
+                                       "layer": "Cellular Locations", "fields": ["item_id"]}, 100).items()
+        self.assertEqual(coverage, client.bodies[0]["facet_filters"])
 
     def test_fields_keeps_only_the_named_paths(self):
         class Client(RecordingClient):

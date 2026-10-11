@@ -1,7 +1,7 @@
 {
  "scenario_id": "lambda",
  "label": {
-  "en": "LAMBDA satellite images and ADINT"
+  "en": "LAMBDA satellite, ADINT, cellular and IPDR"
  },
  "map": {
   "center": [
@@ -24,11 +24,17 @@
  "sources": {
   "he": [
    "Satellite",
-   "ADINT"
+   "ADINT",
+   "Cellular Locations",
+   "Cellular Calls",
+   "IPDR"
   ],
   "en": [
    "Satellite",
-   "ADINT"
+   "ADINT",
+   "Cellular Locations",
+   "Cellular Calls",
+   "IPDR"
   ]
  },
  "dataset_version": "i360",
@@ -42,25 +48,151 @@
      "EO optical (fictional)"
     ],
     "recent_days": 365,
-    "limit": 200,
+    "limit": 300,
     "layer": "Satellite",
-    "all_fields": true
+    "all_fields": true,
+    "labels": {
+     "event_time": "acquisition_datetime_utc",
+     "source_application": "sensor_platform",
+     "location.point.lat": "center_lat",
+     "location.point.lon": "center_lon",
+     "additional_info.image_id": "image_id",
+     "additional_info.footprint_radius_km": "footprint_radius_km",
+     "additional_info.gsd_m": "gsd_m",
+     "additional_info.cloud_cover_pct": "cloud_cover_pct",
+     "additional_info.sun_elevation_deg": "sun_elevation_deg",
+     "additional_info.off_nadir_deg": "off_nadir_deg",
+     "insights.post_comment": "analyst_note",
+     "insights.transcription": "detected_objects"
+    }
    },
    {
     "source_applications": [
      "ADINT"
     ],
     "recent_days": 365,
-    "limit": 200,
+    "limit": 300,
     "layer": "ADINT",
     "fields": [
      "item_id",
+     "event_time",
+     "source_application",
+     "location",
+     "fe_correlation_ids",
+     "additional_info",
+     "user_agents_data",
+     "ip"
+    ],
+    "labels": {
+     "event_time": "timestamp_utc",
+     "location.point.lat": "latitude",
+     "location.point.lon": "longitude",
+     "fe_correlation_ids": "observation_id",
+     "ip.ip_sessions.source_ip": "ip",
+     "additional_info.accuracy_m": "accuracy_m",
+     "user_agents_data.language_code": "keyboard_language",
+     "user_agents_data.operating_system_name": "os",
+     "user_agents_data.device_model": "model",
+     "user_agents_data.device_brand": "brand",
+     "user_agents_data.device_name": "device_id",
+     "source_application": "source_app"
+    }
+   },
+   {
+    "layer": "Cellular Locations",
+    "item_types": [
+     "voice_call",
+     "sms"
+    ],
+    "facet_filters": [
+     {
+      "group": "coverage",
+      "values": [
+       "f1a50da7-4f99-4037-b3fe-b1715e0c2e8d"
+      ]
+     }
+    ],
+    "recent_days": 365,
+    "limit": 300,
+    "fields": [
+     "item_id",
+     "event_time",
+     "item_type",
+     "call_direction",
+     "duration_ms",
+     "parties",
      "location"
-    ]
+    ],
+    "_comment": "voice_call and sms in coverage Demo tali (f1a50da7-...); about half carry a GPS point"
+   },
+   {
+    "layer": "Cellular Calls",
+    "item_types": [
+     "voice_call"
+    ],
+    "facet_filters": [
+     {
+      "group": "coverage",
+      "values": [
+       "b8cc86ef-f8a8-48e2-a3d3-0478c12efd41"
+      ]
+     }
+    ],
+    "recent_days": 365,
+    "limit": 300,
+    "fields": [
+     "item_id",
+     "event_time",
+     "item_type",
+     "call_direction",
+     "duration_ms",
+     "parties",
+     "location"
+    ],
+    "_comment": "coverage calls (b8cc86ef-..., lower case)"
+   },
+   {
+    "layer": "IPDR",
+    "item_types": [
+     "aggregated_ip_session"
+    ],
+    "source_applications": [
+     "HOSHENTEL"
+    ],
+    "recent_days": 365,
+    "limit": 300,
+    "fields": [
+     "item_id",
+     "event_time",
+     "item_type",
+     "source_application",
+     "fe_correlation_ids",
+     "ip",
+     "additional_info"
+    ],
+    "labels": {
+     "fe_correlation_ids": "record_id",
+     "source_application": "source_system",
+     "ip.ip_sessions.source_ip": "ip_public",
+     "ip.ip_sessions.source_port": "public_port",
+     "ip.ip_sessions.destination_ip": "ip_target",
+     "ip.ip_sessions.destination_port": "target_port",
+     "ip.ip_sessions.protocol": "protocol",
+     "ip.ip_sessions.uploaded_bytes": "bytes_received",
+     "ip.ip_sessions.downloaded_bytes": "bytes_sent",
+     "ip.ip_sessions.start_time": "start_time",
+     "ip.ip_sessions.end_time": "end_time",
+     "additional_info.ip_source": "ip_source",
+     "additional_info.ip_private": "ip_private",
+     "additional_info.ip_out": "ip_out",
+     "additional_info.mac": "mac",
+     "additional_info.SUBNETMASK": "SUBNETMASK",
+     "additional_info.source_port": "source_port"
+    }
    }
   ]
  },
- "_comment": "Test scenario for LAMBDA: images from the source \"EO optical (fictional)\" (the Syria convoy demo, with locations) in a layer named \"Satellite\", drawn from their own location.point. recent_days, limit and layer are read by hl/items.py and not sent to HL API; APP_ITEMS_PER_TYPE overrides limit. No location entities exist on LAMBDA, so the Location layer stays empty. all_fields: every populated i360 item field is shown (table without media fields, viewer with everything). A second query reads items whose source_application is ADINT (any item type) into a layer named \"ADINT\", showing only the id and location fields (fields: [item_id, location]). entity_mapping: the Entity layer shows every visible i360 PERSON_OF_INTEREST with the person viewer.",
+ "_comment": "Test scenario for LAMBDA: images from the source \"EO optical (fictional)\" (the Syria convoy demo, with locations) in a layer named \"Satellite\", drawn from their own location.point. recent_days, limit and layer are read by hl/items.py and not sent to HL API; APP_ITEMS_PER_TYPE overrides limit. No location entities exist on LAMBDA, so the Location layer stays empty. all_fields: every populated i360 item field is shown (table without media fields, viewer with everything). A second query reads items whose source_application is ADINT (any item type) into a layer named \"ADINT\", showing only the id and location fields (fields: [item_id, location]). entity_mapping: the Entity layer shows every visible i360 PERSON_OF_INTEREST with the person viewer. Cellular Locations (voice_call and sms in coverage Demo tali), Cellular Calls (voice_call in coverage calls) and IPDR (aggregated_ip_session from HOSHENTEL); coverage filters go to HL API as facet_filters on the coverage group (COVERAGE entity ids). 300 items per query.",
  "entity_mapping": {
   "_comment": "Every visible i360 PERSON_OF_INTEREST, shown with the app's person viewer. Paths accept the record nested under entity, at the top, or under sections. image_file_id, telecom_imei and telecom_msisdn are turned into image_url and telecom by hl/items.py.",
   "types": [
