@@ -71,6 +71,26 @@ class ChatUnitTests(unittest.TestCase):
         from hl.chat import TOOLS
         self.assertNotIn("show_memory", [t["function"]["name"] for t in TOOLS])
 
+    def test_the_panel_scope_is_never_narrowed(self):
+        asked = []
+
+        class Chat:
+            def ask(self, body, conversation_id):
+                asked.append(body)
+                return iter([("answer", {"content": "x", "citations": []})])
+
+        class Host:
+            def layers_scope(self):
+                return {"kind": "results", "ids": [], "exact": True}
+
+        ctx = TurnContext.from_request({"message": "x", "investigation_id": "INV-1", "scope": "layers"})
+        turn = ChatTurn(None, Chat(), Host(), lambda e, d: None, ctx)
+        turn.ask_i360({"question": "find him", "scope": "investigation"})
+        self.assertNotIn("focus", asked[-1])
+        self.assertEqual("results", asked[-1]["scope"]["kind"])
+        turn.ask_i360({"question": "find him everywhere", "scope": "all"})
+        self.assertNotIn("scope", asked[-1])
+
     def test_open_item_takes_an_id_the_user_typed(self):
         class Host:
             def item_layers(self, ids):
@@ -223,6 +243,16 @@ class ChatApiTests(unittest.TestCase):
         self.ask(browser, {"message": "convoy", "investigation_id": "INV-1", "scope": "all",
                            "i360_conversation_id": done["i360_conversation_id"]})
         self.assertIsNone(self.chat.asks[-1]["focus"])  # the conversation's focus is cleared, not kept
+
+    def test_new_scope_starts_a_new_i360_conversation(self):
+        browser = self.signed_in()
+        first = self.ask(browser, {"message": "convoy", "investigation_id": "INV-1"})
+        done = [d for e, d in first if e == "done"][0]
+        self.assertEqual("investigation", done["i360_scope"])
+        self.ask(browser, {"message": "convoy", "investigation_id": "INV-1", "scope": "all",
+                           "i360_conversation_id": done["i360_conversation_id"], "i360_scope": "investigation"})
+        self.assertNotIn("conversation_id", self.chat.asks[-1])  # the investigation's evidence stays behind
+        self.assertNotIn("focus", self.chat.asks[-1])
 
     def test_investigation_wording(self):
         from hl.chat import investigation_wording

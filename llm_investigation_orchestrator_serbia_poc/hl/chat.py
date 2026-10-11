@@ -224,10 +224,9 @@ TOOLS = [
                                                        "so references like 'them' or 'that day' need no rewriting. "
                                                        "Never say 'memory' or 'saved' to i360: there they mean the user's "
                                                        "own chat notes. Ask about the records linked to the investigation"},
-         "scope": {"type": "string", "enum": ["investigation", "layers", "all"],
-                   "description": "investigation: only the open investigation's saved items; layers: the data of the "
-                                  "app's layers (the default without an investigation); all: everything in i360, only "
-                                  "when the user asks for it"}},
+         "scope": {"type": "string", "enum": ["all"],
+                   "description": "Omit it: the user's panel choice applies. 'all' searches everything in i360, only "
+                                  "when the user asks for all data or for something outside the panel's scope"}},
         ["question"]),
     _fn("show_items",
         "Show records i360 cited as a new layer in the app (from_last_answer=true takes all of them).",
@@ -285,6 +284,7 @@ class ToolHost(Protocol):
 
 
 SCOPES = {"investigation", "layers", "all"}
+SCOPE_WIDTH = {"investigation": 0, "layers": 1, "all": 2}
 
 
 @dataclass
@@ -296,6 +296,7 @@ class TurnContext:
     investigation_type: str = ""
     scope: str = "investigation"
     i360_conversation_id: str = ""
+    i360_scope: str = ""  # the scope the i360 conversation was last asked in
     i360_last_turns: list[str] = field(default_factory=list)
     previous_citations: list[dict[str, str]] = field(default_factory=list)
     open_layers: list[str] = field(default_factory=list)
@@ -318,6 +319,7 @@ class TurnContext:
             investigation_name=str(request.get("investigation_name") or "")[:240],
             scope=scope if scope in SCOPES else "investigation",
             i360_conversation_id=str(request.get("i360_conversation_id") or "")[:240],
+            i360_scope=str(request.get("i360_scope") or "") if request.get("i360_scope") in SCOPES else "",
             i360_last_turns=strings(request.get("i360_last_turns"), 6),
             previous_citations=cited_items(request.get("previous_citations")),
             open_layers=strings(request.get("open_layers"), 40),
@@ -380,6 +382,7 @@ class ChatTurn:
         self.has_places = False
         self.i360_conversation_id = context.i360_conversation_id
         self.i360_last_turns = list(context.i360_last_turns)
+        self.i360_scope = context.i360_scope
         self.catalog_cache: list[dict[str, Any]] | None = None
 
     # -- the loop ---------------------------------------------------------------------------
@@ -424,7 +427,7 @@ class ChatTurn:
                 note = "I stopped after several steps; tell me what is still missing."
             if note:
                 self.emit("note", {"text": note})
-        self.emit("done", {"i360_conversation_id": self.i360_conversation_id,
+        self.emit("done", {"i360_conversation_id": self.i360_conversation_id, "i360_scope": self.i360_scope,
                            "i360_last_turns": self.i360_last_turns[-6:], "citations": self.cited[:500]})
 
     def fallback(self, reason: str) -> None:
@@ -441,9 +444,9 @@ class ChatTurn:
         lines = []
         if self.ctx.investigation_id:
             lines.append(f"Open investigation: {self.ctx.investigation_name or self.ctx.investigation_id}. "
-                         f"ask_i360 scope defaults to '{self.ctx.scope}'.")
+                         f"The user's chosen scope is '{self.ctx.scope}'; ask_i360 searches there.")
         else:
-            lines.append(f"No investigation is open; ask_i360 scope defaults to '{self.ctx.scope}' and "
+            lines.append(f"No investigation is open; ask_i360 searches '{self.ctx.scope}' and "
                          "save_to_memory is unavailable.")
         layers = [f"{l['id']} ({l.get('label') or ''})" for l in self.catalog()][:40]
         if layers:
@@ -498,9 +501,14 @@ class ChatTurn:
 
     def ask_i360(self, args: dict[str, Any]) -> dict[str, Any]:
         question = str(args.get("question") or self.ctx.message).strip()[:4000]
-        scope = args.get("scope") if args.get("scope") in SCOPES else self.ctx.scope
-        if scope == "investigation" and not self.ctx.investigation_id:
-            scope = "layers"
+        # The panel's scope wins: the model may widen it (the user asked for all data), never narrow it.
+        scope = self.ctx.scope if self.ctx.scope != "investigation" or self.ctx.investigation_id else "layers"
+        if args.get("scope") in SCOPES and SCOPE_WIDTH[args["scope"]] > SCOPE_WIDTH[scope]:
+            scope = args["scope"]
+        if self.i360_conversation_id and self.i360_scope and self.i360_scope != scope:
+            # A new scope starts a new i360 conversation, so the old scope's evidence cannot leak into the answer.
+            self.i360_conversation_id, self.i360_last_turns = "", []
+        self.i360_scope = scope
         body: dict[str, Any] = {"request_id": "aii-" + uuid.uuid4().hex[:12], "question": question,
                                 "origin": "app", "medium": "auto"}
         if self.i360_conversation_id:

@@ -382,6 +382,7 @@
       turn.errors.push(data?.message || "The chat failed.");
     } else if (event === "done") {
       CHAT.i360ConversationId = data?.i360_conversation_id || CHAT.i360ConversationId;
+      CHAT.i360Scope = data?.i360_scope || CHAT.i360Scope;
       if (Array.isArray(data?.i360_last_turns)) CHAT.i360LastTurns = data.i360_last_turns;
       if (Array.isArray(data?.citations)) CHAT.citations = data.citations;
     }
@@ -397,6 +398,7 @@
     CHAT.controller?.abort();
     CHAT.citations = [];
     CHAT.i360ConversationId = "";
+    CHAT.i360Scope = "";
     CHAT.i360LastTurns = [];
     CHAT.investigationId = state.investigationId || null;
     $("conversation").innerHTML = "";
@@ -418,6 +420,7 @@
       investigation_name: state.investigationName || "",
       scope: state.investigationId ? CHAT.scope : "layers",
       i360_conversation_id: CHAT.i360ConversationId,
+      i360_scope: CHAT.i360Scope || "",
       i360_last_turns: CHAT.i360LastTurns,
       previous_citations: CHAT.citations,
       open_layers: state.layers.filter(layer => layer.visible).map(layer => layer.label).slice(0, 40),
