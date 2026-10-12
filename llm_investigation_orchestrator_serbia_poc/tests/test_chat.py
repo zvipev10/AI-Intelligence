@@ -113,6 +113,23 @@ class ChatUnitTests(unittest.TestCase):
         no_case = ChatTurn(None, Chat(), Host(), lambda e, d: None, TurnContext.from_request({"message": "x", "scope": "auto"}))
         self.assertIn("error", no_case.ask_i360({"question": "linked records", "scope": "investigation"}))
 
+    def test_an_inexact_layers_scope_is_labelled_approximate(self):
+        steps = []
+
+        class Chat:
+            def ask(self, body, conversation_id):
+                return iter([("answer", {"content": "x", "citations": []})])
+
+        class Host:
+            def layers_scope(self):
+                return {"kind": "results", "ids": [], "exact": False}
+
+        ctx = TurnContext.from_request({"message": "x", "scope": "auto"})
+        turn = ChatTurn(None, Chat(), Host(), lambda e, d: steps.append(d), ctx)
+        result = turn.ask_i360({"question": "what data do we have", "scope": "layers"})
+        self.assertIn("approximate", result["scope_note"])
+        self.assertIn("i360 · our layers, approximate · 0 records", turn.summary)
+
     def test_a_layer_in_the_investigation_is_filtered_from_i360s_listing(self):
         # "IPDR" means nothing to i360: the investigation's records it lists are grouped by our layers.
         asked = []
@@ -414,8 +431,9 @@ class ChatApiTests(unittest.TestCase):
     def test_made_up_record_is_not_opened(self):
         events = self.ask(self.signed_in(), {"message": "open this record", "viewer_item_id": "no-such-item"})
         self.assertEqual([], self.actions(events, "open_item"))
-        self.assertIn("open_item: no readable record with id no-such-item",
-                      [d["text"] for e, d in events if e == "step" and d.get("error")])
+        failed = [d for e, d in events if e == "step" and d.get("error")]
+        self.assertEqual(["Couldn't open the record"], [d["text"] for d in failed])
+        self.assertIn("no readable record with id no-such-item", failed[0]["detail"])
 
     def test_command_opens_a_catalog_layer(self):
         events = self.ask(self.signed_in(), {"message": "open cctv on the map"})

@@ -23,6 +23,7 @@ import copy
 import json
 import re
 import socket
+import time
 import urllib.error
 import urllib.request
 import uuid
@@ -290,7 +291,7 @@ Use the fewest tool calls that fulfil the request, then stop and answer in one o
   entity i360 already returned goes to ask_i360 with its entity_id.
 - Every ask_i360 names its scope, decided from the question: the investigation's records ("in this
   investigation", "linked", "the case"), our layers (a layer by name such as ADINT, IPDR, Satellite, CCTV or
-  Cellular, "on the map", "in the layers", "these records"), or all of i360 ("anywhere", "in i360", people and
+  Cellular, "on the map", "in the layers", "these records", "in the system", "we have", "our data"), or all of i360 ("anywhere", "in i360", people and
   entities by name). A follow-up keeps the scope of the question it follows.
   When neither the question nor the conversation says where, search our layers; do not ask the user.
 - Name the scope that was searched as it was (this investigation, our layers, or all data).
@@ -434,6 +435,12 @@ def answer_entities(answer: dict[str, Any]) -> list[dict[str, str]]:
     return [e for e in found.values() if not e["type"].upper().startswith("AICHAT_")]
 
 
+# What a failed step says in the panel; the technical reason goes to the step's details and the log.
+FAILED_STEP = {"ask_i360": "i360 didn't answer", "show_items": "Couldn't show the records",
+               "open_item": "Couldn't open the record", "open_entity": "Couldn't open that person or entity",
+               "open_layer": "Couldn't open the layer", "save_to_memory": "Couldn't save to memory"}
+
+
 class ChatTurn:
     """One message, start to finish. ``emit(event, data)`` writes to the browser's stream."""
 
@@ -454,6 +461,8 @@ class ChatTurn:
         self.i360_last_turns = list(context.i360_last_turns)
         self.i360_scope = context.i360_scope
         self.listing_trace: list[str] = []
+        self.started = time.monotonic()
+        self.summary: list[str] = []  # the turn in one line: "i360 · all data · 50 records → table"
         self.catalog_cache: list[dict[str, Any]] | None = None
 
     # -- the loop ---------------------------------------------------------------------------
@@ -499,6 +508,7 @@ class ChatTurn:
             if note:
                 self.emit("note", {"text": note})
         self.emit("done", {"i360_conversation_id": self.i360_conversation_id, "i360_scope": self.i360_scope,
+                           "summary": " ".join(self.summary + [f"· {time.monotonic() - self.started:.0f} s"]),
                            "i360_last_turns": self.i360_last_turns[-6:], "citations": self.cited[:500],
                            "entities": self.entities[:100]})
 
@@ -573,12 +583,16 @@ class ChatTurn:
         try:
             result = handler(args)
             if isinstance(result, dict) and result.get("error"):
-                self.emit("step", {"text": f"{name}: {result['error']}", "error": True, "tool": name})
+                self.emit("step", {"text": FAILED_STEP.get(name, "A step failed"), "detail": str(result["error"]),
+                                   "error": True, "tool": name})
             return result
         except (AuthExpired, ClientGone):
             raise
         except (HlError, ValueError) as exc:
-            self.emit("step", {"text": f"{name} failed: {exc}", "error": True})
+            text = ("Couldn't reach the platform" if isinstance(exc, Unreachable)
+                    else "The platform failed to answer" if isinstance(exc, HlError) and exc.status >= 500
+                    else FAILED_STEP.get(name, "A step failed"))
+            self.emit("step", {"text": text, "detail": f"{name}: {exc}", "error": True, "tool": name})
             return {"error": str(exc)}
 
     def ask_i360(self, args: dict[str, Any]) -> dict[str, Any]:
@@ -620,19 +634,26 @@ class ChatTurn:
                 scope = "all"  # a records scope would hide the entity's links
         if self.ctx.timezone:
             body["tz"] = self.ctx.timezone
+        scope_note = ""
         if scope == "layers":
             layers = self.host.layers_scope()
             if layers:
                 exact = layers.pop("exact", True)
                 body["scope"] = layers
-                where = " (our layers)" if exact else " (our layers' sources and dates)"
+                where = " (our layers)" if exact else " (our layers, approximate)"
+                if not exact:
+                    # HL search only ANDs filters, so several layers merge into their shared dates: this is
+                    # close to all data, and the answer must say so rather than present it as our layers.
+                    scope_note = ("Our layers could not be searched as one: i360 searched all records in "
+                                       "their date range, so this answer is approximate. Say so in one short clause.")
             else:
                 where = " (all data)"
         else:
             where = " (this investigation)" if body.get("focus") else " (all data)"
         if self.chat_model:
             body["model"] = self.chat_model
-        self.emit("step", {"text": "Asking i360" + where, "tool": "ask_i360",
+        asked_at = time.monotonic()
+        self.emit("step", {"text": "Asking i360" + where, "tool": "ask_i360", "live": True,
                            "focus": (body.get("focus") or {}).get("id", ""),
                            "scope": (body.get("scope") or {}).get("kind", ""), "question": body["question"][:200]})
         answer: dict[str, Any] | None = None
@@ -651,6 +672,7 @@ class ChatTurn:
             self.i360_last_turns.append(str(answer["turn_id"]))
         if answer is None:
             return {"error": f"i360 gave no answer ({error or 'empty stream'})"}
+        where_label = where.strip(" ()")
         citations = list({c["id"]: c for c in cited_items(answer.get("citations"))}.values())
         layer_note = ""
         named = self.layers_named(question) if body.get("focus") else []
@@ -670,8 +692,8 @@ class ChatTurn:
             # i360 reads "what records does this investigation hold" as a request for the case brief (the
             # overview leg: counts by type, source and place, no item ids). Its search leg lists the records.
             citations = self.investigation_listing(body)
-            self.emit("step", {"text": f"i360 listed {len(citations)} record(s) of the investigation", "tool": "ask_i360",
-                               "trace": "; ".join(self.listing_trace)})
+            self.emit("step", {"text": f"Listed the investigation's {len(citations)} record(s)", "tool": "ask_i360",
+                               "trace": "; ".join(self.listing_trace), "log_only": True})
         ids = [c["id"] for c in citations]
         self.cited_this_turn = ids
         self.cited = citations
@@ -682,6 +704,12 @@ class ChatTurn:
             self.entities = entities
         self.has_places = bool(cards.get("place") or agg.get("points") or
                                any(isinstance(b, dict) and "lat" in b for b in agg.get("buckets") or []))
+        found = " · ".join(part for part in (
+            f"{len(ids)} record{'' if len(ids) == 1 else 's'}" if ids or not entities else "",
+            f"{len(entities)} {'person' if len(entities) == 1 else 'people/entities'}" if entities else "") if part)
+        self.emit("step", {"text": f"Asked i360 ({where_label}) · {found} · {time.monotonic() - asked_at:.0f} s",
+                           "tool": "ask_i360"})
+        self.summary.append(f"i360 · {where_label} · {found}")
         return {
             "answer": str(answer.get("content") or "")[:4000],
             "cited_count": len(ids),
@@ -693,6 +721,7 @@ class ChatTurn:
             "entities": entities[:30],
             **({"widen": answer["widen"]} if answer.get("widen") else {}),
             **({"note": layer_note} if layer_note else {}),
+            **({"scope_note": scope_note} if scope_note else {}),
         }
 
     def investigation_listing(self, body: dict[str, Any]) -> list[dict[str, str]]:
@@ -753,7 +782,10 @@ class ChatTurn:
             return {"error": "none of the cited items could be read"}
         self.on_screen.update(str(r.get("i360_item_id")) for g in groups for r in g["rows"])
         self.emit("action", {"kind": "show_items", "label": label, "view": view, "groups": groups})
-        self.emit("step", {"text": f"Showed {shown} records as '{label}' on the {view}", "tool": "show_items"})
+        missing = len(ids) - shown
+        self.emit("step", {"text": f"Showed {shown} record{'' if shown == 1 else 's'} on the {view}"
+                                   + (f" · {missing} couldn't be read" if missing else ""), "tool": "show_items"})
+        self.summary.append(f"→ {view}" + (f" ({missing} missing)" if missing else ""))
         return {"shown": shown, "layers": [f"Chat: {label} · {g['label']}" if len(groups) > 1 else f"Chat: {label}" for g in groups],
                 "view": view, "missing": len(ids) - shown}
 

@@ -98,7 +98,7 @@
     };
   }
 
-  function addStep(turn, title, detail = "", isError = false, tool = "") {
+  function addStep(turn, title, detail = "", isError = false) {
     const shouldFollow = nearBottom();
     turn.steps += 1;
     const item = document.createElement("li");
@@ -111,10 +111,6 @@
           <span class="material-symbols-rounded activity-expand-icon" aria-hidden="true">expand_more</span>
         </summary>
         <div class="activity-expanded">
-          <div class="activity-card-meta">
-            <span class="activity-tool">${esc(tool)}</span>
-            <span class="activity-status ${isError ? "error" : "success"}">${isError ? "Failed" : "Completed"}</span>
-          </div>
           ${detail ? `<div class="activity-flow"><section class="activity-section"><p class="activity-detail">${esc(detail)}</p></section></div>` : ""}
         </div>
       </details>`;
@@ -182,7 +178,8 @@
     const research = turn.article.querySelector(".research-process");
     const details = document.createElement("details");
     details.className = "research-steps-toggle";
-    details.innerHTML = `<summary>Research process${turn.steps ? ` · ${turn.steps} step${turn.steps === 1 ? "" : "s"}` : ""}</summary>`;
+    // One line per answer: what was searched, what was found and where it is shown; the steps open on click.
+    details.innerHTML = `<summary>${esc(turn.summary || (turn.steps ? `${turn.steps} step${turn.steps === 1 ? "" : "s"}` : "No steps"))}</summary>`;
     if (turn.steps) details.appendChild(turn.list);
     else details.insertAdjacentHTML("beforeend", `<div class="activity-empty">No steps were needed.</div>`);
     research?.replaceWith(details);
@@ -360,14 +357,13 @@
 
   async function handle(turn, event, data) {
     if (event === "step") {
-      addStep(turn, data?.text || "Step", "", Boolean(data?.error), data?.tool || "");
-      if (data?.tool === "ask_i360") setWaiting(turn, "i360 is searching");
+      // A live step only says what is running; its result arrives as its own step. Log-only steps stay in the log.
+      if (data?.live) setWaiting(turn, data?.text || "Working");
+      else if (!data?.log_only) addStep(turn, data?.text || "Step", data?.detail || "", Boolean(data?.error));
     } else if (event === "i360") {
       const inner = data?.event, payload = data?.data || {};
       if (inner === "status") {
-        setWaiting(turn, payload.text || "i360 is searching");
-        (payload.steps || []).slice(turn.i360Steps || 0).forEach(step => addStep(turn, `i360: ${step.summary || step.text || step.tool || "step"}`, step.args ? JSON.stringify(step.args) : "", false, step.tool || "i360"));
-        turn.i360Steps = Math.max(turn.i360Steps || 0, (payload.steps || []).length);
+        setWaiting(turn, payload.text || "i360 is searching");  // i360's own progress line; its internal steps are not listed
       } else if (inner === "token") {
         turn.streamed += payload.text || "";
         renderStreaming(turn);
@@ -389,6 +385,7 @@
       CHAT.i360Scope = data?.i360_scope || CHAT.i360Scope;
       if (Array.isArray(data?.i360_last_turns)) CHAT.i360LastTurns = data.i360_last_turns;
       if (Array.isArray(data?.citations)) CHAT.citations = data.citations;
+      turn.summary = data?.summary || "";
       if (Array.isArray(data?.entities)) CHAT.entities = data.entities;
     }
   }

@@ -619,6 +619,10 @@ class Handler(BaseHTTPRequestHandler):
         data = data if isinstance(data, dict) else {}
         if event == "step":
             line = f"step{' (error)' if data.get('error') else ''}: {str(data.get('text') or '')[:200]}"
+            if data.get("detail"):
+                line += f" [{str(data['detail'])[:300]}]"
+            if data.get("trace"):
+                line += f" [{str(data['trace'])[:300]}]"
             if data.get("tool") == "ask_i360" and "question" in data:
                 line += f" [focus {data.get('focus') or '-'}, scope {data.get('scope') or '-'}, question {json.dumps(data.get('question'))}]"
             if data.get("trace"):
