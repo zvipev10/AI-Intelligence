@@ -221,16 +221,26 @@ class ChatUnitTests(unittest.TestCase):
                 if len(asked) <= 2:  # the brief, then a listing i360 also reads as an overview
                     return iter([("answer", {"leg": "overview", "content": "1 image", "citations": [],
                                              "cards": {"case": {"total": 1}}}), ("done", {"conversation_id": "c-1"})])
-                return iter([("answer", {"leg": "search", "citations": [{"id": "img-7", "type": "image"}]})])
+                return iter([("answer", {"leg": "search", "citations": [{"id": "img-7", "type": "image"},
+                                                                         {"id": "doc-1", "type": "document"}]})])
+
+        class Host:  # img-7 is in our Satellite layer; doc-1 is in none of our layers
+            def catalog_layers(self):
+                return [{"id": "events:Satellite", "kind": "events", "source_type": "Satellite"}]
+
+            def item_layers(self, ids):
+                return [{"label": "Satellite", "rows": [{"i360_item_id": "img-7"}]},
+                        {"label": "news", "rows": [{"i360_item_id": "doc-1"}]}]
 
         ctx = TurnContext.from_request({"message": "what records are linked", "investigation_id": "INV-1"})
-        turn = ChatTurn(None, Chat(), object(), lambda e, d: None, ctx)
+        turn = ChatTurn(None, Chat(), Host(), lambda e, d: None, ctx)
         result = turn.ask_i360({"question": "what records are linked", "scope": "investigation"})
         self.assertEqual(["img-7"], [c["id"] for c in result["cited_items"]])
         self.assertEqual(["img-7"], [c["id"] for c in turn.cited])
         self.assertEqual(["find all items", "search all items"], [body["question"] for body, _ in asked[1:]])
         self.assertEqual([None, None], [conversation for _, conversation in asked[1:]])
         self.assertEqual("INV-1", asked[2][0]["focus"]["id"])
+        self.assertIn("1 record(s) linked to the investigation are outside our layers", result["note"])  # strict
         self.assertEqual("1 image", result["answer"])  # the brief stays i360's answer
         self.assertEqual("c-1", turn.i360_conversation_id)  # the listing does not take over the conversation
 

@@ -697,6 +697,19 @@ class ChatTurn:
             citations = self.investigation_listing(body)
             self.emit("step", {"text": f"Listed the investigation's {len(citations)} record(s)", "tool": "ask_i360",
                                "trace": "; ".join(self.listing_trace), "log_only": True})
+        if body.get("focus") and citations and not named:
+            # Strict (Zvika, 2026-10-12): the investigation's records count only when they are also in our layers.
+            layer_names = self.layer_names()
+            groups = self.host.item_layers([c["id"] for c in citations])
+            keep = {str(r.get("i360_item_id")) for g in groups if g.get("label") in layer_names
+                    for r in g.get("rows") or []}
+            outside = len(citations) - len([c for c in citations if c["id"] in keep])
+            citations = [c for c in citations if c["id"] in keep]
+            if outside:
+                layer_note = (f"{outside} record(s) linked to the investigation are outside our layers and were left "
+                              f"out; {len(citations)} remain. Report only these.")
+                self.emit("step", {"text": f"Left out {outside} linked record(s) outside our layers",
+                                   "tool": "ask_i360"})
         ids = [c["id"] for c in citations]
         self.cited_this_turn = ids
         self.cited = citations
@@ -810,10 +823,13 @@ class ChatTurn:
                     return found
         return []
 
+    def layer_names(self) -> set[str]:
+        """The app's record layers (IPDR, Cellular Calls, ...)."""
+        return {str(l.get("source_type") or "") for l in self.catalog() if l.get("kind") == "events"} - {""}
+
     def layers_named(self, question: str) -> list[str]:
         """The app's record layers the question names (IPDR, Cellular Calls, ...), longest names first."""
-        names = sorted({str(l.get("source_type") or "") for l in self.catalog() if l.get("kind") == "events"} - {""},
-                       key=len, reverse=True)
+        names = sorted(self.layer_names(), key=len, reverse=True)
         found, text = [], question
         for name in names:
             pattern = re.compile(rf"(?<![\w]){re.escape(name)}(?![\w])", re.IGNORECASE)

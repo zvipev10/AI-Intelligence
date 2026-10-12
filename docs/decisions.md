@@ -630,4 +630,4 @@ Decision: the chat asks i360 only inside the app's data. There is no "all data" 
 
 Rationale: Zvika: "There shouldn't be an option to ask i360 for something that is not in layers"; a strict rule in code, not wording the model may misread.
 
-Impact: supersedes the "all data" scope and the "our layers, approximate" label of the two entries above. The investigation scope still sends the investigation as focus; whether its records must also be in our layers is open.
+Impact: supersedes the "all data" scope and the "our layers, approximate" label of the two entries above. The investigation scope still sends the investigation as focus, and (Zvika chose strict) only the linked records that are also in our layers are shown and reported; the rest are counted as left out. A record is in a layer when it matches that layer's item types and sources (server.py item_layer_label); facet filters such as Cellular coverage and the layer's date window are not checked.
