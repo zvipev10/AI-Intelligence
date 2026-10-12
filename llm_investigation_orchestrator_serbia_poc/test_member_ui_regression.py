@@ -96,7 +96,7 @@ class MemberUiRegressionTests(unittest.TestCase):
         self.assertIn('selectTeamMember(michlolMember.dataset.memberId);', self.app)
 
     def test_role_layers_match_the_localized_calls_layer(self):
-        self.assertIn('const CATALOG_LAYER_ALIASES = { "events:שיחות סלולר": "events:Cellular Calls" };', self.app)
+        self.assertIn('const CATALOG_LAYER_ALIASES = { "events:שיחות סלולר": "events:Cellular Calls", "events:Cellular Locations": "events:Cellular Geolocations" };', self.app)
         self.assertIn("profile.allowedCatalogLayerIds.has(canonicalCatalogLayerId(layerId))", self.app)
         self.assertIn("openCatalogLayer(resolveCatalogLayerId(profile.defaultCatalogLayerId), { silent: true, roleDefault: true })", self.app)
 

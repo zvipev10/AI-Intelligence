@@ -91,6 +91,80 @@ class ChatUnitTests(unittest.TestCase):
         turn.ask_i360({"question": "find him everywhere", "scope": "all"})
         self.assertNotIn("scope", asked[-1])
 
+    def test_auto_scope_comes_from_the_model_every_time(self):
+        asked = []
+
+        class Chat:
+            def ask(self, body, conversation_id):
+                asked.append(body)
+                return iter([("answer", {"content": "x", "citations": []})])
+
+        class Host:
+            def layers_scope(self):
+                return {"kind": "results", "ids": [], "exact": True}
+
+        ctx = TurnContext.from_request({"message": "x", "investigation_id": "INV-1", "scope": "auto"})
+        turn = ChatTurn(None, Chat(), Host(), lambda e, d: None, ctx)
+        turn.ask_i360({"question": "show the calls"})  # the question does not say where: our layers
+        self.assertEqual("results", asked[-1]["scope"]["kind"])
+        self.assertNotIn("focus", asked[-1])
+        turn.ask_i360({"question": "linked records", "scope": "investigation"})
+        self.assertEqual("INV-1", asked[-1]["focus"]["id"])
+        no_case = ChatTurn(None, Chat(), Host(), lambda e, d: None, TurnContext.from_request({"message": "x", "scope": "auto"}))
+        self.assertIn("error", no_case.ask_i360({"question": "linked records", "scope": "investigation"}))
+
+    def test_a_layer_in_the_investigation_is_filtered_from_i360s_listing(self):
+        # "IPDR" means nothing to i360: the investigation's records it lists are grouped by our layers.
+        asked = []
+
+        class Chat:
+            def ask(self, body, conversation_id):
+                asked.append(body["question"])
+                if len(asked) == 1:  # i360 answers from outside the investigation
+                    return iter([("answer", {"leg": "agent", "content": "none", "citations": [{"id": "outside-1"}]})])
+                return iter([("answer", {"leg": "search", "citations": [{"id": "ipdr-1"}, {"id": "img-1"}]})])
+
+        class Host:
+            def catalog_layers(self):
+                return [{"id": "events:IPDR", "kind": "events", "source_type": "IPDR"},
+                        {"id": "events:Cellular Calls", "kind": "events", "source_type": "Cellular Calls"},
+                        {"id": "events:Calls", "kind": "events", "source_type": "Calls"}]
+
+            def item_layers(self, ids):
+                return [{"label": "IPDR", "rows": [{"i360_item_id": "ipdr-1"}]},
+                        {"label": "Satellite", "rows": [{"i360_item_id": "img-1"}]}]
+
+        ctx = TurnContext.from_request({"message": "x", "investigation_id": "INV-1", "scope": "auto"})
+        turn = ChatTurn(None, Chat(), Host(), lambda e, d: None, ctx)
+        result = turn.ask_i360({"question": "Which IPDR sessions are linked to this investigation?", "scope": "investigation"})
+        self.assertEqual(["ipdr-1"], [c["id"] for c in result["cited_items"]])
+        self.assertIn("1 record(s) of IPDR", result["note"])
+        self.assertEqual(["Cellular Calls"], turn.layers_named("show the cellular calls"))  # not also "Calls"
+        self.assertEqual([], ChatTurn(None, Chat(), Host(), lambda e, d: None, ctx).layers_named("show the IPDRs"))
+
+    def test_investigation_overview_is_listed_by_i360_search(self):
+        # i360's overview leg gives counts only; a second ask reaches its search leg, which lists the records.
+        asked = []
+
+        class Chat:
+            def ask(self, body, conversation_id):
+                asked.append((body, conversation_id))
+                if len(asked) <= 2:  # the brief, then a listing i360 also reads as an overview
+                    return iter([("answer", {"leg": "overview", "content": "1 image", "citations": [],
+                                             "cards": {"case": {"total": 1}}}), ("done", {"conversation_id": "c-1"})])
+                return iter([("answer", {"leg": "search", "citations": [{"id": "img-7", "type": "image"}]})])
+
+        ctx = TurnContext.from_request({"message": "what records are linked", "investigation_id": "INV-1"})
+        turn = ChatTurn(None, Chat(), object(), lambda e, d: None, ctx)
+        result = turn.ask_i360({"question": "what records are linked", "scope": "investigation"})
+        self.assertEqual(["img-7"], [c["id"] for c in result["cited_items"]])
+        self.assertEqual(["img-7"], [c["id"] for c in turn.cited])
+        self.assertEqual(["find all items", "search all items"], [body["question"] for body, _ in asked[1:]])
+        self.assertEqual([None, None], [conversation for _, conversation in asked[1:]])
+        self.assertEqual("INV-1", asked[2][0]["focus"]["id"])
+        self.assertEqual("1 image", result["answer"])  # the brief stays i360's answer
+        self.assertEqual("c-1", turn.i360_conversation_id)  # the listing does not take over the conversation
+
     def test_entities_come_from_i360_and_open_in_the_viewer(self):
         from hl.chat import answer_entities
         answer = {"leg": "lookup", "citations": [{"id": "item-1", "type": "image"}],

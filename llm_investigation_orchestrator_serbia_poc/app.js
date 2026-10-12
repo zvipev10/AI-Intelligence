@@ -397,7 +397,7 @@ const ROLE_WORKSPACES = {
 };
 
 // Catalog layer ids follow the dataset locale; the calls source has a Hebrew and an English id.
-const CATALOG_LAYER_ALIASES = { "events:שיחות סלולר": "events:Cellular Calls" };
+const CATALOG_LAYER_ALIASES = { "events:שיחות סלולר": "events:Cellular Calls", "events:Cellular Locations": "events:Cellular Geolocations" };
 
 function canonicalCatalogLayerId(layerId) {
   const id = String(layerId || "");
@@ -1370,23 +1370,7 @@ async function submitCollectionRequest() {
     openCellularCallsTaskDialog(target, trigger);
     return;
   }
-  const objects = [...collectionRequestForm.querySelectorAll('input[name="collectionObject"]:checked')].map(input => input.value);
-  const response = await fetch("/api/collection-request", {
-    method: "POST",
-    headers: { "Content-Type": "application/json; charset=utf-8" },
-    body: JSON.stringify({
-      investigation_id: state.investigationId,
-      name: state.investigationName,
-      role: state.activeRoleWorkspace || "general",
-      target: target.type === "imei" ? { type: "imei", imei: target.imei } : { type: "polygon", geometry: { type: "Polygon", coordinates: [target.coordinates] } },
-      collection_type: type,
-      extraction_objects: objects,
-      instructions: ""
-    })
-  });
-  const payload = await response.json();
-  if (!response.ok) throw new Error(payload.error || activeLocaleText("שליחת בקשת האיסוף נכשלה", "Could not submit collection request"));
-  await loadInvestigationMemory();
+  // A collection request is a demo: it opens the layer the collection feeds and is not saved to the investigation.
   closeCollectionRequestDialog();
   const openedLayer = await openRequestedCollectionLayer(type);
   if (!openedLayer) target.trigger?.focus?.();
@@ -1565,8 +1549,13 @@ async function loadInvestigationMemory(options = {}) {
     if (!response.ok) throw new Error(payload.error || activeLocaleText("טעינת זיכרון החקירה נכשלה", "Failed to load investigation memory"));
     if (token !== state.investigationMemoryLoadToken) return null;
     state.investigationMemory = payload;
-    if (options.restoreLayers) await restoreMemorySavedLayers(payload, token);
-    await loadInvestigationItemLayers(token);
+    // Opening an investigation opens its memory tabs; a save or removal only updates the tabs already there.
+    if (options.restoreLayers) {
+      await restoreMemorySavedLayers(payload, token);
+      await loadInvestigationItemLayers(token);
+    } else {
+      await refreshInvestigationItemLayers(token);
+    }
     if (!memoryModal?.hidden) renderMemoryScreen();
     return payload;
   } catch (error) {
@@ -1614,6 +1603,35 @@ async function loadInvestigationItemLayers(token) {
   });
   if (wasActive && !state.layers.some(layer => layer.id === state.activeLayerId)) state.activeLayerId = state.layers.find(layer => layer.visible)?.id || null;
   if (!state.activeLayerId) state.activeLayerId = state.layers.find(layer => layer.investigationItemsLayer)?.id || state.activeLayerId;
+  renderAllViews();
+  renderLayerSelector();
+}
+
+// After a save or removal: the memory tabs already open get their new rows; no tab is opened, shown,
+// hidden or made active. A tab whose layer has nothing saved any more is closed.
+async function refreshInvestigationItemLayers(token) {
+  const open = state.layers.filter(layer => layer.investigationItemsLayer);
+  if (!state.investigationId || !open.length) return;
+  let groups;
+  try {
+    const response = await fetch(buildLocaleApiUrl(`/api/investigation-items?id=${encodeURIComponent(state.investigationId)}`), { cache: "no-store" });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) return;
+    groups = Array.isArray(payload.layers) ? payload.layers : [];
+  } catch (error) {
+    return;
+  }
+  if (token !== state.investigationMemoryLoadToken) return;
+  const rowsByLabel = new Map(groups.map(group => [`${group.label} · ${activeLocaleText("זיכרון", "memory")}`, Array.isArray(group.rows) ? group.rows : []]));
+  open.forEach(layer => {
+    const rows = rowsByLabel.get(layer.label) || [];
+    layer.items = buildCatalogLayer({ id: layer.dataId, label: layer.label, kind: layer.kind, capabilities: layer.capabilities }, rows).items;
+  });
+  const emptied = new Set(open.filter(layer => !layer.items.length).map(layer => layer.id));
+  if (emptied.size) {
+    state.layers = state.layers.filter(layer => !emptied.has(layer.id));
+    if (emptied.has(state.activeLayerId)) state.activeLayerId = state.layers.find(layer => layer.visible)?.id || null;
+  }
   renderAllViews();
   renderLayerSelector();
 }
@@ -2491,7 +2509,9 @@ async function openCatalogLayer(layerId, options = {}) {
     state.layerSearchQuery = "";
     state.layerSearchOpen = false;
     if (options.savedLayer) applySavedFiltersToLayer(existing, options.savedLayer);
-    if (!options.silent && existing.kind === "events" && !existing.capabilities.map) activateView("table");
+    // Each layer opens in its default presentation: calls on the timeline, map layers on the map, the rest as a table.
+    if (!options.silent && isCallsLayer(existing)) activateView("timeline");
+    else if (!options.silent && existing.kind === "events") activateView(existing.capabilities.map ? "map" : "table");
     if (!options.silent) {
       renderAllViews();
       renderLayerSelector();
@@ -2531,6 +2551,7 @@ async function openCatalogLayer(layerId, options = {}) {
     if (!options.silent && isCallsLayer(openedLayer)) activateView("timeline");
     else if (!options.silent && ["entity_metadata", "person_entities"].includes(openedLayer.kind)) activateView("table");
     else if (!options.silent && !openedLayer.capabilities.map) activateView(openedLayer.kind === "events" ? "table" : (openedLayer.capabilities.timeline ? "timeline" : "table"));
+    else if (!options.silent && openedLayer.kind === "events") activateView("map");
     if (!options.silent) renderAllViews();
     return restoredLayer;
   } catch (error) {
@@ -2722,11 +2743,11 @@ function cellularCallHtml(item) {
   const translations = String(item.call_transcript_en || "").split(/\n\s*\n/).filter(Boolean);
   const paragraphs = String(original).split(/\n\s*\n/).filter(Boolean);
   const bubbles = paragraphs.map((text, index) => {
-    const match = text.match(/^([^:]+):\s*([\s\S]*)$/);
+    const match = text.match(/^(.+?):\s+([\s\S]*)$/);  // "speaker: text"; a speaker may carry a time ("· 00:05")
     const speaker = match ? match[1] : "";
     const side = speaker.startsWith("IMEI") ? "a" : speaker ? "b" : "note";
     const translated = translations[index] || "";
-    const translation = translated.replace(/^[^:]+:\s*/, "");
+    const translation = translated.replace(/^.+?:\s+/, "");
     const transcriptLanguage = /arabic|persian/i.test(item.call_language || "") ? "ar" : "en";
     return `<article class="call-bubble call-bubble-${side}">${speaker ? `<header>${escapeHtml(speaker)}</header>` : ""}<p lang="${transcriptLanguage}" dir="auto">${escapeHtml(match ? match[2] : text)}</p>${translation && translation !== (match ? match[2] : text) ? `<p class="call-translation" lang="en" dir="ltr">${escapeHtml(translation)}</p>` : ""}</article>`;
   }).join("");
@@ -2886,7 +2907,8 @@ function initializeViewerMediaFallback(item, recordId) {
     const type = recordFileMediaType(file);
     const player = body.querySelector(".call-player");
     if (player && type === "audio") {
-      player.innerHTML = `<div><span class="material-symbols-rounded">graphic_eq</span><strong>${escapeHtml(activeLocaleText("הקלטה", "Recording"))}</strong></div><audio controls preload="metadata" src="${escapeHtml(file.url)}"></audio>`;
+      player.innerHTML = `<div><span class="material-symbols-rounded">graphic_eq</span><strong>${escapeHtml(activeLocaleText("הקלטה", "Recording"))}</strong></div><audio controls autoplay preload="auto" src="${escapeHtml(file.url)}"></audio>`;
+      startCellularCallAudio();  // an i360 call's recording arrives after the viewer opened: play it as the viewer's own does
       return;
     }
     if (player) return;
@@ -3248,7 +3270,9 @@ function personTelecomDetailsHtml(item) {
   const reviewCard = extractedIdentifiers && !approved ? `<section class="person-telecom-review" aria-label="${escapeHtml(activeLocaleText("מזהי מנוי שחולצו וממתינים לאישור", "Extracted subscriber identifiers awaiting approval"))}">
     <div class="person-telecom-review-heading"><span class="material-symbols-rounded" aria-hidden="true">psychology</span><div><strong>${escapeHtml(activeLocaleText("זהות מנוי שחולצה", "Extracted subscriber identity"))}</strong><span>${escapeHtml(activeLocaleText("נדרש אישור אנליסט", "Analyst review required"))}</span></div></div>
     <dl class="person-telecom-identifier-grid">${identifier("MSISDN", extracted.msisdn)}${identifier("IMSI", extracted.imsi)}</dl>
-    <p>${escapeHtml(activeLocaleText("התאמה עקבית ל-IMEI ברשומות מיקום סלולריות.", "Consistently matched to this IMEI across cellular-geolocation records."))}</p>
+    <p>${escapeHtml(derivation?.source === "i360"
+      ? activeLocaleText("נגזר ב-i360 מרשומות המיקום הסלולריות המקושרות לאדם; סטטוס: מומלץ.", "Derived by i360 from the cellular location records linked to this person. Status: recommended.")
+      : activeLocaleText("התאמה עקבית ל-IMEI ברשומות מיקום סלולריות.", "Consistently matched to this IMEI across cellular-geolocation records."))}</p>
     <button type="button" class="person-telecom-approve" data-approve-telecom-entity="${escapeHtml(item.entity_id || "")}"><span class="material-symbols-rounded" aria-hidden="true">verified</span>${escapeHtml(activeLocaleText("אשר", "Approve"))}</button>
   </section>` : "";
   const approvalStatus = approved ? `<span class="person-telecom-approved"><span class="material-symbols-rounded" aria-hidden="true">verified</span>${escapeHtml(activeLocaleText("אושר", "Approved"))}</span>` : "";
@@ -3323,7 +3347,10 @@ function entityRecordLocationPoints(item) {
   });
   const byLocation = new Map();
   related.forEach(event => {
-    const locationId = String(event.location_id || "").trim();
+    // A record without a location object (an i360 call with its own GPS point) is placed at its coordinates.
+    const ownPoint = String(event.latitude ?? "").trim() && String(event.longitude ?? "").trim()
+      ? `geo:${Number(event.latitude).toFixed(5)},${Number(event.longitude).toFixed(5)}` : "";
+    const locationId = String(event.location_id || "").trim() || ownPoint;
     const location = LOCATIONS[locationId] || {};
     const lon = Number(location.lon ?? event.longitude ?? event.lon);
     const lat = Number(location.lat ?? event.latitude ?? event.lat);
@@ -3382,13 +3409,22 @@ function initializeEntityLocationMap(item) {
 
 function personWorkspaceHtml(item) {
   const points = entityRecordLocationPoints(item);
-  const records = [...new Set(points.flatMap(point => point.records))];
+  // Every connected record, with or without a location (an IPDR session has none).
+  const personId = String(item?.entity_id || "");
+  const splitIds = value => Array.isArray(value) ? value.map(String) : String(value || "").split(/[,;|\s]+/).filter(Boolean);
+  const linkedRecords = (typeof state !== "undefined" && Array.isArray(state.events) ? state.events : []).filter(event => personId && (String(event.entity_id || "") === personId
+    || [event.related_entity_ids, event.side_a_entity_id].some(value => splitIds(value).includes(personId))));
+  const records = [...new Set([...points.flatMap(point => point.records), ...linkedRecords.map(event => event.record_id || event.event_id).filter(Boolean)])];
   const detail = (label, value, direction = "auto") => value ? `<div><dt>${escapeHtml(label)}</dt><dd dir="${direction}">${escapeHtml(viewerValue(value))}</dd></div>` : "";
   const mapPanel = points.length
     ? entityLocationMapHtml(item)
     : `<section class="call-map-panel person-map-empty"><span class="material-symbols-rounded">location_off</span><strong>${escapeHtml(activeLocaleText("אין מיקומי רשומות מקושרים", "No connected record locations"))}</strong><p>${escapeHtml(activeLocaleText("יוצגו כאן מיקומים לאחר שייווצרו רשומות המקושרות לאדם.", "Connected record locations will appear here when available."))}</p></section>`;
+  // Grouped by the layer each record belongs to (its source_type), largest group first.
+  const layerOf = id => String(((typeof state !== "undefined" && Array.isArray(state.events) ? state.events : []).find(event => (event.record_id || event.event_id) === id) || {}).source_type || activeLocaleText("אחר", "Other"));
+  const byLayer = new Map();
+  records.forEach(id => byLayer.set(layerOf(id), [...(byLayer.get(layerOf(id)) || []), id]));
   const recordLinks = records.length
-    ? records.map(id => `<button type="button" class="object-viewer-open" data-viewer-kind="record" data-viewer-id="${escapeHtml(id)}">${escapeHtml(id)}</button>`).join("")
+    ? [...byLayer.entries()].sort((a, b) => b[1].length - a[1].length).map(([layer, ids]) => `<div class="person-record-group"><h4>${escapeHtml(layer)} <span>${escapeHtml(ids.length.toLocaleString(currentLocaleTag()))}</span></h4><div class="person-record-group-items">${ids.map(id => `<button type="button" class="object-viewer-open" data-viewer-kind="record" data-viewer-id="${escapeHtml(id)}">${escapeHtml(id)}</button>`).join("")}</div></div>`).join("")
     : `<p class="call-empty">${escapeHtml(activeLocaleText("לא נמצאו רשומות מקושרות.", "No connected records."))}</p>`;
   return `<section class="person-workspace call-workspace" aria-label="${escapeHtml(activeLocaleText("פרופיל אדם", "Person profile"))}">
     <aside class="call-sidebar person-profile-sidebar">
@@ -3436,13 +3472,21 @@ function recordLinkedEntitiesHtml(item) {
     entity_imei_to_ipdr_imei_v1: "IMEI",
     entity_imei_to_cellular_target_imei_v1: "IMEI",
     entity_imei_to_call_party_v1: activeLocaleText("IMEI של צד א׳", "Side A IMEI"),
-    entity_imei_to_call_speaker_imei_v1: activeLocaleText("IMEI דובר בתמליל", "Transcript speaker IMEI")
+    entity_imei_to_call_speaker_imei_v1: activeLocaleText("IMEI דובר בתמליל", "Transcript speaker IMEI"),
+    i360_related_object_v1: "i360 link"
   }[rule] || activeLocaleText("התאמת שדה", "Field match"));
   const rows = links.map(link => {
     const entityId = String(link.entity_id || "");
     const kind = String(link.entity_type || "").toLowerCase() === "person" ? "person" : "organization";
     const name = link.entity_name || entityId;
     const fields = `${link.record_field || "record"} = ${link.entity_field || "entity"}`;
+    if (link.rule_id === "i360_related_object_v1") {
+      // i360 does not record why a record is linked; a shared identifier is the app's own check.
+      const basis = link.matched_value
+        ? `${escapeHtml(activeLocaleText("לפי", "via"))} ${escapeHtml(String(link.entity_field || "").replace("telecom.", "").toUpperCase())} <code dir="ltr">${escapeHtml(link.matched_value)}</code> (<code dir="ltr">${escapeHtml(link.record_field || "")}</code>, ${escapeHtml(activeLocaleText("התאמה של האפליקציה", "matched by the app"))})`
+        : escapeHtml(activeLocaleText("הבסיס לא תועד", "basis not recorded"));
+      return `<li>${entityViewerLinkHtml(entityId, name, kind)}<span>i360 link · ${basis}</span></li>`;
+    }
     return `<li>${entityViewerLinkHtml(entityId, name, kind)}<span>${escapeHtml(ruleLabel(link.rule_id))} · <code dir="ltr">${escapeHtml(fields)}</code> · <code dir="ltr">${escapeHtml(link.matched_value || "—")}</code></span></li>`;
   }).join("");
   return `<section class="object-viewer-evidence record-entity-links"><h3>${escapeHtml(activeLocaleText("ישויות מקושרות", "Linked entities"))}</h3><ul>${rows}</ul></section>`;
@@ -3726,6 +3770,11 @@ function cellularCallMapLocation(event, side) {
   const prefix = side === "a" ? "side_a" : "side_b";
   const locationId = event[`${prefix}_location_id`];
   const canonical = LOCATIONS[locationId];
+  if ((!locationId || !canonical) && side === "a" && event.latitude && event.longitude) {
+    // An i360 call has no location object, only its own point: use it for side A.
+    return { id: "", name: activeLocaleText("מיקום השיחה", "Call location"), lon: Number(event.longitude), lat: Number(event.latitude),
+      number: event[`${prefix}_sim`] || event[`${prefix}_number`] || "-" };
+  }
   if (!locationId || !canonical) return null;
   return {
     id: locationId,
@@ -4578,7 +4627,9 @@ function renderEvidence() {
     const fieldLabels = activeLayer.fieldLabels || {};
     const named = Object.keys(fieldLabels).filter(key => keys.includes(key));
     const first = ["i360.item_id", "i360.event_time", "i360.item_type", "i360.sub_type", "i360.source_application"].filter(key => keys.includes(key) && !named.includes(key));
-    const columns = [...named, ...first, ...keys.filter(key => !first.includes(key) && !named.includes(key))];
+    const ordered = [...named, ...first, ...keys.filter(key => !first.includes(key) && !named.includes(key))];
+    // The item id is always the first column, in every layer.
+    const columns = keys.includes("i360.item_id") ? ["i360.item_id", ...ordered.filter(key => key !== "i360.item_id")] : ordered;
     head.innerHTML = `<tr><th class="result-map-action-column" data-result-action-column="true"></th>${columns.map(key => `<th>${escapeHtml(fieldLabels[key] || viewerFieldLabel(key))}</th>`).join("")}</tr>`;
     body.innerHTML = activeItems.length ? activeItems.map(event => {
       const eventId = String(event.record_id || event.event_id || "");

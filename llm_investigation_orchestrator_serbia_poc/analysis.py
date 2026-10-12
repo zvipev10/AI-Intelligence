@@ -243,7 +243,8 @@ def build_entity_layers(events, entities, locations, links) -> dict[str, dict[st
         }
         presentation.update({f: base[f] for f in ENTITY_PROFILE_FIELDS if base.get(f) not in (None, "", [], {})})
         derivation = derive_subscriber_identity(events, links, entity_id)
-        if derivation and not (presentation.get("telecom") or {}).get("approved_subscriber_identity"):
+        telecom = presentation.get("telecom") or {}
+        if derivation and not telecom.get("approved_subscriber_identity") and not telecom.get("i360_review"):
             presentation["telecom"] = {**(presentation.get("telecom") or {}), "subscriber_identity_derivation": derivation}
         presentations[entity_id] = presentation
     return presentations

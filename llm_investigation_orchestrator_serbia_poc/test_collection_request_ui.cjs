@@ -17,7 +17,7 @@ assert.match(polygonMenuFunction, /state\.pageView !== "workspace"/);
 assert.match(polygonDraw, /getCanvas\(\)\.addEventListener\("contextmenu"/);
 assert.match(polygonDraw, /queryRenderedFeatures\(point,\{layers:\["draw-polygon-fill"\]\}\)/);
 assert.doesNotMatch(polygonDraw, /map\.on\("click","draw-polygon-fill"/);
-assert.match(app, /fetch\("\/api\/collection-request"/);
+assert.doesNotMatch(app, /fetch\("\/api\/collection-request"/);  // not saved to the investigation
 assert.match(html, /id="collectionRequestModal"/);
 assert.match(html, /id="polygonActionMenu"/);
 assert.match(html, /id="cctvTaskModal"/);

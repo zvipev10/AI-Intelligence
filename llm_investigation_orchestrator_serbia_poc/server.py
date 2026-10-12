@@ -32,7 +32,7 @@ from analysis import Dataset, normalize_locale, require_investigation_id
 from hl.chat import ChatServiceClient, ChatTurn, ClientGone, LlmClient, TurnContext, answer_entities
 from hl.client import AuthExpired, HlClient, HlError
 from hl.config import ROOT, Settings, load_settings
-from hl.items import ItemReader, Snapshot, SnapshotCache, entity_presentation, item_fields, layers_search
+from hl.items import TELECOM_APPROVED, ItemReader, Snapshot, SnapshotCache, entity_presentation, item_fields, layers_search
 from hl.mapping import Mapping, load_mapping
 from hl.state import MEMORY_GROUPS, StateStore
 
@@ -73,9 +73,14 @@ def normalize_record_files(files: Any, origin: str) -> list[dict[str, Any]]:
             continue
         entry = dict(entry)
         urls = entry.get("urls") if isinstance(entry.get("urls"), dict) else {}
+        is_video = str(entry.get("content_type") or "").startswith("video/") or entry.get("raw_type") == "video"
+        # Videos: i360's web_preview is an H.264 copy every browser plays; the original may be H.265/HEVC.
+        if is_video and urls.get("web_preview"):
+            entry.setdefault("original_url", urls.get("primary"))
+            entry.setdefault("url", urls["web_preview"])
         entry.setdefault("url", urls.get("primary"))
         entry.setdefault("thumbnail_url", urls.get("thumbnail"))
-        for key in ("url", "signed_url", "thumbnail_url"):
+        for key in ("url", "signed_url", "thumbnail_url", "original_url"):
             value = entry.get(key)
             if isinstance(value, str) and value.startswith("/"):
                 entry[key] = origin + value
@@ -105,7 +110,8 @@ class App:
         return StateStore(self.client(token), investigation_type=s.investigation_type,
                           memory_item_type=s.memory_item_type, approval_type=s.approval_type,
                           scenario=s.scenario, external_investigation_type=s.external_investigation_type,
-                          investigation_links=self.profile.get("investigation_links") or [])
+                          investigation_links=self.profile.get("investigation_links") or [],
+                          item_layer=self.item_layer_label)
 
     def layer_field_labels(self, layer_name: Any) -> dict[str, str]:
         """A layer's display names for its i360 fields (profile query "labels": path -> name), as row keys."""
@@ -189,6 +195,39 @@ class App:
             return Snapshot(items=items, entities=entities, locations=locations, reviews=reviews,
                             fetched_at=time.time(), truncated=reader.truncated, warnings=reader.warnings)
         return self.snapshots.get(token, build, refresh=refresh)
+
+    def approve_i360_telecom(self, token: str, entity_type: str, entity_id: str) -> None:
+        """Set the status of the person's derived MSISDN / IMSI entries (details.device_msisdn,
+        details.device_imsi) to Approved in i360, then re-read the entities. The record keeps its shapes;
+        the write refuses if someone changed the record since it was read."""
+        client = self.client(token)
+        instance = client.get_entity(entity_type, entity_id)
+        record = instance.get("entity") if isinstance(instance.get("entity"), dict) else instance
+        details = (record.get("details") or (record.get("sections") or {}).get("details") or {})
+        changed: dict[str, Any] = {}
+
+        def approve(value: Any) -> Any:
+            if isinstance(value, list):
+                return [approve(v) for v in value]
+            if isinstance(value, dict):
+                return {k: (TELECOM_APPROVED if k == "status" else approve(v)) for k, v in value.items()}
+            return value
+
+        for field in ("device_msisdn", "device_imsi"):
+            if details.get(field) not in (None, "", [], {}):
+                changed[field] = approve(details[field])
+        if not changed:
+            raise ValueError("The person has no derived MSISDN / IMSI to approve")
+        modified = ((record.get("general") or {}).get("modification_time"))
+        body: dict[str, Any] = {"sections": {"details": changed}}
+        if modified:
+            body["expected_modification_time"] = modified
+        client.patch_entity(entity_type, entity_id, body)
+        snap = self.snapshot(token)
+        with snap.lock:
+            snap.entities = ItemReader(client, self.mapping, {}, 1).entities()
+            for key in [k for k in snap.derived if k.startswith("dataset:")]:
+                snap.derived.pop(key, None)
 
     def reload_reviews(self, token: str) -> None:
         """After a review, re-read only the reviews and drop the assembled datasets."""
@@ -421,7 +460,11 @@ class Handler(BaseHTTPRequestHandler):
             return
         if path == "/api/dataset/events":
             snap = app.snapshot(token)
-            body = rows_to_csv(app.rows(snap, locale))
+            linked = {str(e.get("event_id")): ";".join(e.get("related_entity_ids") or [])
+                      for e in app.dataset(token, locale).events if e.get("related_entity_ids")}
+            rows = [{**row, "related_entity_ids": linked[str(row.get("event_id"))]} if str(row.get("event_id")) in linked else row
+                    for row in app.rows(snap, locale)]
+            body = rows_to_csv(rows)
             self._send(200, body, "text/csv; charset=utf-8",
                        extra={"X-Dataset-Truncated": "true" if snap.truncated else "false"})
             return
@@ -561,6 +604,8 @@ class Handler(BaseHTTPRequestHandler):
             line = f"step{' (error)' if data.get('error') else ''}: {str(data.get('text') or '')[:200]}"
             if data.get("tool") == "ask_i360" and "question" in data:
                 line += f" [focus {data.get('focus') or '-'}, scope {data.get('scope') or '-'}, question {json.dumps(data.get('question'))}]"
+            if data.get("trace"):
+                line += f" [{str(data['trace'])[:800]}]"
         elif event == "action":
             row = data.get("row") or {}
             detail = {"show_items": lambda: f"{sum(len(g.get('rows') or []) for g in data.get('groups') or [])} rows, view {data.get('view')}",
@@ -728,6 +773,13 @@ class Handler(BaseHTTPRequestHandler):
                 raise ValueError("Entity id is required")
             action = "approve" if path.endswith("/approve") else analysis.compact_text(request.get("action") or "approve", 20).lower()
             data = app.dataset(token, "en")
+            current = data.entities.get(entity_id) or {}
+            if (current.get("telecom") or {}).get("i360_review") and action == "approve":
+                # i360 derived these identifiers and keeps their status on the person: approving sets it.
+                app.approve_i360_telecom(token, str(current.get("i360_entity_type") or ""), entity_id)
+                entity = app.dataset(token, "en").entities.get(entity_id)
+                self.send_json(201, {"saved": {"method": "i360_status", "status": "approved"}, "entity": entity})
+                return
             snap = app.snapshot(token)
             previous = next((r for r in snap.reviews.values()
                              if str((r.get("subject") or {}).get("object_id") or "") == entity_id), None)

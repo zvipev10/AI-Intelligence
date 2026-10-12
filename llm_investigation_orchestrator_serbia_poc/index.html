@@ -7,7 +7,7 @@
   <title>Intelligence Workspace</title>
   <link rel="icon" type="image/png" href="./assets/i360-logo.png">
   <link rel="stylesheet" href="./vendor/maplibre-gl.css">
-  <link rel="stylesheet" href="./styles.css?v=183">
+  <link rel="stylesheet" href="./styles.css?v=186">
   <link rel="stylesheet" href="./chat.css?v=1">
 </head>
 <body class="welcome-active">
@@ -88,11 +88,6 @@
     <aside id="conversationPanel" class="conversation-panel" aria-label="Chat" hidden>
       <header class="chat-head">
         <h2>Chat</h2>
-        <div class="chat-scope" role="group" aria-label="What the chat searches">
-          <button id="chatScopeInvestigation" type="button" aria-pressed="true" title="Only the items saved to this investigation">This investigation</button>
-          <button id="chatScopeAll" type="button" aria-pressed="false" title="The data of the app's layers (their sources and dates)">Our layers</button>
-        </div>
-        <button id="chatNew" class="chat-new" type="button" title="Start a new conversation">New</button>
       </header>
       <div id="conversation" class="conversation" aria-live="polite">
         <article class="message assistant-message chat-welcome">
@@ -311,6 +306,6 @@
   <script src="./vendor/maplibre-gl.js"></script>
   <script src="./polygon_draw.js?v=3"></script>
   <script src="./demo_bootstrap.js?v=246"></script>
-  <script src="./chat.js?v=1"></script>
+  <script src="./chat.js?v=3"></script>
 </body>
 </html>

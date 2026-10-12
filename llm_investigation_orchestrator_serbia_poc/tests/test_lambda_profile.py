@@ -74,7 +74,7 @@ class LambdaProfileTests(unittest.TestCase):
         events = {layer["id"]: layer["count"] for layer in body["layers"] if layer["id"].startswith("events:")}
         # The cellular and IPDR layers have no data in this fixture; they are listed with 0.
         self.assertEqual({"events:Satellite": 2, "events:ADINT": 1, "events:Cellular Locations": 0,
-                          "events:Cellular Calls": 0, "events:IPDR": 0}, events)
+                          "events:Cellular Calls": 0, "events:IPDR": 0, "events:CCTV": 0}, events)
 
     def test_layers_carry_the_mapping_display_names(self):
         status, body = self.browser().call("GET", "/api/layers?lang=en")

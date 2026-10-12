@@ -51,9 +51,14 @@ class RecentDaysTests(unittest.TestCase):
                         "items": [{"item_id": f"i{n}"} for n in range(start, start + body["page_size"])]}
 
         client = Client()
-        items = ItemReader(client, mapping(), {"item_types": ["image"], "limit": 50}, 30000, items_per_query=200).items()
+        items = ItemReader(client, mapping(), {"item_types": ["image"]}, 30000, items_per_query=200).items()
         self.assertEqual(200, len(items))
         self.assertEqual([1, 2], [body["page_number"] for body in client.bodies])
+
+    def test_a_querys_own_limit_wins_over_the_default(self):
+        client = RecordingClient()
+        ItemReader(client, mapping(), {"item_types": ["video"], "limit": 200}, 30000, items_per_query=300).items()
+        self.assertEqual(100, client.bodies[0]["page_size"])  # paged: 200 = 2 pages of 100
 
     def test_each_query_is_read_and_can_name_its_layer(self):
         class Client(RecordingClient):
@@ -152,6 +157,17 @@ class AllFieldsTests(unittest.TestCase):
         self.assertEqual("2026-09-05T23:26:47Z", fields["i360.ip.ip_sessions.start_time"])
         self.assertEqual("443", fields["i360.ip.ip_sessions.destination_port"])
 
+    def test_parties_with_a_target_flag_are_target_and_other(self):
+        from hl.items import item_fields
+
+        fields = item_fields({"parties": [
+            {"role": "to", "target_indication": "True", "identifiers": [{"type": "msisdn", "value": "963094370078"}]},
+            {"role": "from", "target_indication": "False", "identifiers": [{"type": "imei", "value": "869123048645329"}]}],
+            "messages": [{"text": "hello", "status": None}]})
+        self.assertEqual("963094370078", fields["i360.parties.target.msisdn"])
+        self.assertEqual("869123048645329", fields["i360.parties.other.imei"])
+        self.assertEqual("hello", fields["i360.messages.text"])
+
     def test_parties_are_flattened_by_role(self):
         from hl.items import item_fields
 
@@ -230,6 +246,37 @@ class PersonMappingTests(unittest.TestCase):
         self.assertNotIn("image_file_id", person)
 
 
+class CallRecordTests(unittest.TestCase):
+    def test_a_call_layer_feeds_the_call_viewer(self):
+        class Client(RecordingClient):
+            def search_items(self, body):
+                self.bodies.append(body)
+                return {"total": 1, "total_pages": 1, "items": [{
+                    "item_id": "c1", "item_type": "voice_call", "event_time": "2026-09-02T14:01:00Z", "duration_ms": 24032.0,
+                    "parties": [{"role": "from", "target_indication": "False", "identifiers": [{"type": "msisdn", "value": "963940952424"}]},
+                                {"role": "to", "target_indication": "True", "identifiers": [{"type": "msisdn", "value": "963094370078"},
+                                                                                            {"type": "imei", "value": "353294702931926"}]}]}]}
+
+        client = Client()
+        row = ItemReader(client, mapping(), {"queries": [{"item_types": ["voice_call"], "limit": 5, "layer": "Calls",
+                                                          "call_record": True}]}, 100).rows("en")[0]
+        self.assertNotIn("call_record", client.bodies[0])
+        self.assertEqual(("c1", "24.0"), (row["call_id"], row["call_duration_seconds"]))
+        self.assertEqual(("963094370078", "353294702931926"), (row["side_a_number"], row["side_a_imei"]))
+        self.assertEqual("963940952424", row["side_b_number"])
+
+
+class VideoFileTests(unittest.TestCase):
+    def test_videos_use_the_browser_friendly_web_preview(self):
+        from server import normalize_record_files
+
+        files = normalize_record_files([
+            {"file_id": "v", "role": "media", "raw_type": "video", "content_type": "video/mp4",
+             "urls": {"primary": "/f/v?variant=primary", "web_preview": "/f/v?variant=web_preview"}}], "https://hl.example")
+        self.assertEqual("https://hl.example/f/v?variant=web_preview", files[0]["url"])
+        self.assertEqual("https://hl.example/f/v?variant=primary", files[0]["original_url"])
+
+
 class ForbiddenEntitiesClient(RecordingClient):
     def search_entities(self, entity_type, body):
         raise HlError(403, "ems", "Action not allowed")
@@ -269,3 +316,83 @@ class UnprovisionedStateTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class I360LinkFieldsTests(unittest.TestCase):
+    def test_links_and_identifiers_from_the_item(self):
+        from hl.items import i360_identifiers, i360_links
+        item = {"asset_identifier": "353294702931926",
+                "related_objects": [{"id": "p-1", "type": "PERSON_OF_INTEREST", "relation_type": "associated"}, {"label": "no id"}],
+                "parties": [{"target_indication": "True", "identifiers": [{"type": "imei", "value": "111"}]},
+                            {"role": "from", "identifiers": [{"type": "msisdn", "value": "222"}]}]}
+        self.assertEqual([{"id": "p-1", "type": "PERSON_OF_INTEREST", "relation": "associated"}], i360_links(item))
+        self.assertEqual([["asset_identifier", "353294702931926"], ["parties.target.imei", "111"], ["parties.from.msisdn", "222"]],
+                         i360_identifiers(item))
+
+
+class CellularSectionsTests(unittest.TestCase):
+    def test_sms_parts_and_cell_id_become_plain_fields(self):
+        from hl.items import item_fields
+        fields = item_fields({
+            "item_id": "s-1", "li": {"liid": "cov-1", "cin": None},
+            "telephony": {"caller_id": None, "iri_start_time": "2026-07-01T05:24:00Z"},
+            "sms": {"smsc": "963940000500", "number_of_parts": 2, "parts": [{"key": "2", "value": "world"}, {"key": "1", "value": "hello"}]},
+            "phone_call": {"release_reason": "Normal call clearing"},
+            "locations": [{"type": "geo", "point": {"lat": 1, "lon": 2}}, {"type": "etsi_cgi", "value": "3104-21606"}],
+        })
+        self.assertEqual("cov-1", fields["i360.li.liid"])
+        self.assertNotIn("i360.li.cin", fields)  # empty fields are not shown
+        self.assertNotIn("i360.telephony.caller_id", fields)
+        self.assertEqual("963940000500", fields["i360.sms.smsc"])
+        self.assertEqual("hello" + chr(10) + "world", fields["i360.sms.parts"])
+        self.assertEqual("Normal call clearing", fields["i360.phone_call.release_reason"])
+        self.assertEqual("3104-21606", fields["i360.locations.cell_id"])
+        self.assertFalse(any(k.startswith("i360.locations[") for k in fields))
+
+
+class CallConversationTests(unittest.TestCase):
+    def test_transcription_insights_and_english_become_the_conversation(self):
+        from hl.items import call_fields
+        item = {"item_id": "c1", "event_time": "t",
+                "parties": [{"target_indication": "True", "identifiers": [{"type": "imei", "value": "111"}]},
+                            {"target_indication": "False", "identifiers": [{"type": "msisdn", "value": "222"}]}],
+                "text": {"english": "_[00:02] Hello there _[00:05] Open the window", "transcript": "ignored"},
+                "insights": [{"type": "transcription", "value": "_[00:05] OPEN-ORIGINAL", "party_position": "B"},
+                             {"type": "post_comment", "value": "note"}]}
+        fields = call_fields(item)
+        self.assertEqual(["English · 00:02: Hello there", "222 · 00:05: OPEN-ORIGINAL"], fields["call_transcript"].split(chr(10) * 2))
+        self.assertEqual(["English · 00:02: Hello there", "222 · 00:05: Open the window"], fields["call_transcript_en"].split(chr(10) * 2))
+        self.assertEqual("", fields["event_summary"])  # the English is the translation, not the summary
+        self.assertNotIn("call_transcript", call_fields({"item_id": "c2"}))
+
+
+class CallTranslationInsightsTests(unittest.TestCase):
+    def test_translations_pair_with_lines_by_party_and_order(self):
+        from hl.items import call_fields
+        item = {"item_id": "c1", "parties": [{"target_indication": "True", "identifiers": [{"type": "imei", "value": "111"}]},
+                                             {"target_indication": "False", "identifiers": [{"type": "msisdn", "value": "222"}]}],
+                "insights": [{"type": "transcription", "party_position": "B", "value": "_[00:05]B-one"},
+                             {"type": "transcription", "party_position": "A", "value": "A-one"},
+                             {"type": "transcription", "party_position": "B", "value": "_[00:13]B-two"},
+                             {"type": "translation", "party_position": "A", "value": "_[00:02] A-one EN"},
+                             {"type": "translation", "party_position": "B", "value": "_[00:04] B-one EN"},
+                             {"type": "translation", "party_position": "B", "value": "_[00:00] B-two EN"}]}
+        fields = call_fields(item)
+        self.assertEqual(["IMEI 111 · 00:02: A-one", "222 · 00:05: B-one", "222 · 00:13: B-two"], fields["call_transcript"].split(chr(10) * 2))
+        self.assertEqual(["IMEI 111 · 00:02: A-one EN", "222 · 00:05: B-one EN", "222 · 00:13: B-two EN"], fields["call_transcript_en"].split(chr(10) * 2))
+
+
+class TelecomReviewTests(unittest.TestCase):
+    def test_i360_derived_identity_is_reviewed_then_approved(self):
+        from hl.items import entity_presentation
+        rec = entity_presentation({"entity_id": "p", "telecom_imei": "1",
+                                   "telecom_msisdn": [{"status": "Recommended", "msisdn": "963"}],
+                                   "telecom_imsi": {"device_imsi": {"imsi": "417", "status": "Recommended"}}}, "PERSON_OF_INTEREST")
+        telecom = rec["telecom"]
+        self.assertEqual({"msisdn": "963", "imsi": "417"}, telecom["subscriber_identity_derivation"]["claim"]["value"])
+        self.assertEqual("i360", telecom["subscriber_identity_derivation"]["source"])
+        self.assertNotIn("msisdn", telecom)  # shown in the review card, not as an approved value
+        rec = entity_presentation({"entity_id": "p", "telecom_msisdn": [{"status": "Approved", "msisdn": "963"}],
+                                   "telecom_imsi": {"device_imsi": {"imsi": "417", "status": "Approved"}}}, "PERSON_OF_INTEREST")
+        self.assertEqual({"msisdn": "963", "imsi": "417", "source": "i360"}, rec["telecom"]["approved_subscriber_identity"])
+        self.assertEqual({"msisdn": "050"}, {k: v for k, v in entity_presentation({"entity_id": "p", "telecom_msisdn": "050"}, "X")["telecom"].items()})

@@ -23,6 +23,25 @@ class LinkGraphTests(unittest.TestCase):
         self.assertEqual("candidate", derivation["status"])
         self.assertEqual("9630943700780", derivation["claim"]["value"]["msisdn"])
 
+    def test_i360_records_carry_i360_links_only(self):
+        # On i360 the links are the record's related_objects; the shared IMEI only says what matched.
+        import json
+        events = [
+            {"event_id": "IPDR-1", "source_type": "IPDR", "imei": "353294702931926",
+             "i360_links": json.dumps([{"id": "ENT-PERSON", "type": "PERSON_OF_INTEREST"}, {"id": "INV-1", "type": "INTELLIGENCE_INVESTIGATION"}]),
+             "i360_identifiers": json.dumps([["asset_identifier", "353294702931926"]])},
+            {"event_id": "CALL-1", "source_type": "Cellular Calls", "side_a_imei": "353294702931926",
+             "i360_links": json.dumps([{"id": "ENT-PERSON"}]), "i360_identifiers": "[]"},
+            {"event_id": "LOC-1", "source_type": "Cellular Geolocations", "target_imei": "353294702931926",
+             "i360_links": "[]", "i360_identifiers": "[]"},  # same IMEI, not linked in i360: no link
+            {"event_id": "IPDR-2", "source_type": "IPDR", "i360_links": json.dumps([{"id": "ENT-PERSON"}]), "i360_identifiers": "[]"},
+        ]
+        links = build_links(events, self.entities, self.locations)
+        got = {(l["from"]["object_id"], l["from"]["field"], l["matched_value"]) for l in links}
+        self.assertEqual({("IPDR-1", "asset_identifier", "353294702931926"), ("CALL-1", "side_a_imei", "353294702931926"),
+                          ("IPDR-2", "related_objects", "")}, got)
+        self.assertEqual({"i360_related_object_v1"}, {l["rule_id"] for l in links})
+
     def test_tied_or_singleton_pairs_do_not_create_a_claim(self):
         singleton = [{"event_id": "REC-1", "target_imei": "353294702931926", "target_msisdn": "1", "target_imsi": "2"}]
         self.assertIsNone(derive_subscriber_identity(singleton, build_links(singleton, self.entities, self.locations), "ENT-PERSON"))

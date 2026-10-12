@@ -409,7 +409,6 @@
     CHAT.investigationId = state.investigationId || null;
     $("conversation").innerHTML = "";
     if (message) appendMessage("assistant", `<p class="chat-welcome">${esc(message)}</p>`);
-    renderScope();
   }
 
   async function send(text) {
@@ -424,7 +423,7 @@
       message,
       investigation_id: state.investigationId || "",
       investigation_name: state.investigationName || "",
-      scope: state.investigationId ? CHAT.scope : "layers",
+      scope: "auto",  // where to search is decided from the question
       i360_conversation_id: CHAT.i360ConversationId,
       i360_scope: CHAT.i360Scope || "",
       i360_last_turns: CHAT.i360LastTurns,
@@ -470,14 +469,6 @@
   }
 
   // -- panel --------------------------------------------------------------------------------
-  function renderScope() {
-    const hasInvestigation = Boolean(state.investigationId);
-    const scope = hasInvestigation ? CHAT.scope : "layers";
-    $("chatScopeInvestigation").disabled = !hasInvestigation;
-    $("chatScopeInvestigation").setAttribute("aria-pressed", String(scope === "investigation"));
-    $("chatScopeAll").setAttribute("aria-pressed", String(scope === "layers"));
-  }
-
   function bindResizer() {
     const resizer = document.querySelector(".panel-resizer");
     const workspace = document.querySelector(".workspace");
@@ -520,9 +511,6 @@
       }
     });
     $("chatStop").addEventListener("click", () => CHAT.controller?.abort());
-    $("chatNew").addEventListener("click", () => resetConversation("New conversation."));
-    $("chatScopeInvestigation").addEventListener("click", () => { CHAT.scope = "investigation"; renderScope(); });
-    $("chatScopeAll").addEventListener("click", () => { CHAT.scope = "layers"; renderScope(); });
     $("chatPanelToggle").addEventListener("click", () => {
       const collapsed = workspace.classList.toggle("chat-panel-collapsed");
       $("chatPanelToggle").setAttribute("aria-expanded", String(!collapsed));
@@ -536,8 +524,6 @@
     });
     bindResizer();
     CHAT.investigationId = state.investigationId || null;
-    renderScope();
-    setInterval(renderScope, 1500);  // the investigation can change from the header at any time
     setTimeout(() => state.map?.resize(), 0);
   }
 

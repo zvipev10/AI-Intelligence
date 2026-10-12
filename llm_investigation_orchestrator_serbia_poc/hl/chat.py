@@ -34,6 +34,8 @@ from hl.client import AuthExpired, HlClient, HlError, NotOnThisEstate, Unreachab
 MAX_ROUNDS = 6
 MAX_SHOWN_ITEMS = 200
 MAX_CITED_FOR_MODEL = 60
+# Questions i360 routes to its search leg (an investigation focus keeps them inside), tried in turn.
+OVERVIEW_LISTING_QUESTIONS = ("find all items", "search all items", "find all records")
 VIEWS = ("map", "timeline", "table")
 
 
@@ -226,9 +228,12 @@ TOOLS = [
                                                        "own chat notes. Ask about the records linked to the investigation"},
          "entity_id": {"type": "string", "description": "For a question about one entity i360 returned "
                                                         "(his calls, where she was): its id"},
-         "scope": {"type": "string", "enum": ["all"],
-                   "description": "Omit it: the user's panel choice applies. 'all' searches everything in i360, only "
-                                  "when the user asks for all data or for something outside the panel's scope"}},
+         "scope": {"type": "string", "enum": ["investigation", "layers", "all"],
+                   "description": "Where to search, decided from the user's question: 'investigation' = the records "
+                                  "linked to the open investigation; 'layers' = the data of the app's layers: a layer "
+                                  "named in the question (ADINT, IPDR, Satellite, CCTV, Cellular ...), the map, the "
+                                  "tables; 'all' = everything in i360, and people or other entities by name. "
+                                  "When neither the question nor the conversation says where, 'layers'"}},
         ["question"]),
     _fn("show_items",
         "Show records i360 cited as a new layer in the app (from_last_answer=true takes all of them).",
@@ -268,13 +273,19 @@ Use the fewest tool calls that fulfil the request, then stop and answer in one o
 - The other tools only display. For a display command (open a layer, open a cited record or the one in
   the viewer, save a layer) use the tool directly, without ask_i360. To show what the investigation
   holds, ask i360 and show what it cited.
-  Use open_layer only when the user asks for a layer.
+  Use open_layer only when the user asks for a layer. An opened layer is the whole answer: do not call
+  show_items after it and do not describe its contents (you do not see them).
 - What a tool has put on screen (the record viewer, a chat layer) is done: never show it
   again with another tool.
 - People and other entities come from i360 too. "Open/show <name>" or "who is <name>": ask_i360 (scope
   all: the investigation and our layers' scopes hold records, not entities), then open_entity on the entity
   it returned. If it returned several that match, list their names and ask which one. A follow-up about an
   entity i360 already returned goes to ask_i360 with its entity_id.
+- Every ask_i360 names its scope, decided from the question: the investigation's records ("in this
+  investigation", "linked", "the case"), our layers (a layer by name such as ADINT, IPDR, Satellite, CCTV or
+  Cellular, "on the map", "in the layers", "these records"), or all of i360 ("anywhere", "in i360", people and
+  entities by name). A follow-up keeps the scope of the question it follows.
+  When neither the question nor the conversation says where, search our layers; do not ask the user.
 - Name the scope that was searched as it was (this investigation, our layers, or all data).
 - The conversation lives in i360: you see only the current message, the last answer's cited items and
   what the app shows. Anything about earlier turns goes to ask_i360.
@@ -330,7 +341,7 @@ class TurnContext:
             message=message,
             investigation_id=str(request.get("investigation_id") or "")[:240],
             investigation_name=str(request.get("investigation_name") or "")[:240],
-            scope=scope if scope in SCOPES else "investigation",
+            scope=scope if scope in SCOPES or scope == "auto" else "investigation",
             i360_conversation_id=str(request.get("i360_conversation_id") or "")[:240],
             i360_scope=str(request.get("i360_scope") or "") if request.get("i360_scope") in SCOPES else "",
             i360_last_turns=strings(request.get("i360_last_turns"), 6),
@@ -435,6 +446,7 @@ class ChatTurn:
         self.i360_conversation_id = context.i360_conversation_id
         self.i360_last_turns = list(context.i360_last_turns)
         self.i360_scope = context.i360_scope
+        self.listing_trace: list[str] = []
         self.catalog_cache: list[dict[str, Any]] | None = None
 
     # -- the loop ---------------------------------------------------------------------------
@@ -486,7 +498,8 @@ class ChatTurn:
     def fallback(self, reason: str) -> None:
         """No model: ask i360 directly and show what it cited (the plan's option 1)."""
         self.emit("step", {"text": reason})
-        result = self.ask_i360({"question": self.ctx.message, "scope": self.ctx.scope})
+        scope = self.ctx.scope if self.ctx.scope != "auto" else ("investigation" if self.ctx.investigation_id else "layers")
+        result = self.ask_i360({"question": self.ctx.message, "scope": scope})
         if self.cited_this_turn:
             self.show_items({"from_last_answer": True, "label": self.ctx.message[:60],
                              "view": "map" if self.has_places else "table"})
@@ -495,7 +508,12 @@ class ChatTurn:
 
     def context_text(self) -> str:
         lines = []
-        if self.ctx.investigation_id:
+        if self.ctx.scope == "auto":
+            lines.append((f"Open investigation: {self.ctx.investigation_name or self.ctx.investigation_id}. "
+                          if self.ctx.investigation_id else "No investigation is open (scope 'investigation' is "
+                          "unavailable and save_to_memory too). ") + "Decide ask_i360's scope from the question"
+                         + (f"; the previous question searched '{self.i360_scope}'." if self.i360_scope else "."))
+        elif self.ctx.investigation_id:
             lines.append(f"Open investigation: {self.ctx.investigation_name or self.ctx.investigation_id}. "
                          f"The user's chosen scope is '{self.ctx.scope}'; ask_i360 searches there.")
         else:
@@ -531,8 +549,9 @@ class ChatTurn:
 
     def catalog(self) -> list[dict[str, Any]]:
         if self.catalog_cache is None:
+            lister = getattr(self.host, "catalog_layers", None)
             try:
-                self.catalog_cache = self.host.catalog_layers()
+                self.catalog_cache = lister() if lister else []
             except HlError:
                 self.catalog_cache = []
         return self.catalog_cache
@@ -557,10 +576,19 @@ class ChatTurn:
 
     def ask_i360(self, args: dict[str, Any]) -> dict[str, Any]:
         question = str(args.get("question") or self.ctx.message).strip()[:4000]
-        # The panel's scope wins: the model may widen it (the user asked for all data), never narrow it.
-        scope = self.ctx.scope if self.ctx.scope != "investigation" or self.ctx.investigation_id else "layers"
-        if args.get("scope") in SCOPES and SCOPE_WIDTH[args["scope"]] > SCOPE_WIDTH[scope]:
-            scope = args["scope"]
+        if self.ctx.scope == "auto":
+            # No panel choice: the scope is decided from the question, by the model, every time.
+            # The question decides where to search; when it does not say, the app's layers.
+            scope = str(args.get("scope") or "layers")
+            if scope not in SCOPES:
+                scope = "layers"
+            if scope == "investigation" and not self.ctx.investigation_id:
+                return {"error": "no investigation is open: ask the user to open one, or search layers or all"}
+        else:
+            # The panel's scope wins: the model may widen it (the user asked for all data), never narrow it.
+            scope = self.ctx.scope if self.ctx.scope != "investigation" or self.ctx.investigation_id else "layers"
+            if args.get("scope") in SCOPES and SCOPE_WIDTH[args["scope"]] > SCOPE_WIDTH[scope]:
+                scope = args["scope"]
         if self.i360_conversation_id and self.i360_scope and self.i360_scope != scope:
             # A new scope starts a new i360 conversation, so the old scope's evidence cannot leak into the answer.
             self.i360_conversation_id, self.i360_last_turns = "", []
@@ -617,6 +645,26 @@ class ChatTurn:
         if answer is None:
             return {"error": f"i360 gave no answer ({error or 'empty stream'})"}
         citations = list({c["id"]: c for c in cited_items(answer.get("citations"))}.values())
+        layer_note = ""
+        named = self.layers_named(question) if body.get("focus") else []
+        if named:
+            # i360 does not know the app's layer names ("IPDR" is aggregated_ip_session from HOSHENTEL to it) and
+            # then answers from outside the investigation. The investigation's records, listed by i360, are
+            # grouped by the app's layers and the named ones kept.
+            listed = self.investigation_listing(body)
+            groups = self.host.item_layers([c["id"] for c in listed]) if listed else []
+            keep = {str(r.get("i360_item_id")) for g in groups if g.get("label") in named for r in g.get("rows") or []}
+            citations = [c for c in listed if c["id"] in keep]
+            layer_note = (f"The investigation holds {len(citations)} record(s) of {', '.join(named)}"
+                          + (f": {', '.join(c['id'] for c in citations[:20])}" if citations else "")
+                          + ". Report this, even where i360's text differs.")
+            self.emit("step", {"text": f"The investigation holds {len(citations)} {', '.join(named)} record(s)", "tool": "ask_i360"})
+        elif not citations and body.get("focus") and answer.get("leg") == "overview":
+            # i360 reads "what records does this investigation hold" as a request for the case brief (the
+            # overview leg: counts by type, source and place, no item ids). Its search leg lists the records.
+            citations = self.investigation_listing(body)
+            self.emit("step", {"text": f"i360 listed {len(citations)} record(s) of the investigation", "tool": "ask_i360",
+                               "trace": "; ".join(self.listing_trace)})
         ids = [c["id"] for c in citations]
         self.cited_this_turn = ids
         self.cited = citations
@@ -636,7 +684,39 @@ class ChatTurn:
             "cited_items": citations[:MAX_CITED_FOR_MODEL],
             "entities": entities[:30],
             **({"widen": answer["widen"]} if answer.get("widen") else {}),
+            **({"note": layer_note} if layer_note else {}),
         }
+
+    def investigation_listing(self, body: dict[str, Any]) -> list[dict[str, str]]:
+        """The investigation's records as i360's search leg lists them (a fresh conversation, same focus)."""
+        listing = {key: body[key] for key in ("origin", "medium", "focus", "tz", "model") if key in body}
+        self.listing_trace = []
+        for question_text in OVERVIEW_LISTING_QUESTIONS:
+            listed = None
+            ask = {**listing, "request_id": "aii-" + uuid.uuid4().hex[:12], "question": question_text}
+            for event, data in self.chat.ask(ask, None):
+                if event == "answer" and isinstance(data, dict):
+                    listed = data
+                elif event == "error":
+                    self.listing_trace.append(f"error={json.dumps(data, ensure_ascii=True)[:200]}")
+            self.listing_trace.append(f"{question_text!r}: leg {(listed or {}).get('leg')}")
+            if listed and listed.get("leg") == "search":
+                found = list({c["id"]: c for c in cited_items(listed.get("citations"))}.values())
+                if found:
+                    return found
+        return []
+
+    def layers_named(self, question: str) -> list[str]:
+        """The app's record layers the question names (IPDR, Cellular Calls, ...), longest names first."""
+        names = sorted({str(l.get("source_type") or "") for l in self.catalog() if l.get("kind") == "events"} - {""},
+                       key=len, reverse=True)
+        found, text = [], question
+        for name in names:
+            pattern = re.compile(rf"(?<![\w]){re.escape(name)}(?![\w])", re.IGNORECASE)
+            if pattern.search(text):
+                found.append(name)
+                text = pattern.sub(" ", text)  # "Cellular Calls" is not also "Calls"
+        return found
 
     def known_ids(self) -> set[str]:
         return {c["id"] for c in self.cited} | {c["id"] for c in self.ctx.previous_citations}
@@ -651,7 +731,8 @@ class ChatTurn:
                 return {"error": f"{len(unknown)} ids were not cited by i360 in this conversation; use from_last_answer"}
             ids = requested
         if not ids:
-            return {"error": "nothing to show: i360 cited no items in its last answer"}
+            return {"error": "nothing to show: i360 cited no items in its last answer (this says nothing about "
+                             "the layers on screen)"}
         new = [i for i in ids if i not in self.on_screen]
         if not new:
             return {"already_on_screen": len(ids), "note": "these records are already on screen; nothing else to do"}

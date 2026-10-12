@@ -141,8 +141,11 @@ def type_definitions(prefix: str) -> list[dict[str, Any]]:
 class StateStore:
     def __init__(self, client: HlClient, *, investigation_type: str, memory_item_type: str,
                  approval_type: str, scenario: str, external_investigation_type: str = "",
-                 investigation_links: list[dict[str, Any]] | None = None):
+                 investigation_links: list[dict[str, Any]] | None = None,
+                 item_layer: Any = None):
         self.client = client
+        # The app's layer an i360 item belongs to (e.g. "IPDR"), for memory labels; None keeps i360's item type.
+        self.item_layer = item_layer
         self.investigation_type = investigation_type
         self.external_investigation_type = external_investigation_type
         self.investigation_links = [spec for spec in investigation_links or []
@@ -313,10 +316,11 @@ class StateStore:
                 continue
             text = hit.get("text") if isinstance(hit.get("text"), dict) else {}
             summary = next((str(text[k]) for k in ("english", "summary", "synopsis", "original", "transcript") if text.get(k)), "")
+            layer = self.item_layer(hit) if self.item_layer else ""
             out.append({
                 "id": self.RELATED_PREFIX + item_id, "kind": "object", "object_kind": "record", "object_id": item_id,
-                "label": str(hit.get("name") or f"{hit.get('item_type') or 'item'} {hit.get('event_time') or item_id}"),
-                "source_type": str(hit.get("source_application") or ""), "summary": summary[:1800],
+                "label": str(hit.get("name") or f"{layer or hit.get('item_type') or 'item'} {hit.get('event_time') or item_id}"),
+                "source_type": str(layer or hit.get("source_application") or ""), "summary": summary[:1800],
                 "saved_at_utc": hit.get("event_time"), "source": "i360_related_object",
             })
         return out
