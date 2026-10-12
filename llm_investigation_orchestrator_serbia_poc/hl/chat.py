@@ -239,7 +239,8 @@ TOOLS = [
                    "description": "Where to search, decided from the user's question: 'investigation' = the records "
                                   "linked to the open investigation; 'layers' = the data of the app's layers: a layer "
                                   "named in the question (ADINT, IPDR, Satellite, CCTV, Cellular ...), the map, the "
-                                  "tables; 'all' = everything in i360, and people or other entities by name. "
+                                  "tables, and 'the system', 'our data', 'what do we have'; 'all' = only when the "
+                                  "user says all of i360, everywhere or anywhere, or names a person or other entity. "
                                   "When neither the question nor the conversation says where, 'layers'"}},
         ["question"]),
     _fn("show_items",
@@ -379,6 +380,17 @@ _WHAT_IS_SAVED = re.compile(r"^\W*(?:what|which)(?:'s|\s+is|\s+are|\s+was|\s+wer
 # Checked on LAMBDA: this wording reaches i360's search leg and cites the records; "Which records are linked
 # to this investigation?" reached its overview leg, which answers in prose with no citations.
 INVESTIGATION_RECORDS_QUESTION = "What records are linked in this investigation?"
+
+
+# "The system", "we have", "our data" mean the app's data, whatever scope the model picked; "everywhere" or
+# "in i360" means all of i360.
+OUR_DATA = re.compile(r"\b(in the system|we have|we've got|our data|our layers|the app)\b", re.I)
+ALL_OF_I360 = re.compile(r"\b(everywhere|anywhere|all of i360|in i360|whole platform|all data)\b", re.I)
+# A question about what data there is overall. i360 answers its words as a text search ("75 matches") unless it is
+# asked to count. A count of something named ("how many calls in June") keeps its own words.
+VOLUME = re.compile(r"\b(data types?|types of data|volume|how much data|what data do we have|what do we have|"
+                    r"how many records do we have)\b", re.I)
+COUNT_QUESTION = "How many records are there, by type and month?"
 
 
 def investigation_wording(question: str) -> str:
@@ -604,6 +616,9 @@ class ChatTurn:
             scope = str(args.get("scope") or "layers")
             if scope not in SCOPES:
                 scope = "layers"
+            if (scope == "all" and not args.get("entity_id") and OUR_DATA.search(self.ctx.message)
+                    and not ALL_OF_I360.search(self.ctx.message)):
+                scope = "layers"
             if scope == "investigation" and not self.ctx.investigation_id:
                 return {"error": "no investigation is open: ask the user to open one, or search layers or all"}
         else:
@@ -663,6 +678,8 @@ class ChatTurn:
         self.emit("step", {"text": "Asking i360" + where, "tool": "ask_i360", "live": True,
                            "focus": (body.get("focus") or {}).get("id", ""),
                            "scope": (body.get("scope") or {}).get("kind", ""), "question": body["question"][:200]})
+        if scope == "layers" and VOLUME.search(question):
+            body["question"] = COUNT_QUESTION  # i360's count leg, not a search for the question's words
         if per_layer:
             answer, error = self.ask_each_layer(body, per_layer)
         else:

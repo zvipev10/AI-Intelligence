@@ -622,4 +622,4 @@ Decision: the chat's "our layers" scope is one HL items/search request. When the
 
 Rationale: HL search ANDs filters and the i360 chat's scope takes one request, so the layers cannot be ORed. Asking per layer keeps i360 chat as the only data source and answers about our layers only.
 
-Impact: up to one i360 call per layer for a layers question. Questions about "the system", "what we have" or "our data" are sent to our layers. See gap 3 in `docs/i360-gaps.md`.
+Impact: up to one i360 call per layer for a layers question. Questions about "the system", "what we have" or "our data" are sent to our layers even when the assistant picks all data, unless the user says everywhere or all of i360; a question about what data there is overall is asked of i360 as "How many records are there, by type and month?" so that i360 counts instead of matching words. See gap 3 in `docs/i360-gaps.md`.

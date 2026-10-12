@@ -161,6 +161,28 @@ class ChatUnitTests(unittest.TestCase):
         self.assertEqual("panel", turn.i360_conversation_id)
         self.assertNotIn("scope_note", result)
 
+    def test_our_data_is_counted_in_our_layers(self):
+        asked = []
+
+        class Chat:
+            def ask(self, body, conversation_id):
+                asked.append(body)
+                return iter([("answer", {"content": "x", "citations": []})])
+
+        class Host:
+            def layers_scope(self):
+                return {"kind": "results", "ids": [], "exact": True}
+
+        question = "What data types and volume do we have in the system?"
+        turn = ChatTurn(None, Chat(), Host(), lambda e, d: None, TurnContext.from_request({"message": question, "scope": "auto"}))
+        turn.ask_i360({"question": question, "scope": "all"})
+        self.assertEqual("results", asked[-1]["scope"]["kind"])
+        self.assertEqual("How many records are there, by type and month?", asked[-1]["question"])
+        everywhere = "how many calls do we have everywhere in i360"
+        turn = ChatTurn(None, Chat(), Host(), lambda e, d: None, TurnContext.from_request({"message": everywhere, "scope": "auto"}))
+        turn.ask_i360({"question": everywhere, "scope": "all"})
+        self.assertNotIn("scope", asked[-1])
+
     def test_a_layer_in_the_investigation_is_filtered_from_i360s_listing(self):
         # "IPDR" means nothing to i360: the investigation's records it lists are grouped by our layers.
         asked = []
