@@ -235,13 +235,10 @@ TOOLS = [
                                                        "own chat notes. Ask about the records linked to the investigation"},
          "entity_id": {"type": "string", "description": "For a question about one entity i360 returned "
                                                         "(his calls, where she was): its id"},
-         "scope": {"type": "string", "enum": ["investigation", "layers", "all"],
-                   "description": "Where to search, decided from the user's question: 'investigation' = the records "
-                                  "linked to the open investigation; 'layers' = the data of the app's layers: a layer "
-                                  "named in the question (ADINT, IPDR, Satellite, CCTV, Cellular ...), the map, the "
-                                  "tables, and 'the system', 'our data', 'what do we have'; 'all' = only when the "
-                                  "user says all of i360, everywhere or anywhere, or names a person or other entity. "
-                                  "When neither the question nor the conversation says where, 'layers'"}},
+         "scope": {"type": "string", "enum": ["investigation", "layers"],
+                   "description": "Where to search: 'investigation' = the records linked to the open "
+                                  "investigation, when the question says so; otherwise 'layers' = the app's layers. "
+                                  "i360 is never searched outside these two."}},
         ["question"]),
     _fn("show_items",
         "Show records i360 cited as a new layer in the app (from_last_answer=true takes all of them).",
@@ -287,16 +284,15 @@ Use the fewest tool calls that fulfil the request, then stop and answer in one o
   show_items after it and do not describe its contents (you do not see them).
 - What a tool has put on screen (the record viewer, a chat layer) is done: never show it
   again with another tool.
-- People and other entities come from i360 too. "Open/show <name>" or "who is <name>": ask_i360 (scope
-  all: the investigation and our layers' scopes hold records, not entities), then open_entity on the entity
+- People and other entities come from i360 too. "Open/show <name>" or "who is <name>": ask_i360, then
+  open_entity on the entity
   it returned. If it returned several that match, list their names and ask which one. A follow-up about an
   entity i360 already returned goes to ask_i360 with its entity_id.
-- Every ask_i360 names its scope, decided from the question: the investigation's records ("in this
-  investigation", "linked", "the case"), our layers (a layer by name such as ADINT, IPDR, Satellite, CCTV or
-  Cellular, "on the map", "in the layers", "these records", "in the system", "we have", "our data"), or all of i360 ("anywhere", "in i360", people and
-  entities by name). A follow-up keeps the scope of the question it follows.
-  When neither the question nor the conversation says where, search our layers; do not ask the user.
-- Name the scope that was searched as it was (this investigation, our layers, or all data).
+- i360 is searched only inside the app's data: our layers, or the open investigation's records when the
+  question is about the investigation ("in this investigation", "linked", "the case"). There is no wider
+  search: if the user asks for data outside our layers, say the app searches only its layers.
+  A follow-up keeps the scope of the question it follows. Do not ask the user where to search.
+- Name the scope that was searched (this investigation or our layers).
 - The conversation lives in i360: you see only the current message, the last answer's cited items and
   what the app shows. Anything about earlier turns goes to ask_i360.
 If i360 says the investigation holds nothing that matches and cites records outside it, do not show
@@ -316,8 +312,9 @@ class ToolHost(Protocol):
     def entity(self, entity_type: str, entity_id: str) -> dict[str, Any] | None: ...
 
 
-SCOPES = {"investigation", "layers", "all"}
-SCOPE_WIDTH = {"investigation": 0, "layers": 1, "all": 2}
+# i360 is only ever asked inside the app's data: the open investigation's records or our layers (Zvika,
+# 2026-10-12: "there shouldn't be an option to ask i360 for something that is not in layers").
+SCOPES = {"investigation", "layers"}
 
 
 @dataclass
@@ -351,7 +348,7 @@ class TurnContext:
             message=message,
             investigation_id=str(request.get("investigation_id") or "")[:240],
             investigation_name=str(request.get("investigation_name") or "")[:240],
-            scope=scope if scope in SCOPES or scope == "auto" else "investigation",
+            scope=scope if scope in SCOPES else "auto",
             i360_conversation_id=str(request.get("i360_conversation_id") or "")[:240],
             i360_scope=str(request.get("i360_scope") or "") if request.get("i360_scope") in SCOPES else "",
             i360_last_turns=strings(request.get("i360_last_turns"), 6),
@@ -382,10 +379,6 @@ _WHAT_IS_SAVED = re.compile(r"^\W*(?:what|which)(?:'s|\s+is|\s+are|\s+was|\s+wer
 INVESTIGATION_RECORDS_QUESTION = "What records are linked in this investigation?"
 
 
-# "The system", "we have", "our data" mean the app's data, whatever scope the model picked; "everywhere" or
-# "in i360" means all of i360.
-OUR_DATA = re.compile(r"\b(in the system|we have|we've got|our data|our layers|the app)\b", re.I)
-ALL_OF_I360 = re.compile(r"\b(everywhere|anywhere|all of i360|in i360|whole platform|all data)\b", re.I)
 # A question about what data there is overall. i360 answers its words as a text search ("75 matches") unless it is
 # asked to count. A count of something named ("how many calls in June") keeps its own words.
 VOLUME = re.compile(r"\b(data types?|types of data|volume|how much data|what data do we have|what do we have|"
@@ -419,7 +412,7 @@ _ENTITY_NAME_KEYS = ("entity_name", "canonical_name", "name", "title", "label")
 
 
 def answer_entities(answer: dict[str, Any]) -> list[dict[str, str]]:
-    """Entities an i360 answer returned (lookup lists, entity cards, outside_entities), as id, type and name.
+    """Entities an i360 answer returned (lookup lists, entity cards; never outside_entities, which lie outside the scope), as id, type and name.
 
     Records arrive as citations; entities arrive elsewhere in the answer, in shapes that vary by leg, so any
     object that names an entity (entity_id, or id with entity_type) is taken, once.
@@ -443,7 +436,7 @@ def answer_entities(answer: dict[str, Any]) -> list[dict[str, str]]:
                 if key not in {"citations", "content", "follow", "claims"}:
                     visit(child, depth + 1)
 
-    for key in ("entities", "people", "cards", "outside_entities", "lookup", "subject", "entity"):
+    for key in ("entities", "people", "cards", "lookup", "subject", "entity"):
         visit(answer.get(key), 0)
     return [e for e in found.values() if not e["type"].upper().startswith("AICHAT_")]
 
@@ -610,22 +603,17 @@ class ChatTurn:
 
     def ask_i360(self, args: dict[str, Any]) -> dict[str, Any]:
         question = str(args.get("question") or self.ctx.message).strip()[:4000]
-        if self.ctx.scope == "auto":
-            # No panel choice: the scope is decided from the question, by the model, every time.
-            # The question decides where to search; when it does not say, the app's layers.
-            scope = str(args.get("scope") or "layers")
-            if scope not in SCOPES:
-                scope = "layers"
-            if (scope == "all" and not args.get("entity_id") and OUR_DATA.search(self.ctx.message)
-                    and not ALL_OF_I360.search(self.ctx.message)):
-                scope = "layers"
-            if scope == "investigation" and not self.ctx.investigation_id:
-                return {"error": "no investigation is open: ask the user to open one, or search layers or all"}
-        else:
-            # The panel's scope wins: the model may widen it (the user asked for all data), never narrow it.
-            scope = self.ctx.scope if self.ctx.scope != "investigation" or self.ctx.investigation_id else "layers"
-            if args.get("scope") in SCOPES and SCOPE_WIDTH[args["scope"]] > SCOPE_WIDTH[scope]:
-                scope = args["scope"]
+        # The question decides between the investigation and our layers; anything else is our layers.
+        scope = str(args.get("scope") or "")
+        if self.ctx.scope == "investigation" and self.ctx.investigation_id and scope != "layers":
+            scope = "investigation"  # the panel's scope wins: the model may widen it to our layers, not narrow it
+        elif self.ctx.scope == "layers" or scope not in SCOPES:
+            scope = "layers"
+        if scope == "investigation" and not self.ctx.investigation_id:
+            if self.ctx.scope != "auto":
+                scope = "layers"  # the panel's investigation scope with none open
+            else:
+                return {"error": "no investigation is open: ask the user to open one, or search our layers"}
         if self.i360_conversation_id and self.i360_scope and self.i360_scope != scope:
             # A new scope starts a new i360 conversation, so the old scope's evidence cannot leak into the answer.
             self.i360_conversation_id, self.i360_last_turns = "", []
@@ -646,8 +634,6 @@ class ChatTurn:
         about = next((e for e in self.entities if e["id"] == str(args.get("entity_id") or "")), None)
         if about:
             body["entity"] = {"id": about["id"], "type": about["type"], "name": about["name"]}
-            if scope == "layers":
-                scope = "all"  # a records scope would hide the entity's links
         if self.ctx.timezone:
             body["tz"] = self.ctx.timezone
         scope_note = ""
@@ -663,15 +649,13 @@ class ChatTurn:
                     # data). Each layer is then asked on its own, with its exact request, and the answers joined.
                     lister = getattr(self.host, "layer_scopes", None)
                     per_layer = (lister() if lister else []) or []
-                    if len(per_layer) < 2:
-                        per_layer = []
-                        where = " (our layers, approximate)"
-                        scope_note = ("Our layers could not be searched as one: i360 searched all records in "
-                                      "their date range, so this answer is approximate. Say so in one short clause.")
+                    if not per_layer:
+                        # The merged window is close to all data: never sent.
+                        return {"error": "our layers could not be searched: none of them names its layer"}
             else:
-                where = " (all data)"
+                return {"error": "the app has no layers to search"}
         else:
-            where = " (this investigation)" if body.get("focus") else " (all data)"
+            where = " (this investigation)"
         if self.chat_model:
             body["model"] = self.chat_model
         asked_at = time.monotonic()
@@ -738,7 +722,6 @@ class ChatTurn:
             "has_counts": bool(agg or answer.get("counted")),
             "cited_items": citations[:MAX_CITED_FOR_MODEL],
             "entities": entities[:30],
-            **({"widen": answer["widen"]} if answer.get("widen") else {}),
             **({"note": layer_note} if layer_note else {}),
             **({"scope_note": scope_note} if scope_note else {}),
         }

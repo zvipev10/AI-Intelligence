@@ -88,8 +88,8 @@ class ChatUnitTests(unittest.TestCase):
         turn.ask_i360({"question": "find him", "scope": "investigation"})
         self.assertNotIn("focus", asked[-1])
         self.assertEqual("results", asked[-1]["scope"]["kind"])
-        turn.ask_i360({"question": "find him everywhere", "scope": "all"})
-        self.assertNotIn("scope", asked[-1])
+        turn.ask_i360({"question": "find him everywhere", "scope": "all"})  # there is no wider scope
+        self.assertEqual("results", asked[-1]["scope"]["kind"])
 
     def test_auto_scope_comes_from_the_model_every_time(self):
         asked = []
@@ -113,22 +113,21 @@ class ChatUnitTests(unittest.TestCase):
         no_case = ChatTurn(None, Chat(), Host(), lambda e, d: None, TurnContext.from_request({"message": "x", "scope": "auto"}))
         self.assertIn("error", no_case.ask_i360({"question": "linked records", "scope": "investigation"}))
 
-    def test_an_inexact_layers_scope_is_labelled_approximate(self):
-        steps = []
+    def test_an_inexact_layers_scope_is_never_sent_as_one_search(self):
+        asked = []
 
         class Chat:
             def ask(self, body, conversation_id):
+                asked.append(body)
                 return iter([("answer", {"content": "x", "citations": []})])
 
         class Host:
             def layers_scope(self):
                 return {"kind": "results", "ids": [], "exact": False}
 
-        ctx = TurnContext.from_request({"message": "x", "scope": "auto"})
-        turn = ChatTurn(None, Chat(), Host(), lambda e, d: steps.append(d), ctx)
-        result = turn.ask_i360({"question": "what data do we have", "scope": "layers"})
-        self.assertIn("approximate", result["scope_note"])
-        self.assertIn("i360 · our layers, approximate · 0 records", turn.summary)
+        turn = ChatTurn(None, Chat(), Host(), lambda e, d: None, TurnContext.from_request({"message": "x", "scope": "auto"}))
+        self.assertIn("error", turn.ask_i360({"question": "what data do we have", "scope": "layers"}))
+        self.assertEqual([], asked)
 
     def test_inexact_layers_are_asked_one_at_a_time(self):
         asked = []
@@ -180,8 +179,8 @@ class ChatUnitTests(unittest.TestCase):
         self.assertEqual("How many records are there, by type and month?", asked[-1]["question"])
         everywhere = "how many calls do we have everywhere in i360"
         turn = ChatTurn(None, Chat(), Host(), lambda e, d: None, TurnContext.from_request({"message": everywhere, "scope": "auto"}))
-        turn.ask_i360({"question": everywhere, "scope": "all"})
-        self.assertNotIn("scope", asked[-1])
+        turn.ask_i360({"question": everywhere, "scope": "all"})  # i360 is never asked outside our layers
+        self.assertEqual("results", asked[-1]["scope"]["kind"])
 
     def test_a_layer_in_the_investigation_is_filtered_from_i360s_listing(self):
         # "IPDR" means nothing to i360: the investigation's records it lists are grouped by our layers.
@@ -254,6 +253,9 @@ class ChatUnitTests(unittest.TestCase):
             def entity(self, entity_type, entity_id):
                 return {"entity_id": entity_id, "entity_type": "person", "canonical_name": "Arman Rahimi"}
 
+            def layers_scope(self):
+                return {"kind": "results", "ids": [], "exact": True}
+
         turn = ChatTurn(None, Chat(), Host(), lambda e, d: events.append((e, d)),
                         TurnContext.from_request({"message": "open Arman Rahimi", "scope": "layers"}))
         self.assertIn("error", turn.open_entity({"entity_id": "p-1"}))  # not returned by i360 yet
@@ -263,7 +265,7 @@ class ChatUnitTests(unittest.TestCase):
         self.assertEqual("p-1", [d for e, d in events if e == "action"][-1]["entity_id"])
         turn.ask_i360({"question": "his calls", "entity_id": "p-1"})
         self.assertEqual({"id": "p-1", "type": "PERSON_OF_INTEREST", "name": "Arman Rahimi"}, asked[-1]["entity"])
-        self.assertNotIn("scope", asked[-1])  # a records scope would hide his links
+        self.assertEqual("results", asked[-1]["scope"]["kind"])  # people too are asked about inside our layers
         # The shape i360's entity leg returned on LAMBDA (cards.card), and the top-level people list.
         lambda_answer = {"leg": "entity", "cards": {"card": {
             "id": "da1cbd3a", "type": "PERSON_OF_INTEREST", "label": "Person", "kind": "entity", "name": "Arman Rahimi",
@@ -310,7 +312,7 @@ class ChatUnitTests(unittest.TestCase):
             TurnContext.from_request({"message": "  "})
         ctx = TurnContext.from_request({"message": "hi", "scope": "everything",
             "previous_citations": ["a", {"id": "b", "type": "call"}, {"no": "id"}]})
-        self.assertEqual("investigation", ctx.scope)
+        self.assertEqual("auto", ctx.scope)
         self.assertEqual(["a", "b"], [c["id"] for c in ctx.previous_citations])
 
     def test_app_tools_refuse_ids_i360_did_not_cite(self):
@@ -422,7 +424,7 @@ class ChatApiTests(unittest.TestCase):
         self.assertEqual("results", self.chat.asks[-1]["scope"]["kind"])
         self.ask(self.signed_in(), {"message": "convoy", "investigation_id": "INV-1", "scope": "all"})
         self.assertNotIn("focus", self.chat.asks[-1])
-        self.assertNotIn("scope", self.chat.asks[-1])
+        self.assertEqual("results", self.chat.asks[-1]["scope"]["kind"])  # there is no "all data" scope
 
     def test_investigation_questions_avoid_i360_memory_words(self):
         browser = self.signed_in()

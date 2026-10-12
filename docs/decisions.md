@@ -623,3 +623,11 @@ Decision: the chat's "our layers" scope is one HL items/search request. When the
 Rationale: HL search ANDs filters and the i360 chat's scope takes one request, so the layers cannot be ORed. Asking per layer keeps i360 chat as the only data source and answers about our layers only.
 
 Impact: up to one i360 call per layer for a layers question. Questions about "the system", "what we have" or "our data" are sent to our layers even when the assistant picks all data, unless the user says everywhere or all of i360; a question about what data there is overall is asked of i360 as "How many records are there, by type and month?" so that i360 counts instead of matching words. See gap 3 in `docs/i360-gaps.md`.
+
+### 2026-10-12 — i360 is never asked outside our layers
+
+Decision: the chat asks i360 only inside the app's data. There is no "all data" scope: `ask_i360` sends our layers' scope (one exact search, or one ask per layer when they cannot be one search), or the open investigation as focus when the question is about the investigation. Whatever scope the model or an older panel asks for, the code sends one of these two. The approximate merged window is never sent, and parts of an answer outside the scope (`widen`, `outside_entities`) are dropped. People are asked about inside our layers too, so a person with no records in our layers is not found.
+
+Rationale: Zvika: "There shouldn't be an option to ask i360 for something that is not in layers"; a strict rule in code, not wording the model may misread.
+
+Impact: supersedes the "all data" scope and the "our layers, approximate" label of the two entries above. The investigation scope still sends the investigation as focus; whether its records must also be in our layers is open.
