@@ -348,3 +348,35 @@ class CellularSectionsTests(unittest.TestCase):
         self.assertEqual("Normal call clearing", fields["i360.phone_call.release_reason"])
         self.assertEqual("3104-21606", fields["i360.locations.cell_id"])
         self.assertFalse(any(k.startswith("i360.locations[") for k in fields))
+
+
+class CallConversationTests(unittest.TestCase):
+    def test_transcription_insights_and_english_become_the_conversation(self):
+        from hl.items import call_fields
+        item = {"item_id": "c1", "event_time": "t",
+                "parties": [{"target_indication": "True", "identifiers": [{"type": "imei", "value": "111"}]},
+                            {"target_indication": "False", "identifiers": [{"type": "msisdn", "value": "222"}]}],
+                "text": {"english": "_[00:02] Hello there _[00:05] Open the window", "transcript": "ignored"},
+                "insights": [{"type": "transcription", "value": "_[00:05] OPEN-ORIGINAL", "party_position": "B"},
+                             {"type": "post_comment", "value": "note"}]}
+        fields = call_fields(item)
+        self.assertEqual(["English · 00:02: Hello there", "222 · 00:05: OPEN-ORIGINAL"], fields["call_transcript"].split(chr(10) * 2))
+        self.assertEqual(["English · 00:02: Hello there", "222 · 00:05: Open the window"], fields["call_transcript_en"].split(chr(10) * 2))
+        self.assertEqual("", fields["event_summary"])  # the English is the translation, not the summary
+        self.assertNotIn("call_transcript", call_fields({"item_id": "c2"}))
+
+
+class CallTranslationInsightsTests(unittest.TestCase):
+    def test_translations_pair_with_lines_by_party_and_order(self):
+        from hl.items import call_fields
+        item = {"item_id": "c1", "parties": [{"target_indication": "True", "identifiers": [{"type": "imei", "value": "111"}]},
+                                             {"target_indication": "False", "identifiers": [{"type": "msisdn", "value": "222"}]}],
+                "insights": [{"type": "transcription", "party_position": "B", "value": "_[00:05]B-one"},
+                             {"type": "transcription", "party_position": "A", "value": "A-one"},
+                             {"type": "transcription", "party_position": "B", "value": "_[00:13]B-two"},
+                             {"type": "translation", "party_position": "A", "value": "_[00:02] A-one EN"},
+                             {"type": "translation", "party_position": "B", "value": "_[00:04] B-one EN"},
+                             {"type": "translation", "party_position": "B", "value": "_[00:00] B-two EN"}]}
+        fields = call_fields(item)
+        self.assertEqual(["IMEI 111 · 00:02: A-one", "222 · 00:05: B-one", "222 · 00:13: B-two"], fields["call_transcript"].split(chr(10) * 2))
+        self.assertEqual(["IMEI 111 · 00:02: A-one EN", "222 · 00:05: B-one EN", "222 · 00:13: B-two EN"], fields["call_transcript_en"].split(chr(10) * 2))

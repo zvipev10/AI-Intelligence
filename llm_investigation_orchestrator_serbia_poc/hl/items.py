@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import threading
 import time
 from dataclasses import dataclass, field
@@ -74,7 +75,86 @@ def call_fields(item: dict[str, Any]) -> dict[str, str]:
             out[f"{side}_number"] = out[f"{side}_sim"] = ids["msisdn"]
         if ids.get("imei"):
             out[f"{side}_imei"] = ids["imei"]
+    out.update(call_conversation(item, out))
     return out
+
+
+_LINE_TIME = re.compile(r"_?\[(\d{1,2}:\d{2}(?::\d{2})?)\]\s*")
+
+
+def _timed_lines(text: Any) -> list[tuple[str, str]]:
+    """i360 transcript text as (time, line): "_[00:05] text" marks where each line starts."""
+    text = str(text or "").strip()
+    if not text:
+        return []
+    marks = list(_LINE_TIME.finditer(text))
+    if not marks:
+        return [("", text)]
+    lines = []
+    for index, mark in enumerate(marks):
+        end = marks[index + 1].start() if index + 1 < len(marks) else len(text)
+        line = text[mark.end():end].strip()
+        if line:
+            lines.append((mark.group(1), line))
+    return lines
+
+
+def call_conversation(item: dict[str, Any], sides: dict[str, str]) -> dict[str, str]:
+    """The call viewer's conversation: call_transcript paragraphs ("speaker: text") and call_transcript_en
+    paragraphs at the same positions. The original lines are the transcription insights (side A =
+    party_position A) and the English their translation insights; without those, text.transcript and
+    text.english. An English line with no original is shown on its own; the English is not the summary."""
+    entries: list[dict[str, str]] = []
+    insights = [i for i in item.get("insights") or [] if isinstance(i, dict)]
+    spoken = [i for i in insights if i.get("type") == "transcription"]
+    translated = [i for i in insights if i.get("type") == "translation"]
+    if spoken and translated:
+        # Per party, the n-th translation is the n-th line said (the times typed on translations do not
+        # match the originals'); a line with no time of its own takes its translation's.
+        for position in sorted({str(i.get("party_position") or "").upper() for i in spoken + translated}):
+            said = [l for i in spoken if str(i.get("party_position") or "").upper() == position for l in _timed_lines(i.get("value"))]
+            english = [l for i in translated if str(i.get("party_position") or "").upper() == position for l in _timed_lines(i.get("value"))]
+            side = "a" if position == "A" else "b"
+            for index in range(max(len(said), len(english))):
+                at, line = said[index] if index < len(said) else ("", "")
+                en_at, en_line = english[index] if index < len(english) else ("", "")
+                if line:
+                    entries.append({"time": at or en_at, "side": side, "text": line, "en": en_line})
+                else:
+                    entries.append({"time": en_at, "side": side, "text": en_line, "en": en_line})
+    else:
+        if spoken:
+            for insight in spoken:
+                side = "a" if str(insight.get("party_position") or "").upper() == "A" else "b"
+                for at, line in _timed_lines(insight.get("value")):
+                    entries.append({"time": at, "side": side, "text": line, "en": ""})
+        else:
+            for at, line in _timed_lines((item.get("text") or {}).get("transcript")):
+                entries.append({"time": at, "side": "", "text": line, "en": ""})
+        for at, line in _timed_lines((item.get("text") or {}).get("english")):
+            same = next((e for e in entries if e["time"] and e["time"] == at and not e["en"]), None)
+            if same:
+                same["en"] = line
+            else:
+                entries.append({"time": at, "side": "", "text": line, "en": line, "translation_only": "1"})
+    if not entries:
+        return {}
+    entries.sort(key=lambda e: [int(n) for n in e["time"].split(":")] if e["time"] else [10**6])
+
+    def speaker(entry: dict[str, str]) -> str:
+        at = f" · {entry['time']}" if entry["time"] else ""
+        if entry.get("translation_only"):
+            return f"English{at}"
+        if entry["side"] == "a":  # the viewer draws a speaker starting "IMEI" on side A
+            return f"IMEI {sides.get('side_a_imei') or 'side A'}{at}"
+        if entry["side"] == "b":
+            return f"{sides.get('side_b_number') or 'Side B'}{at}"
+        return f"Speaker{at}"
+
+    original = [f"{speaker(e)}: {e['text']}" for e in entries]
+    english = [f"{speaker(e)}: {e['en'] or e['text']}" for e in entries]
+    return {"call_transcript": "\n\n".join(original), "call_transcript_en": "\n\n".join(english),
+            "event_summary": ""}
 
 
 def i360_links(item: dict[str, Any]) -> list[dict[str, str]]:

@@ -2709,11 +2709,11 @@ function cellularCallHtml(item) {
   const translations = String(item.call_transcript_en || "").split(/\n\s*\n/).filter(Boolean);
   const paragraphs = String(original).split(/\n\s*\n/).filter(Boolean);
   const bubbles = paragraphs.map((text, index) => {
-    const match = text.match(/^([^:]+):\s*([\s\S]*)$/);
+    const match = text.match(/^(.+?):\s+([\s\S]*)$/);  // "speaker: text"; a speaker may carry a time ("· 00:05")
     const speaker = match ? match[1] : "";
     const side = speaker.startsWith("IMEI") ? "a" : speaker ? "b" : "note";
     const translated = translations[index] || "";
-    const translation = translated.replace(/^[^:]+:\s*/, "");
+    const translation = translated.replace(/^.+?:\s+/, "");
     const transcriptLanguage = /arabic|persian/i.test(item.call_language || "") ? "ar" : "en";
     return `<article class="call-bubble call-bubble-${side}">${speaker ? `<header>${escapeHtml(speaker)}</header>` : ""}<p lang="${transcriptLanguage}" dir="auto">${escapeHtml(match ? match[2] : text)}</p>${translation && translation !== (match ? match[2] : text) ? `<p class="call-translation" lang="en" dir="ltr">${escapeHtml(translation)}</p>` : ""}</article>`;
   }).join("");

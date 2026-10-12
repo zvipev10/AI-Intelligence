@@ -131,7 +131,8 @@
      "telephony",
      "sms",
      "phone_call",
-     "locations"
+     "locations",
+     "text"
     ],
     "_comment": "voice_call and sms in coverage Demo tali (f1a50da7-...); about half carry a GPS point",
     "labels": {
@@ -165,7 +166,9 @@
      "phone_call.release_reason": "CALL RELEASE REASON",
      "locations.cell_id": "CELL ID",
      "telephony.cc_duration": "CONTENT DURATION (ms)",
-     "telephony.iri_duration": "SESSION DURATION (ms)"
+     "telephony.iri_duration": "SESSION DURATION (ms)",
+     "text.transcript": "CALL TRANSCRIPT",
+     "text.english": "TRANSLATION (EN)"
     }
    },
    {
@@ -197,7 +200,8 @@
      "telephony",
      "sms",
      "phone_call",
-     "locations"
+     "locations",
+     "text"
     ],
     "_comment": "coverage calls (b8cc86ef-..., lower case)",
     "labels": {
@@ -231,7 +235,9 @@
      "phone_call.release_reason": "CALL RELEASE REASON",
      "locations.cell_id": "CELL ID",
      "telephony.cc_duration": "CONTENT DURATION (ms)",
-     "telephony.iri_duration": "SESSION DURATION (ms)"
+     "telephony.iri_duration": "SESSION DURATION (ms)",
+     "text.transcript": "CALL TRANSCRIPT",
+     "text.english": "TRANSLATION (EN)"
     },
     "call_record": true
    },
