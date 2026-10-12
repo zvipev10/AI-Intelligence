@@ -3495,7 +3495,10 @@ function recordLinkedEntitiesHtml(item) {
 function recordLinkedRawRecordsHtml(item) {
   const links = Array.isArray(item.observed_record_links) ? item.observed_record_links : [];
   if (!links.length) return "";
-  const rows = links.map(link => {
+  // Grouped by the layer each linked record belongs to, as a person's connected records are.
+  const events = typeof state !== "undefined" && Array.isArray(state.events) ? state.events : [];
+  const layerOf = id => String((events.find(event => (event.record_id || event.event_id) === id) || {}).source_type || activeLocaleText("אחר", "Other"));
+  const rowFor = link => {
     const fields = `${link.record_field || "record"} = ${link.linked_record_field || "record"}`;
     if (link.rule_id === "i360_related_item_v1") {
       // i360 links the records and names the value; the fields holding it are the app's check.
@@ -3508,8 +3511,12 @@ function recordLinkedRawRecordsHtml(item) {
       ? activeLocaleText("כתובת IP תואמת", "Matching IP address")
       : activeLocaleText("התאמת שדה", "Field match");
     return `<li><button type="button" class="object-viewer-open" data-linked-record-open="true" data-viewer-kind="record" data-viewer-id="${escapeHtml(link.record_id || "")}">${escapeHtml(link.record_id || "—")}</button><span>${escapeHtml(label)} · <code dir="ltr">${escapeHtml(fields)}</code> · <code dir="ltr">${escapeHtml(link.matched_value || "—")}</code></span></li>`;
-  }).join("");
-  return `<section class="object-viewer-evidence record-raw-links"><h3>${escapeHtml(activeLocaleText("רשומות גולמיות מקושרות", "Linked raw records"))}</h3><ul>${rows}</ul></section>`;
+  };
+  const byLayer = new Map();
+  links.forEach(link => { const layer = layerOf(link.record_id); byLayer.set(layer, [...(byLayer.get(layer) || []), link]); });
+  const groups = [...byLayer.entries()].sort((a, b) => b[1].length - a[1].length)
+    .map(([layer, group]) => `<div class="person-record-group"><h4>${escapeHtml(layer)} <span>${group.length}</span></h4><ul>${group.map(rowFor).join("")}</ul></div>`).join("");
+  return `<section class="object-viewer-evidence record-raw-links"><h3>${escapeHtml(activeLocaleText("רשומות גולמיות מקושרות", "Linked raw records"))}</h3>${groups}</section>`;
 }
 
 function recordLinkIndicator(item) {
