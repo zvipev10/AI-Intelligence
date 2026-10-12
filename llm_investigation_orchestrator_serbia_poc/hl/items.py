@@ -75,10 +75,12 @@ def _identifier_entries(value: Any, key: str) -> list[dict[str, str]]:
     return [{"value": str(value), "status": ""}] if value not in (None, "") else []
 
 
+TELECOM_RECOMMENDED, TELECOM_APPROVED = "Recommended", "Approved"  # the status values on the person in i360
+
+
 def review_status(status: Any) -> str:
-    """i360's status text as the viewer's state: "Recomended"/"recommended" -> recommended, "Approved" -> approved."""
-    text = str(status or "").strip().lower()
-    return "approved" if text.startswith("approv") else "recommended" if text.startswith("recom") else text
+    """i360's status text as the viewer's state: "Recommended" -> recommended, "Approved" -> approved."""
+    return str(status or "").strip().lower()
 
 
 def telecom_review(telecom: dict[str, Any]) -> dict[str, Any]:

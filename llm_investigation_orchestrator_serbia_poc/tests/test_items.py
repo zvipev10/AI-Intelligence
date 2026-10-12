@@ -386,8 +386,8 @@ class TelecomReviewTests(unittest.TestCase):
     def test_i360_derived_identity_is_reviewed_then_approved(self):
         from hl.items import entity_presentation
         rec = entity_presentation({"entity_id": "p", "telecom_imei": "1",
-                                   "telecom_msisdn": [{"status": "Recomended", "msisdn": "963"}],
-                                   "telecom_imsi": {"device_imsi": {"imsi": "417", "status": "Recomended"}}}, "PERSON_OF_INTEREST")
+                                   "telecom_msisdn": [{"status": "Recommended", "msisdn": "963"}],
+                                   "telecom_imsi": {"device_imsi": {"imsi": "417", "status": "Recommended"}}}, "PERSON_OF_INTEREST")
         telecom = rec["telecom"]
         self.assertEqual({"msisdn": "963", "imsi": "417"}, telecom["subscriber_identity_derivation"]["claim"]["value"])
         self.assertEqual("i360", telecom["subscriber_identity_derivation"]["source"])

@@ -32,7 +32,7 @@ from analysis import Dataset, normalize_locale, require_investigation_id
 from hl.chat import ChatServiceClient, ChatTurn, ClientGone, LlmClient, TurnContext, answer_entities
 from hl.client import AuthExpired, HlClient, HlError
 from hl.config import ROOT, Settings, load_settings
-from hl.items import ItemReader, Snapshot, SnapshotCache, entity_presentation, item_fields, layers_search
+from hl.items import TELECOM_APPROVED, ItemReader, Snapshot, SnapshotCache, entity_presentation, item_fields, layers_search
 from hl.mapping import Mapping, load_mapping
 from hl.state import MEMORY_GROUPS, StateStore
 
@@ -210,7 +210,7 @@ class App:
             if isinstance(value, list):
                 return [approve(v) for v in value]
             if isinstance(value, dict):
-                return {k: ("Approved" if k == "status" else approve(v)) for k, v in value.items()}
+                return {k: (TELECOM_APPROVED if k == "status" else approve(v)) for k, v in value.items()}
             return value
 
         for field in ("device_msisdn", "device_imsi"):
