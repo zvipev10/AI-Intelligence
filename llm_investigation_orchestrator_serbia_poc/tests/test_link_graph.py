@@ -42,6 +42,26 @@ class LinkGraphTests(unittest.TestCase):
                           ("IPDR-2", "related_objects", "")}, got)
         self.assertEqual({"i360_related_object_v1"}, {l["rule_id"] for l in links})
 
+    def test_i360_item_links_join_two_records_on_their_value(self):
+        import json
+        from analysis import apply_graph_entity_links
+        events = [
+            {"event_id": "IPDR-1", "source_type": "IPDR", "i360.ip.ip_sessions.destination_ip": "203.0.113.107",
+             "i360_links": json.dumps([{"id": "ADINT-1", "type": "ITEM", "source": "automatic", "values": ["203.0.113.107"]}]),
+             "i360_identifiers": "[]"},
+            {"event_id": "ADINT-1", "source_type": "ADINT", "i360.ip.ip_sessions.source_ip": "203.0.113.107",
+             "i360_links": json.dumps([{"id": "IPDR-1", "type": "ITEM", "source": "automatic", "values": ["203.0.113.107"]}]),
+             "i360_identifiers": "[]"},
+        ]
+        links = build_links(events, self.entities, self.locations)
+        self.assertEqual(1, len(links))  # both records carry the link; it is made once
+        self.assertEqual(("i360_related_item_v1", "203.0.113.107"), (links[0]["rule_id"], links[0]["matched_value"]))
+        apply_graph_entity_links(events, self.entities, self.locations)
+        ipdr = events[0]["observed_record_links"][0]
+        self.assertEqual(("ADINT-1", "ip.ip_sessions.destination_ip", "ip.ip_sessions.source_ip"),
+                         (ipdr["record_id"], ipdr["record_field"], ipdr["linked_record_field"]))
+        self.assertEqual("IPDR-1", events[1]["observed_record_links"][0]["record_id"])
+
     def test_tied_or_singleton_pairs_do_not_create_a_claim(self):
         singleton = [{"event_id": "REC-1", "target_imei": "353294702931926", "target_msisdn": "1", "target_imsi": "2"}]
         self.assertIsNone(derive_subscriber_identity(singleton, build_links(singleton, self.entities, self.locations), "ENT-PERSON"))

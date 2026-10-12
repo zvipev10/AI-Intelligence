@@ -203,11 +203,14 @@ def call_conversation(item: dict[str, Any], sides: dict[str, str]) -> dict[str, 
 
 
 def i360_links(item: dict[str, Any]) -> list[dict[str, str]]:
-    """The entities i360 links this item to (its related_objects): id, type, relation."""
+    """What i360 links this item to (its related_objects): entities, and other items (type ITEM) with the
+    value the link was made on (matching_value) and how (relation_source, e.g. automatic)."""
     out = []
     for obj in item.get("related_objects") or []:
         if isinstance(obj, dict) and obj.get("id"):
-            out.append({"id": str(obj["id"]), "type": str(obj.get("type") or ""), "relation": str(obj.get("relation_type") or "")})
+            out.append({"id": str(obj["id"]), "type": str(obj.get("type") or ""), "relation": str(obj.get("relation_type") or ""),
+                        "source": str(obj.get("relation_source") or ""),
+                        "values": [str(v) for v in obj.get("matching_value") or [] if v not in (None, "")]})
     return out
 
 

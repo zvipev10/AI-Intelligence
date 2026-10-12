@@ -12,7 +12,7 @@ Checked against LAMBDA data with a signed-in user; "the app" is `llm_investigati
 | 2 | Chat: layer names | i360 does not know the app's layer names ("IPDR" is aggregated_ip_session from HOSHENTEL to it) and answers from outside the investigation | Lists the investigation's records through i360, groups them by the app's layers and keeps the named layer | i360's own answer text can contradict what is shown | i360-chat: accept a layer / type vocabulary |
 | 3 | Chat: "our layers" scope | The chat's results scope takes at most 100 ids; a search body cannot say "newest N per query" | When the merged search is inexact (on LAMBDA it keeps only the 12-month window), asks i360 once per layer in parallel, each with that layer's exact request, and joins the answers | One fresh i360 conversation per layer, so a follow-up does not see the joined answer; more i360 calls | A scope that takes a query per layer |
 | 4 | Record → entity links: why | related_objects has matching_value / relation_source, but they are empty / null on our data | The app compares the person's identifiers (IMEI, MSISDN, IMSI) with the record's (asset_identifier, party identifiers) and shows "via IMEI … (matched by the app)" | An inference, not i360's statement | Fill matching_value / relation_source when links are made |
-| 5 | Record → record links | Readable (see "Links" below) but none exist on our data; no write operation | Not shown; the app's own ADINT↔IPDR IP match is set aside | No record-to-record links at all today | A write for item-to-item links, or the ingestion setting parent_ids; a relation type per link |
+| 5 | Record → record links | Two mechanisms (see "Links" below): parent/child links, none on our data; and related_objects of type ITEM, made automatically by i360 with the matched value (1 ADINT↔IPDR pair on our data). No field names or rule on either; no write operation | ITEM links shown under "Linked raw records" with i360's matched value; the fields holding it are found by comparing values ("matched by the app") | Which fields matched is an inference | The matched fields / rule on each ITEM link; a write for item-to-item links |
 | 6 | The app's memory type | AII_MEMORY_ITEM is not provisioned on LAMBDA (provisioning restarts platform services) | Records saved via items/related-objects on the investigation; persons as LINK entities (hit id only in general.entity_id; removal needs ?confirm=link id) | Saving layers and areas does not work on LAMBDA | A slot to provision AII_MEMORY_ITEM |
 | 7 | Item fields | Fields arrived in stages (260: additional_info, user_agents_data, ip, context; 261: li, telephony, sms, phone_call, cell value) | Guessed meanings until then; flattening of one-entry lists, SMS parts and cell entries; call fields (call id, sides from target_indication) built by the app | Still missing: file_infos[0].path; CIN and Call_Id exist but are empty | The file storage path |
 | 8 | Coverage | Facet filters take COVERAGE entity ids, not names (two coverages "calls" / "Calls"); search hits do not carry the coverage | Coverage ids in the profile; records matched to layers by type and source | A saved voice call is always named "Cellular Locations", even when it came from Cellular Calls | Coverage (or the matched query) on search hits |
@@ -37,7 +37,18 @@ Checked against LAMBDA data with a signed-in user; "the app" is `llm_investigati
   2 calls (`attachment_associated`), 4 IPDR (`associated`). `matching_value` is empty and `relation_source` null on all.
 - **Missing:** why a record is linked. The app shows the shared identifier as its own check ("matched by the app").
 
-### Record → record ("Related items")
+### Record → record: related_objects of type ITEM (used by the app)
+
+- **Read:** the same `include: ["related_objects"]`; an entry whose `type` is `ITEM` points to another item, e.g. on
+  IPDR 4e981670 (HOSHENTEL): `{id: 70097b75…, type: "ITEM", label: "location_location_technical", relation_type:
+  "associated", relation_source: "automatic", matching_value: ["203.0.113.107"]}`, and the mirror entry on ADINT 70097b75.
+- **On our data:** 1 pair across all six layers (both records carry it). The value 203.0.113.107 is stored only in the
+  links and in `ip.ip_sessions[0].destination_ip` (IPDR) / `ip.ip_sessions[0].source_ip` (ADINT).
+- **Given by i360:** that the records are linked, automatically, on that value. **Not given:** which fields or rule.
+  The app finds the fields holding the value and labels them "matched by the app".
+- These links do not appear in items/context's buckets or in parent_ids.
+
+### Record → record: parent / child ("Related items")
 
 - **Documented** in platform-hl-api/docs/okf-api:
   - `filtering-items-by-field.md`: `{"field": "parents_ids", "values": ["<item_id>"]}` returns an item's children

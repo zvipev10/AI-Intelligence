@@ -325,7 +325,11 @@ class I360LinkFieldsTests(unittest.TestCase):
                 "related_objects": [{"id": "p-1", "type": "PERSON_OF_INTEREST", "relation_type": "associated"}, {"label": "no id"}],
                 "parties": [{"target_indication": "True", "identifiers": [{"type": "imei", "value": "111"}]},
                             {"role": "from", "identifiers": [{"type": "msisdn", "value": "222"}]}]}
-        self.assertEqual([{"id": "p-1", "type": "PERSON_OF_INTEREST", "relation": "associated"}], i360_links(item))
+        self.assertEqual([{"id": "p-1", "type": "PERSON_OF_INTEREST", "relation": "associated", "source": "", "values": []}], i360_links(item))
+        item_link = {"related_objects": [{"id": "i-2", "type": "ITEM", "relation_type": "associated", "relation_source": "automatic",
+                                          "matching_value": ["203.0.113.107"]}]}
+        self.assertEqual([{"id": "i-2", "type": "ITEM", "relation": "associated", "source": "automatic", "values": ["203.0.113.107"]}],
+                         i360_links(item_link))
         self.assertEqual([["asset_identifier", "353294702931926"], ["parties.target.imei", "111"], ["parties.from.msisdn", "222"]],
                          i360_identifiers(item))
 
