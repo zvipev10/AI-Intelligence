@@ -1601,9 +1601,13 @@ async function loadInvestigationItemLayers(token) {
     const [added] = addResultLayers({ sourceId: `investigation-items:${state.investigationId}`, sourceLabel: label,
       preferredView: meta.capabilities.map ? "map" : "table", layers: [layer] });
     if (added) added.investigationItemsLayer = true;
-    if (added && refresh) added.visible = visibleBefore.has(added.id) ? visibleBefore.get(added.id) : false;
   });
-  if (refresh && state.layers.some(layer => layer.id === activeBefore)) state.activeLayerId = activeBefore;
+  if (refresh) {
+    // After all tabs are back (adding one tab shows the others of the same source again).
+    state.layers.filter(layer => layer.investigationItemsLayer)
+      .forEach(layer => { layer.visible = visibleBefore.has(layer.id) ? visibleBefore.get(layer.id) : false; });
+    if (state.layers.some(layer => layer.id === activeBefore)) state.activeLayerId = activeBefore;
+  }
   if (wasActive && !state.layers.some(layer => layer.id === state.activeLayerId)) state.activeLayerId = state.layers.find(layer => layer.visible)?.id || null;
   if (!state.activeLayerId) state.activeLayerId = state.layers.find(layer => layer.investigationItemsLayer)?.id || state.activeLayerId;
   renderAllViews();
