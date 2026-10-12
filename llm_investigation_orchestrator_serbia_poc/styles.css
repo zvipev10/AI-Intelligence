@@ -799,7 +799,9 @@ body.visual-media-overlay-open { overflow:hidden; }
 @media(max-width:760px){.call-workspace{grid-template-columns:1fr}.call-sidebar .cellular-call-parties{grid-template-columns:1fr 1fr}.call-detail-list{grid-template-columns:1fr 1fr}.call-main{grid-template-rows:240px auto}.person-workspace-main{grid-template-rows:auto 240px auto}.call-player{flex-wrap:wrap;gap:8px}.call-bubble{max-width:96%}.call-transcript-scroll{max-height:none}}
 
 @media(min-width:761px){
- :is(.is-cellular-viewer,.is-person-viewer) .object-viewer-body{overflow:hidden}
+ .is-cellular-viewer .object-viewer-body{overflow:hidden}
+ /* A person's photo sits above the workspace, so the person viewer scrolls instead of cutting its bottom off. */
+ .is-person-viewer .object-viewer-body{overflow-x:hidden;overflow-y:auto}
  .call-workspace{height:calc(100dvh - 150px);min-height:440px;grid-template-rows:minmax(0,1fr) auto auto}
  .call-sidebar{overflow:auto}
  .call-main{min-height:0;grid-template-rows:40% minmax(0,1fr)}
