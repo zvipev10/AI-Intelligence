@@ -310,7 +310,7 @@
  },
  "_comment": "Test scenario for LAMBDA: images from the source \"EO optical (fictional)\" (the Syria convoy demo, with locations) in a layer named \"Satellite\", drawn from their own location.point. recent_days, limit and layer are read by hl/items.py and not sent to HL API; APP_ITEMS_PER_TYPE overrides limit. No location entities exist on LAMBDA, so the Location layer stays empty. all_fields: every populated i360 item field is shown (table without media fields, viewer with everything). A second query reads items whose source_application is ADINT (any item type) into a layer named \"ADINT\", showing only the id and location fields (fields: [item_id, location]). entity_mapping: the Entity layer shows every visible i360 PERSON_OF_INTEREST with the person viewer. Cellular Locations (voice_call and sms in coverage Demo tali), Cellular Calls (voice_call in coverage calls) and IPDR (aggregated_ip_session from HOSHENTEL); coverage filters go to HL API as facet_filters on the coverage group (COVERAGE entity ids). 300 items per query. CCTV: video items from source cctv (up to 200), drawn at their GPS point; the viewer plays the MP4 from i360. A query's own limit wins over APP_ITEMS_PER_TYPE.",
  "entity_mapping": {
-  "_comment": "Every visible i360 PERSON_OF_INTEREST, shown with the app's person viewer. Paths accept the record nested under entity, at the top, or under sections. image_file_id, telecom_imei and telecom_msisdn are turned into image_url and telecom by hl/items.py.",
+  "_comment": "Every visible i360 PERSON_OF_INTEREST, shown with the app's person viewer. Paths accept the record nested under entity, at the top, or under sections. image_file_id, telecom_imei and telecom_msisdn are turned into image_url and telecom by hl/items.py. telecom_msisdn / telecom_imsi may carry a status (Recomended / Approved): i360's derived subscriber identity, reviewed in the person viewer.",
   "types": [
    "PERSON_OF_INTEREST"
   ],
@@ -326,7 +326,8 @@
    "telecom_imei": "entity.details.device_imei | details.device_imei | sections.details.device_imei",
    "telecom_msisdn": "entity.details.device_msisdn | details.device_msisdn | sections.details.device_msisdn",
    "image_file_id": "entity.identifier.official_picture.id | identifier.official_picture.id | sections.identifier.official_picture.id",
-   "basis": "'i360 person of interest'"
+   "basis": "'i360 person of interest'",
+   "telecom_imsi": "entity.details.device_imsi | details.device_imsi | sections.details.device_imsi"
   }
  },
  "investigation_links": [

@@ -196,6 +196,39 @@ class App:
                             fetched_at=time.time(), truncated=reader.truncated, warnings=reader.warnings)
         return self.snapshots.get(token, build, refresh=refresh)
 
+    def approve_i360_telecom(self, token: str, entity_type: str, entity_id: str) -> None:
+        """Set the status of the person's derived MSISDN / IMSI entries (details.device_msisdn,
+        details.device_imsi) to Approved in i360, then re-read the entities. The record keeps its shapes;
+        the write refuses if someone changed the record since it was read."""
+        client = self.client(token)
+        instance = client.get_entity(entity_type, entity_id)
+        record = instance.get("entity") if isinstance(instance.get("entity"), dict) else instance
+        details = (record.get("details") or (record.get("sections") or {}).get("details") or {})
+        changed: dict[str, Any] = {}
+
+        def approve(value: Any) -> Any:
+            if isinstance(value, list):
+                return [approve(v) for v in value]
+            if isinstance(value, dict):
+                return {k: ("Approved" if k == "status" else approve(v)) for k, v in value.items()}
+            return value
+
+        for field in ("device_msisdn", "device_imsi"):
+            if details.get(field) not in (None, "", [], {}):
+                changed[field] = approve(details[field])
+        if not changed:
+            raise ValueError("The person has no derived MSISDN / IMSI to approve")
+        modified = ((record.get("general") or {}).get("modification_time"))
+        body: dict[str, Any] = {"sections": {"details": changed}}
+        if modified:
+            body["expected_modification_time"] = modified
+        client.patch_entity(entity_type, entity_id, body)
+        snap = self.snapshot(token)
+        with snap.lock:
+            snap.entities = ItemReader(client, self.mapping, {}, 1).entities()
+            for key in [k for k in snap.derived if k.startswith("dataset:")]:
+                snap.derived.pop(key, None)
+
     def reload_reviews(self, token: str) -> None:
         """After a review, re-read only the reviews and drop the assembled datasets."""
         snap = self.snapshot(token)
@@ -740,6 +773,13 @@ class Handler(BaseHTTPRequestHandler):
                 raise ValueError("Entity id is required")
             action = "approve" if path.endswith("/approve") else analysis.compact_text(request.get("action") or "approve", 20).lower()
             data = app.dataset(token, "en")
+            current = data.entities.get(entity_id) or {}
+            if (current.get("telecom") or {}).get("i360_review") and action == "approve":
+                # i360 derived these identifiers and keeps their status on the person: approving sets it.
+                app.approve_i360_telecom(token, str(current.get("i360_entity_type") or ""), entity_id)
+                entity = app.dataset(token, "en").entities.get(entity_id)
+                self.send_json(201, {"saved": {"method": "i360_status", "status": "approved"}, "entity": entity})
+                return
             snap = app.snapshot(token)
             previous = next((r for r in snap.reviews.values()
                              if str((r.get("subject") or {}).get("object_id") or "") == entity_id), None)

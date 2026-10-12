@@ -51,10 +51,53 @@ def entity_presentation(record: dict[str, Any], entity_type: str) -> dict[str, A
                if record.get(f"telecom_{key}") not in (None, "", [])}
     for key in ("imei", "msisdn", "imsi"):
         record.pop(f"telecom_{key}", None)
+    review = telecom_review(telecom)
+    if "i360_review" in review:  # the derived values live in the review / approved identity, not as plain ones
+        telecom.pop("msisdn", None)
+        telecom.pop("imsi", None)
+    telecom.update(review)
     if telecom:
         record["telecom"] = {**(record.get("telecom") or {}), **telecom}
     record.setdefault("i360_entity_type", entity_type)
     return record
+
+
+def _identifier_entries(value: Any, key: str) -> list[dict[str, str]]:
+    """i360 subscriber identifiers as [{value, status}]: a plain value, an entry {key, status}, a list of
+    entries, or an entry nested once more under its field name ({"device_imsi": {"imsi", "status"}})."""
+    if isinstance(value, list):
+        return [e for v in value for e in _identifier_entries(v, key)]
+    if isinstance(value, dict):
+        if key in value:
+            return [{"value": str(value.get(key) or ""), "status": str(value.get("status") or "")}] if value.get(key) else []
+        nested = [v for v in value.values() if isinstance(v, (dict, list))]
+        return [e for v in nested for e in _identifier_entries(v, key)]
+    return [{"value": str(value), "status": ""}] if value not in (None, "") else []
+
+
+def review_status(status: Any) -> str:
+    """i360's status text as the viewer's state: "Recomended"/"recommended" -> recommended, "Approved" -> approved."""
+    text = str(status or "").strip().lower()
+    return "approved" if text.startswith("approv") else "recommended" if text.startswith("recom") else text
+
+
+def telecom_review(telecom: dict[str, Any]) -> dict[str, Any]:
+    """MSISDN / IMSI that i360 derived from the cellular location records linked to the person carry a
+    status. Recommended ones are the viewer's review card (approval needed); approved ones are its approved
+    identity. Plain values without a status stay as they are."""
+    entries = {key: _identifier_entries(telecom.get(key), key) for key in ("msisdn", "imsi")}
+    if not any(e["status"] for values in entries.values() for e in values):
+        return {k: ", ".join(e["value"] for e in v) for k, v in entries.items() if v and k in telecom}
+    first = {k: (v[0] if v else {}) for k, v in entries.items()}
+    statuses = {k: review_status(e.get("status")) for k, e in first.items() if e}
+    identity = {k: e["value"] for k, e in first.items() if e}
+    out: dict[str, Any] = {"msisdn": None, "imsi": None, "i360_review": statuses}
+    if all(s == "approved" for s in statuses.values()):
+        out["approved_subscriber_identity"] = {**identity, "source": "i360"}
+    else:
+        out["subscriber_identity_derivation"] = {"status": "candidate", "source": "i360",
+                                                 "claim": {"value": identity}, "supporting_record_ids": []}
+    return {k: v for k, v in out.items() if v is not None}
 
 
 CALL_LAYERS: set[str] = set()

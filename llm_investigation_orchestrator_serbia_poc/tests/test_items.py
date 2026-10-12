@@ -380,3 +380,19 @@ class CallTranslationInsightsTests(unittest.TestCase):
         fields = call_fields(item)
         self.assertEqual(["IMEI 111 · 00:02: A-one", "222 · 00:05: B-one", "222 · 00:13: B-two"], fields["call_transcript"].split(chr(10) * 2))
         self.assertEqual(["IMEI 111 · 00:02: A-one EN", "222 · 00:05: B-one EN", "222 · 00:13: B-two EN"], fields["call_transcript_en"].split(chr(10) * 2))
+
+
+class TelecomReviewTests(unittest.TestCase):
+    def test_i360_derived_identity_is_reviewed_then_approved(self):
+        from hl.items import entity_presentation
+        rec = entity_presentation({"entity_id": "p", "telecom_imei": "1",
+                                   "telecom_msisdn": [{"status": "Recomended", "msisdn": "963"}],
+                                   "telecom_imsi": {"device_imsi": {"imsi": "417", "status": "Recomended"}}}, "PERSON_OF_INTEREST")
+        telecom = rec["telecom"]
+        self.assertEqual({"msisdn": "963", "imsi": "417"}, telecom["subscriber_identity_derivation"]["claim"]["value"])
+        self.assertEqual("i360", telecom["subscriber_identity_derivation"]["source"])
+        self.assertNotIn("msisdn", telecom)  # shown in the review card, not as an approved value
+        rec = entity_presentation({"entity_id": "p", "telecom_msisdn": [{"status": "Approved", "msisdn": "963"}],
+                                   "telecom_imsi": {"device_imsi": {"imsi": "417", "status": "Approved"}}}, "PERSON_OF_INTEREST")
+        self.assertEqual({"msisdn": "963", "imsi": "417", "source": "i360"}, rec["telecom"]["approved_subscriber_identity"])
+        self.assertEqual({"msisdn": "050"}, {k: v for k, v in entity_presentation({"entity_id": "p", "telecom_msisdn": "050"}, "X")["telecom"].items()})

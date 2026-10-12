@@ -3270,7 +3270,9 @@ function personTelecomDetailsHtml(item) {
   const reviewCard = extractedIdentifiers && !approved ? `<section class="person-telecom-review" aria-label="${escapeHtml(activeLocaleText("מזהי מנוי שחולצו וממתינים לאישור", "Extracted subscriber identifiers awaiting approval"))}">
     <div class="person-telecom-review-heading"><span class="material-symbols-rounded" aria-hidden="true">psychology</span><div><strong>${escapeHtml(activeLocaleText("זהות מנוי שחולצה", "Extracted subscriber identity"))}</strong><span>${escapeHtml(activeLocaleText("נדרש אישור אנליסט", "Analyst review required"))}</span></div></div>
     <dl class="person-telecom-identifier-grid">${identifier("MSISDN", extracted.msisdn)}${identifier("IMSI", extracted.imsi)}</dl>
-    <p>${escapeHtml(activeLocaleText("התאמה עקבית ל-IMEI ברשומות מיקום סלולריות.", "Consistently matched to this IMEI across cellular-geolocation records."))}</p>
+    <p>${escapeHtml(derivation?.source === "i360"
+      ? activeLocaleText("נגזר ב-i360 מרשומות המיקום הסלולריות המקושרות לאדם; סטטוס: מומלץ.", "Derived by i360 from the cellular location records linked to this person. Status: recommended.")
+      : activeLocaleText("התאמה עקבית ל-IMEI ברשומות מיקום סלולריות.", "Consistently matched to this IMEI across cellular-geolocation records."))}</p>
     <button type="button" class="person-telecom-approve" data-approve-telecom-entity="${escapeHtml(item.entity_id || "")}"><span class="material-symbols-rounded" aria-hidden="true">verified</span>${escapeHtml(activeLocaleText("אשר", "Approve"))}</button>
   </section>` : "";
   const approvalStatus = approved ? `<span class="person-telecom-approved"><span class="material-symbols-rounded" aria-hidden="true">verified</span>${escapeHtml(activeLocaleText("אושר", "Approved"))}</span>` : "";
