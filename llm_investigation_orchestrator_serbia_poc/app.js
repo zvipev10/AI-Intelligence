@@ -1549,8 +1549,13 @@ async function loadInvestigationMemory(options = {}) {
     if (!response.ok) throw new Error(payload.error || activeLocaleText("טעינת זיכרון החקירה נכשלה", "Failed to load investigation memory"));
     if (token !== state.investigationMemoryLoadToken) return null;
     state.investigationMemory = payload;
-    if (options.restoreLayers) await restoreMemorySavedLayers(payload, token);
-    await loadInvestigationItemLayers(token);
+    // Opening an investigation opens its memory tabs; a save or removal only updates the tabs already there.
+    if (options.restoreLayers) {
+      await restoreMemorySavedLayers(payload, token);
+      await loadInvestigationItemLayers(token);
+    } else {
+      await refreshInvestigationItemLayers(token);
+    }
     if (!memoryModal?.hidden) renderMemoryScreen();
     return payload;
   } catch (error) {
@@ -1581,12 +1586,6 @@ async function loadInvestigationItemLayers(token) {
   if (token !== state.investigationMemoryLoadToken) return;
   const previous = state.layers.filter(layer => layer.investigationItemsLayer);
   const wasActive = previous.some(layer => layer.id === state.activeLayerId);
-  // Opening an investigation opens its memory tabs; a later reload (after saving or removing an item)
-  // only refreshes them, keeping the active layer, the view and each tab's visibility as they were.
-  const refresh = state.investigationItemLayersFor === state.investigationId;
-  state.investigationItemLayersFor = state.investigationId;
-  const activeBefore = state.activeLayerId;
-  const visibleBefore = new Map(previous.map(layer => [layer.id, layer.visible]));
   state.layers = state.layers.filter(layer => !layer.investigationItemsLayer);
   groups.forEach(group => {
     const rows = Array.isArray(group.rows) ? group.rows : [];
@@ -1602,14 +1601,37 @@ async function loadInvestigationItemLayers(token) {
       preferredView: meta.capabilities.map ? "map" : "table", layers: [layer] });
     if (added) added.investigationItemsLayer = true;
   });
-  if (refresh) {
-    // After all tabs are back (adding one tab shows the others of the same source again).
-    state.layers.filter(layer => layer.investigationItemsLayer)
-      .forEach(layer => { layer.visible = visibleBefore.has(layer.id) ? visibleBefore.get(layer.id) : false; });
-    if (state.layers.some(layer => layer.id === activeBefore)) state.activeLayerId = activeBefore;
-  }
   if (wasActive && !state.layers.some(layer => layer.id === state.activeLayerId)) state.activeLayerId = state.layers.find(layer => layer.visible)?.id || null;
   if (!state.activeLayerId) state.activeLayerId = state.layers.find(layer => layer.investigationItemsLayer)?.id || state.activeLayerId;
+  renderAllViews();
+  renderLayerSelector();
+}
+
+// After a save or removal: the memory tabs already open get their new rows; no tab is opened, shown,
+// hidden or made active. A tab whose layer has nothing saved any more is closed.
+async function refreshInvestigationItemLayers(token) {
+  const open = state.layers.filter(layer => layer.investigationItemsLayer);
+  if (!state.investigationId || !open.length) return;
+  let groups;
+  try {
+    const response = await fetch(buildLocaleApiUrl(`/api/investigation-items?id=${encodeURIComponent(state.investigationId)}`), { cache: "no-store" });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) return;
+    groups = Array.isArray(payload.layers) ? payload.layers : [];
+  } catch (error) {
+    return;
+  }
+  if (token !== state.investigationMemoryLoadToken) return;
+  const rowsByLabel = new Map(groups.map(group => [`${group.label} · ${activeLocaleText("זיכרון", "memory")}`, Array.isArray(group.rows) ? group.rows : []]));
+  open.forEach(layer => {
+    const rows = rowsByLabel.get(layer.label) || [];
+    layer.items = buildCatalogLayer({ id: layer.dataId, label: layer.label, kind: layer.kind, capabilities: layer.capabilities }, rows).items;
+  });
+  const emptied = new Set(open.filter(layer => !layer.items.length).map(layer => layer.id));
+  if (emptied.size) {
+    state.layers = state.layers.filter(layer => !emptied.has(layer.id));
+    if (emptied.has(state.activeLayerId)) state.activeLayerId = state.layers.find(layer => layer.visible)?.id || null;
+  }
   renderAllViews();
   renderLayerSelector();
 }
