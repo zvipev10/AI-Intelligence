@@ -374,6 +374,19 @@ class ChatApiTests(unittest.TestCase):
             self.assertEqual("What records are linked in this investigation?", investigation_wording(question))
         self.assertEqual("Which linked records mention trucks?", investigation_wording("Which saved records mention trucks?"))
 
+    def test_one_unreadable_record_does_not_hide_the_rest(self):
+        browser = self.signed_in()
+        first = self.ask(browser, {"message": "convoy trucks"})
+        cited = [c["id"] for c in [d for e, d in first if e == "done"][0]["citations"]]
+        self.assertGreater(len(cited), 1)
+        self.estate.get_items_poison = {cited[0]}
+        try:
+            events = self.ask(browser, {"message": "convoy trucks"})
+        finally:
+            self.estate.get_items_poison = set()
+        shown = [r["i360_item_id"] for a in self.actions(events, "show_items") for g in a["groups"] for r in g["rows"]]
+        self.assertEqual(cited[1:], shown)
+
     def test_follow_up_opens_a_cited_record(self):
         browser = self.signed_in()
         first = self.ask(browser, {"message": "convoy trucks"})

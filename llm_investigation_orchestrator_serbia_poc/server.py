@@ -30,7 +30,7 @@ from urllib.parse import parse_qs, quote, unquote, urlparse
 import analysis
 from analysis import Dataset, normalize_locale, require_investigation_id
 from hl.chat import ChatServiceClient, ChatTurn, ClientGone, LlmClient, TurnContext, answer_entities
-from hl.client import AuthExpired, HlClient, HlError
+from hl.client import AuthExpired, HlClient, HlError, Unreachable
 from hl.config import ROOT, Settings, load_settings
 from hl.items import TELECOM_APPROVED, ItemReader, Snapshot, SnapshotCache, entity_presentation, item_fields, layers_search
 from hl.mapping import Mapping, load_mapping
@@ -170,11 +170,27 @@ class App:
         """Given i360 items (read in full, in the order asked), grouped by layer; unknown ids are skipped."""
         client = self.client(token)
         found: dict[str, dict[str, Any]] = {}
-        for start in range(0, len(item_ids), 100):
-            batch = item_ids[start:start + 100]
-            for item in client.get_items(batch, self.mapping.get_include).get("items") or []:
+
+        def read(batch: list[str]) -> None:
+            try:
+                items = client.get_items(batch, self.mapping.get_include).get("items") or []
+            except HlError as exc:
+                # A server error on a batch (seen: digestserver 500 on items/get-items) is narrowed down by halves,
+                # so one unreadable id costs only itself.
+                if exc.status < 500 or isinstance(exc, Unreachable):
+                    raise
+                if len(batch) == 1:
+                    print(f"items/get failed for {batch[0]}: {exc.status} {str(exc)[:200]}", flush=True)
+                    return
+                read(batch[:len(batch) // 2])
+                read(batch[len(batch) // 2:])
+                return
+            for item in items:
                 if isinstance(item, dict) and item.get("item_id") and item.get("found") is not False:
                     found[str(item["item_id"])] = item
+
+        for start in range(0, len(item_ids), 100):
+            read(item_ids[start:start + 100])
         return self.item_groups([found[i] for i in item_ids if i in found], locale)
 
     def known_sources(self, locale: str) -> list[str]:

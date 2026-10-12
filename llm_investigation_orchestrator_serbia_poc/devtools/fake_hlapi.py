@@ -65,6 +65,7 @@ class FakeEstate:
         self.instances: dict[str, dict[str, dict[str, Any]]] = {}
         self.llm_off = False
         self.llm_empty = False  # answer like a model that spent max_tokens thinking
+        self.get_items_poison: set[str] = set()  # ids that make items/get answer 500, as digestserver did
         self.llm_requests: list[dict[str, Any]] = []
         self.lock = threading.RLock()
         self.calls: list[tuple[str, str]] = []
@@ -219,6 +220,8 @@ class FakeEstate:
         ids = body.get("item_ids") or []
         if len(ids) > 100:
             raise ApiError(422, "too_many_ids", "Up to 100 item ids at a time.")
+        if self.get_items_poison & set(ids):
+            raise ApiError(500, "internal", "digestserver -> HTTP 500")
         include = set(body.get("include") or [])
         out = []
         for item_id in ids:
