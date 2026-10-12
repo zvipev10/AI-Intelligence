@@ -839,6 +839,21 @@ class AppToolHost:
         return {"kind": "results", "name": "Our layers", "query": "the app's layers", "ids": ids[:100],
                 "total": len(ids), "request": request, "exact": exact}
 
+    def layer_scopes(self) -> list[dict[str, Any]]:
+        """Each of our layers as its own i360 chat ``scope``, exact, for asking the layers one at a time."""
+        queries = (self.app.profile.get("items_query") or {}).get("queries") or []
+        items = self.app.snapshot(self.token).items
+        scopes = []
+        for query in queries:
+            name = str((query or {}).get("layer") or "")
+            request, _ = layers_search({"queries": [query]})
+            if not name or request is None:
+                continue
+            ids = [str(i["item_id"]) for i in items if i.get("item_id") and i.get("_layer") == name]
+            scopes.append({"kind": "results", "name": name, "query": f"the {name} layer", "ids": ids[:100],
+                           "total": len(ids), "request": request})
+        return scopes
+
 
 def main(argv: list[str]) -> int:
     settings = load_settings()

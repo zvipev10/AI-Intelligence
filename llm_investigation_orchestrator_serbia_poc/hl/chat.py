@@ -27,6 +27,7 @@ import time
 import urllib.error
 import urllib.request
 import uuid
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from typing import Any, Callable, Iterator, Protocol
 
@@ -635,17 +636,23 @@ class ChatTurn:
         if self.ctx.timezone:
             body["tz"] = self.ctx.timezone
         scope_note = ""
+        per_layer: list[dict[str, Any]] = []
         if scope == "layers":
             layers = self.host.layers_scope()
             if layers:
                 exact = layers.pop("exact", True)
                 body["scope"] = layers
-                where = " (our layers)" if exact else " (our layers, approximate)"
+                where = " (our layers)"
                 if not exact:
-                    # HL search only ANDs filters, so several layers merge into their shared dates: this is
-                    # close to all data, and the answer must say so rather than present it as our layers.
-                    scope_note = ("Our layers could not be searched as one: i360 searched all records in "
-                                       "their date range, so this answer is approximate. Say so in one short clause.")
+                    # HL search only ANDs filters, so several layers merge into their shared dates (close to all
+                    # data). Each layer is then asked on its own, with its exact request, and the answers joined.
+                    lister = getattr(self.host, "layer_scopes", None)
+                    per_layer = (lister() if lister else []) or []
+                    if len(per_layer) < 2:
+                        per_layer = []
+                        where = " (our layers, approximate)"
+                        scope_note = ("Our layers could not be searched as one: i360 searched all records in "
+                                      "their date range, so this answer is approximate. Say so in one short clause.")
             else:
                 where = " (all data)"
         else:
@@ -656,18 +663,13 @@ class ChatTurn:
         self.emit("step", {"text": "Asking i360" + where, "tool": "ask_i360", "live": True,
                            "focus": (body.get("focus") or {}).get("id", ""),
                            "scope": (body.get("scope") or {}).get("kind", ""), "question": body["question"][:200]})
-        answer: dict[str, Any] | None = None
-        error = ""
-        for event, data in self.chat.ask(body, self.i360_conversation_id or None):
-            self.emit("i360", {"event": event, "data": data})
-            if event == "answer" and isinstance(data, dict):
-                answer = data
-            elif event == "error":
-                error = str((data or {}).get("message") or "error") if isinstance(data, dict) else "error"
-                if isinstance(data, dict) and data.get("code") == "model_unavailable":
-                    error = "the i360 chat is offline for the night"
-            elif event == "done" and isinstance(data, dict) and data.get("conversation_id"):
-                self.i360_conversation_id = str(data["conversation_id"])
+        if per_layer:
+            answer, error = self.ask_each_layer(body, per_layer)
+        else:
+            answer, error, _, conversation = self.stream(
+                body, self.i360_conversation_id or None, lambda e, d: self.emit("i360", {"event": e, "data": d}))
+            if conversation:
+                self.i360_conversation_id = conversation
         if answer is not None and answer.get("turn_id"):
             self.i360_last_turns.append(str(answer["turn_id"]))
         if answer is None:
@@ -716,13 +718,78 @@ class ChatTurn:
             "total": answer.get("total") or len(ids),
             "has_places": self.has_places,
             "has_time_series": bool(agg and not self.has_places),
-            "has_counts": bool(agg),
+            "has_counts": bool(agg or answer.get("counted")),
             "cited_items": citations[:MAX_CITED_FOR_MODEL],
             "entities": entities[:30],
             **({"widen": answer["widen"]} if answer.get("widen") else {}),
             **({"note": layer_note} if layer_note else {}),
             **({"scope_note": scope_note} if scope_note else {}),
         }
+
+    def stream(self, body: dict[str, Any], conversation_id: str | None,
+               on_event: Callable[[str, Any], None] | None = None) -> tuple[dict[str, Any] | None, str, list[tuple[str, Any]], str]:
+        """One i360 question: its answer, error, events and conversation id."""
+        answer: dict[str, Any] | None = None
+        error = conversation = ""
+        events: list[tuple[str, Any]] = []
+        for event, data in self.chat.ask(body, conversation_id):
+            events.append((event, data))
+            if on_event:
+                on_event(event, data)
+            if event == "answer" and isinstance(data, dict):
+                answer = data
+            elif event == "error":
+                error = str((data or {}).get("message") or "error") if isinstance(data, dict) else "error"
+                if isinstance(data, dict) and data.get("code") == "model_unavailable":
+                    error = "the i360 chat is offline for the night"
+            elif event == "done" and isinstance(data, dict) and data.get("conversation_id"):
+                conversation = str(data["conversation_id"])
+        return answer, error, events, conversation
+
+    def ask_each_layer(self, body: dict[str, Any], scopes: list[dict[str, Any]]
+                       ) -> tuple[dict[str, Any] | None, str]:
+        """Asks i360 once per layer, in parallel, each with that layer's exact scope; joins the answers.
+
+        i360's scope takes one search request and our layers cannot be ORed into one. Each layer's question
+        starts a fresh i360 conversation, so the panel's conversation is left as it was.
+        """
+        def one(scope: dict[str, Any]):
+            single = {k: v for k, v in body.items() if k not in ("conversation_id", "last_turns", "focus")}
+            single.update({"scope": scope, "request_id": "aii-" + uuid.uuid4().hex[:12]})
+            try:
+                return scope, *self.stream(single, None)
+            except (HlError, ValueError, OSError) as exc:
+                return scope, None, str(exc), [], ""
+
+        with ThreadPoolExecutor(max_workers=min(8, len(scopes))) as pool:
+            results = list(pool.map(one, scopes))
+        texts: list[str] = []
+        citations: list[Any] = []
+        total = 0
+        counted = False
+        errors: list[str] = []
+        for scope, answer, error, events, _ in results:
+            name = str(scope.get("name") or "layer")
+            for event, data in events:
+                if event == "answer":
+                    self.emit("i360", {"event": event, "data": data, "layer": name})
+            if answer is None:
+                errors.append(f"{name}: {error or 'no answer'}")
+                continue
+            texts.append(f"[{name}] " + str(answer.get("content") or "").strip()[:1500])
+            citations += answer.get("citations") or []
+            total += int(answer.get("total") or 0)
+            cards = answer.get("cards") if isinstance(answer.get("cards"), dict) else {}
+            counted = counted or bool(cards.get("agg"))
+        if not texts:
+            return None, "; ".join(errors)
+        if errors:
+            texts.append("No answer for " + "; ".join(errors))
+        joined = {"content": "Answered one layer at a time:\n" + "\n\n".join(texts), "citations": citations,
+                  "total": total or None, "leg": "search"}
+        if counted:
+            joined["counted"] = True
+        return joined, ""
 
     def investigation_listing(self, body: dict[str, Any]) -> list[dict[str, str]]:
         """The investigation's records as i360's search leg lists them (a fresh conversation, same focus)."""

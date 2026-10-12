@@ -615,3 +615,11 @@ Decision: in the chat panel, the i360 chat service is the only path to the data.
 Rationale: i360 chat already owns search, context and the conversation. Keeping our tools to presentation avoids a second, weaker data path that answers differently from i360.
 
 Impact: the app still reads a cited record by id (items/get) to draw it; that fetch is display, not a search. `open_item` refuses ids that were not cited, shown or in the viewer.
+
+### 2026-10-12 — Ask i360 once per layer when our layers cannot be one search
+
+Decision: the chat's "our layers" scope is one HL items/search request. When the layers' queries merge into a request that is not exact (on LAMBDA the six layers keep only their shared 12-month window, which is close to all data), the app asks i360 the same question once per layer, in parallel, each with that layer's exact request and its records as `ids`, and gives the assistant the answers joined by layer. Each layer question is a fresh i360 conversation; the panel's conversation is not changed. With fewer than two layers to split, the answer is labelled "our layers, approximate" and the assistant is told to say so.
+
+Rationale: HL search ANDs filters and the i360 chat's scope takes one request, so the layers cannot be ORed. Asking per layer keeps i360 chat as the only data source and answers about our layers only.
+
+Impact: up to one i360 call per layer for a layers question. Questions about "the system", "what we have" or "our data" are sent to our layers. See gap 3 in `docs/i360-gaps.md`.

@@ -130,6 +130,37 @@ class ChatUnitTests(unittest.TestCase):
         self.assertIn("approximate", result["scope_note"])
         self.assertIn("i360 · our layers, approximate · 0 records", turn.summary)
 
+    def test_inexact_layers_are_asked_one_at_a_time(self):
+        asked = []
+
+        class Chat:
+            def ask(self, body, conversation_id):
+                asked.append((body, conversation_id))
+                name = body["scope"]["name"]
+                return iter([("answer", {"content": f"{name} has 1", "citations": [{"id": f"{name}-1"}], "total": 1,
+                                         "cards": {"agg": {"buckets": []}}}),
+                             ("done", {"conversation_id": "fresh-" + name})])
+
+        class Host:
+            def layers_scope(self):
+                return {"kind": "results", "ids": [], "exact": False}
+
+            def layer_scopes(self):
+                return [{"kind": "results", "name": n, "ids": [], "request": {"source_applications": [n]}}
+                        for n in ("ADINT", "IPDR")]
+
+        ctx = TurnContext.from_request({"message": "x", "scope": "auto", "i360_conversation_id": "panel",
+                                        "i360_scope": "layers"})
+        turn = ChatTurn(None, Chat(), Host(), lambda e, d: None, ctx)
+        result = turn.ask_i360({"question": "what data do we have", "scope": "layers"})
+        self.assertEqual({"ADINT", "IPDR"}, {b["scope"]["name"] for b, _ in asked})
+        self.assertEqual([None, None], [c for _, c in asked])  # each layer is a fresh i360 conversation
+        self.assertEqual(["ADINT-1", "IPDR-1"], sorted(c["id"] for c in result["cited_items"]))
+        self.assertIn("[ADINT] ADINT has 1", result["answer"])
+        self.assertTrue(result["has_counts"])
+        self.assertEqual("panel", turn.i360_conversation_id)
+        self.assertNotIn("scope_note", result)
+
     def test_a_layer_in_the_investigation_is_filtered_from_i360s_listing(self):
         # "IPDR" means nothing to i360: the investigation's records it lists are grouped by our layers.
         asked = []
