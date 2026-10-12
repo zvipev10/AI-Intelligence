@@ -2873,7 +2873,8 @@ function initializeViewerMediaFallback(item, recordId) {
     const type = recordFileMediaType(file);
     const player = body.querySelector(".call-player");
     if (player && type === "audio") {
-      player.innerHTML = `<div><span class="material-symbols-rounded">graphic_eq</span><strong>${escapeHtml(activeLocaleText("הקלטה", "Recording"))}</strong></div><audio controls preload="metadata" src="${escapeHtml(file.url)}"></audio>`;
+      player.innerHTML = `<div><span class="material-symbols-rounded">graphic_eq</span><strong>${escapeHtml(activeLocaleText("הקלטה", "Recording"))}</strong></div><audio controls autoplay preload="auto" src="${escapeHtml(file.url)}"></audio>`;
+      startCellularCallAudio();  // an i360 call's recording arrives after the viewer opened: play it as the viewer's own does
       return;
     }
     if (player) return;
