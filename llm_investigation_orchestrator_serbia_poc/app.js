@@ -3497,6 +3497,13 @@ function recordLinkedRawRecordsHtml(item) {
   if (!links.length) return "";
   const rows = links.map(link => {
     const fields = `${link.record_field || "record"} = ${link.linked_record_field || "record"}`;
+    if (link.rule_id === "i360_related_item_v1") {
+      // i360 links the records and names the value; the fields holding it are the app's check.
+      const where = link.record_field !== "related_objects" && link.linked_record_field !== "related_objects"
+        ? ` · ${escapeHtml(activeLocaleText("נמצא ב", "found in"))} <code dir="ltr">${escapeHtml(link.record_field)}</code> / <code dir="ltr">${escapeHtml(link.linked_record_field)}</code> (${escapeHtml(activeLocaleText("התאמה של האפליקציה", "matched by the app"))})`
+        : "";
+      return `<li><button type="button" class="object-viewer-open" data-linked-record-open="true" data-viewer-kind="record" data-viewer-id="${escapeHtml(link.record_id || "")}">${escapeHtml(link.record_id || "—")}</button><span>i360 link · ${escapeHtml(activeLocaleText("אוטומטי", "automatic"))} · ${escapeHtml(activeLocaleText("ערך תואם", "matched value"))} <code dir="ltr">${escapeHtml(link.matched_value || "—")}</code>${where}</span></li>`;
+    }
     const label = link.rule_id === "adint_ip_to_ipdr_public_ip_v1"
       ? activeLocaleText("כתובת IP תואמת", "Matching IP address")
       : activeLocaleText("התאמת שדה", "Field match");
