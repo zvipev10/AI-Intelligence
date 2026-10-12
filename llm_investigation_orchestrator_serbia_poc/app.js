@@ -1581,6 +1581,12 @@ async function loadInvestigationItemLayers(token) {
   if (token !== state.investigationMemoryLoadToken) return;
   const previous = state.layers.filter(layer => layer.investigationItemsLayer);
   const wasActive = previous.some(layer => layer.id === state.activeLayerId);
+  // Opening an investigation opens its memory tabs; a later reload (after saving or removing an item)
+  // only refreshes them, keeping the active layer, the view and each tab's visibility as they were.
+  const refresh = state.investigationItemLayersFor === state.investigationId;
+  state.investigationItemLayersFor = state.investigationId;
+  const activeBefore = state.activeLayerId;
+  const visibleBefore = new Map(previous.map(layer => [layer.id, layer.visible]));
   state.layers = state.layers.filter(layer => !layer.investigationItemsLayer);
   groups.forEach(group => {
     const rows = Array.isArray(group.rows) ? group.rows : [];
@@ -1595,7 +1601,9 @@ async function loadInvestigationItemLayers(token) {
     const [added] = addResultLayers({ sourceId: `investigation-items:${state.investigationId}`, sourceLabel: label,
       preferredView: meta.capabilities.map ? "map" : "table", layers: [layer] });
     if (added) added.investigationItemsLayer = true;
+    if (added && refresh) added.visible = visibleBefore.has(added.id) ? visibleBefore.get(added.id) : false;
   });
+  if (refresh && state.layers.some(layer => layer.id === activeBefore)) state.activeLayerId = activeBefore;
   if (wasActive && !state.layers.some(layer => layer.id === state.activeLayerId)) state.activeLayerId = state.layers.find(layer => layer.visible)?.id || null;
   if (!state.activeLayerId) state.activeLayerId = state.layers.find(layer => layer.investigationItemsLayer)?.id || state.activeLayerId;
   renderAllViews();

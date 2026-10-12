@@ -155,6 +155,8 @@ body.welcome-active .investigation-switcher { visibility: hidden; pointer-events
 .result-panel { min-width: 0; min-height: 0; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
 .result-panel { border: 0; border-radius: 0; background: transparent; }
 .modal-backdrop.memory-modal,.modal-backdrop.memory-comment-modal,.modal-backdrop.collection-modal { z-index:150; }
+/* Save to memory opens from the record viewer (z-index 1300, maximized 1400): it must stay above it. */
+.modal-backdrop.memory-comment-modal { z-index:1500; }
 .memory-modal-panel,.memory-comment-panel,.collection-modal-panel { width:min(720px,calc(100vw - 28px));max-height:min(760px,calc(100dvh - 28px));display:grid;gap:14px;padding:20px;border:1px solid var(--line);border-radius:14px;background:var(--panel);box-shadow:0 24px 70px rgba(0,0,0,.55);overflow:auto; }
 .memory-modal-header,.memory-comment-panel>header,.collection-modal-panel>header { display:flex;align-items:flex-start;justify-content:space-between;gap:12px;border-bottom:1px solid var(--line);padding-bottom:12px; }
 .memory-modal-body { display:grid;gap:14px; }
