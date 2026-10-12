@@ -228,6 +228,13 @@ class ChatUnitTests(unittest.TestCase):
         self.assertNotIn("3x cargo truck", json.dumps(result))
         self.assertEqual(1, turn.show_items({"item_ids": ["img-1"], "label": "x", "view": "map"})["already_on_screen"])
 
+    def test_model_rounds_get_their_own_timeout(self):
+        from hl.chat import LlmClient
+        from hl.client import HlClient
+        base = HlClient("http://hl.example", "token", timeout=30)
+        llm = LlmClient(base, "m", timeout=180)
+        self.assertEqual((180, 30), (llm.client.timeout, base.timeout))
+
     def test_context_is_validated(self):
         with self.assertRaises(ValueError):
             TurnContext.from_request({"message": "  "})

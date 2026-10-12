@@ -597,7 +597,8 @@ class Handler(BaseHTTPRequestHandler):
             self.log_chat_event(event, data)
             self.stream_event(event, data)
 
-        llm = LlmClient(self.app.client(token), settings.llm_model) if settings.llm_enabled else None
+        llm = LlmClient(self.app.client(token), settings.llm_model, timeout=settings.llm_timeout_seconds) \
+            if settings.llm_enabled else None
         chat = ChatServiceClient(settings.chat_service_url, token, settings.chat_idle_timeout_seconds)
         turn = ChatTurn(llm, chat, AppToolHost(self.app, token, locale), emit, context, settings.chat_model)
         try:

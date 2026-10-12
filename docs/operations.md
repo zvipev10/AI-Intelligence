@@ -23,6 +23,7 @@ Branch `feature/i360-only`. The app is one stateless container that talks to pla
 | `CHAT_SERVICE_URL` | (empty) | i360 chat service (`analytics/i360-chat`). In cluster: `http://i360-chat:4020`; from a laptop on the company network: `https://i360-chat.intel360.lambda.projects.e-bitbox.com`. Empty turns the chat panel off. The chat saves conversations only for users holding the `Vibe Coder` profile |
 | `CHAT_MODEL` | (empty) | model the i360 chat is asked to use; empty keeps the service's default |
 | `APP_CHAT_ASSISTANT` | `true` | the small assistant over HL API `/api/v1/llm/chat` that drives the app (open layers, records, memory). `false` sends every message straight to the i360 chat |
+| `APP_CHAT_ASSISTANT_TIMEOUT` | `180` | seconds one assistant model round may take on `/api/v1/llm/chat` (HL API calls otherwise wait 30 s; a round with a large i360 answer took longer) |
 | `APP_CHAT_ASSISTANT_MODEL` | first of `GET /api/v1/llm/models` | model id for that assistant |
 | `CHAT_IDLE_TIMEOUT` | `300` | seconds the app waits on a silent chat stream before giving up |
 

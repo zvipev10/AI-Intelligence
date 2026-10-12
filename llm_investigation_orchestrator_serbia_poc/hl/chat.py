@@ -19,6 +19,7 @@ its recent answer ids and the previous answer's cited items.
 """
 from __future__ import annotations
 
+import copy
 import json
 import re
 import socket
@@ -33,7 +34,7 @@ from hl.client import AuthExpired, HlClient, HlError, NotOnThisEstate, Unreachab
 
 MAX_ROUNDS = 6
 MAX_SHOWN_ITEMS = 200
-MAX_CITED_FOR_MODEL = 60
+MAX_CITED_FOR_MODEL = 25  # the model sees these; every cited id is still shown
 # Questions i360 routes to its search leg (an investigation focus keeps them inside), tried in turn.
 OVERVIEW_LISTING_QUESTIONS = ("find all items", "search all items", "find all records")
 VIEWS = ("map", "timeline", "table")
@@ -129,7 +130,11 @@ class LlmClient:
     ``{model, content, tool_calls, finish_reason, usage}`` (unknown request fields are a 422). Tool calls
     are returned, never run."""
 
-    def __init__(self, client: HlClient, model: str = "", path: str = "/api/v1/llm/chat"):
+    def __init__(self, client: HlClient, model: str = "", path: str = "/api/v1/llm/chat", timeout: int = 0):
+        if timeout and timeout > getattr(client, "timeout", 0):
+            # A model round with a large tool result takes longer than HL API's usual 30 s.
+            client = copy.copy(client)
+            client.timeout = timeout
         self.client = client
         self.model = model
         self.path = path
@@ -270,6 +275,8 @@ Use the fewest tool calls that fulfil the request, then stop and answer in one o
   connections, what the investigation holds or has saved, what a record says) goes to ask_i360. Then show
   what it cited with show_items (from_last_answer=true, a clear label, and the view that fits: map when
   places matter, timeline for sequences and calls, table otherwise).
+- A question about how many, what kinds or how much data (counts, volume, types) is answered by i360's
+  text: do not show the records it sampled.
 - The other tools only display. For a display command (open a layer, open a cited record or the one in
   the viewer, save a layer) use the tool directly, without ask_i360. To show what the investigation
   holds, ask i360 and show what it cited.
@@ -486,7 +493,7 @@ class ChatTurn:
                 for call in calls:
                     result = self.run_tool(call["name"], call["arguments"])
                     messages.append({"role": "tool", "tool_call_id": call["id"],
-                                     "content": json.dumps(result, ensure_ascii=False)[:12000]})
+                                     "content": json.dumps(result, ensure_ascii=False)[:6000]})
             else:
                 note = "I stopped after several steps; tell me what is still missing."
             if note:
@@ -681,6 +688,7 @@ class ChatTurn:
             "total": answer.get("total") or len(ids),
             "has_places": self.has_places,
             "has_time_series": bool(agg and not self.has_places),
+            "has_counts": bool(agg),
             "cited_items": citations[:MAX_CITED_FOR_MODEL],
             "entities": entities[:30],
             **({"widen": answer["widen"]} if answer.get("widen") else {}),

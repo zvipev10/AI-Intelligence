@@ -49,6 +49,7 @@ class Settings:
     llm_enabled: bool = True
     llm_model: str = ""
     chat_idle_timeout_seconds: int = 300
+    llm_timeout_seconds: int = 180
 
     @property
     def investigation_type(self) -> str:
@@ -85,4 +86,5 @@ def load_settings() -> Settings:
         llm_enabled=_bool("APP_CHAT_ASSISTANT", True),
         llm_model=os.environ.get("APP_CHAT_ASSISTANT_MODEL", "").strip(),
         chat_idle_timeout_seconds=_int("CHAT_IDLE_TIMEOUT", 300),
+        llm_timeout_seconds=_int("APP_CHAT_ASSISTANT_TIMEOUT", 180),
     )
