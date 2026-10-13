@@ -3502,8 +3502,14 @@ function recordLinkedRawRecordsHtml(item) {
     const fields = `${link.record_field || "record"} = ${link.linked_record_field || "record"}`;
     if (link.rule_id === "i360_related_item_v1") {
       // i360 links the records and names the value; the fields holding it are the app's check.
+      // A field by its layer's display name (the mapping's, e.g. "ip_public"), the i360 path as its tooltip.
+      const catalog = typeof state !== "undefined" && Array.isArray(state.layerCatalog) ? state.layerCatalog : [];
+      const fieldName = (layer, path) => {
+        const label = (catalog.find(entry => entry.source_type === layer)?.field_labels || {})[`i360.${path}`];
+        return `<code dir="ltr" title="${escapeHtml(path)}">${escapeHtml(label ? `${layer} ${label}` : path)}</code>`;
+      };
       const where = link.record_field !== "related_objects" && link.linked_record_field !== "related_objects"
-        ? ` · ${escapeHtml(activeLocaleText("נמצא ב", "found in"))} <code dir="ltr">${escapeHtml(link.record_field)}</code> / <code dir="ltr">${escapeHtml(link.linked_record_field)}</code> (${escapeHtml(activeLocaleText("התאמה של האפליקציה", "matched by the app"))})`
+        ? ` · ${escapeHtml(activeLocaleText("נמצא ב", "found in"))} ${fieldName(item.source_type, link.record_field)} / ${fieldName(layerOf(link.record_id), link.linked_record_field)} (${escapeHtml(activeLocaleText("התאמה של האפליקציה", "matched by the app"))})`
         : "";
       return `<li><button type="button" class="object-viewer-open" data-linked-record-open="true" data-viewer-kind="record" data-viewer-id="${escapeHtml(link.record_id || "")}">${escapeHtml(link.record_id || "—")}</button><span>i360 link · ${escapeHtml(activeLocaleText("אוטומטי", "automatic"))} · ${escapeHtml(activeLocaleText("ערך תואם", "matched value"))} <code dir="ltr">${escapeHtml(link.matched_value || "—")}</code>${where}</span></li>`;
     }
