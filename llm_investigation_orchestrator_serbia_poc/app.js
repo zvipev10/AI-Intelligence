@@ -1387,11 +1387,10 @@ function renderMemoryScreen() {
   ];
   const html = groups.filter(([, , items]) => items.length).map(([group, title, items, label, openable]) => `<section class="memory-group"><h3>${escapeHtml(title)}</h3>${items.slice().reverse().map(item => `<article class="memory-entry"><div class="memory-entry-heading">${openable ? `<button type="button" class="memory-entry-open" data-memory-open-group="${group}" data-memory-open-id="${escapeHtml(item.id)}"><strong>${escapeHtml(label(item))}</strong></button>` : `<strong>${escapeHtml(label(item))}</strong>`}<button type="button" class="memory-entry-delete" data-memory-delete-group="${group}" data-memory-delete-id="${escapeHtml(item.id)}" title="${escapeHtml(activeLocaleText("הסר מהזיכרון", "Remove from memory"))}" aria-label="${escapeHtml(activeLocaleText("הסר מהזיכרון", "Remove from memory"))}"><span class="material-symbols-rounded" aria-hidden="true">delete</span></button></div><span class="memory-entry-meta">${escapeHtml(formatSavedTime(item.saved_at_utc))}${item.object_id ? ` · ${escapeHtml(item.object_id)}` : ""}</span>${item.analyst_comment ? `<p class="memory-entry-comment">${escapeHtml(item.analyst_comment)}</p>` : ""}</article>`).join("")}</section>`).join("");
   const hasObjects = (memory.artifacts || []).some(item => item.kind === "object");
-  const reportBar = hasObjects
-    ? `<div class="report-bar"><button type="button" class="primary-filter-action" data-report-create>${escapeHtml(activeLocaleText("צור דוח", "Create report"))}</button><span>${escapeHtml(activeLocaleText("עובדות מהרשומות שנשמרו; ניתוח על ידי מודל השפה של HL API", "Facts from the saved records; analysis by HL API's language model"))}</span></div>`
-    : "";
-  memoryModalBody.innerHTML = reportBar
-    + (html || `<div class="activity-empty">${escapeHtml(activeLocaleText("עדיין לא נשמרו פריטים לחקירה זו.", "No items have been saved to this investigation yet."))}</div>`);
+  // "Generate report" sits at the bottom of the Memory window, shown when something is saved.
+  const reportActions = document.getElementById("memoryModalActions");
+  if (reportActions) reportActions.hidden = !hasObjects;
+  memoryModalBody.innerHTML = (html || `<div class="activity-empty">${escapeHtml(activeLocaleText("עדיין לא נשמרו פריטים לחקירה זו.", "No items have been saved to this investigation yet."))}</div>`);
 }
 
 // ---- Investigation report, layout A "Document" (docs/report-plan.md) --------------------------------------
@@ -1406,12 +1405,12 @@ async function openReportDialog() {
   const dialog = document.createElement("div");
   dialog.className = "modal-backdrop report-dialog";
   dialog.innerHTML = facts.error
-    ? `<section class="memory-comment-panel"><header><h2>${escapeHtml(activeLocaleText("צור דוח", "Create report"))}</h2></header><p class="report-error">${escapeHtml(facts.error)}</p><div class="memory-comment-actions"><button type="button" data-report-dialog-close>${escapeHtml(activeLocaleText("סגור", "Close"))}</button></div></section>`
-    : `<form class="memory-comment-panel" data-report-dialog-form><header><h2>${escapeHtml(activeLocaleText("צור דוח", "Create report"))}</h2></header>
+    ? `<section class="memory-comment-panel"><header><h2>${escapeHtml(activeLocaleText("הפק דוח", "Generate report"))}</h2></header><p class="report-error">${escapeHtml(facts.error)}</p><div class="memory-comment-actions"><button type="button" data-report-dialog-close>${escapeHtml(activeLocaleText("סגור", "Close"))}</button></div></section>`
+    : `<form class="memory-comment-panel" data-report-dialog-form><header><h2>${escapeHtml(activeLocaleText("הפק דוח", "Generate report"))}</h2></header>
       <p>${escapeHtml(`${facts.records_total} ${activeLocaleText("רשומות שמורות", "saved records")} · ${facts.subtitle || ""}`)}</p>
       <label>${escapeHtml(activeLocaleText("נושא הדוח", "Subject person"))}<select name="subject">${(facts.persons || []).map(person => `<option value="${escapeHtml(person.id)}" ${person.id === facts.subject_id ? "selected" : ""}>${escapeHtml(`${person.name} · ${person.linked} ${activeLocaleText("רשומות מקושרות", "linked records")}`)}</option>`).join("") || `<option value="">${escapeHtml(activeLocaleText("אין אדם שמור", "No person saved"))}</option>`}</select></label>
       <label>${escapeHtml(activeLocaleText("סיווג", "Classification"))}<input name="classification" type="text" value="UNCLASSIFIED // EXERCISE"></label>
-      <div class="memory-comment-actions"><button type="button" data-report-dialog-close>${escapeHtml(activeLocaleText("ביטול", "Cancel"))}</button><button type="submit" class="primary-filter-action">${escapeHtml(activeLocaleText("צור דוח", "Create report"))}</button></div></form>`;
+      <div class="memory-comment-actions"><button type="button" data-report-dialog-close>${escapeHtml(activeLocaleText("ביטול", "Cancel"))}</button><button type="submit" class="primary-filter-action">${escapeHtml(activeLocaleText("הפק דוח", "Generate report"))}</button></div></form>`;
   document.body.appendChild(dialog);
   dialog.querySelector("[data-report-dialog-close]")?.addEventListener("click", () => dialog.remove());
   dialog.querySelector("[data-report-dialog-form]")?.addEventListener("submit", event => {

@@ -951,8 +951,10 @@ body.auth-required > :not(#loginScreen):not(.bootstrap-notice) { visibility: hid
 .map-popup-open .object-viewer-open { text-align:start; }
 
 /* Investigation report: layout A "Document" (docs/report-plan.md, docs/report-mockups.html). */
-.report-bar { display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding-bottom:10px; border-bottom:1px solid var(--line); }
-.report-bar span { color:#aeb8c6; font-size:12px; }
+.memory-modal-actions { padding-top:12px; border-top:1px solid var(--line); }
+/* The Memory window keeps its header and actions in view; only the saved items scroll. */
+.memory-modal-panel { grid-template-rows:auto minmax(0,1fr) auto; overflow:hidden; }
+.memory-modal-panel .memory-modal-body { min-height:0; overflow:auto; }
 .report-dialog { z-index:1500; }
 .report-dialog label { display:grid; gap:4px; font-size:12px; font-weight:800; }
 .report-dialog select, .report-dialog input { padding:7px; border:1px solid rgba(146,170,205,.38); border-radius:7px; background:#10141b; color:var(--ink); font:inherit; }
