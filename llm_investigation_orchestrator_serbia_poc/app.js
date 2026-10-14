@@ -1528,10 +1528,9 @@ function reportScreenHtml(report) {
     ? `<div class="report-progress" role="progressbar" aria-valuemin="0" aria-valuemax="${statuses.length}" aria-valuenow="${finished}"><div class="report-progress-track"><span style="width:${Math.round(100 * finished / statuses.length)}%"></span></div><small>${escapeHtml(activeLocaleText("המודל כותב את הניתוח", "The model is writing the analysis"))} · ${finished}/${statuses.length}</small></div>`
     : "";
   // A window on top of the application: Back to memory, Export PDF and a close button.
-  return `<div class="report-window" role="dialog" aria-modal="true" aria-label="${escapeHtml(f.title)}"><div class="report-bar-top">
-      <span class="report-spacer"></span>
+  return `<div class="report-window" role="dialog" aria-modal="true" aria-label="${escapeHtml(f.title)}"><div class="report-bar-top memory-comment-actions">
       <button type="button" data-report-back>${escapeHtml(activeLocaleText("חזרה לזיכרון", "Back to memory"))}</button>
-      <button type="button" data-report-print ${running ? "disabled" : ""}>${escapeHtml(activeLocaleText("ייצוא PDF", "Export PDF"))}</button>
+      <button type="button" class="primary-filter-action" data-report-print ${running ? "disabled" : ""}>${escapeHtml(activeLocaleText("ייצוא PDF", "Export PDF"))}</button>
       <button type="button" class="modal-close-button" data-report-close aria-label="${escapeHtml(activeLocaleText("סגור", "Close"))}">×</button>
     </div>${progress}
     <div class="report-desk"><article class="report-paper">
