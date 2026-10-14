@@ -1447,7 +1447,8 @@ async function createInvestigationReport(subjectId, classification, initialFacts
   };
   closeMemoryScreen();
   renderReportScreen();
-  for (const block of blocks) await runReportBlock(block);
+  // All analysis blocks are asked at once; each fills in as soon as its answer arrives.
+  await Promise.all(blocks.map(block => runReportBlock(block)));
 }
 
 async function runReportBlock(block) {
