@@ -3850,9 +3850,7 @@ function addCellularCallMapPresentation(event, layer, index, bounds) {
     const element = document.createElement("button");
     element.type = "button";
     element.className = `cellular-call-map-endpoint cellular-call-map-endpoint-${side}`;
-    element.dataset.viewerKind = "record";
-    element.dataset.viewerId = recordId;
-    element.setAttribute("aria-haspopup", "dialog");
+    element.setAttribute("aria-haspopup", "dialog");  // the bubble's "Open call" opens the viewer
     element.setAttribute("aria-label", `${recordId}, ${sideLabel}, ${location.name}`);
     element.innerHTML = `<span aria-hidden="true">${side.toUpperCase()}</span>`;
     const other = side === "a" ? sideB : sideA;
@@ -4014,11 +4012,7 @@ function renderMap() {
     element.setAttribute("aria-label", activeLocaleText(`${location.name}: ${item.count.toLocaleString("he-IL")} פריטים`, `${location.name}: ${item.count.toLocaleString("en-US")} items`));
     element.innerHTML = `<span class="map-marker-dot"></span>${item.count > 1 ? `<span class="map-marker-count">${item.count.toLocaleString(currentLocaleTag())}</span>` : ""}`;
     const viewerRefs = [...item.viewerRefs.values()];
-    if (viewerRefs.length === 1 && item.viewerEligible) {
-      element.dataset.viewerKind = viewerRefs[0].kind;
-      element.dataset.viewerId = viewerRefs[0].id;
-      element.setAttribute("aria-haspopup", "dialog");
-    }
+    element.setAttribute("aria-haspopup", "dialog");  // a click opens the bubble; its "Open the item" opens the viewer
     const popupHtml = `
       <div class="map-popup" dir="${currentLocale() === "en" ? "ltr" : "rtl"}">
         <strong>${escapeHtml(location.name)}</strong>
@@ -4149,12 +4143,15 @@ function mapActionButton(layerId, kind, itemId, item) {
   return `<button type="button" class="result-map-action ${selected ? "active" : ""}" data-result-map-kind="${escapeHtml(kind)}" data-result-map-item="${escapeHtml(itemId)}" data-result-map-layer="${escapeHtml(String(layerId))}" title="${escapeHtml(label)}" aria-label="${escapeHtml(label)}" aria-pressed="${selected ? "true" : "false"}" ${available ? "" : "disabled"}><span class="material-symbols-rounded" aria-hidden="true">${selected ? "location_off" : "location_on"}</span></button>`;
 }
 
-function mapItemPopupHtml(item, kind) {
+function mapItemPopupHtml(item, kind, layerLabel = "") {
   if (kind === "target") return `<div class="map-popup target-map-popup" dir="${currentLocale() === "en" ? "ltr" : "rtl"}"><strong>${escapeHtml(String(item.title || item.target_id || activeLocaleText("מועמד מטרה", "Target candidate")))}</strong><span>${escapeHtml(String(item.object_class || "-"))} · ${escapeHtml(String(item.entity_name || item.entity_id || "-"))}</span><span>${escapeHtml(activeLocaleText("ביטחון", "Confidence"))} ${escapeHtml(String(confidenceLabel(item.confidence)))}</span><p>${escapeHtml(String(item.summary || ""))}</p></div>`;
   if (kind === "evidence") return `<div class="map-popup milstd-popup" dir="${currentLocale() === "en" ? "ltr" : "rtl"}"><strong>${escapeHtml(String(item.object_class || item.claim_type || item.evidence_id))}</strong><span>${escapeHtml(String(item.evidence_status || "-"))} · ${escapeHtml(String(confidenceLabel(item.confidence)))}</span><em dir="ltr">${escapeHtml(String(item.evidence_id || "-"))}</em><p>${escapeHtml(String(item.summary || ""))}</p><button type="button" class="object-viewer-open" data-viewer-kind="evidence" data-viewer-id="${escapeHtml(item.evidence_id || "")}">${escapeHtml(activeLocaleText("פתח פרטים", "Open details"))}</button></div>`;
   if (kind === "location") return `<div class="map-popup" dir="${currentLocale() === "en" ? "ltr" : "rtl"}"><strong>${escapeHtml(String(item.location_name || item.name || item.label || item.location_id || item.key || "-"))}</strong><span dir="ltr">${escapeHtml(String(item.location_id || item.key || "-"))}</span><span>${escapeHtml(activeLocaleText("כמות", "Count"))}: ${Number(item.event_count || item.count || 0).toLocaleString(currentLocaleTag())}</span>${item.municipality ? `<em>${escapeHtml(String(item.municipality))}</em>` : ""}</div>`;
-  const recordId = String(item.record_id || item.event_id || "-");
-  return `<div class="map-popup event-map-popup" dir="${currentLocale() === "en" ? "ltr" : "rtl"}"><strong dir="ltr">${escapeHtml(recordId)}</strong><span dir="ltr">${escapeHtml(String(item.timestamp_utc || "-"))}</span><span>${escapeHtml(String(item.entity_name || item.entity_id || "-"))}</span><em>${escapeHtml(String(item.location_name || item.location_id || "-"))}</em><p>${escapeHtml(String(item.event_summary || ""))}</p></div>`;
+  // The same bubble as a point on the map: the place, one item, its layer, and "Open the item".
+  const recordId = String(item.record_id || item.event_id || "");
+  const lat = Number(item.latitude), lon = Number(item.longitude);
+  const place = item.location_name || (Number.isFinite(lat) && Number.isFinite(lon) && String(item.latitude ?? "").trim() !== "" ? `${lat.toFixed(5)}, ${lon.toFixed(5)}` : (item.location_id || "-"));
+  return `<div class="map-popup" dir="${currentLocale() === "en" ? "ltr" : "rtl"}"><strong>${escapeHtml(String(place))}</strong><span>${escapeHtml(activeLocaleText("1 פריטים", "1 items"))}</span><em>${escapeHtml(String(layerLabel || item.source_type || ""))}</em>${recordId ? `<div class="map-popup-open"><button type="button" class="object-viewer-open" data-viewer-kind="record" data-viewer-id="${escapeHtml(recordId)}">${escapeHtml(activeLocaleText("פתח את הפריט", "Open the item"))}</button></div>` : ""}</div>`;
 }
 
 function toggleMapItem(layerId, kind, itemId) {
@@ -4211,7 +4208,7 @@ function toggleMapItem(layerId, kind, itemId) {
       .addTo(state.map);
     state.focusedEventPopup = new maplibregl.Popup({ offset: 32, closeButton: true, closeOnClick: false })
       .setLngLat([coordinates.lon, coordinates.lat])
-      .setHTML(mapItemPopupHtml(selectedEvent, kind))
+      .setHTML(mapItemPopupHtml(selectedEvent, kind, layer?.label))
       .addTo(state.map);
   }, 0);
 }

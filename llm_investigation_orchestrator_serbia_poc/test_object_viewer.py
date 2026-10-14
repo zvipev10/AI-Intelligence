@@ -52,8 +52,11 @@ class ObjectViewerContractTests(unittest.TestCase):
         self.assertIn('const kind = isPersonEntity(item) ? "person" : "organization";', self.app)
         self.assertNotIn("appendAssistantObjectLinks", self.app)
 
-    def test_map_opens_only_a_single_item(self):
-        self.assertIn("viewerRefs.length === 1 && item.viewerEligible", self.app)
+    def test_map_point_opens_its_bubble_and_the_bubble_opens_the_item(self):
+        # A click on a point opens its bubble (not the viewer); the bubble's buttons open the records.
+        self.assertNotIn("element.dataset.viewerKind = viewerRefs[0].kind", self.app)
+        self.assertIn("item.viewerEligible && viewerRefs.length ? `<div class=\"map-popup-open\">", self.app)
+        self.assertIn('"Open the item"', self.app)
         self.assertIn("else existing.viewerEligible = false", self.app)
 
     def test_media_is_not_autoplayed_and_has_fallback(self):
