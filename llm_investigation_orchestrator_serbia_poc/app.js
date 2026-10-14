@@ -3684,7 +3684,15 @@ function openObjectViewer(kind, id, trigger = document.activeElement) {
   const recordFieldLabels = kind === "record" ? ((state.layerCatalog || []).find(layer => layer.source_type === item.source_type)?.field_labels || {}) : {};
   const fields = viewerFields(item, kind).map(([key,value]) => `<div class="object-viewer-field"><dt>${escapeHtml(recordFieldLabels[key] || viewerFieldLabel(key))}</dt><dd>${viewerFieldValueHtml(key, value)}</dd></div>`).join("");
   const entityMapHtml = kind === "organization" ? entityLocationMapHtml(item) : "";
-  document.getElementById("objectViewerBody").innerHTML = `${mediaHtml}${cellularHtml}${ipdrPackageLinkHtml(item, kind)}${personViewer ? personWorkspaceHtml(item) : ""}${entityMapHtml}${["record", "evidence", "assessment"].includes(kind) ? `<p class="object-viewer-summary">${escapeHtml(item.event_summary || item.summary || "-")}</p>` : ""}${personViewer ? "" : `<dl class="object-viewer-fields">${fields}</dl>`}${kind === "record" ? `${recordLinkedEntitiesHtml(item)}${recordLinkedRawRecordsHtml(item)}` : kind === "organization" ? organizationEvidenceHtml(item) : kind === "evidence" ? evidenceProvenanceHtml(item) : kind === "assessment" ? assessmentEvidenceHtml(item) : ""}`;
+  document.getElementById("objectViewerBody").innerHTML = `${mediaHtml}${cellularHtml}${ipdrPackageLinkHtml(item, kind)}${personViewer ? personWorkspaceHtml(item) : ""}${entityMapHtml}${(() => {
+    // The text box under the media: a record's summary only for the call layers; a Satellite image shows its
+    // analyst note (insights.post_comment) there; other records have no text in i360, so no box.
+    if (kind !== "record") return ["evidence", "assessment"].includes(kind) ? `<p class="object-viewer-summary">${escapeHtml(item.event_summary || item.summary || "-")}</p>` : "";
+    const layer = String(item.source_type || "");
+    const text = /^Cellular (Calls|Locations)$/.test(layer) || isCellularCallRecord(item) ? (item.event_summary || item.summary || "")
+      : layer === "Satellite" ? (item["i360.insights.post_comment"] || "") : "";
+    return text ? `<p class="object-viewer-summary">${escapeHtml(text)}</p>` : "";
+  })()}${personViewer ? "" : `<dl class="object-viewer-fields">${fields}</dl>`}${kind === "record" ? `${recordLinkedEntitiesHtml(item)}${recordLinkedRawRecordsHtml(item)}` : kind === "organization" ? organizationEvidenceHtml(item) : kind === "evidence" ? evidenceProvenanceHtml(item) : kind === "assessment" ? assessmentEvidenceHtml(item) : ""}`;
   viewer.hidden = false;
   setViewerMaximized(false);
   if (cellularCallViewer) initializeCellularViewer(item);
