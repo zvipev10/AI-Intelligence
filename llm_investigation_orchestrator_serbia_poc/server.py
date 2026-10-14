@@ -249,7 +249,7 @@ class App:
     def report_inputs(self, token: str, investigation_id: str, subject_id: str = "") -> dict[str, Any]:
         """The records and persons saved to the investigation, the subject person, and the report's facts."""
         memory = self.state(token).load_memory(investigation_id)
-        saved = [a for a in memory.get("artifacts") or [] if a.get("kind") == "object"]
+        saved = [a for a in (memory.get("memory") or {}).get("artifacts") or [] if a.get("kind") == "object"]
         record_ids = [str(a.get("object_id")) for a in saved if a.get("object_kind") == "record" and a.get("object_id")]
         person_ids = [str(a.get("object_id")) for a in saved if a.get("object_kind") == "person" and a.get("object_id")]
         data = self.dataset(token, "en")
