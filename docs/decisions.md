@@ -607,3 +607,27 @@ Decision: move the fifteen-petrol-units call to (34.9837599416126, 35.8893277774
 Rationale: the two calls now have distinct user-supplied positions. Dedicated locations preserve the route waypoint and avoid incorrectly moving both calls together.
 
 Impact: Syria profile 36 selects immutable dataset `cellular-records-v13`. Call content, identifiers, timestamps, participants and media remain unchanged.
+
+### 2026-10-11 — The chat assistant's tools only present; i360 chat reads the data
+
+Decision: in the chat panel, the i360 chat service is the only path to the data. The assistant over HL API `/api/v1/llm/chat` has one data tool, `ask_i360`, and its other tools (`show_items`, `open_item`, `open_entity`, `open_layer`, `save_to_memory`) only change what the app shows. They act on records and entities i360 returned (citations, and the entities in its answer's cards), ids the user typed, the record in the viewer, or the app's own layers. Questions about a person go to i360 across all data, since the investigation and layers scopes hold records only; a follow-up about one entity sends i360 `entity: {id, type, name}`, and they return no record content to the model. There is no memory tool: what the investigation holds is asked of i360 with the investigation as focus (worded as "the records linked to this investigation", since i360 reads "memory" and "saved" as the user's own chat notes) and shown from its citations. The app's memory button still opens saved records and layers.
+
+Rationale: i360 chat already owns search, context and the conversation. Keeping our tools to presentation avoids a second, weaker data path that answers differently from i360.
+
+Impact: the app still reads a cited record by id (items/get) to draw it; that fetch is display, not a search. `open_item` refuses ids that were not cited, shown or in the viewer.
+
+### 2026-10-12 — Ask i360 once per layer when our layers cannot be one search
+
+Decision: the chat's "our layers" scope is one HL items/search request. When the layers' queries merge into a request that is not exact (on LAMBDA the six layers keep only their shared 12-month window, which is close to all data), the app asks i360 the same question once per layer, in parallel, each with that layer's exact request and its records as `ids`, and gives the assistant the answers joined by layer. Each layer question is a fresh i360 conversation; the panel's conversation is not changed. With fewer than two layers to split, the answer is labelled "our layers, approximate" and the assistant is told to say so.
+
+Rationale: HL search ANDs filters and the i360 chat's scope takes one request, so the layers cannot be ORed. Asking per layer keeps i360 chat as the only data source and answers about our layers only.
+
+Impact: up to one i360 call per layer for a layers question. Questions about "the system", "what we have" or "our data" are sent to our layers even when the assistant picks all data, unless the user says everywhere or all of i360; a question about what data there is overall is asked of i360 as "How many records are there, by type and month?" so that i360 counts instead of matching words. See gap 3 in `docs/i360-gaps.md`.
+
+### 2026-10-12 — i360 is never asked outside our layers
+
+Decision: the chat asks i360 only inside the app's data. There is no "all data" scope: `ask_i360` sends our layers' scope (one exact search, or one ask per layer when they cannot be one search), or the open investigation as focus when the question is about the investigation. Whatever scope the model or an older panel asks for, the code sends one of these two. The approximate merged window is never sent, and parts of an answer outside the scope (`widen`, `outside_entities`) are dropped. People are asked about inside our layers too, so a person with no records in our layers is not found.
+
+Rationale: Zvika: "There shouldn't be an option to ask i360 for something that is not in layers"; a strict rule in code, not wording the model may misread.
+
+Impact: supersedes the "all data" scope and the "our layers, approximate" label of the two entries above. The investigation scope still sends the investigation as focus, and (Zvika chose strict) only the linked records that are also in our layers are shown and reported; the rest are counted as left out. A record is in a layer when it matches that layer's item types and sources (server.py item_layer_label); facet filters such as Cellular coverage and the layer's date window are not checked.

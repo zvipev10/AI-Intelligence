@@ -13,6 +13,7 @@ no local state and no secret.
 """
 from __future__ import annotations
 
+import copy
 import csv
 import io
 import json
@@ -28,10 +29,12 @@ from urllib.parse import parse_qs, quote, unquote, urlparse
 
 import analysis
 from analysis import Dataset, normalize_locale, require_investigation_id
-from hl.client import AuthExpired, HlClient, HlError
+from hl.chat import ChatServiceClient, ChatTurn, ClientGone, LlmClient, TurnContext, answer_entities
+from hl.client import AuthExpired, HlClient, HlError, Unreachable
 from hl.config import ROOT, Settings, load_settings
-from hl.items import ItemReader, Snapshot, SnapshotCache, item_fields
+from hl.items import TELECOM_APPROVED, ItemReader, Snapshot, SnapshotCache, entity_presentation, item_fields, layers_search
 from hl.mapping import Mapping, load_mapping
+from hl import report
 from hl.state import MEMORY_GROUPS, StateStore
 
 SESSION_COOKIE = "aii_session"
@@ -43,7 +46,7 @@ MAX_BODY = 2_000_000
 
 STATIC_FILES = {
     "/": "index.html", "/index.html": "index.html", "/app.js": "app.js", "/styles.css": "styles.css",
-    "/polygon_draw.js": "polygon_draw.js", "/demo_bootstrap.js": "demo_bootstrap.js",
+    "/polygon_draw.js": "polygon_draw.js", "/demo_bootstrap.js": "demo_bootstrap.js", "/chat.js": "chat.js", "/chat.css": "chat.css",
     "/help.html": "help.html", "/investigation-user-flow.html": "investigation-user-flow.html",
     "/system-capabilities-guide.html": "system-capabilities-guide.html",
 }
@@ -71,9 +74,14 @@ def normalize_record_files(files: Any, origin: str) -> list[dict[str, Any]]:
             continue
         entry = dict(entry)
         urls = entry.get("urls") if isinstance(entry.get("urls"), dict) else {}
+        is_video = str(entry.get("content_type") or "").startswith("video/") or entry.get("raw_type") == "video"
+        # Videos: i360's web_preview is an H.264 copy every browser plays; the original may be H.265/HEVC.
+        if is_video and urls.get("web_preview"):
+            entry.setdefault("original_url", urls.get("primary"))
+            entry.setdefault("url", urls["web_preview"])
         entry.setdefault("url", urls.get("primary"))
         entry.setdefault("thumbnail_url", urls.get("thumbnail"))
-        for key in ("url", "signed_url", "thumbnail_url"):
+        for key in ("url", "signed_url", "thumbnail_url", "original_url"):
             value = entry.get(key)
             if isinstance(value, str) and value.startswith("/"):
                 entry[key] = origin + value
@@ -88,6 +96,11 @@ class App:
         self.settings = settings
         self.mapping: Mapping = load_mapping(str(settings.mapping_path))
         self.profile = load_profile(settings)
+        if isinstance(self.profile.get("entity_mapping"), dict):
+            # The scenario's own entity mapping (e.g. i360 PERSON_OF_INTEREST) replaces the default one,
+            # on a copy: load_mapping() is cached and shared.
+            self.mapping = copy.copy(self.mapping)
+            self.mapping.entities = self.profile["entity_mapping"]
         self.snapshots = SnapshotCache(settings.snapshot_ttl_seconds)
 
     def client(self, token: str | None = None) -> HlClient:
@@ -97,7 +110,16 @@ class App:
         s = self.settings
         return StateStore(self.client(token), investigation_type=s.investigation_type,
                           memory_item_type=s.memory_item_type, approval_type=s.approval_type,
-                          scenario=s.scenario, external_investigation_type=s.external_investigation_type)
+                          scenario=s.scenario, external_investigation_type=s.external_investigation_type,
+                          investigation_links=self.profile.get("investigation_links") or [],
+                          item_layer=self.item_layer_label)
+
+    def layer_field_labels(self, layer_name: Any) -> dict[str, str]:
+        """A layer's display names for its i360 fields (profile query "labels": path -> name), as row keys."""
+        query = self.profile.get("items_query") or {}
+        spec = next((q for q in query.get("queries") or [] if q.get("layer") and q.get("layer") == layer_name), None)
+        labels = (spec or {}).get("labels") or {}
+        return {f"i360.{path}": str(name) for path, name in labels.items() if not str(path).startswith("_")}
 
     def item_layer_label(self, item: dict[str, Any]) -> str:
         """The layer an item belongs to: the first profile query it matches that names a layer, else its source."""
@@ -112,16 +134,65 @@ class App:
             return str(spec["layer"])
         return str(item.get("source_application") or item.get("item_type") or "i360")
 
-    def investigation_item_layers(self, token: str, investigation_id: str, locale: str) -> list[dict[str, Any]]:
-        """Items attached to an i360 investigation, as rows with every field, grouped by layer."""
+    def item_groups(self, items: list[dict[str, Any]], locale: str) -> list[dict[str, Any]]:
+        """i360 items as rows with every field, grouped by the layer each belongs to."""
         groups: dict[str, list[dict[str, str]]] = {}
-        for item in self.state(token).attached_items(investigation_id, self.mapping.get_include):
+        for item in items:
             label = self.item_layer_label(item)
             row = self.mapping.item_to_row(item, locale)
             row["source_type"] = label
             row.update(item_fields(item))
             groups.setdefault(label, []).append(row)
         return [{"label": label, "rows": rows} for label, rows in groups.items()]
+
+    def investigation_item_layers(self, token: str, investigation_id: str, locale: str) -> list[dict[str, Any]]:
+        """Items attached to an i360 investigation, as rows with every field, grouped by layer."""
+        return self.item_groups(self.state(token).attached_items(investigation_id, self.mapping.get_include), locale)
+
+    def entity_record(self, token: str, entity_type: str, entity_id: str) -> dict[str, Any] | None:
+        """One entity by id (its type from i360, or else the scenario's entity types), as the viewer draws it."""
+        client = self.client(token)
+        for candidate in [entity_type] if entity_type else list(self.mapping.entities.get("types") or []):
+            try:
+                instance = client.get_entity(candidate, entity_id)
+            except HlError as exc:
+                if exc.status in {400, 403, 404, 422}:
+                    continue
+                raise
+            record = entity_presentation(self.mapping.instance_to_entity(instance), candidate)
+            record["entity_id"] = record.get("entity_id") or entity_id
+            if not record.get("entity_type"):
+                record["entity_type"] = "person" if "PERSON" in candidate.upper() else candidate.lower()
+            record.setdefault("canonical_name", instance.get("entity_name") or (instance.get("general") or {}).get("entity_name") or entity_id)
+            return record
+        return None
+
+    def item_layers(self, token: str, item_ids: list[str], locale: str) -> list[dict[str, Any]]:
+        """Given i360 items (read in full, in the order asked), grouped by layer; unknown ids are skipped."""
+        client = self.client(token)
+        found: dict[str, dict[str, Any]] = {}
+
+        def read(batch: list[str]) -> None:
+            try:
+                items = client.get_items(batch, self.mapping.get_include).get("items") or []
+            except HlError as exc:
+                # A server error on a batch (seen: digestserver 500 on items/get-items) is narrowed down by halves,
+                # so one unreadable id costs only itself.
+                if exc.status < 500 or isinstance(exc, Unreachable):
+                    raise
+                if len(batch) == 1:
+                    print(f"items/get failed for {batch[0]}: {exc.status} {str(exc)[:200]}", flush=True)
+                    return
+                read(batch[:len(batch) // 2])
+                read(batch[len(batch) // 2:])
+                return
+            for item in items:
+                if isinstance(item, dict) and item.get("item_id") and item.get("found") is not False:
+                    found[str(item["item_id"])] = item
+
+        for start in range(0, len(item_ids), 100):
+            read(item_ids[start:start + 100])
+        return self.item_groups([found[i] for i in item_ids if i in found], locale)
 
     def known_sources(self, locale: str) -> list[str]:
         return list(((self.profile.get("sources") or {}).get(locale)) or [])
@@ -141,6 +212,70 @@ class App:
             return Snapshot(items=items, entities=entities, locations=locations, reviews=reviews,
                             fetched_at=time.time(), truncated=reader.truncated, warnings=reader.warnings)
         return self.snapshots.get(token, build, refresh=refresh)
+
+    def approve_i360_telecom(self, token: str, entity_type: str, entity_id: str) -> None:
+        """Set the status of the person's derived MSISDN / IMSI entries (details.device_msisdn,
+        details.device_imsi) to Approved in i360, then re-read the entities. The record keeps its shapes;
+        the write refuses if someone changed the record since it was read."""
+        client = self.client(token)
+        instance = client.get_entity(entity_type, entity_id)
+        record = instance.get("entity") if isinstance(instance.get("entity"), dict) else instance
+        details = (record.get("details") or (record.get("sections") or {}).get("details") or {})
+        changed: dict[str, Any] = {}
+
+        def approve(value: Any) -> Any:
+            if isinstance(value, list):
+                return [approve(v) for v in value]
+            if isinstance(value, dict):
+                return {k: (TELECOM_APPROVED if k == "status" else approve(v)) for k, v in value.items()}
+            return value
+
+        for field in ("device_msisdn", "device_imsi"):
+            if details.get(field) not in (None, "", [], {}):
+                changed[field] = approve(details[field])
+        if not changed:
+            raise ValueError("The person has no derived MSISDN / IMSI to approve")
+        modified = ((record.get("general") or {}).get("modification_time"))
+        body: dict[str, Any] = {"sections": {"details": changed}}
+        if modified:
+            body["expected_modification_time"] = modified
+        client.patch_entity(entity_type, entity_id, body)
+        snap = self.snapshot(token)
+        with snap.lock:
+            snap.entities = ItemReader(client, self.mapping, {}, 1).entities()
+            for key in [k for k in snap.derived if k.startswith("dataset:")]:
+                snap.derived.pop(key, None)
+
+    def report_inputs(self, token: str, investigation_id: str, subject_id: str = "") -> dict[str, Any]:
+        """The records and persons saved to the investigation, the subject person, and the report's facts."""
+        memory = self.state(token).load_memory(investigation_id)
+        saved = [a for a in (memory.get("memory") or {}).get("artifacts") or [] if a.get("kind") == "object"]
+        record_ids = [str(a.get("object_id")) for a in saved if a.get("object_kind") == "record" and a.get("object_id")]
+        person_ids = [str(a.get("object_id")) for a in saved if a.get("object_kind") == "person" and a.get("object_id")]
+        data = self.dataset(token, "en")
+        by_id = {str(e.get("i360_item_id") or e.get("event_id")): e for e in data.events}
+        rows = [by_id[i] for i in record_ids if i in by_id]
+        missing = [i for i in record_ids if i not in by_id]
+        if missing:  # saved records outside the app's layers: read them from i360
+            rows += [row for group in self.item_layers(token, missing, "en") for row in group["rows"]]
+        if not rows and not person_ids:
+            raise ValueError("Nothing is saved to this investigation yet")
+        persons = [data.entities[i] for i in person_ids if i in data.entities]
+        subject_id = subject_id if any(str(p.get("entity_id")) == subject_id for p in persons) else report.default_subject(persons, rows)
+        facts = report.compute_facts(str(memory.get("name") or investigation_id), rows, persons, subject_id, self.layer_field_labels)
+        names = {eid: str(e.get("canonical_name") or eid) for eid, e in data.entities.items()}
+        return {"rows": rows, "persons": persons, "subject_id": subject_id, "facts": facts, "names": names}
+
+    def report_facts(self, token: str, investigation_id: str, subject_id: str = "") -> dict[str, Any]:
+        inputs = self.report_inputs(token, investigation_id, subject_id)
+        return {**inputs["facts"], "investigation_id": investigation_id, "subject_id": inputs["subject_id"]}
+
+    def report_block(self, token: str, investigation_id: str, block: str, subject_id: str = "") -> dict[str, Any]:
+        """One analysis block of the report, written by HL API's language model."""
+        inputs = self.report_inputs(token, investigation_id, subject_id)
+        llm = LlmClient(self.client(token), self.settings.llm_model, timeout=self.settings.llm_timeout_seconds)
+        return report.run_block(llm.complete_json, block, inputs["facts"], inputs["rows"], self.layer_field_labels,
+                                inputs["persons"], inputs["subject_id"], inputs["names"])
 
     def reload_reviews(self, token: str) -> None:
         """After a review, re-read only the reviews and drop the assembled datasets."""
@@ -187,6 +322,7 @@ class Handler(BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):
         if not self.quiet:
             sys.stdout.write("%s %s\n" % (self.log_date_time_string(), fmt % args))
+            sys.stdout.flush()
 
     def _send(self, status: int, body: bytes, content_type: str, extra: dict[str, str] | None = None,
               cookie: str | None = None) -> None:
@@ -355,7 +491,7 @@ class Handler(BaseHTTPRequestHandler):
                 "scenario_id": app.profile.get("scenario_id") or app.settings.scenario,
                 "dataset_version": app.profile.get("dataset_version") or "i360",
                 "demo_profile": {k: app.profile.get(k) for k in ("scenario_id", "label", "map", "sources")},
-                "features": {"ai": False, "playback": False},
+                "features": {"ai": bool(app.settings.chat_service_url), "playback": False},
                 "build": app.settings.build,
                 "locale": locale,
                 "backend": "i360",
@@ -372,7 +508,11 @@ class Handler(BaseHTTPRequestHandler):
             return
         if path == "/api/dataset/events":
             snap = app.snapshot(token)
-            body = rows_to_csv(app.rows(snap, locale))
+            linked = {str(e.get("event_id")): ";".join(e.get("related_entity_ids") or [])
+                      for e in app.dataset(token, locale).events if e.get("related_entity_ids")}
+            rows = [{**row, "related_entity_ids": linked[str(row.get("event_id"))]} if str(row.get("event_id")) in linked else row
+                    for row in app.rows(snap, locale)]
+            body = rows_to_csv(rows)
             self._send(200, body, "text/csv; charset=utf-8",
                        extra={"X-Dataset-Truncated": "true" if snap.truncated else "false"})
             return
@@ -386,7 +526,12 @@ class Handler(BaseHTTPRequestHandler):
                                  "warnings": snap.warnings[:20], "fetched_at": snap.fetched_at})
             return
         if path == "/api/layers":
-            self.send_json(200, {"layers": analysis.list_layers(app.dataset(token, locale), app.known_sources(locale))})
+            layers = analysis.list_layers(app.dataset(token, locale), app.known_sources(locale))
+            for layer in layers:
+                labels = app.layer_field_labels(layer.get("source_type"))
+                if labels:
+                    layer["field_labels"] = labels
+            self.send_json(200, {"layers": layers})
             return
         if path.startswith("/api/layers/") and path.endswith("/rows"):
             layer_id = unquote(path[len("/api/layers/"):-len("/rows")])
@@ -395,7 +540,11 @@ class Handler(BaseHTTPRequestHandler):
             if result is None:
                 self.send_json(404, {"error": "Layer not found"})
             else:
-                self.send_json(200, {"layer": result[0], "rows": result[1]})
+                layer = dict(result[0])
+                labels = app.layer_field_labels(layer.get("source_type"))
+                if labels:
+                    layer["field_labels"] = labels
+                self.send_json(200, {"layer": layer, "rows": result[1]})
             return
         if path == "/api/links":
             data = app.dataset(token, locale)
@@ -411,6 +560,19 @@ class Handler(BaseHTTPRequestHandler):
             entity_id = str((query.get("subject_id") or query.get("entity_id") or [""])[0]).strip()
             derivation = analysis.derive_subscriber_identity(data.events, data.links, entity_id) if entity_id else None
             self.send_json(200, {"schema_version": 1, "derivations": [derivation] if derivation else []})
+            return
+        if path.startswith("/api/entity-files/"):
+            parts = [unquote(p) for p in path[len("/api/entity-files/"):].split("/")]
+            if len(parts) != 3 or not all(re.fullmatch(r"[A-Za-z0-9_.:-]{1,200}", p) for p in parts):
+                raise ValueError("Invalid entity file path")
+            entity_type, entity_id, file_id = parts
+            payload, headers = app.client(token)._request(
+                "GET", f"/api/v1/entities/{quote(entity_type, safe='')}/{quote(entity_id, safe='')}/files/{quote(file_id, safe='')}",
+                read=True, raw=True)
+            content_type = headers.get("Content-Type") or "application/octet-stream"
+            if not content_type.split(";")[0].strip().startswith(("image/", "video/")):
+                raise HlError(415, "unsupported_media", "Only image and video attachments are served")
+            self._send(200, payload, content_type)
             return
         if path.startswith("/api/records/") and path.endswith("/files"):
             self.send_json(200, self.record_files(token, unquote(path[len("/api/records/"):-len("/files")])))
@@ -442,12 +604,124 @@ class Handler(BaseHTTPRequestHandler):
         """Files of one record, with signed URLs the browser can load directly from HL API."""
         data = self.app.dataset(token, "he")
         row = next((r for r in data.events if record_id in {r.get("event_id"), r.get("record_id"), r.get("i360_item_id")}), None)
-        if row is None:
-            raise HlError(404, "record_not_found", "Record not found")
-        response = self.app.client(token).item_files(row.get("i360_item_id") or record_id, signed_urls=True)
+        # A record the chat showed may be outside the snapshot: its id is then the i360 item id itself.
+        item_id = (row.get("i360_item_id") if row else None) or record_id
+        response = self.app.client(token).item_files(item_id, signed_urls=True)
         if isinstance(response, dict):
             response["files"] = normalize_record_files(response.get("files"), self.app.settings.hl_api_public_origin)
         return response
+
+    # -- chat ------------------------------------------------------------------------
+    def chat_ask(self, token: str, request: dict[str, Any]) -> None:
+        settings = self.app.settings
+        if not settings.chat_service_url:
+            self.send_json(501, {"error": "chat_off", "message": "The chat is not configured on this deployment (CHAT_SERVICE_URL)."})
+            return
+        context = TurnContext.from_request(request)
+        context.investigation_type = settings.external_investigation_type or settings.investigation_type
+        locale = normalize_locale(str(request.get("locale") or "en"))
+        self.log_message("chat turn: scope %s, %d previous citations, viewer %s, i360 conversation %s",
+                         context.scope, len(context.previous_citations), context.viewer_item_id or "-",
+                         context.i360_conversation_id or "-")
+        self.start_stream()
+
+        def emit(event: str, data: Any) -> None:
+            self.log_chat_event(event, data)
+            self.stream_event(event, data)
+
+        llm = LlmClient(self.app.client(token), settings.llm_model, timeout=settings.llm_timeout_seconds) \
+            if settings.llm_enabled else None
+        chat = ChatServiceClient(settings.chat_service_url, token, settings.chat_idle_timeout_seconds)
+        turn = ChatTurn(llm, chat, AppToolHost(self.app, token, locale), emit, context, settings.chat_model)
+        try:
+            turn.run()
+        except ClientGone:
+            self.log_message("chat: the browser closed the stream")
+        except AuthExpired:
+            self.try_stream_event("error", {"error": "signed_out", "message": "Sign in again."})
+        except HlError as exc:
+            self.log_message("chat error: %s %s %s", exc.status, exc.code, exc)
+            self.try_stream_event("error", {"error": exc.code, "message": str(exc)})
+        except Exception as exc:  # noqa: BLE001 - the stream is already open; report in it
+            self.log_message("chat: unhandled error %r", exc)
+            self.try_stream_event("error", {"error": "internal_error", "message": "The chat failed."})
+
+    def log_chat_event(self, event: str, data: Any) -> None:
+        """One log line per step, action and closing note of a chat turn (ids and counts, not the records)."""
+        data = data if isinstance(data, dict) else {}
+        if event == "step":
+            line = f"step{' (error)' if data.get('error') else ''}: {str(data.get('text') or '')[:200]}"
+            if data.get("detail"):
+                line += f" [{str(data['detail'])[:300]}]"
+            if data.get("trace"):
+                line += f" [{str(data['trace'])[:300]}]"
+            if data.get("tool") == "ask_i360" and "question" in data:
+                line += f" [focus {data.get('focus') or '-'}, scope {data.get('scope') or '-'}, question {json.dumps(data.get('question'))}]"
+            if data.get("trace"):
+                line += f" [{str(data['trace'])[:800]}]"
+        elif event == "action":
+            row = data.get("row") or {}
+            detail = {"show_items": lambda: f"{sum(len(g.get('rows') or []) for g in data.get('groups') or [])} rows, view {data.get('view')}",
+                      "open_item": lambda: f"record {row.get('record_id') or row.get('event_id') or ''} item {row.get('i360_item_id') or ''}",
+                      "open_layer": lambda: f"{data.get('layer_id')} view {data.get('view')}",
+                      "open_entity": lambda: f"entity {data.get('entity_id')}"}.get(str(data.get("kind")), lambda: "")()
+            line = f"action {data.get('kind')}: {detail}"
+        elif event in {"note", "error"}:
+            line = f"{event}: {str(data.get('text') or data.get('message') or '')[:200]}"
+        elif event == "i360" and data.get("event") in {"answer", "error"}:
+            inner = data.get("data") or {}
+            cards = inner.get("cards") if isinstance(inner.get("cards"), dict) else {}
+            line = (f"i360 answer: {len(inner.get('citations') or [])} citations, {len(answer_entities(inner))} entities, "
+                    f"leg {inner.get('leg')}, keys {sorted(inner)[:20]}, cards {sorted(cards)[:20]}"
+                    if data.get("event") == "answer" else f"i360 error: {inner.get('code')} {inner.get('message')}")
+            if data.get("event") == "answer" and inner.get("leg") in {"lookup", "entity", "entities"}:
+                # Entity answers' shapes are still being mapped: log their structure (ids and names, no record text).
+                sample = {k: inner.get(k) for k in ("cards", "people", "outside_entities", "lookup", "subject", "entities") if inner.get(k)}
+                line += f"\n    entity payload: {json.dumps(sample, ensure_ascii=True)[:3000]}"
+        else:
+            return
+        self.log_message("chat %s", line)
+
+    def chat_action(self, token: str, request: dict[str, Any]) -> Any:
+        """A tag or note the i360 answer proposed, confirmed by the user: the chat service writes it."""
+        settings = self.app.settings
+        if not settings.chat_service_url:
+            raise HlError(501, "chat_off", "The chat is not configured on this deployment.")
+        action = request.get("action") if isinstance(request.get("action"), dict) else {}
+        kind = {"tag": "tag", "note": "annotate", "annotate": "annotate"}.get(str(action.get("kind")))
+        ids = action.get("ids")
+        if not kind or not isinstance(ids, list) or not 0 < len(ids) <= 50:
+            raise ValueError("Invalid action")
+        # The chat service's POST /chat/actions: {kind: tag|annotate, ids (at most 50), type, value}.
+        body = {"kind": kind, "ids": [str(i) for i in ids], "type": action.get("type"),
+                "value": action.get("value") if action.get("value") is not None else action.get("text"),
+                "text": action.get("text")}
+        body["conversation_id"] = str(request.get("conversation_id") or "") or None
+        return ChatServiceClient(settings.chat_service_url, token, settings.request_timeout_seconds).call("POST", "/actions", body)
+
+    def start_stream(self) -> None:
+        self.send_response(200)
+        self.send_header("Content-Type", "text/event-stream; charset=utf-8")
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("X-Accel-Buffering", "no")  # the ingress must not hold the stream back
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.send_header("Connection", "close")
+        self.end_headers()
+        self.close_connection = True
+
+    def stream_event(self, event: str, data: Any) -> None:
+        payload = f"event: {event}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n".encode("utf-8")
+        try:
+            self.wfile.write(payload)
+            self.wfile.flush()
+        except (BrokenPipeError, ConnectionResetError, OSError):
+            raise ClientGone() from None
+
+    def try_stream_event(self, event: str, data: Any) -> None:
+        try:
+            self.stream_event(event, data)
+        except ClientGone:
+            pass
 
     # -- POST routes -----------------------------------------------------------------
     def route_post(self, path: str) -> None:
@@ -481,6 +755,20 @@ class Handler(BaseHTTPRequestHandler):
         if not token:
             self.send_json(401, {"error": "signed_out", "message": "Sign in first."})
             return
+        if path == "/api/chat/ask":
+            self.chat_ask(token, self.read_json(400_000))
+            return
+        if path == "/api/chat/items":
+            request = self.read_json(100_000)
+            ids = [str(i) for i in request.get("ids") or [] if isinstance(i, str) and i.strip()][:100]
+            if not ids:
+                raise ValueError("Missing ids")
+            locale = normalize_locale(str(request.get("locale") or "en"))
+            self.send_json(200, {"groups": app.item_layers(token, ids, locale)})
+            return
+        if path == "/api/chat/action":
+            self.send_json(200, self.chat_action(token, self.read_json(100_000)))
+            return
         state = app.state(token)
         if path == "/api/refresh":
             snap = app.snapshot(token, refresh=True)
@@ -510,6 +798,15 @@ class Handler(BaseHTTPRequestHandler):
             saved = state.add_memory_item(investigation_id, group, item, request.get("name"))
             self.send_json(201, {"saved": saved, "memory": state.load_memory(investigation_id)})
             return
+        if path in {"/api/report/facts", "/api/report/block"}:
+            request = self.read_json(10_000)
+            investigation_id = require_investigation_id(request.get("investigation_id"))
+            subject_id = analysis.compact_text(request.get("subject_id"), 240)
+            if path.endswith("/facts"):
+                self.send_json(200, app.report_facts(token, investigation_id, subject_id))
+            else:
+                self.send_json(200, app.report_block(token, investigation_id, str(request.get("block") or ""), subject_id))
+            return
         if path == "/api/collection-request":
             request = self.read_json(200_000)
             investigation_id = require_investigation_id(request.get("investigation_id"))
@@ -538,6 +835,13 @@ class Handler(BaseHTTPRequestHandler):
                 raise ValueError("Entity id is required")
             action = "approve" if path.endswith("/approve") else analysis.compact_text(request.get("action") or "approve", 20).lower()
             data = app.dataset(token, "en")
+            current = data.entities.get(entity_id) or {}
+            if (current.get("telecom") or {}).get("i360_review") and action == "approve":
+                # i360 derived these identifiers and keeps their status on the person: approving sets it.
+                app.approve_i360_telecom(token, str(current.get("i360_entity_type") or ""), entity_id)
+                entity = app.dataset(token, "en").entities.get(entity_id)
+                self.send_json(201, {"saved": {"method": "i360_status", "status": "approved"}, "entity": entity})
+                return
             snap = app.snapshot(token)
             previous = next((r for r in snap.reviews.values()
                              if str((r.get("subject") or {}).get("object_id") or "") == entity_id), None)
@@ -549,6 +853,47 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json(201, {"saved": {**review, "method": review.get("rule_id")}, "entity": entity})
             return
         self.send_json(404, {"error": "not_found"})
+
+
+class AppToolHost:
+    """What the chat's app tools read, with the user's token."""
+
+    def __init__(self, app: App, token: str, locale: str):
+        self.app, self.token, self.locale = app, token, locale
+
+    def catalog_layers(self) -> list[dict[str, Any]]:
+        return analysis.list_layers(self.app.dataset(self.token, self.locale), self.app.known_sources(self.locale))
+
+    def item_layers(self, item_ids: list[str]) -> list[dict[str, Any]]:
+        return self.app.item_layers(self.token, item_ids, self.locale)
+
+    def entity(self, entity_type: str, entity_id: str) -> dict[str, Any] | None:
+        """One entity i360 returned, read by id with the user's token, as the person viewer draws it."""
+        return self.app.entity_record(self.token, entity_type, entity_id)
+
+    def layers_scope(self) -> dict[str, Any] | None:
+        """Our layers as the i360 chat's ``scope``: the profile's queries merged into one search."""
+        request, exact = layers_search(self.app.profile.get("items_query") or {})
+        if request is None:
+            return None
+        ids = [str(item.get("item_id")) for item in self.app.snapshot(self.token).items if item.get("item_id")]
+        return {"kind": "results", "name": "Our layers", "query": "the app's layers", "ids": ids[:100],
+                "total": len(ids), "request": request, "exact": exact}
+
+    def layer_scopes(self) -> list[dict[str, Any]]:
+        """Each of our layers as its own i360 chat ``scope``, exact, for asking the layers one at a time."""
+        queries = (self.app.profile.get("items_query") or {}).get("queries") or []
+        items = self.app.snapshot(self.token).items
+        scopes = []
+        for query in queries:
+            name = str((query or {}).get("layer") or "")
+            request, _ = layers_search({"queries": [query]})
+            if not name or request is None:
+                continue
+            ids = [str(i["item_id"]) for i in items if i.get("item_id") and i.get("_layer") == name]
+            scopes.append({"kind": "results", "name": name, "query": f"the {name} layer", "ids": ids[:100],
+                           "total": len(ids), "request": request})
+        return scopes
 
 
 def main(argv: list[str]) -> int:

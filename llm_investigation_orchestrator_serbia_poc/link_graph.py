@@ -49,6 +49,16 @@ def _link(
     }
 
 
+def _field_with(record: dict[str, Any], value: str) -> str:
+    """The record's i360 field that holds the value (e.g. ip.ip_sessions.destination_ip), or ""."""
+    if not value:
+        return ""
+    for key, field_value in record.items():
+        if str(key).startswith("i360.") and value in [part.strip() for part in str(field_value).split(";")]:
+            return str(key)[len("i360."):]
+    return ""
+
+
 def build_links(events: list[dict[str, Any]], entities: dict[str, dict[str, Any]], locations: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
     """Build only approved field-pair link rules for the active dataset."""
     links: list[dict[str, Any]] = []
@@ -64,11 +74,51 @@ def build_links(events: list[dict[str, Any]], entities: dict[str, dict[str, Any]
                 if identifier:
                     device_identifiers[identifier] = entity_id
 
+    entity_values: dict[str, dict[str, str]] = {}
+    for entity_id, entity in entities.items():
+        telecom = entity.get("telecom") if isinstance(entity.get("telecom"), dict) else {}
+        entity_values[entity_id] = {_text(telecom.get(key)): key for key in ("imei", "msisdn", "imsi") if _text(telecom.get(key))}
+
+    by_record = {_text(e.get("event_id")): e for e in events if _text(e.get("event_id"))}
     for event in events:
         record_id = _text(event.get("event_id"))
         if not record_id:
             continue
         source_type = _text(event.get("source_type"))
+        if "i360_links" in event:
+            # An i360 record: its links are i360's (related_objects), not the app's field matches. i360 does not
+            # say why a record is linked; when one of the entity's identifiers is among the record's, that is shown.
+            try:
+                linked = json.loads(event.get("i360_links") or "[]")
+                identifiers = json.loads(event.get("i360_identifiers") or "[]")
+            except (TypeError, ValueError):
+                linked, identifiers = [], []
+            if _text(event.get("side_a_imei")):
+                identifiers.insert(0, ["side_a_imei", _text(event.get("side_a_imei"))])  # the call viewer's side A
+            for obj in linked:
+                target = _text(obj.get("id"))
+                if _text(obj.get("type")).upper() == "ITEM":
+                    # A record linked to another record by i360, on a value it names (matching_value). Both records
+                    # carry the link; it is made once. The fields holding the value are found by comparing values.
+                    other = by_record.get(target)
+                    if other is not None and target < record_id:
+                        continue
+                    value = _text((obj.get("values") or [""])[0])
+                    links.append(_link("i360_related_item_v1", "raw_record", record_id, _field_with(event, value) or "related_objects",
+                                       "raw_record", target, _field_with(other or {}, value) or "related_objects", value,
+                                       provenance_record_ids=sorted({record_id, target})))
+                    continue
+                if target not in entities:
+                    continue
+                values = entity_values.get(target, {})
+                match = next(((field, value) for field, value in identifiers if _text(value) in values), None)
+                if match:
+                    links.append(_link("i360_related_object_v1", "raw_record", record_id, match[0], "entity", target,
+                                       f"telecom.{values[_text(match[1])]}", _text(match[1])))
+                else:
+                    links.append(_link("i360_related_object_v1", "raw_record", record_id, "related_objects", "entity",
+                                       target, "entity_id", ""))
+            continue
         entity_id = _text(event.get("entity_id"))
         if entity_id in entities:
             links.append(_link("event_entity_id_v1", "raw_record", record_id, "entity_id", "entity", entity_id, "entity_id", entity_id))

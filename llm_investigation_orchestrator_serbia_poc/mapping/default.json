@@ -6,7 +6,18 @@
   "tag_passthrough": true,
   "needs_get": true,
   "get_include": [
-   "parties"
+   "parties",
+   "additional_info",
+   "user_agents_data",
+   "ip",
+   "context",
+   "messages",
+   "related_objects",
+   "li",
+   "telephony",
+   "sms",
+   "phone_call",
+   "locations"
   ],
   "fields": {
    "event_id": "tags[type=event_id].value | item_id",
