@@ -3632,11 +3632,11 @@ function openObjectViewer(kind, id, trigger = document.activeElement) {
   if (!['record', 'organization', 'person', 'evidence', 'assessment', 'ipdr_package'].includes(kind)) return false;
   const item = viewerObjects().get(`${kind}:${id}`);
   if (!item) return false;
+  // Scroll the table to the record only when it was opened from elsewhere (a link, the map, the chat);
+  // a click in the table itself leaves the table where it is. Read before renderEvidence() replaces the rows.
+  const fromTable = Boolean(trigger?.closest?.("#evidenceRows"));
   state.focusedViewerRecordId = kind === "record" ? String(id) : null;
   renderEvidence();
-  // Scroll the table to the record only when it was opened from elsewhere (a link, the map, the chat);
-  // a click in the table itself leaves the table where it is.
-  const fromTable = Boolean(trigger?.closest?.("#evidenceRows"));
   if (kind === "record" && !fromTable) {
     const reveal = () => revealViewerRecordInTable(id);
     if (typeof requestAnimationFrame === "function") requestAnimationFrame(reveal);
