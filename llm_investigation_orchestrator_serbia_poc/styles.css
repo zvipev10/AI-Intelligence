@@ -1009,7 +1009,22 @@ body.auth-required > :not(#loginScreen):not(.bootstrap-notice) { visibility: hid
 .report-footer { display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-top:28px; padding-top:8px; border-top:1px solid var(--paper-line); font-family:system-ui,sans-serif; font-size:10.5px; color:var(--paper-muted); }
 .report-error { color:#b3261e; }
 @media (max-width:760px) { .report-paper { padding:24px 18px; } .report-kv { grid-template-columns:1fr 1.2fr; } }
+/* Progress while the model writes: overall bar under the top bar, a moving line in each running block,
+   and a moving fill on the Generate report button while the facts are prepared. */
+.report-screen { grid-template-rows:auto auto minmax(0,1fr); }
+.report-progress { display:grid; gap:4px; padding:6px 14px 8px; background:#171a21; border-bottom:1px solid #303640; }
+.report-progress small { color:#a7adb7; font-size:11.5px; }
+.report-progress-track { height:4px; border-radius:2px; background:#2a2f38; overflow:hidden; position:relative; }
+.report-progress-track span { display:block; height:100%; background:#8ab4f8; transition:width .4s ease; }
+.report-progress-track::after { content:""; position:absolute; inset:0; background:linear-gradient(90deg, transparent, rgba(138,180,248,.55), transparent); animation:report-sweep 1.4s linear infinite; }
+.report-progress-line { height:3px; margin-top:6px; border-radius:2px; background:linear-gradient(90deg, transparent, var(--paper-accent), transparent); background-size:40% 100%; background-repeat:no-repeat; animation:report-slide 1.2s ease-in-out infinite; }
+#memoryModalActions .is-busy { position:relative; overflow:hidden; cursor:progress; }
+#memoryModalActions .is-busy::after { content:""; position:absolute; left:0; right:0; bottom:0; height:3px; background:linear-gradient(90deg, transparent, var(--blue), transparent); animation:report-sweep 1.2s linear infinite; }
+@keyframes report-sweep { from { transform:translateX(-100%); } to { transform:translateX(100%); } }
+@keyframes report-slide { from { background-position:-40% 0; } to { background-position:140% 0; } }
+@media (prefers-reduced-motion: reduce) { .report-progress-track::after, .report-progress-line, #memoryModalActions .is-busy::after { animation:none; } }
 @media print {
+  .report-progress { display:none !important; }
   body > *:not(#reportScreen) { display:none !important; }
   .report-screen { position:static; display:block; background:#fff; }
   .report-bar-top, .report-analysis-act { display:none !important; }

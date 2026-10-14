@@ -1401,7 +1401,11 @@ const REPORT_LAYER_LETTER = { "Satellite": "S", "ADINT": "A", "IPDR": "I", "Cell
 
 async function openReportDialog() {
   if (!state.investigationId) return;
+  const button = document.querySelector("#memoryModalActions [data-report-create]");
+  const label = button?.textContent;
+  if (button) { button.disabled = true; button.classList.add("is-busy"); button.textContent = activeLocaleText("מכין את הדוח…", "Preparing report…"); }
   const facts = await reportFetch("/api/report/facts", { investigation_id: state.investigationId }).catch(error => ({ error: error.message }));
+  if (button) { button.disabled = false; button.classList.remove("is-busy"); button.textContent = label; }
   const dialog = document.createElement("div");
   dialog.className = "modal-backdrop report-dialog";
   dialog.innerHTML = facts.error
@@ -1480,7 +1484,7 @@ function reportAnalysisHtml(report, block) {
   const state_ = report.blocks[block] || { status: "waiting" };
   const head = label => `<div class="report-analysis-tag"><b>${escapeHtml(activeLocaleText("ניתוח · HL LLM", "Analysis · HL LLM"))}</b><span>${escapeHtml(label)}</span>${state_.status === "done" || state_.status === "error" ? `<span class="report-analysis-act"><button type="button" data-report-edit="${escapeHtml(block)}">${escapeHtml(activeLocaleText("ערוך", "Edit"))}</button><button type="button" data-report-regenerate="${escapeHtml(block)}">${escapeHtml(activeLocaleText("צור מחדש", "Regenerate"))}</button></span>` : ""}</div>`;
   if (state_.status === "waiting") return `<div class="report-analysis is-waiting">${head(activeLocaleText("ממתין", "waiting"))}</div>`;
-  if (state_.status === "running") return `<div class="report-analysis is-waiting">${head(`${activeLocaleText("כותב מ-", "Writing from ")}${report.facts.records_total} ${activeLocaleText("רשומות…", "records…")}`)}</div>`;
+  if (state_.status === "running") return `<div class="report-analysis is-waiting">${head(`${activeLocaleText("כותב מ-", "Writing from ")}${report.facts.records_total} ${activeLocaleText("רשומות…", "records…")}`)}<div class="report-progress-line" role="progressbar" aria-label="${escapeHtml(activeLocaleText("המודל כותב", "The model is writing"))}"></div></div>`;
   if (state_.status === "error") return `<div class="report-analysis">${head(activeLocaleText("שגיאה", "error"))}<p class="report-error">${escapeHtml(state_.error)}</p></div>`;
   const cited = new Set([...(state_.sentences || []), ...(state_.claims || [])].flatMap(item => item.record_ids || []));
   const time = new Date(state_.at).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
@@ -1525,12 +1529,16 @@ function reportScreenHtml(report) {
     : reportAnalysisHtml(report, "assessment");
   const annexes = (f.layers || []).map((layer, index) => `<div class="report-annex"><h4>${escapeHtml(activeLocaleText("נספח", "Annex"))} ${String.fromCharCode(65 + index)} · ${escapeHtml(layer.layer)}</h4><ol>${(layer.records || []).map(record => `<li>${reportFact(report, record.id, `${REPORT_LAYER_LETTER[layer.layer] || "R"}-${record.id.slice(0, 4)}`)} ${escapeHtml(fmtTime(record.time))} · ${escapeHtml(record.label)}</li>`).join("")}</ol></div>`).join("");
   const running = statuses.some(block => block.status === "running" || block.status === "waiting");
+  const finished = statuses.filter(block => block.status === "done" || block.status === "error").length;
+  const progress = running
+    ? `<div class="report-progress" role="progressbar" aria-valuemin="0" aria-valuemax="${statuses.length}" aria-valuenow="${finished}"><div class="report-progress-track"><span style="width:${Math.round(100 * finished / statuses.length)}%"></span></div><small>${escapeHtml(activeLocaleText("המודל כותב את הניתוח", "The model is writing the analysis"))} · ${finished}/${statuses.length}</small></div>`
+    : "";
   return `<div class="report-bar-top">
       <span class="report-crumb">${escapeHtml(f.title)} › ${escapeHtml(activeLocaleText("זיכרון", "Memory"))} › ${escapeHtml(activeLocaleText("דוח", "Report"))}</span>
       <span class="report-chips">${chips}</span><span class="report-spacer"></span>
       <button type="button" data-report-back>${escapeHtml(activeLocaleText("חזרה לזיכרון", "Back to memory"))}</button>
       <button type="button" class="primary-filter-action" data-report-print ${running ? "disabled" : ""}>${escapeHtml(activeLocaleText("ייצוא PDF", "Export PDF"))}</button>
-    </div>
+    </div>${progress}
     <div class="report-desk"><article class="report-paper">
       <div class="report-meta"><span>${escapeHtml(activeLocaleText("דוח מודיעין", "Intelligence Report"))}${report.classification ? ` · ${escapeHtml(report.classification)}` : ""}</span><span>${escapeHtml(report.id)} · ${escapeHtml(fmtDate(report.date))}</span></div>
       <h2>${escapeHtml(f.title)}</h2><p class="report-sub">${escapeHtml(f.subtitle || "")}</p>
