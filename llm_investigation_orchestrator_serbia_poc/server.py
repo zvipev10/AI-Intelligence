@@ -615,7 +615,8 @@ class Handler(BaseHTTPRequestHandler):
             self.try_stream_event("error", {"error": "internal_error", "message": "The chat failed."})
 
     def log_chat_event(self, event: str, data: Any) -> None:
-        """One log line per step, action and closing note of a chat turn (ids and counts, not the records)."""
+        """One log line per step, action and closing note of a chat turn (ids and counts, not the records),
+        plus the start of each i360 answer's text, to see what i360 said before our model summarised it."""
         data = data if isinstance(data, dict) else {}
         if event == "step":
             line = f"step{' (error)' if data.get('error') else ''}: {str(data.get('text') or '')[:200]}"
@@ -642,6 +643,10 @@ class Handler(BaseHTTPRequestHandler):
             line = (f"i360 answer: {len(inner.get('citations') or [])} citations, {len(answer_entities(inner))} entities, "
                     f"leg {inner.get('leg')}, keys {sorted(inner)[:20]}, cards {sorted(cards)[:20]}"
                     if data.get("event") == "answer" else f"i360 error: {inner.get('code')} {inner.get('message')}")
+            if data.get("layer"):
+                line += f", layer {data['layer']}"
+            if data.get("event") == "answer":
+                line += f"\n    i360 text: {json.dumps(str(inner.get('content') or '')[:600], ensure_ascii=False)}"
             if data.get("event") == "answer" and inner.get("leg") in {"lookup", "entity", "entities"}:
                 # Entity answers' shapes are still being mapped: log their structure (ids and names, no record text).
                 sample = {k: inner.get(k) for k in ("cards", "people", "outside_entities", "lookup", "subject", "entities") if inner.get(k)}
@@ -829,6 +834,16 @@ class AppToolHost:
     def entity(self, entity_type: str, entity_id: str) -> dict[str, Any] | None:
         """One entity i360 returned, read by id with the user's token, as the person viewer draws it."""
         return self.app.entity_record(self.token, entity_type, entity_id)
+
+    def layer_fields(self) -> dict[str, dict[str, str]]:
+        """Each layer's field names: our display name -> the i360 field (profile query "labels", inverted)."""
+        fields: dict[str, dict[str, str]] = {}
+        for query in (self.app.profile.get("items_query") or {}).get("queries") or []:
+            name = str((query or {}).get("layer") or "")
+            labels = (query or {}).get("labels") or {}
+            if name and labels:
+                fields[name] = {str(label): str(path) for path, label in labels.items() if not str(path).startswith("_")}
+        return fields
 
     def layers_scope(self) -> dict[str, Any] | None:
         """Our layers as the i360 chat's ``scope``: the profile's queries merged into one search."""

@@ -304,9 +304,14 @@
   function openLayerContext(layer) {
     const filters = typeof validAppliedFilters === "function" ? validAppliedFilters(layer) : [];
     const range = layer.catalogFilters || {};
+    // The results table's column filters (typed in a column header): they hide rows in the table only.
+    const control = state.resultTableControls instanceof Map ? state.resultTableControls.get(String(layer.id)) : null;
+    const tableFilters = Object.entries(control?.filters || {})
+      .filter(([, value]) => String(value || "").trim())
+      .map(([column, value]) => ({ field: String(control.columnFields?.[column] || `column ${column}`), value: String(value).trim(), where: "table" }));
     return {
       label: String(layer.label || ""),
-      filters: filters.map(filter => ({ field: String(filter.field), value: stringifyFilterValue(filter.value) })),
+      filters: [...filters.map(filter => ({ field: String(filter.field), value: stringifyFilterValue(filter.value) })), ...tableFilters],
       start_time: range.start_time || "", end_time: range.end_time || "",
       shown: filters.length && typeof itemsForLayerPresentation === "function" ? itemsForLayerPresentation(layer).length : (layer.items || []).length,
       total: (layer.items || []).length,

@@ -293,13 +293,53 @@ class ChatUnitTests(unittest.TestCase):
             {"label": "ADINT", "filters": [{"field": "keyboard_language", "value": "fa"}], "shown": 12, "total": 120},
             {"label": "IPDR", "filters": [], "start_time": "2026-09-01T00:00:00Z", "end_time": "", "shown": 5, "total": 5},
             {"label": "CCTV", "filters": [], "shown": 3, "total": 3}, {"no": "label"}]})
-        self.assertEqual(["Old name only",
-                          'ADINT (filtered: keyboard_language contains "fa"; 12 of 120 records shown)',
-                          "IPDR (filtered: time 2026-09-01T00:00:00Z to …; 5 of 5 records shown)", "CCTV"],
-                         ctx.open_layers)
-        turn = ChatTurn(None, None, None, lambda e, d: None, ctx)
+        ctx.open_layers[2]["filters"].append({"field": "i360.ip.source_ip", "value": "10.0.0.1", "where": "table"})
+        ctx.open_layers[3]["filters"].append({"field": "Keyboard language", "value": "he", "where": "table"})
+
+        class Host:
+            def layer_fields(self):
+                return {"ADINT": {"keyboard_language": "user_agents_data.language_code"},
+                        "CCTV": {"keyboard_language": "x.lang"}}
+
+        turn = ChatTurn(None, None, Host(), lambda e, d: None, ctx)
         turn.catalog_cache = []
-        self.assertIn('ADINT (filtered: keyboard_language contains "fa"', turn.context_text())
+        text = turn.context_text()
+        self.assertIn("Old name only; "
+                      'ADINT (filtered: user_agents_data.language_code contains "fa"; 12 of 120 records shown); '
+                      'IPDR (filtered: ip.source_ip contains "10.0.0.1" (table column filter); time 2026-09-01T00:00:00Z to …); '
+                      'CCTV (filtered: x.lang contains "he" (table column filter))', text)
+        self.assertIn("- ADINT: keyboard_language = user_agents_data.language_code", text)
+
+    def test_a_named_layer_is_asked_alone_in_i360s_field_names(self):
+        asked = []
+
+        class Chat:
+            def ask(self, body, conversation_id):
+                asked.append(body)
+                return iter([("answer", {"content": "2 found", "citations": [{"id": "a-1"}, {"id": "a-2"}]})])
+
+        class Host:
+            def layers_scope(self):
+                return {"kind": "results", "ids": [], "exact": False}
+
+            def layer_scopes(self):
+                return [{"kind": "results", "name": n, "ids": [], "request": {"source_applications": [n]}}
+                        for n in ("ADINT", "IPDR", "Cellular Calls", "Calls")]
+
+            def layer_fields(self):
+                return {"ADINT": {"keyboard_language": "user_agents_data.language_code", "os": "user_agents_data.os"}}
+
+        turn = ChatTurn(None, Chat(), Host(), lambda e, d: None,
+                        TurnContext.from_request({"message": "Show me all adint records with fa keyboard", "scope": "auto"}))
+        result = turn.ask_i360({"question": "adint records where keyboard_language is fa and os is ios", "scope": "layers"})
+        self.assertEqual(1, len(asked))  # ADINT only, not one question per layer
+        self.assertEqual("ADINT", asked[0]["scope"]["name"])
+        self.assertEqual("adint records where user_agents_data.language_code is fa and os is ios", asked[0]["question"])
+        self.assertEqual(2, result["cited_count"])
+        asked.clear()
+        turn = ChatTurn(None, Chat(), Host(), lambda e, d: None, TurnContext.from_request({"message": "x", "scope": "auto"}))
+        turn.ask_i360({"question": "Cellular Calls and IPDR on the 3rd", "scope": "layers"})
+        self.assertEqual({"Cellular Calls", "IPDR"}, {b["scope"]["name"] for b in asked})  # not also "Calls"
 
     def test_open_item_takes_an_id_the_user_typed(self):
         class Host:

@@ -330,7 +330,7 @@ class TurnContext:
     i360_last_turns: list[str] = field(default_factory=list)
     previous_citations: list[dict[str, str]] = field(default_factory=list)
     previous_entities: list[dict[str, str]] = field(default_factory=list)
-    open_layers: list[str] = field(default_factory=list)
+    open_layers: list[dict[str, Any]] = field(default_factory=list)
     viewer_item_id: str = ""
     timezone: str = ""
 
@@ -358,30 +358,58 @@ class TurnContext:
                                for e in (request.get("previous_entities") or [])[:100]
                                if isinstance(e, dict) and str(e.get("id") or "").strip()]
                               if isinstance(request.get("previous_entities"), list) else [],
-            open_layers=[open_layer_text(layer) for layer in (request.get("open_layers") or [])[:40]
-                         if open_layer_text(layer)] if isinstance(request.get("open_layers"), list) else [],
+            open_layers=[layer for layer in map(open_layer, request.get("open_layers")[:40]) if layer]
+                        if isinstance(request.get("open_layers"), list) else [],
             viewer_item_id=str(request.get("viewer_item_id") or "")[:240],
             timezone=str(request.get("tz") or "")[:64],
         )
 
 
-def open_layer_text(layer: Any) -> str:
-    """A layer on screen in one line: its name, the filters applied in the app, its time range and counts."""
+def open_layer(layer: Any) -> dict[str, Any] | None:
+    """A layer on screen as the browser sent it: its name, the filters applied in the app (the layer's filter
+    panel and the results table's column filters, ``where: "table"``), its time range and counts."""
     if isinstance(layer, (str, int)):
-        return str(layer).strip()[:240]  # an older browser sends names only
+        label = str(layer).strip()[:120]  # an older browser sends names only
+        return {"label": label, "filters": []} if label else None
     if not isinstance(layer, dict) or not str(layer.get("label") or "").strip():
-        return ""
-    parts = [f'{str(f.get("field"))[:80]} contains "{str(f.get("value"))[:120]}"'
-             for f in (layer.get("filters") or [])[:10]
-             if isinstance(f, dict) and str(f.get("field") or "").strip() and str(f.get("value") or "").strip()]
-    start, end = str(layer.get("start_time") or "")[:40], str(layer.get("end_time") or "")[:40]
-    if start or end:
-        parts.append(f"time {start or '…'} to {end or '…'}")
+        return None
+    filters = [{"field": str(f["field"]).strip()[:120], "value": str(f["value"]).strip()[:120],
+                "where": "table" if f.get("where") == "table" else "layer"}
+               for f in (layer.get("filters") or [])[:10]
+               if isinstance(f, dict) and str(f.get("field") or "").strip() and str(f.get("value") or "").strip()]
+    counts = {k: layer[k] for k in ("shown", "total") if isinstance(layer.get(k), int)}
+    return {"label": str(layer["label"]).strip()[:120], "filters": filters,
+            "start_time": str(layer.get("start_time") or "")[:40], "end_time": str(layer.get("end_time") or "")[:40],
+            **counts}
+
+
+def _field_key(text: str) -> str:
+    return re.sub(r"[^0-9a-z]+", "_", text.lower()).strip("_")
+
+
+def i360_field(field: str, fields: dict[str, str]) -> str:
+    """Our name for a field (a row key, a display name or a column header) as i360 names it, or ''."""
+    if field.startswith("i360."):
+        return field[len("i360."):]  # LAMBDA rows are keyed by the i360 path itself
+    if field in fields:
+        return fields[field]
+    key = _field_key(field)
+    return next((path for label, path in fields.items() if _field_key(label) == key), "")
+
+
+def open_layer_text(layer: dict[str, Any], fields: dict[str, str]) -> str:
+    """A layer on screen in one line, its filters' fields named as i360 names them."""
+    parts = []
+    for f in layer.get("filters") or []:
+        path = i360_field(f["field"], fields)
+        name = path if path else f["field"]
+        parts.append(f'{name} contains "{f["value"]}"' + (" (table column filter)" if f["where"] == "table" else ""))
+    if layer.get("start_time") or layer.get("end_time"):
+        parts.append(f"time {layer.get('start_time') or '…'} to {layer.get('end_time') or '…'}")
     shown, total = layer.get("shown"), layer.get("total")
-    if parts and isinstance(shown, int) and isinstance(total, int):
+    if parts and isinstance(shown, int) and isinstance(total, int) and shown != total:
         parts.append(f"{shown} of {total} records shown")
-    label = str(layer["label"]).strip()[:120]
-    return f"{label} (filtered: {'; '.join(parts)})" if parts else label
+    return f"{layer['label']} (filtered: {'; '.join(parts)})" if parts else layer["label"]
 
 
 _MEMORY_WORDS = [(re.compile(r"\b(?:the |this |our |my )?investigation'?s memory\b", re.I), "the records linked to this investigation"),
@@ -490,6 +518,7 @@ class ChatTurn:
         self.started = time.monotonic()
         self.summary: list[str] = []  # the turn in one line: "i360 · all data · 50 records → table"
         self.catalog_cache: list[dict[str, Any]] | None = None
+        self.fields_cache: dict[str, dict[str, str]] | None = None
 
     # -- the loop ---------------------------------------------------------------------------
     def run(self) -> None:
@@ -567,9 +596,16 @@ class ChatTurn:
             lines.append("Layers the app can open: " + "; ".join(layers))
         if self.ctx.viewer_item_id:
             lines.append(f"Record open in the viewer now: {self.ctx.viewer_item_id}")
+        fields = self.layer_fields()
+        if fields:
+            lines.append("i360's names for our layers' fields (ours = i360's). In ask_i360's question name a field "
+                         "the way i360 does, e.g. 'fa keyboard' in ADINT is user_agents_data.language_code fa:")
+            lines += [f"- {layer}: " + ", ".join(f"{ours} = {path}" for ours, path in names.items())
+                      for layer, names in fields.items()]
         if self.ctx.open_layers:
-            lines.append("Layers on screen now, with the filters the user applied in the app: "
-                         + "; ".join(self.ctx.open_layers))
+            lines.append("Layers on screen now, with the filters the user applied in the app (fields in i360's names): "
+                         + "; ".join(open_layer_text(layer, self.fields_of(layer["label"]))
+                                     for layer in self.ctx.open_layers))
             lines.append("A question about a filtered layer on screen ('these', 'this layer', the filtered records) "
                          "keeps its filters: say them in ask_i360's question.")
         if self.ctx.previous_citations:
@@ -592,6 +628,21 @@ class ChatTurn:
         if self.ctx.timezone:
             lines.append(f"The user's time zone: {self.ctx.timezone}.")
         return "\n".join(lines)
+
+    def layer_fields(self) -> dict[str, dict[str, str]]:
+        """Each of our layers' fields: our name -> i360's (from the profile)."""
+        if self.fields_cache is None:
+            lister = getattr(self.host, "layer_fields", None)
+            try:
+                self.fields_cache = (lister() if lister else {}) or {}
+            except HlError:
+                self.fields_cache = {}
+        return self.fields_cache
+
+    def fields_of(self, label: str) -> dict[str, str]:
+        """The fields of the layer a label names (a catalog layer's name, any case); others have none."""
+        fields = self.layer_fields()
+        return next((names for layer, names in fields.items() if layer.lower() == label.strip().lower()), {})
 
     def catalog(self) -> list[dict[str, Any]]:
         if self.catalog_cache is None:
@@ -667,7 +718,17 @@ class ChatTurn:
                 exact = layers.pop("exact", True)
                 body["scope"] = layers
                 where = " (our layers)"
-                if not exact:
+                lister = getattr(self.host, "layer_scopes", None)
+                named = self.scopes_named(question + "\n" + self.ctx.message, (lister() if lister else []) or [])
+                if named:
+                    # The question names our layers ("ADINT records with ..."): only they are asked.
+                    where = f" ({', '.join(s['name'] for s in named)})"
+                    body["question"] = question = self.i360_wording(question, named)
+                    if len(named) == 1:
+                        body["scope"] = named[0]
+                    else:
+                        per_layer = named
+                elif not exact:
                     # HL search only ANDs filters, so several layers merge into their shared dates (close to all
                     # data). Each layer is then asked on its own, with its exact request, and the answers joined.
                     lister = getattr(self.host, "layer_scopes", None)
@@ -845,6 +906,27 @@ class ChatTurn:
                 if found:
                     return found
         return []
+
+    @staticmethod
+    def scopes_named(text: str, scopes: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        """Our layers' scopes whose names the text says (ADINT, Cellular Locations, ...), longest names first."""
+        found, rest = [], text
+        for scope in sorted(scopes, key=lambda s: len(str(s.get("name") or "")), reverse=True):
+            name = str(scope.get("name") or "")
+            pattern = re.compile(rf"(?<![\w]){re.escape(name)}(?![\w])", re.IGNORECASE) if name else None
+            if pattern and pattern.search(rest):
+                found.append(scope)
+                rest = pattern.sub(" ", rest)  # "Cellular Calls" is not also "Calls"
+        return found
+
+    def i360_wording(self, question: str, scopes: list[dict[str, Any]]) -> str:
+        """The question with our field names (keyboard_language) replaced by i360's (user_agents_data.language_code).
+        Only names with an underscore are replaced: 'model' or 'os' are also plain words."""
+        for scope in scopes:
+            for ours, path in self.fields_of(str(scope.get("name") or "")).items():
+                if "_" in ours and ours != path:
+                    question = re.sub(rf"(?<![\w.]){re.escape(ours)}(?![\w])", path, question)
+        return question
 
     def layer_names(self) -> set[str]:
         """The app's record layers (IPDR, Cellular Calls, ...)."""
