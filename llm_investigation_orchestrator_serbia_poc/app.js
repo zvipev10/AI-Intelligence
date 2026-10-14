@@ -3634,7 +3634,10 @@ function openObjectViewer(kind, id, trigger = document.activeElement) {
   if (!item) return false;
   state.focusedViewerRecordId = kind === "record" ? String(id) : null;
   renderEvidence();
-  if (kind === "record") {
+  // Scroll the table to the record only when it was opened from elsewhere (a link, the map, the chat);
+  // a click in the table itself leaves the table where it is.
+  const fromTable = Boolean(trigger?.closest?.("#evidenceRows"));
+  if (kind === "record" && !fromTable) {
     const reveal = () => revealViewerRecordInTable(id);
     if (typeof requestAnimationFrame === "function") requestAnimationFrame(reveal);
     else reveal();
