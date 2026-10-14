@@ -944,3 +944,8 @@ body.auth-required > :not(#loginScreen):not(.bootstrap-notice) { visibility: hid
 .bootstrap-notice { position: fixed; bottom: 0; left: 0; right: 0; z-index: 100001; padding: 8px; text-align: center; background: #132b41; color: #fff; visibility: visible; }
 .bootstrap-notice[hidden] { display: none; }
 .object-viewer-media-missing { margin: 0; padding: 14px; border: 1px dashed var(--line); border-radius: 8px; color: var(--muted); text-align: center; font-size: 12px; }
+
+/* A table row opens its record on click; the map bubble lists its records to open. */
+#evidenceRows tr:has([data-viewer-kind][data-viewer-id]) { cursor:pointer; }
+.map-popup-open { display:grid; gap:4px; margin-top:6px; max-height:180px; overflow:auto; }
+.map-popup-open .object-viewer-open { text-align:start; }

@@ -4024,6 +4024,7 @@ function renderMap() {
         <strong>${escapeHtml(location.name)}</strong>
         <span>${escapeHtml(activeLocaleText(`${item.count.toLocaleString("he-IL")} פריטים`, `${item.count.toLocaleString("en-US")} items`))}</span>
         <em>${escapeHtml([...item.labels].join(" · "))}</em>
+        ${item.viewerEligible && viewerRefs.length ? `<div class="map-popup-open">${viewerRefs.slice(0, 10).map(ref => `<button type="button" class="object-viewer-open" data-viewer-kind="${escapeHtml(ref.kind)}" data-viewer-id="${escapeHtml(ref.id)}">${escapeHtml(viewerRefs.length === 1 ? activeLocaleText("פתח את הפריט", "Open the item") : `${activeLocaleText("פתח", "Open")} ${ref.id}`)}</button>`).join("")}${viewerRefs.length > 10 ? `<span>${escapeHtml(activeLocaleText(`ועוד ${viewerRefs.length - 10}`, `and ${viewerRefs.length - 10} more`))}</span>` : ""}</div>` : ""}
       </div>`;
     const popup = new maplibregl.Popup({ offset: 18, closeButton: true, closeOnClick: true }).setHTML(popupHtml);
     const marker = new maplibregl.Marker({ element, anchor: "center" }).setLngLat([location.lon, location.lat]).setPopup(popup).addTo(state.map);
@@ -4850,6 +4851,15 @@ document.addEventListener("click", event => {
     event.preventDefault();
     openObjectViewer(viewerTrigger.dataset.viewerKind, viewerTrigger.dataset.viewerId, viewerTrigger);
     return;
+  }
+  // A click anywhere on a table row opens its record, as its id link does (other controls in the row keep their own action).
+  const tableRow = event.target.closest("#evidenceRows tr");
+  if (tableRow && !event.target.closest("button,a,input,select,textarea,label,summary")) {
+    const rowViewer = tableRow.querySelector("[data-viewer-kind][data-viewer-id]");
+    if (rowViewer) {
+      openObjectViewer(rowViewer.dataset.viewerKind, rowViewer.dataset.viewerId, rowViewer);
+      return;
+    }
   }
   const packageOpen = event.target.closest("[data-ipdr-package-open]");
   if (packageOpen) {
