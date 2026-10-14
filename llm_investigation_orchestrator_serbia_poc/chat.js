@@ -300,6 +300,19 @@
     return String(item?.i360_item_id || "");
   }
 
+  /* A layer on screen as the chat sees it: its name, the filters applied in the app and its time range. */
+  function openLayerContext(layer) {
+    const filters = typeof validAppliedFilters === "function" ? validAppliedFilters(layer) : [];
+    const range = layer.catalogFilters || {};
+    return {
+      label: String(layer.label || ""),
+      filters: filters.map(filter => ({ field: String(filter.field), value: stringifyFilterValue(filter.value) })),
+      start_time: range.start_time || "", end_time: range.end_time || "",
+      shown: filters.length && typeof itemsForLayerPresentation === "function" ? itemsForLayerPresentation(layer).length : (layer.items || []).length,
+      total: (layer.items || []).length,
+    };
+  }
+
   async function openCited(id) {
     const response = await fetch("/api/chat/items", {
       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ids: [id], locale: "en" }),
@@ -426,7 +439,7 @@
       i360_last_turns: CHAT.i360LastTurns,
       previous_citations: CHAT.citations,
       previous_entities: CHAT.entities || [],
-      open_layers: state.layers.filter(layer => layer.visible).map(layer => layer.label).slice(0, 40),
+      open_layers: state.layers.filter(layer => layer.visible).slice(0, 40).map(openLayerContext),
       viewer_item_id: viewerItemId(),
       tz: (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone; } catch { return ""; } })(),
       locale: "en",

@@ -287,6 +287,20 @@ class ChatUnitTests(unittest.TestCase):
             {"id": "p-1", "type": "PERSON_OF_INTEREST", "name": "Arman Rahimi"}, {"no": "id"}]})
         self.assertEqual(["p-1"], [e["id"] for e in ctx.previous_entities])
 
+    def test_layers_on_screen_carry_their_filters(self):
+        ctx = TurnContext.from_request({"message": "x", "open_layers": [
+            "Old name only",
+            {"label": "ADINT", "filters": [{"field": "keyboard_language", "value": "fa"}], "shown": 12, "total": 120},
+            {"label": "IPDR", "filters": [], "start_time": "2026-09-01T00:00:00Z", "end_time": "", "shown": 5, "total": 5},
+            {"label": "CCTV", "filters": [], "shown": 3, "total": 3}, {"no": "label"}]})
+        self.assertEqual(["Old name only",
+                          'ADINT (filtered: keyboard_language contains "fa"; 12 of 120 records shown)',
+                          "IPDR (filtered: time 2026-09-01T00:00:00Z to …; 5 of 5 records shown)", "CCTV"],
+                         ctx.open_layers)
+        turn = ChatTurn(None, None, None, lambda e, d: None, ctx)
+        turn.catalog_cache = []
+        self.assertIn('ADINT (filtered: keyboard_language contains "fa"', turn.context_text())
+
     def test_open_item_takes_an_id_the_user_typed(self):
         class Host:
             def item_layers(self, ids):

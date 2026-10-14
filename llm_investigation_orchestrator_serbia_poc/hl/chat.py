@@ -358,10 +358,30 @@ class TurnContext:
                                for e in (request.get("previous_entities") or [])[:100]
                                if isinstance(e, dict) and str(e.get("id") or "").strip()]
                               if isinstance(request.get("previous_entities"), list) else [],
-            open_layers=strings(request.get("open_layers"), 40),
+            open_layers=[open_layer_text(layer) for layer in (request.get("open_layers") or [])[:40]
+                         if open_layer_text(layer)] if isinstance(request.get("open_layers"), list) else [],
             viewer_item_id=str(request.get("viewer_item_id") or "")[:240],
             timezone=str(request.get("tz") or "")[:64],
         )
+
+
+def open_layer_text(layer: Any) -> str:
+    """A layer on screen in one line: its name, the filters applied in the app, its time range and counts."""
+    if isinstance(layer, (str, int)):
+        return str(layer).strip()[:240]  # an older browser sends names only
+    if not isinstance(layer, dict) or not str(layer.get("label") or "").strip():
+        return ""
+    parts = [f'{str(f.get("field"))[:80]} contains "{str(f.get("value"))[:120]}"'
+             for f in (layer.get("filters") or [])[:10]
+             if isinstance(f, dict) and str(f.get("field") or "").strip() and str(f.get("value") or "").strip()]
+    start, end = str(layer.get("start_time") or "")[:40], str(layer.get("end_time") or "")[:40]
+    if start or end:
+        parts.append(f"time {start or '…'} to {end or '…'}")
+    shown, total = layer.get("shown"), layer.get("total")
+    if parts and isinstance(shown, int) and isinstance(total, int):
+        parts.append(f"{shown} of {total} records shown")
+    label = str(layer["label"]).strip()[:120]
+    return f"{label} (filtered: {'; '.join(parts)})" if parts else label
 
 
 _MEMORY_WORDS = [(re.compile(r"\b(?:the |this |our |my )?investigation'?s memory\b", re.I), "the records linked to this investigation"),
@@ -548,7 +568,10 @@ class ChatTurn:
         if self.ctx.viewer_item_id:
             lines.append(f"Record open in the viewer now: {self.ctx.viewer_item_id}")
         if self.ctx.open_layers:
-            lines.append("Layers on screen now: " + "; ".join(self.ctx.open_layers))
+            lines.append("Layers on screen now, with the filters the user applied in the app: "
+                         + "; ".join(self.ctx.open_layers))
+            lines.append("A question about a filtered layer on screen ('these', 'this layer', the filtered records) "
+                         "keeps its filters: say them in ask_i360's question.")
         if self.ctx.previous_citations:
             lines.append(f"The previous i360 answer cited {len(self.ctx.previous_citations)} items "
                          "(from_last_answer=true shows them all). In order:")
