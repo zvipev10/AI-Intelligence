@@ -962,8 +962,7 @@ body.auth-required > :not(#loginScreen):not(.bootstrap-notice) { visibility: hid
   --paper:#fbfaf7; --paper-ink:#1d2128; --paper-muted:#5b6270; --paper-line:#dcdfe5; --paper-analysis:#f2eefb; --paper-accent:#6b3fb8; }
 .report-window { width:min(980px, 100%); height:min(94dvh, 100%); display:grid; grid-template-rows:auto auto minmax(0,1fr); background:#0b0d10; border:1px solid #303640; border-radius:12px; overflow:hidden; box-shadow:0 24px 70px rgba(0,0,0,.6); }
 .report-bar-top { display:flex; flex-wrap:wrap; align-items:center; justify-content:flex-end; gap:8px; padding:10px 14px; background:var(--panel); border-bottom:1px solid var(--line); }
-.report-bar-top.memory-comment-actions .modal-close-button { width:30px; min-height:30px; height:30px; padding:0; margin-inline-start:4px; border-color:var(--line); border-radius:6px; background:transparent; color:var(--muted); font-size:22px; }
-.report-bar-top.memory-comment-actions .modal-close-button:hover { border-color:var(--red); background:rgba(242,139,130,.12); color:var(--red); }
+/* The close button is the app's plain .modal-close-button, as in the Request collection dialog. */
 
 .report-crumb { color:#a7adb7; }
 .report-chips { display:flex; flex-wrap:wrap; gap:6px; font-size:12px; }
