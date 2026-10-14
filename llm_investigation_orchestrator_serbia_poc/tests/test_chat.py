@@ -310,6 +310,24 @@ class ChatUnitTests(unittest.TestCase):
                       'CCTV (filtered: x.lang contains "he" (table column filter))', text)
         self.assertIn("- ADINT: keyboard_language = user_agents_data.language_code", text)
 
+    def test_a_raw_test_question_goes_to_i360_as_typed(self):
+        asked, events = [], []
+
+        class Chat:
+            def ask(self, body, conversation_id):
+                asked.append(body)
+                return iter([("answer", {"content": "3 found", "citations": [{"id": "a-1"}], "total": 3})])
+
+        ctx = TurnContext.from_request({"message": "/i360 location_update items from ADINT where x is fa"})
+        turn = ChatTurn(None, Chat(), None, lambda e, d: events.append((e, d)), ctx)
+        turn.raw_test = True
+        turn.run()
+        self.assertEqual("location_update items from ADINT where x is fa", asked[0]["question"])
+        self.assertNotIn("scope", asked[0])
+        self.assertEqual("done", events[-1][0])
+        off = ChatTurn(None, Chat(), None, lambda e, d: None, ctx)  # off by default: the usual turn
+        self.assertFalse(off.raw_test)
+
     def test_a_named_layer_is_asked_alone_in_i360s_field_names(self):
         asked = []
 

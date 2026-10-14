@@ -519,10 +519,13 @@ class ChatTurn:
         self.summary: list[str] = []  # the turn in one line: "i360 · all data · 50 records → table"
         self.catalog_cache: list[dict[str, Any]] | None = None
         self.fields_cache: dict[str, dict[str, str]] | None = None
+        self.raw_test = False  # "/i360 <text>" sends the text to i360 as typed (local tests only)
 
     # -- the loop ---------------------------------------------------------------------------
     def run(self) -> None:
-        if self.llm is None:
+        if self.raw_test and self.ctx.message.startswith("/i360 "):
+            self.raw_i360(self.ctx.message[len("/i360 "):].strip())
+        elif self.llm is None:
             self.fallback("The assistant is not configured; asking i360 directly.")
         else:
             messages = [{"role": "system", "content": SYSTEM_PROMPT + "\n\n" + self.context_text()}]
@@ -566,6 +569,22 @@ class ChatTurn:
                            "summary": " ".join(self.summary + [f"· {time.monotonic() - self.started:.0f} s"]),
                            "i360_last_turns": self.i360_last_turns[-6:], "citations": self.cited[:500],
                            "entities": self.entities[:100]})
+
+    def raw_i360(self, question: str) -> None:
+        """Local test only (CHAT_RAW_TEST=1): the text after "/i360 " goes to i360 exactly as typed, with no
+        scope, focus or model; i360's answer is shown as it came. For checking what i360 understands by itself."""
+        body = {"request_id": "aii-" + uuid.uuid4().hex[:12], "question": question, "origin": "app", "medium": "auto"}
+        if self.ctx.timezone:
+            body["tz"] = self.ctx.timezone
+        self.emit("step", {"text": "Asking i360 as typed (test, no scope)", "tool": "ask_i360", "live": True,
+                           "focus": "", "scope": "", "question": question[:200]})
+        answer, error, _, _ = self.stream(body, None, lambda e, d: self.emit("i360", {"event": e, "data": d}))
+        if answer is None:
+            self.emit("note", {"text": f"i360 gave no answer ({error or 'empty stream'})"})
+            return
+        cited = cited_items(answer.get("citations"))
+        self.emit("step", {"text": f"i360 answered as typed · {len(cited)} cited · total {answer.get('total')}",
+                           "tool": "ask_i360"})
 
     def fallback(self, reason: str) -> None:
         """No model: ask i360 directly and show what it cited (the plan's option 1)."""

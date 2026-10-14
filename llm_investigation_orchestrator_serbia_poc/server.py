@@ -18,6 +18,7 @@ import csv
 import io
 import json
 import mimetypes
+import os
 import re
 import sys
 import time
@@ -601,6 +602,7 @@ class Handler(BaseHTTPRequestHandler):
             if settings.llm_enabled else None
         chat = ChatServiceClient(settings.chat_service_url, token, settings.chat_idle_timeout_seconds)
         turn = ChatTurn(llm, chat, AppToolHost(self.app, token, locale), emit, context, settings.chat_model)
+        turn.raw_test = os.environ.get("CHAT_RAW_TEST") == "1"  # never set on LAMBDA
         try:
             turn.run()
         except ClientGone:
