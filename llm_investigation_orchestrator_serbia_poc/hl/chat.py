@@ -159,6 +159,19 @@ class LlmClient:
         return assistant_message(response)
 
 
+    def complete_json(self, messages: list[dict[str, Any]], schema: dict[str, Any], max_tokens: int = 4000) -> dict[str, Any]:
+        """One completion that must answer a JSON object of the given schema (no tools): {content, model}."""
+        body: dict[str, Any] = {"messages": messages, "temperature": 0.2, "seed": 7, "stream": False,
+                                "max_tokens": max_tokens,
+                                "response_format": {"type": "json_schema", "json_schema": {"name": "answer", "schema": schema}},
+                                "extra_body": {"chat_template_kwargs": {"enable_thinking": False}}}
+        model = self.resolve_model()
+        if model:
+            body["model"] = model
+        response = self.client.post(self.path, body)
+        return {"content": str((response or {}).get("content") or ""), "model": str((response or {}).get("model") or model)}
+
+
 TOOL_CALL_TEXT = re.compile(r"<tool_call>\s*(\{.*?\})\s*</tool_call>", re.S)
 
 

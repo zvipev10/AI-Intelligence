@@ -949,3 +949,20 @@ body.auth-required > :not(#loginScreen):not(.bootstrap-notice) { visibility: hid
 #evidenceRows tr:has([data-viewer-kind][data-viewer-id]) { cursor:pointer; }
 .map-popup-open { display:grid; gap:4px; margin-top:6px; max-height:180px; overflow:auto; }
 .map-popup-open .object-viewer-open { text-align:start; }
+
+/* Investigation report in the Memory screen. */
+.report-bar { display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding-bottom:10px; border-bottom:1px solid var(--line); }
+.report-bar span { color:#aeb8c6; font-size:12px; }
+.investigation-report { display:grid; gap:12px; padding:12px; border:1px solid rgba(146,170,205,.32); border-radius:10px; background:rgba(138,180,248,.05); }
+.investigation-report > header { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
+.investigation-report > header div { display:grid; gap:3px; }
+.investigation-report > header span { color:#aeb8c6; font-size:11px; }
+.report-section h3 { margin:0 0 6px; font-size:14px; }
+.report-section p { margin:0 0 8px; line-height:1.5; font-size:13px; }
+.report-cites { display:inline-flex; flex-wrap:wrap; gap:4px; margin-inline-start:6px; vertical-align:middle; }
+.report-cite { padding:1px 6px; border:1px solid #4c6580; border-radius:6px; background:#2d4051; color:#c7e3ff; font:11px ui-monospace,monospace; cursor:pointer; }
+.report-unsupported { color:#f2b8b5; font-size:11px; }
+.report-progress { color:#aeb8c6; font-style:italic; }
+.report-error { color:#f2b8b5; }
+.report-gaps h4 { margin:4px 0; font-size:12px; color:#c4cbbd; }
+.report-gaps ul { margin:0; padding-inline-start:18px; font-size:12px; color:#c4cbbd; }

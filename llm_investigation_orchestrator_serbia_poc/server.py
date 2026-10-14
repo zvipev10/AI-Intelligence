@@ -34,6 +34,7 @@ from hl.client import AuthExpired, HlClient, HlError, Unreachable
 from hl.config import ROOT, Settings, load_settings
 from hl.items import TELECOM_APPROVED, ItemReader, Snapshot, SnapshotCache, entity_presentation, item_fields, layers_search
 from hl.mapping import Mapping, load_mapping
+from hl import report
 from hl.state import MEMORY_GROUPS, StateStore
 
 SESSION_COOKIE = "aii_session"
@@ -244,6 +245,27 @@ class App:
             snap.entities = ItemReader(client, self.mapping, {}, 1).entities()
             for key in [k for k in snap.derived if k.startswith("dataset:")]:
                 snap.derived.pop(key, None)
+
+    def report_section(self, token: str, investigation_id: str, section: dict[str, str]) -> dict[str, Any]:
+        """One report section over the records and persons saved to the investigation (HL API's model)."""
+        memory = self.state(token).load_memory(investigation_id)
+        saved = [a for a in memory.get("artifacts") or [] if a.get("kind") == "object"]
+        record_ids = [str(a.get("object_id")) for a in saved if a.get("object_kind") == "record" and a.get("object_id")]
+        person_ids = [str(a.get("object_id")) for a in saved if a.get("object_kind") == "person" and a.get("object_id")]
+        data = self.dataset(token, "en")
+        by_id = {str(e.get("i360_item_id") or e.get("event_id")): e for e in data.events}
+        rows = [by_id[i] for i in record_ids if i in by_id]
+        missing = [i for i in record_ids if i not in by_id]
+        if missing:  # saved records outside the app's layers: read them from i360
+            rows += [row for group in self.item_layers(token, missing, "en") for row in group["rows"]]
+        if not rows and not person_ids:
+            raise ValueError("Nothing is saved to this investigation yet")
+        persons = [data.entities[i] for i in person_ids if i in data.entities]
+        names = {eid: str(e.get("canonical_name") or eid) for eid, e in data.entities.items()}
+        llm = LlmClient(self.client(token), self.settings.llm_model, timeout=self.settings.llm_timeout_seconds)
+        result = report.run_section(llm.complete_json, section, rows, self.layer_field_labels, persons, names)
+        result["investigation_id"] = investigation_id
+        return result
 
     def reload_reviews(self, token: str) -> None:
         """After a review, re-read only the reviews and drop the assembled datasets."""
@@ -552,6 +574,9 @@ class Handler(BaseHTTPRequestHandler):
             investigation_id = require_investigation_id((query.get("id") or [""])[0])
             self.send_json(200, app.state(token).load_memory(investigation_id))
             return
+        if path == "/api/report/sections":
+            self.send_json(200, {"sections": [{"id": x["id"], "title": x["title"]} for x in report.SECTIONS]})
+            return
         if path == "/api/investigation-items":
             investigation_id = require_investigation_id((query.get("id") or [""])[0])
             self.send_json(200, {"layers": app.investigation_item_layers(token, investigation_id, locale)})
@@ -765,6 +790,14 @@ class Handler(BaseHTTPRequestHandler):
                         item["i360_item_id"] = row["i360_item_id"]
             saved = state.add_memory_item(investigation_id, group, item, request.get("name"))
             self.send_json(201, {"saved": saved, "memory": state.load_memory(investigation_id)})
+            return
+        if path == "/api/report/section":
+            request = self.read_json(10_000)
+            investigation_id = require_investigation_id(request.get("investigation_id"))
+            section = next((x for x in report.SECTIONS if x["id"] == request.get("section")), None)
+            if not section:
+                raise ValueError("Unknown report section")
+            self.send_json(200, app.report_section(token, investigation_id, section))
             return
         if path == "/api/collection-request":
             request = self.read_json(200_000)

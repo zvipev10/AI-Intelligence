@@ -1386,7 +1386,77 @@ function renderMemoryScreen() {
     ["collection_requests", activeLocaleText("בקשות איסוף", "Collection requests"), memory.collection_requests || [], item => item.label || item.collection_type || "—", false]
   ];
   const html = groups.filter(([, , items]) => items.length).map(([group, title, items, label, openable]) => `<section class="memory-group"><h3>${escapeHtml(title)}</h3>${items.slice().reverse().map(item => `<article class="memory-entry"><div class="memory-entry-heading">${openable ? `<button type="button" class="memory-entry-open" data-memory-open-group="${group}" data-memory-open-id="${escapeHtml(item.id)}"><strong>${escapeHtml(label(item))}</strong></button>` : `<strong>${escapeHtml(label(item))}</strong>`}<button type="button" class="memory-entry-delete" data-memory-delete-group="${group}" data-memory-delete-id="${escapeHtml(item.id)}" title="${escapeHtml(activeLocaleText("הסר מהזיכרון", "Remove from memory"))}" aria-label="${escapeHtml(activeLocaleText("הסר מהזיכרון", "Remove from memory"))}"><span class="material-symbols-rounded" aria-hidden="true">delete</span></button></div><span class="memory-entry-meta">${escapeHtml(formatSavedTime(item.saved_at_utc))}${item.object_id ? ` · ${escapeHtml(item.object_id)}` : ""}</span>${item.analyst_comment ? `<p class="memory-entry-comment">${escapeHtml(item.analyst_comment)}</p>` : ""}</article>`).join("")}</section>`).join("");
-  memoryModalBody.innerHTML = html || `<div class="activity-empty">${escapeHtml(activeLocaleText("עדיין לא נשמרו פריטים לחקירה זו.", "No items have been saved to this investigation yet."))}</div>`;
+  const hasObjects = (memory.artifacts || []).some(item => item.kind === "object");
+  const reportBar = hasObjects
+    ? `<div class="report-bar"><button type="button" class="primary-filter-action" data-report-generate>${escapeHtml(activeLocaleText("הפק דוח", "Generate report"))}</button><span>${escapeHtml(activeLocaleText("ניתוח של הרשומות והאנשים שנשמרו, על ידי מודל השפה של HL API", "Analysis of the saved records and people by HL API's language model"))}</span></div>`
+    : "";
+  memoryModalBody.innerHTML = reportBar + (investigationReport.investigationId === state.investigationId ? reportHtml(investigationReport) : "")
+    + (html || `<div class="activity-empty">${escapeHtml(activeLocaleText("עדיין לא נשמרו פריטים לחקירה זו.", "No items have been saved to this investigation yet."))}</div>`);
+}
+
+// The investigation report: one HL API model call per section over the records and people saved to the
+// investigation; the server checks every citation. Kept per investigation until the page reloads.
+let investigationReport = { investigationId: null, sections: [], running: false, model: "", startedAt: "" };
+
+function reportHtml(report) {
+  if (!report.sections.length) return "";
+  const cite = id => `<button type="button" class="report-cite" data-linked-record-open="true" data-viewer-kind="record" data-viewer-id="${escapeHtml(id)}" title="${escapeHtml(id)}">${escapeHtml(id.slice(0, 8))}</button>`;
+  const sections = report.sections.map(section => {
+    if (section.status === "running") return `<section class="report-section"><h3>${escapeHtml(section.title)}</h3><p class="report-progress">${escapeHtml(activeLocaleText("מפיק…", "Generating…"))}</p></section>`;
+    if (section.status === "waiting") return `<section class="report-section"><h3>${escapeHtml(section.title)}</h3><p class="report-progress">${escapeHtml(activeLocaleText("ממתין", "Waiting"))}</p></section>`;
+    if (section.status === "error") return `<section class="report-section"><h3>${escapeHtml(section.title)}</h3><p class="report-error">${escapeHtml(section.error)}</p></section>`;
+    const paragraphs = (section.paragraphs || []).map(paragraph => `<p>${escapeHtml(paragraph.text)}${paragraph.unsupported ? ` <em class="report-unsupported">${escapeHtml(activeLocaleText("ללא סימוכין", "unsupported"))}</em>` : ""}${paragraph.record_ids.length ? `<span class="report-cites">${paragraph.record_ids.map(cite).join("")}</span>` : ""}</p>`).join("");
+    const gaps = (section.gaps || []).length ? `<div class="report-gaps"><h4>${escapeHtml(activeLocaleText("פערים", "Gaps"))}</h4><ul>${section.gaps.map(gap => `<li>${escapeHtml(gap)}</li>`).join("")}</ul></div>` : "";
+    return `<section class="report-section"><h3>${escapeHtml(section.title)}</h3>${paragraphs}${gaps}</section>`;
+  }).join("");
+  const done = report.sections.filter(section => section.status === "done");
+  const used = done[0] ? `${done[0].records_used} ${activeLocaleText("מתוך", "of")} ${done[0].records_total}` : "";
+  return `<article class="investigation-report">
+    <header><div><strong>${escapeHtml(activeLocaleText("דוח חקירה", "Investigation report"))}</strong><span>${escapeHtml(activeLocaleText("ניתוח של מודל שפה, לא נתוני i360", "Analysis by a language model, not i360 data"))}${report.model ? ` · ${escapeHtml(report.model)}` : ""}${used ? ` · ${escapeHtml(activeLocaleText("רשומות", "records"))} ${escapeHtml(used)}` : ""} · ${escapeHtml(formatSavedTime(report.startedAt))}</span></div>${!report.running && done.length ? `<button type="button" data-report-download>${escapeHtml(activeLocaleText("הורד (Markdown)", "Download (Markdown)"))}</button>` : ""}</header>
+    ${sections}
+  </article>`;
+}
+
+async function generateInvestigationReport() {
+  if (!state.investigationId || investigationReport.running) return;
+  const investigationId = state.investigationId;
+  const listing = await fetch("/api/report/sections", { cache: "no-store" }).then(response => response.json()).catch(() => ({}));
+  const sections = (listing.sections || []).map(section => ({ ...section, status: "waiting" }));
+  investigationReport = { investigationId, sections, running: true, model: "", startedAt: new Date().toISOString() };
+  renderMemoryScreen();
+  for (const section of sections) {
+    if (investigationReport.investigationId !== investigationId) return;
+    section.status = "running";
+    renderMemoryScreen();
+    try {
+      const response = await fetch("/api/report/section", { method: "POST", headers: { "Content-Type": "application/json; charset=utf-8" }, body: JSON.stringify({ investigation_id: investigationId, section: section.id }) });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || payload.message || activeLocaleText("הפקת הסעיף נכשלה", "The section could not be generated"));
+      Object.assign(section, payload, { status: "done" });
+      investigationReport.model = payload.model || investigationReport.model;
+    } catch (error) {
+      Object.assign(section, { status: "error", error: error.message || String(error) });
+    }
+    renderMemoryScreen();
+  }
+  investigationReport.running = false;
+  renderMemoryScreen();
+}
+
+function downloadInvestigationReport() {
+  const report = investigationReport;
+  const lines = [`# ${activeLocaleText("דוח חקירה", "Investigation report")}: ${state.investigationName || report.investigationId}`, "",
+    `_${activeLocaleText("ניתוח של מודל שפה, לא נתוני i360", "Analysis by a language model, not i360 data")} · ${report.model} · ${report.startedAt}_`, ""];
+  report.sections.filter(section => section.status === "done").forEach(section => {
+    lines.push(`## ${section.title}`, "");
+    (section.paragraphs || []).forEach(paragraph => lines.push(`${paragraph.text}${paragraph.record_ids.length ? ` [${paragraph.record_ids.join(", ")}]` : " [unsupported]"}`, ""));
+    if ((section.gaps || []).length) lines.push(`**${activeLocaleText("פערים", "Gaps")}**`, "", ...section.gaps.map(gap => `- ${gap}`), "");
+  });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(new Blob([lines.join("\n")], { type: "text/markdown;charset=utf-8" }));
+  link.download = `report-${String(state.investigationName || report.investigationId).replace(/[^\p{L}\p{N}_-]+/gu, "-")}.md`;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(link.href), 1000);
 }
 
 function savedMemoryEntry(group, id) {
@@ -4846,6 +4916,16 @@ document.addEventListener("click", event => {
   }
   if (event.target.closest("#visualMediaOverlayClose") || event.target.id === "visualMediaOverlay") {
     closeVisualCollectionMediaFullscreen();
+    return;
+  }
+  if (event.target.closest("[data-report-generate]")) {
+    event.preventDefault();
+    void generateInvestigationReport();
+    return;
+  }
+  if (event.target.closest("[data-report-download]")) {
+    event.preventDefault();
+    downloadInvestigationReport();
     return;
   }
   const linkedRecordTrigger = event.target.closest("[data-linked-record-open][data-viewer-id]");
