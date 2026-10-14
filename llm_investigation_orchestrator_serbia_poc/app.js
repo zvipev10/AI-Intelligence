@@ -1497,13 +1497,6 @@ function reportScreenHtml(report) {
   const fmtDate = value => value ? new Date(value).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "—";
   const fmtTime = value => value ? new Date(value).toLocaleString("en-GB", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "UTC" }) + " UTC" : "";
   const statuses = Object.values(report.blocks);
-  const layerBlocks = report.order.filter(block => block.startsWith("layer:"));
-  const doneLayers = layerBlocks.filter(block => report.blocks[block].status === "done").length;
-  const chip = (label, status) => `<span class="report-chip ${status}">${escapeHtml(label)}</span>`;
-  const chipStatus = block => report.blocks[block]?.status === "done" ? "done" : report.blocks[block]?.status === "running" ? "run" : "";
-  const chips = chip(activeLocaleText("עובדות מוכנות", "Facts ready"), "done") + chip(activeLocaleText("תקציר", "Summary"), chipStatus("summary"))
-    + chip(`${activeLocaleText("ממצאים", "Findings")} ${doneLayers}/${layerBlocks.length}`, doneLayers === layerBlocks.length ? "done" : layerBlocks.some(b => report.blocks[b].status === "running") ? "run" : "")
-    + chip(`${activeLocaleText("הערכה", "Assessment")}${report.blocks.assessment?.status === "done" ? "" : "…"}`, chipStatus("assessment"));
   const area = f.area ? `${f.area.north.toFixed(2)}, ${f.area.west.toFixed(2)} → ${f.area.south.toFixed(2)}, ${f.area.east.toFixed(2)}` : "—";
   const subjectImei = (f.subject?.identifiers || []).find(row => row.label === "IMEI")?.value || "—";
   const chain = (f.chain || []).map((step, index) => `${index ? `<span class="report-arrow ${step.linked ? "" : "dash"}">${step.linked ? "→" : "⋯"}</span>` : ""}<span class="report-step ${index && !step.linked ? "dash" : ""}">${escapeHtml(step.role)} · ${escapeHtml(step.layer === "person" ? activeLocaleText("אדם", "Person") : step.layer)}${index && !step.linked ? ` <small>${escapeHtml(activeLocaleText("אין קישור i360", "no i360 link"))}</small>` : ""}</span>`).join("");
@@ -1533,11 +1526,12 @@ function reportScreenHtml(report) {
   const progress = running
     ? `<div class="report-progress" role="progressbar" aria-valuemin="0" aria-valuemax="${statuses.length}" aria-valuenow="${finished}"><div class="report-progress-track"><span style="width:${Math.round(100 * finished / statuses.length)}%"></span></div><small>${escapeHtml(activeLocaleText("המודל כותב את הניתוח", "The model is writing the analysis"))} · ${finished}/${statuses.length}</small></div>`
     : "";
-  return `<div class="report-bar-top">
-      <span class="report-crumb">${escapeHtml(f.title)} › ${escapeHtml(activeLocaleText("זיכרון", "Memory"))} › ${escapeHtml(activeLocaleText("דוח", "Report"))}</span>
-      <span class="report-chips">${chips}</span><span class="report-spacer"></span>
+  // A window on top of the application: Back to memory, Export PDF and a close button.
+  return `<div class="report-window" role="dialog" aria-modal="true" aria-label="${escapeHtml(f.title)}"><div class="report-bar-top">
+      <span class="report-spacer"></span>
       <button type="button" data-report-back>${escapeHtml(activeLocaleText("חזרה לזיכרון", "Back to memory"))}</button>
-      <button type="button" class="primary-filter-action" data-report-print ${running ? "disabled" : ""}>${escapeHtml(activeLocaleText("ייצוא PDF", "Export PDF"))}</button>
+      <button type="button" data-report-print ${running ? "disabled" : ""}>${escapeHtml(activeLocaleText("ייצוא PDF", "Export PDF"))}</button>
+      <button type="button" class="modal-close-button" data-report-close aria-label="${escapeHtml(activeLocaleText("סגור", "Close"))}">×</button>
     </div>${progress}
     <div class="report-desk"><article class="report-paper">
       <div class="report-meta"><span>${escapeHtml(activeLocaleText("דוח מודיעין", "Intelligence Report"))}${report.classification ? ` · ${escapeHtml(report.classification)}` : ""}</span><span>${escapeHtml(report.id)} · ${escapeHtml(fmtDate(report.date))}</span></div>
@@ -1553,7 +1547,7 @@ function reportScreenHtml(report) {
       <h3>${escapeHtml(activeLocaleText("הערכה ורמת ביטחון", "Assessment and confidence"))}</h3>${claims}
       <h3>${escapeHtml(activeLocaleText("נספחים", "Attachments"))}</h3>${annexes}
       <footer class="report-footer"><span>${escapeHtml(report.classification || "")}</span><span>${escapeHtml(report.id)}</span><span>${escapeHtml(activeLocaleText("ניתוח של מודל שפה מסומן; שאר הנתונים מרשומות i360", "Analysis blocks are written by a language model; everything else comes from i360 records"))}</span></footer>
-    </article></div>`;
+    </article></div></div>`;
 }
 
 function renderReportScreen() {
@@ -5055,6 +5049,12 @@ document.addEventListener("click", event => {
     investigationReport = null;
     renderReportScreen();
     openMemoryScreen();
+    return;
+  }
+  if (event.target.closest("[data-report-close]")) {
+    event.preventDefault();
+    investigationReport = null;
+    renderReportScreen();
     return;
   }
   if (event.target.closest("[data-report-print]")) {
