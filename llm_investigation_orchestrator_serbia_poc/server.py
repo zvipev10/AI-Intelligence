@@ -246,8 +246,8 @@ class App:
             for key in [k for k in snap.derived if k.startswith("dataset:")]:
                 snap.derived.pop(key, None)
 
-    def report_section(self, token: str, investigation_id: str, section: dict[str, str]) -> dict[str, Any]:
-        """One report section over the records and persons saved to the investigation (HL API's model)."""
+    def report_inputs(self, token: str, investigation_id: str, subject_id: str = "") -> dict[str, Any]:
+        """The records and persons saved to the investigation, the subject person, and the report's facts."""
         memory = self.state(token).load_memory(investigation_id)
         saved = [a for a in memory.get("artifacts") or [] if a.get("kind") == "object"]
         record_ids = [str(a.get("object_id")) for a in saved if a.get("object_kind") == "record" and a.get("object_id")]
@@ -261,11 +261,21 @@ class App:
         if not rows and not person_ids:
             raise ValueError("Nothing is saved to this investigation yet")
         persons = [data.entities[i] for i in person_ids if i in data.entities]
+        subject_id = subject_id if any(str(p.get("entity_id")) == subject_id for p in persons) else report.default_subject(persons, rows)
+        facts = report.compute_facts(str(memory.get("name") or investigation_id), rows, persons, subject_id, self.layer_field_labels)
         names = {eid: str(e.get("canonical_name") or eid) for eid, e in data.entities.items()}
+        return {"rows": rows, "persons": persons, "subject_id": subject_id, "facts": facts, "names": names}
+
+    def report_facts(self, token: str, investigation_id: str, subject_id: str = "") -> dict[str, Any]:
+        inputs = self.report_inputs(token, investigation_id, subject_id)
+        return {**inputs["facts"], "investigation_id": investigation_id, "subject_id": inputs["subject_id"]}
+
+    def report_block(self, token: str, investigation_id: str, block: str, subject_id: str = "") -> dict[str, Any]:
+        """One analysis block of the report, written by HL API's language model."""
+        inputs = self.report_inputs(token, investigation_id, subject_id)
         llm = LlmClient(self.client(token), self.settings.llm_model, timeout=self.settings.llm_timeout_seconds)
-        result = report.run_section(llm.complete_json, section, rows, self.layer_field_labels, persons, names)
-        result["investigation_id"] = investigation_id
-        return result
+        return report.run_block(llm.complete_json, block, inputs["facts"], inputs["rows"], self.layer_field_labels,
+                                inputs["persons"], inputs["subject_id"], inputs["names"])
 
     def reload_reviews(self, token: str) -> None:
         """After a review, re-read only the reviews and drop the assembled datasets."""
@@ -574,9 +584,6 @@ class Handler(BaseHTTPRequestHandler):
             investigation_id = require_investigation_id((query.get("id") or [""])[0])
             self.send_json(200, app.state(token).load_memory(investigation_id))
             return
-        if path == "/api/report/sections":
-            self.send_json(200, {"sections": [{"id": x["id"], "title": x["title"]} for x in report.SECTIONS]})
-            return
         if path == "/api/investigation-items":
             investigation_id = require_investigation_id((query.get("id") or [""])[0])
             self.send_json(200, {"layers": app.investigation_item_layers(token, investigation_id, locale)})
@@ -791,13 +798,14 @@ class Handler(BaseHTTPRequestHandler):
             saved = state.add_memory_item(investigation_id, group, item, request.get("name"))
             self.send_json(201, {"saved": saved, "memory": state.load_memory(investigation_id)})
             return
-        if path == "/api/report/section":
+        if path in {"/api/report/facts", "/api/report/block"}:
             request = self.read_json(10_000)
             investigation_id = require_investigation_id(request.get("investigation_id"))
-            section = next((x for x in report.SECTIONS if x["id"] == request.get("section")), None)
-            if not section:
-                raise ValueError("Unknown report section")
-            self.send_json(200, app.report_section(token, investigation_id, section))
+            subject_id = analysis.compact_text(request.get("subject_id"), 240)
+            if path.endswith("/facts"):
+                self.send_json(200, app.report_facts(token, investigation_id, subject_id))
+            else:
+                self.send_json(200, app.report_block(token, investigation_id, str(request.get("block") or ""), subject_id))
             return
         if path == "/api/collection-request":
             request = self.read_json(200_000)

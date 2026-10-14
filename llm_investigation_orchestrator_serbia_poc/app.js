@@ -1388,75 +1388,195 @@ function renderMemoryScreen() {
   const html = groups.filter(([, , items]) => items.length).map(([group, title, items, label, openable]) => `<section class="memory-group"><h3>${escapeHtml(title)}</h3>${items.slice().reverse().map(item => `<article class="memory-entry"><div class="memory-entry-heading">${openable ? `<button type="button" class="memory-entry-open" data-memory-open-group="${group}" data-memory-open-id="${escapeHtml(item.id)}"><strong>${escapeHtml(label(item))}</strong></button>` : `<strong>${escapeHtml(label(item))}</strong>`}<button type="button" class="memory-entry-delete" data-memory-delete-group="${group}" data-memory-delete-id="${escapeHtml(item.id)}" title="${escapeHtml(activeLocaleText("הסר מהזיכרון", "Remove from memory"))}" aria-label="${escapeHtml(activeLocaleText("הסר מהזיכרון", "Remove from memory"))}"><span class="material-symbols-rounded" aria-hidden="true">delete</span></button></div><span class="memory-entry-meta">${escapeHtml(formatSavedTime(item.saved_at_utc))}${item.object_id ? ` · ${escapeHtml(item.object_id)}` : ""}</span>${item.analyst_comment ? `<p class="memory-entry-comment">${escapeHtml(item.analyst_comment)}</p>` : ""}</article>`).join("")}</section>`).join("");
   const hasObjects = (memory.artifacts || []).some(item => item.kind === "object");
   const reportBar = hasObjects
-    ? `<div class="report-bar"><button type="button" class="primary-filter-action" data-report-generate>${escapeHtml(activeLocaleText("הפק דוח", "Generate report"))}</button><span>${escapeHtml(activeLocaleText("ניתוח של הרשומות והאנשים שנשמרו, על ידי מודל השפה של HL API", "Analysis of the saved records and people by HL API's language model"))}</span></div>`
+    ? `<div class="report-bar"><button type="button" class="primary-filter-action" data-report-create>${escapeHtml(activeLocaleText("צור דוח", "Create report"))}</button><span>${escapeHtml(activeLocaleText("עובדות מהרשומות שנשמרו; ניתוח על ידי מודל השפה של HL API", "Facts from the saved records; analysis by HL API's language model"))}</span></div>`
     : "";
-  memoryModalBody.innerHTML = reportBar + (investigationReport.investigationId === state.investigationId ? reportHtml(investigationReport) : "")
+  memoryModalBody.innerHTML = reportBar
     + (html || `<div class="activity-empty">${escapeHtml(activeLocaleText("עדיין לא נשמרו פריטים לחקירה זו.", "No items have been saved to this investigation yet."))}</div>`);
 }
 
-// The investigation report: one HL API model call per section over the records and people saved to the
-// investigation; the server checks every citation. Kept per investigation until the page reloads.
-let investigationReport = { investigationId: null, sections: [], running: false, model: "", startedAt: "" };
+// ---- Investigation report, layout A "Document" (docs/report-plan.md) --------------------------------------
+// Facts come from the memory records and their i360 links (the server computes them); analysis blocks are
+// written by HL API's language model, one call per block, citing the records after each sentence.
+let investigationReport = null;
+const REPORT_LAYER_LETTER = { "Satellite": "S", "ADINT": "A", "IPDR": "I", "Cellular Calls": "C", "Cellular Locations": "L", "CCTV": "V" };
 
-function reportHtml(report) {
-  if (!report.sections.length) return "";
-  const cite = id => `<button type="button" class="report-cite" data-linked-record-open="true" data-viewer-kind="record" data-viewer-id="${escapeHtml(id)}" title="${escapeHtml(id)}">${escapeHtml(id.slice(0, 8))}</button>`;
-  const sections = report.sections.map(section => {
-    if (section.status === "running") return `<section class="report-section"><h3>${escapeHtml(section.title)}</h3><p class="report-progress">${escapeHtml(activeLocaleText("מפיק…", "Generating…"))}</p></section>`;
-    if (section.status === "waiting") return `<section class="report-section"><h3>${escapeHtml(section.title)}</h3><p class="report-progress">${escapeHtml(activeLocaleText("ממתין", "Waiting"))}</p></section>`;
-    if (section.status === "error") return `<section class="report-section"><h3>${escapeHtml(section.title)}</h3><p class="report-error">${escapeHtml(section.error)}</p></section>`;
-    const paragraphs = (section.paragraphs || []).map(paragraph => `<p>${escapeHtml(paragraph.text)}${paragraph.unsupported ? ` <em class="report-unsupported">${escapeHtml(activeLocaleText("ללא סימוכין", "unsupported"))}</em>` : ""}${paragraph.record_ids.length ? `<span class="report-cites">${paragraph.record_ids.map(cite).join("")}</span>` : ""}</p>`).join("");
-    const gaps = (section.gaps || []).length ? `<div class="report-gaps"><h4>${escapeHtml(activeLocaleText("פערים", "Gaps"))}</h4><ul>${section.gaps.map(gap => `<li>${escapeHtml(gap)}</li>`).join("")}</ul></div>` : "";
-    return `<section class="report-section"><h3>${escapeHtml(section.title)}</h3>${paragraphs}${gaps}</section>`;
-  }).join("");
-  const done = report.sections.filter(section => section.status === "done");
-  const used = done[0] ? `${done[0].records_used} ${activeLocaleText("מתוך", "of")} ${done[0].records_total}` : "";
-  return `<article class="investigation-report">
-    <header><div><strong>${escapeHtml(activeLocaleText("דוח חקירה", "Investigation report"))}</strong><span>${escapeHtml(activeLocaleText("ניתוח של מודל שפה, לא נתוני i360", "Analysis by a language model, not i360 data"))}${report.model ? ` · ${escapeHtml(report.model)}` : ""}${used ? ` · ${escapeHtml(activeLocaleText("רשומות", "records"))} ${escapeHtml(used)}` : ""} · ${escapeHtml(formatSavedTime(report.startedAt))}</span></div>${!report.running && done.length ? `<button type="button" data-report-download>${escapeHtml(activeLocaleText("הורד (Markdown)", "Download (Markdown)"))}</button>` : ""}</header>
-    ${sections}
-  </article>`;
-}
-
-async function generateInvestigationReport() {
-  if (!state.investigationId || investigationReport.running) return;
-  const investigationId = state.investigationId;
-  const listing = await fetch("/api/report/sections", { cache: "no-store" }).then(response => response.json()).catch(() => ({}));
-  const sections = (listing.sections || []).map(section => ({ ...section, status: "waiting" }));
-  investigationReport = { investigationId, sections, running: true, model: "", startedAt: new Date().toISOString() };
-  renderMemoryScreen();
-  for (const section of sections) {
-    if (investigationReport.investigationId !== investigationId) return;
-    section.status = "running";
-    renderMemoryScreen();
-    try {
-      const response = await fetch("/api/report/section", { method: "POST", headers: { "Content-Type": "application/json; charset=utf-8" }, body: JSON.stringify({ investigation_id: investigationId, section: section.id }) });
-      const payload = await response.json();
-      if (!response.ok) throw new Error(payload.error || payload.message || activeLocaleText("הפקת הסעיף נכשלה", "The section could not be generated"));
-      Object.assign(section, payload, { status: "done" });
-      investigationReport.model = payload.model || investigationReport.model;
-    } catch (error) {
-      Object.assign(section, { status: "error", error: error.message || String(error) });
-    }
-    renderMemoryScreen();
-  }
-  investigationReport.running = false;
-  renderMemoryScreen();
-}
-
-function downloadInvestigationReport() {
-  const report = investigationReport;
-  const lines = [`# ${activeLocaleText("דוח חקירה", "Investigation report")}: ${state.investigationName || report.investigationId}`, "",
-    `_${activeLocaleText("ניתוח של מודל שפה, לא נתוני i360", "Analysis by a language model, not i360 data")} · ${report.model} · ${report.startedAt}_`, ""];
-  report.sections.filter(section => section.status === "done").forEach(section => {
-    lines.push(`## ${section.title}`, "");
-    (section.paragraphs || []).forEach(paragraph => lines.push(`${paragraph.text}${paragraph.record_ids.length ? ` [${paragraph.record_ids.join(", ")}]` : " [unsupported]"}`, ""));
-    if ((section.gaps || []).length) lines.push(`**${activeLocaleText("פערים", "Gaps")}**`, "", ...section.gaps.map(gap => `- ${gap}`), "");
+async function openReportDialog() {
+  if (!state.investigationId) return;
+  const facts = await reportFetch("/api/report/facts", { investigation_id: state.investigationId }).catch(error => ({ error: error.message }));
+  const dialog = document.createElement("div");
+  dialog.className = "modal-backdrop report-dialog";
+  dialog.innerHTML = facts.error
+    ? `<section class="memory-comment-panel"><header><h2>${escapeHtml(activeLocaleText("צור דוח", "Create report"))}</h2></header><p class="report-error">${escapeHtml(facts.error)}</p><div class="memory-comment-actions"><button type="button" data-report-dialog-close>${escapeHtml(activeLocaleText("סגור", "Close"))}</button></div></section>`
+    : `<form class="memory-comment-panel" data-report-dialog-form><header><h2>${escapeHtml(activeLocaleText("צור דוח", "Create report"))}</h2></header>
+      <p>${escapeHtml(`${facts.records_total} ${activeLocaleText("רשומות שמורות", "saved records")} · ${facts.subtitle || ""}`)}</p>
+      <label>${escapeHtml(activeLocaleText("נושא הדוח", "Subject person"))}<select name="subject">${(facts.persons || []).map(person => `<option value="${escapeHtml(person.id)}" ${person.id === facts.subject_id ? "selected" : ""}>${escapeHtml(`${person.name} · ${person.linked} ${activeLocaleText("רשומות מקושרות", "linked records")}`)}</option>`).join("") || `<option value="">${escapeHtml(activeLocaleText("אין אדם שמור", "No person saved"))}</option>`}</select></label>
+      <label>${escapeHtml(activeLocaleText("סיווג", "Classification"))}<input name="classification" type="text" value="UNCLASSIFIED // EXERCISE"></label>
+      <div class="memory-comment-actions"><button type="button" data-report-dialog-close>${escapeHtml(activeLocaleText("ביטול", "Cancel"))}</button><button type="submit" class="primary-filter-action">${escapeHtml(activeLocaleText("צור דוח", "Create report"))}</button></div></form>`;
+  document.body.appendChild(dialog);
+  dialog.querySelector("[data-report-dialog-close]")?.addEventListener("click", () => dialog.remove());
+  dialog.querySelector("[data-report-dialog-form]")?.addEventListener("submit", event => {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    dialog.remove();
+    void createInvestigationReport(String(form.get("subject") || ""), String(form.get("classification") || ""), facts);
   });
-  const link = document.createElement("a");
-  link.href = URL.createObjectURL(new Blob([lines.join("\n")], { type: "text/markdown;charset=utf-8" }));
-  link.download = `report-${String(state.investigationName || report.investigationId).replace(/[^\p{L}\p{N}_-]+/gu, "-")}.md`;
-  link.click();
-  setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+}
+
+async function reportFetch(url, body) {
+  const response = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json; charset=utf-8" }, body: JSON.stringify(body) });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(payload.error || payload.message || activeLocaleText("הבקשה נכשלה", "The request failed"));
+  return payload;
+}
+
+async function createInvestigationReport(subjectId, classification, initialFacts) {
+  const investigationId = state.investigationId;
+  const facts = subjectId && subjectId !== initialFacts.subject_id
+    ? await reportFetch("/api/report/facts", { investigation_id: investigationId, subject_id: subjectId })
+    : initialFacts;
+  const slug = String(facts.title || investigationId).replace(/[^A-Za-z0-9]+/g, " ").trim().split(/\s+/).map(word => word[0]).join("").toUpperCase().slice(0, 6) || "REP";
+  const now = new Date();
+  const blocks = ["summary", "chain", ...(facts.layers || []).map(layer => `layer:${layer.layer}`), "assessment"];
+  investigationReport = {
+    investigationId, subjectId: facts.subject_id, classification: classification.trim(), facts,
+    id: `${slug}-${now.toISOString().slice(0, 16).replace(/[-:T]/g, "")}`, date: now.toISOString().slice(0, 10),
+    blocks: Object.fromEntries(blocks.map(block => [block, { status: "waiting" }])), order: blocks
+  };
+  closeMemoryScreen();
+  renderReportScreen();
+  for (const block of blocks) await runReportBlock(block);
+}
+
+async function runReportBlock(block) {
+  const report = investigationReport;
+  if (!report) return;
+  report.blocks[block] = { status: "running" };
+  renderReportScreen();
+  try {
+    const result = await reportFetch("/api/report/block", { investigation_id: report.investigationId, block, subject_id: report.subjectId });
+    if (investigationReport !== report) return;
+    report.blocks[block] = { ...result, status: "done", at: new Date().toISOString() };
+  } catch (error) {
+    if (investigationReport !== report) return;
+    report.blocks[block] = { status: "error", error: error.message || String(error) };
+  }
+  renderReportScreen();
+}
+
+function reportRecordLayer(report, id) {
+  for (const layer of report.facts.layers || []) if ((layer.records || []).some(record => record.id === id)) return layer.layer;
+  return "";
+}
+
+function reportCite(report, id) {
+  const label = `${REPORT_LAYER_LETTER[reportRecordLayer(report, id)] || "R"}-${String(id).slice(0, 4)}`;
+  return `<button type="button" class="report-ref" data-linked-record-open="true" data-viewer-kind="record" data-viewer-id="${escapeHtml(id)}" title="${escapeHtml(id)}">${escapeHtml(label)}</button>`;
+}
+
+function reportFact(report, id, text) {
+  return `<button type="button" class="report-fact" data-linked-record-open="true" data-viewer-kind="record" data-viewer-id="${escapeHtml(id)}" title="${escapeHtml(id)}">${escapeHtml(text)}</button>`;
+}
+
+function reportAnalysisHtml(report, block) {
+  const state_ = report.blocks[block] || { status: "waiting" };
+  const head = label => `<div class="report-analysis-tag"><b>${escapeHtml(activeLocaleText("ניתוח · HL LLM", "Analysis · HL LLM"))}</b><span>${escapeHtml(label)}</span>${state_.status === "done" || state_.status === "error" ? `<span class="report-analysis-act"><button type="button" data-report-edit="${escapeHtml(block)}">${escapeHtml(activeLocaleText("ערוך", "Edit"))}</button><button type="button" data-report-regenerate="${escapeHtml(block)}">${escapeHtml(activeLocaleText("צור מחדש", "Regenerate"))}</button></span>` : ""}</div>`;
+  if (state_.status === "waiting") return `<div class="report-analysis is-waiting">${head(activeLocaleText("ממתין", "waiting"))}</div>`;
+  if (state_.status === "running") return `<div class="report-analysis is-waiting">${head(`${activeLocaleText("כותב מ-", "Writing from ")}${report.facts.records_total} ${activeLocaleText("רשומות…", "records…")}`)}</div>`;
+  if (state_.status === "error") return `<div class="report-analysis">${head(activeLocaleText("שגיאה", "error"))}<p class="report-error">${escapeHtml(state_.error)}</p></div>`;
+  const cited = new Set([...(state_.sentences || []), ...(state_.claims || [])].flatMap(item => item.record_ids || []));
+  const time = new Date(state_.at).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+  const sentences = (state_.sentences || []).map((sentence, index) => `<span class="report-sentence" data-report-sentence="${escapeHtml(block)}:${index}">${escapeHtml(sentence.text)}</span>${sentence.unsupported ? `<em class="report-unsupported">${escapeHtml(activeLocaleText("ללא סימוכין", "unsupported"))}</em>` : sentence.record_ids.map(id => reportCite(report, id)).join("")} `).join("");
+  return `<div class="report-analysis" data-report-block="${escapeHtml(block)}">${head(`${time} · ${activeLocaleText("מצטט", "cites")} ${cited.size} ${activeLocaleText("רשומות", "records")}`)}${sentences ? `<p>${sentences}</p>` : ""}</div>`;
+}
+
+function reportScreenHtml(report) {
+  const f = report.facts;
+  const fmtDate = value => value ? new Date(value).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "—";
+  const fmtTime = value => value ? new Date(value).toLocaleString("en-GB", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "UTC" }) + " UTC" : "";
+  const statuses = Object.values(report.blocks);
+  const layerBlocks = report.order.filter(block => block.startsWith("layer:"));
+  const doneLayers = layerBlocks.filter(block => report.blocks[block].status === "done").length;
+  const chip = (label, status) => `<span class="report-chip ${status}">${escapeHtml(label)}</span>`;
+  const chipStatus = block => report.blocks[block]?.status === "done" ? "done" : report.blocks[block]?.status === "running" ? "run" : "";
+  const chips = chip(activeLocaleText("עובדות מוכנות", "Facts ready"), "done") + chip(activeLocaleText("תקציר", "Summary"), chipStatus("summary"))
+    + chip(`${activeLocaleText("ממצאים", "Findings")} ${doneLayers}/${layerBlocks.length}`, doneLayers === layerBlocks.length ? "done" : layerBlocks.some(b => report.blocks[b].status === "running") ? "run" : "")
+    + chip(`${activeLocaleText("הערכה", "Assessment")}${report.blocks.assessment?.status === "done" ? "" : "…"}`, chipStatus("assessment"));
+  const area = f.area ? `${f.area.north.toFixed(2)}, ${f.area.west.toFixed(2)} → ${f.area.south.toFixed(2)}, ${f.area.east.toFixed(2)}` : "—";
+  const subjectImei = (f.subject?.identifiers || []).find(row => row.label === "IMEI")?.value || "—";
+  const chain = (f.chain || []).map((step, index) => `${index ? `<span class="report-arrow ${step.linked ? "" : "dash"}">${step.linked ? "→" : "⋯"}</span>` : ""}<span class="report-step ${index && !step.linked ? "dash" : ""}">${escapeHtml(step.role)} · ${escapeHtml(step.layer === "person" ? activeLocaleText("אדם", "Person") : step.layer)}${index && !step.linked ? ` <small>${escapeHtml(activeLocaleText("אין קישור i360", "no i360 link"))}</small>` : ""}</span>`).join("");
+  const findings = (f.layers || []).map(layer => {
+    const range = layer.first ? `${fmtDate(layer.first)}${layer.last && layer.last.slice(0, 10) !== layer.first.slice(0, 10) ? ` – ${fmtDate(layer.last)}` : ""}` : "";
+    const fields = (layer.fields || []).map(field => `${escapeHtml(field.label)}: ${escapeHtml(field.values.join(", "))}`).join(" · ");
+    const extra = [layer.route_km != null ? `${activeLocaleText("מסלול", "Route")}: ${layer.route_points} ${activeLocaleText("נקודות", "points")}, ${layer.route_km} km` : "",
+      ...(layer.record_links || []).map(link => `i360 link: ${escapeHtml(link.fields)} = ${escapeHtml(link.value || "")}`)].filter(Boolean).join(" · ");
+    const block = report.blocks[`layer:${layer.layer}`] || {};
+    const quote = layer.layer === "Cellular Calls" && (layer.quotes || []).length
+      ? (layer.quotes.find(q => q.n === String(block.quote_line)) || layer.quotes.reduce((a, b) => (b.text.length > a.text.length ? b : a)))
+      : null;
+    return `<section class="report-finding"><h3>${escapeHtml(layer.layer)} <small>${layer.count} ${escapeHtml(activeLocaleText("רשומות", "records"))}${range ? ` · ${escapeHtml(range)}` : ""}</small></h3>
+      ${fields || extra ? `<p class="report-factline">${fields}${fields && extra ? " · " : ""}${extra}</p>` : ""}
+      ${quote ? `<blockquote class="report-quote">“${escapeHtml(quote.text)}”<small>${reportFact(report, quote.id, `${quote.speaker} · ${fmtTime(quote.time)}`)} · ${escapeHtml(activeLocaleText("תרגום מילולי מהרשומה", "verbatim translation from the record"))}</small></blockquote>` : ""}
+      ${reportAnalysisHtml(report, `layer:${layer.layer}`)}</section>`;
+  }).join("");
+  const subject = f.subject ? `<h3>${escapeHtml(activeLocaleText("זיהוי הנושא", "Subject identification"))}</h3><div class="report-subject">${f.subject.image_url ? `<img src="${escapeHtml(f.subject.image_url)}" alt="">` : ""}<div><strong>${escapeHtml(f.subject.name)}</strong>${(f.subject.identifiers || []).map(row => `<span>${escapeHtml(row.label)} ${escapeHtml(row.value)}${row.status ? ` <em>(${escapeHtml(row.status)})</em>` : ""}</span>`).join("")}<span>${escapeHtml(activeLocaleText("רשומות מקושרות", "Linked records"))}: ${escapeHtml(Object.entries(f.subject.linked || {}).map(([layer, count]) => `${layer} ${count}`).join(", ") || "—")}</span></div></div>` : "";
+  const table = (f.identifiers_table || []).length ? `<h3>${escapeHtml(activeLocaleText("מזהי הנושא", "Subject identifiers"))}</h3><div class="report-kv">${f.identifiers_table.map(row => `<div>${escapeHtml(row.label)}</div><div>${escapeHtml(row.value)}${row.status ? ` <em>(${escapeHtml(row.status)})</em>` : ""}</div>`).join("")}</div>` : "";
+  const assessment = report.blocks.assessment || {};
+  const claims = assessment.status === "done"
+    ? `<div class="report-analysis" data-report-block="assessment">${reportAnalysisHtml(report, "assessment").replace(/^<div class="report-analysis"[^>]*>/, "").replace(/<\/div>$/, "")}<ul class="report-claims">${(assessment.claims || []).map(claim => `<li><span class="report-level ${claim.level.toLowerCase()}">${escapeHtml(claim.level)}</span> ${escapeHtml(claim.claim)} ${claim.unsupported ? `<em class="report-unsupported">${escapeHtml(activeLocaleText("ללא סימוכין", "unsupported"))}</em>` : claim.record_ids.map(id => reportCite(report, id)).join("")}</li>`).join("")}</ul>${(assessment.open_questions || []).length ? `<h4>${escapeHtml(activeLocaleText("שאלות פתוחות", "Open questions"))}</h4><ul>${assessment.open_questions.map(q => `<li>${escapeHtml(q)}</li>`).join("")}</ul>` : ""}</div>`
+    : reportAnalysisHtml(report, "assessment");
+  const annexes = (f.layers || []).map((layer, index) => `<div class="report-annex"><h4>${escapeHtml(activeLocaleText("נספח", "Annex"))} ${String.fromCharCode(65 + index)} · ${escapeHtml(layer.layer)}</h4><ol>${(layer.records || []).map(record => `<li>${reportFact(report, record.id, `${REPORT_LAYER_LETTER[layer.layer] || "R"}-${record.id.slice(0, 4)}`)} ${escapeHtml(fmtTime(record.time))} · ${escapeHtml(record.label)}</li>`).join("")}</ol></div>`).join("");
+  const running = statuses.some(block => block.status === "running" || block.status === "waiting");
+  return `<div class="report-bar-top">
+      <span class="report-crumb">${escapeHtml(f.title)} › ${escapeHtml(activeLocaleText("זיכרון", "Memory"))} › ${escapeHtml(activeLocaleText("דוח", "Report"))}</span>
+      <span class="report-chips">${chips}</span><span class="report-spacer"></span>
+      <button type="button" data-report-back>${escapeHtml(activeLocaleText("חזרה לזיכרון", "Back to memory"))}</button>
+      <button type="button" class="primary-filter-action" data-report-print ${running ? "disabled" : ""}>${escapeHtml(activeLocaleText("ייצוא PDF", "Export PDF"))}</button>
+    </div>
+    <div class="report-desk"><article class="report-paper">
+      <div class="report-meta"><span>${escapeHtml(activeLocaleText("דוח מודיעין", "Intelligence Report"))}${report.classification ? ` · ${escapeHtml(report.classification)}` : ""}</span><span>${escapeHtml(report.id)} · ${escapeHtml(fmtDate(report.date))}</span></div>
+      <h2>${escapeHtml(f.title)}</h2><p class="report-sub">${escapeHtml(f.subtitle || "")}</p>
+      <div class="report-kv"><div>${escapeHtml(activeLocaleText("IMEI הנושא", "Subject IMEI"))}</div><div>${escapeHtml(subjectImei)}</div>
+        <div>${escapeHtml(activeLocaleText("תקופת הדיווח", "Reporting period"))}</div><div>${escapeHtml(`${fmtDate(f.period?.first)} – ${fmtDate(f.period?.last)}`)} ${escapeHtml(activeLocaleText("מתוך", "from"))} ${f.records_total} ${escapeHtml(activeLocaleText("רשומות", "records"))}</div>
+        <div>${escapeHtml(activeLocaleText("אזור עניין", "Area of interest"))}</div><div>${escapeHtml(area)}</div></div>
+      <h3>${escapeHtml(activeLocaleText("תקציר מנהלים", "Executive summary"))}</h3>${reportAnalysisHtml(report, "summary")}
+      <h3>${escapeHtml(activeLocaleText("שרשרת מתאם מקורות", "Source correlation chain"))}</h3><div class="report-chain">${chain}</div>
+      <p class="report-note">${escapeHtml(activeLocaleText("חצים רציפים הם קישורי i360; צעד מקווקו הוא ללא קישור i360.", "Solid arrows are i360 links; a dashed step has no i360 link."))}</p>${reportAnalysisHtml(report, "chain")}
+      <h3>${escapeHtml(activeLocaleText("ממצאים לפי מקור", "Findings by source"))}</h3>${findings}
+      ${subject}${table}
+      <h3>${escapeHtml(activeLocaleText("הערכה ורמת ביטחון", "Assessment and confidence"))}</h3>${claims}
+      <h3>${escapeHtml(activeLocaleText("נספחים", "Attachments"))}</h3>${annexes}
+      <footer class="report-footer"><span>${escapeHtml(report.classification || "")}</span><span>${escapeHtml(report.id)}</span><span>${escapeHtml(activeLocaleText("ניתוח של מודל שפה מסומן; שאר הנתונים מרשומות i360", "Analysis blocks are written by a language model; everything else comes from i360 records"))}</span></footer>
+    </article></div>`;
+}
+
+function renderReportScreen() {
+  let screen = document.getElementById("reportScreen");
+  if (!investigationReport) { screen?.remove(); return; }
+  if (!screen) {
+    screen = document.createElement("div");
+    screen.id = "reportScreen";
+    screen.className = "report-screen";
+    document.body.appendChild(screen);
+  }
+  const scroll = screen.querySelector(".report-desk")?.scrollTop || 0;
+  screen.innerHTML = reportScreenHtml(investigationReport);
+  const desk = screen.querySelector(".report-desk");
+  if (desk) desk.scrollTop = scroll;
+}
+
+function toggleReportEdit(block) {
+  const panel = document.querySelector(`#reportScreen [data-report-block="${CSS.escape(block)}"]`);
+  const result = investigationReport?.blocks[block];
+  if (!panel || !result) return;
+  const editing = panel.classList.toggle("is-editing");
+  panel.querySelectorAll(".report-sentence").forEach(span => {
+    span.contentEditable = editing ? "true" : "false";
+    if (!editing) {
+      const index = Number(String(span.dataset.reportSentence).split(":").pop());
+      if (result.sentences?.[index]) result.sentences[index].text = span.textContent.trim();
+    }
+  });
+  if (editing) panel.querySelector(".report-sentence")?.focus();
 }
 
 function savedMemoryEntry(group, id) {
@@ -4918,14 +5038,33 @@ document.addEventListener("click", event => {
     closeVisualCollectionMediaFullscreen();
     return;
   }
-  if (event.target.closest("[data-report-generate]")) {
+  if (event.target.closest("[data-report-create]")) {
     event.preventDefault();
-    void generateInvestigationReport();
+    void openReportDialog();
     return;
   }
-  if (event.target.closest("[data-report-download]")) {
+  if (event.target.closest("[data-report-back]")) {
     event.preventDefault();
-    downloadInvestigationReport();
+    investigationReport = null;
+    renderReportScreen();
+    openMemoryScreen();
+    return;
+  }
+  if (event.target.closest("[data-report-print]")) {
+    event.preventDefault();
+    window.print();
+    return;
+  }
+  const reportRegenerate = event.target.closest("[data-report-regenerate]");
+  if (reportRegenerate) {
+    event.preventDefault();
+    void runReportBlock(reportRegenerate.dataset.reportRegenerate);
+    return;
+  }
+  const reportEdit = event.target.closest("[data-report-edit]");
+  if (reportEdit) {
+    event.preventDefault();
+    toggleReportEdit(reportEdit.dataset.reportEdit);
     return;
   }
   const linkedRecordTrigger = event.target.closest("[data-linked-record-open][data-viewer-id]");
