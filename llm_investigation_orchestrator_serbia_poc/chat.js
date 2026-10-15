@@ -318,6 +318,28 @@
     };
   }
 
+  /* The i360 chat's "labels": the words our screen calls each i360 field by (its column name in Hebrew and
+     English, and the profile's name with spaces), keyed by the i360 field path. Short or everyday words are left
+     out: the chat reads every sent word as the field, in every question. */
+  const LABEL_STOP_WORDS = new Set(["ip", "os", "model", "brand", "time", "date", "type", "source", "location", "name",
+    "id", "record id", "latitude", "longitude", "זמן", "מיקום", "סוג", "מקור", "דגם", "יצרן"]);
+  function i360Labels() {
+    const labels = {};
+    for (const layer of state.layerCatalog || []) {
+      for (const [field, key] of Object.entries(layer.field_labels || {})) {
+        const path = String(field).replace(/^i360\./, "");
+        const names = typeof VIEWER_FIELD_LABELS === "object" ? VIEWER_FIELD_LABELS[key] || [] : [];
+        const words = new Set(labels[path] || []);
+        [String(key).replaceAll("_", " "), String(key), ...names].forEach(word => {
+          const text = String(word || "").trim();
+          if (text.length > 3 && text.length <= 40 && text !== path && !LABEL_STOP_WORDS.has(text.toLowerCase())) words.add(text);
+        });
+        if (words.size) labels[path] = [...words].slice(0, 10);
+      }
+    }
+    return Object.fromEntries(Object.entries(labels).slice(0, 200));  // the server keeps i360's fields, at most 40
+  }
+
   async function openCited(id) {
     const response = await fetch("/api/chat/items", {
       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ids: [id], locale: "en" }),
@@ -446,6 +468,7 @@
       previous_entities: CHAT.entities || [],
       open_layers: state.layers.filter(layer => layer.visible).slice(0, 40).map(openLayerContext),
       viewer_item_id: viewerItemId(),
+      labels: i360Labels(),
       tz: (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone; } catch { return ""; } })(),
       locale: "en",
     };

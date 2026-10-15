@@ -3070,8 +3070,8 @@ function viewerFields(item, kind) {
   return preferred.filter(key => !hidden.has(key) && item[key] != null && item[key] !== "").map(key => [key, item[key]]);
 }
 
-function viewerFieldLabel(key) {
-  const labels = {
+// Our field names on screen, [Hebrew, English]; also sent to the i360 chat as its `labels` (chat.js).
+const VIEWER_FIELD_LABELS = {
     package_id: ["חבילת ראיות", "Evidence package"],
     evidence_type: ["סוג ראיה", "Evidence type"],
     record_type: ["סוג רשומה", "Record type"],
@@ -3195,7 +3195,10 @@ function viewerFieldLabel(key) {
     ,overlays: ["גרפיקה אנליטית", "Analytic overlays"]
     ,revision: ["גרסה", "Revision"]
     ,updated_at: ["עודכן", "Updated"]
-  };
+};
+
+function viewerFieldLabel(key) {
+  const labels = VIEWER_FIELD_LABELS;
   if (!labels[key] && String(key).startsWith("i360.")) return String(key).slice("i360.".length).replaceAll("_", " ");
   return labels[key] ? activeLocaleText(...labels[key]) : key.replaceAll("_", " ");
 }

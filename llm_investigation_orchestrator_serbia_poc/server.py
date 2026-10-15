@@ -639,6 +639,11 @@ class Handler(BaseHTTPRequestHandler):
             line = f"action {data.get('kind')}: {detail}"
         elif event in {"note", "error"}:
             line = f"{event}: {str(data.get('text') or data.get('message') or '')[:200]}"
+        elif event == "i360" and data.get("event") == "understood":
+            # What i360 read in the question: field_words shows which of our words it took as a field.
+            line = f"i360 understood: {json.dumps(data.get('data'), ensure_ascii=False)[:800]}"
+            if data.get("layer"):
+                line += f", layer {data['layer']}"
         elif event == "i360" and data.get("event") in {"answer", "error"}:
             inner = data.get("data") or {}
             cards = inner.get("cards") if isinstance(inner.get("cards"), dict) else {}
@@ -837,15 +842,32 @@ class AppToolHost:
         """One entity i360 returned, read by id with the user's token, as the person viewer draws it."""
         return self.app.entity_record(self.token, entity_type, entity_id)
 
-    def layer_fields(self) -> dict[str, dict[str, str]]:
-        """Each layer's field names: our display name -> the i360 field (profile query "labels", inverted)."""
-        fields: dict[str, dict[str, str]] = {}
-        for query in (self.app.profile.get("items_query") or {}).get("queries") or []:
-            name = str((query or {}).get("layer") or "")
-            labels = (query or {}).get("labels") or {}
-            if name and labels:
-                fields[name] = {str(label): str(path) for path, label in labels.items() if not str(path).startswith("_")}
-        return fields
+    item_field_ids_cache: set[str] | None = None  # per server: the estate's fields change with a deployment
+
+    def item_field_ids(self) -> set[str]:
+        """The ids of the index's item fields (HL ``GET /api/v1/meta/item-fields``): the keys the i360 chat's
+        ``labels`` accept. Empty when the list cannot be read."""
+        if AppToolHost.item_field_ids_cache is None:
+            try:
+                listing = self.app.client(self.token).get("/api/v1/meta/item-fields")
+            except HlError as exc:
+                print(f"item-fields not read: {exc}", file=sys.stderr, flush=True)
+                return set()
+            ids: set[str] = set()
+
+            def collect(value: Any) -> None:
+                if isinstance(value, list):
+                    for entry in value:
+                        collect(entry)
+                elif isinstance(value, dict):
+                    if isinstance(value.get("id"), str):
+                        ids.add(value["id"])
+                    for key in ("fields", "items", "data"):
+                        collect(value.get(key))
+            collect(listing)
+            print(f"item-fields: {len(ids)} ids", file=sys.stderr, flush=True)
+            AppToolHost.item_field_ids_cache = ids
+        return AppToolHost.item_field_ids_cache
 
     def layers_scope(self) -> dict[str, Any] | None:
         """Our layers as the i360 chat's ``scope``: the profile's queries merged into one search."""

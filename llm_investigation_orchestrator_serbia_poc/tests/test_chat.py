@@ -296,19 +296,12 @@ class ChatUnitTests(unittest.TestCase):
         ctx.open_layers[2]["filters"].append({"field": "i360.ip.source_ip", "value": "10.0.0.1", "where": "table"})
         ctx.open_layers[3]["filters"].append({"field": "Keyboard language", "value": "he", "where": "table"})
 
-        class Host:
-            def layer_fields(self):
-                return {"ADINT": {"keyboard_language": "user_agents_data.language_code"},
-                        "CCTV": {"keyboard_language": "x.lang"}}
-
-        turn = ChatTurn(None, None, Host(), lambda e, d: None, ctx)
+        turn = ChatTurn(None, None, None, lambda e, d: None, ctx)
         turn.catalog_cache = []
-        text = turn.context_text()
         self.assertIn("Old name only; "
-                      'ADINT (filtered: user_agents_data.language_code contains "fa"; 12 of 120 records shown); '
+                      'ADINT (filtered: keyboard_language contains "fa"; 12 of 120 records shown); '
                       'IPDR (filtered: ip.source_ip contains "10.0.0.1" (table column filter); time 2026-09-01T00:00:00Z to …); '
-                      'CCTV (filtered: x.lang contains "he" (table column filter))', text)
-        self.assertIn("- ADINT: keyboard_language = user_agents_data.language_code", text)
+                      'CCTV (filtered: Keyboard language contains "he" (table column filter))', turn.context_text())
 
     def test_a_raw_test_question_goes_to_i360_as_typed(self):
         asked, events = [], []
@@ -328,7 +321,7 @@ class ChatUnitTests(unittest.TestCase):
         off = ChatTurn(None, Chat(), None, lambda e, d: None, ctx)  # off by default: the usual turn
         self.assertFalse(off.raw_test)
 
-    def test_a_named_layer_is_asked_alone_in_i360s_field_names(self):
+    def test_a_named_layer_is_asked_alone_with_our_field_names_as_labels(self):
         asked = []
 
         class Chat:
@@ -344,15 +337,21 @@ class ChatUnitTests(unittest.TestCase):
                 return [{"kind": "results", "name": n, "ids": [], "request": {"source_applications": [n]}}
                         for n in ("ADINT", "IPDR", "Cellular Calls", "Calls")]
 
-            def layer_fields(self):
-                return {"ADINT": {"keyboard_language": "user_agents_data.language_code", "os": "user_agents_data.os"}}
+            def item_field_ids(self):
+                return {"user_agents_data.language_code", "event_time"}
 
-        turn = ChatTurn(None, Chat(), Host(), lambda e, d: None,
-                        TurnContext.from_request({"message": "Show me all adint records with fa keyboard", "scope": "auto"}))
-        result = turn.ask_i360({"question": "adint records where keyboard_language is fa and os is ios", "scope": "layers"})
+        events = []
+        ctx = TurnContext.from_request({"message": "Show me all adint records with fa keyboard", "scope": "auto", "labels": {
+            "user_agents_data.language_code": ["keyboard language", "שפת מקלדת"], "not.a.field": ["thing"],
+            "event_time": "timestamp utc", "empty": []}})
+        turn = ChatTurn(None, Chat(), Host(), lambda e, d: events.append((e, d)), ctx)
+        result = turn.ask_i360({"question": "ADINT records with fa keyboard language", "scope": "layers"})
         self.assertEqual(1, len(asked))  # ADINT only, not one question per layer
         self.assertEqual("ADINT", asked[0]["scope"]["name"])
-        self.assertEqual("adint records where user_agents_data.language_code is fa and os is ios", asked[0]["question"])
+        self.assertEqual("ADINT records with fa keyboard language", asked[0]["question"])  # i360 reads it via labels
+        self.assertEqual({"user_agents_data.language_code": ["keyboard language", "שפת מקלדת"],
+                          "event_time": ["timestamp utc"]}, asked[0]["labels"])  # only the index's fields
+        self.assertIn("not.a.field", [d.get("detail") for e, d in events if e == "step"][0])
         self.assertEqual(2, result["cited_count"])
         asked.clear()
         turn = ChatTurn(None, Chat(), Host(), lambda e, d: None, TurnContext.from_request({"message": "x", "scope": "auto"}))
