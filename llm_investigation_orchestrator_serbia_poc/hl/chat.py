@@ -229,7 +229,8 @@ TOOLS = [
         "Ask the i360 analyst chat a question about the intelligence data (records, people, phones, places, "
         "times, connections). It searches i360 and answers with cited items. Use it for every question about "
         "the data; never answer such a question yourself.",
-        {"question": {"type": "string", "description": "The user's question in their own words. i360 keeps the conversation, "
+        {"question": {"type": "string", "description": "Ignored when the user wrote a message: i360 always gets the "
+                                                       "message exactly as typed. The user's question in their own words. i360 keeps the conversation, "
                                                        "so references like 'them' or 'that day' need no rewriting. "
                                                        "Never say 'memory' or 'saved' to i360: there they mean the user's "
                                                        "own chat notes. Ask about the records linked to the investigation"},
@@ -710,7 +711,9 @@ class ChatTurn:
             return {"error": str(exc)}
 
     def ask_i360(self, args: dict[str, Any]) -> dict[str, Any]:
-        question = str(args.get("question") or self.ctx.message).strip()[:4000]
+        # i360 gets the analyst's message as typed: it reads the layers (sets), the fields (labels) and the
+        # conditions itself, and holds the conversation. The model's own wording is used only without a message.
+        question = str(self.ctx.message or args.get("question") or "").strip()[:4000]
         # The question decides between the investigation and our layers; anything else is our layers.
         scope = str(args.get("scope") or "")
         if self.ctx.scope == "investigation" and self.ctx.investigation_id and scope != "layers":

@@ -156,7 +156,7 @@ class ChatUnitTests(unittest.TestCase):
                 return [{"label": "IPDR", "rows": [{"i360_item_id": "ipdr-1"}]},
                         {"label": "Satellite", "rows": [{"i360_item_id": "img-1"}]}]
 
-        ctx = TurnContext.from_request({"message": "x", "investigation_id": "INV-1", "scope": "auto"})
+        ctx = TurnContext.from_request({"message": "Which IPDR sessions are linked to this investigation?", "investigation_id": "INV-1", "scope": "auto"})
         turn = ChatTurn(None, Chat(), Host(), lambda e, d: None, ctx)
         result = turn.ask_i360({"question": "Which IPDR sessions are linked to this investigation?", "scope": "investigation"})
         self.assertEqual(["ipdr-1"], [c["id"] for c in result["cited_items"]])
@@ -294,8 +294,8 @@ class ChatUnitTests(unittest.TestCase):
                 return {"related_objects.id": ["linked record"]}
 
         for question in ("IPDR records where linked record is X", "how many records are there?"):
-            turn = ChatTurn(None, Chat(), Host(), lambda e, d: None, TurnContext.from_request({"message": "x", "scope": "auto"}))
-            turn.ask_i360({"question": question, "scope": "layers"})
+            turn = ChatTurn(None, Chat(), Host(), lambda e, d: None, TurnContext.from_request({"message": question, "scope": "auto"}))
+            turn.ask_i360({"question": "a rewording by the model", "scope": "layers"})
         first, second = asked
         self.assertEqual("IPDR records where linked record is X", first["question"])  # nothing taken out
         self.assertEqual((first["scope"], first["sets"], first["labels"]), (second["scope"], second["sets"], second["labels"]))
