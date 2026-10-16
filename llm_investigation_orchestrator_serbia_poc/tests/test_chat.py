@@ -539,7 +539,7 @@ class ChatApiTests(unittest.TestCase):
         self.assertEqual({"kind": "results", "name": "Our layers", "query": "the app's layers",
                           "request": {"filters": [{"field": "scenario", "values": ["syria"]}]}},
                          {k: v for k, v in ask["scope"].items() if k not in {"ids", "total"}})
-        self.assertEqual(min(100, ask["scope"]["total"]), len(ask["scope"]["ids"]))
+        self.assertEqual([], ask["scope"]["ids"])  # the scope is the layers' fields and values, not record ids
 
     def test_open_investigation_is_the_focus(self):
         self.ask(self.signed_in(), {"message": "convoy", "investigation_id": "INV-1", "investigation_name": "Convoy"})

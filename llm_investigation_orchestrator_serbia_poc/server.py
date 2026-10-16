@@ -915,7 +915,7 @@ class AppToolHost:
         if request is None:
             return None
         ids = [str(item.get("item_id")) for item in self.app.snapshot(self.token).items if item.get("item_id")]
-        return {"kind": "results", "name": "Our layers", "query": "the app's layers", "ids": ids[:100],
+        return {"kind": "results", "name": "Our layers", "query": "the app's layers", "ids": [],
                 "total": len(ids), "request": request, "exact": exact}
 
     def layer_scopes(self) -> list[dict[str, Any]]:
@@ -929,7 +929,7 @@ class AppToolHost:
             if not name or request is None:
                 continue
             ids = [str(i["item_id"]) for i in items if i.get("item_id") and i.get("_layer") == name]
-            scopes.append({"kind": "results", "name": name, "query": f"the {name} layer", "ids": ids[:100],
+            scopes.append({"kind": "results", "name": name, "query": f"the {name} layer", "ids": [],
                            "total": len(ids), "request": request})
         return scopes
 
