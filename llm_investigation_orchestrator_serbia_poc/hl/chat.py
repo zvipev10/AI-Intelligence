@@ -334,7 +334,9 @@ The app's layers and fields are listed below. Call set_scope once:
   only says where a value comes from). i360 turns a condition on a field into a filter only in this wording:
   English "where <field word> is <value>" (more conditions: "and <field word> is <value>"; negation "is not"),
   Hebrew "שבהן <field word> היא <value>". So write each condition on a listed field that way, using one of the
-  field's words from the list and the value exactly as the question gives it. Keep every other word as it was,
+  field's words from the list and the value exactly as the question gives it. Only a condition with a value is
+  rewritten: never make a value up ("have an IMEI", "linked to an ADINT record" have none: leave them as they
+  are). Keep every other word as it was,
   in the question's language; do not answer it.
 Examples:
 - "Which IPDR records are linked to ADINT record X?" -> layers ["IPDR"], "Which records where linked record is X?"
