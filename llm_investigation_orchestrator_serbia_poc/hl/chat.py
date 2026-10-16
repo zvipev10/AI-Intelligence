@@ -313,34 +313,23 @@ Do not repeat i360's answer; it is already shown to the user."""
 # layer names ("IPDR" is source HOSHENTEL, type aggregated_ip_session there) and reads them as a wrong filter, so
 # they are also taken out of the question.
 SCOPE_TOOL = _fn(
-    "set_scope", "The scope of this question: the app's layers it asks for, conditions on fields, and what is left "
-                 "of the question for i360.",
+    "set_scope", "The app's layers this question asks for, and the question for i360 without the layer names.",
     {"layers": {"type": "array", "items": {"type": "string"},
                 "description": "Names from the list of layers, exactly as written there: the layers whose records the "
                                "question asks for. Empty when it names none (then every layer is searched)."},
-     "filters": {"type": "array", "description": "Conditions the question puts on a field from the field list, "
-                                                 "with the value exactly as the question gives it.",
-                 "items": {"type": "object", "additionalProperties": False, "required": ["field", "values"],
-                           "properties": {"field": {"type": "string", "description": "A field id from the field list"},
-                                          "values": {"type": "array", "items": {"type": "string"}},
-                                          "negated": {"type": "boolean", "description": "true for 'is not'"}}}},
      "question": {"type": "string",
-                  "description": "The question with the layer names and the conditions moved to filters taken out; "
-                                 "every other word kept as it was. Empty when nothing else is asked."}},
-    ["layers", "filters", "question"])
-
-# A bare request i360 answers with a search ("Which records?" reads to it as chit-chat and searches nothing).
-SHOW_RECORDS = "show the records"
+                  "description": "The question with every layer name taken out (also one that only says where a "
+                                 "value comes from), every other word kept as it was."}},
+    ["layers", "question"])
 
 SCOPE_PROMPT = """You set the search scope for one question to i360, inside an analyst map application.
-The app's layers and the fields you may filter on are listed below. Call set_scope once:
+The app's layers are listed below. i360 does not know these names, so they must not reach it. Call set_scope once:
 - layers: the layers whose records the question asks for, by their exact names. A layer is named by its name, in
   any case or language ("IPDR", "the ADINT records"). A layer named only to say where a value comes from ("linked
   to ADINT record X") is not asked for. If the question names no layer, give an empty list.
-- filters: each condition on a listed field: the field's id and the value exactly as written in the question
-  (an id, a phone number, a word). "linked to record X" is the field of linked records with value X.
-- question: what is left after the layer names and the filtered conditions are taken out, nothing else changed
-  (for "Which IPDR records are linked to record X?" that is "show the records"). Do not translate or answer it."""
+- question: the same question with every layer name removed, also the ones that only say where a value comes
+  from ("Which IPDR records are linked to ADINT record X?" -> "Which records are linked to record X?"). Change
+  nothing else: keep every condition, value and word. Do not translate or answer it."""
 
 
 class ToolHost(Protocol):
@@ -423,16 +412,6 @@ def open_layer(layer: Any) -> dict[str, Any] | None:
     return {"label": str(layer["label"]).strip()[:120], "filters": filters,
             "start_time": str(layer.get("start_time") or "")[:40], "end_time": str(layer.get("end_time") or "")[:40],
             **counts}
-
-
-def with_filters(scope: dict[str, Any], filters: list[dict[str, Any]]) -> dict[str, Any]:
-    """A copy of an i360 chat scope whose search request also holds these field filters (ANDed)."""
-    scope = copy.deepcopy(scope)
-    request = scope.setdefault("request", {})
-    request["filters"] = list(request.get("filters") or []) + copy.deepcopy(filters)
-    scope.pop("total", None)  # the layer's count no longer applies
-    scope["ids"] = []
-    return scope
 
 
 def labels_of(value: Any) -> dict[str, list[str]]:
@@ -569,7 +548,6 @@ class ChatTurn:
         self.summary: list[str] = []  # the turn in one line: "i360 · all data · 50 records → table"
         self.catalog_cache: list[dict[str, Any]] | None = None
         self.labels_cache: dict[str, list[str]] | None = None
-        self.scope_filters: list[dict[str, Any]] = []  # field conditions the scope step moved into the scope
         self.raw_test = False  # "/i360 <text>" sends the text to i360 as typed (local tests only)
 
     # -- the loop ---------------------------------------------------------------------------
@@ -821,10 +799,6 @@ class ChatTurn:
                     if not per_layer:
                         # The merged window is close to all data: never sent.
                         return {"error": "our layers could not be searched: none of them names its layer"}
-                if self.scope_filters:
-                    # The question's field conditions join the scope's request (AND), as fields and values.
-                    body["scope"] = with_filters(body["scope"], self.scope_filters)
-                    per_layer = [with_filters(s, self.scope_filters) for s in per_layer]
             else:
                 return {"error": "the app has no layers to search"}
         else:
@@ -883,6 +857,8 @@ class ChatTurn:
                               f"out; {len(citations)} remain. Report only these.")
                 self.emit("step", {"text": f"Left out {outside} linked record(s) outside our layers",
                                    "tool": "ask_i360"})
+        if answer.get("total") == 0:
+            citations = []  # the "closest by meaning" records i360 cites with total 0 did not match
         ids = [c["id"] for c in citations]
         self.cited_this_turn = ids
         self.cited = citations
@@ -899,10 +875,11 @@ class ChatTurn:
         self.emit("step", {"text": f"Asked i360 ({where_label}) · {found} · {time.monotonic() - asked_at:.0f} s",
                            "tool": "ask_i360"})
         self.summary.append(f"i360 · {where_label} · {found}")
+        found = answer.get("total") if isinstance(answer.get("total"), int) else len(ids)
         return {
-            "found": f"i360 found {answer.get('total') or len(ids)} record(s) for this question"
-                     + (f", {len(ids)} of them cited" if (answer.get('total') or 0) > len(ids) else "") + (
-                " (the scope held the question's conditions)" if self.scope_filters else ""),
+            "found": f"i360 found {found} record(s) for this question"
+                     + (f", {len(ids)} of them cited" if found > len(ids) else "")
+                     + ". Its text below only describes what the records contain; say how many were found.",
             "answer": str(answer.get("content") or "")[:4000],
             "cited_count": len(ids),
             "total": answer.get("total") or len(ids),
@@ -966,7 +943,9 @@ class ChatTurn:
                 errors.append(f"{name}: {error or 'no answer'}")
                 continue
             texts.append(f"[{name}] " + str(answer.get("content") or "").strip()[:1500])
-            citations += answer.get("citations") or []
+            if answer.get("total") != 0:
+                # With total 0 i360 still cites the "closest by meaning" records; they did not match.
+                citations += answer.get("citations") or []
             total += int(answer.get("total") or 0)
             cards = answer.get("cards") if isinstance(answer.get("cards"), dict) else {}
             counted = counted or bool(cards.get("agg"))
@@ -1003,17 +982,13 @@ class ChatTurn:
         """The layers the question is about and the question without their names. The model decides; without a
         model (or when it does not answer) the layer names are matched as words."""
         by_name = {str(s.get("name") or "").lower(): s for s in scopes if s.get("name")}
-        self.scope_filters = []
         if self.llm is not None and by_name:
             listing = "\n".join(f"- {s['name']}: " + json.dumps({k: v for k, v in (s.get("request") or {}).items()
                                                                   if k != "time"}, ensure_ascii=False)
                                 for s in scopes if s.get("name"))
-            fields = self.i360_labels()
-            field_list = "\n".join(f"- {f}: {', '.join(words)}" for f, words in fields.items()) or "(none)"
             asked = question if question.strip() == self.ctx.message.strip() else \
                 f"{question}\n(The analyst wrote: {self.ctx.message})"
-            messages = [{"role": "system", "content": SCOPE_PROMPT + "\n\nLayers:\n" + listing
-                         + "\n\nFields (id: the words for it):\n" + field_list},
+            messages = [{"role": "system", "content": SCOPE_PROMPT + "\n\nLayers:\n" + listing},
                         {"role": "user", "content": asked}]
             try:
                 reply = self.llm.complete(messages, [SCOPE_TOOL])
@@ -1028,19 +1003,8 @@ class ChatTurn:
                 args = call.get("arguments") or {}
                 names = [str(n).strip().lower() for n in args.get("layers") or [] if isinstance(n, str)]
                 named = [by_name[n] for n in dict.fromkeys(names) if n in by_name]
-                self.scope_filters = [
-                    {"field": str(f["field"]), "values": [str(v) for v in f.get("values") or [] if str(v).strip()][:20],
-                     **({"negated": True} if f.get("negated") else {})}
-                    for f in args.get("filters") or []
-                    if isinstance(f, dict) and str(f.get("field") or "") in fields and f.get("values")]
-                cleaned = str(args.get("question") or "").strip() or (SHOW_RECORDS if self.scope_filters else question)
-                if any(v.lower() in cleaned.lower() for f in self.scope_filters for v in f["values"]):
-                    # A condition left in the words is read again by i360, as text or a second filter, and ANDs
-                    # the answer to nothing: the scope already holds it.
-                    cleaned = SHOW_RECORDS
-                self.emit("step", {"text": "Scope: " + (", ".join(s["name"] for s in named) or "all our layers")
-                                   + "".join(f" · {f['field']} {'is not' if f.get('negated') else '='} {', '.join(f['values'])}"
-                                             for f in self.scope_filters),
+                cleaned = str(args.get("question") or "").strip() or question
+                self.emit("step", {"text": "Scope: " + (", ".join(s["name"] for s in named) or "all our layers"),
                                    "detail": f"question for i360: {cleaned}", "log_only": True})
                 return named, cleaned[:4000]
         named = self.scopes_named(question + "\n" + self.ctx.message, scopes)
