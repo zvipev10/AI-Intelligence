@@ -40,6 +40,10 @@
   ]
  },
  "dataset_version": "i360",
+ "chat_labels": {
+  "_comment": "Words for i360 index fields that no layer column shows, sent to the i360 chat as labels with every question",
+  "related_objects.id": ["linked record", "linked to record", "רשומה מקושרת"]
+ },
  "items_query": {
   "i360_links": true,
   "queries": [
@@ -99,6 +103,10 @@
      "user_agents_data.device_brand": "brand",
      "user_agents_data.device_name": "device_id",
      "source_application": "source_app"
+    },
+    "search_fields": {
+     "_comment": "i360's index field where it differs from the item path and its trailing name (for the chat's labels)",
+     "user_agents_data.operating_system_name": "device_operating_system"
     }
    },
    {

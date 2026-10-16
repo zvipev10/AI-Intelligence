@@ -337,8 +337,11 @@ class ChatUnitTests(unittest.TestCase):
                 return [{"kind": "results", "name": n, "ids": [], "request": {"source_applications": [n]}}
                         for n in ("ADINT", "IPDR", "Cellular Calls", "Calls")]
 
-            def item_field_ids(self):
-                return {"user_agents_data.language_code", "event_time"}
+            def index_field(self, path):
+                return path if path in {"user_agents_data.language_code", "event_time"} else ""
+
+            def profile_labels(self):
+                return {"related_objects.id": ["linked record"]}
 
         events = []
         ctx = TurnContext.from_request({"message": "Show me all adint records with fa keyboard", "scope": "auto", "labels": {
@@ -349,8 +352,9 @@ class ChatUnitTests(unittest.TestCase):
         self.assertEqual(1, len(asked))  # ADINT only, not one question per layer
         self.assertEqual("ADINT", asked[0]["scope"]["name"])
         self.assertEqual("records with fa keyboard language", asked[0]["question"])  # the layer name is not i360's word
-        self.assertEqual({"user_agents_data.language_code": ["keyboard language", "שפת מקלדת"],
-                          "event_time": ["timestamp utc"]}, asked[0]["labels"])  # only the index's fields
+        self.assertEqual({"event_time": ["timestamp utc"], "related_objects.id": ["linked record"],
+                          "user_agents_data.language_code": ["keyboard language", "שפת מקלדת"]},
+                         asked[0]["labels"])  # the profile's words plus the screen's, only the index's fields
         self.assertIn("not.a.field", [d.get("detail") for e, d in events if e == "step"][0])
         self.assertEqual(2, result["cited_count"])
         asked.clear()

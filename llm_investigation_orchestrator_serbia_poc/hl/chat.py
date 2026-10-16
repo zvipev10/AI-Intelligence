@@ -699,17 +699,26 @@ class ChatTurn:
         language" in a question as the field). Only fields the index has are sent (an unknown key is ignored
         there, silently), at most 40."""
         if self.labels_cache is None:
-            lister = getattr(self.host, "item_field_ids", None)
+            # The same on every request: the profile's names for its fields (built once on the server), plus the
+            # screen's words for them (the browser's column names, also fixed), keyed by i360's index field.
+            profile = getattr(self.host, "profile_labels", None)
+            mapper = getattr(self.host, "index_field", None)
             try:
-                known = lister() if lister else set()
+                labels = {f: list(w) for f, w in ((profile() if profile else None) or {}).items()}
+                dropped = []
+                for path, words in self.ctx.labels.items():
+                    field = mapper(path) if mapper else path
+                    if not field:
+                        dropped.append(path)
+                        continue
+                    merged = labels.setdefault(field, [])
+                    merged += [w for w in words if w.lower() not in {m.lower() for m in merged}]
             except HlError:
-                known = set()
-            labels = {f: w for f, w in self.ctx.labels.items() if not known or f in known}
-            dropped = sorted(set(self.ctx.labels) - set(labels))
+                labels, dropped = dict(self.ctx.labels), []
             if dropped:
-                self.emit("step", {"text": f"{len(dropped)} field name(s) not sent to i360 (not i360 fields)",
-                                   "detail": ", ".join(dropped[:20]), "log_only": True})
-            self.labels_cache = dict(list(labels.items())[:40])
+                self.emit("step", {"text": f"{len(dropped)} field name(s) not sent to i360 (not in its index)",
+                                   "detail": ", ".join(sorted(dropped)[:20]), "log_only": True})
+            self.labels_cache = {f: w[:10] for f, w in sorted(labels.items())[:40] if w}
         return self.labels_cache
 
     def catalog(self) -> list[dict[str, Any]]:
@@ -891,7 +900,8 @@ class ChatTurn:
                            "tool": "ask_i360"})
         self.summary.append(f"i360 · {where_label} · {found}")
         return {
-            "found": f"i360 found {len(ids)} record(s) for this question" + (
+            "found": f"i360 found {answer.get('total') or len(ids)} record(s) for this question"
+                     + (f", {len(ids)} of them cited" if (answer.get('total') or 0) > len(ids) else "") + (
                 " (the scope held the question's conditions)" if self.scope_filters else ""),
             "answer": str(answer.get("content") or "")[:4000],
             "cited_count": len(ids),

@@ -843,6 +843,46 @@ class AppToolHost:
         return self.app.entity_record(self.token, entity_type, entity_id)
 
     item_field_ids_cache: set[str] | None = None  # per server: the estate's fields change with a deployment
+    profile_labels_cache: dict[str, list[str]] | None = None
+    # Words the chat would read as a field in every question ("ip", "model"): never sent as labels.
+    LABEL_STOP_WORDS = {"ip", "os", "model", "brand", "time", "date", "type", "source", "location", "name", "id",
+                        "latitude", "longitude", "lat", "lon", "record id", "record_id"}
+
+    def index_field(self, path: str) -> str:
+        """A profile field path (``user_agents_data.device_brand``, ``i360.ip.ip_sessions.source_ip``) as i360's
+        index field (``device_brand``, ``source_ip``): the path itself, the layer's ``search_fields`` entry, or its
+        trailing segments. '' when the index has no such field (it cannot be searched)."""
+        known = self.item_field_ids()
+        path = re.sub(r"\[\d+\]", "", str(path or "").removeprefix("i360."))
+        for query in (self.app.profile.get("items_query") or {}).get("queries") or []:
+            override = ((query or {}).get("search_fields") or {}).get(path)
+            if override:
+                return override if not known or override in known else ""
+        if not known or path in known:
+            return path
+        parts = path.split(".")
+        return next((".".join(parts[i:]) for i in range(1, len(parts)) if ".".join(parts[i:]) in known), "")
+
+    def profile_labels(self) -> dict[str, list[str]]:
+        """The profile's names for its layers' fields as the i360 chat's ``labels`` (index field -> words), built
+        once: they are the same on every question."""
+        if AppToolHost.profile_labels_cache is None:
+            # The profile's own words for fields no layer column shows (a record's links: related_objects.id).
+            labels: dict[str, list[str]] = {str(f): [str(w) for w in words] for f, words in
+                                            (self.app.profile.get("chat_labels") or {}).items()
+                                            if not str(f).startswith("_") and self.index_field(f)}
+            for query in (self.app.profile.get("items_query") or {}).get("queries") or []:
+                for path, name in ((query or {}).get("labels") or {}).items():
+                    field = self.index_field(path) if not str(path).startswith("_") else ""
+                    if not field:
+                        continue
+                    for word in (str(name).replace("_", " ").strip(), str(name).strip()):
+                        if 3 < len(word) <= 40 and word.lower() not in self.LABEL_STOP_WORDS and word != field:
+                            words = labels.setdefault(field, [])
+                            if word.lower() not in {w.lower() for w in words}:
+                                words.append(word)
+            AppToolHost.profile_labels_cache = labels
+        return AppToolHost.profile_labels_cache
 
     def item_field_ids(self) -> set[str]:
         """The ids of the index's item fields (HL ``GET /api/v1/meta/item-fields``): the keys the i360 chat's
