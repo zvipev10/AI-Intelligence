@@ -309,41 +309,7 @@ Never invent ids, layer names or facts. If a request is ambiguous, ask one short
 Do not repeat i360's answer; it is already shown to the user."""
 
 
-# The scope step: before i360 is asked about our layers, the model reads the question and names the layers it is
-# about; the app then builds the scope from those layers' fields and values (the profile). i360 does not know our
-# layer names ("IPDR" is source HOSHENTEL, type aggregated_ip_session there) and reads them as a wrong filter, so
-# they are also taken out of the question.
-SCOPE_TOOL = _fn(
-    "set_scope", "The app's layers this question asks for, and the question for i360 in the wording it reads.",
-    {"layers": {"type": "array", "items": {"type": "string"},
-                "description": "Names from the list of layers, exactly as written there: the layers whose records the "
-                               "question asks for. Empty when it names none (then every layer is searched)."},
-     "question": {"type": "string",
-                  "description": "The question with every layer name taken out and each condition on a listed field "
-                                 "written as i360 reads it; values and every other word unchanged."}},
-    ["layers", "question"])
-
 NO_TEXT_ANSWER = re.compile(r"\s*(these results do not hold the answer|the provided records do not contain)", re.I)
-
-SCOPE_PROMPT = """You set the search scope for one question to i360, inside an analyst map application.
-The app's layers and fields are listed below. Call set_scope once:
-- layers: the layers whose records the question asks for, by their exact names. A layer is named by its name, in
-  any case or language ("IPDR", "the ADINT records"). A layer named only to say where a value comes from ("linked
-  to ADINT record X") is not asked for. If the question names no layer, give an empty list.
-- question: the question for i360. i360 does not know the layer names, so remove every one of them (also one that
-  only says where a value comes from). i360 turns a condition on a field into a filter only in this wording:
-  English "where <field word> is <value>" (more conditions: "and <field word> is <value>"; negation "is not"),
-  Hebrew "שבהן <field word> היא <value>". So write each condition on a listed field that way, using one of the
-  field's words from the list and the value exactly as the question gives it. Only a condition with a value is
-  rewritten: never make a value up ("have an IMEI", "linked to an ADINT record" have none: leave them as they
-  are). Keep every other word as it was,
-  in the question's language; do not answer it.
-Examples:
-- "Which IPDR records are linked to ADINT record X?" -> layers ["IPDR"], "Which records where linked record is X?"
-- "רשומות IPDR שמקושרות לרשומה X" -> layers ["IPDR"], "רשומות שבהן רשומה מקושרת היא X"
-- "Cellular Locations calls with DIRECTION incoming" -> layers ["Cellular Locations"], "calls where DIRECTION is incoming"
-- "how many calls were there in June?" -> layers [], unchanged (no listed field)"""
-
 
 class ToolHost(Protocol):
     """What the app gives the tools. Implemented in server.py with the user's token."""
@@ -781,39 +747,20 @@ class ChatTurn:
         if self.i360_labels():
             body["labels"] = self.i360_labels()
         scope_note = ""
-        per_layer: list[dict[str, Any]] = []
         if scope == "layers":
-            layers = self.host.layers_scope()
-            if layers:
-                exact = layers.pop("exact", True)
-                body["scope"] = layers
-                where = " (our layers)"
-                lister = getattr(self.host, "layer_scopes", None)
-                all_scopes = (lister() if lister else []) or []
-                named, question = self.plan_scope(question, all_scopes)
-                body["question"] = question
-                if named:
-                    # The question names our layers ("IPDR records with ..."): the scope is those layers' fields
-                    # and values, one request when they can be ORed, else one question per layer.
-                    where = f" ({', '.join(s['name'] for s in named)})"
-                    combiner = getattr(self.host, "combined_scope", None)
-                    combined = combiner([s["name"] for s in named]) if combiner and len(named) > 1 else None
-                    if len(named) == 1:
-                        body["scope"] = named[0]
-                    elif combined:
-                        body["scope"] = combined
-                    else:
-                        per_layer = named
-                elif not exact:
-                    # HL search only ANDs filters, so several layers merge into their shared dates (close to all
-                    # data). Each layer is then asked on its own, with its exact request, and the answers joined.
-                    lister = getattr(self.host, "layer_scopes", None)
-                    per_layer = (lister() if lister else []) or []
-                    if not per_layer:
-                        # The merged window is close to all data: never sent.
-                        return {"error": "our layers could not be searched: none of them names its layer"}
-            else:
+            # Constant on every question: the scope is all our layers' records, `sets` names each layer by its
+            # fields and values (i360 narrows to a layer when the question names it), `labels` names the fields.
+            # The question goes as typed: i360 reads the layers and the conditions in it.
+            constant = getattr(self.host, "constant_scope", None)
+            layers = constant() if constant else self.host.layers_scope()
+            if not layers:
                 return {"error": "the app has no layers to search"}
+            layers.pop("exact", None)
+            body["scope"] = layers
+            sets = getattr(self.host, "layer_sets", None)
+            if sets and sets():
+                body["sets"] = sets()
+            where = " (our layers)"
         else:
             where = " (this investigation)"
         if self.chat_model:
@@ -824,13 +771,10 @@ class ChatTurn:
                            "scope": (body.get("scope") or {}).get("kind", ""), "question": body["question"][:200]})
         if scope == "layers" and VOLUME.search(question):
             body["question"] = COUNT_QUESTION  # i360's count leg, not a search for the question's words
-        if per_layer:
-            answer, error = self.ask_each_layer(body, per_layer)
-        else:
-            answer, error, _, conversation = self.stream(
-                body, self.i360_conversation_id or None, lambda e, d: self.emit("i360", {"event": e, "data": d}))
-            if conversation:
-                self.i360_conversation_id = conversation
+        answer, error, _, conversation = self.stream(
+            body, self.i360_conversation_id or None, lambda e, d: self.emit("i360", {"event": e, "data": d}))
+        if conversation:
+            self.i360_conversation_id = conversation
         if answer is not None and answer.get("turn_id"):
             self.i360_last_turns.append(str(answer["turn_id"]))
         if answer is None:
@@ -929,53 +873,6 @@ class ChatTurn:
                 conversation = str(data["conversation_id"])
         return answer, error, events, conversation
 
-    def ask_each_layer(self, body: dict[str, Any], scopes: list[dict[str, Any]]
-                       ) -> tuple[dict[str, Any] | None, str]:
-        """Asks i360 once per layer, in parallel, each with that layer's exact scope; joins the answers.
-
-        i360's scope takes one search request and our layers cannot be ORed into one. Each layer's question
-        starts a fresh i360 conversation, so the panel's conversation is left as it was.
-        """
-        def one(scope: dict[str, Any]):
-            single = {k: v for k, v in body.items() if k not in ("conversation_id", "last_turns", "focus")}
-            single.update({"scope": scope, "request_id": "aii-" + uuid.uuid4().hex[:12]})
-            try:
-                return scope, *self.stream(single, None)
-            except (HlError, ValueError, OSError) as exc:
-                return scope, None, str(exc), [], ""
-
-        with ThreadPoolExecutor(max_workers=min(8, len(scopes))) as pool:
-            results = list(pool.map(one, scopes))
-        texts: list[str] = []
-        citations: list[Any] = []
-        total = 0
-        counted = False
-        errors: list[str] = []
-        for scope, answer, error, events, _ in results:
-            name = str(scope.get("name") or "layer")
-            for event, data in events:
-                if event in ("answer", "understood"):
-                    self.emit("i360", {"event": event, "data": data, "layer": name})
-            if answer is None:
-                errors.append(f"{name}: {error or 'no answer'}")
-                continue
-            texts.append(f"[{name}] " + str(answer.get("content") or "").strip()[:1500])
-            if answer.get("total") != 0:
-                # With total 0 i360 still cites the "closest by meaning" records; they did not match.
-                citations += answer.get("citations") or []
-            total += int(answer.get("total") or 0)
-            cards = answer.get("cards") if isinstance(answer.get("cards"), dict) else {}
-            counted = counted or bool(cards.get("agg"))
-        if not texts:
-            return None, "; ".join(errors)
-        if errors:
-            texts.append("No answer for " + "; ".join(errors))
-        joined = {"content": "Answered one layer at a time:\n" + "\n\n".join(texts), "citations": citations,
-                  "total": total or None, "leg": "search"}
-        if counted:
-            joined["counted"] = True
-        return joined, ""
-
     def investigation_listing(self, body: dict[str, Any]) -> list[dict[str, str]]:
         """The investigation's records as i360's search leg lists them (a fresh conversation, same focus)."""
         listing = {key: body[key] for key in ("origin", "medium", "focus", "tz", "model") if key in body}
@@ -994,55 +891,6 @@ class ChatTurn:
                 if found:
                     return found
         return []
-
-    def plan_scope(self, question: str, scopes: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], str]:
-        """The layers the question is about and the question without their names. The model decides; without a
-        model (or when it does not answer) the layer names are matched as words."""
-        by_name = {str(s.get("name") or "").lower(): s for s in scopes if s.get("name")}
-        if self.llm is not None and by_name:
-            listing = "\n".join(f"- {s['name']}: " + json.dumps({k: v for k, v in (s.get("request") or {}).items()
-                                                                  if k != "time"}, ensure_ascii=False)
-                                for s in scopes if s.get("name"))
-            asked = question if question.strip() == self.ctx.message.strip() else \
-                f"{question}\n(The analyst wrote: {self.ctx.message})"
-            fields = "\n".join(f"- {', '.join(words)}" for words in self.i360_labels().values()) or "(none)"
-            messages = [{"role": "system", "content": SCOPE_PROMPT + "\n\nLayers:\n" + listing
-                         + "\n\nFields (the words for each one):\n" + fields},
-                        {"role": "user", "content": asked}]
-            try:
-                reply = self.llm.complete(messages, [SCOPE_TOOL])
-            except (AuthExpired, ClientGone):
-                raise
-            except (HlError, ValueError) as exc:
-                reply = {"tool_calls": [], "content": ""}
-                self.emit("step", {"text": "Scope from layer names (the model did not answer)", "detail": str(exc),
-                                   "log_only": True})
-            call = next((c for c in reply.get("tool_calls") or [] if c.get("name") == "set_scope"), None)
-            if call:
-                args = call.get("arguments") or {}
-                names = [str(n).strip().lower() for n in args.get("layers") or [] if isinstance(n, str)]
-                named = [by_name[n] for n in dict.fromkeys(names) if n in by_name]
-                cleaned = str(args.get("question") or "").strip() or question
-                self.emit("step", {"text": "Scope: " + (", ".join(s["name"] for s in named) or "all our layers"),
-                                   "detail": f"question for i360: {cleaned}", "log_only": True})
-                return named, cleaned[:4000]
-        named = self.scopes_named(question + "\n" + self.ctx.message, scopes)
-        for scope in named:
-            question = re.sub(rf"(?<![\w]){re.escape(str(scope['name']))}(?![\w])", " ", question, flags=re.I)
-        return named, re.sub(r"\s{2,}", " ", question).strip()
-
-    @staticmethod
-    def scopes_named(text: str, scopes: list[dict[str, Any]]) -> list[dict[str, Any]]:
-        """Our layers' scopes whose names the text says (ADINT, Cellular Locations, ...), longest names first."""
-        found, rest = [], text
-        for scope in sorted(scopes, key=lambda s: len(str(s.get("name") or "")), reverse=True):
-            name = str(scope.get("name") or "")
-            pattern = re.compile(rf"(?<![\w]){re.escape(name)}(?![\w])", re.IGNORECASE) if name else None
-            if pattern and pattern.search(rest):
-                found.append(scope)
-                rest = pattern.sub(" ", rest)  # "Cellular Calls" is not also "Calls"
-        return found
-
 
     def layer_names(self) -> set[str]:
         """The app's record layers (IPDR, Cellular Calls, ...)."""

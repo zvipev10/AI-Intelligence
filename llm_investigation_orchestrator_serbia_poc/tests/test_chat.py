@@ -113,53 +113,6 @@ class ChatUnitTests(unittest.TestCase):
         no_case = ChatTurn(None, Chat(), Host(), lambda e, d: None, TurnContext.from_request({"message": "x", "scope": "auto"}))
         self.assertIn("error", no_case.ask_i360({"question": "linked records", "scope": "investigation"}))
 
-    def test_an_inexact_layers_scope_is_never_sent_as_one_search(self):
-        asked = []
-
-        class Chat:
-            def ask(self, body, conversation_id):
-                asked.append(body)
-                return iter([("answer", {"content": "x", "citations": []})])
-
-        class Host:
-            def layers_scope(self):
-                return {"kind": "results", "ids": [], "exact": False}
-
-        turn = ChatTurn(None, Chat(), Host(), lambda e, d: None, TurnContext.from_request({"message": "x", "scope": "auto"}))
-        self.assertIn("error", turn.ask_i360({"question": "what data do we have", "scope": "layers"}))
-        self.assertEqual([], asked)
-
-    def test_inexact_layers_are_asked_one_at_a_time(self):
-        asked = []
-
-        class Chat:
-            def ask(self, body, conversation_id):
-                asked.append((body, conversation_id))
-                name = body["scope"]["name"]
-                return iter([("answer", {"content": f"{name} has 1", "citations": [{"id": f"{name}-1"}], "total": 1,
-                                         "cards": {"agg": {"buckets": []}}}),
-                             ("done", {"conversation_id": "fresh-" + name})])
-
-        class Host:
-            def layers_scope(self):
-                return {"kind": "results", "ids": [], "exact": False}
-
-            def layer_scopes(self):
-                return [{"kind": "results", "name": n, "ids": [], "request": {"source_applications": [n]}}
-                        for n in ("ADINT", "IPDR")]
-
-        ctx = TurnContext.from_request({"message": "x", "scope": "auto", "i360_conversation_id": "panel",
-                                        "i360_scope": "layers"})
-        turn = ChatTurn(None, Chat(), Host(), lambda e, d: None, ctx)
-        result = turn.ask_i360({"question": "what data do we have", "scope": "layers"})
-        self.assertEqual({"ADINT", "IPDR"}, {b["scope"]["name"] for b, _ in asked})
-        self.assertEqual([None, None], [c for _, c in asked])  # each layer is a fresh i360 conversation
-        self.assertEqual(["ADINT-1", "IPDR-1"], sorted(c["id"] for c in result["cited_items"]))
-        self.assertIn("[ADINT] ADINT has 1", result["answer"])
-        self.assertTrue(result["has_counts"])
-        self.assertEqual("panel", turn.i360_conversation_id)
-        self.assertNotIn("scope_note", result)
-
     def test_our_data_is_counted_in_our_layers(self):
         asked = []
 
@@ -321,48 +274,7 @@ class ChatUnitTests(unittest.TestCase):
         off = ChatTurn(None, Chat(), None, lambda e, d: None, ctx)  # off by default: the usual turn
         self.assertFalse(off.raw_test)
 
-    def test_a_named_layer_is_asked_alone_with_our_field_names_as_labels(self):
-        asked = []
-
-        class Chat:
-            def ask(self, body, conversation_id):
-                asked.append(body)
-                return iter([("answer", {"content": "2 found", "citations": [{"id": "a-1"}, {"id": "a-2"}]})])
-
-        class Host:
-            def layers_scope(self):
-                return {"kind": "results", "ids": [], "exact": False}
-
-            def layer_scopes(self):
-                return [{"kind": "results", "name": n, "ids": [], "request": {"source_applications": [n]}}
-                        for n in ("ADINT", "IPDR", "Cellular Calls", "Calls")]
-
-            def index_field(self, path):
-                return path if path in {"user_agents_data.language_code", "event_time"} else ""
-
-            def profile_labels(self):
-                return {"related_objects.id": ["linked record"]}
-
-        events = []
-        ctx = TurnContext.from_request({"message": "Show me all adint records with fa keyboard", "scope": "auto", "labels": {
-            "user_agents_data.language_code": ["keyboard language", "שפת מקלדת"], "not.a.field": ["thing"],
-            "event_time": "timestamp utc", "empty": []}})
-        turn = ChatTurn(None, Chat(), Host(), lambda e, d: events.append((e, d)), ctx)
-        result = turn.ask_i360({"question": "ADINT records with fa keyboard language", "scope": "layers"})
-        self.assertEqual(1, len(asked))  # ADINT only, not one question per layer
-        self.assertEqual("ADINT", asked[0]["scope"]["name"])
-        self.assertEqual("records with fa keyboard language", asked[0]["question"])  # the layer name is not i360's word
-        self.assertEqual({"event_time": ["timestamp utc"], "related_objects.id": ["linked record"],
-                          "user_agents_data.language_code": ["keyboard language", "שפת מקלדת"]},
-                         asked[0]["labels"])  # the profile's words plus the screen's, only the index's fields
-        self.assertIn("not.a.field", [d.get("detail") for e, d in events if e == "step"][0])
-        self.assertEqual(2, result["cited_count"])
-        asked.clear()
-        turn = ChatTurn(None, Chat(), Host(), lambda e, d: None, TurnContext.from_request({"message": "x", "scope": "auto"}))
-        turn.ask_i360({"question": "Cellular Calls and IPDR on the 3rd", "scope": "layers"})
-        self.assertEqual({"Cellular Calls", "IPDR"}, {b["scope"]["name"] for b in asked})  # not also "Calls"
-
-    def test_the_model_sets_the_scope_and_the_layers_are_ored_by_fields(self):
+    def test_scope_sets_and_labels_are_constant_and_the_question_goes_as_typed(self):
         asked = []
 
         class Chat:
@@ -370,38 +282,24 @@ class ChatUnitTests(unittest.TestCase):
                 asked.append(body)
                 return iter([("answer", {"content": "1", "citations": [{"id": "ipdr-1"}], "total": 1})])
 
-        class Llm:
-            def complete(self, messages, tools):
-                self.seen = messages
-                return {"content": "", "tool_calls": [{"id": "c1", "name": "set_scope", "arguments": {
-                    "layers": ["ipdr", "ADINT", "Nope"], "question": "records where linked record is X"}}]}
-
         class Host:
-            def layers_scope(self):
-                return {"kind": "results", "ids": [], "exact": False}
+            def constant_scope(self):
+                return {"kind": "results", "name": "Our layers", "ids": [], "total": 2,
+                        "request": {"filters": [{"field": "item_id", "values": ["a", "b"]}]}}
 
-            def layer_scopes(self):
-                return [{"kind": "results", "name": n, "ids": [], "request": {"source_applications": [n]}}
-                        for n in ("ADINT", "IPDR", "CCTV")]
+            def layer_sets(self):
+                return {"IPDR": {"item_types": ["aggregated_ip_session"], "source_applications": ["HOSHENTEL"]}}
 
-            def combined_scope(self, names):
-                return {"kind": "results", "name": " + ".join(names), "request": {"filters": [{"any_of": [
-                    [{"field": "source_application", "values": [n]}] for n in names]}]}}
+            def profile_labels(self):
+                return {"related_objects.id": ["linked record"]}
 
-        llm = Llm()
-        turn = ChatTurn(llm, Chat(), Host(), lambda e, d: None, TurnContext.from_request({"message": "x", "scope": "auto"}))
-        turn.ask_i360({"question": "IPDR and ADINT records where linked record is X", "scope": "layers"})
-        self.assertIn("- IPDR: {\"source_applications\": [\"IPDR\"]}", llm.seen[0]["content"])
-        self.assertEqual(1, len(asked))  # one request: the two layers ORed by their fields and values
-        self.assertEqual("records where linked record is X", asked[0]["question"])
-        self.assertEqual("IPDR + ADINT", asked[0]["scope"]["name"])
-
-    def test_without_a_model_layer_names_are_matched_and_taken_out(self):
-        turn = ChatTurn(None, None, None, lambda e, d: None, TurnContext.from_request({"message": "x"}))
-        named, question = turn.plan_scope("IPDR records where linked record is X",
-                                          [{"name": "IPDR"}, {"name": "ADINT"}])
-        self.assertEqual(["IPDR"], [s["name"] for s in named])
-        self.assertEqual("records where linked record is X", question)
+        for question in ("IPDR records where linked record is X", "how many records are there?"):
+            turn = ChatTurn(None, Chat(), Host(), lambda e, d: None, TurnContext.from_request({"message": "x", "scope": "auto"}))
+            turn.ask_i360({"question": question, "scope": "layers"})
+        first, second = asked
+        self.assertEqual("IPDR records where linked record is X", first["question"])  # nothing taken out
+        self.assertEqual((first["scope"], first["sets"], first["labels"]), (second["scope"], second["sets"], second["labels"]))
+        self.assertEqual({"related_objects.id": ["linked record"]}, first["labels"])
 
     def test_open_item_takes_an_id_the_user_typed(self):
         class Host:
@@ -536,10 +434,11 @@ class ChatApiTests(unittest.TestCase):
         ask = self.chat.asks[-1]
         self.assertEqual(("convoy trucks", "app", "Asia/Jerusalem"), (ask["question"], ask["origin"], ask["tz"]))
         self.assertNotIn("focus", ask)  # no investigation open
-        self.assertEqual({"kind": "results", "name": "Our layers", "query": "the app's layers",
-                          "request": {"filters": [{"field": "scenario", "values": ["syria"]}]}},
-                         {k: v for k, v in ask["scope"].items() if k not in {"ids", "total"}})
-        self.assertEqual([], ask["scope"]["ids"])  # the scope is the layers' fields and values, not record ids
+        # The constant scope: our layers' records, by item id; `sets` names each layer by its fields and values.
+        self.assertEqual("Our layers", ask["scope"]["name"])
+        ids = ask["scope"]["request"]["filters"][0]
+        self.assertEqual("item_id", ids["field"])
+        self.assertEqual(ask["scope"]["total"], len(ids["values"]))
 
     def test_open_investigation_is_the_focus(self):
         self.ask(self.signed_in(), {"message": "convoy", "investigation_id": "INV-1", "investigation_name": "Convoy"})

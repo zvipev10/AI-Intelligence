@@ -918,47 +918,30 @@ class AppToolHost:
         return {"kind": "results", "name": "Our layers", "query": "the app's layers", "ids": [],
                 "total": len(ids), "request": request, "exact": exact}
 
-    def layer_scopes(self) -> list[dict[str, Any]]:
-        """Each of our layers as its own i360 chat ``scope``, exact, for asking the layers one at a time."""
-        queries = (self.app.profile.get("items_query") or {}).get("queries") or []
-        items = self.app.snapshot(self.token).items
-        scopes = []
-        for query in queries:
+    def constant_scope(self) -> dict[str, Any] | None:
+        """All our layers as the i360 chat's ``scope``, the same on every question: their records, by i360 item id.
+        A field/value scope cannot hold them in one request (the Cellular layers' coverage facet cannot sit inside
+        an OR); the chat keeps a scope request up to 200,000 characters (about 5,000 ids)."""
+        ids = sorted({str(i["item_id"]) for i in self.app.snapshot(self.token).items if i.get("item_id")})
+        if not ids:
+            return None
+        return {"kind": "results", "name": "Our layers", "query": "the app's layers", "ids": [], "total": len(ids),
+                "request": {"filters": [{"field": "item_id", "values": ids}]}}
+
+    def layer_sets(self) -> dict[str, dict[str, Any]]:
+        """Our layers as the i360 chat's ``sets``, from the profile: each layer's name (and ``words``) for its item
+        types, sources, facets and filters. A question that names a layer is answered inside it."""
+        sets: dict[str, dict[str, Any]] = {}
+        for query in (self.app.profile.get("items_query") or {}).get("queries") or []:
             name = str((query or {}).get("layer") or "")
             request, _ = layers_search({"queries": [query]})
             if not name or request is None:
                 continue
-            ids = [str(i["item_id"]) for i in items if i.get("item_id") and i.get("_layer") == name]
-            scopes.append({"kind": "results", "name": name, "query": f"the {name} layer", "ids": [],
-                           "total": len(ids), "request": request})
-        return scopes
-
-    def combined_scope(self, names: list[str]) -> dict[str, Any] | None:
-        """Several of our layers as ONE i360 chat ``scope``, by their fields and values: an OR (``any_of``) of each
-        layer's item types and sources. None when a layer needs more than that (a coverage facet cannot sit inside
-        an OR), so the layers are then asked one at a time."""
-        queries = [q for q in (self.app.profile.get("items_query") or {}).get("queries") or []
-                   if (q or {}).get("layer") in names]
-        branches = []
-        for query in queries:
-            request, _ = layers_search({"queries": [query]})
-            if request is None or set(request) - {"item_types", "source_applications", "time"}:
-                return None
-            branch = ([{"field": "type", "values": request["item_types"]}] if request.get("item_types") else []) + \
-                ([{"field": "source_application", "values": request["source_applications"]}]
-                 if request.get("source_applications") else [])
-            if not branch:
-                return None
-            branches.append(branch)
-        if len(branches) < 2:
-            return None
-        merged, _ = layers_search({"queries": queries})
-        request = {"filters": [{"any_of": branches}], **({"time": merged["time"]} if (merged or {}).get("time") else {})}
-        items = self.app.snapshot(self.token).items
-        total = sum(1 for i in items if i.get("_layer") in names)
-        return {"kind": "results", "name": " + ".join(q["layer"] for q in queries),
-                "query": "the " + " and ".join(q["layer"] for q in queries) + " layers", "ids": [],
-                "total": total, "request": request}
+            entry = {k: request[k] for k in ("item_types", "source_applications", "facet_filters", "filters")
+                     if request.get(k)}
+            words = [str(w) for w in (query.get("words") or []) if str(w).strip()]
+            sets[name] = {**({"words": [name] + words[:4]} if words else {}), **entry}
+        return sets
 
 
 def main(argv: list[str]) -> int:
