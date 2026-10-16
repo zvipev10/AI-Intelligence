@@ -280,7 +280,8 @@ Use the fewest tool calls that fulfil the request, then stop and answer in one o
 - The other tools only display. For a display command (open a layer, open a cited record or the one in
   the viewer, save a layer) use the tool directly, without ask_i360. To show what the investigation
   holds, ask i360 and show what it cited.
-  Use open_layer only when the user asks for a layer. An opened layer is the whole answer: do not call
+  Use open_layer only when the user asks for a layer as a whole ("open IPDR"); a layer's records with a
+  condition ("IPDR records where …", "calls with DIRECTION incoming") go to ask_i360. An opened layer is the whole answer: do not call
   show_items after it and do not describe its contents (you do not see them).
 - What a tool has put on screen (the record viewer, a chat layer) is done: never show it
   again with another tool.
@@ -313,23 +314,33 @@ Do not repeat i360's answer; it is already shown to the user."""
 # layer names ("IPDR" is source HOSHENTEL, type aggregated_ip_session there) and reads them as a wrong filter, so
 # they are also taken out of the question.
 SCOPE_TOOL = _fn(
-    "set_scope", "The app's layers this question asks for, and the question for i360 without the layer names.",
+    "set_scope", "The app's layers this question asks for, and the question for i360 in the wording it reads.",
     {"layers": {"type": "array", "items": {"type": "string"},
                 "description": "Names from the list of layers, exactly as written there: the layers whose records the "
                                "question asks for. Empty when it names none (then every layer is searched)."},
      "question": {"type": "string",
-                  "description": "The question with every layer name taken out (also one that only says where a "
-                                 "value comes from), every other word kept as it was."}},
+                  "description": "The question with every layer name taken out and each condition on a listed field "
+                                 "written as i360 reads it; values and every other word unchanged."}},
     ["layers", "question"])
 
+NO_TEXT_ANSWER = re.compile(r"\s*(these results do not hold the answer|the provided records do not contain)", re.I)
+
 SCOPE_PROMPT = """You set the search scope for one question to i360, inside an analyst map application.
-The app's layers are listed below. i360 does not know these names, so they must not reach it. Call set_scope once:
+The app's layers and fields are listed below. Call set_scope once:
 - layers: the layers whose records the question asks for, by their exact names. A layer is named by its name, in
   any case or language ("IPDR", "the ADINT records"). A layer named only to say where a value comes from ("linked
   to ADINT record X") is not asked for. If the question names no layer, give an empty list.
-- question: the same question with every layer name removed, also the ones that only say where a value comes
-  from ("Which IPDR records are linked to ADINT record X?" -> "Which records are linked to record X?"). Change
-  nothing else: keep every condition, value and word. Do not translate or answer it."""
+- question: the question for i360. i360 does not know the layer names, so remove every one of them (also one that
+  only says where a value comes from). i360 turns a condition on a field into a filter only in this wording:
+  English "where <field word> is <value>" (more conditions: "and <field word> is <value>"; negation "is not"),
+  Hebrew "שבהן <field word> היא <value>". So write each condition on a listed field that way, using one of the
+  field's words from the list and the value exactly as the question gives it. Keep every other word as it was,
+  in the question's language; do not answer it.
+Examples:
+- "Which IPDR records are linked to ADINT record X?" -> layers ["IPDR"], "Which records where linked record is X?"
+- "רשומות IPDR שמקושרות לרשומה X" -> layers ["IPDR"], "רשומות שבהן רשומה מקושרת היא X"
+- "Cellular Locations calls with DIRECTION incoming" -> layers ["Cellular Locations"], "calls where DIRECTION is incoming"
+- "how many calls were there in June?" -> layers [], unchanged (no listed field)"""
 
 
 class ToolHost(Protocol):
@@ -880,7 +891,11 @@ class ChatTurn:
             "found": f"i360 found {found} record(s) for this question"
                      + (f", {len(ids)} of them cited" if found > len(ids) else "")
                      + ". Its text below only describes what the records contain; say how many were found.",
-            "answer": str(answer.get("content") or "")[:4000],
+            # i360 opens with "These results do not hold the answer" whenever the records hold no text (IPDR, ADINT,
+            # calls), even when its filter found exactly them; the model then reports "nothing matched".
+            "answer": ("(i360's text only says these records hold no text; the records themselves are the answer.)"
+                       if found and NO_TEXT_ANSWER.match(str(answer.get("content") or ""))
+                       else str(answer.get("content") or "")[:4000]),
             "cited_count": len(ids),
             "total": answer.get("total") or len(ids),
             "has_places": self.has_places,
@@ -988,7 +1003,9 @@ class ChatTurn:
                                 for s in scopes if s.get("name"))
             asked = question if question.strip() == self.ctx.message.strip() else \
                 f"{question}\n(The analyst wrote: {self.ctx.message})"
-            messages = [{"role": "system", "content": SCOPE_PROMPT + "\n\nLayers:\n" + listing},
+            fields = "\n".join(f"- {', '.join(words)}" for words in self.i360_labels().values()) or "(none)"
+            messages = [{"role": "system", "content": SCOPE_PROMPT + "\n\nLayers:\n" + listing
+                         + "\n\nFields (the words for each one):\n" + fields},
                         {"role": "user", "content": asked}]
             try:
                 reply = self.llm.complete(messages, [SCOPE_TOOL])
