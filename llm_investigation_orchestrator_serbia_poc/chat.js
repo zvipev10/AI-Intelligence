@@ -323,8 +323,10 @@
      out: the chat reads every sent word as the field, in every question. */
   const LABEL_STOP_WORDS = new Set(["ip", "os", "model", "brand", "time", "date", "type", "source", "location", "name",
     "id", "record id", "latitude", "longitude", "זמן", "מיקום", "סוג", "מקור", "דגם", "יצרן"]);
+  // Words for i360 fields that no layer column shows: a record's links (related_objects.id is in i360's index).
+  const CHAT_FIELD_WORDS = { "related_objects.id": ["linked record", "linked to record", "רשומה מקושרת"] };
   function i360Labels() {
-    const labels = {};
+    const labels = Object.fromEntries(Object.entries(CHAT_FIELD_WORDS).map(([field, words]) => [field, [...words]]));
     for (const layer of state.layerCatalog || []) {
       for (const [field, key] of Object.entries(layer.field_labels || {})) {
         const path = String(field).replace(/^i360\./, "");

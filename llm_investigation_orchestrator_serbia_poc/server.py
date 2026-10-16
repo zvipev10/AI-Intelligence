@@ -893,6 +893,33 @@ class AppToolHost:
                            "total": len(ids), "request": request})
         return scopes
 
+    def combined_scope(self, names: list[str]) -> dict[str, Any] | None:
+        """Several of our layers as ONE i360 chat ``scope``, by their fields and values: an OR (``any_of``) of each
+        layer's item types and sources. None when a layer needs more than that (a coverage facet cannot sit inside
+        an OR), so the layers are then asked one at a time."""
+        queries = [q for q in (self.app.profile.get("items_query") or {}).get("queries") or []
+                   if (q or {}).get("layer") in names]
+        branches = []
+        for query in queries:
+            request, _ = layers_search({"queries": [query]})
+            if request is None or set(request) - {"item_types", "source_applications", "time"}:
+                return None
+            branch = ([{"field": "type", "values": request["item_types"]}] if request.get("item_types") else []) + \
+                ([{"field": "source_application", "values": request["source_applications"]}]
+                 if request.get("source_applications") else [])
+            if not branch:
+                return None
+            branches.append(branch)
+        if len(branches) < 2:
+            return None
+        merged, _ = layers_search({"queries": queries})
+        request = {"filters": [{"any_of": branches}], **({"time": merged["time"]} if (merged or {}).get("time") else {})}
+        items = self.app.snapshot(self.token).items
+        total = sum(1 for i in items if i.get("_layer") in names)
+        return {"kind": "results", "name": " + ".join(q["layer"] for q in queries),
+                "query": "the " + " and ".join(q["layer"] for q in queries) + " layers", "ids": [],
+                "total": total, "request": request}
+
 
 def main(argv: list[str]) -> int:
     settings = load_settings()
