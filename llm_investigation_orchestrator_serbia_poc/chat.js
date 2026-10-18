@@ -353,9 +353,37 @@
     openRow(row, group.label);
   }
 
+  /* One record i360 cited, from one of our layers: open that layer (IPDR, ADINT...) instead of a new "Chat:" layer,
+     and focus the record's row in its table. False when that cannot be done (several records, a layer the catalog
+     does not have, or a record outside the layer's loaded rows): the records are then shown as a chat layer. */
+  async function focusInItsLayer(turn, action) {
+    const groups = action.groups || [];
+    const rows = groups.flatMap(group => (group.rows || []).map(row => ({ row, label: group.label })));
+    if (rows.length !== 1) return false;
+    const { row, label } = rows[0];
+    const recordId = String(row.record_id || row.event_id || "");
+    await ensureCatalog();
+    const meta = (state.layerCatalog || []).find(layer => layer.kind === "events"
+      && (layer.source_type === label || layer.label === label || layer.id === `events:${label}`));
+    if (!recordId || !meta) return false;
+    const layer = await openCatalogLayer(meta.id, { silent: true });
+    if (!layer || !(layer.items || []).some(item => String(item.record_id || item.event_id || "") === recordId)) return false;
+    layer.visible = true;
+    state.activeLayerId = layer.id;
+    state.focusedViewerRecordId = recordId;
+    if (!turn.shownLayerIds.includes(layer.id)) turn.shownLayerIds.push(layer.id);
+    activateView("table");
+    renderAllViews();
+    renderLayerSelector();
+    revealViewerRecordInTable(recordId);
+    return true;
+  }
+
   async function runAction(turn, action) {
     try {
-      if (action.kind === "show_items") {
+      if (action.kind === "show_items" && await focusInItsLayer(turn, action)) {
+        // shown in the record's own layer
+      } else if (action.kind === "show_items") {
         const added = itemLayers(action.groups || [], action.label || "results", `chat:${turn.id}`, action.view);
         turn.shownLayerIds.push(...added.map(layer => layer.id));
         if (added[0]) state.activeLayerId = added[0].id;
