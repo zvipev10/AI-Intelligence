@@ -689,6 +689,10 @@ class Handler(BaseHTTPRequestHandler):
         by_id = {str(r.get("record_id") or r.get("i360_item_id") or ""): r for r in rows}
 
         def show(ids: list[str], view: str, label: str) -> int:
+            if view == "open" and len(ids) == 1 and by_id.get(ids[0]):
+                row = by_id[ids[0]]  # "open the record": the record viewer, as open_item does
+                emit("action", {"kind": "open_item", "row": row, "group": str(row.get("source_type") or "")})
+                return 1
             groups: dict[str, list[dict[str, Any]]] = {}
             for record_id in ids:
                 row = by_id.get(record_id)

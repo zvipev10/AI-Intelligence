@@ -148,7 +148,13 @@ class Catalogue:
                 linked = {**linked, "where": [c for c in linked["where"] if c not in own]}
                 records = [r for r in records if all(self._holds(r, c) for c in own)]
         if linked:
-            targets = self._link_targets(linked)
+            # linked.previous alone = linked to the previous answer's records; with a layer, record or entity the
+            # link target is that, and the previous answer can only narrow the asked records (within_previous).
+            by_previous = linked.get("previous") and not any(linked.get(k) for k in (
+                "record_id", "layer", "entity_id", "entity_name", "entity_type"))
+            targets = set(previous or []) if by_previous else self._link_targets(linked)
+            if by_previous and not targets:
+                return {"error": "there is no previous result to link to; ask the whole question"}
             if isinstance(targets, str):
                 return {"error": targets}
             records = [r for r in records if self._linked(r, targets, linked)]
@@ -279,6 +285,7 @@ QUERY_TOOL = {"type": "function", "function": {
         "linked": {"type": "object", "additionalProperties": False, "description":
                    "Keep only records i360 links to: one record, the records of a layer (with conditions), or an "
                    "entity", "properties": {
+                       "previous": {"type": "boolean", "description": "Linked to the previous answer's records"},
                        "record_id": {"type": "string"}, "layer": {"type": "string"},
                        "where": {"type": "array", "items": CONDITION},
                        "entity_id": {"type": "string"}, "entity_name": {"type": "string"},
@@ -289,9 +296,10 @@ QUERY_TOOL = {"type": "function", "function": {
         "sort": {"type": "object", "properties": {"field": {"type": "string"},
                                                   "order": {"type": "string", "enum": ["asc", "desc"]}}},
         "limit": {"type": "integer"},
-        "show": {"type": "string", "enum": ["map", "table", "timeline", "none"],
+        "show": {"type": "string", "enum": ["map", "table", "timeline", "open", "none"],
                  "description": "How to show the records: map for places, timeline for calls, table otherwise; "
-                                "none when the question asks only for a number"}}}}}
+                                "open to open one record in the record viewer (\"open the record\"); none when the "
+                                "question asks only for a number"}}}}}
 
 QUERY_PROMPT = """You turn an analyst's question about the records loaded in an intelligence map application into
 ONE query, by calling run_query. You do not see the records and you do not answer.
@@ -308,6 +316,9 @@ ONE query, by calling run_query. You do not see the records and you do not answe
 - "how many ... by <field>" -> group_by. A question that asks only for a number -> show none.
 - "them", "these", "of them", "which of them", "among these" refer to the previous answer's records:
   set within_previous (keep the layers of those records).
+- "the related / linked / connected <layer> record(s)" after an answer are OTHER records, linked to the previous
+  answer's records: layers [<layer>], linked.previous = true (not within_previous).
+- "open ..." -> show open.
 - If the question cannot be expressed with these layers and fields, call run_query with what you can and nothing
   invented."""
 
@@ -345,13 +356,17 @@ class InternalTurn:
                                    f"{'' if result['count'] == 1 else 's'}",
                            "detail": json.dumps(query, ensure_ascii=False), "tool": "internal_query"})
         self.emit("note", {"text": self.ask_answer(question, query, result)})
-        view = query.get("show") if query.get("show") in ("map", "table", "timeline", "none") else "table"
+        view = query.get("show") if query.get("show") in ("map", "table", "timeline", "open", "none") else "table"
+        if re.match(r"\s*(open|show me the record)\b", question, re.I) and len(ids) == 1:
+            view = "open"  # "open the related IPDR record": the record viewer
         if view == "none" and not query.get("group_by"):
             view = "table"  # records found are shown, so a follow-up's "them" is on screen
         if ids and view != "none":
             shown = self.show(ids[:MAX_SHOWN], view, question[:60])
             if shown:
-                self.emit("step", {"text": f"Showed {shown} record{'' if shown == 1 else 's'} on the {view}"})
+                self.emit("step", {"text": "Opened the record viewer" if view == "open" and shown == 1 else
+                                   f"Showed {shown} record{'' if shown == 1 else 's'} on the "
+                                   f"{'table' if view == 'open' else view}"})
         return {"query": query, "count": result["count"], "ids": ids}
 
     def ask_query(self, question: str) -> dict[str, Any] | None:

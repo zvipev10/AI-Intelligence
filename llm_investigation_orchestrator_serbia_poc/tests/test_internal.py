@@ -66,6 +66,11 @@ class CatalogueTests(unittest.TestCase):
         self.assertEqual(["a-3"], [r.id for r in cat.run(them, ["a-1", "a-3"])["records"]])
         self.assertIn("no previous result", cat.run(them)["error"])
 
+    def test_the_related_records_of_the_previous_answer(self):
+        related = {"layers": ["IPDR"], "linked": {"previous": True}}
+        self.assertEqual(["p-1"], [r.id for r in self.cat.run(related, ["a-1"])["records"]])
+        self.assertIn("no previous result", self.cat.run(related)["error"])
+
     def test_counts_by_field(self):
         result = self.cat.run({"layers": ["ADINT"], "group_by": "keyboard_language"})
         self.assertEqual({"fa": 2, "ar": 1}, result["groups"])
