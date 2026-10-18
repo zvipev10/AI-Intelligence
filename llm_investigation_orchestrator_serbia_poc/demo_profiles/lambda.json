@@ -84,7 +84,8 @@
      "fe_correlation_ids",
      "additional_info",
      "user_agents_data",
-     "ip"
+     "ip",
+     "language"
     ],
     "labels": {
      "event_time": "timestamp_utc",
@@ -93,7 +94,7 @@
      "fe_correlation_ids": "observation_id",
      "ip.ip_sessions.source_ip": "ip",
      "additional_info.accuracy_m": "accuracy_m",
-     "user_agents_data.language_code": "keyboard_language",
+     "language": "keyboard_language",
      "user_agents_data.operating_system_name": "os",
      "user_agents_data.device_model": "model",
      "user_agents_data.device_brand": "brand",
