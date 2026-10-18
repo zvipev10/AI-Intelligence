@@ -27,8 +27,8 @@ class ReportTests(unittest.TestCase):
                        "telecom": {"imei": "353294702931926",
                                    "subscriber_identity_derivation": {"claim": {"value": {"msisdn": "963094370078"}}}}}
 
-    def labels_of(self, layer):
-        return self.labels.get(layer, {})
+    def labels_of(self, row):
+        return self.labels.get(row.get("source_type"), {})
 
     def test_facts_come_from_the_records_and_links(self):
         facts = report.compute_facts("Op Praha", self.rows, [self.person], "p-1", self.labels_of)

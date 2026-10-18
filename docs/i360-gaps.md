@@ -24,6 +24,7 @@ Checked against LAMBDA data with a signed-in user; "the app" is `llm_investigati
 | 14 | Presenting chat results | The chat returns citations (id, type, time, text) and cards for its own UI; no "show as a layer", no view hint | The app reads cited records again (items/get), groups them by layer, and the assistant picks map / timeline / table and the layer name; previous citations are sent back by the browser each turn | Extra calls per answer; i360's text and the app's layer can disagree; i360's own cards are not reused | A presentation hint with citations (kind of records, whether places matter) |
 | 15 | Layer presentation and display names | HL API returns no field display names or default view per item type. ui-360 does have display names: its dictionary configuration (htx/ui/app/dictionary.json in environments-configuration, branch intel_2026_04_2791300, and the live /opt/app/shared/dictionary.json in the ui-360 pod) | Names copied by hand from the ingestion mappings into the profile; default view by rule (calls → timeline, map if any row has coordinates, else table); call viewer by a profile flag; collection type → layer by a table in the code | Names can drift from ingestion and from i360's own UI ("Source application"); a layer becomes a map layer as soon as one row has coordinates; renaming a layer breaks the collection table silently | An HL API endpoint for field display names (the configuration ui-360 reads) |
 | 16 | Call transcripts | Lines and translations are insights per party (transcription / translation); text.english holds only one line; translation times do not match the originals' | The app pairs translations with lines per party, in order, and draws them in the call viewer | Wrong pairing if a translation is missing or entered out of order | A link from each translation to the line it translates |
+| 17 | Search vs get by id return different fields | items/search and items/get describe the same item with different field sets. On ADINT, `language` is filled by search only (52 of 120 records) and is always null in items/get (no include brings it), although both contracts declare it; items/get alone has the content (user_agents_data, ip, additional_info, fe_correlation_ids, flags, tags), which search cannot return (its include takes only text / related_objects). Checked field by field on all 120 ADINT records; `language` is the only field of the layer in search and not in items/get | Two mappings per layer in the profile: `labels` for rows read through search (the layers: search, then items/get, merged) and `labels_by_id` for rows read by id (items/get alone: chat results, opening a cited record, investigation records, the report's extra records). ADINT keyboard_language is `language` in the first and `user_agents_data.language_code` in the second | Bad design: one record can show two values for the same field depending on how it was opened (ADINT 702e8fa9: empty in the layer, "fa" by id); every field has to be checked in both calls; the app needs an extra search per 100 ids to get the indexed fields by id | items/get to return every field search returns (here `language`), so one item has one set of fields |
 
 ## Links: what HL API offers and what is missing
 
@@ -70,3 +71,30 @@ Checked against LAMBDA data with a signed-in user; "the app" is `llm_investigati
   with `POST /api/v1/entities/IP`) through items/related-objects; the app would then show the two records as linked
   through that entity. On our data this is 2 shared IPs (203.0.113.107, 203.0.113.80): 20 ADINT and 2 IPDR records.
   Not done; it writes to the shared estate.
+
+## Search and get by id: different fields for the same item
+
+Example (LAMBDA, ADINT 72715428-c56e-11f1-b31b-0be3e65f42aa):
+
+```
+POST /api/v1/items/get     {"item_ids":["72715428-…"],"include":["user_agents_data"]}
+  -> "language": null, "user_agents_data": [{"language_code": "ar", "language": null, …}]
+POST /api/v1/items/search  {"include_ids":["72715428-…"],"page_size":1}
+  -> "language": "ar"
+```
+
+ADINT fields in the two calls (all 120 records; number of records with the field filled):
+
+| Field | search | items/get |
+|---|---|---|
+| item_id, item_type, sub_type, event_time, end_time, source_application, secrecy_holder_status, media | 120 | 120 (same values) |
+| location.point, location.accuracy ("gps") | 84 | 84 (same values) |
+| fe_correlation_ids, ip, user_agents_data | 0 | 120 |
+| additional_info (accuracy_m) | 0 | 84 |
+| flags, tags | 0 | 120 |
+| **language** | **52** | **0** |
+
+Where the app reads by id: `server.py` `App.item_layers` (chat show_items / listing, open_item, `POST /api/chat/items`,
+the report's records outside the layers) and `hl/state.py` `attached_items` (investigation records; search then items/get,
+items/get winning). The layers (`hl/items.py` `ItemReader.items`) read search then items/get and keep the search value
+where items/get has none.

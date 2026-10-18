@@ -100,6 +100,10 @@
      "user_agents_data.device_brand": "brand",
      "user_agents_data.device_name": "device_id",
      "source_application": "source_app"
+    },
+    "_labels_by_id": "Records read by id (items/get alone: chat, investigation records, report extras): HL API's items/get does not return 'language' (search only), so keyboard_language comes from the user agent's language_code there.",
+    "labels_by_id": {
+     "user_agents_data.language_code": "keyboard_language"
     }
    },
    {

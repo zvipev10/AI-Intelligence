@@ -147,8 +147,9 @@ def _top(rows: list[dict[str, Any]], key: str, n: int = 3) -> list[str]:
 
 
 def compute_facts(name: str, rows: list[dict[str, Any]], persons: list[dict[str, Any]], subject_id: str,
-                  labels_of: Callable[[str], dict[str, str]]) -> dict[str, Any]:
-    """Everything the report states as fact, from the memory records, persons and i360 links."""
+                  labels_of: Callable[[dict[str, Any]], dict[str, str]]) -> dict[str, Any]:
+    """Everything the report states as fact, from the memory records, persons and i360 links.
+    labels_of(row) gives a row's field display names (they depend on how the row was read)."""
     ordered = sorted(rows, key=lambda r: str(r.get("timestamp_utc") or ""))
     times = [str(r.get("timestamp_utc")) for r in ordered if r.get("timestamp_utc")]
     points = [p for p in (_point(r) for r in ordered) if p]
@@ -162,12 +163,12 @@ def compute_facts(name: str, rows: list[dict[str, Any]], persons: list[dict[str,
 
     def layer_facts(layer: str) -> dict[str, Any]:
         lrows = by_layer[layer]
-        labels = labels_of(layer)
-        fields = []
-        for key, label in labels.items():
-            values = _top(lrows, key)
-            if values:
-                fields.append({"label": label, "values": values})
+        counts: dict[str, Counter] = {}
+        for row in lrows:
+            for key, label in labels_of(row).items():
+                counts.setdefault(label, Counter()).update(
+                    v.strip() for v in str(row.get(key) or "").split(";") if v.strip())
+        fields = [{"label": label, "values": [v for v, _ in c.most_common(3)]} for label, c in counts.items() if c]
         lt = [str(r.get("timestamp_utc")) for r in lrows if r.get("timestamp_utc")]
         out = {"layer": layer, "count": len(lrows), "first": lt[0] if lt else "", "last": lt[-1] if lt else "",
                "fields": fields[:8], "records": [{"id": record_id_of(r), "time": r.get("timestamp_utc") or "",
@@ -324,7 +325,7 @@ def checked_block(answer: dict[str, Any], refs: dict[str, str]) -> dict[str, Any
 
 
 def run_block(complete_json: Callable[[list[dict[str, str]], dict[str, Any]], dict[str, Any]], block: str,
-              facts: dict[str, Any], rows: list[dict[str, Any]], labels_of: Callable[[str], dict[str, str]],
+              facts: dict[str, Any], rows: list[dict[str, Any]], labels_of: Callable[[dict[str, Any]], dict[str, str]],
               persons: list[dict[str, Any]], subject_id: str, entity_names: dict[str, str]) -> dict[str, Any]:
     """One analysis block over the memory records (those of one layer for a layer block)."""
     instruction, schema, layer = block_task(block, facts)
@@ -333,7 +334,7 @@ def run_block(complete_json: Callable[[list[dict[str, str]], dict[str, Any]], di
         ordered = [r for r in ordered if str(r.get("source_type") or "") == layer]
     used = ordered[-MAX_CARDS:]
     refs = {f"R{n}": record_id_of(r) for n, r in enumerate(used, 1)}
-    cards = [record_card(r, labels_of(str(r.get("source_type") or "")), entity_names, f"R{n}") for n, r in enumerate(used, 1)]
+    cards = [record_card(r, labels_of(r), entity_names, f"R{n}") for n, r in enumerate(used, 1)]
     subject = next((p for p in persons if str(p.get("entity_id")) == subject_id), None)
     body = [f"BLOCK: {block}", f"TASK: {instruction}"]
     if len(used) < len(ordered):

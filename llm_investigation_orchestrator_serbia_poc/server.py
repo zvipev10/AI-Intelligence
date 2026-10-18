@@ -114,12 +114,24 @@ class App:
                           investigation_links=self.profile.get("investigation_links") or [],
                           item_layer=self.item_layer_label)
 
-    def layer_field_labels(self, layer_name: Any) -> dict[str, str]:
-        """A layer's display names for its i360 fields (profile query "labels": path -> name), as row keys."""
+    def layer_field_labels(self, layer_name: Any, by_id: bool = False) -> dict[str, str]:
+        """A layer's display names for its i360 fields (profile query "labels": path -> name), as row keys.
+
+        HL API's search and get-by-id do not return the same fields (e.g. "language" comes from search only),
+        so rows read by id (items/get alone: chat, investigation records, the report's extra records) use the
+        query's "labels_by_id" where it has one: its entries replace the "labels" entries of the same name."""
         query = self.profile.get("items_query") or {}
         spec = next((q for q in query.get("queries") or [] if q.get("layer") and q.get("layer") == layer_name), None)
-        labels = (spec or {}).get("labels") or {}
+        labels = dict((spec or {}).get("labels") or {})
+        if by_id and (spec or {}).get("labels_by_id"):
+            override = spec["labels_by_id"]
+            names = {str(name) for name in override.values()}
+            labels = {**{p: n for p, n in labels.items() if str(n) not in names}, **override}
         return {f"i360.{path}": str(name) for path, name in labels.items() if not str(path).startswith("_")}
+
+    def row_field_labels(self, row: dict[str, Any]) -> dict[str, str]:
+        """The display names for one row: its layer's, by how the row was read (see layer_field_labels)."""
+        return self.layer_field_labels(row.get("source_type"), by_id=row.get("i360_read") == "by_id")
 
     def item_layer_label(self, item: dict[str, Any]) -> str:
         """The layer an item belongs to: the first profile query it matches that names a layer, else its source."""
@@ -135,15 +147,18 @@ class App:
         return str(item.get("source_application") or item.get("item_type") or "i360")
 
     def item_groups(self, items: list[dict[str, Any]], locale: str) -> list[dict[str, Any]]:
-        """i360 items as rows with every field, grouped by the layer each belongs to."""
+        """i360 items read by id, as rows with every field, grouped by the layer each belongs to; each group
+        carries its layer's by-id display names (see layer_field_labels)."""
         groups: dict[str, list[dict[str, str]]] = {}
         for item in items:
             label = self.item_layer_label(item)
             row = self.mapping.item_to_row(item, locale)
             row["source_type"] = label
             row.update(item_fields(item))
+            row["i360_read"] = "by_id"
             groups.setdefault(label, []).append(row)
-        return [{"label": label, "rows": rows} for label, rows in groups.items()]
+        return [{"label": label, "rows": rows, "field_labels": self.layer_field_labels(label, by_id=True)}
+                for label, rows in groups.items()]
 
     def investigation_item_layers(self, token: str, investigation_id: str, locale: str) -> list[dict[str, Any]]:
         """Items attached to an i360 investigation, as rows with every field, grouped by layer."""
@@ -262,7 +277,7 @@ class App:
             raise ValueError("Nothing is saved to this investigation yet")
         persons = [data.entities[i] for i in person_ids if i in data.entities]
         subject_id = subject_id if any(str(p.get("entity_id")) == subject_id for p in persons) else report.default_subject(persons, rows)
-        facts = report.compute_facts(str(memory.get("name") or investigation_id), rows, persons, subject_id, self.layer_field_labels)
+        facts = report.compute_facts(str(memory.get("name") or investigation_id), rows, persons, subject_id, self.row_field_labels)
         names = {eid: str(e.get("canonical_name") or eid) for eid, e in data.entities.items()}
         return {"rows": rows, "persons": persons, "subject_id": subject_id, "facts": facts, "names": names}
 
@@ -274,7 +289,7 @@ class App:
         """One analysis block of the report, written by HL API's language model."""
         inputs = self.report_inputs(token, investigation_id, subject_id)
         llm = LlmClient(self.client(token), self.settings.llm_model, timeout=self.settings.llm_timeout_seconds)
-        return report.run_block(llm.complete_json, block, inputs["facts"], inputs["rows"], self.layer_field_labels,
+        return report.run_block(llm.complete_json, block, inputs["facts"], inputs["rows"], self.row_field_labels,
                                 inputs["persons"], inputs["subject_id"], inputs["names"])
 
     def reload_reviews(self, token: str) -> None:
@@ -531,6 +546,9 @@ class Handler(BaseHTTPRequestHandler):
                 labels = app.layer_field_labels(layer.get("source_type"))
                 if labels:
                     layer["field_labels"] = labels
+                by_id = app.layer_field_labels(layer.get("source_type"), by_id=True)
+                if by_id != labels:
+                    layer["field_labels_by_id"] = by_id
             self.send_json(200, {"layers": layers})
             return
         if path.startswith("/api/layers/") and path.endswith("/rows"):

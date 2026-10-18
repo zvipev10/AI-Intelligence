@@ -264,7 +264,7 @@
       if (!rows.length) return;
       const name = groups.length > 1 ? `Chat: ${label} · ${group.label}` : `Chat: ${label}`;
       const meta = {
-        id: `${sourceId}:${group.label}`, label: name, kind: "events", source_type: group.label,
+        id: `${sourceId}:${group.label}`, label: name, kind: "events", source_type: group.label, field_labels: group.field_labels,
         capabilities: { table: true, timeline: true, map: rows.some(row => row.latitude || row.location_id) },
       };
       layers.push(buildCatalogLayer(meta, rows));

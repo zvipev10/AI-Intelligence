@@ -422,6 +422,7 @@ class ItemReader:
         # "layer" is ours too: the layer (source_type) these items are shown in.
         layer = str(query.pop("layer", "") or "")
         query.pop("labels", None)  # display names for the layer's fields; read by the server, not sent
+        query.pop("labels_by_id", None)  # the same for rows read by id (items/get alone); read by the server
         if query.pop("call_record", False) and layer:
             CALL_LAYERS.add(layer)  # rows get the fields the app's call viewer reads (see call_fields)
         # "all_fields" is ours too: rows carry every populated item field as i360.<path>;

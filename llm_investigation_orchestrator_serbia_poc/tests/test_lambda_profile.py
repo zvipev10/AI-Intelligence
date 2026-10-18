@@ -85,6 +85,22 @@ class LambdaProfileTests(unittest.TestCase):
         self.assertEqual("observation_id", labels["events:ADINT"]["i360.fe_correlation_ids"])
         self.assertEqual("ip_public", labels["events:IPDR"]["i360.ip.ip_sessions.source_ip"])
 
+    def test_adint_language_has_one_mapping_for_search_and_one_for_get_by_id(self):
+        # HL API's items/get does not return "language" (search does), so rows read by id name language_code.
+        status, body = self.browser().call("GET", "/api/layers?lang=en")
+        self.assertEqual(200, status, body)
+        adint = next(layer for layer in body["layers"] if layer["id"] == "events:ADINT")
+        self.assertEqual("keyboard_language", adint["field_labels"]["i360.language"])
+        self.assertNotIn("i360.user_agents_data.language_code", adint["field_labels"])
+        self.assertEqual("keyboard_language", adint["field_labels_by_id"]["i360.user_agents_data.language_code"])
+        self.assertNotIn("i360.language", adint["field_labels_by_id"])
+        self.assertEqual("observation_id", adint["field_labels_by_id"]["i360.fe_correlation_ids"])
+        status, body = self.browser().call("POST", "/api/chat/items", {"ids": ["AD-1"], "locale": "en"})
+        self.assertEqual(200, status, body)
+        group = body["groups"][0]
+        self.assertEqual(("ADINT", "by_id"), (group["label"], group["rows"][0]["i360_read"]))
+        self.assertEqual("keyboard_language", group["field_labels"]["i360.user_agents_data.language_code"])
+
     def test_layer_rows_carry_the_display_names_too(self):
         status, body = self.browser().call("GET", "/api/layers/events:Satellite/rows?lang=en")
         self.assertEqual(200, status, body)

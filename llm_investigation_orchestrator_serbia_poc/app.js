@@ -1783,7 +1783,7 @@ async function loadInvestigationItemLayers(token) {
     if (!rows.length) return;
     const label = `${group.label} · ${activeLocaleText("זיכרון", "memory")}`;
     const meta = {
-      id: `investigation-items:${group.label}`, label, kind: "events", source_type: group.label,
+      id: `investigation-items:${group.label}`, label, kind: "events", source_type: group.label, field_labels: group.field_labels,
       capabilities: { table: true, timeline: true, map: rows.some(row => row.latitude || row.location_id) }
     };
     const layer = buildCatalogLayer(meta, rows);
@@ -3230,12 +3230,19 @@ function isPersonEntity(item) {
   return String(item?.entity_type || "").trim().toLowerCase() === "person";
 }
 
+// A record's field display names: its layer's (profile "labels"); rows read by id (chat, investigation records)
+// use the layer's by-id names where the profile has them ("labels_by_id"): search and get-by-id return different fields.
+function recordFieldLabelsOf(item) {
+  const catalog = typeof state !== "undefined" && Array.isArray(state.layerCatalog) ? state.layerCatalog : [];
+  const entry = catalog.find(layer => layer.source_type === item?.source_type) || {};
+  return (item?.i360_read === "by_id" && entry.field_labels_by_id) || entry.field_labels || {};
+}
+
 function viewerFields(item, kind) {
   // Rows from a profile query with "all_fields" carry every i360 item field as "i360.<path>": show them all.
   const i360Keys = Object.keys(item || {}).filter(key => key.startsWith("i360.") && item[key] != null && item[key] !== "").sort((a, b) => a.localeCompare(b, "en"));
   if (kind === "record" && i360Keys.length) {
-    const catalog = typeof state !== "undefined" && Array.isArray(state.layerCatalog) ? state.layerCatalog : [];
-    const named = Object.keys(catalog.find(layer => layer.source_type === item.source_type)?.field_labels || {}).filter(key => i360Keys.includes(key));
+    const named = Object.keys(recordFieldLabelsOf(item)).filter(key => i360Keys.includes(key));
     return ["record_id", "source_type", ...named, ...i360Keys.filter(key => !named.includes(key))].filter(key => item[key] != null && item[key] !== "").map(key => [key, item[key]]);
   }
   if (kind === "ipdr_package") return ["package_id", "classification", "provider", "source_system", "filename", "sha256", "record_count", "validation_state", "session_validation_counts", "observed_coverage", "requested_scope", "acquired_at", "imported_at", "ingest_batch_id", "authority_case_reference", "chain_of_custody_note", "field_semantics", "transformations", "limitations"].map(key => [key, item[key] ?? activeLocaleText("לא ידוע", "Unknown")]);
@@ -3875,7 +3882,7 @@ function openObjectViewer(kind, id, trigger = document.activeElement) {
   viewer.classList.toggle("is-person-viewer", personViewer);
   const mediaHtml = viewerMediaHtml(item);
   const cellularHtml = kind === "record" ? cellularCallHtml(item) : "";
-  const recordFieldLabels = kind === "record" ? ((state.layerCatalog || []).find(layer => layer.source_type === item.source_type)?.field_labels || {}) : {};
+  const recordFieldLabels = kind === "record" ? recordFieldLabelsOf(item) : {};
   const fields = viewerFields(item, kind).map(([key,value]) => `<div class="object-viewer-field"><dt>${escapeHtml(recordFieldLabels[key] || viewerFieldLabel(key))}</dt><dd>${viewerFieldValueHtml(key, value)}</dd></div>`).join("");
   const entityMapHtml = kind === "organization" ? entityLocationMapHtml(item) : "";
   document.getElementById("objectViewerBody").innerHTML = `${mediaHtml}${cellularHtml}${ipdrPackageLinkHtml(item, kind)}${personViewer ? personWorkspaceHtml(item) : ""}${entityMapHtml}${(() => {
