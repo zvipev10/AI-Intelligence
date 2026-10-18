@@ -71,6 +71,17 @@ class CatalogueTests(unittest.TestCase):
         self.assertEqual(["p-1"], [r.id for r in self.cat.run(related, ["a-1"])["records"]])
         self.assertIn("no previous result", self.cat.run(related)["error"])
 
+    def test_a_person_with_recommended_knowledge(self):
+        import server
+        person = server.Handler.internal_person("p-9", {"canonical_name": "Arman Rahimi", "telecom": {
+            "imei": "3532", "i360_review": {"msisdn": "recommended", "imsi": "recommended"},
+            "subscriber_identity_derivation": {"claim": {"value": {"msisdn": "9630", "imsi": "4170"}}}}})
+        self.assertEqual(("recommended", "9630", "recommended"), (person["knowledge_status"], person["msisdn"],
+                                                                 person["msisdn_status"]))
+        cat = Catalogue({"Persons": [person], **LAYERS}, LABELS, {"p-9": "Arman Rahimi"})
+        query = {"layers": ["Persons"], "where": [{"field": "knowledge_status", "op": "is", "value": "recommended"}]}
+        self.assertEqual(["p-9"], [r.id for r in cat.run(query)["records"]])
+
     def test_counts_by_field(self):
         result = self.cat.run({"layers": ["ADINT"], "group_by": "keyboard_language"})
         self.assertEqual({"fa": 2, "ar": 1}, result["groups"])

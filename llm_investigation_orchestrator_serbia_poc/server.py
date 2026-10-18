@@ -688,7 +688,18 @@ class Handler(BaseHTTPRequestHandler):
         catalogue = snap.memo(f"internal:{locale}", lambda: self.internal_catalogue(snap, rows))
         by_id = {str(r.get("record_id") or r.get("i360_item_id") or ""): r for r in rows}
 
+        people = {str(e.get("entity_id") or ""): e for e in snap.entities or [] if isinstance(e, dict)}
+
         def show(ids: list[str], view: str, label: str) -> int:
+            persons = [i for i in ids if i in people]
+            if persons:
+                # People open in the person viewer, one at a time: the first (the answer names the others).
+                entity = people[persons[0]]
+                emit("action", {"kind": "open_entity", "entity_id": persons[0], "entity": entity})
+                emit("step", {"text": f"Opened {entity.get('canonical_name') or persons[0]}"})
+                ids = [i for i in ids if i not in people]
+                if not ids:
+                    return 0
             if view == "open" and len(ids) == 1 and by_id.get(ids[0]):
                 row = by_id[ids[0]]  # "open the record": the record viewer, as open_item does
                 emit("action", {"kind": "open_item", "row": row, "group": str(row.get("source_type") or "")})
@@ -720,13 +731,40 @@ class Handler(BaseHTTPRequestHandler):
             layers.setdefault(str(row.get("source_type") or ""), []).append(row)
         labels = {layer: self.app.layer_field_labels(layer) for layer in layers}
         entities: dict[str, str] = {}
+        persons = []
         for entity in snap.entities or []:
             if isinstance(entity, dict):
                 entity_id = str(entity.get("entity_id") or entity.get("id") or "")
-                name = entity.get("name") or entity.get("entity_name") or entity.get("display_name")
+                name = entity.get("canonical_name") or entity.get("name") or entity.get("display_name")
                 if entity_id and name:
                     entities[entity_id] = str(name)
+                if entity_id:
+                    persons.append(self.internal_person(entity_id, entity))
+        if persons:
+            layers["Persons"] = persons  # the people the app loaded, as a layer the questions can name
         return Catalogue({k: v for k, v in layers.items() if k}, labels, entities)
+
+    @staticmethod
+    def internal_person(entity_id: str, entity: dict[str, Any]) -> dict[str, Any]:
+        """A person as a row of /internal's "Persons" layer. i360's telecom knowledge on the person (MSISDN /
+        IMSI it derived from the linked records) carries a review status: "recommended" waits for the analyst's
+        approval, "approved" is accepted."""
+        telecom = entity.get("telecom") if isinstance(entity.get("telecom"), dict) else {}
+        review = telecom.get("i360_review") or {}
+        claim = ((telecom.get("subscriber_identity_derivation") or {}).get("claim") or {}).get("value") or {}
+        approved = telecom.get("approved_subscriber_identity") or {}
+        statuses = {str(s) for s in review.values() if s}
+        row = {"source_type": "Persons", "record_id": entity_id,
+               "name": entity.get("canonical_name") or "", "given_name": entity.get("given_name") or "",
+               "gender": entity.get("gender") or "", "nationality": entity.get("nationality") or "",
+               "identifiers": entity.get("identifiers") or "", "person_type": entity.get("i360_entity_type") or "",
+               "imei": telecom.get("imei") or "",
+               "msisdn": claim.get("msisdn") or approved.get("msisdn") or telecom.get("msisdn") or "",
+               "imsi": claim.get("imsi") or approved.get("imsi") or telecom.get("imsi") or "",
+               "msisdn_status": review.get("msisdn") or "", "imsi_status": review.get("imsi") or "",
+               "knowledge_status": "recommended" if "recommended" in statuses else
+                                   ("approved" if statuses == {"approved"} else "")}
+        return {k: (str(v) if not isinstance(v, str) else v) for k, v in row.items()}
 
     def log_chat_event(self, event: str, data: Any) -> None:
         """One log line per step, action and closing note of a chat turn (ids and counts, not the records),

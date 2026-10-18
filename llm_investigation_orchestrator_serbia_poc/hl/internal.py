@@ -319,6 +319,8 @@ ONE query, by calling run_query. You do not see the records and you do not answe
 - "the related / linked / connected <layer> record(s)" after an answer are OTHER records, linked to the previous
   answer's records: layers [<layer>], linked.previous = true (not within_previous).
 - "open ..." -> show open.
+- The Persons layer holds the people (persons of interest). "Recommended knowledge" / "new knowledge to approve"
+  is i360's telecom identity (MSISDN / IMSI) waiting for approval: Persons where knowledge_status is recommended.
 - If the question cannot be expressed with these layers and fields, call run_query with what you can and nothing
   invented."""
 
