@@ -57,6 +57,15 @@ class CatalogueTests(unittest.TestCase):
         self.assertIn("IPDR has no field 'keyboard_language'", self.cat.run(
             {"layers": ["IPDR"], "where": [{"field": "keyboard_language", "op": "is", "value": "fa"}]})["error"])
 
+    def test_not_skips_records_without_a_value_and_them_is_the_previous_result(self):
+        layers = {"ADINT": LAYERS["ADINT"] + [row("ADINT", "a-4")]}  # a-4 has no keyboard language
+        cat = Catalogue(layers, LABELS)
+        not_arabic = {"layers": ["ADINT"], "where": [{"field": "keyboard_language", "op": "not_in", "value": ["ar"]}]}
+        self.assertEqual(["a-1", "a-3"], sorted(r.id for r in cat.run(not_arabic)["records"]))
+        them = {"within_previous": True, "where": [{"field": "os", "op": "is", "value": "Android"}]}
+        self.assertEqual(["a-3"], [r.id for r in cat.run(them, ["a-1", "a-3"])["records"]])
+        self.assertIn("no previous result", cat.run(them)["error"])
+
     def test_counts_by_field(self):
         result = self.cat.run({"layers": ["ADINT"], "group_by": "keyboard_language"})
         self.assertEqual({"fa": 2, "ar": 1}, result["groups"])

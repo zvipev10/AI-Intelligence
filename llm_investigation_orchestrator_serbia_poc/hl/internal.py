@@ -118,13 +118,18 @@ class Catalogue:
         return "\n".join(lines)
 
     # -- running a query ------------------------------------------------------------------------
-    def run(self, query: dict[str, Any]) -> dict[str, Any]:
+    def run(self, query: dict[str, Any], previous: list[str] | None = None) -> dict[str, Any]:
         """The query's records and counts, or {"error": ...} naming what does not exist."""
         layers = [str(l) for l in query.get("layers") or []]
         unknown = [l for l in layers if l not in self.layers]
         if unknown:
             return {"error": f"no layer named {', '.join(unknown)}; the layers are {', '.join(self.layers)}"}
         records = [r for r in self.records if not layers or r.layer in layers]
+        if query.get("within_previous"):
+            previous = set(previous or [])
+            if not previous:
+                return {"error": "there is no previous result to look in; ask the whole question"}
+            records = [r for r in records if r.id in previous]
         problem = self._check(query.get("where") or [], layers)
         if problem:
             return {"error": problem}
@@ -197,7 +202,7 @@ class Catalogue:
         if op == "missing":
             return not have
         if have is None:
-            return op in ("is_not", "not_in")
+            return False  # "not X" means a value other than X: a record without one is not counted
         text = have.lower()
         if op in ("is", "is_not"):
             hit = text == str(value).lower()
@@ -278,6 +283,8 @@ QUERY_TOOL = {"type": "function", "function": {
                        "where": {"type": "array", "items": CONDITION},
                        "entity_id": {"type": "string"}, "entity_name": {"type": "string"},
                        "entity_type": {"type": "string"}}},
+        "within_previous": {"type": "boolean", "description": "Search only the records of the previous answer "
+                                                              "(the question says them / these / of them / which of them)"},
         "group_by": {"type": "string", "description": "A field name, or 'layer', to count the records by"},
         "sort": {"type": "object", "properties": {"field": {"type": "string"},
                                                   "order": {"type": "string", "enum": ["asc", "desc"]}}},
@@ -299,6 +306,8 @@ ONE query, by calling run_query. You do not see the records and you do not answe
 - "linked to record X" -> linked.record_id; "linked to ADINT records (where ...)" -> linked.layer (+ linked.where);
   "linked to <person>" -> linked.entity_name; "has a <field>" -> op exists.
 - "how many ... by <field>" -> group_by. A question that asks only for a number -> show none.
+- "them", "these", "of them", "which of them", "among these" refer to the previous answer's records:
+  set within_previous (keep the layers of those records).
 - If the question cannot be expressed with these layers and fields, call run_query with what you can and nothing
   invented."""
 
@@ -312,8 +321,10 @@ answer."""
 class InternalTurn:
     """One /internal message: question -> query (model) -> result (our code) -> answer (model) -> shown."""
 
-    def __init__(self, llm: Any, catalogue: Catalogue, emit: Callable[[str, Any], None], show: Callable[[list[str], str, str], int]):
+    def __init__(self, llm: Any, catalogue: Catalogue, emit: Callable[[str, Any], None],
+                 show: Callable[[list[str], str, str], int], previous: list[str] | None = None):
         self.llm, self.catalogue, self.emit, self.show = llm, catalogue, emit, show
+        self.previous = [str(i) for i in previous or [] if str(i) in catalogue.by_id]
         self.started = time.monotonic()
 
     def run(self, question: str) -> dict[str, Any]:
@@ -324,7 +335,7 @@ class InternalTurn:
         query = self.ask_query(question)
         if query is None:
             return {}
-        result = self.catalogue.run(query)
+        result = self.catalogue.run(query, self.previous)
         if result.get("error"):
             self.emit("step", {"text": "The question does not fit the loaded data", "detail": result["error"]})
             self.emit("note", {"text": result["error"][0].upper() + result["error"][1:] + "."})
@@ -334,7 +345,9 @@ class InternalTurn:
                                    f"{'' if result['count'] == 1 else 's'}",
                            "detail": json.dumps(query, ensure_ascii=False), "tool": "internal_query"})
         self.emit("note", {"text": self.ask_answer(question, query, result)})
-        view = query.get("show") or "table"
+        view = query.get("show") if query.get("show") in ("map", "table", "timeline", "none") else "table"
+        if view == "none" and not query.get("group_by"):
+            view = "table"  # records found are shown, so a follow-up's "them" is on screen
         if ids and view != "none":
             shown = self.show(ids[:MAX_SHOWN], view, question[:60])
             if shown:
@@ -342,7 +355,11 @@ class InternalTurn:
         return {"query": query, "count": result["count"], "ids": ids}
 
     def ask_query(self, question: str) -> dict[str, Any] | None:
-        messages = [{"role": "system", "content": QUERY_PROMPT + "\n\n" + self.catalogue.describe()},
+        previous = ""
+        if self.previous:
+            layers = sorted({self.catalogue.by_id[i].layer for i in self.previous})
+            previous = f"\n\nPrevious answer: {len(self.previous)} records ({', '.join(layers)})."
+        messages = [{"role": "system", "content": QUERY_PROMPT + "\n\n" + self.catalogue.describe() + previous},
                     {"role": "user", "content": question}]
         for attempt in range(2):
             try:

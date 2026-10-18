@@ -700,10 +700,15 @@ class Handler(BaseHTTPRequestHandler):
             return sum(len(g) for g in groups.values())
 
         question = re.sub(r"^\s*/internal\b", "", context.message).strip()
-        result = InternalTurn(llm, catalogue, emit, show).run(question)
+        previous = [c["id"] for c in context.previous_citations]
+        result = InternalTurn(llm, catalogue, emit, show, previous).run(question)
+        # The records found go back to the browser as the answer's citations, so a following /internal question
+        # can say "them" (and the i360 chat sees them as the previous answer's records, as with its own).
+        found = result.get("ids") if "ids" in result else previous
         emit("done", {"i360_conversation_id": context.i360_conversation_id, "i360_scope": context.i360_scope,
                       "summary": f"internal · {result.get('count', 0)} records", "i360_last_turns": context.i360_last_turns,
-                      "citations": [], "entities": []})
+                      "citations": [{"id": i, "type": "", "time": "", "text": ""} for i in (found or [])[:500]],
+                      "entities": []})
 
     def internal_catalogue(self, snap: Any, rows: list[dict[str, Any]]) -> Catalogue:
         layers: dict[str, list[dict[str, Any]]] = {}
