@@ -465,6 +465,8 @@
       if (Array.isArray(data?.citations)) CHAT.citations = data.citations;
       turn.summary = data?.summary || "";
       if (Array.isArray(data?.entities)) CHAT.entities = data.entities;
+      // /internal asked which name was meant: the next message answers that question.
+      CHAT.internalPending = data?.internal_pending || "";
     }
   }
 
@@ -481,6 +483,7 @@
     CHAT.i360ConversationId = "";
     CHAT.i360Scope = "";
     CHAT.i360LastTurns = [];
+    CHAT.internalPending = "";
     CHAT.investigationId = state.investigationId || null;
     $("conversation").innerHTML = "";
     if (message) appendMessage("assistant", `<p class="chat-welcome">${esc(message)}</p>`);
@@ -504,6 +507,7 @@
       i360_last_turns: CHAT.i360LastTurns,
       previous_citations: CHAT.citations,
       previous_entities: CHAT.entities || [],
+      internal_pending: CHAT.internalPending || "",
       open_layers: state.layers.filter(layer => layer.visible).slice(0, 40).map(openLayerContext),
       viewer_item_id: viewerItemId(),
       labels: i360Labels(),

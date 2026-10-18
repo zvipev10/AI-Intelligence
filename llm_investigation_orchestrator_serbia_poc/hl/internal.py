@@ -7,6 +7,8 @@ The i360 chat is not asked. One message is one turn:
 2. Our code checks the query against that catalogue (an unknown layer, field or value is said back, never guessed)
    and runs it over the loaded rows: field conditions, i360's own links (``i360_links``: records and entities),
    counts by a field.
+   When a layer, field, value or entity named in the question does not exist, the analyst is asked which one is
+   meant (the model writes the question, with the closest names), and the reply completes the question.
 3. The model writes the answer from the query's result (the count, the counts by field, a sample of the records).
 4. The records are shown with the chat's presentation tools (the same ``show_items`` action as i360's answers).
 
@@ -15,6 +17,7 @@ are followed.
 """
 from __future__ import annotations
 
+import difflib
 import json
 import re
 import time
@@ -27,11 +30,19 @@ MAX_VALUES = 30      # a field with at most this many distinct values lists them
 SAMPLE_ROWS = 20     # records of the result the model reads to write its answer
 MAX_SHOWN = 200      # records put on screen
 
+# Errors that name something the question asked for and the data does not have: the analyst is asked which is meant.
+_UNCLEAR = re.compile(r"^(no layer named|no field named|.* has no field|no record has|no linked entity named)")
+
 # Row keys that are the app's bookkeeping, not record fields.
 _SKIP = {"i360_links", "i360_identifiers", "record_id", "i360_item_id", "event_id", "source_type", "event",
          "duplication_counter", "flag", "has_secrecy_holder_processed", "event_summary", "call_transcript",
          "side_a_imei", "side_a_number", "side_b_imei", "side_b_number", "latitude", "longitude", "timestamp_utc"}
 _TIME = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}")
+
+
+def _garbled(query: dict[str, Any]) -> bool:
+    """The model's arguments came out broken: the rest of the query spilled into the layer names."""
+    return any(re.search(r"[{}\[\]<>|]|\w+:", str(layer)) for layer in query.get("layers") or [])
 
 
 def _number(value: str) -> float | None:
@@ -188,7 +199,12 @@ class Catalogue:
             entry = self.fields.get(name)
             if not entry:
                 close = [f for f in self.fields if name.lower().replace(" ", "_") in f.lower()]
-                return f"no field named '{name}'" + (f"; did you mean {', '.join(close[:3])}?" if close else "")
+                close += [f for f in difflib.get_close_matches(name.lower().replace(" ", "_"), list(self.fields), 3, 0.6)
+                          if f not in close]
+                if close:
+                    return f"no field named '{name}'; did you mean {', '.join(close[:5])}?"
+                fields = sorted(f.name for f in self.fields.values() if not layers or f.layers & set(layers))
+                return f"no field named '{name}'; the fields are {', '.join(fields[:40])}"
             if layers and not entry.layers & set(layers):
                 return f"{', '.join(layers)} has no field '{name}' (it is in {', '.join(sorted(entry.layers))})"
             op = c.get("op")
@@ -321,8 +337,16 @@ ONE query, by calling run_query. You do not see the records and you do not answe
 - "open ..." -> show open.
 - The Persons layer holds the people (persons of interest). "Recommended knowledge" / "new knowledge to approve"
   is i360's telecom identity (MSISDN / IMSI) waiting for approval: Persons where knowledge_status is recommended.
-- If the question cannot be expressed with these layers and fields, call run_query with what you can and nothing
-  invented."""
+- Map a word to a listed layer or field only when it clearly means it. A layer, field or value the question names
+  that is not in the list (and is not clearly one of them) is written as the analyst wrote it: never dropped and never
+  swapped for a different one. The analyst is then asked which one is meant.
+- Nothing invented."""
+
+CLARIFY_PROMPT = """An analyst asked a question about the records loaded in an intelligence map application, and a
+name in it does not match the loaded data (the problem below says which, with the names that do exist). Ask the
+analyst ONE short question, in English, that first says which word was not found and then offers the closest names
+(at most five) as options to choose from, e.g. "There is no layer called RADAR. Did you mean Satellite or Cellular
+Locations?". Do not answer the question and do not mention queries, JSON or tools."""
 
 ANSWER_PROMPT = """You answer an analyst's question from the result of a query over the records loaded in the
 application's layers. Answer in one to three short sentences, in English. Use only the result below: the count, the
@@ -335,8 +359,10 @@ class InternalTurn:
     """One /internal message: question -> query (model) -> result (our code) -> answer (model) -> shown."""
 
     def __init__(self, llm: Any, catalogue: Catalogue, emit: Callable[[str, Any], None],
-                 show: Callable[[list[str], str, str], int], previous: list[str] | None = None):
+                 show: Callable[[list[str], str, str], int], previous: list[str] | None = None,
+                 pending: str = ""):
         self.llm, self.catalogue, self.emit, self.show = llm, catalogue, emit, show
+        self.pending = pending  # the question a clarification was asked about, which this message answers
         self.previous = [str(i) for i in previous or [] if str(i) in catalogue.by_id]
         self.started = time.monotonic()
 
@@ -345,10 +371,18 @@ class InternalTurn:
             self.emit("note", {"text": "/internal needs the assistant model, which is not configured here."})
             return {}
         self.emit("step", {"text": "Reading the question against the loaded layers", "live": True})
+        if self.pending:
+            question = f"{self.pending}\n(Asked which name was meant, the analyst answered: {question})"
         query = self.ask_query(question)
         if query is None:
             return {}
         result = self.catalogue.run(query, self.previous)
+        if result.get("error") and _UNCLEAR.match(result["error"]):
+            # A name the data does not have: ask which is meant instead of answering. The reply completes the question
+            # (the analyst's own question, again when the reply named something that does not exist either).
+            self.emit("step", {"text": "Asked which name is meant", "detail": result["error"]})
+            self.emit("note", {"text": self.ask_clarification(question, result["error"])})
+            return {"query": query, "error": result["error"], "clarify": self.pending or question}
         if result.get("error"):
             self.emit("step", {"text": "The question does not fit the loaded data", "detail": result["error"]})
             self.emit("note", {"text": result["error"][0].upper() + result["error"][1:] + "."})
@@ -387,12 +421,27 @@ class InternalTurn:
                 self.emit("note", {"text": f"The assistant model did not answer ({exc})."})
                 return None
             call = next((c for c in reply.get("tool_calls") or [] if c.get("name") == "run_query"), None)
-            if call:
-                return call.get("arguments") or {}
+            arguments = (call or {}).get("arguments") or {}
+            if call and not _garbled(arguments):
+                return arguments
             messages.append({"role": "assistant", "content": reply.get("content") or ""})
-            messages.append({"role": "user", "content": "Call run_query with the query."})
+            messages.append({"role": "user", "content": "Call run_query with the query." if not call else
+                             "The run_query arguments were not valid JSON (a layer name held the rest of the query). "
+                             "Call run_query again, each part in its own property."})
         self.emit("note", {"text": "The assistant model gave no query for this question."})
         return None
+
+    def ask_clarification(self, question: str, problem: str) -> str:
+        messages = [{"role": "system", "content": CLARIFY_PROMPT},
+                    {"role": "user", "content": f"Question: {question}\n\nProblem: {problem}"}]
+        try:
+            reply = self.llm.complete(messages, [])
+        except AuthExpired:
+            raise
+        except (NotOnThisEstate, Unreachable, HlError):
+            reply = {}
+        text = str((reply or {}).get("content") or "").strip()
+        return text or problem[0].upper() + problem[1:] + ". Which did you mean?"
 
     def ask_answer(self, question: str, query: dict[str, Any], result: dict[str, Any]) -> str:
         sample = [{"layer": r.layer, "id": r.id, **{k: v for k, v in list(r.fields.items())[:14]}}

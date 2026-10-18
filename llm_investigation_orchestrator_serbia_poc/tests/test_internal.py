@@ -109,6 +109,30 @@ class TurnTests(unittest.TestCase):
         self.assertEqual("2 ADINT records have keyboard language fa.", [d for e, d in events if e == "note"][0]["text"])
         self.assertEqual([], calls[1])  # the answer is written without tools, from the result
 
+    def test_an_unknown_name_is_asked_about_and_the_reply_completes_the_question(self):
+        asked = []
+
+        class Llm:
+            def complete(self, messages, tools):
+                asked.append(messages[-1]["content"])
+                if not tools:
+                    return {"content": "I found no field 'keyboard'. Did you mean keyboard_language?", "tool_calls": []}
+                field = "keyboard_language" if "answered: keyboard_language" in messages[-1]["content"] else "keyboard"
+                return {"content": "", "tool_calls": [{"id": "q", "name": "run_query", "arguments": {
+                    "layers": ["ADINT"], "where": [{"field": field, "op": "is", "value": "fa"}], "show": "table"}}]}
+
+        events = []
+        first = InternalTurn(Llm(), Catalogue(LAYERS, LABELS), lambda e, d: events.append((e, d)),
+                             lambda ids, view, label: len(ids)).run("ADINT records with keyboard fa")
+        self.assertEqual("ADINT records with keyboard fa", first["clarify"])
+        self.assertIn("did you mean keyboard_language", asked[-1])  # the model writes the question from the problem
+        self.assertEqual("I found no field 'keyboard'. Did you mean keyboard_language?",
+                         [d for e, d in events if e == "note"][-1]["text"])
+        second = InternalTurn(Llm(), Catalogue(LAYERS, LABELS), lambda e, d: None, lambda ids, view, label: len(ids),
+                              pending=first["clarify"]).run("keyboard_language")
+        self.assertEqual(2, second["count"])
+        self.assertNotIn("clarify", second)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -651,10 +651,13 @@ class Handler(BaseHTTPRequestHandler):
 
         llm = LlmClient(self.app.client(token), settings.llm_model, timeout=settings.llm_timeout_seconds) \
             if settings.llm_enabled else None
-        if re.match(r"\s*/internal\b", context.message):
+        # The /internal question a clarification was asked about: the next message (with or without /internal)
+        # answers it, unless it is another command.
+        pending = str(request.get("internal_pending") or "")[:2000]
+        if re.match(r"\s*/internal\b", context.message) or (pending and not context.message.lstrip().startswith("/")):
             # /internal: answered from the records the app loaded, not by the i360 chat.
             try:
-                self.internal_turn(token, locale, llm, emit, context)
+                self.internal_turn(token, locale, llm, emit, context, pending)
             except ClientGone:
                 self.log_message("chat: the browser closed the stream")
             except AuthExpired:
@@ -680,7 +683,7 @@ class Handler(BaseHTTPRequestHandler):
             self.try_stream_event("error", {"error": "internal_error", "message": "The chat failed."})
 
     def internal_turn(self, token: str, locale: str, llm: Any, emit: Callable[[str, Any], None],
-                      context: TurnContext) -> None:
+                      context: TurnContext, pending: str = "") -> None:
         """/internal <question>: the model turns the question into a query over the loaded records (our layer and
         field names), our code runs it, the model answers from the result, and the records are shown."""
         snap = self.app.snapshot(token)
@@ -716,14 +719,14 @@ class Handler(BaseHTTPRequestHandler):
 
         question = re.sub(r"^\s*/internal\b", "", context.message).strip()
         previous = [c["id"] for c in context.previous_citations]
-        result = InternalTurn(llm, catalogue, emit, show, previous).run(question)
+        result = InternalTurn(llm, catalogue, emit, show, previous, pending).run(question)
         # The records found go back to the browser as the answer's citations, so a following /internal question
         # can say "them" (and the i360 chat sees them as the previous answer's records, as with its own).
         found = result.get("ids") if "ids" in result else previous
         emit("done", {"i360_conversation_id": context.i360_conversation_id, "i360_scope": context.i360_scope,
                       "summary": f"internal · {result.get('count', 0)} records", "i360_last_turns": context.i360_last_turns,
                       "citations": [{"id": i, "type": "", "time": "", "text": ""} for i in (found or [])[:500]],
-                      "entities": []})
+                      "entities": [], "internal_pending": result.get("clarify", "")})
 
     def internal_catalogue(self, snap: Any, rows: list[dict[str, Any]]) -> Catalogue:
         layers: dict[str, list[dict[str, Any]]] = {}
