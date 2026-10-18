@@ -430,7 +430,7 @@ class ChatApiTests(unittest.TestCase):
         done = [d for e, d in events if e == "done"][0]
         self.assertTrue(done["i360_conversation_id"].startswith("conv-"))
         self.assertEqual(len(cited), len(done["citations"]))
-        self.assertIn("Showed", [d for e, d in events if e == "note"][0]["text"])
+        self.assertEqual([], [d for e, d in events if e == "note"])  # no closing note of ours: i360 answers
         ask = self.chat.asks[-1]
         self.assertEqual(("convoy trucks", "app", "Asia/Jerusalem"), (ask["question"], ask["origin"], ask["tz"]))
         self.assertNotIn("focus", ask)  # no investigation open

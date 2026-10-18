@@ -271,7 +271,8 @@ TOOLS = [
 ]
 
 SYSTEM_PROMPT = """You are the assistant inside AI-Intelligence, an analyst map application on i360.
-Use the fewest tool calls that fulfil the request, then stop and answer in one or two short sentences.
+Use the fewest tool calls that fulfil the request. Write no answer of your own: i360's answer and what the app
+shows are the answer. Write text only to ask the user one short question when a request is ambiguous.
 - You never read data yourself. Every question about the data (records, people, phones, places, times,
   connections, what the investigation holds or has saved, what a record says) goes to ask_i360. Then show
   what it cited with show_items (from_last_answer=true, a clear label, and the view that fits: map when
@@ -499,6 +500,8 @@ def answer_entities(answer: dict[str, Any]) -> list[dict[str, str]]:
 
 
 # What a failed step says in the panel; the technical reason goes to the step's details and the log.
+DISPLAY_TOOLS = {"show_items", "open_layer", "open_item", "open_entity", "save_to_memory"}
+
 FAILED_STEP = {"ask_i360": "i360 didn't answer", "show_items": "Couldn't show the records",
                "open_item": "Couldn't open the record", "open_entity": "Couldn't open that person or entity",
                "open_layer": "Couldn't open the layer", "save_to_memory": "Couldn't save to memory"}
@@ -539,7 +542,11 @@ class ChatTurn:
         else:
             messages = [{"role": "system", "content": SYSTEM_PROMPT + "\n\n" + self.context_text()}]
             messages.append({"role": "user", "content": self.ctx.message})
+            # The answer is i360's (its stream is shown as it comes) and what the app shows; our model writes no
+            # closing note. It only picks the tools, and its text is shown only when it ran none (a question back
+            # to the analyst). The turn ends after the first round that put something on screen.
             note = ""
+            ran_tools = False
             for round_number in range(MAX_ROUNDS):
                 try:
                     reply = self.llm.complete(messages, TOOLS)
@@ -548,30 +555,31 @@ class ChatTurn:
                 except (NotOnThisEstate, Unreachable, HlError) as exc:
                     if round_number == 0:
                         self.fallback(f"The assistant is not available ({exc}); asking i360 directly.")
-                        break
-                    note = "The assistant stopped before finishing; what is shown above is complete."
                     break
                 calls = reply["tool_calls"]
                 if not calls and not reply["content"].strip():
                     # Nothing usable, e.g. the model spent its token budget thinking (finish_reason "length").
                     if round_number == 0:
                         self.fallback("The assistant gave no answer; asking i360 directly.")
-                    else:
-                        note = "The assistant stopped before finishing; what is shown above is complete."
                     break
                 if not calls:
-                    note = reply["content"].strip()
+                    note = "" if ran_tools else reply["content"].strip()
                     break
+                ran_tools = True
                 messages.append({"role": "assistant", "content": reply["content"] or None, "tool_calls": [
                     {"id": c["id"], "type": "function",
                      "function": {"name": c["name"], "arguments": json.dumps(c["arguments"], ensure_ascii=False)}}
                     for c in calls]})
+                shown = False
                 for call in calls:
                     result = self.run_tool(call["name"], call["arguments"])
+                    shown = shown or (call["name"] in DISPLAY_TOOLS and not result.get("error"))
                     messages.append({"role": "tool", "tool_call_id": call["id"],
                                      "content": json.dumps(result, ensure_ascii=False)[:6000]})
-            else:
-                note = "I stopped after several steps; tell me what is still missing."
+                asked_empty = any(c["name"] == "ask_i360" for c in calls) and not self.cited_this_turn \
+                    and not self.entities
+                if shown or asked_empty:
+                    break  # on screen, or i360 found nothing to show: its answer says so
             if note:
                 self.emit("note", {"text": note})
         self.emit("done", {"i360_conversation_id": self.i360_conversation_id, "i360_scope": self.i360_scope,
