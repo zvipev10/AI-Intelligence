@@ -589,9 +589,9 @@ class Handler(BaseHTTPRequestHandler):
         context = TurnContext.from_request(request)
         context.investigation_type = settings.external_investigation_type or settings.investigation_type
         locale = normalize_locale(str(request.get("locale") or "en"))
-        self.log_message("chat turn: scope %s, %d previous citations, viewer %s, i360 conversation %s",
+        self.log_message("chat turn: scope %s, %d previous citations, viewer %s, i360 conversation %s, message %s",
                          context.scope, len(context.previous_citations), context.viewer_item_id or "-",
-                         context.i360_conversation_id or "-")
+                         context.i360_conversation_id or "-", json.dumps(context.message[:300], ensure_ascii=False))
         self.start_stream()
 
         def emit(event: str, data: Any) -> None:
