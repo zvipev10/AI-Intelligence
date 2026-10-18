@@ -423,6 +423,8 @@ class ItemReader:
         layer = str(query.pop("layer", "") or "")
         query.pop("labels", None)  # display names for the layer's fields; read by the server, not sent
         query.pop("labels_by_id", None)  # the same for rows read by id (items/get alone); read by the server
+        query.pop("search_fields", None)  # field path -> i360 index field, for the chat's labels; not sent
+        query.pop("words", None)  # more names of the layer, for the chat's sets; not sent
         if query.pop("call_record", False) and layer:
             CALL_LAYERS.add(layer)  # rows get the fields the app's call viewer reads (see call_fields)
         # "all_fields" is ours too: rows carry every populated item field as i360.<path>;

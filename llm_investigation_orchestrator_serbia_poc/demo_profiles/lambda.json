@@ -40,6 +40,10 @@
   ]
  },
  "dataset_version": "i360",
+ "chat_labels": {
+  "_comment": "Words for i360 index fields that no layer column shows, sent to the i360 chat as labels with every question",
+  "related_objects.id": ["linked record", "linked to record", "רשומה מקושרת"]
+ },
  "items_query": {
   "i360_links": true,
   "queries": [
@@ -104,6 +108,10 @@
     "_labels_by_id": "Records read by id (items/get alone: chat, investigation records, report extras): HL API's items/get does not return 'language' (search only), so keyboard_language comes from the user agent's language_code there.",
     "labels_by_id": {
      "user_agents_data.language_code": "keyboard_language"
+    },
+    "search_fields": {
+     "_comment": "i360's index field where it differs from the item path and its trailing name (for the chat's labels)",
+     "user_agents_data.operating_system_name": "device_operating_system"
     }
    },
    {

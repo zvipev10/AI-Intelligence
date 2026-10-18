@@ -18,6 +18,7 @@ import csv
 import io
 import json
 import mimetypes
+import os
 import re
 import sys
 import time
@@ -638,9 +639,9 @@ class Handler(BaseHTTPRequestHandler):
         context = TurnContext.from_request(request)
         context.investigation_type = settings.external_investigation_type or settings.investigation_type
         locale = normalize_locale(str(request.get("locale") or "en"))
-        self.log_message("chat turn: scope %s, %d previous citations, viewer %s, i360 conversation %s",
+        self.log_message("chat turn: scope %s, %d previous citations, viewer %s, i360 conversation %s, message %s",
                          context.scope, len(context.previous_citations), context.viewer_item_id or "-",
-                         context.i360_conversation_id or "-")
+                         context.i360_conversation_id or "-", json.dumps(context.message[:300], ensure_ascii=False))
         self.start_stream()
 
         def emit(event: str, data: Any) -> None:
@@ -651,6 +652,7 @@ class Handler(BaseHTTPRequestHandler):
             if settings.llm_enabled else None
         chat = ChatServiceClient(settings.chat_service_url, token, settings.chat_idle_timeout_seconds)
         turn = ChatTurn(llm, chat, AppToolHost(self.app, token, locale), emit, context, settings.chat_model)
+        turn.raw_test = os.environ.get("CHAT_RAW_TEST") == "1"  # never set on LAMBDA
         try:
             turn.run()
         except ClientGone:
@@ -665,7 +667,8 @@ class Handler(BaseHTTPRequestHandler):
             self.try_stream_event("error", {"error": "internal_error", "message": "The chat failed."})
 
     def log_chat_event(self, event: str, data: Any) -> None:
-        """One log line per step, action and closing note of a chat turn (ids and counts, not the records)."""
+        """One log line per step, action and closing note of a chat turn (ids and counts, not the records),
+        plus the start of each i360 answer's text, to see what i360 said before our model summarised it."""
         data = data if isinstance(data, dict) else {}
         if event == "step":
             line = f"step{' (error)' if data.get('error') else ''}: {str(data.get('text') or '')[:200]}"
@@ -686,12 +689,21 @@ class Handler(BaseHTTPRequestHandler):
             line = f"action {data.get('kind')}: {detail}"
         elif event in {"note", "error"}:
             line = f"{event}: {str(data.get('text') or data.get('message') or '')[:200]}"
+        elif event == "i360" and data.get("event") == "understood":
+            # What i360 read in the question: field_words shows which of our words it took as a field.
+            line = f"i360 understood: {json.dumps(data.get('data'), ensure_ascii=False)[:800]}"
+            if data.get("layer"):
+                line += f", layer {data['layer']}"
         elif event == "i360" and data.get("event") in {"answer", "error"}:
             inner = data.get("data") or {}
             cards = inner.get("cards") if isinstance(inner.get("cards"), dict) else {}
             line = (f"i360 answer: {len(inner.get('citations') or [])} citations, {len(answer_entities(inner))} entities, "
                     f"leg {inner.get('leg')}, keys {sorted(inner)[:20]}, cards {sorted(cards)[:20]}"
                     if data.get("event") == "answer" else f"i360 error: {inner.get('code')} {inner.get('message')}")
+            if data.get("layer"):
+                line += f", layer {data['layer']}"
+            if data.get("event") == "answer":
+                line += f"\n    i360 text: {json.dumps(str(inner.get('content') or '')[:600], ensure_ascii=False)}"
             if data.get("event") == "answer" and inner.get("leg") in {"lookup", "entity", "entities"}:
                 # Entity answers' shapes are still being mapped: log their structure (ids and names, no record text).
                 sample = {k: inner.get(k) for k in ("cards", "people", "outside_entities", "lookup", "subject", "entities") if inner.get(k)}
@@ -889,29 +901,106 @@ class AppToolHost:
         """One entity i360 returned, read by id with the user's token, as the person viewer draws it."""
         return self.app.entity_record(self.token, entity_type, entity_id)
 
+    item_field_ids_cache: set[str] | None = None  # per server: the estate's fields change with a deployment
+    profile_labels_cache: dict[str, list[str]] | None = None
+    # Words the chat would read as a field in every question ("ip", "model"): never sent as labels.
+    LABEL_STOP_WORDS = {"ip", "os", "model", "brand", "time", "date", "type", "source", "location", "name", "id",
+                        "latitude", "longitude", "lat", "lon", "record id", "record_id"}
+
+    def index_field(self, path: str) -> str:
+        """A profile field path (``user_agents_data.device_brand``, ``i360.ip.ip_sessions.source_ip``) as i360's
+        index field (``device_brand``, ``source_ip``): the path itself, the layer's ``search_fields`` entry, or its
+        trailing segments. '' when the index has no such field (it cannot be searched)."""
+        known = self.item_field_ids()
+        path = re.sub(r"\[\d+\]", "", str(path or "").removeprefix("i360."))
+        for query in (self.app.profile.get("items_query") or {}).get("queries") or []:
+            override = ((query or {}).get("search_fields") or {}).get(path)
+            if override:
+                return override if not known or override in known else ""
+        if not known or path in known:
+            return path
+        parts = path.split(".")
+        return next((".".join(parts[i:]) for i in range(1, len(parts)) if ".".join(parts[i:]) in known), "")
+
+    def profile_labels(self) -> dict[str, list[str]]:
+        """The profile's names for its layers' fields as the i360 chat's ``labels`` (index field -> words), built
+        once: they are the same on every question."""
+        if AppToolHost.profile_labels_cache is None:
+            # The profile's own words for fields no layer column shows (a record's links: related_objects.id).
+            labels: dict[str, list[str]] = {str(f): [str(w) for w in words] for f, words in
+                                            (self.app.profile.get("chat_labels") or {}).items()
+                                            if not str(f).startswith("_") and self.index_field(f)}
+            for query in (self.app.profile.get("items_query") or {}).get("queries") or []:
+                for path, name in ((query or {}).get("labels") or {}).items():
+                    field = self.index_field(path) if not str(path).startswith("_") else ""
+                    if not field:
+                        continue
+                    for word in (str(name).replace("_", " ").strip(), str(name).strip()):
+                        if 3 < len(word) <= 40 and word.lower() not in self.LABEL_STOP_WORDS and word != field:
+                            words = labels.setdefault(field, [])
+                            if word.lower() not in {w.lower() for w in words}:
+                                words.append(word)
+            AppToolHost.profile_labels_cache = labels
+        return AppToolHost.profile_labels_cache
+
+    def item_field_ids(self) -> set[str]:
+        """The ids of the index's item fields (HL ``GET /api/v1/meta/item-fields``): the keys the i360 chat's
+        ``labels`` accept. Empty when the list cannot be read."""
+        if AppToolHost.item_field_ids_cache is None:
+            try:
+                listing = self.app.client(self.token).get("/api/v1/meta/item-fields")
+            except HlError as exc:
+                print(f"item-fields not read: {exc}", file=sys.stderr, flush=True)
+                return set()
+            ids: set[str] = set()
+
+            def collect(value: Any) -> None:
+                if isinstance(value, list):
+                    for entry in value:
+                        collect(entry)
+                elif isinstance(value, dict):
+                    if isinstance(value.get("id"), str):
+                        ids.add(value["id"])
+                    for key in ("fields", "items", "data"):
+                        collect(value.get(key))
+            collect(listing)
+            print(f"item-fields: {len(ids)} ids", file=sys.stderr, flush=True)
+            AppToolHost.item_field_ids_cache = ids
+        return AppToolHost.item_field_ids_cache
+
     def layers_scope(self) -> dict[str, Any] | None:
         """Our layers as the i360 chat's ``scope``: the profile's queries merged into one search."""
         request, exact = layers_search(self.app.profile.get("items_query") or {})
         if request is None:
             return None
         ids = [str(item.get("item_id")) for item in self.app.snapshot(self.token).items if item.get("item_id")]
-        return {"kind": "results", "name": "Our layers", "query": "the app's layers", "ids": ids[:100],
+        return {"kind": "results", "name": "Our layers", "query": "the app's layers", "ids": [],
                 "total": len(ids), "request": request, "exact": exact}
 
-    def layer_scopes(self) -> list[dict[str, Any]]:
-        """Each of our layers as its own i360 chat ``scope``, exact, for asking the layers one at a time."""
-        queries = (self.app.profile.get("items_query") or {}).get("queries") or []
-        items = self.app.snapshot(self.token).items
-        scopes = []
-        for query in queries:
+    def constant_scope(self) -> dict[str, Any] | None:
+        """All our layers as the i360 chat's ``scope``, the same on every question: their records, by i360 item id.
+        A field/value scope cannot hold them in one request (the Cellular layers' coverage facet cannot sit inside
+        an OR); the chat keeps a scope request up to 200,000 characters (about 5,000 ids)."""
+        ids = sorted({str(i["item_id"]) for i in self.app.snapshot(self.token).items if i.get("item_id")})
+        if not ids:
+            return None
+        return {"kind": "results", "name": "Our layers", "query": "the app's layers", "ids": [], "total": len(ids),
+                "request": {"filters": [{"field": "item_id", "values": ids}]}}
+
+    def layer_sets(self) -> dict[str, dict[str, Any]]:
+        """Our layers as the i360 chat's ``sets``, from the profile: each layer's name (and ``words``) for its item
+        types, sources, facets and filters. A question that names a layer is answered inside it."""
+        sets: dict[str, dict[str, Any]] = {}
+        for query in (self.app.profile.get("items_query") or {}).get("queries") or []:
             name = str((query or {}).get("layer") or "")
             request, _ = layers_search({"queries": [query]})
             if not name or request is None:
                 continue
-            ids = [str(i["item_id"]) for i in items if i.get("item_id") and i.get("_layer") == name]
-            scopes.append({"kind": "results", "name": name, "query": f"the {name} layer", "ids": ids[:100],
-                           "total": len(ids), "request": request})
-        return scopes
+            entry = {k: request[k] for k in ("item_types", "source_applications", "facet_filters", "filters")
+                     if request.get(k)}
+            words = [str(w) for w in (query.get("words") or []) if str(w).strip()]
+            sets[name] = {**({"words": [name] + words[:4]} if words else {}), **entry}
+        return sets
 
 
 def main(argv: list[str]) -> int:

@@ -300,6 +300,48 @@
     return String(item?.i360_item_id || "");
   }
 
+  /* A layer on screen as the chat sees it: its name, the filters applied in the app and its time range. */
+  function openLayerContext(layer) {
+    const filters = typeof validAppliedFilters === "function" ? validAppliedFilters(layer) : [];
+    const range = layer.catalogFilters || {};
+    // The results table's column filters (typed in a column header): they hide rows in the table only.
+    const control = state.resultTableControls instanceof Map ? state.resultTableControls.get(String(layer.id)) : null;
+    const tableFilters = Object.entries(control?.filters || {})
+      .filter(([, value]) => String(value || "").trim())
+      .map(([column, value]) => ({ field: String(control.columnFields?.[column] || `column ${column}`), value: String(value).trim(), where: "table" }));
+    return {
+      label: String(layer.label || ""),
+      filters: [...filters.map(filter => ({ field: String(filter.field), value: stringifyFilterValue(filter.value) })), ...tableFilters],
+      start_time: range.start_time || "", end_time: range.end_time || "",
+      shown: filters.length && typeof itemsForLayerPresentation === "function" ? itemsForLayerPresentation(layer).length : (layer.items || []).length,
+      total: (layer.items || []).length,
+    };
+  }
+
+  /* The i360 chat's "labels": the words our screen calls each i360 field by (its column name in Hebrew and
+     English, and the profile's name with spaces), keyed by the i360 field path. Short or everyday words are left
+     out: the chat reads every sent word as the field, in every question. */
+  const LABEL_STOP_WORDS = new Set(["ip", "os", "model", "brand", "time", "date", "type", "source", "location", "name",
+    "id", "record id", "latitude", "longitude", "זמן", "מיקום", "סוג", "מקור", "דגם", "יצרן"]);
+  // Words for i360 fields that no layer column shows: a record's links (related_objects.id is in i360's index).
+  const CHAT_FIELD_WORDS = { "related_objects.id": ["linked record", "linked to record", "רשומה מקושרת"] };
+  function i360Labels() {
+    const labels = Object.fromEntries(Object.entries(CHAT_FIELD_WORDS).map(([field, words]) => [field, [...words]]));
+    for (const layer of state.layerCatalog || []) {
+      for (const [field, key] of Object.entries(layer.field_labels || {})) {
+        const path = String(field).replace(/^i360\./, "");
+        const names = typeof VIEWER_FIELD_LABELS === "object" ? VIEWER_FIELD_LABELS[key] || [] : [];
+        const words = new Set(labels[path] || []);
+        [String(key).replaceAll("_", " "), String(key), ...names].forEach(word => {
+          const text = String(word || "").trim();
+          if (text.length > 3 && text.length <= 40 && text !== path && !LABEL_STOP_WORDS.has(text.toLowerCase())) words.add(text);
+        });
+        if (words.size) labels[path] = [...words].slice(0, 10);
+      }
+    }
+    return Object.fromEntries(Object.entries(labels).slice(0, 200));  // the server keeps i360's fields, at most 40
+  }
+
   async function openCited(id) {
     const response = await fetch("/api/chat/items", {
       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ids: [id], locale: "en" }),
@@ -311,9 +353,37 @@
     openRow(row, group.label);
   }
 
+  /* One record i360 cited, from one of our layers: open that layer (IPDR, ADINT...) instead of a new "Chat:" layer,
+     and focus the record's row in its table. False when that cannot be done (several records, a layer the catalog
+     does not have, or a record outside the layer's loaded rows): the records are then shown as a chat layer. */
+  async function focusInItsLayer(turn, action) {
+    const groups = action.groups || [];
+    const rows = groups.flatMap(group => (group.rows || []).map(row => ({ row, label: group.label })));
+    if (rows.length !== 1) return false;
+    const { row, label } = rows[0];
+    const recordId = String(row.record_id || row.event_id || "");
+    await ensureCatalog();
+    const meta = (state.layerCatalog || []).find(layer => layer.kind === "events"
+      && (layer.source_type === label || layer.label === label || layer.id === `events:${label}`));
+    if (!recordId || !meta) return false;
+    const layer = await openCatalogLayer(meta.id, { silent: true });
+    if (!layer || !(layer.items || []).some(item => String(item.record_id || item.event_id || "") === recordId)) return false;
+    layer.visible = true;
+    state.activeLayerId = layer.id;
+    state.focusedViewerRecordId = recordId;
+    if (!turn.shownLayerIds.includes(layer.id)) turn.shownLayerIds.push(layer.id);
+    activateView("table");
+    renderAllViews();
+    renderLayerSelector();
+    revealViewerRecordInTable(recordId);
+    return true;
+  }
+
   async function runAction(turn, action) {
     try {
-      if (action.kind === "show_items") {
+      if (action.kind === "show_items" && await focusInItsLayer(turn, action)) {
+        // shown in the record's own layer
+      } else if (action.kind === "show_items") {
         const added = itemLayers(action.groups || [], action.label || "results", `chat:${turn.id}`, action.view);
         turn.shownLayerIds.push(...added.map(layer => layer.id));
         if (added[0]) state.activeLayerId = added[0].id;
@@ -426,8 +496,9 @@
       i360_last_turns: CHAT.i360LastTurns,
       previous_citations: CHAT.citations,
       previous_entities: CHAT.entities || [],
-      open_layers: state.layers.filter(layer => layer.visible).map(layer => layer.label).slice(0, 40),
+      open_layers: state.layers.filter(layer => layer.visible).slice(0, 40).map(openLayerContext),
       viewer_item_id: viewerItemId(),
+      labels: i360Labels(),
       tz: (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone; } catch { return ""; } })(),
       locale: "en",
     };

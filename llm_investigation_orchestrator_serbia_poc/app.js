@@ -3268,8 +3268,8 @@ function viewerFields(item, kind) {
   return preferred.filter(key => !hidden.has(key) && item[key] != null && item[key] !== "").map(key => [key, item[key]]);
 }
 
-function viewerFieldLabel(key) {
-  const labels = {
+// Our field names on screen, [Hebrew, English]; also sent to the i360 chat as its `labels` (chat.js).
+const VIEWER_FIELD_LABELS = {
     package_id: ["חבילת ראיות", "Evidence package"],
     evidence_type: ["סוג ראיה", "Evidence type"],
     record_type: ["סוג רשומה", "Record type"],
@@ -3393,7 +3393,10 @@ function viewerFieldLabel(key) {
     ,overlays: ["גרפיקה אנליטית", "Analytic overlays"]
     ,revision: ["גרסה", "Revision"]
     ,updated_at: ["עודכן", "Updated"]
-  };
+};
+
+function viewerFieldLabel(key) {
+  const labels = VIEWER_FIELD_LABELS;
   if (!labels[key] && String(key).startsWith("i360.")) return String(key).slice("i360.".length).replaceAll("_", " ");
   return labels[key] ? activeLocaleText(...labels[key]) : key.replaceAll("_", " ");
 }
@@ -4572,9 +4575,11 @@ function enhanceResultsTable(layer) {
   const head = document.getElementById("evidenceHead");
   if (!head || !layer) return;
   const control = resultTableControl(layer.id);
+  control.columnFields = {};  // column -> field key (or its header text), so the chat can name a column filter
   [...head.querySelectorAll("th")].forEach((cell, column) => {
     if (cell.dataset.resultActionColumn === "true") return;
     const label = normalizedTableCellText(cell.textContent);
+    control.columnFields[column] = cell.dataset.field || label;
     const activeSort = control.sortColumn === column;
     const filterValue = String(control.filters[column] || "");
     const filterOpen = control.openFilterColumn === column;
@@ -4707,7 +4712,7 @@ function renderEvidence() {
   }
   if (activeLayer.kind === "evidence" && activeLayer.items?.length && activeLayer.items.every(item => item.evidence_type === "ipdr_package")) {
     const keys = ["package_id", "filename", "source_system", "record_count", "classification", "validation_state"];
-    head.innerHTML = `<tr>${keys.map(key => `<th>${escapeHtml(viewerFieldLabel(key))}</th>`).join("")}</tr>`;
+    head.innerHTML = `<tr>${keys.map(key => `<th data-field="${escapeHtml(key)}">${escapeHtml(viewerFieldLabel(key))}</th>`).join("")}</tr>`;
     body.innerHTML = activeItems.map(item => `<tr>${keys.map(key => `<td>${key === "package_id" ? `<button type="button" class="object-viewer-open" data-viewer-kind="ipdr_package" data-viewer-id="${escapeHtml(item.package_id)}">${escapeHtml(item.package_id)}</button>` : escapeHtml(item[key] ?? "—")}</td>`).join("")}</tr>`).join("") || `<tr><td colspan="6" class="empty-cell">${escapeHtml(activeLocaleText("אין חבילות להצגה", "No packages to display"))}</td></tr>`;
     enhanceResultsTable(activeLayer);
     return;
@@ -4857,7 +4862,7 @@ function renderEvidence() {
     const ordered = [...named, ...first, ...keys.filter(key => !first.includes(key) && !named.includes(key))];
     // The item id is always the first column, in every layer.
     const columns = keys.includes("i360.item_id") ? ["i360.item_id", ...ordered.filter(key => key !== "i360.item_id")] : ordered;
-    head.innerHTML = `<tr><th class="result-map-action-column" data-result-action-column="true"></th>${columns.map(key => `<th>${escapeHtml(fieldLabels[key] || viewerFieldLabel(key))}</th>`).join("")}</tr>`;
+    head.innerHTML = `<tr><th class="result-map-action-column" data-result-action-column="true"></th>${columns.map(key => `<th data-field="${escapeHtml(key)}">${escapeHtml(fieldLabels[key] || viewerFieldLabel(key))}</th>`).join("")}</tr>`;
     body.innerHTML = activeItems.length ? activeItems.map(event => {
       const eventId = String(event.record_id || event.event_id || "");
       const selected = isMapItemSelected(activeLayer.id, "event", eventId);
@@ -4876,7 +4881,7 @@ function renderEvidence() {
     : activeLayer.catalogLayerId === "events:Cellular Geolocations";
   if (cellularGeolocationTable) {
     const columns = ["event_id", "timestamp_utc", "imei", "sim", "target_msisdn", "target_imsi", "operator_msisdn", "operator_imsi", "location_name"];
-    head.innerHTML = `<tr><th class="result-map-action-column" data-result-action-column="true"></th>${columns.map(key => `<th>${escapeHtml(viewerFieldLabel(key))}</th>`).join("")}</tr>`;
+    head.innerHTML = `<tr><th class="result-map-action-column" data-result-action-column="true"></th>${columns.map(key => `<th data-field="${escapeHtml(key)}">${escapeHtml(viewerFieldLabel(key))}</th>`).join("")}</tr>`;
     body.innerHTML = activeItems.length ? activeItems.map(event => {
       const id = String(event.record_id || event.event_id || "");
       return `<tr class="${isViewerRecordSelected(id) ? "viewer-selected-row" : ""}"><td>${mapActionButton(activeLayer.id, "event", id, event)}</td>${columns.map(key => {
@@ -4892,7 +4897,7 @@ function renderEvidence() {
     : activeLayer.catalogLayerId === "events:ADINT";
   if (adintTable) {
     const columns = ["event_id", "device_id", "timestamp_utc", "brand", "model", "os", "keyboard_language", "ip", "latitude", "longitude", "accuracy_m"];
-    head.innerHTML = `<tr><th class="result-map-action-column" data-result-action-column="true"></th>${columns.map(key => `<th>${escapeHtml(viewerFieldLabel(key))}</th>`).join("")}</tr>`;
+    head.innerHTML = `<tr><th class="result-map-action-column" data-result-action-column="true"></th>${columns.map(key => `<th data-field="${escapeHtml(key)}">${escapeHtml(viewerFieldLabel(key))}</th>`).join("")}</tr>`;
     body.innerHTML = activeItems.length ? activeItems.map(event => {
       const eventId = String(event.record_id || event.event_id || "");
       const selected = isMapItemSelected(activeLayer.id, "event", eventId);
@@ -4911,7 +4916,7 @@ function renderEvidence() {
     : activeLayer.catalogLayerId === "events:IPDR";
   if (ipdrTable && (activeLayer.items || []).some(event => event.source_record_id)) {
     const fields = ["event_id", ...IPDR_SOURCE_FIELDS];
-    head.innerHTML = `<tr>${fields.map(key => `<th>${escapeHtml(ipdrTableFieldLabel(key))}</th>`).join("")}</tr>`;
+    head.innerHTML = `<tr>${fields.map(key => `<th data-field="${escapeHtml(key)}">${escapeHtml(ipdrTableFieldLabel(key))}</th>`).join("")}</tr>`;
     body.innerHTML = activeItems.length ? activeItems.map(event => `<tr class="${isViewerRecordSelected(event.event_id || event.record_id || "") ? "viewer-selected-row" : ""}">${fields.map(key => {
       const value = escapeHtml(event[key] == null || event[key] === "" ? "—" : event[key]);
       return key === "event_id"
