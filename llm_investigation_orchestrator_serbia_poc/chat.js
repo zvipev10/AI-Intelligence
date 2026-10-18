@@ -400,7 +400,15 @@
         if (!viewerObjects().has(`${kind}:${action.entity_id}`) && action.entity) state.entityDirectory.push(action.entity);
         if (!openObjectViewer(kind, action.entity_id)) throw new Error("The entity could not be opened.");
       } else if (action.kind === "open_item") {
-        openRow(action.row, action.group);
+        // As show_items does for one record: open the record's own layer, focus its row, then open its viewer.
+        // A record outside our layers' loaded rows still opens, in the chat's "opened records" layer.
+        const opened = action.row && await focusInItsLayer(turn, { groups: [{ label: action.group, rows: [action.row] }] });
+        if (opened) {
+          const recordId = String(action.row.record_id || action.row.event_id || action.row.i360_item_id || "");
+          if (!openObjectViewer("record", recordId)) throw new Error("The record viewer could not open this record.");
+        } else {
+          openRow(action.row, action.group);
+        }
       } else if (action.kind === "confirm_save") {
         turn.body.hidden = false;
         turn.body.appendChild(confirmCard(`Save the layer <b>${esc(action.layer)}</b> to this investigation's memory?`, async button => {
