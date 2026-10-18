@@ -25,12 +25,13 @@ import time
 from http import cookies
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 from urllib.parse import parse_qs, quote, unquote, urlparse
 
 import analysis
 from analysis import Dataset, normalize_locale, require_investigation_id
 from hl.chat import ChatServiceClient, ChatTurn, ClientGone, LlmClient, TurnContext, answer_entities
+from hl.internal import Catalogue, InternalTurn
 from hl.client import AuthExpired, HlClient, HlError, Unreachable
 from hl.config import ROOT, Settings, load_settings
 from hl.items import TELECOM_APPROVED, ItemReader, Snapshot, SnapshotCache, entity_presentation, item_fields, layers_search
@@ -650,6 +651,18 @@ class Handler(BaseHTTPRequestHandler):
 
         llm = LlmClient(self.app.client(token), settings.llm_model, timeout=settings.llm_timeout_seconds) \
             if settings.llm_enabled else None
+        if re.match(r"\s*/internal\b", context.message):
+            # /internal: answered from the records the app loaded, not by the i360 chat.
+            try:
+                self.internal_turn(token, locale, llm, emit, context)
+            except ClientGone:
+                self.log_message("chat: the browser closed the stream")
+            except AuthExpired:
+                self.try_stream_event("error", {"error": "signed_out", "message": "Sign in again."})
+            except Exception as exc:  # noqa: BLE001 - the stream is already open; report in it
+                self.log_message("chat /internal: unhandled error %r", exc)
+                self.try_stream_event("error", {"error": "internal_error", "message": "The /internal assistant failed."})
+            return
         chat = ChatServiceClient(settings.chat_service_url, token, settings.chat_idle_timeout_seconds)
         turn = ChatTurn(llm, chat, AppToolHost(self.app, token, locale), emit, context, settings.chat_model)
         turn.raw_test = os.environ.get("CHAT_RAW_TEST") == "1"  # never set on LAMBDA
@@ -665,6 +678,46 @@ class Handler(BaseHTTPRequestHandler):
         except Exception as exc:  # noqa: BLE001 - the stream is already open; report in it
             self.log_message("chat: unhandled error %r", exc)
             self.try_stream_event("error", {"error": "internal_error", "message": "The chat failed."})
+
+    def internal_turn(self, token: str, locale: str, llm: Any, emit: Callable[[str, Any], None],
+                      context: TurnContext) -> None:
+        """/internal <question>: the model turns the question into a query over the loaded records (our layer and
+        field names), our code runs it, the model answers from the result, and the records are shown."""
+        snap = self.app.snapshot(token)
+        rows = self.app.rows(snap, locale)
+        catalogue = snap.memo(f"internal:{locale}", lambda: self.internal_catalogue(snap, rows))
+        by_id = {str(r.get("record_id") or r.get("i360_item_id") or ""): r for r in rows}
+
+        def show(ids: list[str], view: str, label: str) -> int:
+            groups: dict[str, list[dict[str, Any]]] = {}
+            for record_id in ids:
+                row = by_id.get(record_id)
+                if row:
+                    groups.setdefault(str(row.get("source_type") or "records"), []).append(row)
+            if groups:
+                emit("action", {"kind": "show_items", "label": label, "view": view if view in ("map", "table", "timeline") else "table",
+                                "groups": [{"label": name, "rows": group} for name, group in groups.items()]})
+            return sum(len(g) for g in groups.values())
+
+        question = re.sub(r"^\s*/internal\b", "", context.message).strip()
+        result = InternalTurn(llm, catalogue, emit, show).run(question)
+        emit("done", {"i360_conversation_id": context.i360_conversation_id, "i360_scope": context.i360_scope,
+                      "summary": f"internal · {result.get('count', 0)} records", "i360_last_turns": context.i360_last_turns,
+                      "citations": [], "entities": []})
+
+    def internal_catalogue(self, snap: Any, rows: list[dict[str, Any]]) -> Catalogue:
+        layers: dict[str, list[dict[str, Any]]] = {}
+        for row in rows:
+            layers.setdefault(str(row.get("source_type") or ""), []).append(row)
+        labels = {layer: self.app.layer_field_labels(layer) for layer in layers}
+        entities: dict[str, str] = {}
+        for entity in snap.entities or []:
+            if isinstance(entity, dict):
+                entity_id = str(entity.get("entity_id") or entity.get("id") or "")
+                name = entity.get("name") or entity.get("entity_name") or entity.get("display_name")
+                if entity_id and name:
+                    entities[entity_id] = str(name)
+        return Catalogue({k: v for k, v in layers.items() if k}, labels, entities)
 
     def log_chat_event(self, event: str, data: Any) -> None:
         """One log line per step, action and closing note of a chat turn (ids and counts, not the records),

@@ -150,8 +150,9 @@ class LlmClient:
         return self.model
 
     def complete(self, messages: list[dict[str, Any]], tools: list[dict[str, Any]]) -> dict[str, Any]:
-        body: dict[str, Any] = {"messages": messages, "tools": tools, "tool_choice": "auto",
-                                "temperature": 0.1, "stream": False}
+        body: dict[str, Any] = {"messages": messages, "temperature": 0.1, "stream": False}
+        if tools:  # without tools the model writes text only
+            body.update({"tools": tools, "tool_choice": "auto"})
         model = self.resolve_model()
         if model:
             body["model"] = model
