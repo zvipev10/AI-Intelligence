@@ -1659,6 +1659,28 @@ async function deleteMemoryEntry(group, id) {
   await loadInvestigationMemory();
 }
 
+// Removing from memory shows the same bar as saving, inside the entry being removed, until the memory has reloaded.
+async function removeMemoryEntryWithProgress(button) {
+  const entry = button.closest(".memory-entry");
+  if (!entry || entry.dataset.memoryRemoving === "true") return;
+  entry.dataset.memoryRemoving = "true";
+  button.disabled = true;
+  entry.querySelector(".memory-entry-error")?.remove();
+  const label = activeLocaleText("מסיר מהזיכרון…", "Removing from memory…");
+  entry.insertAdjacentHTML("beforeend", `<div class="memory-save-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="${escapeHtml(label)}"><div class="memory-save-progress-track"><span></span></div><small>${escapeHtml(label)}</small></div>`);
+  const progress = startMemorySaveProgress(entry.querySelector(".memory-save-progress"));
+  try {
+    await deleteMemoryEntry(button.dataset.memoryDeleteGroup, button.dataset.memoryDeleteId);
+    await progress.finish();  // the list re-renders without the entry when the memory reloads
+  } catch (error) {
+    progress.stop();
+    entry.querySelector(".memory-save-progress")?.remove();
+    entry.insertAdjacentHTML("beforeend", `<p class="memory-comment-error memory-entry-error" role="alert">${escapeHtml(error.message || activeLocaleText("ההסרה נכשלה", "Remove failed"))}</p>`);
+    button.disabled = false;
+    delete entry.dataset.memoryRemoving;
+  }
+}
+
 function openMemoryScreen(trigger = memoryButton) {
   if (!state.investigationId || state.draftSessionActive) return;
   memoryReturnFocus = trigger;
@@ -5014,7 +5036,7 @@ document.addEventListener("click", event => {
   const memoryDelete = event.target.closest("[data-memory-delete-group][data-memory-delete-id]");
   if (memoryDelete) {
     event.preventDefault();
-    void deleteMemoryEntry(memoryDelete.dataset.memoryDeleteGroup, memoryDelete.dataset.memoryDeleteId).catch(error => { memoryCommentError.textContent = error.message; memoryCommentError.hidden = false; });
+    void removeMemoryEntryWithProgress(memoryDelete);
     return;
   }
   const memoryOpen = event.target.closest("[data-memory-open-group][data-memory-open-id]");
@@ -5533,10 +5555,9 @@ memoryCommentForm?.addEventListener("submit", async event => {
   } finally { submit.disabled = false; memoryCommentInput.disabled = false; }
 });
 
-// Saving to memory takes a few seconds (the save, then the memory reloads): a bar fills while it runs, easing toward
+// Saving to (or removing from) memory takes a few seconds (the save, then the memory reloads): a bar fills while it runs, easing toward
 // the end without reaching it, and completes when the save is done.
-function startMemorySaveProgress() {
-  const bar = document.getElementById("memoryCommentProgress");
+function startMemorySaveProgress(bar = document.getElementById("memoryCommentProgress")) {
   const fill = bar?.querySelector(".memory-save-progress-track span");
   if (!bar || !fill) return { finish: async () => {}, stop() {} };
   const started = performance.now();
