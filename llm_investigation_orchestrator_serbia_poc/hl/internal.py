@@ -1,4 +1,4 @@
-"""/internal: an assistant over the records the app has already loaded for its layers.
+"""/i (/internal): an assistant over the records the app has already loaded for its layers.
 
 The i360 chat is not asked. One message is one turn:
 
@@ -356,7 +356,7 @@ answer."""
 
 
 class InternalTurn:
-    """One /internal message: question -> query (model) -> result (our code) -> answer (model) -> shown."""
+    """One /i message: question -> query (model) -> result (our code) -> answer (model) -> shown."""
 
     def __init__(self, llm: Any, catalogue: Catalogue, emit: Callable[[str, Any], None],
                  show: Callable[[list[str], str, str], int], previous: list[str] | None = None,
@@ -368,7 +368,7 @@ class InternalTurn:
 
     def run(self, question: str) -> dict[str, Any]:
         if self.llm is None:
-            self.emit("note", {"text": "/internal needs the assistant model, which is not configured here."})
+            self.emit("note", {"text": "/i needs the assistant model, which is not configured here."})
             return {}
         self.emit("step", {"text": "Reading the question against the loaded layers", "live": True})
         if self.pending:

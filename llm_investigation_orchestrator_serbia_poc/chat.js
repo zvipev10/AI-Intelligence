@@ -465,7 +465,7 @@
       if (Array.isArray(data?.citations)) CHAT.citations = data.citations;
       turn.summary = data?.summary || "";
       if (Array.isArray(data?.entities)) CHAT.entities = data.entities;
-      // /internal asked which name was meant: the next message answers that question.
+      // /i asked which name was meant: the next message answers that question.
       CHAT.internalPending = data?.internal_pending || "";
     }
   }

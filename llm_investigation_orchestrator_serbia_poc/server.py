@@ -32,6 +32,8 @@ import analysis
 from analysis import Dataset, normalize_locale, require_investigation_id
 from hl.chat import ChatServiceClient, ChatTurn, ClientGone, LlmClient, TurnContext, answer_entities
 from hl.internal import Catalogue, InternalTurn
+
+INTERNAL_COMMAND = r"^\s*/(?:i|internal)\b"  # /i (and the older /internal): the assistant over the loaded data
 from hl.client import AuthExpired, HlClient, HlError, Unreachable
 from hl.config import ROOT, Settings, load_settings
 from hl.items import TELECOM_APPROVED, ItemReader, Snapshot, SnapshotCache, entity_presentation, item_fields, layers_search
@@ -651,11 +653,11 @@ class Handler(BaseHTTPRequestHandler):
 
         llm = LlmClient(self.app.client(token), settings.llm_model, timeout=settings.llm_timeout_seconds) \
             if settings.llm_enabled else None
-        # The /internal question a clarification was asked about: the next message (with or without /internal)
+        # The /i question a clarification was asked about: the next message (with or without /i)
         # answers it, unless it is another command.
         pending = str(request.get("internal_pending") or "")[:2000]
-        if re.match(r"\s*/internal\b", context.message) or (pending and not context.message.lstrip().startswith("/")):
-            # /internal: answered from the records the app loaded, not by the i360 chat.
+        if re.match(INTERNAL_COMMAND, context.message) or (pending and not context.message.lstrip().startswith("/")):
+            # /i: answered from the records the app loaded, not by the i360 chat.
             try:
                 self.internal_turn(token, locale, llm, emit, context, pending)
             except ClientGone:
@@ -663,8 +665,8 @@ class Handler(BaseHTTPRequestHandler):
             except AuthExpired:
                 self.try_stream_event("error", {"error": "signed_out", "message": "Sign in again."})
             except Exception as exc:  # noqa: BLE001 - the stream is already open; report in it
-                self.log_message("chat /internal: unhandled error %r", exc)
-                self.try_stream_event("error", {"error": "internal_error", "message": "The /internal assistant failed."})
+                self.log_message("chat /i: unhandled error %r", exc)
+                self.try_stream_event("error", {"error": "internal_error", "message": "The /i assistant failed."})
             return
         chat = ChatServiceClient(settings.chat_service_url, token, settings.chat_idle_timeout_seconds)
         turn = ChatTurn(llm, chat, AppToolHost(self.app, token, locale), emit, context, settings.chat_model)
@@ -684,7 +686,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def internal_turn(self, token: str, locale: str, llm: Any, emit: Callable[[str, Any], None],
                       context: TurnContext, pending: str = "") -> None:
-        """/internal <question>: the model turns the question into a query over the loaded records (our layer and
+        """/i <question>: the model turns the question into a query over the loaded records (our layer and
         field names), our code runs it, the model answers from the result, and the records are shown."""
         snap = self.app.snapshot(token)
         rows = self.app.rows(snap, locale)
@@ -717,10 +719,10 @@ class Handler(BaseHTTPRequestHandler):
                                 "groups": [{"label": name, "rows": group} for name, group in groups.items()]})
             return sum(len(g) for g in groups.values())
 
-        question = re.sub(r"^\s*/internal\b", "", context.message).strip()
+        question = re.sub(INTERNAL_COMMAND, "", context.message, count=1).strip()
         previous = [c["id"] for c in context.previous_citations]
         result = InternalTurn(llm, catalogue, emit, show, previous, pending).run(question)
-        # The records found go back to the browser as the answer's citations, so a following /internal question
+        # The records found go back to the browser as the answer's citations, so a following /i question
         # can say "them" (and the i360 chat sees them as the previous answer's records, as with its own).
         found = result.get("ids") if "ids" in result else previous
         emit("done", {"i360_conversation_id": context.i360_conversation_id, "i360_scope": context.i360_scope,
@@ -749,7 +751,7 @@ class Handler(BaseHTTPRequestHandler):
 
     @staticmethod
     def internal_person(entity_id: str, entity: dict[str, Any]) -> dict[str, Any]:
-        """A person as a row of /internal's "Persons" layer. i360's telecom knowledge on the person (MSISDN /
+        """A person as a row of /i's "Persons" layer. i360's telecom knowledge on the person (MSISDN /
         IMSI it derived from the linked records) carries a review status: "recommended" waits for the analyst's
         approval, "approved" is accepted."""
         telecom = entity.get("telecom") if isinstance(entity.get("telecom"), dict) else {}

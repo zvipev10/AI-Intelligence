@@ -5519,11 +5519,45 @@ memoryCommentForm?.addEventListener("submit", async event => {
   if (!action) return;
   const submit = document.getElementById("memoryCommentSubmit");
   submit.disabled = true;
+  memoryCommentInput.disabled = true;
   memoryCommentError.hidden = true;
-  try { await action.onSave(memoryCommentValue(memoryCommentInput.value)); closeMemoryCommentDialog(); }
-  catch (error) { memoryCommentError.textContent = error.message || activeLocaleText("השמירה נכשלה", "Save failed"); memoryCommentError.hidden = false; }
-  finally { submit.disabled = false; }
+  const progress = startMemorySaveProgress();
+  try {
+    await action.onSave(memoryCommentValue(memoryCommentInput.value));
+    await progress.finish();
+    closeMemoryCommentDialog();
+  } catch (error) {
+    progress.stop();
+    memoryCommentError.textContent = error.message || activeLocaleText("השמירה נכשלה", "Save failed");
+    memoryCommentError.hidden = false;
+  } finally { submit.disabled = false; memoryCommentInput.disabled = false; }
 });
+
+// Saving to memory takes a few seconds (the save, then the memory reloads): a bar fills while it runs, easing toward
+// the end without reaching it, and completes when the save is done.
+function startMemorySaveProgress() {
+  const bar = document.getElementById("memoryCommentProgress");
+  const fill = bar?.querySelector(".memory-save-progress-track span");
+  if (!bar || !fill) return { finish: async () => {}, stop() {} };
+  const started = performance.now();
+  let frame = 0;
+  const set = value => { fill.style.width = `${value}%`; bar.setAttribute("aria-valuenow", String(Math.round(value))); };
+  const tick = () => { set(92 * (1 - Math.exp(-(performance.now() - started) / 1800))); frame = requestAnimationFrame(tick); };
+  bar.hidden = false;
+  bar.classList.remove("is-done");
+  set(0);
+  frame = requestAnimationFrame(tick);
+  return {
+    async finish() {
+      cancelAnimationFrame(frame);
+      bar.classList.add("is-done");
+      set(100);
+      await new Promise(resolve => setTimeout(resolve, 320));
+      bar.hidden = true;
+    },
+    stop() { cancelAnimationFrame(frame); bar.hidden = true; },
+  };
+}
 appHomeButton?.addEventListener("click", () => setPageView("welcome"));
 welcomePage?.addEventListener("click", event => {
   const action = event.target.closest("[data-welcome-action]");

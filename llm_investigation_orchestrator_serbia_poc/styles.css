@@ -177,6 +177,16 @@ body.welcome-active .investigation-switcher { visibility: hidden; pointer-events
 .memory-comment-actions button { min-height:34px;border:1px solid rgba(146,170,205,.32);border-radius:8px;background:rgba(255,255,255,.04);color:var(--ink);padding:6px 12px;font:inherit;cursor:pointer; }
 .memory-comment-actions .primary-filter-action { border-color:rgba(88,166,255,.52);background:rgba(88,166,255,.14);color:var(--blue); }
 .memory-comment-error { margin:0;color:var(--red);font-size:12px; }
+.memory-save-progress { display:grid;gap:6px; }
+.memory-save-progress[hidden] { display:none; }
+.memory-save-progress-track { position:relative;height:4px;border-radius:999px;background:var(--blue-soft);overflow:hidden; }
+.memory-save-progress-track span { position:absolute;inset:0 auto 0 0;width:0;border-radius:inherit;background:linear-gradient(90deg, rgba(138,180,248,.55), var(--blue));transition:width .12s linear; }
+.memory-save-progress-track span::after { content:"";position:absolute;inset:0;background:linear-gradient(90deg, transparent, rgba(255,255,255,.45), transparent);transform:translateX(-100%);animation:memory-save-shimmer 1.1s ease-in-out infinite; }
+.memory-save-progress.is-done .memory-save-progress-track span { transition:width .3s ease-out; }
+.memory-save-progress.is-done .memory-save-progress-track span::after { animation:none; }
+.memory-save-progress small { color:var(--muted);font-size:12px; }
+@keyframes memory-save-shimmer { to { transform:translateX(100%); } }
+@media (prefers-reduced-motion: reduce) { .memory-save-progress-track span::after { animation:none; } }
 .collection-modal-panel>p,.collection-modal-panel header p { margin:0;color:var(--muted);font-size:12px;line-height:1.45; }
 .collection-request-types,.collection-extraction-objects { display:grid;gap:8px;margin:0;padding:0;border:0; }
 .collection-request-types legend,.collection-extraction-objects legend { font-size:12px;font-weight:800; }
