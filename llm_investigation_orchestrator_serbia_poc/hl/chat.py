@@ -37,6 +37,7 @@ from hl.client import AuthExpired, HlClient, HlError, NotOnThisEstate, Unreachab
 MAX_ROUNDS = 6
 MAX_SHOWN_ITEMS = 200
 MAX_CITED_FOR_MODEL = 25  # the model sees these; every cited id is still shown
+MAX_I360_CITATIONS = 500  # asked of i360 on every question (``citations.max``)
 # Questions i360 routes to its search leg (an investigation focus keeps them inside), tried in turn.
 OVERVIEW_LISTING_QUESTIONS = ("find all items", "search all items", "find all records")
 VIEWS = ("map", "timeline", "table")
@@ -751,8 +752,10 @@ class ChatTurn:
             # A new scope starts a new i360 conversation, so the old scope's evidence cannot leak into the answer.
             self.i360_conversation_id, self.i360_last_turns = "", []
         self.i360_scope = scope
+        # surface "aii": i360 knows this app's layers (its sets) and field words itself, so neither is sent.
         body: dict[str, Any] = {"request_id": "aii-" + uuid.uuid4().hex[:12], "question": question,
-                                "origin": "app", "medium": "auto"}
+                                "origin": "app", "medium": "auto", "surface": "aii",
+                                "citations": {"max": MAX_I360_CITATIONS}}
         if self.i360_conversation_id:
             body["conversation_id"] = self.i360_conversation_id
             if self.i360_last_turns:
@@ -769,22 +772,16 @@ class ChatTurn:
             body["entity"] = {"id": about["id"], "type": about["type"], "name": about["name"]}
         if self.ctx.timezone:
             body["tz"] = self.ctx.timezone
-        if self.i360_labels():
-            body["labels"] = self.i360_labels()
         scope_note = ""
         if scope == "layers":
-            # Constant on every question: the scope is all our layers' records, `sets` names each layer by its
-            # fields and values (i360 narrows to a layer when the question names it), `labels` names the fields.
-            # The question goes as typed: i360 reads the layers and the conditions in it.
+            # Constant on every question: the scope is our layers as i360 knows them for surface "aii" (kind
+            # "sets"); i360 narrows to a layer when the question names it. The question goes as typed.
             constant = getattr(self.host, "constant_scope", None)
             layers = constant() if constant else self.host.layers_scope()
             if not layers:
                 return {"error": "the app has no layers to search"}
-            layers.pop("exact", None)
-            body["scope"] = layers
-            sets = getattr(self.host, "layer_sets", None)
-            if sets and sets():
-                body["sets"] = sets()
+            body["scope"] = {"name": layers.get("name") or "Our layers", "query": layers.get("query") or "the app's layers",
+                             "total": layers.get("total"), "kind": "sets"}
             where = " (our layers)"
         else:
             where = " (this investigation)"

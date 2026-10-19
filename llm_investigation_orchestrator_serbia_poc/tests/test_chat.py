@@ -87,9 +87,9 @@ class ChatUnitTests(unittest.TestCase):
         turn = ChatTurn(None, Chat(), Host(), lambda e, d: None, ctx)
         turn.ask_i360({"question": "find him", "scope": "investigation"})
         self.assertNotIn("focus", asked[-1])
-        self.assertEqual("results", asked[-1]["scope"]["kind"])
+        self.assertEqual("sets", asked[-1]["scope"]["kind"])
         turn.ask_i360({"question": "find him everywhere", "scope": "all"})  # there is no wider scope
-        self.assertEqual("results", asked[-1]["scope"]["kind"])
+        self.assertEqual("sets", asked[-1]["scope"]["kind"])
 
     def test_auto_scope_comes_from_the_model_every_time(self):
         asked = []
@@ -106,7 +106,7 @@ class ChatUnitTests(unittest.TestCase):
         ctx = TurnContext.from_request({"message": "x", "investigation_id": "INV-1", "scope": "auto"})
         turn = ChatTurn(None, Chat(), Host(), lambda e, d: None, ctx)
         turn.ask_i360({"question": "show the calls"})  # the question does not say where: our layers
-        self.assertEqual("results", asked[-1]["scope"]["kind"])
+        self.assertEqual("sets", asked[-1]["scope"]["kind"])
         self.assertNotIn("focus", asked[-1])
         turn.ask_i360({"question": "linked records", "scope": "investigation"})
         self.assertEqual("INV-1", asked[-1]["focus"]["id"])
@@ -128,12 +128,12 @@ class ChatUnitTests(unittest.TestCase):
         question = "What data types and volume do we have in the system?"
         turn = ChatTurn(None, Chat(), Host(), lambda e, d: None, TurnContext.from_request({"message": question, "scope": "auto"}))
         turn.ask_i360({"question": question, "scope": "all"})
-        self.assertEqual("results", asked[-1]["scope"]["kind"])
+        self.assertEqual("sets", asked[-1]["scope"]["kind"])
         self.assertEqual("How many records are there, by type and month?", asked[-1]["question"])
         everywhere = "how many calls do we have everywhere in i360"
         turn = ChatTurn(None, Chat(), Host(), lambda e, d: None, TurnContext.from_request({"message": everywhere, "scope": "auto"}))
         turn.ask_i360({"question": everywhere, "scope": "all"})  # i360 is never asked outside our layers
-        self.assertEqual("results", asked[-1]["scope"]["kind"])
+        self.assertEqual("sets", asked[-1]["scope"]["kind"])
 
     def test_a_layer_in_the_investigation_is_filtered_from_i360s_listing(self):
         # "IPDR" means nothing to i360: the investigation's records it lists are grouped by our layers.
@@ -228,7 +228,7 @@ class ChatUnitTests(unittest.TestCase):
         self.assertEqual("p-1", [d for e, d in events if e == "action"][-1]["entity_id"])
         turn.ask_i360({"question": "his calls", "entity_id": "p-1"})
         self.assertEqual({"id": "p-1", "type": "PERSON_OF_INTEREST", "name": "Arman Rahimi"}, asked[-1]["entity"])
-        self.assertEqual("results", asked[-1]["scope"]["kind"])  # people too are asked about inside our layers
+        self.assertEqual("sets", asked[-1]["scope"]["kind"])  # people too are asked about inside our layers
         # The shape i360's entity leg returned on LAMBDA (cards.card), and the top-level people list.
         lambda_answer = {"leg": "entity", "cards": {"card": {
             "id": "da1cbd3a", "type": "PERSON_OF_INTEREST", "label": "Person", "kind": "entity", "name": "Arman Rahimi",
@@ -274,7 +274,7 @@ class ChatUnitTests(unittest.TestCase):
         off = ChatTurn(None, Chat(), None, lambda e, d: None, ctx)  # off by default: the usual turn
         self.assertFalse(off.raw_test)
 
-    def test_scope_sets_and_labels_are_constant_and_the_question_goes_as_typed(self):
+    def test_the_scope_is_constant_and_the_question_goes_as_typed(self):
         asked = []
 
         class Chat:
@@ -298,8 +298,12 @@ class ChatUnitTests(unittest.TestCase):
             turn.ask_i360({"question": "a rewording by the model", "scope": "layers"})
         first, second = asked
         self.assertEqual("IPDR records where linked record is X", first["question"])  # nothing taken out
-        self.assertEqual((first["scope"], first["sets"], first["labels"]), (second["scope"], second["sets"], second["labels"]))
-        self.assertEqual({"related_objects.id": ["linked record"]}, first["labels"])
+        # Surface "aii": i360 knows our layers and field words, so the body holds neither, and the scope is constant.
+        self.assertEqual(first["scope"], second["scope"])
+        self.assertEqual({"name": "Our layers", "query": "the app's layers", "total": 2, "kind": "sets"}, first["scope"])
+        self.assertEqual(("aii", {"max": 500}), (first["surface"], first["citations"]))
+        self.assertNotIn("sets", first)
+        self.assertNotIn("labels", first)
 
     def test_open_item_takes_an_id_the_user_typed(self):
         class Host:
@@ -434,11 +438,10 @@ class ChatApiTests(unittest.TestCase):
         ask = self.chat.asks[-1]
         self.assertEqual(("convoy trucks", "app", "Asia/Jerusalem"), (ask["question"], ask["origin"], ask["tz"]))
         self.assertNotIn("focus", ask)  # no investigation open
-        # The constant scope: our layers' records, by item id; `sets` names each layer by its fields and values.
-        self.assertEqual("Our layers", ask["scope"]["name"])
-        ids = ask["scope"]["request"]["filters"][0]
-        self.assertEqual("item_id", ids["field"])
-        self.assertEqual(ask["scope"]["total"], len(ids["values"]))
+        # The constant scope: our layers as i360 knows them for surface "aii", with the count of our records.
+        self.assertEqual(("Our layers", "sets", "aii"), (ask["scope"]["name"], ask["scope"]["kind"], ask["surface"]))
+        self.assertGreater(ask["scope"]["total"], 0)
+        self.assertNotIn("request", ask["scope"])
 
     def test_open_investigation_is_the_focus(self):
         self.ask(self.signed_in(), {"message": "convoy", "investigation_id": "INV-1", "investigation_name": "Convoy"})
@@ -446,10 +449,10 @@ class ChatApiTests(unittest.TestCase):
                           "label": "Investigation"}, self.chat.asks[-1]["focus"])
         self.ask(self.signed_in(), {"message": "convoy", "investigation_id": "INV-1", "scope": "layers"})
         self.assertNotIn("focus", self.chat.asks[-1])
-        self.assertEqual("results", self.chat.asks[-1]["scope"]["kind"])
+        self.assertEqual("sets", self.chat.asks[-1]["scope"]["kind"])
         self.ask(self.signed_in(), {"message": "convoy", "investigation_id": "INV-1", "scope": "all"})
         self.assertNotIn("focus", self.chat.asks[-1])
-        self.assertEqual("results", self.chat.asks[-1]["scope"]["kind"])  # there is no "all data" scope
+        self.assertEqual("sets", self.chat.asks[-1]["scope"]["kind"])  # there is no "all data" scope
 
     def test_investigation_questions_avoid_i360_memory_words(self):
         browser = self.signed_in()
