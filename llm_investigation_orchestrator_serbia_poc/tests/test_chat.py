@@ -315,6 +315,35 @@ class ChatUnitTests(unittest.TestCase):
         self.assertEqual("2a8dbf57-1234", turn.open_item({"item_id": "2a8dbf57-1234"})["opened"])
         self.assertIn("error", turn.open_item({"item_id": "other-record"}))
 
+    def test_cited_records_are_shown_even_when_the_model_believes_the_text(self):
+        class Llm:
+            rounds = 0
+
+            def complete(self, messages, tools):
+                Llm.rounds += 1
+                if Llm.rounds == 1:
+                    return {"content": "", "tool_calls": [{"id": "a", "name": "ask_i360", "arguments": {"scope": "layers"}}]}
+                return {"content": "i360 says these results do not hold the answer.", "tool_calls": []}
+
+        class Chat:
+            def ask(self, body, conversation_id):
+                return iter([("answer", {"content": "These results do not hold the answer.", "leg": "search",
+                                         "citations": [{"id": f"a-{n}"} for n in range(30)]})])
+
+        class Host:
+            def constant_scope(self):
+                return {"kind": "results", "name": "Our layers", "total": 30}
+
+            def item_layers(self, ids):
+                return [{"label": "ADINT", "rows": [{"i360_item_id": i} for i in ids]}]
+
+        for question, shown in (("Are there ADINT records with language is fa?", 30), ("how many ADINT records are there?", 0)):
+            Llm.rounds, events = 0, []
+            ctx = TurnContext.from_request({"message": question, "scope": "auto"})
+            ChatTurn(Llm(), Chat(), Host(), lambda e, d: events.append((e, d)), ctx).run()
+            actions = [d for e, d in events if e == "action"]
+            self.assertEqual(shown, sum(len(g["rows"]) for a in actions for g in a["groups"]), question)
+
     def test_listing_the_25_cited_ids_it_sees_shows_all_cited(self):
         class Host:
             def item_layers(self, ids):

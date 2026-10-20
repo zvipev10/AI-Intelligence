@@ -457,6 +457,8 @@ INVESTIGATION_RECORDS_QUESTION = "What records are linked in this investigation?
 VOLUME = re.compile(r"\b(data types?|types of data|volume|how much data|what data do we have|what do we have|"
                     r"how many records do we have)\b", re.I)
 COUNT_QUESTION = "How many records are there, by type and month?"
+# A question asking only for a number: i360's text is the answer and the records it sampled are not shown.
+ASKS_A_NUMBER = re.compile(r"\b(how many|count|number of)\b", re.I)
 
 
 def investigation_wording(question: str) -> str:
@@ -562,6 +564,7 @@ class ChatTurn:
             # to the analyst). The turn ends after the first round that put something on screen.
             note = ""
             ran_tools = False
+            shown_any = False
             for round_number in range(MAX_ROUNDS):
                 try:
                     reply = self.llm.complete(messages, TOOLS)
@@ -593,8 +596,15 @@ class ChatTurn:
                                      "content": json.dumps(result, ensure_ascii=False)[:6000]})
                 asked_empty = any(c["name"] == "ask_i360" for c in calls) and not self.cited_this_turn \
                     and not self.entities
+                shown_any = shown_any or shown
                 if shown or asked_empty:
                     break  # on screen, or i360 found nothing to show: its answer says so
+            if (self.cited_this_turn and not shown_any and not note and not ASKS_A_NUMBER.search(self.ctx.message)
+                    and not VOLUME.search(self.ctx.message)):
+                # i360 cited records but the model showed none (e.g. it believed i360's "these results do not hold
+                # the answer"): what i360 found is its cited records, so they are shown.
+                self.show_items({"from_last_answer": True, "label": self.ctx.message[:60],
+                                 "view": "map" if self.has_places else "table"})
             if note:
                 self.emit("note", {"text": note})
         self.emit("done", {"i360_conversation_id": self.i360_conversation_id, "i360_scope": self.i360_scope,
