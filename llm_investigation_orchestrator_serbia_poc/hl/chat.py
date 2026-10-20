@@ -941,6 +941,9 @@ class ChatTurn:
             if unknown:
                 return {"error": f"{len(unknown)} ids were not cited by i360 in this conversation; use from_last_answer"}
             ids = requested
+            cited = [c["id"] for c in self.cited]
+            if len(cited) > MAX_CITED_FOR_MODEL and len(requested) >= MAX_CITED_FOR_MODEL and set(requested) <= set(cited):
+                ids = cited  # the model listed every cited id it was shown (the first 25): it means all of them
         if not ids:
             return {"error": "nothing to show: i360 cited no items in its last answer (this says nothing about "
                              "the layers on screen)"}

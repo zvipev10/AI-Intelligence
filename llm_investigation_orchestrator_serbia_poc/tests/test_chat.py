@@ -315,6 +315,18 @@ class ChatUnitTests(unittest.TestCase):
         self.assertEqual("2a8dbf57-1234", turn.open_item({"item_id": "2a8dbf57-1234"})["opened"])
         self.assertIn("error", turn.open_item({"item_id": "other-record"}))
 
+    def test_listing_the_25_cited_ids_it_sees_shows_all_cited(self):
+        class Host:
+            def item_layers(self, ids):
+                return [{"label": "ADINT", "rows": [{"i360_item_id": i} for i in ids]}]
+
+        cited = [f"a-{n}" for n in range(30)]
+        ctx = TurnContext.from_request({"message": "ADINT records with fa", "previous_citations": cited})
+        turn = ChatTurn(None, None, Host(), lambda e, d: None, ctx)
+        self.assertEqual(30, turn.show_items({"item_ids": cited[:25], "label": "fa", "view": "table"})["shown"])
+        other = ChatTurn(None, None, Host(), lambda e, d: None, TurnContext.from_request({"message": "x", "previous_citations": cited}))
+        self.assertEqual(3, other.show_items({"item_ids": cited[:3], "label": "three", "view": "table"})["shown"])
+
     def test_open_item_returns_no_record_fields(self):
         class Host:
             def item_layers(self, ids):
