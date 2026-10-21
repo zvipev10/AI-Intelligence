@@ -470,6 +470,27 @@ def investigation_wording(question: str) -> str:
     return question
 
 
+I360_LEGS = {"criteria": "filter on the layers and fields", "search": "text search", "hop": "links between records",
+             "relations": "the platform's related records", "overview": "overview", "count": "count"}
+
+
+def i360_step_detail(body: dict[str, Any], where: str, understood: dict[str, Any], answer: dict[str, Any],
+                     cited: int) -> str:
+    """What the "Asked i360" step shows when opened: the question sent, what i360 read in it, its path, the result."""
+    read = [f"layer {', '.join(str(s.get('name')) for s in understood.get('sets') or [] if s.get('name'))}"] \
+        if understood.get("sets") else []
+    for f in understood.get("field_filters") or []:
+        value = "has a value" if f.get("exists") else (("≠ " if f.get("negated") else "= ") + str(f.get("value")))
+        read.append(f"{f.get('asked') or f.get('field')} {value}")
+    leg = str(answer.get("leg") or "")
+    total = answer.get("total")
+    lines = [f"Question sent: {body.get('question')}", f"Searched: {where}",
+             f"i360 read: {'; '.join(read) if read else 'no layer or field condition'}",
+             f"i360 path: {leg} ({I360_LEGS[leg]})" if leg in I360_LEGS else (f"i360 path: {leg}" if leg else ""),
+             f"Found: {total if isinstance(total, int) else cited} · cited {cited}"]
+    return "\n".join(line for line in lines if line)
+
+
 def cited_items(value: Any) -> list[dict[str, str]]:
     """i360 citations as the app keeps them: id, type, time and a line of text; plain ids are accepted."""
     out = []
@@ -803,8 +824,14 @@ class ChatTurn:
                            "scope": (body.get("scope") or {}).get("kind", ""), "question": body["question"][:200]})
         if scope == "layers" and VOLUME.search(question):
             body["question"] = COUNT_QUESTION  # i360's count leg, not a search for the question's words
-        answer, error, _, conversation = self.stream(
-            body, self.i360_conversation_id or None, lambda e, d: self.emit("i360", {"event": e, "data": d}))
+        understood: dict[str, Any] = {}
+
+        def relay(event: str, data: Any) -> None:
+            if event == "understood" and isinstance(data, dict):
+                understood.update(data)
+            self.emit("i360", {"event": event, "data": data})
+
+        answer, error, _, conversation = self.stream(body, self.i360_conversation_id or None, relay)
         if conversation:
             self.i360_conversation_id = conversation
         if answer is not None and answer.get("turn_id"):
@@ -862,7 +889,7 @@ class ChatTurn:
             f"{len(ids)} record{'' if len(ids) == 1 else 's'}" if ids or not entities else "",
             f"{len(entities)} {'person' if len(entities) == 1 else 'people/entities'}" if entities else "") if part)
         self.emit("step", {"text": f"Asked i360 ({where_label}) · {found} · {time.monotonic() - asked_at:.0f} s",
-                           "tool": "ask_i360"})
+                           "tool": "ask_i360", "detail": i360_step_detail(body, where_label, understood, answer, len(ids))})
         self.summary.append(f"i360 · {where_label} · {found}")
         found = answer.get("total") if isinstance(answer.get("total"), int) else len(ids)
         return {
@@ -971,7 +998,9 @@ class ChatTurn:
         self.emit("action", {"kind": "show_items", "label": label, "view": view, "groups": groups})
         missing = len(ids) - shown
         self.emit("step", {"text": f"Showed {shown} record{'' if shown == 1 else 's'} on the {view}"
-                                   + (f" · {missing} couldn't be read" if missing else ""), "tool": "show_items"})
+                                   + (f" · {missing} couldn't be read" if missing else ""), "tool": "show_items",
+                           "detail": f"New layer: Chat: {label}\n" + "\n".join(
+                               f"{g['label']}: {len(g['rows'])} record{'' if len(g['rows']) == 1 else 's'}" for g in groups)})
         self.summary.append(f"→ {view}" + (f" ({missing} missing)" if missing else ""))
         return {"shown": shown, "layers": [f"Chat: {label} · {g['label']}" if len(groups) > 1 else f"Chat: {label}" for g in groups],
                 "view": view, "missing": len(ids) - shown}

@@ -103,17 +103,19 @@
     turn.steps += 1;
     const item = document.createElement("li");
     item.className = "activity-item";
-    item.innerHTML = `
+    // A step opens only when it has details to show; one without is a plain line (no arrow).
+    const head = `<span class="activity-step-number">${turn.steps}</span>
+          <strong class="activity-step-title" title="${esc(title)}">${esc(title)}</strong>`;
+    item.innerHTML = detail ? `
       <details class="activity-disclosure">
         <summary class="activity-card-summary">
-          <span class="activity-step-number">${turn.steps}</span>
-          <strong class="activity-step-title">${esc(title)}</strong>
+          ${head}
           <span class="material-symbols-rounded activity-expand-icon" aria-hidden="true">expand_more</span>
         </summary>
         <div class="activity-expanded">
-          ${detail ? `<div class="activity-flow"><section class="activity-section"><p class="activity-detail">${esc(detail)}</p></section></div>` : ""}
+          <div class="activity-flow"><section class="activity-section"><p class="activity-detail">${esc(detail)}</p></section></div>
         </div>
-      </details>`;
+      </details>` : `<div class="activity-card-summary activity-card-plain">${head}</div>`;
     turn.list.appendChild(item);
     follow(shouldFollow);
   }

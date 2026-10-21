@@ -26,7 +26,7 @@
 .message-label {margin-bottom: 5px; color: var(--muted); font-size: 10px; font-weight: 700;}
 .research-process {margin: 0 0 9px; padding: 9px; border: 1px solid var(--line); border-radius: 7px; background: rgba(255,255,255,.04);}
 .research-process h3 {margin-bottom: 8px; color: var(--blue); font-size: 12px;}
-.research-steps-toggle {margin: 0 0 10px; padding: 8px 9px; border: 1px solid var(--line); border-radius: 6px; background: rgba(255,255,255,.05);}
+.research-steps-toggle {min-width: 0; max-width: 100%; box-sizing: border-box; margin: 0 0 10px; padding: 8px 9px; border: 1px solid var(--line); border-radius: 6px; background: rgba(255,255,255,.05);}
 .research-steps-toggle summary {color: var(--blue); cursor: pointer; font-size: 11px; font-weight: 800; user-select: none;}
 .research-steps-toggle summary:hover {text-decoration: underline;}
 .answer-body {display: grid; gap: 7px;}
@@ -59,13 +59,15 @@
 @media (prefers-reduced-motion: reduce) {
   .thinking-dots i {animation: none; opacity: .65;}
 }
-.activity-list {margin: 0; padding: 0; list-style: none; display: grid; align-content: start; gap: 12px; overflow: visible;}
-.activity-item {position: relative; padding: 0; border: 1px solid var(--line); border-radius: 8px; background: var(--panel-2); box-shadow: 0 1px 2px rgba(0,0,0,.18);}
+.activity-list {min-width: 0; margin: 8px 0 0; padding: 0; list-style: none; display: grid; grid-template-columns: minmax(0, 1fr); align-content: start; gap: 12px; overflow: visible;}
+.activity-item {min-width: 0; box-sizing: border-box; position: relative; padding: 0; border: 1px solid var(--line); border-radius: 8px; background: var(--panel-2); box-shadow: 0 1px 2px rgba(0,0,0,.18);}
 .activity-item:not(:last-child)::after {content: ""; position: absolute; right: 25px; bottom: -13px; width: 1px; height: 13px; background: var(--line);}
 .activity-disclosure {min-width: 0;}
 .activity-card-summary {min-width: 0; display: flex; align-items: center; gap: 9px; padding: 10px 12px; border-radius: 8px; cursor: pointer; list-style: none; user-select: none;}
 .activity-card-summary::-webkit-details-marker {display: none;}
 .activity-card-summary:hover {background: rgba(255,255,255,.035);}
+.activity-card-plain {cursor: default;}
+.activity-card-plain:hover {background: none;}
 .activity-card-summary:focus-visible {outline: 2px solid rgba(88,166,255,.45); outline-offset: -2px;}
 .activity-step-number {display: grid; place-items: center; width: 25px; height: 25px; flex: 0 0 25px; border-radius: 50%; background: var(--blue); color: white; font-size: 11px; font-weight: 800;}
 .activity-step-title {min-width: 0; flex: 1; overflow: hidden; color: var(--ink); font-size: 12px; text-overflow: ellipsis; white-space: nowrap;}
@@ -81,7 +83,7 @@
 .activity-section {padding: 8px 9px; border-radius: 6px; background: #151922; border: 1px solid var(--line);}
 .activity-section-label {color: var(--muted); font-size: 9px; font-weight: 800; letter-spacing: .02em;}
 .activity-rationale {color: var(--blue);}
-.activity-detail {color: var(--muted);}
+.activity-detail {margin: 0; color: var(--muted); font-size: 11px; line-height: 1.5; white-space: pre-line; overflow-wrap: anywhere;}
 .activity-result {color: var(--ink); font-weight: 700;}
 .assistant-object-links {display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px;}
 .assistant-object-links .object-viewer-open {padding: 4px 8px; border: 1px solid rgba(88,166,255,.35); border-radius: 999px; text-decoration: none; font-size: 12px;}
