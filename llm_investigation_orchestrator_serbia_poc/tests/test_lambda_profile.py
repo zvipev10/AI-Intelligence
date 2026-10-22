@@ -108,8 +108,8 @@ class LambdaProfileTests(unittest.TestCase):
         self.assertEqual("Military Intelligence", body["title"])
         self.assertEqual(["ADINT", "Cellular Geolocations", "Cellular Calls", "Satellite", "CCTV"], [e["name"] for e in body["applications"]])
         self.assertEqual("./?layer=ADINT", body["applications"][0]["url"])
-        self.assertEqual(["Administrator", "Dashboards", "i360 Studio"], [e["name"] for e in body["workspace"]])
-        self.assertNotIn("url", body["workspace"][1])  # Dashboards: not on LAMBDA yet, shown as unavailable
+        self.assertEqual(["i360", "Administrator", "Dashboards", "i360 Studio"], [e["name"] for e in body["workspace"]])
+        self.assertNotIn("url", body["workspace"][2])  # Dashboards: not on LAMBDA yet, shown as unavailable
         import urllib.request
         with urllib.request.urlopen(self.base + "/home") as response:
             page = response.read().decode("utf-8")

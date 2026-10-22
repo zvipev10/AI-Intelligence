@@ -395,6 +395,12 @@
   ],
   "workspace": [
    {
+    "name": "i360",
+    "description": "All in one intelligence platform",
+    "icon": "i360",
+    "url": "https://intel360.lambda.projects.e-bitbox.com/"
+   },
+   {
     "name": "Administrator",
     "description": "Users, roles, sources",
     "icon": "shield",

@@ -48,6 +48,7 @@
     .tile div > span { display: block; margin-top: 5px; color: var(--muted); font-size: 11.5px; }
     .tile.unavailable { opacity: .55; cursor: default; }
     .tile .icon { width: 44px; height: 44px; }
+    .icon.logo img { width: 34px; height: auto; display: block; }
     .workspace { display: grid; gap: 12px; align-content: start; }
     .workspace .tile { min-height: 68px; padding: 12px 14px; }
     .workspace .tile.highlight { border-color: rgba(74,158,255,.55); background: #0f1a2a; }
@@ -87,8 +88,7 @@
         <div id="apps" class="apps"><p class="message">Loading…</p></div>
       </section>
       <div class="main-divider" aria-hidden="true"></div>
-      <section aria-labelledby="workspaceTitle">
-        <h2 id="workspaceTitle">Workspace</h2>
+      <section aria-label="Workspace">
         <div id="workspace" class="workspace"></div>
       </section>
     </main>
@@ -120,7 +120,7 @@
       // An entry with a url opens it (same tab for this app, a new tab for another); without one it is shown
       // as not available on this deployment.
       const tile = (entry, extra = "") => {
-        const body = `<span class="icon" aria-hidden="true">${svg(entry.icon)}</span><div><strong>${esc(entry.name)}</strong><span>${esc(entry.url ? entry.description : (entry.unavailable || "Not available on this deployment"))}</span></div>`;
+        const body = `<span class="icon${entry.icon === "i360" ? " logo" : ""}" aria-hidden="true">${entry.icon === "i360" ? '<img src="./assets/i360-logo.png" alt="">' : svg(entry.icon)}</span><div><strong>${esc(entry.name)}</strong><span>${esc(entry.url ? entry.description : (entry.unavailable || "Not available on this deployment"))}</span></div>`;
         if (!entry.url) return `<div class="tile unavailable ${extra}" aria-disabled="true">${body}</div>`;
         const external = /^https?:/i.test(entry.url);
         return `<a class="tile ${extra}" href="${esc(entry.url)}"${external ? ' target="_blank" rel="noopener"' : ""}>${body}</a>`;
