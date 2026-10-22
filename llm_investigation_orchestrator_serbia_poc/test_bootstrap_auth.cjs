@@ -32,7 +32,7 @@ async function boot({ status, responses = {} }) {
     const answer = responses[url] || { status: 200, body: {} };
     return { ok: answer.status < 400, status: answer.status, json: async () => answer.body, text: async () => '' };
   };
-  const window = { fetch, location: { href: 'http://app.test/', reload() { window.reloaded = true; } } };
+  const window = { fetch, location: { href: 'http://app.test/', reload() { window.reloaded = true; }, replace(url) { window.replacedWith = url; } } };
   const storage = new Map();
   const context = {
     window, URL, Headers, console, location: { origin: 'http://app.test', href: 'http://app.test/' },
@@ -59,20 +59,20 @@ async function boot({ status, responses = {} }) {
   assert.equal(signedOut.root.dataset.appReady, 'true');
   assert.equal(typeof signedOut.window.DEMO_STORAGE.getItem, 'function', 'namespaced storage is still available');
 
-  // Wrong password shows an error; a correct one reloads the page.
+  // Wrong password shows an error; a correct one opens the launcher (/home).
   const wrong = await boot({ status: { authenticated: false }, responses: { '/api/login': { status: 401, body: { error: 'invalid_credentials' } } } });
   const wrongScreen = wrong.body.children.find(child => child.id === 'loginScreen');
   wrongScreen.querySelector('#loginUsername').value = 'analyst';
   wrongScreen.querySelector('#loginPassword').value = 'nope';
   await wrongScreen.querySelector('#loginForm').listeners.submit({ preventDefault() {} });
   assert.equal(wrongScreen.querySelector('#loginError').hidden, false, 'wrong credentials show the error message');
-  assert.ok(!wrong.window.reloaded);
+  assert.ok(!wrong.window.reloaded && !wrong.window.replacedWith);
   const right = await boot({ status: { authenticated: false }, responses: { '/api/login': { status: 200, body: { user: { user_name: 'analyst' } } } } });
   const rightScreen = right.body.children.find(child => child.id === 'loginScreen');
   rightScreen.querySelector('#loginUsername').value = 'analyst';
   rightScreen.querySelector('#loginPassword').value = 'analyst';
   await rightScreen.querySelector('#loginForm').listeners.submit({ preventDefault() {} });
-  assert.ok(right.window.reloaded, 'successful sign-in reloads the page');
+  assert.equal(right.window.replacedWith, './home', 'successful sign-in opens the launcher');
 
   // Signed in: app.js loads, the user name is shown, sign-out posts /api/logout.
   const signedIn = await boot({ status: { authenticated: true, scenario_id: 'syria', dataset_version: 'i360' }, responses: { '/api/me': { status: 200, body: { user_name: 'analyst' } } } });
@@ -93,5 +93,5 @@ async function boot({ status, responses = {} }) {
   assert.ok(expiredScreen, 'login screen returns after a 401');
   assert.match(expiredScreen.innerHTML, /class="login-expired" role="status" >/);
   assert.doesNotMatch(source, /X-Demo-Generation|agent-queue|maintenance/);
-  console.log('PASS: sign-in screen, wrong-password error, reload on success, app load when signed in, sign-out, expiry handling');
+  console.log('PASS: sign-in screen, wrong-password error, launcher on success, app load when signed in, sign-out, expiry handling');
 })().catch(error => { console.error(error); process.exitCode = 1; });

@@ -53,6 +53,7 @@ STATIC_FILES = {
     "/polygon_draw.js": "polygon_draw.js", "/demo_bootstrap.js": "demo_bootstrap.js", "/chat.js": "chat.js", "/chat.css": "chat.css",
     "/help.html": "help.html", "/investigation-user-flow.html": "investigation-user-flow.html",
     "/system-capabilities-guide.html": "system-capabilities-guide.html",
+    "/home": "home.html", "/home.html": "home.html",  # the launcher, opened after sign-in
 }
 STATIC_DIRS = ("/vendor/", "/assets/")
 
@@ -524,6 +525,10 @@ class Handler(BaseHTTPRequestHandler):
             return
         if path == "/api/me":
             self.send_json(200, app.client(token).whoami())
+            return
+        if path == "/api/launcher":
+            # The launcher page's applications and workspace tools (profile "launcher"; links are per deployment).
+            self.send_json(200, app.profile.get("launcher") or {})
             return
         if path == "/api/dataset/events":
             snap = app.snapshot(token)

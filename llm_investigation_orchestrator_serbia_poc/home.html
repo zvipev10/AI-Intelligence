@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Military Intelligence</title>
+  <link rel="icon" type="image/png" href="./assets/i360-logo.png">
+  <!-- The launcher: the applications and workspace tools of this deployment, from the profile's "launcher"
+       (GET /api/launcher). Opened after sign-in; the Intelligence Workspace itself is "/". -->
+  <style>
+    :root {
+      --bg: #08090c; --panel: #111318; --panel-hover: #161a21; --line: #22262e; --line-strong: #2e3440;
+      --ink: #e8eaed; --muted: #8b93a1; --accent: #4a9eff; --accent-soft: rgba(74,158,255,.12); --icon-bg: #1a2230;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; background: var(--bg); color: var(--ink);
+      font-family: "Inter", "Roboto", "Segoe UI", Arial, sans-serif; }
+    a { color: inherit; text-decoration: none; }
+    .page { min-height: 100vh; display: grid; grid-template-rows: auto 1fr; padding: 28px 48px 40px; }
+    header { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+    .brand { display: flex; align-items: center; gap: 22px; }
+    .brand img { width: 67px; height: 53px; display: block; }
+    .brand-divider { width: 1px; height: 46px; background: var(--line-strong); }
+    .brand h1 { margin: 0; font-size: 17px; font-weight: 700; letter-spacing: .01em; }
+    .session { display: flex; align-items: center; gap: 20px; color: var(--muted); font-size: 13px; }
+    .session strong { color: var(--ink); font-weight: 500; }
+    .button { padding: 9px 14px; border: 1px solid var(--line-strong); border-radius: 8px; background: transparent;
+      color: var(--ink); font: inherit; font-size: 13px; cursor: pointer; }
+    .button:hover { background: var(--panel-hover); }
+    main { display: grid; grid-template-columns: minmax(0, 1fr) 1px 276px; gap: 36px; align-content: center;
+      padding-top: 40px; }
+    .main-divider { background: var(--line); }
+    h2 { margin: 0 0 12px; font-size: 13px; font-weight: 600; color: var(--muted); }
+    .assistant { display: inline-flex; align-items: center; gap: 16px; padding: 20px; width: min(354px, 100%);
+      margin-bottom: 30px; border: 1px solid rgba(74,158,255,.45); border-radius: 12px; background: var(--panel);
+      box-shadow: 0 0 34px rgba(74,158,255,.12); }
+    .assistant:hover { background: var(--panel-hover); }
+    .assistant strong { display: block; font-size: 20px; font-weight: 700; letter-spacing: .02em; }
+    .assistant div > span { display: block; margin-top: 4px; color: var(--muted); font-size: 13px; }
+    .icon { flex: none; width: 50px; height: 50px; display: grid; place-items: center; border-radius: 10px;
+      background: var(--icon-bg); color: #b9c7dc; }
+    .icon svg { width: 20px; height: 20px; }
+    .apps { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(220px, 100%), 1fr)); gap: 12px; }
+    .tile { display: flex; align-items: center; gap: 14px; min-height: 98px; padding: 16px; border: 1px solid var(--line);
+      border-radius: 10px; background: var(--panel); transition: background .15s, border-color .15s; }
+    a.tile:hover { background: var(--panel-hover); border-color: var(--line-strong); }
+    .tile strong { display: block; font-size: 14px; font-weight: 600; }
+    .tile div > span { display: block; margin-top: 5px; color: var(--muted); font-size: 11.5px; }
+    .tile.unavailable { opacity: .55; cursor: default; }
+    .tile .icon { width: 44px; height: 44px; }
+    .workspace { display: grid; gap: 12px; align-content: start; }
+    .workspace .tile { min-height: 68px; padding: 12px 14px; }
+    .workspace .tile.highlight { border-color: rgba(74,158,255,.55); background: #0f1a2a; }
+    .workspace .tile.highlight .icon { background: var(--accent); color: #fff; }
+    .message { color: var(--muted); font-size: 13px; }
+    @media (max-width: 860px) {
+      .page { padding: 20px 16px 28px; }
+      main { grid-template-columns: minmax(0, 1fr); gap: 24px; padding-top: 28px; }
+      header { flex-wrap: wrap; }
+      .brand img { width: 50px; height: 40px; }
+      .main-divider { display: none; }
+      .brand { gap: 14px; }
+      .session span.welcome { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header>
+      <div class="brand">
+        <img src="./assets/i360-logo.png" alt="i360">
+        <div class="brand-divider" aria-hidden="true"></div>
+        <h1 id="launcherTitle">Military Intelligence</h1>
+      </div>
+      <div class="session">
+        <span class="welcome">Welcome, <strong id="userName" dir="ltr"></strong></span>
+        <button id="signOut" class="button" type="button">Sign out</button>
+      </div>
+    </header>
+    <main>
+      <section aria-labelledby="appsTitle">
+        <a id="assistant" class="assistant" href="./">
+          <span class="icon" aria-hidden="true" data-icon="sparkle"></span>
+          <div><strong id="assistantName">Ask ARIA</strong><span id="assistantText">Your assistant across every application</span></div>
+        </a>
+        <h2 id="appsTitle">Expert applications</h2>
+        <div id="apps" class="apps"><p class="message">Loading…</p></div>
+      </section>
+      <div class="main-divider" aria-hidden="true"></div>
+      <section aria-labelledby="workspaceTitle">
+        <h2 id="workspaceTitle">Workspace</h2>
+        <div id="workspace" class="workspace"></div>
+      </section>
+    </main>
+  </div>
+  <script>
+    (() => {
+      // Line icons (24px grid, stroke): one per tile kind; unknown kinds get "grid".
+      const ICONS = {
+        sparkle: '<path d="M12 3l1.8 4.9L19 9.7l-5.2 1.8L12 16.4l-1.8-4.9L5 9.7l5.2-1.8z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/>',
+        radar: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><path d="M12 12l6-6"/>',
+        search: '<circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/>',
+        globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.5 3.8 5.5 3.8 9s-1.3 6.5-3.8 9c-2.5-2.5-3.8-5.5-3.8-9S9.5 5.5 12 3z"/>',
+        flask: '<path d="M9 3h6M10 3v6L4.5 18.5A1.7 1.7 0 0 0 6 21h12a1.7 1.7 0 0 0 1.5-2.5L14 9V3"/><path d="M7 15h10"/>',
+        book: '<path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 21V5M8 7h7"/>',
+        shield: '<path d="M12 3l8 3v6c0 4.5-3.4 8-8 9-4.6-1-8-4.5-8-9V6z"/><path d="M9 12l2 2 4-4"/>',
+        chart: '<path d="M4 20V4M4 20h16"/><path d="M8 16v-4M12 16V8M16 16v-6"/>',
+        studio: '<rect x="4" y="7" width="16" height="12" rx="2"/><path d="M12 3v4M9 12h.01M15 12h.01M9 16h6"/>',
+        grid: '<rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><rect x="13" y="13" width="7" height="7" rx="1"/>'
+      };
+      const svg = name => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${ICONS[name] || ICONS.grid}</svg>`;
+      const esc = value => String(value ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+      document.querySelectorAll("[data-icon]").forEach(el => { el.innerHTML = svg(el.dataset.icon); });
+
+      // An entry with a url opens it (same tab for this app, a new tab for another); without one it is shown
+      // as not available on this deployment.
+      const tile = (entry, extra = "") => {
+        const body = `<span class="icon" aria-hidden="true">${svg(entry.icon)}</span><div><strong>${esc(entry.name)}</strong><span>${esc(entry.url ? entry.description : (entry.unavailable || "Not available on this deployment"))}</span></div>`;
+        if (!entry.url) return `<div class="tile unavailable ${extra}" aria-disabled="true">${body}</div>`;
+        const external = /^https?:/i.test(entry.url);
+        return `<a class="tile ${extra}" href="${esc(entry.url)}"${external ? ' target="_blank" rel="noopener"' : ""}>${body}</a>`;
+      };
+
+      async function load() {
+        const me = await fetch("/api/me", { cache: "no-store" });
+        if (me.status === 401) { location.replace("./"); return; }  // the workspace page signs in, then comes back
+        if (me.ok) {
+          const user = await me.json().catch(() => ({}));
+          document.getElementById("userName").textContent = user.user_name || user.id || "";
+        }
+        const response = await fetch("/api/launcher", { cache: "no-store" });
+        const launcher = response.ok ? await response.json() : {};
+        if (launcher.title) {
+          document.getElementById("launcherTitle").textContent = launcher.title;
+          document.title = launcher.title;
+        }
+        if (launcher.assistant) {
+          document.getElementById("assistantName").textContent = launcher.assistant.name || "Ask ARIA";
+          document.getElementById("assistantText").textContent = launcher.assistant.description || "";
+          document.getElementById("assistant").href = launcher.assistant.url || "./";
+        }
+        const apps = launcher.applications || [];
+        document.getElementById("apps").innerHTML = apps.length ? apps.map(entry => tile(entry)).join("")
+          : '<p class="message">No applications are configured for this deployment.</p>';
+        document.getElementById("workspace").innerHTML = (launcher.workspace || []).map(entry => tile(entry, entry.highlight ? "highlight" : "")).join("");
+      }
+
+      document.getElementById("signOut").addEventListener("click", async event => {
+        event.currentTarget.disabled = true;
+        try { await fetch("/api/logout", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }); } catch { /* the workspace page shows the sign-in when the cookie is gone */ }
+        location.replace("./");
+      });
+      load().catch(() => { document.getElementById("apps").innerHTML = '<p class="message">The applications could not be loaded. Reload the page.</p>'; });
+    })();
+  </script>
+</body>
+</html>

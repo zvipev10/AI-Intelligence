@@ -101,6 +101,21 @@ class LambdaProfileTests(unittest.TestCase):
         self.assertEqual(("ADINT", "by_id"), (group["label"], group["rows"][0]["i360_read"]))
         self.assertEqual("keyboard_language", group["field_labels"]["i360.user_agents_data.language_code"])
 
+    def test_launcher_page_and_its_applications(self):
+        browser = self.browser()
+        status, body = browser.call("GET", "/api/launcher")
+        self.assertEqual(200, status, body)
+        self.assertEqual("Military Intelligence", body["title"])
+        self.assertEqual("Intelligence Workspace", body["applications"][0]["name"])
+        self.assertEqual("./", body["applications"][0]["url"])
+        self.assertEqual(["Administrator", "Dashboards", "i360 Studio"], [e["name"] for e in body["workspace"]])
+        self.assertNotIn("url", body["workspace"][1])  # Dashboards: not on LAMBDA yet, shown as unavailable
+        import urllib.request
+        with urllib.request.urlopen(self.base + "/home") as response:
+            page = response.read().decode("utf-8")
+        self.assertIn("/api/launcher", page)
+        self.assertIn("Expert applications", page)
+
     def test_layer_rows_carry_the_display_names_too(self):
         status, body = self.browser().call("GET", "/api/layers/events:Satellite/rows?lang=en")
         self.assertEqual(200, status, body)

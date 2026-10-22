@@ -73,7 +73,7 @@
         });
         await response.text().catch(() => "");
         if (response.ok) {
-          window.location.reload();
+          window.location.replace("./home");  // the launcher; its Intelligence Workspace tile comes back here
           return;
         }
         if (response.status === 401) showError("שם משתמש או סיסמה שגויים.", "Wrong username or password.");

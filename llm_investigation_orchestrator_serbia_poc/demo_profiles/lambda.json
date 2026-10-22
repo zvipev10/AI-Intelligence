@@ -352,5 +352,73 @@
    "investigation_side": "intelligence_investigation",
    "entity_side": "person"
   }
- ]
+ ],
+ "launcher": {
+  "_comment": "The launcher page (/home), opened after sign-in. An entry without a url is shown as not available here.",
+  "title": "Military Intelligence",
+  "assistant": {
+   "name": "Ask ARIA",
+   "description": "Your assistant across every application",
+   "url": "./"
+  },
+  "applications": [
+   {
+    "name": "Intelligence Workspace",
+    "description": "Layers, investigations and the i360 chat",
+    "icon": "radar",
+    "url": "./"
+   },
+   {
+    "name": "Free-Language Search",
+    "description": "Search i360 in free language",
+    "icon": "search",
+    "url": "https://freelang-search.intel360.lambda.projects.e-bitbox.com/"
+   },
+   {
+    "name": "Federated Search",
+    "description": "One search across the connected sources",
+    "icon": "globe",
+    "url": "https://intel360.lambda.projects.e-bitbox.com/federated-search/home"
+   },
+   {
+    "name": "Research Agent",
+    "description": "Agentic research over the sources",
+    "icon": "flask",
+    "url": "https://agentic-research.intel360.lambda.projects.e-bitbox.com/"
+   },
+   {
+    "name": "Research Agent v2",
+    "description": "Agentic research, new version",
+    "icon": "flask",
+    "url": "https://agentic-research-v2.intel360.lambda.projects.e-bitbox.com/"
+   },
+   {
+    "name": "S-Research",
+    "description": "Structured research",
+    "icon": "book",
+    "unavailable": "Not deployed on LAMBDA yet"
+   }
+  ],
+  "workspace": [
+   {
+    "name": "Administrator",
+    "description": "Users, roles, sources",
+    "icon": "shield",
+    "url": "https://intel360.lambda.projects.e-bitbox.com/"
+   },
+   {
+    "name": "Dashboards",
+    "description": "Operational dashboards",
+    "icon": "chart",
+    "unavailable": "Not deployed on LAMBDA yet"
+   },
+   {
+    "name": "i360 Studio",
+    "description": "Build agents and pipelines",
+    "icon": "studio",
+    "url": "https://i360-studio.intel360.lambda.projects.e-bitbox.com/",
+    "highlight": true
+   }
+  ]
+ }
 }
