@@ -457,6 +457,9 @@ INVESTIGATION_RECORDS_QUESTION = "What records are linked in this investigation?
 VOLUME = re.compile(r"\b(data types?|types of data|volume|how much data|what data do we have|what do we have|"
                     r"how many records do we have)\b", re.I)
 COUNT_QUESTION = "How many records are there, by type and month?"
+# A question about the open investigation names it; any other question searches our layers (the model's choice of
+# the investigation is kept only then, or when the question follows one that searched the investigation).
+NAMES_INVESTIGATION = re.compile(r"(\b(investigation|case|memory|saved)\b|חקירה|בתיק)", re.I)
 # A question asking only for a number: i360's text is the answer and the records it sampled are not shown.
 ASKS_A_NUMBER = re.compile(r"\b(how many|count|number of)\b", re.I)
 
@@ -560,6 +563,7 @@ class ChatTurn:
         self.entities: list[dict[str, str]] = list(context.previous_entities)
         self.on_screen: set[str] = set()  # records this turn already put on screen
         self.cited_this_turn: list[str] = []
+        self.entities_this_turn: list[dict[str, str]] = []
         self.has_places = False
         self.i360_conversation_id = context.i360_conversation_id
         self.i360_last_turns = list(context.i360_last_turns)
@@ -626,6 +630,16 @@ class ChatTurn:
                 # the answer"): what i360 found is its cited records, so they are shown.
                 self.show_items({"from_last_answer": True, "label": self.ctx.message[:60],
                                  "view": "map" if self.has_places else "table"})
+            if self.entities_this_turn and not shown_any and not note:
+                # i360 returned people but the model opened none (its question back is not shown after a tool):
+                # one is opened, several are named so the analyst can pick.
+                people = self.entities_this_turn
+                if len(people) == 1:
+                    self.open_entity({"entity_id": people[0]["id"]})
+                else:
+                    names = "; ".join(f"{e.get('name') or e['id']}" + (f" ({e['type']})" if e.get("type") else "")
+                                      for e in people[:10])
+                    note = f"i360 found {len(people)} people/entities: {names}. Which one should I open?"
             if note:
                 self.emit("note", {"text": note})
         self.emit("done", {"i360_conversation_id": self.i360_conversation_id, "i360_scope": self.i360_scope,
@@ -774,6 +788,9 @@ class ChatTurn:
             scope = "investigation"  # the panel's scope wins: the model may widen it to our layers, not narrow it
         elif self.ctx.scope == "layers" or scope not in SCOPES:
             scope = "layers"
+        elif (scope == "investigation" and self.ctx.scope == "auto" and not NAMES_INVESTIGATION.search(question)
+              and self.i360_scope != "investigation"):
+            scope = "layers"  # an open investigation is searched only when the question is about it
         if scope == "investigation" and not self.ctx.investigation_id:
             if self.ctx.scope != "auto":
                 scope = "layers"  # the panel's investigation scope with none open
@@ -883,6 +900,7 @@ class ChatTurn:
         entities = answer_entities(answer)
         if entities:
             self.entities = entities
+            self.entities_this_turn = entities
         self.has_places = bool(cards.get("place") or agg.get("points") or
                                any(isinstance(b, dict) and "lat" in b for b in agg.get("buckets") or []))
         found = " · ".join(part for part in (

@@ -108,9 +108,13 @@ class ChatUnitTests(unittest.TestCase):
         turn.ask_i360({"question": "show the calls"})  # the question does not say where: our layers
         self.assertEqual("sets", asked[-1]["scope"]["kind"])
         self.assertNotIn("focus", asked[-1])
+        turn.ask_i360({"question": "open the related IPDR record", "scope": "investigation"})
+        self.assertNotIn("focus", asked[-1])  # the model chose the investigation, but the question is not about it
+        turn.ctx.message = "records linked to this investigation"
         turn.ask_i360({"question": "linked records", "scope": "investigation"})
         self.assertEqual("INV-1", asked[-1]["focus"]["id"])
-        no_case = ChatTurn(None, Chat(), Host(), lambda e, d: None, TurnContext.from_request({"message": "x", "scope": "auto"}))
+        no_case = ChatTurn(None, Chat(), Host(), lambda e, d: None,
+                           TurnContext.from_request({"message": "records linked to this investigation", "scope": "auto"}))
         self.assertIn("error", no_case.ask_i360({"question": "linked records", "scope": "investigation"}))
 
     def test_our_data_is_counted_in_our_layers(self):
