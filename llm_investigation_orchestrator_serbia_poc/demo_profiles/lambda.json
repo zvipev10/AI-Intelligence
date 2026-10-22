@@ -416,8 +416,7 @@
     "name": "i360 Studio",
     "description": "Build agents and pipelines",
     "icon": "studio",
-    "url": "https://i360-studio.intel360.lambda.projects.e-bitbox.com/",
-    "highlight": true
+    "url": "https://i360-studio.intel360.lambda.projects.e-bitbox.com/"
    }
   ]
  }
