@@ -354,7 +354,7 @@
   }
  ],
  "launcher": {
-  "_comment": "The launcher page (/home), opened after sign-in. An entry without a url is shown as not available here.",
+  "_comment": "The launcher page (/home), opened after sign-in. Expert applications are our layers: each opens the workspace with that layer (./?layer=<layer>). An entry without a url is shown as not available here.",
   "title": "Military Intelligence",
   "assistant": {
    "name": "Ask ARIA",
@@ -363,40 +363,34 @@
   },
   "applications": [
    {
-    "name": "Intelligence Workspace",
-    "description": "Layers, investigations and the i360 chat",
-    "icon": "radar",
-    "url": "./"
+    "name": "ADINT",
+    "description": "Advertising-ID device observations",
+    "icon": "target",
+    "url": "./?layer=ADINT"
    },
    {
-    "name": "Free-Language Search",
-    "description": "Search i360 in free language",
-    "icon": "search",
-    "url": "https://freelang-search.intel360.lambda.projects.e-bitbox.com/"
+    "name": "Cellular Geolocations",
+    "description": "Cellular location records",
+    "icon": "tower",
+    "url": "./?layer=Cellular%20Locations"
    },
    {
-    "name": "Federated Search",
-    "description": "One search across the connected sources",
-    "icon": "globe",
-    "url": "https://intel360.lambda.projects.e-bitbox.com/federated-search/home"
+    "name": "Cellular Calls",
+    "description": "Calls with transcripts and translations",
+    "icon": "phone",
+    "url": "./?layer=Cellular%20Calls"
    },
    {
-    "name": "Research Agent",
-    "description": "Agentic research over the sources",
-    "icon": "flask",
-    "url": "https://agentic-research.intel360.lambda.projects.e-bitbox.com/"
+    "name": "Satellite",
+    "description": "EO optical images and analyst notes",
+    "icon": "satellite",
+    "url": "./?layer=Satellite"
    },
    {
-    "name": "Research Agent v2",
-    "description": "Agentic research, new version",
-    "icon": "flask",
-    "url": "https://agentic-research-v2.intel360.lambda.projects.e-bitbox.com/"
-   },
-   {
-    "name": "S-Research",
-    "description": "Structured research",
-    "icon": "book",
-    "unavailable": "Not deployed on LAMBDA yet"
+    "name": "CCTV",
+    "description": "Camera videos",
+    "icon": "camera",
+    "url": "./?layer=CCTV"
    }
   ],
   "workspace": [

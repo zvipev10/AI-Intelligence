@@ -106,8 +106,8 @@ class LambdaProfileTests(unittest.TestCase):
         status, body = browser.call("GET", "/api/launcher")
         self.assertEqual(200, status, body)
         self.assertEqual("Military Intelligence", body["title"])
-        self.assertEqual("Intelligence Workspace", body["applications"][0]["name"])
-        self.assertEqual("./", body["applications"][0]["url"])
+        self.assertEqual(["ADINT", "Cellular Geolocations", "Cellular Calls", "Satellite", "CCTV"], [e["name"] for e in body["applications"]])
+        self.assertEqual("./?layer=ADINT", body["applications"][0]["url"])
         self.assertEqual(["Administrator", "Dashboards", "i360 Studio"], [e["name"] for e in body["workspace"]])
         self.assertNotIn("url", body["workspace"][1])  # Dashboards: not on LAMBDA yet, shown as unavailable
         import urllib.request

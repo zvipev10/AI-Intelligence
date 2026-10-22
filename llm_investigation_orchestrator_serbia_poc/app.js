@@ -5665,6 +5665,19 @@ document.addEventListener("keydown", event => {
 applyLocaleUi();
 setPageView("welcome", { focus: false });
 
+// The launcher's layer tiles open "./?layer=<layer>": a draft investigation with that layer open.
+async function openLaunchLayer() {
+  const params = new URLSearchParams(window.location.search);
+  const wanted = params.get("layer");
+  if (!wanted) return;
+  params.delete("layer");
+  history.replaceState(null, "", `${window.location.pathname}${params.size ? `?${params}` : ""}${window.location.hash}`);
+  const entry = (state.layerCatalog || []).find(layer => layer.source_type === wanted || layer.id === wanted || layer.id === `events:${wanted}`);
+  if (!entry) return;
+  startDraftInvestigation();
+  await openCatalogLayer(entry.id);
+}
+
 async function boot() {
   if (demoRuntime?.scenario_id !== "kosovo" && demoRuntime?.scenario_id) {
     Object.keys(LOCATIONS).forEach(key => delete LOCATIONS[key]);
@@ -5673,6 +5686,7 @@ async function boot() {
   await loadInvestigations();
   await loadLayerCatalog();
   await loadInvestigationMemory({ restoreLayers: true });
+  await openLaunchLayer();
   let runtimeStatus = null;
   try {
     runtimeStatus = await fetch(buildLocaleApiUrl("/api/status"), { cache: "no-store" }).then(response => response.json());
