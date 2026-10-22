@@ -27,11 +27,12 @@
     .button { padding: 9px 14px; border: 1px solid var(--line-strong); border-radius: 8px; background: transparent;
       color: var(--ink); font: inherit; font-size: 13px; cursor: pointer; }
     .button:hover { background: var(--panel-hover); }
-    main { display: grid; grid-template-columns: minmax(0, 1fr) 1px 276px; gap: 36px; align-content: center;
+    main { display: grid; grid-template-columns: minmax(0, 1fr) 1px 260px; gap: 28px; align-content: center;
+      width: 100%; max-width: 1460px; margin-inline: auto;
       padding-top: 40px; }
     .main-divider { background: var(--line); }
     h2 { margin: 0 0 12px; font-size: 13px; font-weight: 600; color: var(--muted); }
-    .assistant { display: inline-flex; align-items: center; gap: 16px; padding: 20px; width: min(354px, 100%);
+    .assistant { display: inline-flex; align-items: center; gap: 16px; padding: 20px; width: min(400px, 100%);
       margin-bottom: 30px; border: 1px solid rgba(74,158,255,.45); border-radius: 12px; background: var(--panel);
       box-shadow: 0 0 34px rgba(74,158,255,.12); }
     .assistant:hover { background: var(--panel-hover); }
@@ -40,7 +41,9 @@
     .icon { flex: none; width: 50px; height: 50px; display: grid; place-items: center; border-radius: 10px;
       background: var(--icon-bg); color: #b9c7dc; }
     .icon svg { width: 20px; height: 20px; }
-    .apps { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(220px, 100%), 1fr)); gap: 12px; }
+    /* The left block (ARIA, heading, tiles) is centred in its column; tiles keep one width and wrap. */
+    .apps-block { width: 100%; max-width: calc(5 * 210px + 4 * 12px); margin-inline: auto; }
+    .apps { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(180px, 100%), 1fr)); gap: 12px; }
     .tile { display: flex; align-items: center; gap: 14px; min-height: 98px; padding: 16px; border: 1px solid var(--line);
       border-radius: 10px; background: var(--panel); transition: background .15s, border-color .15s; }
     a.tile:hover { background: var(--panel-hover); border-color: var(--line-strong); }
@@ -79,13 +82,14 @@
       </div>
     </header>
     <main>
-      <section aria-labelledby="appsTitle">
+      <section aria-labelledby="appsTitle"><div class="apps-block">
         <a id="assistant" class="assistant" href="./">
           <span class="icon" aria-hidden="true" data-icon="sparkle"></span>
           <div><strong id="assistantName">Ask ARIA</strong><span id="assistantText">Your assistant driven intelligence workspace</span></div>
         </a>
         <h2 id="appsTitle">Expert applications</h2>
         <div id="apps" class="apps"><p class="message">Loading…</p></div>
+      </div>
       </section>
       <div class="main-divider" aria-hidden="true"></div>
       <section aria-label="Workspace">
