@@ -139,7 +139,7 @@ class LambdaProfileTests(unittest.TestCase):
             status, body = browser.call("GET", "/api/status")
             window = body["area_search"]
             self.assertEqual("2026-03-01T00:00:00Z", window["start_time"])
-            area = [[36.285, 35.030], [36.390, 35.030], [36.400, 35.065], [36.390, 35.105], [36.285, 35.105], [36.280, 35.065]]
+            area = [[36.250, 35.022], [36.365, 35.022], [36.372, 35.070], [36.365, 35.124], [36.250, 35.124], [36.245, 35.070]]
             status, body = browser.call("POST", "/api/area-search", {"polygon": area, "locale": "en", **window})
             self.assertEqual(200, status, body)
             found = {layer["layer_id"]: layer["count"] for layer in body["layers"]}

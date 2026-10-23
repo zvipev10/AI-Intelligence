@@ -2,7 +2,8 @@
 """Writes demo_data/lambda-area-search.json: the app's own records for the polygon area search demo.
 
 These records are not in i360. They copy the exact item shape of the LAMBDA layers (ADINT, Cellular
-Locations, Satellite), are scattered in and around the town of Masyaf and are dated March to
+Locations, Satellite), are spread like the real i360 ADINT data, over
+the 9 x 10 km around and west of Masyaf (35.028-35.117 N, 36.255-36.357 E), and are dated March to
 May 2026, weeks to months before the earliest i360 record (2026-07-01).
 
     python tools/make_area_search_data.py <templates.json>
@@ -57,18 +58,19 @@ def base(template: dict, item_id: str, when: str, lat: float, lon: float) -> dic
     return item
 
 
-# Every record has its own spot in and around Masyaf (centre about 35.065, 36.342).
+# Every record has its own spot, spread like the real i360 ADINT points (each a real ADINT point moved
+# by up to ~400 m, at least ~900 m from the others): 35.028-35.117 N, 36.255-36.357 E, Masyaf at its east side.
 
 # --- ADINT: 7 location updates from phones that are not in the current data ------------------------------
 ADINT = [
     # time, lat, lon, brand, model, os, language, ip, accuracy_m
-    ("2026-03-04T06:12:00Z", 35.0712, 36.3385, "Xiaomi", "Redmi Note 12", "Android", "ar", "198.51.100.14", 20),
-    ("2026-03-19T17:40:00Z", 35.0598, 36.3501, "Oppo", "A78", "Android", "ar", "198.51.100.37", 35),
-    ("2026-04-07T09:05:00Z", 35.0821, 36.3302, "Samsung", "Galaxy A54", "Android", "fa", "198.51.100.52", 15),
-    ("2026-04-22T21:18:00Z", 35.0505, 36.3367, "Tecno", "Spark 10", "Android", "ar", "198.51.100.68", 60),
-    ("2026-05-03T05:47:00Z", 35.0689, 36.3618, "Apple", "iPhone 13", "iOS", "en", "198.51.100.91", 10),
-    ("2026-05-11T13:26:00Z", 35.0444, 36.3540, "Infinix", "Hot 30", "Android", "fa", "198.51.100.103", 45),
-    ("2026-05-18T19:02:00Z", 35.0866, 36.3489, "Nokia", "G21", "Android", "ar", "198.51.100.120", 80),
+    ("2026-03-04T06:12:00Z", 35.1106, 36.3250, "Xiaomi", "Redmi Note 12", "Android", "ar", "198.51.100.14", 20),
+    ("2026-03-19T17:40:00Z", 35.0630, 36.3215, "Oppo", "A78", "Android", "ar", "198.51.100.37", 35),
+    ("2026-04-07T09:05:00Z", 35.0576, 36.3345, "Samsung", "Galaxy A54", "Android", "fa", "198.51.100.52", 15),
+    ("2026-04-22T21:18:00Z", 35.0926, 36.2888, "Tecno", "Spark 10", "Android", "ar", "198.51.100.68", 60),
+    ("2026-05-03T05:47:00Z", 35.0366, 36.2819, "Apple", "iPhone 13", "iOS", "en", "198.51.100.91", 10),
+    ("2026-05-11T13:26:00Z", 35.0874, 36.3086, "Infinix", "Hot 30", "Android", "fa", "198.51.100.103", 45),
+    ("2026-05-18T19:02:00Z", 35.0765, 36.3320, "Nokia", "G21", "Android", "ar", "198.51.100.120", 80),
 ]
 
 # --- Cellular Locations: 9 calls and SMS of a new target, each with a cell and a GPS point -----------------
@@ -90,33 +92,33 @@ def device(rng: random.Random) -> dict[str, str]:
 
 CELLULAR = [
     # time, lat, lon, type, direction, cell, duration s, sms text (both devices of every record are random)
-    ("2026-03-02T07:31:00Z", 35.0634, 36.3248, "voice_call", "out", "3104-21877", 94, None),
-    ("2026-03-14T22:05:00Z", 35.0750, 36.3560, "sms", "out", "3102-21290", 0, "وصلنا عند المفرق"),
-    ("2026-03-27T11:48:00Z", 35.0552, 36.3205, "voice_call", "in", "3105-22410", 212, None),
-    ("2026-04-09T18:22:00Z", 35.0901, 36.3399, "sms", "in", "3102-21291", 0, "الطريق فاضي هلق"),
-    ("2026-04-19T04:56:00Z", 35.0481, 36.3466, "voice_call", "out", "3101-20983", 47, None),
-    ("2026-04-28T15:10:00Z", 35.0785, 36.3196, "sms", "out", "3104-21878", 0, "جيب السيارة التانية"),
-    ("2026-05-06T20:37:00Z", 35.0607, 36.3655, "voice_call", "in", "3107-22715", 138, None),
-    ("2026-05-14T08:03:00Z", 35.0420, 36.3290, "sms", "in", "3104-21876", 0, "بكرا الصبح بكير"),
-    ("2026-05-20T23:44:00Z", 35.0839, 36.3634, "voice_call", "out", "3103-21504", 76, None),
+    ("2026-03-02T07:31:00Z", 35.1000, 36.3082, "voice_call", "out", "3104-21877", 94, None),
+    ("2026-03-14T22:05:00Z", 35.0338, 36.2963, "sms", "out", "3102-21290", 0, "وصلنا عند المفرق"),
+    ("2026-03-27T11:48:00Z", 35.0937, 36.2638, "voice_call", "in", "3105-22410", 212, None),
+    ("2026-04-09T18:22:00Z", 35.1075, 36.3368, "sms", "in", "3102-21291", 0, "الطريق فاضي هلق"),
+    ("2026-04-19T04:56:00Z", 35.0799, 36.2710, "voice_call", "out", "3101-20983", 47, None),
+    ("2026-04-28T15:10:00Z", 35.0609, 36.2838, "sms", "out", "3104-21878", 0, "جيب السيارة التانية"),
+    ("2026-05-06T20:37:00Z", 35.0814, 36.3222, "voice_call", "in", "3107-22715", 138, None),
+    ("2026-05-14T08:03:00Z", 35.1121, 36.3106, "sms", "in", "3104-21876", 0, "بكرا الصبح بكير"),
+    ("2026-05-20T23:44:00Z", 35.0688, 36.2617, "voice_call", "out", "3103-21504", 76, None),
 ]
 
 # --- Satellite: 4 captures of civilian sites with cars detected; synthetic images (tools/draw_area_search_images.py)
 SATELLITE = [
     # time, lat, lon, image file, classification, detected objects, recognised objects, analyst note, cloud %, sun, off-nadir
-    ("2026-03-09T07:12:00Z", 35.0532, 36.3130, "sat-area-a.png", "Logistics park",
+    ("2026-03-09T07:12:00Z", 35.0631, 36.2945, "sat-area-a.png", "Logistics park",
      "2x large warehouse, ~40x car in staff car park, 6x car on access road",
      ["building", "building", "parking lot"] + ["car"] * 8,
      "Two large warehouses with a nearly full staff car park; steady civilian traffic on the access road.", 3, 38.1, 6.4),
-    ("2026-04-02T07:09:00Z", 35.0880, 36.3250, "sat-area-b.png", "Construction site",
+    ("2026-04-02T07:09:00Z", 35.0513, 36.2875, "sat-area-b.png", "Construction site",
      "1x large building under construction, 1x tower crane, 2x excavator, 2x dump truck, 1x concrete mixer, 7x car",
      ["building", "crane", "excavator", "excavator", "truck", "truck", "truck"] + ["car"] * 7,
      "Concrete frame of a large building going up; earthworks with two excavators and a mixer on site.", 8, 47.6, 3.9),
-    ("2026-04-25T07:15:00Z", 35.0470, 36.3700, "sat-area-c.png", "Factory",
+    ("2026-04-25T07:15:00Z", 35.0684, 36.3473, "sat-area-c.png", "Factory",
      "1x large factory hall, 4x storage silo, 4x truck in yard, ~20x car parked, 8x car on road",
      ["building", "building", "silo", "truck", "truck", "truck", "truck"] + ["car"] * 8,
      "Factory beside the main road with four silos; trucks loading in the yard and cars passing on the road.", 2, 55.2, 5.1),
-    ("2026-05-16T07:21:00Z", 35.0925, 36.3570, "sat-area-d.png", "Plant hire depot",
+    ("2026-05-16T07:21:00Z", 35.0465, 36.3163, "sat-area-d.png", "Plant hire depot",
      "1x hangar, 4x excavator, 3x dump truck, 3x concrete mixer, 6x shipping container, ~25x car",
      ["building", "excavator", "excavator", "excavator", "excavator", "truck", "truck", "truck", "container"] + ["car"] * 8,
      "Plant-hire depot with rows of yellow machinery, containers and a customer car park.", 6, 61.8, 4.6),

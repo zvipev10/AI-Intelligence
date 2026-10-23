@@ -10,8 +10,8 @@ from hl.mapping import load_mapping
 ROOT = Path(__file__).resolve().parent.parent
 PROFILE = json.loads((ROOT / "demo_profiles" / "lambda.json").read_text(encoding="utf-8"))
 LOCAL = json.loads((ROOT / PROFILE["local_items"]).read_text(encoding="utf-8"))
-# In and around Masyaf, where the local records are.
-AREA = [[36.285, 35.030], [36.390, 35.030], [36.400, 35.065], [36.390, 35.105], [36.285, 35.105], [36.280, 35.065], [36.286, 35.060]]
+# The area of the real ADINT data around and west of Masyaf, where the local records are.
+AREA = [[36.250, 35.022], [36.365, 35.022], [36.372, 35.070], [36.365, 35.124], [36.250, 35.124], [36.245, 35.070], [36.286, 35.060]]
 
 
 def local_rows():

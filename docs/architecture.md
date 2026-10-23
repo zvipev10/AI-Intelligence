@@ -54,8 +54,8 @@ lands in i360, only the mapping file changes.**
 
 A profile may also name the app's **own records** (`local_items`, a JSON file of items by layer). They
 are not in i360: the LAMBDA profile's `demo_data/lambda-area-search.json` (written by
-`tools/make_area_search_data.py`) holds 7 ADINT, 9 Cellular Locations and 4 Satellite records scattered in
-and around Masyaf, March to May 2026, in the exact i360 item shape of their layers (the satellite images are drawn by
+`tools/make_area_search_data.py`) holds 7 ADINT, 9 Cellular Locations and 4 Satellite records spread like
+the real ADINT data around and west of Masyaf, March to May 2026, in the exact i360 item shape of their layers (the satellite images are drawn by
 `tools/draw_area_search_images.py`: civilian buildings, plant and cars). They join the snapshot
 after the i360 items and appear in their layers like any record; their images are served by the app
 (`/api/local-files/`), and anything read by id from i360 (Save to memory links, the chat, the report's
