@@ -495,14 +495,8 @@ class ItemReader:
                     page += 1
             else:
                 self._collect_window((start, end), found)
-            if self.layer or self.all_fields or self.i360_links:
-                mark = {"_layer": self.layer} if self.layer else {}
-                if self.i360_links:
-                    mark["_i360_links"] = True
-                if self.layer in CALL_LAYERS:
-                    mark["_call_record"] = True
-                if self.all_fields:
-                    mark["_all_fields"] = self.all_fields
+            mark = self._mark(self.layer, self.all_fields)
+            if mark:
                 found = [{**hit, **mark} for hit in found]
             self.query_stats.append({
                 "layer": self.layer, "query": {k: v for k, v in self.base_query.items() if k != "time"},
@@ -532,6 +526,29 @@ class ItemReader:
             complete.extend(_merge(hit, by_id.get(str(hit["item_id"]))) for hit in batch)
         return complete
 
+    def _mark(self, layer: str, all_fields: Any) -> dict[str, Any]:
+        """What a layer's items carry for the rows (see _with_layer): their layer, i360 links, call fields."""
+        mark: dict[str, Any] = {"_layer": layer} if layer else {}
+        if self.i360_links:
+            mark["_i360_links"] = True
+        if layer in CALL_LAYERS:
+            mark["_call_record"] = True
+        if all_fields:
+            mark["_all_fields"] = all_fields
+        return mark
+
+    def local_items(self, data: dict[str, Any]) -> list[dict[str, Any]]:
+        """The app's own records (profile "local_items"; not in i360), by layer: {"layers": {name: [item, ...]}}.
+
+        Each keeps the exact i360 item shape of its layer, so the layer's query marks it like an i360 item;
+        "_local" tells the app it has no i360 record behind it (its files are served by the app)."""
+        out: list[dict[str, Any]] = []
+        for layer, items in ((data or {}).get("layers") or {}).items():
+            spec = next((s for s in self.specs if s[3] == layer), None)
+            mark = self._mark(layer, spec[4] if spec else False)
+            out.extend({**item, **mark, "_local": True} for item in items if isinstance(item, dict) and item.get("item_id"))
+        return out
+
     @staticmethod
     def _with_layer(row: dict[str, str], item: dict[str, Any]) -> dict[str, str]:
         if item.get("_i360_links"):
@@ -539,6 +556,8 @@ class ItemReader:
             row["i360_identifiers"] = json.dumps(i360_identifiers(item), ensure_ascii=False)
         if item.get("_layer"):
             row["source_type"] = str(item["_layer"])
+        if item.get("_local"):
+            row["record_origin"] = "local"
         if item.get("_call_record"):
             row.update(call_fields(item))
         if item.get("_all_fields"):

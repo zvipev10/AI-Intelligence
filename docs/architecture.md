@@ -52,6 +52,19 @@ expressions (`tags[type=imei].value | parties[0].identifiers[type=imei].value`).
 mapping matches the development fixture. **When the ingestion team publishes how the demo data
 lands in i360, only the mapping file changes.**
 
+A profile may also name the app's **own records** (`local_items`, a JSON file of items by layer). They
+are not in i360: the LAMBDA profile's `demo_data/lambda-area-search.json` (written by
+`tools/make_area_search_data.py`) holds 7 ADINT, 9 Cellular Locations and 4 Satellite records around the
+convoy track, March to May 2026, in the exact i360 item shape of their layers. They join the snapshot
+after the i360 items and appear in their layers like any record; their images are served by the app
+(`/api/local-files/`), and anything read by id from i360 (Save to memory links, the chat, the report's
+by-id reads) does not know them.
+
+**Search data in area** (the polygon menu) posts the polygon and a time window to `POST /api/area-search`,
+which returns, per event layer, the records whose point lies inside the polygon and whose time is in the
+window. Each layer then opens filtered to those records (`event_ids`, `start_time`, `end_time`). The dates
+start at the profile's `area_search` window, which on LAMBDA covers only the app's own records.
+
 `analysis.Dataset` then runs the existing logic on the rows: entity and location summaries,
 the layer catalog, layer filters, field-backed links and the subscriber-identity derivation.
 

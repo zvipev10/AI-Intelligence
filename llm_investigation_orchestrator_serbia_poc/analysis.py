@@ -303,6 +303,47 @@ def list_layers(data: Dataset, known_sources: list[str] | None = None) -> list[d
     return layers
 
 
+def point_in_polygon(lon: float, lat: float, ring: list[list[float]]) -> bool:
+    """Ray casting over a ring of [lon, lat] points (closed or not)."""
+    inside = False
+    for (x1, y1), (x2, y2) in zip(ring, ring[1:] + ring[:1]):
+        if (y1 > lat) != (y2 > lat) and lon < (x2 - x1) * (lat - y1) / (y2 - y1) + x1:
+            inside = not inside
+    return inside
+
+
+def area_search(data: Dataset, polygon: Any, start_time: Any = None, end_time: Any = None,
+                known_sources: list[str] | None = None) -> list[dict[str, Any]]:
+    """The records of every event layer whose point lies inside the polygon and whose time is in the window:
+    per layer, its id, label and the matching event ids (the layer's catalog filters open them)."""
+    ring = [[float(p[0]), float(p[1])] for p in polygon or [] if isinstance(p, (list, tuple)) and len(p) >= 2]
+    if len(ring) > 1 and ring[0] == ring[-1]:
+        ring = ring[:-1]
+    if len(ring) < 3 or len(ring) > 500:
+        raise ValueError("The area needs 3 to 500 points")
+    window = validate_filters({k: v for k, v in {"start_time": start_time, "end_time": end_time}.items() if v})
+    unknown_source = "Unknown source" if data.locale == "en" else "מקור לא ידוע"
+
+    def point(row: dict[str, Any]) -> tuple[float, float] | None:
+        place = data.locations.get(row.get("location_id")) if row.get("location_id") else None
+        for lat, lon in ((row.get("latitude"), row.get("longitude")), ((place or {}).get("latitude"), (place or {}).get("longitude"))):
+            try:
+                return float(lon), float(lat)
+            except (TypeError, ValueError):
+                continue
+        return None
+
+    out = []
+    for layer in list_layers(data, known_sources):
+        if layer.get("kind") != "events":
+            continue
+        rows = filter_rows([e for e in data.events if (e.get("source_type") or unknown_source) == layer["source_type"]], window)
+        ids = [str(e.get("event_id")) for e in rows if (p := point(e)) and point_in_polygon(p[0], p[1], ring)]
+        if ids:
+            out.append({"layer_id": layer["id"], "label": layer["label"], "count": len(ids), "event_ids": ids})
+    return out
+
+
 def layer_rows(data: Dataset, layer_id: str, filters=None, known_sources: list[str] | None = None):
     layers = {layer["id"]: layer for layer in list_layers(data, known_sources)}
     layer = layers.get(layer_id)

@@ -574,6 +574,9 @@ let pendingMemoryCommentAction = null;
 let memoryReturnFocus = null;
 const polygonActionMenu = document.getElementById("polygonActionMenu");
 const collectionRequestModal = document.getElementById("collectionRequestModal");
+const areaSearchModal = document.getElementById("areaSearchModal");
+const areaSearchForm = document.getElementById("areaSearchForm");
+const areaSearchError = document.getElementById("areaSearchError");
 const collectionRequestForm = document.getElementById("collectionRequestForm");
 const collectionRequestTarget = document.getElementById("collectionRequestTarget");
 const collectionRequestTypes = document.getElementById("collectionRequestTypes");
@@ -585,6 +588,7 @@ const cellularCallsTaskModal = document.getElementById("cellularCallsTaskModal")
 const cctvTaskModal = document.getElementById("cctvTaskModal");
 let pendingPolygonAction = null;
 let pendingCollectionRequest = null;
+let pendingAreaSearch = null;
 let collectionTaskReturnFocus = null;
 let adintTaskMap = null;
 let cctvTaskMap = null;
@@ -1310,12 +1314,49 @@ function openPolygonActionMenu(polygon) {
   pendingPolygonAction = polygon;
   const minimumMargin = 8;
   const menuWidth = 213;
-  const menuHeight = 82;
+  const menuHeight = 122;
   const x = Math.min(Math.max(polygon.position?.x ?? window.innerWidth / 2, minimumMargin), window.innerWidth - menuWidth - minimumMargin);
   const y = Math.min(Math.max(polygon.position?.y ?? window.innerHeight / 2, minimumMargin), window.innerHeight - menuHeight - minimumMargin);
   polygonActionMenu.style.left = `${x}px`;
   polygonActionMenu.style.top = `${y}px`;
   polygonActionMenu.hidden = false;
+}
+
+function closeAreaSearchDialog() {
+  const trigger = pendingAreaSearch?.trigger;
+  pendingAreaSearch = null;
+  areaSearchModal.hidden = true;
+  areaSearchError.hidden = true;
+  trigger?.focus?.();
+}
+
+// The default time window (profile "area_search") keeps the search to the scenario's own records.
+function openAreaSearchDialog(polygon, trigger = document.activeElement) {
+  if (!polygon?.coordinates) return;
+  pendingAreaSearch = { coordinates: polygon.coordinates, trigger };
+  const defaults = state.areaSearchDefaults || {};
+  document.getElementById("areaSearchFrom").value = String(defaults.start_time || "").slice(0, 10);
+  document.getElementById("areaSearchTo").value = String(defaults.end_time || "").slice(0, 10);
+  areaSearchError.hidden = true;
+  areaSearchModal.hidden = false;
+  document.getElementById("areaSearchFrom").focus();
+}
+
+// Every layer with records inside the area opens filtered to them, as its own records.
+async function submitAreaSearch() {
+  const target = pendingAreaSearch;
+  if (!target) return;
+  const from = document.getElementById("areaSearchFrom").value;
+  const to = document.getElementById("areaSearchTo").value;
+  if (from && to && from > to) throw new Error(activeLocaleText("תאריך ההתחלה מאוחר מתאריך הסיום", "The From date is after the To date"));
+  const range = { start_time: from ? `${from}T00:00:00Z` : undefined, end_time: to ? `${to}T23:59:59Z` : undefined };
+  const response = await fetch("/api/area-search", { method: "POST", headers: { "Content-Type": "application/json; charset=utf-8" }, body: JSON.stringify({ polygon: target.coordinates, locale: currentLocale(), ...range }) });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(result.message || result.error || activeLocaleText("החיפוש נכשל", "The search failed"));
+  const layers = result.layers || [];
+  if (!layers.length) throw new Error(activeLocaleText("לא נמצאו רשומות באזור בטווח הזמן", "No records inside the area in this time range"));
+  closeAreaSearchDialog();
+  for (const layer of layers) await openCatalogLayer(resolveCatalogLayerId(layer.layer_id), { filters: { event_ids: layer.event_ids, ...Object.fromEntries(Object.entries(range).filter(([, value]) => value)) } });
 }
 
 function openCollectionRequestDialog(target, trigger = document.activeElement) {
@@ -5449,6 +5490,23 @@ document.getElementById("polygonRequestCollection")?.addEventListener("click", (
   closePolygonActionMenu();
   if (polygon) openCollectionRequestDialog({ type: "polygon", coordinates: polygon.coordinates }, document.getElementById("polygonDrawButton"));
 });
+document.getElementById("polygonAreaSearch")?.addEventListener("click", () => {
+  const polygon = pendingPolygonAction;
+  closePolygonActionMenu();
+  if (polygon) openAreaSearchDialog(polygon, document.getElementById("polygonDrawButton"));
+});
+document.getElementById("areaSearchClose")?.addEventListener("click", closeAreaSearchDialog);
+document.getElementById("areaSearchCancel")?.addEventListener("click", closeAreaSearchDialog);
+areaSearchModal?.addEventListener("click", event => { if (event.target === areaSearchModal) closeAreaSearchDialog(); });
+areaSearchForm?.addEventListener("submit", async event => {
+  event.preventDefault();
+  const submit = document.getElementById("areaSearchSubmit");
+  submit.disabled = true;
+  areaSearchError.hidden = true;
+  try { await submitAreaSearch(); }
+  catch (error) { areaSearchError.textContent = error.message || activeLocaleText("החיפוש נכשל", "The search failed"); areaSearchError.hidden = false; }
+  finally { submit.disabled = false; }
+});
 document.getElementById("collectionRequestClose")?.addEventListener("click", closeCollectionRequestDialog);
 document.getElementById("collectionRequestCancel")?.addEventListener("click", closeCollectionRequestDialog);
 collectionRequestModal?.addEventListener("click", event => { if (event.target === collectionRequestModal) closeCollectionRequestDialog(); });
@@ -5690,6 +5748,7 @@ async function boot() {
   let runtimeStatus = null;
   try {
     runtimeStatus = await fetch(buildLocaleApiUrl("/api/status"), { cache: "no-store" }).then(response => response.json());
+    state.areaSearchDefaults = runtimeStatus.area_search || {};
     Object.keys(LOCATIONS).forEach(key => delete LOCATIONS[key]);
     if (runtimeStatus.locations_url) {
       const runtimeLocations = await fetch(runtimeStatus.locations_url, { cache: "no-store" }).then(response => response.json());
