@@ -72,7 +72,54 @@ class LambdaProfileTests(unittest.TestCase):
         status, body = self.browser().call("GET", "/api/layers?lang=en")
         self.assertEqual(200, status, body)
         events = {layer["id"]: layer["count"] for layer in body["layers"] if layer["id"].startswith("events:")}
-        self.assertEqual({"events:Satellite": 2, "events:ADINT": 1}, events)
+        # The cellular and IPDR layers have no data in this fixture; they are listed with 0.
+        self.assertEqual({"events:Satellite": 2, "events:ADINT": 1, "events:Cellular Locations": 0,
+                          "events:Cellular Calls": 0, "events:IPDR": 0, "events:CCTV": 0}, events)
+
+    def test_layers_carry_the_mapping_display_names(self):
+        status, body = self.browser().call("GET", "/api/layers?lang=en")
+        self.assertEqual(200, status, body)
+        labels = {layer["id"]: layer.get("field_labels") or {} for layer in body["layers"]}
+        self.assertEqual("acquisition_datetime_utc", labels["events:Satellite"]["i360.event_time"])
+        self.assertEqual("analyst_note", labels["events:Satellite"]["i360.insights.post_comment"])
+        self.assertEqual("observation_id", labels["events:ADINT"]["i360.fe_correlation_ids"])
+        self.assertEqual("ip_public", labels["events:IPDR"]["i360.ip.ip_sessions.source_ip"])
+
+    def test_adint_language_has_one_mapping_for_search_and_one_for_get_by_id(self):
+        # HL API's items/get does not return "language" (search does), so rows read by id name language_code.
+        status, body = self.browser().call("GET", "/api/layers?lang=en")
+        self.assertEqual(200, status, body)
+        adint = next(layer for layer in body["layers"] if layer["id"] == "events:ADINT")
+        self.assertEqual("keyboard_language", adint["field_labels"]["i360.language"])
+        self.assertNotIn("i360.user_agents_data.language_code", adint["field_labels"])
+        self.assertEqual("keyboard_language", adint["field_labels_by_id"]["i360.user_agents_data.language_code"])
+        self.assertNotIn("i360.language", adint["field_labels_by_id"])
+        self.assertEqual("observation_id", adint["field_labels_by_id"]["i360.fe_correlation_ids"])
+        status, body = self.browser().call("POST", "/api/chat/items", {"ids": ["AD-1"], "locale": "en"})
+        self.assertEqual(200, status, body)
+        group = body["groups"][0]
+        self.assertEqual(("ADINT", "by_id"), (group["label"], group["rows"][0]["i360_read"]))
+        self.assertEqual("keyboard_language", group["field_labels"]["i360.user_agents_data.language_code"])
+
+    def test_launcher_page_and_its_applications(self):
+        browser = self.browser()
+        status, body = browser.call("GET", "/api/launcher")
+        self.assertEqual(200, status, body)
+        self.assertEqual("Military Intelligence", body["title"])
+        self.assertEqual(["ADINT", "Cellular Geolocations", "Cellular Calls", "Satellite", "CCTV"], [e["name"] for e in body["applications"]])
+        self.assertEqual("./?layer=ADINT", body["applications"][0]["url"])
+        self.assertEqual(["i360", "Administrator", "Dashboards", "i360 Studio"], [e["name"] for e in body["workspace"]])
+        self.assertNotIn("url", body["workspace"][2])  # Dashboards: not on LAMBDA yet, shown as unavailable
+        import urllib.request
+        with urllib.request.urlopen(self.base + "/home") as response:
+            page = response.read().decode("utf-8")
+        self.assertIn("/api/launcher", page)
+        self.assertIn("Expert applications", page)
+
+    def test_layer_rows_carry_the_display_names_too(self):
+        status, body = self.browser().call("GET", "/api/layers/events:Satellite/rows?lang=en")
+        self.assertEqual(200, status, body)
+        self.assertEqual("acquisition_datetime_utc", body["layer"]["field_labels"]["i360.event_time"])
 
     def test_rows_carry_coordinates(self):
         status, body = self.browser().call("GET", "/api/layers/events:Satellite/rows?lang=en")

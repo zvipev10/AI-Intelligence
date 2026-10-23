@@ -157,5 +157,125 @@ class AttachItemsToInvestigationTests(unittest.TestCase):
             store(Refusing()).add_memory_item("inv-1", "artifacts", dict(self.RECORD))
 
 
+class AttachLayerRecordsTests(unittest.TestCase):
+    def test_a_layer_attaches_every_record_25_per_call(self):
+        client = RelatedClient()
+        client.related["inv-1"] = {"item-3"}
+        ids = [f"item-{n}" for n in range(60)] + ["item-0"]
+        result = store(client).attach_items("inv-1", ids)
+        self.assertEqual([25, 25, 10], [len(call[3]) for call in client.calls])
+        self.assertEqual({"requested": 60, "linked": 59, "already_linked": 1, "failed": []}, result)
+        self.assertEqual(60, len(client.related["inv-1"]))
+
+    def test_records_the_investigation_refuses_are_reported(self):
+        class Partial(RelatedClient):
+            def add_related_objects(self, entity_type, entity_id, item_ids, relation_type="associated"):
+                return {"results": [{"item_id": i, "outcome": "linked" if i != "item-1" else "failed", "error": "not_found"}
+                                    for i in item_ids]}
+
+        result = store(Partial()).attach_items("inv-1", ["item-0", "item-1"])
+        self.assertEqual((1, [{"item_id": "item-1", "error": "not_found"}]), (result["linked"], result["failed"]))
+
+    def test_nothing_attached_is_an_error(self):
+        class Refusing(RelatedClient):
+            def add_related_objects(self, *args, **kwargs):
+                return {"results": []}
+
+        with self.assertRaises(HlError):
+            store(Refusing()).attach_items("inv-1", ["item-0"])
+
+    def test_memory_lists_more_than_one_page_of_attached_records(self):
+        class Paged(RelatedClient):
+            def search_items(self, body):
+                ids = sorted(self.related.get("inv-1", set()))
+                start = (body["page_number"] - 1) * body["page_size"]
+                return {"items": [{"item_id": i} for i in ids[start:start + body["page_size"]]]}
+
+        client = Paged()
+        s = store(client)
+        s.attach_items("inv-1", [f"item-{n:03d}" for n in range(130)])
+        self.assertEqual(130, len(s.load_memory("inv-1")["memory"]["artifacts"]))
+
+    def test_a_missing_memory_type_is_its_own_error(self):
+        from hl.state import MemoryTypeMissing
+
+        class NoType(RelatedClient):
+            def create_entity(self, entity_type, body):
+                raise HlError(400, "bad_request", "Invalid entity type AII_MEMORY_ITEM")
+
+        layer = {"id": "layer-1", "kind": "layer_filter_state", "label": "ADINT"}
+        with self.assertRaises(MemoryTypeMissing):
+            store(NoType()).add_memory_item("inv-1", "layers", layer)
+
+
+LINK_SPEC = {"object_kind": "person", "entity_type": "PERSON_OF_INTEREST", "link_type": "person_to_int_investigation",
+             "investigation_side": "intelligence_investigation", "entity_side": "person"}
+
+
+class LinkingClient(RelatedClient):
+    def __init__(self):
+        super().__init__()
+        self.links = {}
+
+    def create_link(self, entity_type, entity_id, body):
+        link_id = f"L{len(self.links) + 1}"
+        self.links[link_id] = {"general": {"entity_id": link_id}, "entity": {body["link_type"]: {
+            body["origin_field"]: {"id": entity_id, "type": entity_type},
+            body["target_field"]: {"id": body["target_entity_id"], "type": body["target_entity_type"], "name": "Arman Rahimi"}}}}
+        return {"entity_id": link_id, "status": "created"}
+
+    def remove_link(self, entity_type, entity_id, link_id):
+        del self.links[link_id]
+        return {"removed": True}
+
+    def search_entities(self, entity_type, body):
+        if entity_type == "LINK":
+            field = body["fields"][0]["field"]; wanted = body["fields"][0]["values"][0]
+            link_type, side = field.split(".")
+            hits = [l for l in self.links.values() if l["entity"][link_type][side]["id"] == wanted]
+            return {"items": hits, "total_pages": 1}
+        return super().search_entities(entity_type, body)
+
+
+def linking_store(client):
+    return StateStore(client, investigation_type="AII_INVESTIGATION", memory_item_type="AII_MEMORY_ITEM",
+                      approval_type="AII_TELECOM_APPROVAL", scenario="lambda",
+                      external_investigation_type="INTELLIGENCE_INVESTIGATION", investigation_links=[LINK_SPEC])
+
+
+class LinkPersonToInvestigationTests(unittest.TestCase):
+    PERSON = {"kind": "object", "object_kind": "person", "object_id": "p-1", "label": "Arman Rahimi", "id": "a-1"}
+
+    def test_saving_a_person_creates_one_i360_link(self):
+        client = LinkingClient()
+        s = linking_store(client)
+        saved = s.add_memory_item("inv-1", "artifacts", dict(self.PERSON))
+        again = s.add_memory_item("inv-1", "artifacts", dict(self.PERSON))
+        self.assertEqual(["L1"], list(client.links))
+        self.assertEqual(("link:L1", "link:L1"), (saved["id"], again["id"]))
+        self.assertEqual([], client.created)  # no AII_MEMORY_ITEM record
+
+    def test_memory_lists_linked_persons_and_remove_deletes_the_link(self):
+        client = LinkingClient()
+        s = linking_store(client)
+        s.add_memory_item("inv-1", "artifacts", dict(self.PERSON))
+        artifacts = [a for a in s.load_memory("inv-1")["memory"]["artifacts"] if a["object_kind"] == "person"]
+        self.assertEqual([("link:L1", "p-1", "Arman Rahimi")], [(a["id"], a["object_id"], a["label"]) for a in artifacts])
+        self.assertTrue(s.delete_memory_item("inv-1", "artifacts", "link:L1"))
+        self.assertEqual({}, client.links)
+
+
+class UnprovisionedMemoryTests(unittest.TestCase):
+    def test_saving_a_person_without_the_memory_type_says_why(self):
+        class NoMemoryType(RelatedClient):
+            def create_entity(self, entity_type, body):
+                raise HlError(400, "ems_error", f"ems -> HTTP 400: Invalid entity type: /entities/entities/{entity_type}")
+
+        person = {"kind": "object", "object_kind": "person", "object_id": "p-1", "label": "Arman Rahimi", "id": "a-1"}
+        with self.assertRaises(ValueError) as caught:
+            store(NoMemoryType()).add_memory_item("inv-1", "artifacts", person)
+        self.assertIn("AII_MEMORY_ITEM", str(caught.exception))
+
+
 if __name__ == "__main__":
     unittest.main()

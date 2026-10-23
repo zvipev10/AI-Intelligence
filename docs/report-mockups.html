@@ -1,0 +1,283 @@
+<title>Report Screen Mockups</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Layout: one mockup at a time, picked by tabs; colours copied from the app's own dark palette (styles.css) so the mockups read as the real app. Single dark look by choice. */
+:root {
+  color-scheme: dark;
+  --bg: #0f1115; --panel: #171a21; --soft: #20242c; --line: #303640;
+  --ink: #e8eaed; --muted: #a7adb7;
+  --blue: #8ab4f8; --blue-soft: #182d4a;
+  --green: #81c995; --green-soft: #153323;
+  --purple: #c58af9; --purple-soft: #2a243b;
+  --yellow-ink: #f6d98b; --yellow-soft: #332b18;
+  --paper: #fbfaf7; --paper-ink: #1d2128; --paper-muted: #5b6270; --paper-line: #dcdfe5; --paper-analysis: #f2eefb; --paper-accent: #6b3fb8;
+  --ui: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --doc: Georgia, "Times New Roman", serif;
+  --mono: ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+body { background: var(--bg); color: var(--ink); font-family: var(--ui); font-size: 14px; }
+.wrap { max-width: 1180px; margin: 0 auto; padding-block: 20px 40px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 16px; }
+h1 { font-size: 20px; margin: 0; text-wrap: balance; }
+.intro { color: var(--muted); margin: 4px 0 0; max-width: 70ch; line-height: 1.5; }
+.tabs { display: flex; flex-wrap: wrap; gap: 8px; }
+.tabs button { font: inherit; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 8px 14px; cursor: pointer; text-align: left; }
+.tabs button b { display: block; font-size: 14px; }
+.tabs button span { color: var(--muted); font-size: 12px; }
+.tabs button[aria-selected="true"] { border-color: var(--blue); background: var(--blue-soft); }
+.tabs button:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+.note { color: var(--muted); font-size: 13px; line-height: 1.5; margin: 0; }
+.screen { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--bg); }
+.bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 10px 14px; background: var(--panel); border-bottom: 1px solid var(--line); }
+.bar .crumb { color: var(--muted); }
+.bar .title { font-weight: 600; }
+.spacer { flex: 1; }
+.btn { font: inherit; font-size: 13px; color: var(--ink); background: var(--soft); border: 1px solid var(--line); border-radius: 6px; padding: 5px 10px; }
+.btn.primary { background: var(--blue-soft); border-color: var(--blue); color: var(--blue); }
+.prog { display: flex; flex-wrap: wrap; gap: 6px; font-size: 12px; }
+.chip { border-radius: 999px; padding: 2px 8px; border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
+.chip.done { color: var(--green); border-color: #2c5a3c; background: var(--green-soft); }
+.chip.run { color: var(--yellow-ink); border-color: #5a4a22; background: var(--yellow-soft); }
+.rid { font-family: var(--mono); font-size: 11.5px; color: var(--blue); text-decoration: underline dotted; cursor: pointer; white-space: nowrap; }
+
+/* A: paper document */
+.desk { padding: 24px 16px; background: #0b0d10; overflow-x: auto; }
+.paper { background: var(--paper); color: var(--paper-ink); max-width: 760px; margin: 0 auto; padding: 36px 44px; border-radius: 4px; box-shadow: 0 10px 40px rgba(0,0,0,.5); font-family: var(--doc); line-height: 1.55; }
+.paper .meta { display: flex; justify-content: space-between; font-family: var(--ui); font-size: 11.5px; color: var(--paper-muted); letter-spacing: .04em; text-transform: uppercase; border-bottom: 1px solid var(--paper-line); padding-bottom: 8px; }
+.paper h2 { font-size: 22px; margin: 18px 0 2px; letter-spacing: .01em; }
+.paper .sub { color: var(--paper-muted); margin: 0 0 14px; }
+.paper h3 { font-family: var(--ui); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; margin: 22px 0 6px; color: var(--paper-ink); display: flex; gap: 8px; align-items: baseline; }
+.paper h3 small { color: var(--paper-muted); font-weight: 400; letter-spacing: .04em; }
+.kv { display: grid; grid-template-columns: 170px 1fr; font-family: var(--ui); font-size: 13px; border-top: 1px solid var(--paper-line); }
+.kv div { padding: 5px 0; border-bottom: 1px solid var(--paper-line); }
+.kv div:nth-child(odd) { color: var(--paper-muted); }
+.fact { border-bottom: 1px dotted var(--paper-muted); }
+.analysis { background: var(--paper-analysis); border-radius: 4px; padding: 10px 12px 10px; margin: 6px 0; }
+.analysis .tag { font-family: var(--ui); font-size: 11px; color: var(--paper-accent); display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 4px; }
+.analysis .tag b { letter-spacing: .05em; text-transform: uppercase; }
+.analysis .tag .act { margin-left: auto; display: flex; gap: 10px; }
+.analysis .tag .act span { text-decoration: underline; cursor: pointer; }
+.analysis p { margin: 0; }
+.cite { font-family: var(--mono); font-size: 10.5px; color: var(--paper-accent); vertical-align: super; }
+.chain { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-family: var(--ui); font-size: 12px; margin: 6px 0; }
+.chain span.s { border: 1px solid var(--paper-line); border-radius: 4px; padding: 3px 7px; background: #fff; }
+.chain span.dash { border-style: dashed; color: var(--paper-muted); }
+.quote { border-left: 3px solid var(--paper-ink); padding: 4px 12px; margin: 8px 0; font-style: italic; }
+.quote small { display: block; font-style: normal; font-family: var(--ui); font-size: 11px; color: var(--paper-muted); }
+
+/* B: side by side */
+.split { display: grid; grid-template-columns: 300px minmax(0, 1fr); min-height: 560px; }
+.mem { border-right: 1px solid var(--line); background: var(--panel); padding: 12px; display: grid; align-content: start; gap: 10px; }
+.mem h4 { margin: 0; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; display: flex; justify-content: space-between; }
+.rec { display: grid; gap: 2px; padding: 7px 9px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); font-size: 12.5px; }
+.rec .t { color: var(--muted); font-size: 11.5px; font-variant-numeric: tabular-nums; }
+.rec.hi { border-color: var(--purple); background: var(--purple-soft); }
+.draft { padding: 18px 24px; display: grid; gap: 14px; align-content: start; min-width: 0; }
+.draft h2 { margin: 0; font-size: 20px; }
+.draft .sub { color: var(--muted); margin: 0; }
+.sec { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 12px 14px; display: grid; gap: 8px; }
+.sec h3 { margin: 0; font-size: 13px; letter-spacing: .06em; text-transform: uppercase; display: flex; gap: 8px; align-items: center; }
+.sec h3 .src { font-size: 11px; color: var(--muted); letter-spacing: .04em; }
+.factline { color: var(--ink); font-size: 13px; line-height: 1.5; }
+.factline .lbl { color: var(--muted); }
+.ai { border-left: 3px solid var(--purple); background: var(--purple-soft); border-radius: 0 6px 6px 0; padding: 8px 10px; line-height: 1.55; }
+.ai .tag { font-size: 11px; color: var(--purple); display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 3px; }
+.ai .tag .act { margin-left: auto; display: flex; gap: 10px; }
+.ai .tag .act span { text-decoration: underline; cursor: pointer; }
+.ai mark { background: transparent; color: var(--ink); border-bottom: 2px solid var(--purple); }
+.waiting { color: var(--yellow-ink); font-size: 12.5px; display: flex; gap: 8px; align-items: center; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--yellow-ink); animation: pulse 1.2s infinite; }
+@keyframes pulse { 50% { opacity: .3; } }
+@media (prefers-reduced-motion: reduce) { .dot { animation: none; } }
+
+/* C: section builder */
+.builder { display: grid; grid-template-columns: 220px minmax(0, 1fr); min-height: 560px; }
+.outline { border-right: 1px solid var(--line); background: var(--panel); padding: 12px 10px; display: grid; align-content: start; gap: 4px; }
+.outline label { display: flex; gap: 8px; align-items: center; padding: 6px 8px; border-radius: 6px; font-size: 13px; }
+.outline label.cur { background: var(--blue-soft); }
+.outline label .st { margin-left: auto; font-size: 11px; color: var(--muted); }
+.outline label .st.ok { color: var(--green); }
+.outline label .st.run { color: var(--yellow-ink); }
+.outline .hint { color: var(--muted); font-size: 11.5px; padding: 6px 8px; line-height: 1.4; }
+.pane { padding: 16px 20px; display: grid; gap: 12px; align-content: start; min-width: 0; }
+.pane h2 { margin: 0; font-size: 18px; }
+.cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
+.col { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 12px; display: grid; gap: 8px; align-content: start; }
+.col h4 { margin: 0; font-size: 11.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); display: flex; gap: 8px; align-items: center; }
+.col.anal { border-color: #4a3a6b; }
+.col.anal h4 { color: var(--purple); }
+table.ft { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+table.ft td { padding: 4px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+table.ft td:first-child { color: var(--muted); width: 42%; }
+.instr { font-family: var(--mono); font-size: 11.5px; color: var(--muted); background: var(--bg); border: 1px dashed var(--line); border-radius: 6px; padding: 8px; line-height: 1.45; }
+.cols-wrap { overflow-x: auto; }
+
+@media (max-width: 760px) {
+  .split, .builder { grid-template-columns: 1fr; }
+  .mem, .outline { border-right: 0; border-bottom: 1px solid var(--line); }
+  .cols { grid-template-columns: 1fr; }
+  .paper { padding: 24px 18px; }
+  .kv { grid-template-columns: 1fr 1.2fr; }
+}
+</style>
+
+<div class="wrap">
+  <div>
+    <h1>Create report: three layouts to pick from</h1>
+    <p class="intro">Each mockup shows the same Op Praha investigation after <b>Create report</b> on the Memory screen. Facts come straight from the memory records. Purple blocks are written by the HL LLM and cite the records they use. Content is sample data from the Op Praha PDF.</p>
+  </div>
+
+  <div class="tabs" role="tablist">
+    <button role="tab" id="tab-a" aria-selected="true" aria-controls="m-a"><b>A · Document</b><span>The report as the PDF page it becomes</span></button>
+    <button role="tab" id="tab-b" aria-selected="false" aria-controls="m-b"><b>B · Beside memory</b><span>Draft next to the records it cites</span></button>
+    <button role="tab" id="tab-c" aria-selected="false" aria-controls="m-c"><b>C · Section by section</b><span>Facts and analysis side by side, one section at a time</span></button>
+  </div>
+
+  <!-- A -->
+  <section id="m-a" role="tabpanel" aria-labelledby="tab-a" class="screen">
+    <div class="bar">
+      <span class="crumb">Op Praha › Memory ›</span><span class="title">Report</span>
+      <div class="prog"><span class="chip done">Facts ready</span><span class="chip done">Summary</span><span class="chip done">Findings 5/6</span><span class="chip run">Assessment…</span></div>
+      <span class="spacer"></span>
+      <button class="btn">Back to memory</button><button class="btn primary">Export PDF</button>
+    </div>
+    <div class="desk">
+      <article class="paper">
+        <div class="meta"><span>Intelligence Report · CLFD</span><span>OP-PRAHA-001 · 14 Oct 2026</span></div>
+        <h2>Operation Praha: convoy assessment</h2>
+        <p class="sub">Fusion of Satellite, ADINT, IPDR, Calls, Cellular Locations and CCTV records on one subject.</p>
+        <div class="kv">
+          <div>Subject IMEI</div><div><span class="fact">353294702931926</span></div>
+          <div>Reporting period</div><div>1 Jul – 5 Sep 2026 <span class="cite">from 23 records</span></div>
+          <div>Area of interest</div><div>35.07, 36.31 → 34.98, 35.90 · <i>Masyaf foothills</i> <span class="cite">HL LLM</span></div>
+        </div>
+
+        <h3>Executive summary</h3>
+        <div class="analysis">
+          <div class="tag"><b>Analysis · HL LLM</b><span>14 Oct 11:52 · cites 9 records</span><span class="act"><span>Edit</span><span>Regenerate</span></span></div>
+          <p>A military-style convoy flagged on satellite imagery was resolved, through ADINT and IPDR, to one subject carrying IMEI 353294702931926.<span class="cite">[S-31aug, A-0d2f, I-44b5]</span> Intercepted calls establish that the subject is moving a fuel convoy, coordinated by a Farsi-speaking contact.<span class="cite">[C-02sep]</span></p>
+        </div>
+
+        <h3>Source correlation chain</h3>
+        <div class="chain"><span class="s">Detection · Satellite</span>⋯<span class="s dash">Device set · ADINT</span>→<span class="s">Attribution · IPDR</span>→<span class="s">Identification · Person</span>→<span class="s">Intercept · Calls</span>→<span class="s">Confirmation · CCTV</span></div>
+        <p style="font-family:var(--ui);font-size:12px;color:var(--paper-muted);margin:0">Solid arrows are i360 links (ADINT to IPDR on public IP 203.0.113.107). The dashed step has no i360 link.</p>
+
+        <h3>Communications <small>Calls · 2 records</small></h3>
+        <div class="quote">"We'll arrive in twenty minutes. Open the gates; we have fifteen units of petrol."<small>Call 2 · B-party · 02 Sep 14:01 UTC · verbatim translation from the record</small></div>
+        <div class="analysis">
+          <div class="tag"><b>Analysis · HL LLM</b><span>14 Oct 11:53 · cites 2 records</span><span class="act"><span>Edit</span><span>Regenerate</span></span></div>
+          <p>The subject reports a broken air-conditioner, then announces arrival with fuel. Taken together, the subject is assessed as a driver moving a fuel convoy.<span class="cite">[C-01sep, C-02sep]</span></p>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <!-- B -->
+  <section id="m-b" role="tabpanel" aria-labelledby="tab-b" class="screen" hidden>
+    <div class="bar">
+      <span class="crumb">Op Praha › Memory ›</span><span class="title">Report draft</span>
+      <span class="spacer"></span>
+      <button class="btn">Regenerate all</button><button class="btn primary">Export PDF</button>
+    </div>
+    <div class="split">
+      <aside class="mem">
+        <h4>Memory records <span>23</span></h4>
+        <h4>Satellite <span>3</span></h4>
+        <div class="rec"><span>Convoy, 3 trucks + 2 4x4</span><span class="t">31 Aug · 35.0731, 36.3053</span></div>
+        <h4>ADINT <span>2</span></h4>
+        <div class="rec hi"><span>Apple iPhone 15 · Farsi keyboard</span><span class="t">ip 203.0.113.107</span></div>
+        <h4>IPDR <span>4</span></h4>
+        <div class="rec hi"><span>10.30.4.117 · HOSHENTEL</span><span class="t">02 Sep 09:10 · ip_public 203.0.113.107</span></div>
+        <h4>Calls <span>2</span></h4>
+        <div class="rec"><span>Subject → 963940952424</span><span class="t">02 Sep 14:01 · 1:12</span></div>
+        <h4>Cellular Locations <span>12</span></h4>
+        <div class="rec"><span>Route, 12 points</span><span class="t">01–02 Sep</span></div>
+        <p class="note">Hovering a highlighted sentence lights up the records it cites.</p>
+      </aside>
+      <div class="draft">
+        <div>
+          <h2>Operation Praha: convoy assessment</h2>
+          <p class="sub">OP-PRAHA-001 · CLFD · 1 Jul – 5 Sep 2026 · subject IMEI 353294702931926</p>
+        </div>
+        <div class="sec">
+          <h3>ADINT <span class="src">2 records · 31 Aug</span></h3>
+          <div class="factline"><span class="lbl">Devices:</span> Apple iPhone 15, Huawei P40 · <span class="lbl">Keyboard:</span> Farsi · <span class="lbl">IPs:</span> 203.0.113.107, 203.0.113.122</div>
+          <div class="ai">
+            <div class="tag"><b>Analysis · HL LLM</b><span>11:52</span><span class="act"><span>Edit</span><span>Regenerate</span></span></div>
+            A collection over the convoy location returned devices with a Farsi keyboard. <mark>The iPhone's public IP was carried forward and matched an IPDR session.</mark> <span class="rid">A-0d2f</span> <span class="rid">I-44b5</span>
+          </div>
+        </div>
+        <div class="sec">
+          <h3>IPDR <span class="src">4 records · 1–2 Sep</span></h3>
+          <div class="factline"><span class="lbl">Private IP:</span> 10.30.4.117 · <span class="lbl">Carrier:</span> HOSHENTEL · <span class="lbl">IMEI:</span> 353294702931926 · <span class="lbl">i360 link:</span> ip_public = ADINT ip</div>
+          <div class="ai">
+            <div class="tag"><b>Analysis · HL LLM</b><span>11:52</span><span class="act"><span>Edit</span><span>Regenerate</span></span></div>
+            The public IP resolves to a single subscriber session carrying the subject's IMEI, with three further sessions on the same address. <span class="rid">I-44b5</span> <span class="rid">I-702e</span>
+          </div>
+        </div>
+        <div class="sec">
+          <h3>Assessment and confidence</h3>
+          <div class="waiting"><span class="dot"></span>Writing from 23 records…</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- C -->
+  <section id="m-c" role="tabpanel" aria-labelledby="tab-c" class="screen" hidden>
+    <div class="bar">
+      <span class="crumb">Op Praha › Memory ›</span><span class="title">Build report</span>
+      <span class="spacer"></span>
+      <button class="btn">Preview PDF</button><button class="btn primary">Export PDF</button>
+    </div>
+    <div class="builder">
+      <nav class="outline">
+        <label><input type="checkbox" checked> Header <span class="st ok">facts</span></label>
+        <label><input type="checkbox" checked> Executive summary <span class="st ok">done</span></label>
+        <label><input type="checkbox" checked> Correlation chain <span class="st ok">done</span></label>
+        <label><input type="checkbox" checked> Satellite <span class="st ok">done</span></label>
+        <label><input type="checkbox" checked> ADINT <span class="st ok">done</span></label>
+        <label class="cur"><input type="checkbox" checked> IPDR <span class="st ok">done</span></label>
+        <label><input type="checkbox" checked> Subject <span class="st ok">facts</span></label>
+        <label><input type="checkbox" checked> Calls <span class="st ok">done</span></label>
+        <label><input type="checkbox" checked> Movement <span class="st run">writing</span></label>
+        <label><input type="checkbox"> CCTV <span class="st">off</span></label>
+        <label><input type="checkbox" checked> Assessment <span class="st">waiting</span></label>
+        <label><input type="checkbox" checked> Attachments <span class="st ok">facts</span></label>
+        <p class="hint">Untick a section to leave it out of the PDF.</p>
+      </nav>
+      <div class="pane">
+        <h2>IPDR</h2>
+        <div class="cols-wrap"><div class="cols">
+          <div class="col">
+            <h4>Facts · from 4 records</h4>
+            <table class="ft">
+              <tr><td>Private IP</td><td>10.30.4.117</td></tr>
+              <tr><td>Carrier</td><td>HOSHENTEL</td></tr>
+              <tr><td>IMEI</td><td>353294702931926</td></tr>
+              <tr><td>First session</td><td>02 Sep 09:10 UTC <span class="rid">I-44b5</span></td></tr>
+              <tr><td>Further sessions</td><td>3, on 1–2 Sep</td></tr>
+              <tr><td>i360 link</td><td>IPDR ip_public / ADINT ip = 203.0.113.107</td></tr>
+            </table>
+          </div>
+          <div class="col anal">
+            <h4>Analysis · HL LLM · 11:52</h4>
+            <div>Correlating the ADINT IP against network sessions resolved the iPhone's public IP to a single private address on a session that carried the subject's IMEI. <span class="rid">I-44b5</span> <span class="rid">A-0d2f</span></div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn">Edit</button><button class="btn">Regenerate</button></div>
+            <details><summary class="note" style="cursor:pointer">Instruction sent to the model</summary>
+              <div class="instr">Write 2–3 sentences on what these IPDR records show about the subject. Use and cite only the record ids given. Say what is missing.</div>
+            </details>
+          </div>
+        </div></div>
+      </div>
+    </div>
+  </section>
+
+  <p class="note">A and C export the same PDF. B is the quickest to check citations, A is closest to the Op Praha sample, C gives the most control per section.</p>
+</div>
+
+<script>
+const tabs = [...document.querySelectorAll('[role="tab"]')];
+tabs.forEach(t => t.addEventListener('click', () => {
+  tabs.forEach(o => { const on = o === t; o.setAttribute('aria-selected', on); document.getElementById(o.getAttribute('aria-controls')).hidden = !on; });
+}));
+</script>

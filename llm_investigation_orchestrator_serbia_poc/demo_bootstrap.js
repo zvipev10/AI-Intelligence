@@ -73,7 +73,7 @@
         });
         await response.text().catch(() => "");
         if (response.ok) {
-          window.location.reload();
+          window.location.replace("./home");  // the launcher; its Intelligence Workspace tile comes back here
           return;
         }
         if (response.status === 401) showError("שם משתמש או סיסמה שגויים.", "Wrong username or password.");
@@ -150,7 +150,7 @@
       return result;
     };
     const script = document.createElement("script");
-    script.src = "./app.js?v=287";
+    script.src = "./app.js?v=321";
     script.onerror = () => {
       root.dataset.appReady = "true";
       setNotice(text("לא ניתן לטעון את היישום. יש לרענן.", "Application could not load. Reload to retry."));

@@ -14,6 +14,8 @@ shapes and its documented behaviour (contract 252):
 - entity instances: create (platform-assigned id), read (``deleted`` flag), patch (merge),
   soft delete, per-type search with ``fields`` exact matches; records a user creates are
   visible to that user only, as with HL API's default grant
+- ``GET /api/v1/llm/models`` and ``POST /api/v1/llm/chat``: a scripted stand-in for the model
+  (``devtools/fake_chat.py``), never a model; ``--chat-port`` also starts a fake i360 chat service
 - one error envelope ``{"error": {"code", "message", "hint"}}``
 
 It is not the real API. Recorded responses from a real estate are the check on it.
@@ -40,6 +42,9 @@ from urllib.parse import parse_qs, unquote, urlparse
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 CONTRACT_VERSION = 252
+# Entity attachments are served as this 1x1 PNG (enough to test the photo proxy).
+FAKE_PNG = bytes.fromhex("89504e470d0a1a0a0000000d4948445200000001000000010806000000"
+                         "1f15c4890000000d49444154789c6360000002000154a24f5d0000000049454e44ae426082")
 SEARCH_TEXT_BUCKETS = ("english", "synopsis", "summary")
 
 
@@ -58,6 +63,10 @@ class FakeEstate:
         self.items: dict[str, dict[str, Any]] = {}
         self.types: dict[str, dict[str, Any]] = {}
         self.instances: dict[str, dict[str, dict[str, Any]]] = {}
+        self.llm_off = False
+        self.llm_empty = False  # answer like a model that spent max_tokens thinking
+        self.get_items_poison: set[str] = set()  # ids that make items/get answer 500, as digestserver did
+        self.llm_requests: list[dict[str, Any]] = []
         self.lock = threading.RLock()
         self.calls: list[tuple[str, str]] = []
 
@@ -211,6 +220,8 @@ class FakeEstate:
         ids = body.get("item_ids") or []
         if len(ids) > 100:
             raise ApiError(422, "too_many_ids", "Up to 100 item ids at a time.")
+        if self.get_items_poison & set(ids):
+            raise ApiError(500, "internal", "digestserver -> HTTP 500")
         include = set(body.get("include") or [])
         out = []
         for item_id in ids:
@@ -230,6 +241,9 @@ class FakeEstate:
                 "parties": copy.deepcopy(item.get("parties") or []) if "parties" in include else None,
                 "related_objects": [] if "related_objects" in include else None,
                 "detections": [] if "detections" in include else None,
+                **{part: copy.deepcopy(item.get(part, [] if part != "ip" else None)) if part in include else None
+                   for part in ("additional_info", "user_agents_data", "ip", "context")},
+                "fe_correlation_ids": copy.deepcopy(item.get("fe_correlation_ids") or []),
             })
         return {"items": out, "warnings": []}
 
@@ -298,6 +312,37 @@ class FakeEstate:
         record["deleted"] = True
         return {"status": "deleted", "deleted": True}
 
+    def create_link(self, origin_type: str, origin_id: str, body: dict[str, Any], user: str) -> dict[str, Any]:
+        """Like HL API's create_link: a LINK record joining two live entities, one side each."""
+        for key in ("link_type", "origin_field", "target_field", "target_entity_type", "target_entity_id"):
+            if not body.get(key):
+                raise ApiError(422, "validation_error", f"{key}: Field required")
+        origin = self.read_instance(origin_type, origin_id, user)
+        target_store = self._type(body["target_entity_type"])
+        target = target_store.get(body["target_entity_id"])
+        if target is None or target.get("deleted"):
+            raise ApiError(404, "target_not_found", "No live target.")
+        self.types.setdefault("LINK", {"type": "LINK", "canBeCreated": False})
+        link_id = str(uuid.uuid4())
+        self.instances.setdefault("LINK", {})[link_id] = {
+            "entity_id": link_id, "entity_type": "LINK", "entity_name": body["link_type"], "deleted": False,
+            "link_type": body["link_type"], "_owner": user,
+            "sections": {body["link_type"]: {
+                body["origin_field"]: {"id": origin_id, "type": origin_type, "name": origin.get("entity_name")},
+                body["target_field"]: {"id": body["target_entity_id"], "type": body["target_entity_type"],
+                                       "name": body.get("target_entity_name") or target.get("entity_name")},
+            }},
+        }
+        return {"link_type": body["link_type"], "entity_id": link_id, "status": "created", "verified": True}
+
+    def remove_link(self, link_id: str, confirm: str) -> dict[str, Any]:
+        if confirm != link_id:
+            raise ApiError(409, "confirm_required", "confirm must be the link id")
+        if link_id not in self.instances.get("LINK", {}):
+            raise ApiError(404, "link_not_found", "No such link.")
+        del self.instances["LINK"][link_id]
+        return {"link_id": link_id, "removed": True}
+
     def search_instances(self, type_name: str, body: dict[str, Any], user: str) -> dict[str, Any]:
         store = self._type(type_name)
         page = max(1, int(body.get("page_number") or 1))
@@ -313,6 +358,8 @@ class FakeEstate:
             for condition in body.get("fields") or []:
                 section, _, name = str(condition.get("field") or "").partition(".")
                 value = (record.get("sections") or {}).get(section, {}).get(name)
+                if isinstance(value, dict):  # a LINK side: {id, type, name}
+                    value = value.get("id")
                 if condition.get("values") is not None and str(value) not in [str(v) for v in condition["values"]]:
                     ok = False
                     if value is None:
@@ -320,6 +367,12 @@ class FakeEstate:
             if ok:
                 matched.append(record)
         total = len(matched)
+        if type_name == "LINK":  # like i360: the sides at the top, the id only in general.entity_id
+            return {"items": [{**(r["sections"]), "link_type": r["link_type"],
+                               "general": {"entity_id": r["entity_id"], "entity_type": "LINK"}}
+                              for r in matched[(page - 1) * size: page * size]],
+                    "searchResponseMetadata": {"totalItems": total, "totalPages": max(1, math.ceil(total / size))},
+                    "warnings": sorted(set(warnings))}
         return {"items": [self._public(r) for r in matched[(page - 1) * size: page * size]],
                 "searchResponseMetadata": {"totalItems": total, "totalPages": max(1, math.ceil(total / size))},
                 "warnings": sorted(set(warnings))}
@@ -341,6 +394,13 @@ class FakeHandler(BaseHTTPRequestHandler):
         body = json.dumps(value, ensure_ascii=False).encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def _bytes(self, status: int, body: bytes, content_type: str) -> None:
+        self.send_response(status)
+        self.send_header("Content-Type", content_type)
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)
@@ -387,6 +447,21 @@ class FakeHandler(BaseHTTPRequestHandler):
                     return self._json(200, estate.related_objects(method, self._body(), query))
                 if path == "/api/v1/items/get" and method == "POST":
                     return self._json(200, estate.get_items(self._body()))
+                if path == "/api/v1/llm/models":
+                    return self._json(200, {"models": [{"id": "fake-model"}]})
+                if path == "/api/v1/llm/chat" and method == "POST":
+                    if estate.llm_off:
+                        raise ApiError(503, "llm_unavailable", "The model servers are off.", "Try again during the day.")
+                    from devtools.fake_chat import scripted_completion
+                    body = self._body()
+                    estate.llm_requests.append(body)
+                    if estate.llm_empty:
+                        return self._json(200, {"model": body.get("model"), "content": "", "tool_calls": None,
+                                                "finish_reason": "length", "usage": {}})
+                    choice = scripted_completion(body)["choices"][0]  # HL API reduces the completion
+                    return self._json(200, {"model": body.get("model"), "content": choice["message"].get("content"),
+                                            "tool_calls": choice["message"].get("tool_calls"),
+                                            "finish_reason": choice["finish_reason"], "usage": {}})
                 if path.startswith("/api/v1/items/") and path.endswith("/files"):
                     item_id = unquote(path[len("/api/v1/items/"):-len("/files")])
                     if item_id not in estate.items:
@@ -429,6 +504,13 @@ class FakeHandler(BaseHTTPRequestHandler):
                     return self._json(200, estate.types[name])
                 if path.startswith("/api/v1/entities/"):
                     parts = [unquote(p) for p in path[len("/api/v1/entities/"):].split("/")]
+                    if len(parts) == 3 and parts[2] == "links" and method == "POST":
+                        return self._json(200, estate.create_link(parts[0], parts[1], self._body(), user))
+                    if len(parts) == 4 and parts[2] == "links" and method == "DELETE":
+                        return self._json(200, estate.remove_link(parts[3], (query.get("confirm") or [""])[0]))
+                    if len(parts) == 4 and parts[2] == "files" and method == "GET":
+                        estate.read_instance(parts[0], parts[1], user)  # 404 when the entity is unknown
+                        return self._bytes(200, FAKE_PNG, "image/png")
                     if len(parts) == 2 and parts[1] == "search" and method == "POST":
                         return self._json(200, estate.search_instances(parts[0], self._body(), user))
                     if len(parts) == 1 and method == "POST":
@@ -477,6 +559,7 @@ def main() -> None:
     parser.add_argument("--prefix", default="AII_")
     parser.add_argument("--result-window", type=int, default=10000)
     parser.add_argument("--verbose", action="store_true")
+    parser.add_argument("--chat-port", type=int, default=0, help="also run a fake i360 chat service on this port")
     args = parser.parse_args()
     users = dict(entry.split(":", 1) for entry in (args.user or ["analyst:analyst"]))
     estate = FakeEstate(users, result_window=args.result_window)
@@ -486,6 +569,11 @@ def main() -> None:
         from hl.state import type_definitions
         estate.provision(type_definitions(args.prefix))
     server = make_server(args.host, args.port, estate, args.verbose)
+    if args.chat_port:
+        from devtools.fake_chat import make_chat_server
+        chat_server, _ = make_chat_server(args.host, args.chat_port, estate)
+        threading.Thread(target=chat_server.serve_forever, daemon=True).start()
+        print(f"fake i360 chat service on http://{args.host}:{args.chat_port}", flush=True)
     print(f"fake platform-hl-api on http://{args.host}:{args.port} ({len(estate.items)} items, users: {', '.join(users)})", flush=True)
     server.serve_forever()
 

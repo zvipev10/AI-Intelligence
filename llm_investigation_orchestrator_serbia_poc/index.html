@@ -7,10 +7,10 @@
   <title>Intelligence Workspace</title>
   <link rel="icon" type="image/png" href="./assets/i360-logo.png">
   <link rel="stylesheet" href="./vendor/maplibre-gl.css">
-  <link rel="stylesheet" href="./styles.css?v=183">
+  <link rel="stylesheet" href="./styles.css?v=196">
+  <link rel="stylesheet" href="./chat.css?v=2">
 </head>
 <body class="welcome-active">
-  <a class="help-button" href="./help.html" target="_blank" rel="noopener" aria-label="פתח עזרה" data-i18n-aria-he="פתח עזרה" data-i18n-aria-en="Open help">?</a>
   <header class="app-header">
     <div class="header-copy">
       <h1><button id="appHomeButton" class="app-home-button" type="button" title="Intelligence Workspace" aria-label="Intelligence Workspace: return to welcome page"><img class="app-home-logo" src="./assets/i360-logo.png" alt=""></button></h1>
@@ -84,6 +84,32 @@
   </main>
 
   <main class="workspace" hidden>
+    <aside id="conversationPanel" class="conversation-panel" aria-label="Chat" hidden>
+      <header class="chat-head">
+        <h2>Chat</h2>
+      </header>
+      <div id="conversation" class="conversation" aria-live="polite">
+        <article class="message assistant-message chat-welcome">
+          <div class="message-label">Assistant</div>
+          <p>Ask about the data, for example "Who called this number last week?", or tell me what to show: "open location updates for last night on the map".</p>
+        </article>
+      </div>
+      <div id="suggestions" class="suggestions"></div>
+      <form id="promptForm" class="prompt-form">
+        <textarea id="promptInput" rows="2" aria-label="Question" placeholder="Ask a question or give a command..."></textarea>
+        <div class="prompt-actions">
+          <button id="sendButton" class="prompt-icon-button send-icon-button" type="submit" title="Send" aria-label="Send">↑</button>
+          <button id="chatStop" class="chat-stop" type="button" title="Stop" aria-label="Stop" hidden>■</button>
+        </div>
+      </form>
+    </aside>
+
+    <div class="panel-resizer" data-resizer="left" role="separator" aria-label="Resize the chat" hidden>
+      <button id="chatPanelToggle" class="chat-panel-toggle" type="button" title="Collapse the chat" aria-label="Collapse the chat" aria-controls="conversationPanel" aria-expanded="true">
+        <span class="material-symbols-rounded" aria-hidden="true">chevron_left</span>
+      </button>
+    </div>
+
     <section class="result-panel">
       <nav class="view-tabs" aria-label="תצוגות תוצאה" data-i18n-aria-he="תצוגות תוצאה" data-i18n-aria-en="Result views">
         <div class="view-tab-list">
@@ -162,6 +188,7 @@
     <section class="memory-modal-panel" role="dialog" aria-modal="true" aria-labelledby="memoryModalTitle">
       <header class="memory-modal-header"><div><span class="eyebrow" data-i18n-text-he="חקירה פעילה" data-i18n-text-en="Active investigation">חקירה פעילה</span><h2 id="memoryModalTitle" data-i18n-text-he="זיכרון" data-i18n-text-en="Memory">זיכרון</h2></div><button id="memoryModalClose" class="modal-close-button" type="button" aria-label="סגור" data-i18n-aria-he="סגור" data-i18n-aria-en="Close">×</button></header>
       <div id="memoryModalBody" class="memory-modal-body"></div>
+      <footer id="memoryModalActions" class="memory-comment-actions memory-modal-actions" hidden><button type="button" class="primary-filter-action" data-report-create data-i18n-text-he="הפק דוח" data-i18n-text-en="Generate report">Generate report</button></footer>
     </section>
   </div>
 
@@ -170,6 +197,7 @@
       <header><div><span class="eyebrow" data-i18n-text-he="שמירה לחקירה" data-i18n-text-en="Save to investigation">שמירה לחקירה</span><h2 id="memoryCommentTitle" data-i18n-text-he="הוספה לזיכרון" data-i18n-text-en="Add to memory">הוספה לזיכרון</h2><p id="memoryCommentSubject"></p></div><button id="memoryCommentClose" class="modal-close-button" type="button" aria-label="סגור" data-i18n-aria-he="סגור" data-i18n-aria-en="Close">×</button></header>
       <label for="memoryCommentInput" data-i18n-text-he="הערה (אופציונלי)" data-i18n-text-en="Comment (optional)">הערה (אופציונלי)</label>
       <textarea id="memoryCommentInput" maxlength="1200" rows="4" data-i18n-placeholder-he="למה חשוב לשמור את הפריט הזה?" data-i18n-placeholder-en="Why is this item important to save?"></textarea>
+      <div id="memoryCommentProgress" class="memory-save-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" data-i18n-aria-he="שומר לזיכרון" data-i18n-aria-en="Saving to memory" aria-label="Saving to memory" hidden><div class="memory-save-progress-track"><span></span></div><small data-i18n-text-he="שומר לזיכרון…" data-i18n-text-en="Saving to memory…">Saving to memory…</small></div>
       <p id="memoryCommentError" class="memory-comment-error" role="alert" hidden></p>
       <div class="memory-comment-actions"><button id="memoryCommentCancel" type="button" data-i18n-text-he="ביטול" data-i18n-text-en="Cancel">ביטול</button><button id="memoryCommentSubmit" class="primary-filter-action" type="submit" data-i18n-text-he="שמור לזיכרון" data-i18n-text-en="Save to memory">שמור לזיכרון</button></div>
     </form>
@@ -278,6 +306,7 @@
 
   <script src="./vendor/maplibre-gl.js"></script>
   <script src="./polygon_draw.js?v=3"></script>
-  <script src="./demo_bootstrap.js?v=246"></script>
+  <script src="./demo_bootstrap.js?v=248"></script>
+  <script src="./chat.js?v=5"></script>
 </body>
 </html>

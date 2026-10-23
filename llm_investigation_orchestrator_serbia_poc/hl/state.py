@@ -27,6 +27,10 @@ from .client import HlClient, HlError, list_hits, total_pages
 SECTION = "main"
 PAGE_SIZE = 100
 
+class MemoryTypeMissing(ValueError):
+    """The app's own memory entity type is not set up on this i360 (records can still be attached)."""
+
+
 MEMORY_GROUPS = ("chat_summaries", "layers", "artifacts", "collection_requests", "entity_enrichments")
 
 
@@ -140,10 +144,17 @@ def type_definitions(prefix: str) -> list[dict[str, Any]]:
 
 class StateStore:
     def __init__(self, client: HlClient, *, investigation_type: str, memory_item_type: str,
-                 approval_type: str, scenario: str, external_investigation_type: str = ""):
+                 approval_type: str, scenario: str, external_investigation_type: str = "",
+                 investigation_links: list[dict[str, Any]] | None = None,
+                 item_layer: Any = None):
         self.client = client
+        # The app's layer an i360 item belongs to (e.g. "IPDR"), for memory labels; None keeps i360's item type.
+        self.item_layer = item_layer
         self.investigation_type = investigation_type
         self.external_investigation_type = external_investigation_type
+        self.investigation_links = [spec for spec in investigation_links or []
+                                    if all(spec.get(k) for k in ("object_kind", "entity_type", "link_type",
+                                                                  "investigation_side", "entity_side"))]
         self.memory_item_type = memory_item_type
         self.approval_type = approval_type
         self.scenario = scenario
@@ -296,23 +307,62 @@ class StateStore:
             raise HlError(502, "attach_not_applied", f"i360 did not attach the item to the investigation ({detail})")
         return {**item, "id": self.RELATED_PREFIX + item_id, "object_id": item_id, "source": "i360_related_object"}
 
+    RELATED_BATCH = 25  # HL API takes 1-25 item ids per items/related-objects call
+    RELATED_MAX_PAGES = 20
+
+    def attach_items(self, investigation_key: str, item_ids: list[str]) -> dict[str, Any]:
+        """Attach many records to the external investigation, 25 ids per items/related-objects call."""
+        if not self.external_investigation_type:
+            raise ValueError("Records can be attached only to an i360 investigation")
+        if self._investigation_instance(investigation_key) is None:
+            raise ValueError("Investigation not found in i360")
+        ids = list(dict.fromkeys(str(i) for i in item_ids if i))
+        linked = already = 0
+        failed: list[dict[str, str]] = []
+        for start in range(0, len(ids), self.RELATED_BATCH):
+            batch = ids[start:start + self.RELATED_BATCH]
+            response = self.client.add_related_objects(self.external_investigation_type, investigation_key, batch)
+            outcomes = {str(r.get("item_id")): r for r in response.get("results") or [] if isinstance(r, dict)}
+            for item_id in batch:
+                result = outcomes.get(item_id) or {}
+                if result.get("outcome") == "linked":
+                    linked += 1
+                elif result.get("outcome") == "already_linked":
+                    already += 1
+                else:
+                    failed.append({"item_id": item_id, "error": str(result.get("error") or result.get("outcome") or "no result")})
+        if ids and not linked and not already:
+            raise HlError(502, "attach_not_applied", f"i360 did not attach the records to the investigation ({failed[0]['error']})")
+        return {"requested": len(ids), "linked": linked, "already_linked": already, "failed": failed}
+
+    def _related_hits(self, investigation_key: str) -> list[dict[str, Any]]:
+        """Every item i360 reports as related to the investigation, newest first (paged)."""
+        hits: list[dict[str, Any]] = []
+        for page in range(1, self.RELATED_MAX_PAGES + 1):
+            response = self.client.search_items({
+                "related_to": {"ids": [investigation_key]},
+                "time": {"from": "1970-01-01T00:00:00Z", "to": "2100-01-01T00:00:00Z", "field": "event"},
+                "page_number": page, "page_size": PAGE_SIZE, "include": ["text"], "sort": "time", "order": "desc",
+            })
+            page_hits = list_hits(response)
+            hits.extend(page_hits)
+            if len(page_hits) < PAGE_SIZE:
+                break
+        return hits
+
     def _attached_items(self, investigation_key: str) -> list[dict[str, Any]]:
-        response = self.client.search_items({
-            "related_to": {"ids": [investigation_key]},
-            "time": {"from": "1970-01-01T00:00:00Z", "to": "2100-01-01T00:00:00Z", "field": "event"},
-            "page_number": 1, "page_size": 100, "include": ["text"], "sort": "time", "order": "desc",
-        })
         out = []
-        for hit in list_hits(response):
+        for hit in self._related_hits(investigation_key):
             item_id = str(hit.get("item_id") or "")
             if not item_id:
                 continue
             text = hit.get("text") if isinstance(hit.get("text"), dict) else {}
             summary = next((str(text[k]) for k in ("english", "summary", "synopsis", "original", "transcript") if text.get(k)), "")
+            layer = self.item_layer(hit) if self.item_layer else ""
             out.append({
                 "id": self.RELATED_PREFIX + item_id, "kind": "object", "object_kind": "record", "object_id": item_id,
-                "label": str(hit.get("name") or f"{hit.get('item_type') or 'item'} {hit.get('event_time') or item_id}"),
-                "source_type": str(hit.get("source_application") or ""), "summary": summary[:1800],
+                "label": str(hit.get("name") or f"{layer or hit.get('item_type') or 'item'} {hit.get('event_time') or item_id}"),
+                "source_type": str(layer or hit.get("source_application") or ""), "summary": summary[:1800],
                 "saved_at_utc": hit.get("event_time"), "source": "i360_related_object",
             })
         return out
@@ -321,15 +371,14 @@ class StateStore:
         """The items attached to an external investigation, in full (items/get), newest first."""
         if not self.external_investigation_type:
             return []
-        hits = list_hits(self.client.search_items({
-            "related_to": {"ids": [investigation_key]},
-            "time": {"from": "1970-01-01T00:00:00Z", "to": "2100-01-01T00:00:00Z", "field": "event"},
-            "page_number": 1, "page_size": 100, "include": ["text"], "sort": "time", "order": "desc",
-        }))
+        hits = self._related_hits(investigation_key)
         ids = [str(hit["item_id"]) for hit in hits if hit.get("item_id")]
         if not ids:
             return []
-        full = {str(item.get("item_id")): item for item in self.client.get_items(ids, include or []).get("items") or []}
+        full: dict[str, Any] = {}
+        for start in range(0, len(ids), PAGE_SIZE):
+            for item in self.client.get_items(ids[start:start + PAGE_SIZE], include or []).get("items") or []:
+                full[str(item.get("item_id"))] = item
         out = []
         for hit in hits:
             item = full.get(str(hit.get("item_id")))
@@ -341,6 +390,65 @@ class StateStore:
         response = self.client.remove_related_objects(self.external_investigation_type, investigation_key, [item_id])
         outcome = next((r.get("outcome") for r in response.get("results") or [] if r.get("item_id") == item_id), None)
         return outcome in {"unlinked", "not_linked"}
+
+
+    # -- entities linked to an external investigation (HL API LINK records) ---------------
+    # A person (or any object kind configured in the profile's investigation_links) saved to memory
+    # becomes an i360 LINK between the investigation and that entity; the memory lists the links.
+    LINK_PREFIX = "link:"
+
+    def _link_spec(self, object_kind: str) -> dict[str, Any] | None:
+        if not self.external_investigation_type:
+            return None
+        return next((spec for spec in self.investigation_links if spec.get("object_kind") == object_kind), None)
+
+    @staticmethod
+    def _link_sides(hit: dict[str, Any], link_type: str) -> dict[str, Any]:
+        for holder in (hit, hit.get("entity") or {}, hit.get("sections") or {}):
+            if isinstance(holder, dict) and isinstance(holder.get(link_type), dict):
+                return holder[link_type]
+        return {}
+
+    def _links_of(self, investigation_key: str, spec: dict[str, Any]) -> list[dict[str, Any]]:
+        field = f"{spec['link_type']}.{spec['investigation_side']}"
+        hits = self._search_all("LINK", [{"field": field, "values": [investigation_key]}])
+        out = []
+        for hit in hits:
+            sides = self._link_sides(hit, spec["link_type"])
+            other = sides.get(spec["entity_side"]) if isinstance(sides.get(spec["entity_side"]), dict) else {}
+            mine = sides.get(spec["investigation_side"]) if isinstance(sides.get(spec["investigation_side"]), dict) else {}
+            general = hit.get("general") if isinstance(hit.get("general"), dict) else {}
+            # i360's LINK hits carry their id in general.entity_id, not at the top.
+            link_id = entity_id_of(hit) or str(general.get("entity_id") or hit.get("@intelligence360_sort_id") or "")
+            if link_id and other.get("id") and str(mine.get("id") or investigation_key) == investigation_key:
+                out.append({"link_id": link_id, "entity": other, "created": general.get("creation_time")})
+        return out
+
+    def _link_entity(self, investigation_key: str, item: dict[str, Any], spec: dict[str, Any]) -> dict[str, Any]:
+        entity_id = str(item.get("object_id") or "")
+        existing = next((l for l in self._links_of(investigation_key, spec) if str(l["entity"].get("id")) == entity_id), None)
+        if existing:
+            link_id = existing["link_id"]
+        else:
+            response = self.client.create_link(self.external_investigation_type, investigation_key, {
+                "link_type": spec["link_type"], "origin_field": spec["investigation_side"],
+                "target_field": spec["entity_side"], "target_entity_type": spec["entity_type"],
+                "target_entity_id": entity_id})
+            link_id = str(response.get("entity_id") or "")
+            if not link_id:
+                raise HlError(502, "link_without_id", "i360 accepted the link but returned no id")
+        return {**item, "id": self.LINK_PREFIX + link_id, "source": "i360_link"}
+
+    def _linked_entities(self, investigation_key: str) -> list[dict[str, Any]]:
+        out = []
+        for spec in self.investigation_links:
+            for link in self._links_of(investigation_key, spec):
+                entity = link["entity"]
+                out.append({"id": self.LINK_PREFIX + link["link_id"], "kind": "object", "object_kind": spec["object_kind"],
+                            "object_id": str(entity.get("id")), "label": str(entity.get("name") or entity.get("id")),
+                            "source_type": spec["link_type"], "saved_at_utc": _iso_time(link.get("created")),
+                            "source": "i360_link"})
+        return out
 
     def load_memory(self, investigation_key: str) -> dict[str, Any]:
         header_instance = self._investigation_instance(investigation_key)
@@ -361,6 +469,7 @@ class StateStore:
                 memory[group].append(payload)
         if self.external_investigation_type:
             memory["artifacts"].extend(self._attached_items(investigation_key))
+            memory["artifacts"].extend(self._linked_entities(investigation_key))
         for group in memory:
             memory[group].sort(key=lambda item: str(item.get("saved_at_utc") or ""))
         return {
@@ -375,12 +484,30 @@ class StateStore:
     def add_memory_item(self, investigation_key: str, group: str, item: dict[str, Any], name: str | None = None) -> dict[str, Any]:
         if group not in MEMORY_GROUPS:
             raise ValueError("Invalid memory group")
+        link_spec = self._link_spec(str(item.get("object_kind") or "")) if group == "artifacts" and item.get("kind") == "object" else None
+        if link_spec:
+            if self._investigation_instance(investigation_key) is None:
+                raise ValueError("Investigation not found in i360")
+            return self._link_entity(investigation_key, item, link_spec)
         if self._attaches_items(group, item):
             if self._investigation_instance(investigation_key) is None:
                 raise ValueError("Investigation not found in i360")
             return self._attach_item(investigation_key, item)
         if self._investigation_instance(investigation_key) is None:
             self.register_investigation(investigation_key, name or investigation_key)
+        try:
+            self._create_memory_record(investigation_key, group, item)
+        except HlError as exc:
+            if exc.status == 400 and "invalid entity type" in str(exc).lower():
+                raise MemoryTypeMissing(
+                    "This can't be saved to the investigation yet: the app's own memory type "
+                    f"({self.memory_item_type}) is not set up on this i360. Records can be saved; persons, "
+                    "layers and areas need it.") from None
+            raise
+        self.touch_investigation(investigation_key)
+        return item
+
+    def _create_memory_record(self, investigation_key: str, group: str, item: dict[str, Any]) -> None:
         self._create(self.memory_item_type, str(item.get("label") or item.get("kind") or group), {
             "investigation_key": investigation_key,
             "item_key": str(item.get("id") or ""),
@@ -391,10 +518,14 @@ class StateStore:
             "saved_at_utc": str(item.get("saved_at_utc") or utc_now_iso()),
             "payload": json.dumps(item, ensure_ascii=False),
         })
-        self.touch_investigation(investigation_key)
-        return item
 
     def delete_memory_item(self, investigation_key: str, group: str, item_key: str) -> bool:
+        if self.external_investigation_type and group == "artifacts" and item_key.startswith(self.LINK_PREFIX):
+            link_id = item_key[len(self.LINK_PREFIX):]
+            if not link_id:
+                raise ValueError("Missing link id")
+            self.client.remove_link(self.external_investigation_type, investigation_key, link_id)
+            return True
         if self.external_investigation_type and group == "artifacts" and item_key.startswith(self.RELATED_PREFIX):
             return self._detach_item(investigation_key, item_key)
         hits = self._search_all(self.memory_item_type, [

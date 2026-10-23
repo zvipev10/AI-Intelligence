@@ -96,14 +96,16 @@ class MemberUiRegressionTests(unittest.TestCase):
         self.assertIn('selectTeamMember(michlolMember.dataset.memberId);', self.app)
 
     def test_role_layers_match_the_localized_calls_layer(self):
-        self.assertIn('const CATALOG_LAYER_ALIASES = { "events:שיחות סלולר": "events:Cellular Calls" };', self.app)
+        self.assertIn('const CATALOG_LAYER_ALIASES = { "events:שיחות סלולר": "events:Cellular Calls", "events:Cellular Locations": "events:Cellular Geolocations" };', self.app)
         self.assertIn("profile.allowedCatalogLayerIds.has(canonicalCatalogLayerId(layerId))", self.app)
         self.assertIn("openCatalogLayer(resolveCatalogLayerId(profile.defaultCatalogLayerId), { silent: true, roleDefault: true })", self.app)
 
     def test_removed_chat_and_agent_ui_is_gone(self):
-        for marker in ('id="conversationPanel"', 'id="promptForm"', 'id="chatPanelToggle"', 'id="workstreamRail"',
+        # conversationPanel, chatPanelToggle, promptForm and suggestions are back as the i360 chat panel (chat.js);
+        # the agent and playback UI stays gone.
+        for marker in ('id="workstreamRail"',
                        'id="playbackNextButton"', 'id="recordedModal"', 'id="stepInjectModal"', 'id="queryModal"',
-                       'id="agentStatusIndicator"', 'id="suggestions"'):
+                       'id="agentStatusIndicator"'):
             self.assertNotIn(marker, self.index)
         for endpoint in ("/api/investigate", "/api/live-steps", "/api/agent-queue", "/api/performance-client",
                          "/api/saved-question", "/api/recorded-", "/api/workstreams", "/api/playback", "/api/scenario",
