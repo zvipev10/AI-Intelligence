@@ -19,8 +19,8 @@
     "parent_ids": [],
     "location": {
      "point": {
-      "lat": 35.069,
-      "lon": 36.3
+      "lat": 35.0712,
+      "lon": 36.3385
      },
      "city": null,
      "country": null,
@@ -66,10 +66,10 @@
     "locations": [
      {
       "point": {
-       "lat": 35.069,
-       "lon": 36.3
+       "lat": 35.0712,
+       "lon": 36.3385
       },
-      "geography": "POINT (36.3 35.069)",
+      "geography": "POINT (36.3385 35.0712)",
       "type": "geo",
       "accuracy": "gps",
       "from_time": "2026-03-04T06:12:00Z",
@@ -177,8 +177,8 @@
     "parent_ids": [],
     "location": {
      "point": {
-      "lat": 35.083,
-      "lon": 36.291
+      "lat": 35.0598,
+      "lon": 36.3501
      },
      "city": null,
      "country": null,
@@ -224,10 +224,10 @@
     "locations": [
      {
       "point": {
-       "lat": 35.083,
-       "lon": 36.291
+       "lat": 35.0598,
+       "lon": 36.3501
       },
-      "geography": "POINT (36.291 35.083)",
+      "geography": "POINT (36.3501 35.0598)",
       "type": "geo",
       "accuracy": "gps",
       "from_time": "2026-03-19T17:40:00Z",
@@ -335,8 +335,8 @@
     "parent_ids": [],
     "location": {
      "point": {
-      "lat": 35.09,
-      "lon": 36.276
+      "lat": 35.0821,
+      "lon": 36.3302
      },
      "city": null,
      "country": null,
@@ -382,10 +382,10 @@
     "locations": [
      {
       "point": {
-       "lat": 35.09,
-       "lon": 36.276
+       "lat": 35.0821,
+       "lon": 36.3302
       },
-      "geography": "POINT (36.276 35.09)",
+      "geography": "POINT (36.3302 35.0821)",
       "type": "geo",
       "accuracy": "gps",
       "from_time": "2026-04-07T09:05:00Z",
@@ -493,8 +493,8 @@
     "parent_ids": [],
     "location": {
      "point": {
-      "lat": 35.107,
-      "lon": 36.268
+      "lat": 35.0505,
+      "lon": 36.3367
      },
      "city": null,
      "country": null,
@@ -540,10 +540,10 @@
     "locations": [
      {
       "point": {
-       "lat": 35.107,
-       "lon": 36.268
+       "lat": 35.0505,
+       "lon": 36.3367
       },
-      "geography": "POINT (36.268 35.107)",
+      "geography": "POINT (36.3367 35.0505)",
       "type": "geo",
       "accuracy": "gps",
       "from_time": "2026-04-22T21:18:00Z",
@@ -651,8 +651,8 @@
     "parent_ids": [],
     "location": {
      "point": {
-      "lat": 35.091,
-      "lon": 36.296
+      "lat": 35.0689,
+      "lon": 36.3618
      },
      "city": null,
      "country": null,
@@ -698,10 +698,10 @@
     "locations": [
      {
       "point": {
-       "lat": 35.091,
-       "lon": 36.296
+       "lat": 35.0689,
+       "lon": 36.3618
       },
-      "geography": "POINT (36.296 35.091)",
+      "geography": "POINT (36.3618 35.0689)",
       "type": "geo",
       "accuracy": "gps",
       "from_time": "2026-05-03T05:47:00Z",
@@ -809,8 +809,8 @@
     "parent_ids": [],
     "location": {
      "point": {
-      "lat": 35.072,
-      "lon": 36.281
+      "lat": 35.0444,
+      "lon": 36.354
      },
      "city": null,
      "country": null,
@@ -856,10 +856,10 @@
     "locations": [
      {
       "point": {
-       "lat": 35.072,
-       "lon": 36.281
+       "lat": 35.0444,
+       "lon": 36.354
       },
-      "geography": "POINT (36.281 35.072)",
+      "geography": "POINT (36.354 35.0444)",
       "type": "geo",
       "accuracy": "gps",
       "from_time": "2026-05-11T13:26:00Z",
@@ -967,8 +967,8 @@
     "parent_ids": [],
     "location": {
      "point": {
-      "lat": 35.097,
-      "lon": 36.262
+      "lat": 35.0866,
+      "lon": 36.3489
      },
      "city": null,
      "country": null,
@@ -1014,10 +1014,10 @@
     "locations": [
      {
       "point": {
-       "lat": 35.097,
-       "lon": 36.262
+       "lat": 35.0866,
+       "lon": 36.3489
       },
-      "geography": "POINT (36.262 35.097)",
+      "geography": "POINT (36.3489 35.0866)",
       "type": "geo",
       "accuracy": "gps",
       "from_time": "2026-05-18T19:02:00Z",
@@ -1127,8 +1127,8 @@
     "parent_ids": [],
     "location": {
      "point": {
-      "lat": 35.078,
-      "lon": 36.309
+      "lat": 35.0634,
+      "lon": 36.3248
      },
      "city": null,
      "country": null,
@@ -1246,10 +1246,10 @@
      },
      {
       "point": {
-       "lat": 35.078,
-       "lon": 36.309
+       "lat": 35.0634,
+       "lon": 36.3248
       },
-      "geography": "POINT (36.309 35.078)",
+      "geography": "POINT (36.3248 35.0634)",
       "type": "geo",
       "accuracy": "gps",
       "from_time": "2026-03-02T07:31:00Z",
@@ -1269,7 +1269,7 @@
       "count": 1,
       "source": null,
       "origin": null,
-      "value": "N350440.80 E0361832.40"
+      "value": "N350348.24 E0361929.28"
      }
     ],
     "fe_correlation_ids": [
@@ -1328,8 +1328,8 @@
     "parent_ids": [],
     "location": {
      "point": {
-      "lat": 35.094,
-      "lon": 36.288
+      "lat": 35.075,
+      "lon": 36.356
      },
      "city": null,
      "country": null,
@@ -1447,10 +1447,10 @@
      },
      {
       "point": {
-       "lat": 35.094,
-       "lon": 36.288
+       "lat": 35.075,
+       "lon": 36.356
       },
-      "geography": "POINT (36.288 35.094)",
+      "geography": "POINT (36.356 35.075)",
       "type": "geo",
       "accuracy": "gps",
       "from_time": "2026-03-14T22:05:00Z",
@@ -1470,7 +1470,7 @@
       "count": 1,
       "source": null,
       "origin": null,
-      "value": "N350538.40 E0361716.80"
+      "value": "N350430.00 E0362121.60"
      }
     ],
     "messages": [
@@ -1556,8 +1556,8 @@
     "parent_ids": [],
     "location": {
      "point": {
-      "lat": 35.084,
-      "lon": 36.272
+      "lat": 35.0552,
+      "lon": 36.3205
      },
      "city": null,
      "country": null,
@@ -1675,10 +1675,10 @@
      },
      {
       "point": {
-       "lat": 35.084,
-       "lon": 36.272
+       "lat": 35.0552,
+       "lon": 36.3205
       },
-      "geography": "POINT (36.272 35.084)",
+      "geography": "POINT (36.3205 35.0552)",
       "type": "geo",
       "accuracy": "gps",
       "from_time": "2026-03-27T11:48:00Z",
@@ -1698,7 +1698,7 @@
       "count": 1,
       "source": null,
       "origin": null,
-      "value": "N350502.40 E0361619.20"
+      "value": "N350318.72 E0361913.80"
      }
     ],
     "fe_correlation_ids": [
@@ -1757,8 +1757,8 @@
     "parent_ids": [],
     "location": {
      "point": {
-      "lat": 35.104,
-      "lon": 36.283
+      "lat": 35.0901,
+      "lon": 36.3399
      },
      "city": null,
      "country": null,
@@ -1876,10 +1876,10 @@
      },
      {
       "point": {
-       "lat": 35.104,
-       "lon": 36.283
+       "lat": 35.0901,
+       "lon": 36.3399
       },
-      "geography": "POINT (36.283 35.104)",
+      "geography": "POINT (36.3399 35.0901)",
       "type": "geo",
       "accuracy": "gps",
       "from_time": "2026-04-09T18:22:00Z",
@@ -1899,7 +1899,7 @@
       "count": 1,
       "source": null,
       "origin": null,
-      "value": "N350614.40 E0361658.80"
+      "value": "N350524.36 E0362023.64"
      }
     ],
     "messages": [
@@ -1985,8 +1985,8 @@
     "parent_ids": [],
     "location": {
      "point": {
-      "lat": 35.111,
-      "lon": 36.264
+      "lat": 35.0481,
+      "lon": 36.3466
      },
      "city": null,
      "country": null,
@@ -2100,10 +2100,10 @@
      },
      {
       "point": {
-       "lat": 35.111,
-       "lon": 36.264
+       "lat": 35.0481,
+       "lon": 36.3466
       },
-      "geography": "POINT (36.264 35.111)",
+      "geography": "POINT (36.3466 35.0481)",
       "type": "geo",
       "accuracy": "gps",
       "from_time": "2026-04-19T04:56:00Z",
@@ -2123,7 +2123,7 @@
       "count": 1,
       "source": null,
       "origin": null,
-      "value": "N350639.60 E0361550.40"
+      "value": "N350253.16 E0362047.76"
      }
     ],
     "fe_correlation_ids": [
@@ -2182,8 +2182,8 @@
     "parent_ids": [],
     "location": {
      "point": {
-      "lat": 35.074,
-      "lon": 36.297
+      "lat": 35.0785,
+      "lon": 36.3196
      },
      "city": null,
      "country": null,
@@ -2305,10 +2305,10 @@
      },
      {
       "point": {
-       "lat": 35.074,
-       "lon": 36.297
+       "lat": 35.0785,
+       "lon": 36.3196
       },
-      "geography": "POINT (36.297 35.074)",
+      "geography": "POINT (36.3196 35.0785)",
       "type": "geo",
       "accuracy": "gps",
       "from_time": "2026-04-28T15:10:00Z",
@@ -2328,7 +2328,7 @@
       "count": 1,
       "source": null,
       "origin": null,
-      "value": "N350426.40 E0361749.20"
+      "value": "N350442.60 E0361910.56"
      }
     ],
     "messages": [
@@ -2414,8 +2414,8 @@
     "parent_ids": [],
     "location": {
      "point": {
-      "lat": 35.091,
-      "lon": 36.258
+      "lat": 35.0607,
+      "lon": 36.3655
      },
      "city": null,
      "country": null,
@@ -2533,10 +2533,10 @@
      },
      {
       "point": {
-       "lat": 35.091,
-       "lon": 36.258
+       "lat": 35.0607,
+       "lon": 36.3655
       },
-      "geography": "POINT (36.258 35.091)",
+      "geography": "POINT (36.3655 35.0607)",
       "type": "geo",
       "accuracy": "gps",
       "from_time": "2026-05-06T20:37:00Z",
@@ -2556,7 +2556,7 @@
       "count": 1,
       "source": null,
       "origin": null,
-      "value": "N350527.60 E0361528.80"
+      "value": "N350338.52 E0362155.80"
      }
     ],
     "fe_correlation_ids": [
@@ -2615,8 +2615,8 @@
     "parent_ids": [],
     "location": {
      "point": {
-      "lat": 35.065,
-      "lon": 36.292
+      "lat": 35.042,
+      "lon": 36.329
      },
      "city": null,
      "country": null,
@@ -2734,10 +2734,10 @@
      },
      {
       "point": {
-       "lat": 35.065,
-       "lon": 36.292
+       "lat": 35.042,
+       "lon": 36.329
       },
-      "geography": "POINT (36.292 35.065)",
+      "geography": "POINT (36.329 35.042)",
       "type": "geo",
       "accuracy": "gps",
       "from_time": "2026-05-14T08:03:00Z",
@@ -2757,7 +2757,7 @@
       "count": 1,
       "source": null,
       "origin": null,
-      "value": "N350354.00 E0361731.20"
+      "value": "N350231.20 E0361944.40"
      }
     ],
     "messages": [
@@ -2843,8 +2843,8 @@
     "parent_ids": [],
     "location": {
      "point": {
-      "lat": 35.099,
-      "lon": 36.276
+      "lat": 35.0839,
+      "lon": 36.3634
      },
      "city": null,
      "country": null,
@@ -2962,10 +2962,10 @@
      },
      {
       "point": {
-       "lat": 35.099,
-       "lon": 36.276
+       "lat": 35.0839,
+       "lon": 36.3634
       },
-      "geography": "POINT (36.276 35.099)",
+      "geography": "POINT (36.3634 35.0839)",
       "type": "geo",
       "accuracy": "gps",
       "from_time": "2026-05-20T23:44:00Z",
@@ -2985,7 +2985,7 @@
       "count": 1,
       "source": null,
       "origin": null,
-      "value": "N350556.40 E0361633.60"
+      "value": "N350502.04 E0362148.24"
      }
     ],
     "fe_correlation_ids": [
@@ -3046,8 +3046,8 @@
     "parent_ids": [],
     "location": {
      "point": {
-      "lat": 35.0768,
-      "lon": 36.3008
+      "lat": 35.0532,
+      "lon": 36.313
      },
      "city": null,
      "country": null,
@@ -3066,7 +3066,7 @@
      "primary_file_name": "sat-area-a.png",
      "primary_file_content_type": "image/png"
     },
-    "content_size": 784268,
+    "content_size": 642697,
     "parent": null,
     "children": null,
     "details": null,
@@ -3077,7 +3077,7 @@
       "annotation_id": 90000001,
       "editable": false,
       "read_only": false,
-      "value": "Vehicles parked on the clearing beside the road; no movement observed.",
+      "value": "Two large warehouses with a nearly full staff car park; steady civilian traffic on the access road.",
       "party_id": null,
       "party_position": null,
       "author": null,
@@ -3100,6 +3100,26 @@
      },
      {
       "type": "object_recognition",
+      "value": "building",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "building",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "parking lot",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "car",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
       "value": "car",
       "source": "system"
      },
@@ -3110,17 +3130,27 @@
      },
      {
       "type": "object_recognition",
-      "value": "truck",
+      "value": "car",
       "source": "system"
      },
      {
       "type": "object_recognition",
-      "value": "truck",
+      "value": "car",
       "source": "system"
      },
      {
       "type": "object_recognition",
-      "value": "truck",
+      "value": "car",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "car",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "car",
       "source": "system"
      },
      {
@@ -3135,10 +3165,10 @@
     "locations": [
      {
       "point": {
-       "lat": 35.0768,
-       "lon": 36.3008
+       "lat": 35.0532,
+       "lon": 36.313
       },
-      "geography": "POINT (36.3008 35.0768)",
+      "geography": "POINT (36.313 35.0532)",
       "type": "geo",
       "accuracy": "gps",
       "from_time": "2026-03-09T07:12:00Z",
@@ -3168,11 +3198,11 @@
      {
       "off_nadir_deg": 6.4,
       "sun_elevation_deg": 38.1,
-      "gsd_m": 0.5,
-      "footprint_radius_km": 0.6,
+      "gsd_m": 0.3,
+      "footprint_radius_km": 0.12,
       "cloud_cover_pct": 3,
-      "classification": "Vehicles",
-      "detected_objects": "2x light vehicle, 3x cargo truck (parked)"
+      "classification": "Logistics park",
+      "detected_objects": "2x large warehouse, ~40x car in staff car park, 6x car on access road"
      }
     ],
     "context": []
@@ -3194,8 +3224,8 @@
     "parent_ids": [],
     "location": {
      "point": {
-      "lat": 35.0843,
-      "lon": 36.2918
+      "lat": 35.088,
+      "lon": 36.325
      },
      "city": null,
      "country": null,
@@ -3214,7 +3244,7 @@
      "primary_file_name": "sat-area-b.png",
      "primary_file_content_type": "image/png"
     },
-    "content_size": 764309,
+    "content_size": 679235,
     "parent": null,
     "children": null,
     "details": null,
@@ -3225,7 +3255,7 @@
       "annotation_id": 90000002,
       "editable": false,
       "read_only": false,
-      "value": "A light vehicle leads two trucks north-west along the road.",
+      "value": "Concrete frame of a large building going up; earthworks with two excavators and a mixer on site.",
       "party_id": null,
       "party_position": null,
       "author": null,
@@ -3248,17 +3278,72 @@
      },
      {
       "type": "object_recognition",
+      "value": "building",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "crane",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "excavator",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "excavator",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "truck",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "truck",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "truck",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
       "value": "car",
       "source": "system"
      },
      {
       "type": "object_recognition",
-      "value": "truck",
+      "value": "car",
       "source": "system"
      },
      {
       "type": "object_recognition",
-      "value": "truck",
+      "value": "car",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "car",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "car",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "car",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "car",
       "source": "system"
      },
      {
@@ -3273,10 +3358,10 @@
     "locations": [
      {
       "point": {
-       "lat": 35.0843,
-       "lon": 36.2918
+       "lat": 35.088,
+       "lon": 36.325
       },
-      "geography": "POINT (36.2918 35.0843)",
+      "geography": "POINT (36.325 35.088)",
       "type": "geo",
       "accuracy": "gps",
       "from_time": "2026-04-02T07:09:00Z",
@@ -3306,11 +3391,11 @@
      {
       "off_nadir_deg": 3.9,
       "sun_elevation_deg": 47.6,
-      "gsd_m": 0.5,
-      "footprint_radius_km": 0.6,
+      "gsd_m": 0.3,
+      "footprint_radius_km": 0.12,
       "cloud_cover_pct": 8,
-      "classification": "Vehicles",
-      "detected_objects": "1x light vehicle leading 2x cargo truck"
+      "classification": "Construction site",
+      "detected_objects": "1x large building under construction, 1x tower crane, 2x excavator, 2x dump truck, 1x concrete mixer, 7x car"
      }
     ],
     "context": []
@@ -3332,8 +3417,8 @@
     "parent_ids": [],
     "location": {
      "point": {
-      "lat": 35.0918,
-      "lon": 36.2828
+      "lat": 35.047,
+      "lon": 36.37
      },
      "city": null,
      "country": null,
@@ -3352,7 +3437,7 @@
      "primary_file_name": "sat-area-c.png",
      "primary_file_content_type": "image/png"
     },
-    "content_size": 744055,
+    "content_size": 579077,
     "parent": null,
     "children": null,
     "details": null,
@@ -3363,7 +3448,7 @@
       "annotation_id": 90000003,
       "editable": false,
       "read_only": false,
-      "value": "A light vehicle follows one truck on the road; spacing about 80 m.",
+      "value": "Factory beside the main road with four silos; trucks loading in the yard and cars passing on the road.",
       "party_id": null,
       "party_position": null,
       "author": null,
@@ -3386,12 +3471,77 @@
      },
      {
       "type": "object_recognition",
-      "value": "car",
+      "value": "building",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "building",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "silo",
       "source": "system"
      },
      {
       "type": "object_recognition",
       "value": "truck",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "truck",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "truck",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "truck",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "car",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "car",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "car",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "car",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "car",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "car",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "car",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "car",
       "source": "system"
      },
      {
@@ -3406,10 +3556,10 @@
     "locations": [
      {
       "point": {
-       "lat": 35.0918,
-       "lon": 36.2828
+       "lat": 35.047,
+       "lon": 36.37
       },
-      "geography": "POINT (36.2828 35.0918)",
+      "geography": "POINT (36.37 35.047)",
       "type": "geo",
       "accuracy": "gps",
       "from_time": "2026-04-25T07:15:00Z",
@@ -3439,11 +3589,11 @@
      {
       "off_nadir_deg": 5.1,
       "sun_elevation_deg": 55.2,
-      "gsd_m": 0.5,
-      "footprint_radius_km": 0.6,
+      "gsd_m": 0.3,
+      "footprint_radius_km": 0.12,
       "cloud_cover_pct": 2,
-      "classification": "Vehicles",
-      "detected_objects": "1x light vehicle, 1x cargo truck"
+      "classification": "Factory",
+      "detected_objects": "1x large factory hall, 4x storage silo, 4x truck in yard, ~20x car parked, 8x car on road"
      }
     ],
     "context": []
@@ -3465,8 +3615,8 @@
     "parent_ids": [],
     "location": {
      "point": {
-      "lat": 35.0993,
-      "lon": 36.2738
+      "lat": 35.0925,
+      "lon": 36.357
      },
      "city": null,
      "country": null,
@@ -3485,7 +3635,7 @@
      "primary_file_name": "sat-area-d.png",
      "primary_file_content_type": "image/png"
     },
-    "content_size": 726191,
+    "content_size": 734365,
     "parent": null,
     "children": null,
     "details": null,
@@ -3496,7 +3646,7 @@
       "annotation_id": 90000004,
       "editable": false,
       "read_only": false,
-      "value": "Short column of five vehicles moving along the ridge road.",
+      "value": "Plant-hire depot with rows of yellow machinery, containers and a customer car park.",
       "party_id": null,
       "party_position": null,
       "author": null,
@@ -3519,6 +3669,51 @@
      },
      {
       "type": "object_recognition",
+      "value": "building",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "excavator",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "excavator",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "excavator",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "excavator",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "truck",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "truck",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "truck",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "container",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
       "value": "car",
       "source": "system"
      },
@@ -3529,17 +3724,32 @@
      },
      {
       "type": "object_recognition",
-      "value": "truck",
+      "value": "car",
       "source": "system"
      },
      {
       "type": "object_recognition",
-      "value": "truck",
+      "value": "car",
       "source": "system"
      },
      {
       "type": "object_recognition",
-      "value": "truck",
+      "value": "car",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "car",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "car",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "car",
       "source": "system"
      },
      {
@@ -3554,10 +3764,10 @@
     "locations": [
      {
       "point": {
-       "lat": 35.0993,
-       "lon": 36.2738
+       "lat": 35.0925,
+       "lon": 36.357
       },
-      "geography": "POINT (36.2738 35.0993)",
+      "geography": "POINT (36.357 35.0925)",
       "type": "geo",
       "accuracy": "gps",
       "from_time": "2026-05-16T07:21:00Z",
@@ -3587,11 +3797,11 @@
      {
       "off_nadir_deg": 4.6,
       "sun_elevation_deg": 61.8,
-      "gsd_m": 0.5,
-      "footprint_radius_km": 0.6,
+      "gsd_m": 0.3,
+      "footprint_radius_km": 0.12,
       "cloud_cover_pct": 6,
-      "classification": "Vehicles",
-      "detected_objects": "2x light vehicle, 3x cargo truck in column"
+      "classification": "Plant hire depot",
+      "detected_objects": "1x hangar, 4x excavator, 3x dump truck, 3x concrete mixer, 6x shipping container, ~25x car"
      }
     ],
     "context": []

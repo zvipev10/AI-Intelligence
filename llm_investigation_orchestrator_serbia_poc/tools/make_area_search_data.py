@@ -2,7 +2,7 @@
 """Writes demo_data/lambda-area-search.json: the app's own records for the polygon area search demo.
 
 These records are not in i360. They copy the exact item shape of the LAMBDA layers (ADINT, Cellular
-Locations, Satellite), sit around the satellite convoy track north-west of Hama and are dated March to
+Locations, Satellite), are scattered in and around the town of Masyaf and are dated March to
 May 2026, weeks to months before the earliest i360 record (2026-07-01).
 
     python tools/make_area_search_data.py <templates.json>
@@ -56,16 +56,18 @@ def base(template: dict, item_id: str, when: str, lat: float, lon: float) -> dic
     return item
 
 
+# Every record has its own spot in and around Masyaf (centre about 35.065, 36.342).
+
 # --- ADINT: 7 location updates from phones that are not in the current data ------------------------------
 ADINT = [
     # time, lat, lon, brand, model, os, language, ip, accuracy_m
-    ("2026-03-04T06:12:00Z", 35.0690, 36.3000, "Xiaomi", "Redmi Note 12", "Android", "ar", "198.51.100.14", 20),
-    ("2026-03-19T17:40:00Z", 35.0830, 36.2910, "Oppo", "A78", "Android", "ar", "198.51.100.37", 35),
-    ("2026-04-07T09:05:00Z", 35.0900, 36.2760, "Samsung", "Galaxy A54", "Android", "fa", "198.51.100.52", 15),
-    ("2026-04-22T21:18:00Z", 35.1070, 36.2680, "Tecno", "Spark 10", "Android", "ar", "198.51.100.68", 60),
-    ("2026-05-03T05:47:00Z", 35.0910, 36.2960, "Apple", "iPhone 13", "iOS", "en", "198.51.100.91", 10),
-    ("2026-05-11T13:26:00Z", 35.0720, 36.2810, "Infinix", "Hot 30", "Android", "fa", "198.51.100.103", 45),
-    ("2026-05-18T19:02:00Z", 35.0970, 36.2620, "Nokia", "G21", "Android", "ar", "198.51.100.120", 80),
+    ("2026-03-04T06:12:00Z", 35.0712, 36.3385, "Xiaomi", "Redmi Note 12", "Android", "ar", "198.51.100.14", 20),
+    ("2026-03-19T17:40:00Z", 35.0598, 36.3501, "Oppo", "A78", "Android", "ar", "198.51.100.37", 35),
+    ("2026-04-07T09:05:00Z", 35.0821, 36.3302, "Samsung", "Galaxy A54", "Android", "fa", "198.51.100.52", 15),
+    ("2026-04-22T21:18:00Z", 35.0505, 36.3367, "Tecno", "Spark 10", "Android", "ar", "198.51.100.68", 60),
+    ("2026-05-03T05:47:00Z", 35.0689, 36.3618, "Apple", "iPhone 13", "iOS", "en", "198.51.100.91", 10),
+    ("2026-05-11T13:26:00Z", 35.0444, 36.3540, "Infinix", "Hot 30", "Android", "fa", "198.51.100.103", 45),
+    ("2026-05-18T19:02:00Z", 35.0866, 36.3489, "Nokia", "G21", "Android", "ar", "198.51.100.120", 80),
 ]
 
 # --- Cellular Locations: 9 calls and SMS of a new target, each with a cell and a GPS point -----------------
@@ -73,32 +75,36 @@ TARGET = {"msisdn": "963933412870", "imsi": "417012345098761", "imei": "35693810
 OTHER_IMEI = {"963944118203": "352099001761481", "963966540338": "861536030196001"}  # known handsets of two contacts
 CELLULAR = [
     # time, lat, lon, type, direction, other msisdn, other imsi, cell, duration s, sms text
-    ("2026-03-02T07:31:00Z", 35.0780, 36.3090, "voice_call", "out", "963944118203", "417016620194387", "3104-21877", 94, None),
-    ("2026-03-14T22:05:00Z", 35.0940, 36.2880, "sms", "out", "963955207714", "417019031265540", "3102-21290", 0, "وصلنا عند المفرق"),
-    ("2026-03-27T11:48:00Z", 35.0840, 36.2720, "voice_call", "in", "963944118203", "417016620194387", "3105-22410", 212, None),
-    ("2026-04-09T18:22:00Z", 35.1040, 36.2830, "sms", "in", "963988301457", "417017744329016", "3102-21291", 0, "الطريق فاضي هلق"),
-    ("2026-04-19T04:56:00Z", 35.1110, 36.2640, "voice_call", "out", "963955207714", "417019031265540", "3101-20983", 47, None),
-    ("2026-04-28T15:10:00Z", 35.0740, 36.2970, "sms", "out", "963944118203", "417016620194387", "3104-21878", 0, "جيب السيارة التانية"),
-    ("2026-05-06T20:37:00Z", 35.0910, 36.2580, "voice_call", "in", "963966540338", "417015580931274", "3107-22715", 138, None),
-    ("2026-05-14T08:03:00Z", 35.0650, 36.2920, "sms", "in", "963988301457", "417017744329016", "3104-21876", 0, "بكرا الصبح بكير"),
-    ("2026-05-20T23:44:00Z", 35.0990, 36.2760, "voice_call", "out", "963966540338", "417015580931274", "3103-21504", 76, None),
+    ("2026-03-02T07:31:00Z", 35.0634, 36.3248, "voice_call", "out", "963944118203", "417016620194387", "3104-21877", 94, None),
+    ("2026-03-14T22:05:00Z", 35.0750, 36.3560, "sms", "out", "963955207714", "417019031265540", "3102-21290", 0, "وصلنا عند المفرق"),
+    ("2026-03-27T11:48:00Z", 35.0552, 36.3205, "voice_call", "in", "963944118203", "417016620194387", "3105-22410", 212, None),
+    ("2026-04-09T18:22:00Z", 35.0901, 36.3399, "sms", "in", "963988301457", "417017744329016", "3102-21291", 0, "الطريق فاضي هلق"),
+    ("2026-04-19T04:56:00Z", 35.0481, 36.3466, "voice_call", "out", "963955207714", "417019031265540", "3101-20983", 47, None),
+    ("2026-04-28T15:10:00Z", 35.0785, 36.3196, "sms", "out", "963944118203", "417016620194387", "3104-21878", 0, "جيب السيارة التانية"),
+    ("2026-05-06T20:37:00Z", 35.0607, 36.3655, "voice_call", "in", "963966540338", "417015580931274", "3107-22715", 138, None),
+    ("2026-05-14T08:03:00Z", 35.0420, 36.3290, "sms", "in", "963988301457", "417017744329016", "3104-21876", 0, "بكرا الصبح بكير"),
+    ("2026-05-20T23:44:00Z", 35.0839, 36.3634, "voice_call", "out", "963966540338", "417015580931274", "3103-21504", 76, None),
 ]
 
-# --- Satellite: 4 captures with cars detected, images cropped from the current captures -------------------
+# --- Satellite: 4 captures of civilian sites with cars detected; synthetic images (tools/draw_area_search_images.py)
 SATELLITE = [
     # time, lat, lon, image file, classification, detected objects, recognised objects, analyst note, cloud %, sun, off-nadir
-    ("2026-03-09T07:12:00Z", 35.0768, 36.3008, "sat-area-a.png", "Vehicles",
-     "2x light vehicle, 3x cargo truck (parked)", ["car", "car", "truck", "truck", "truck"],
-     "Vehicles parked on the clearing beside the road; no movement observed.", 3, 38.1, 6.4),
-    ("2026-04-02T07:09:00Z", 35.0843, 36.2918, "sat-area-b.png", "Vehicles",
-     "1x light vehicle leading 2x cargo truck", ["car", "truck", "truck"],
-     "A light vehicle leads two trucks north-west along the road.", 8, 47.6, 3.9),
-    ("2026-04-25T07:15:00Z", 35.0918, 36.2828, "sat-area-c.png", "Vehicles",
-     "1x light vehicle, 1x cargo truck", ["car", "truck"],
-     "A light vehicle follows one truck on the road; spacing about 80 m.", 2, 55.2, 5.1),
-    ("2026-05-16T07:21:00Z", 35.0993, 36.2738, "sat-area-d.png", "Vehicles",
-     "2x light vehicle, 3x cargo truck in column", ["car", "car", "truck", "truck", "truck"],
-     "Short column of five vehicles moving along the ridge road.", 6, 61.8, 4.6),
+    ("2026-03-09T07:12:00Z", 35.0532, 36.3130, "sat-area-a.png", "Logistics park",
+     "2x large warehouse, ~40x car in staff car park, 6x car on access road",
+     ["building", "building", "parking lot"] + ["car"] * 8,
+     "Two large warehouses with a nearly full staff car park; steady civilian traffic on the access road.", 3, 38.1, 6.4),
+    ("2026-04-02T07:09:00Z", 35.0880, 36.3250, "sat-area-b.png", "Construction site",
+     "1x large building under construction, 1x tower crane, 2x excavator, 2x dump truck, 1x concrete mixer, 7x car",
+     ["building", "crane", "excavator", "excavator", "truck", "truck", "truck"] + ["car"] * 7,
+     "Concrete frame of a large building going up; earthworks with two excavators and a mixer on site.", 8, 47.6, 3.9),
+    ("2026-04-25T07:15:00Z", 35.0470, 36.3700, "sat-area-c.png", "Factory",
+     "1x large factory hall, 4x storage silo, 4x truck in yard, ~20x car parked, 8x car on road",
+     ["building", "building", "silo", "truck", "truck", "truck", "truck"] + ["car"] * 8,
+     "Factory beside the main road with four silos; trucks loading in the yard and cars passing on the road.", 2, 55.2, 5.1),
+    ("2026-05-16T07:21:00Z", 35.0925, 36.3570, "sat-area-d.png", "Plant hire depot",
+     "1x hangar, 4x excavator, 3x dump truck, 3x concrete mixer, 6x shipping container, ~25x car",
+     ["building", "excavator", "excavator", "excavator", "excavator", "truck", "truck", "truck", "container"] + ["car"] * 8,
+     "Plant-hire depot with rows of yellow machinery, containers and a customer car park.", 6, 61.8, 4.6),
 ]
 
 
@@ -165,7 +171,7 @@ def satellite_items(template: dict) -> list[dict]:
         item["fe_correlation_ids"] = [new_id(f"satellite-correlation-{n}")]
         item["locations"] = [geo(lat, lon, when, None, None, (template.get("locations") or [{}])[0])]
         info = dict((template.get("additional_info") or [{}])[0])
-        info.update({"off_nadir_deg": nadir, "sun_elevation_deg": sun, "gsd_m": 0.5, "footprint_radius_km": 0.6,
+        info.update({"off_nadir_deg": nadir, "sun_elevation_deg": sun, "gsd_m": 0.3, "footprint_radius_km": 0.12,
                      "cloud_cover_pct": cloud, "classification": classification, "detected_objects": detected})
         item["additional_info"] = [info]
         item["tags"] = ([{"type": "event", "value": True, "source": "system"}, {"type": "flag", "value": "HasContent", "source": "system"}]

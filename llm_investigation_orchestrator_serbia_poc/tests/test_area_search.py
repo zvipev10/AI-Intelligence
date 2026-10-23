@@ -10,8 +10,8 @@ from hl.mapping import load_mapping
 ROOT = Path(__file__).resolve().parent.parent
 PROFILE = json.loads((ROOT / "demo_profiles" / "lambda.json").read_text(encoding="utf-8"))
 LOCAL = json.loads((ROOT / PROFILE["local_items"]).read_text(encoding="utf-8"))
-# Around the satellite convoy track north-west of Hama, where the local records are.
-AREA = [[36.286, 35.060], [36.322, 35.071], [36.300, 35.101], [36.272, 35.117], [36.250, 35.104], [36.262, 35.080], [36.286, 35.060]]
+# In and around Masyaf, where the local records are.
+AREA = [[36.285, 35.030], [36.390, 35.030], [36.400, 35.065], [36.390, 35.105], [36.285, 35.105], [36.280, 35.065], [36.286, 35.060]]
 
 
 def local_rows():
