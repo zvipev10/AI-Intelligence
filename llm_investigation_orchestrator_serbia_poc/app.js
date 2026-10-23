@@ -1875,7 +1875,9 @@ function layerMemoryPayload(layer) {
     original_count: (layer.items || []).length,
     filtered_count: filteredItems.length,
     applied_filters: appliedFilters,
-    sample_ids: identifiersForLayerContext(layer, filteredItems)
+    sample_ids: identifiersForLayerContext(layer, filteredItems),
+    // Every record the layer presents; on an i360 investigation each is attached to it (HL API related objects).
+    record_ids: [...new Set(filteredItems.map(item => item.i360_item_id || item.record_id || item.event_id).filter(Boolean).map(String))]
   };
 }
 
@@ -1903,7 +1905,8 @@ async function saveLayerToInvestigationMemory(layer, button, comment = "", confi
   button.title = "Saving layer to investigation memory";
   button.setAttribute("aria-label", "Saving layer to investigation memory");
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 15000);
+  // Attaching every presented record takes one HL API call per 25 records.
+  const timeout = setTimeout(() => controller.abort(), 180000);
   try {
     const response = await fetch("/api/investigation-memory/layer", {
       method: "POST",
@@ -1920,7 +1923,11 @@ async function saveLayerToInvestigationMemory(layer, button, comment = "", confi
     if (!response.ok) throw new Error(payload.error || activeLocaleText("שמירת השכבה לזיכרון נכשלה", "Failed to save layer to memory"));
     layer.investigation_memory_layer_id = payload.saved?.id || true;
     await loadInvestigationMemory();
-    button.title = activeLocaleText("השכבה נשמרה בזיכרון החקירה", "Layer saved to investigation memory");
+    const records = payload.saved?.records;
+    button.title = records
+      ? `${(records.linked + records.already_linked).toLocaleString("en-US")} of ${records.requested.toLocaleString("en-US")} records saved to investigation memory`
+        + (records.failed?.length ? ` (${records.failed.length.toLocaleString("en-US")} not saved)` : "")
+      : activeLocaleText("השכבה נשמרה בזיכרון החקירה", "Layer saved to investigation memory");
     button.setAttribute("aria-label", button.title);
     renderEvidence();
   } catch (error) {

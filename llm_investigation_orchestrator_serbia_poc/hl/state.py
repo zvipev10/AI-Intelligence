@@ -27,6 +27,10 @@ from .client import HlClient, HlError, list_hits, total_pages
 SECTION = "main"
 PAGE_SIZE = 100
 
+class MemoryTypeMissing(ValueError):
+    """The app's own memory entity type is not set up on this i360 (records can still be attached)."""
+
+
 MEMORY_GROUPS = ("chat_summaries", "layers", "artifacts", "collection_requests", "entity_enrichments")
 
 
@@ -303,14 +307,52 @@ class StateStore:
             raise HlError(502, "attach_not_applied", f"i360 did not attach the item to the investigation ({detail})")
         return {**item, "id": self.RELATED_PREFIX + item_id, "object_id": item_id, "source": "i360_related_object"}
 
+    RELATED_BATCH = 25  # HL API takes 1-25 item ids per items/related-objects call
+    RELATED_MAX_PAGES = 20
+
+    def attach_items(self, investigation_key: str, item_ids: list[str]) -> dict[str, Any]:
+        """Attach many records to the external investigation, 25 ids per items/related-objects call."""
+        if not self.external_investigation_type:
+            raise ValueError("Records can be attached only to an i360 investigation")
+        if self._investigation_instance(investigation_key) is None:
+            raise ValueError("Investigation not found in i360")
+        ids = list(dict.fromkeys(str(i) for i in item_ids if i))
+        linked = already = 0
+        failed: list[dict[str, str]] = []
+        for start in range(0, len(ids), self.RELATED_BATCH):
+            batch = ids[start:start + self.RELATED_BATCH]
+            response = self.client.add_related_objects(self.external_investigation_type, investigation_key, batch)
+            outcomes = {str(r.get("item_id")): r for r in response.get("results") or [] if isinstance(r, dict)}
+            for item_id in batch:
+                result = outcomes.get(item_id) or {}
+                if result.get("outcome") == "linked":
+                    linked += 1
+                elif result.get("outcome") == "already_linked":
+                    already += 1
+                else:
+                    failed.append({"item_id": item_id, "error": str(result.get("error") or result.get("outcome") or "no result")})
+        if ids and not linked and not already:
+            raise HlError(502, "attach_not_applied", f"i360 did not attach the records to the investigation ({failed[0]['error']})")
+        return {"requested": len(ids), "linked": linked, "already_linked": already, "failed": failed}
+
+    def _related_hits(self, investigation_key: str) -> list[dict[str, Any]]:
+        """Every item i360 reports as related to the investigation, newest first (paged)."""
+        hits: list[dict[str, Any]] = []
+        for page in range(1, self.RELATED_MAX_PAGES + 1):
+            response = self.client.search_items({
+                "related_to": {"ids": [investigation_key]},
+                "time": {"from": "1970-01-01T00:00:00Z", "to": "2100-01-01T00:00:00Z", "field": "event"},
+                "page_number": page, "page_size": PAGE_SIZE, "include": ["text"], "sort": "time", "order": "desc",
+            })
+            page_hits = list_hits(response)
+            hits.extend(page_hits)
+            if len(page_hits) < PAGE_SIZE:
+                break
+        return hits
+
     def _attached_items(self, investigation_key: str) -> list[dict[str, Any]]:
-        response = self.client.search_items({
-            "related_to": {"ids": [investigation_key]},
-            "time": {"from": "1970-01-01T00:00:00Z", "to": "2100-01-01T00:00:00Z", "field": "event"},
-            "page_number": 1, "page_size": 100, "include": ["text"], "sort": "time", "order": "desc",
-        })
         out = []
-        for hit in list_hits(response):
+        for hit in self._related_hits(investigation_key):
             item_id = str(hit.get("item_id") or "")
             if not item_id:
                 continue
@@ -329,15 +371,14 @@ class StateStore:
         """The items attached to an external investigation, in full (items/get), newest first."""
         if not self.external_investigation_type:
             return []
-        hits = list_hits(self.client.search_items({
-            "related_to": {"ids": [investigation_key]},
-            "time": {"from": "1970-01-01T00:00:00Z", "to": "2100-01-01T00:00:00Z", "field": "event"},
-            "page_number": 1, "page_size": 100, "include": ["text"], "sort": "time", "order": "desc",
-        }))
+        hits = self._related_hits(investigation_key)
         ids = [str(hit["item_id"]) for hit in hits if hit.get("item_id")]
         if not ids:
             return []
-        full = {str(item.get("item_id")): item for item in self.client.get_items(ids, include or []).get("items") or []}
+        full: dict[str, Any] = {}
+        for start in range(0, len(ids), PAGE_SIZE):
+            for item in self.client.get_items(ids[start:start + PAGE_SIZE], include or []).get("items") or []:
+                full[str(item.get("item_id"))] = item
         out = []
         for hit in hits:
             item = full.get(str(hit.get("item_id")))
@@ -458,7 +499,7 @@ class StateStore:
             self._create_memory_record(investigation_key, group, item)
         except HlError as exc:
             if exc.status == 400 and "invalid entity type" in str(exc).lower():
-                raise ValueError(
+                raise MemoryTypeMissing(
                     "This can't be saved to the investigation yet: the app's own memory type "
                     f"({self.memory_item_type}) is not set up on this i360. Records can be saved; persons, "
                     "layers and areas need it.") from None

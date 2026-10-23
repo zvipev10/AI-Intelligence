@@ -157,6 +157,57 @@ class AttachItemsToInvestigationTests(unittest.TestCase):
             store(Refusing()).add_memory_item("inv-1", "artifacts", dict(self.RECORD))
 
 
+class AttachLayerRecordsTests(unittest.TestCase):
+    def test_a_layer_attaches_every_record_25_per_call(self):
+        client = RelatedClient()
+        client.related["inv-1"] = {"item-3"}
+        ids = [f"item-{n}" for n in range(60)] + ["item-0"]
+        result = store(client).attach_items("inv-1", ids)
+        self.assertEqual([25, 25, 10], [len(call[3]) for call in client.calls])
+        self.assertEqual({"requested": 60, "linked": 59, "already_linked": 1, "failed": []}, result)
+        self.assertEqual(60, len(client.related["inv-1"]))
+
+    def test_records_the_investigation_refuses_are_reported(self):
+        class Partial(RelatedClient):
+            def add_related_objects(self, entity_type, entity_id, item_ids, relation_type="associated"):
+                return {"results": [{"item_id": i, "outcome": "linked" if i != "item-1" else "failed", "error": "not_found"}
+                                    for i in item_ids]}
+
+        result = store(Partial()).attach_items("inv-1", ["item-0", "item-1"])
+        self.assertEqual((1, [{"item_id": "item-1", "error": "not_found"}]), (result["linked"], result["failed"]))
+
+    def test_nothing_attached_is_an_error(self):
+        class Refusing(RelatedClient):
+            def add_related_objects(self, *args, **kwargs):
+                return {"results": []}
+
+        with self.assertRaises(HlError):
+            store(Refusing()).attach_items("inv-1", ["item-0"])
+
+    def test_memory_lists_more_than_one_page_of_attached_records(self):
+        class Paged(RelatedClient):
+            def search_items(self, body):
+                ids = sorted(self.related.get("inv-1", set()))
+                start = (body["page_number"] - 1) * body["page_size"]
+                return {"items": [{"item_id": i} for i in ids[start:start + body["page_size"]]]}
+
+        client = Paged()
+        s = store(client)
+        s.attach_items("inv-1", [f"item-{n:03d}" for n in range(130)])
+        self.assertEqual(130, len(s.load_memory("inv-1")["memory"]["artifacts"]))
+
+    def test_a_missing_memory_type_is_its_own_error(self):
+        from hl.state import MemoryTypeMissing
+
+        class NoType(RelatedClient):
+            def create_entity(self, entity_type, body):
+                raise HlError(400, "bad_request", "Invalid entity type AII_MEMORY_ITEM")
+
+        layer = {"id": "layer-1", "kind": "layer_filter_state", "label": "ADINT"}
+        with self.assertRaises(MemoryTypeMissing):
+            store(NoType()).add_memory_item("inv-1", "layers", layer)
+
+
 LINK_SPEC = {"object_kind": "person", "entity_type": "PERSON_OF_INTEREST", "link_type": "person_to_int_investigation",
              "investigation_side": "intelligence_investigation", "entity_side": "person"}
 

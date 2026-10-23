@@ -39,7 +39,7 @@ from hl.config import ROOT, Settings, load_settings
 from hl.items import TELECOM_APPROVED, ItemReader, Snapshot, SnapshotCache, entity_presentation, item_fields, layers_search
 from hl.mapping import Mapping, load_mapping
 from hl import report
-from hl.state import MEMORY_GROUPS, StateStore
+from hl.state import MEMORY_GROUPS, MemoryTypeMissing, StateStore
 
 SESSION_COOKIE = "aii_session"
 # With Secure cookies the "__Host-" prefix pins the cookie to this exact host (no Domain, Path=/),
@@ -627,6 +627,30 @@ class Handler(BaseHTTPRequestHandler):
             return
         self.send_json(404, {"error": "not_found"})
 
+    def save_layer_records(self, token: str, state: StateStore, investigation_id: str,
+                           item: dict[str, Any], request: dict[str, Any]) -> dict[str, Any]:
+        """Save a layer to an i360 investigation: every record it presents is attached to the investigation
+        (25 per HL API call); the layer's own view is kept too when the app's memory type is set up."""
+        layer = request.get("layer") if isinstance(request.get("layer"), dict) else {}
+        wanted = [str(i) for i in layer.get("record_ids") or [] if isinstance(i, (str, int)) and str(i).strip()]
+        data = self.app.dataset(token, "he")
+        by_id: dict[str, str] = {}
+        for row in data.events:
+            if row.get("i360_item_id"):
+                for key in (row.get("record_id"), row.get("event_id"), row.get("i360_item_id")):
+                    if key:
+                        by_id.setdefault(str(key), str(row["i360_item_id"]))
+        # A record the chat showed may be outside the snapshot: its id is then the i360 item id itself.
+        item_ids = list(dict.fromkeys(by_id.get(i, i) for i in wanted))
+        if not item_ids:
+            raise ValueError("This layer shows no records to save")
+        records = state.attach_items(investigation_id, item_ids)
+        try:
+            saved = state.add_memory_item(investigation_id, "layers", item, request.get("name"))
+        except MemoryTypeMissing:
+            saved = {"id": f"records:{item['id']}", "label": item.get("label")}
+        return {"saved": {**saved, "records": records}, "memory": state.load_memory(investigation_id)}
+
     def record_files(self, token: str, record_id: str) -> dict[str, Any]:
         """Files of one record, with signed URLs the browser can load directly from HL API."""
         data = self.app.dataset(token, "he")
@@ -927,6 +951,9 @@ class Handler(BaseHTTPRequestHandler):
             investigation_id = require_investigation_id(request.get("investigation_id"))
             if path.endswith("/layer"):
                 group, item = "layers", analysis.layer_memory_item(request)
+                if state.external_investigation_type and (request.get("layer") or {}).get("record_ids"):
+                    self.send_json(201, self.save_layer_records(token, state, investigation_id, item, request))
+                    return
             else:
                 group, item = "artifacts", analysis.artifact_memory_item(request)
                 if item.get("object_kind") == "record":
