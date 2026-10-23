@@ -140,6 +140,7 @@
           </button>
           <div id="polygonDrawHint" class="polygon-draw-hint" role="status" hidden data-i18n-text-he="לחצו להוספת נקודות. לחצו על הנקודה הראשונה לסגירה (לפחות 3 נקודות). Esc לביטול." data-i18n-text-en="Click to add points. Click the first point to close (at least 3 points). Esc to cancel.">Click to add points. Click the first point to close (at least 3 points). Esc to cancel.</div>
           <div id="basemapStatus" class="basemap-status" role="status" hidden></div>
+          <div id="areaSearchStatus" class="polygon-draw-hint area-search-status" role="status" hidden></div>
         </section>
         <section id="timelineView" class="view-pane"><div id="timelineLayersTabs" class="timeline-layer-tabs raw-events-tabs" role="tablist" aria-label="סינון לפי מקור" data-i18n-aria-he="סינון לפי מקור" data-i18n-aria-en="Filter by source"></div><div id="timeline" class="timeline empty-state" data-i18n-text-he="לא נבחרו אירועים להצגה." data-i18n-text-en="No events were selected for display.">לא נבחרו אירועים להצגה.</div></section>
         <section id="tableView" class="view-pane"><div class="table-view-empty" data-i18n-text-he="פתח שכבה כדי להציג רשומות בטבלה." data-i18n-text-en="Open a layer to view its records in the table.">פתח שכבה כדי להציג רשומות בטבלה.</div></section>
@@ -207,15 +208,6 @@
     <button id="polygonSaveMemory" type="button" role="menuitem"><span class="material-symbols-rounded" aria-hidden="true">bookmark_add</span><span data-i18n-text-he="שמור לזיכרון" data-i18n-text-en="Save to memory">שמור לזיכרון</span></button>
     <button id="polygonRequestCollection" type="button" role="menuitem"><span class="material-symbols-rounded" aria-hidden="true">satellite_alt</span><span data-i18n-text-he="בקשת איסוף" data-i18n-text-en="Request collection">בקשת איסוף</span></button>
     <button id="polygonAreaSearch" type="button" role="menuitem"><span class="material-symbols-rounded" aria-hidden="true">travel_explore</span><span data-i18n-text-he="חיפוש נתונים באזור" data-i18n-text-en="Search data in area">חיפוש נתונים באזור</span></button>
-  </div>
-
-  <div id="areaSearchModal" class="modal-backdrop collection-modal" hidden>
-    <form id="areaSearchForm" class="collection-modal-panel area-search-panel" aria-labelledby="areaSearchTitle">
-      <header><div><h2 id="areaSearchTitle" data-i18n-text-he="חיפוש נתונים באזור" data-i18n-text-en="Search data in area">חיפוש נתונים באזור</h2><p data-i18n-text-he="כל הרשומות מכל השכבות שנמצאות באזור המסומן, בטווח הזמן" data-i18n-text-en="Records of every layer inside the marked area, in the time range">כל הרשומות מכל השכבות שנמצאות באזור המסומן, בטווח הזמן</p></div><button id="areaSearchClose" class="modal-close-button" type="button" aria-label="סגור" data-i18n-aria-he="סגור" data-i18n-aria-en="Close">×</button></header>
-      <div class="area-search-dates"><label><span data-i18n-text-he="מתאריך" data-i18n-text-en="From">מתאריך</span><input id="areaSearchFrom" type="date" required></label><label><span data-i18n-text-he="עד תאריך" data-i18n-text-en="To">עד תאריך</span><input id="areaSearchTo" type="date" required></label></div>
-      <p id="areaSearchError" class="memory-comment-error" role="alert" hidden></p>
-      <div class="collection-modal-actions"><button id="areaSearchCancel" type="button" data-i18n-text-he="ביטול" data-i18n-text-en="Cancel">ביטול</button><button id="areaSearchSubmit" class="primary-filter-action" type="submit" data-i18n-text-he="חיפוש" data-i18n-text-en="Search">חיפוש</button></div>
-    </form>
   </div>
 
   <div id="collectionRequestModal" class="modal-backdrop collection-modal" hidden>

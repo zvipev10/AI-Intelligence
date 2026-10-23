@@ -63,8 +63,9 @@ by-id reads) does not know them.
 
 **Search data in area** (the polygon menu) posts the polygon and a time window to `POST /api/area-search`,
 which returns, per event layer, the records whose point lies inside the polygon and whose time is in the
-window. Each layer then opens filtered to those records (`event_ids`, `start_time`, `end_time`). The dates
-start at the profile's `area_search` window, which on LAMBDA covers only the app's own records.
+window. Each layer then opens filtered to those records (`event_ids`, `start_time`, `end_time`). The search runs
+at once, with no date dialog, in the profile's `area_search` window, which on LAMBDA covers only the app's
+own records.
 
 `analysis.Dataset` then runs the existing logic on the rows: entity and location summaries,
 the layer catalog, layer filters, field-backed links and the subscriber-identity derivation.

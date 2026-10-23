@@ -202,10 +202,7 @@ body.welcome-active .investigation-switcher { visibility: hidden; pointer-events
 .collection-modal-actions .primary-filter-action { border-color:rgba(88,166,255,.52);background:rgba(88,166,255,.14);color:var(--blue); }
 .polygon-action-menu { position:fixed;z-index:160;display:grid;min-width:205px;padding:5px;border:1px solid rgba(146,170,205,.38);border-radius:10px;background:#1c2129;box-shadow:0 16px 36px rgba(0,0,0,.5); }
 .polygon-action-menu[hidden] { display:none; }
-.area-search-panel { width:min(460px,calc(100vw - 28px)); }
-.area-search-dates { display:grid;grid-template-columns:1fr 1fr;gap:10px; }
-.area-search-dates label { display:grid;gap:5px;font-size:12px;font-weight:800; }
-.area-search-dates input { min-height:34px;border:1px solid rgba(146,170,205,.38);border-radius:8px;background:#10141b;color:var(--ink);padding:6px 9px;font:inherit;color-scheme:dark; }
+
 .polygon-action-menu button { display:flex;align-items:center;gap:8px;width:100%;min-height:34px;border:0;border-radius:6px;background:transparent;color:var(--ink);padding:7px 9px;font:inherit;font-size:13px;font-weight:700;text-align:start;cursor:pointer; }
 .polygon-action-menu button:hover,.polygon-action-menu button:focus-visible { background:rgba(88,166,255,.16);color:#b6dcff;outline:none; }
 .polygon-action-menu .material-symbols-rounded { color:var(--blue);font-size:18px; }

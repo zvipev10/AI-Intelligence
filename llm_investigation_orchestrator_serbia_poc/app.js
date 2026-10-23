@@ -574,9 +574,7 @@ let pendingMemoryCommentAction = null;
 let memoryReturnFocus = null;
 const polygonActionMenu = document.getElementById("polygonActionMenu");
 const collectionRequestModal = document.getElementById("collectionRequestModal");
-const areaSearchModal = document.getElementById("areaSearchModal");
-const areaSearchForm = document.getElementById("areaSearchForm");
-const areaSearchError = document.getElementById("areaSearchError");
+const areaSearchStatus = document.getElementById("areaSearchStatus");
 const collectionRequestForm = document.getElementById("collectionRequestForm");
 const collectionRequestTarget = document.getElementById("collectionRequestTarget");
 const collectionRequestTypes = document.getElementById("collectionRequestTypes");
@@ -588,7 +586,6 @@ const cellularCallsTaskModal = document.getElementById("cellularCallsTaskModal")
 const cctvTaskModal = document.getElementById("cctvTaskModal");
 let pendingPolygonAction = null;
 let pendingCollectionRequest = null;
-let pendingAreaSearch = null;
 let collectionTaskReturnFocus = null;
 let adintTaskMap = null;
 let cctvTaskMap = null;
@@ -1322,41 +1319,31 @@ function openPolygonActionMenu(polygon) {
   polygonActionMenu.hidden = false;
 }
 
-function closeAreaSearchDialog() {
-  const trigger = pendingAreaSearch?.trigger;
-  pendingAreaSearch = null;
-  areaSearchModal.hidden = true;
-  areaSearchError.hidden = true;
-  trigger?.focus?.();
+function showAreaSearchStatus(text, hideAfterMs = 0) {
+  clearTimeout(showAreaSearchStatus.timer);
+  areaSearchStatus.textContent = text;
+  areaSearchStatus.hidden = !text;
+  if (text && hideAfterMs) showAreaSearchStatus.timer = setTimeout(() => { areaSearchStatus.hidden = true; }, hideAfterMs);
 }
 
-// The default time window (profile "area_search") keeps the search to the scenario's own records.
-function openAreaSearchDialog(polygon, trigger = document.activeElement) {
+// Every layer with records inside the area opens filtered to them, as its own records. The time window is the
+// profile's "area_search" one, not asked: on LAMBDA it keeps the search to the scenario's own records.
+async function runAreaSearch(polygon) {
   if (!polygon?.coordinates) return;
-  pendingAreaSearch = { coordinates: polygon.coordinates, trigger };
   const defaults = state.areaSearchDefaults || {};
-  document.getElementById("areaSearchFrom").value = String(defaults.start_time || "").slice(0, 10);
-  document.getElementById("areaSearchTo").value = String(defaults.end_time || "").slice(0, 10);
-  areaSearchError.hidden = true;
-  areaSearchModal.hidden = false;
-  document.getElementById("areaSearchFrom").focus();
-}
-
-// Every layer with records inside the area opens filtered to them, as its own records.
-async function submitAreaSearch() {
-  const target = pendingAreaSearch;
-  if (!target) return;
-  const from = document.getElementById("areaSearchFrom").value;
-  const to = document.getElementById("areaSearchTo").value;
-  if (from && to && from > to) throw new Error(activeLocaleText("תאריך ההתחלה מאוחר מתאריך הסיום", "The From date is after the To date"));
-  const range = { start_time: from ? `${from}T00:00:00Z` : undefined, end_time: to ? `${to}T23:59:59Z` : undefined };
-  const response = await fetch("/api/area-search", { method: "POST", headers: { "Content-Type": "application/json; charset=utf-8" }, body: JSON.stringify({ polygon: target.coordinates, locale: currentLocale(), ...range }) });
-  const result = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(result.message || result.error || activeLocaleText("החיפוש נכשל", "The search failed"));
-  const layers = result.layers || [];
-  if (!layers.length) throw new Error(activeLocaleText("לא נמצאו רשומות באזור בטווח הזמן", "No records inside the area in this time range"));
-  closeAreaSearchDialog();
-  for (const layer of layers) await openCatalogLayer(resolveCatalogLayerId(layer.layer_id), { filters: { event_ids: layer.event_ids, ...Object.fromEntries(Object.entries(range).filter(([, value]) => value)) } });
+  const range = Object.fromEntries(Object.entries({ start_time: defaults.start_time, end_time: defaults.end_time }).filter(([, value]) => value));
+  showAreaSearchStatus(activeLocaleText("מחפש נתונים באזור…", "Searching the area…"));
+  try {
+    const response = await fetch("/api/area-search", { method: "POST", headers: { "Content-Type": "application/json; charset=utf-8" }, body: JSON.stringify({ polygon: polygon.coordinates, locale: currentLocale(), ...range }) });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(result.message || result.error || activeLocaleText("החיפוש נכשל", "The search failed"));
+    const layers = result.layers || [];
+    if (!layers.length) { showAreaSearchStatus(activeLocaleText("לא נמצאו רשומות באזור", "No records inside the area"), 4000); return; }
+    showAreaSearchStatus("");
+    for (const layer of layers) await openCatalogLayer(resolveCatalogLayerId(layer.layer_id), { filters: { event_ids: layer.event_ids, ...range } });
+  } catch (error) {
+    showAreaSearchStatus(error.message || activeLocaleText("החיפוש נכשל", "The search failed"), 6000);
+  }
 }
 
 function openCollectionRequestDialog(target, trigger = document.activeElement) {
@@ -5493,19 +5480,7 @@ document.getElementById("polygonRequestCollection")?.addEventListener("click", (
 document.getElementById("polygonAreaSearch")?.addEventListener("click", () => {
   const polygon = pendingPolygonAction;
   closePolygonActionMenu();
-  if (polygon) openAreaSearchDialog(polygon, document.getElementById("polygonDrawButton"));
-});
-document.getElementById("areaSearchClose")?.addEventListener("click", closeAreaSearchDialog);
-document.getElementById("areaSearchCancel")?.addEventListener("click", closeAreaSearchDialog);
-areaSearchModal?.addEventListener("click", event => { if (event.target === areaSearchModal) closeAreaSearchDialog(); });
-areaSearchForm?.addEventListener("submit", async event => {
-  event.preventDefault();
-  const submit = document.getElementById("areaSearchSubmit");
-  submit.disabled = true;
-  areaSearchError.hidden = true;
-  try { await submitAreaSearch(); }
-  catch (error) { areaSearchError.textContent = error.message || activeLocaleText("החיפוש נכשל", "The search failed"); areaSearchError.hidden = false; }
-  finally { submit.disabled = false; }
+  if (polygon) void runAreaSearch(polygon);
 });
 document.getElementById("collectionRequestClose")?.addEventListener("click", closeCollectionRequestDialog);
 document.getElementById("collectionRequestCancel")?.addEventListener("click", closeCollectionRequestDialog);
