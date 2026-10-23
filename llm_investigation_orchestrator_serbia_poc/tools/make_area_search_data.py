@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import copy
 import json
+import random
 import sys
 import uuid
 from datetime import datetime, timedelta
@@ -71,19 +72,33 @@ ADINT = [
 ]
 
 # --- Cellular Locations: 9 calls and SMS of a new target, each with a cell and a GPS point -----------------
-TARGET = {"msisdn": "963933412870", "imsi": "417012345098761", "imei": "356938104472615"}
-OTHER_IMEI = {"963944118203": "352099001761481", "963966540338": "861536030196001"}  # known handsets of two contacts
+def luhn(digits: str) -> str:
+    total = 0
+    for i, d in enumerate(reversed(digits)):
+        v = int(d) * (2 if i % 2 == 0 else 1)
+        total += v - 9 if v > 9 else v
+    return digits + str((10 - total % 10) % 10)
+
+
+def device(rng: random.Random) -> dict[str, str]:
+    """A random Syrian subscriber: MSISDN (9639...), IMSI (41701...) and an IMEI with its check digit."""
+    tac = rng.choice(["35329470", "35693810", "35209900", "86153603", "35874210", "86719305", "35412608"])
+    return {"msisdn": "9639" + "".join(rng.choice("0123456789") for _ in range(8)),
+            "imsi": "41701" + "".join(rng.choice("0123456789") for _ in range(10)),
+            "imei": luhn(tac + "".join(rng.choice("0123456789") for _ in range(6)))}
+
+
 CELLULAR = [
-    # time, lat, lon, type, direction, other msisdn, other imsi, cell, duration s, sms text
-    ("2026-03-02T07:31:00Z", 35.0634, 36.3248, "voice_call", "out", "963944118203", "417016620194387", "3104-21877", 94, None),
-    ("2026-03-14T22:05:00Z", 35.0750, 36.3560, "sms", "out", "963955207714", "417019031265540", "3102-21290", 0, "وصلنا عند المفرق"),
-    ("2026-03-27T11:48:00Z", 35.0552, 36.3205, "voice_call", "in", "963944118203", "417016620194387", "3105-22410", 212, None),
-    ("2026-04-09T18:22:00Z", 35.0901, 36.3399, "sms", "in", "963988301457", "417017744329016", "3102-21291", 0, "الطريق فاضي هلق"),
-    ("2026-04-19T04:56:00Z", 35.0481, 36.3466, "voice_call", "out", "963955207714", "417019031265540", "3101-20983", 47, None),
-    ("2026-04-28T15:10:00Z", 35.0785, 36.3196, "sms", "out", "963944118203", "417016620194387", "3104-21878", 0, "جيب السيارة التانية"),
-    ("2026-05-06T20:37:00Z", 35.0607, 36.3655, "voice_call", "in", "963966540338", "417015580931274", "3107-22715", 138, None),
-    ("2026-05-14T08:03:00Z", 35.0420, 36.3290, "sms", "in", "963988301457", "417017744329016", "3104-21876", 0, "بكرا الصبح بكير"),
-    ("2026-05-20T23:44:00Z", 35.0839, 36.3634, "voice_call", "out", "963966540338", "417015580931274", "3103-21504", 76, None),
+    # time, lat, lon, type, direction, cell, duration s, sms text (both devices of every record are random)
+    ("2026-03-02T07:31:00Z", 35.0634, 36.3248, "voice_call", "out", "3104-21877", 94, None),
+    ("2026-03-14T22:05:00Z", 35.0750, 36.3560, "sms", "out", "3102-21290", 0, "وصلنا عند المفرق"),
+    ("2026-03-27T11:48:00Z", 35.0552, 36.3205, "voice_call", "in", "3105-22410", 212, None),
+    ("2026-04-09T18:22:00Z", 35.0901, 36.3399, "sms", "in", "3102-21291", 0, "الطريق فاضي هلق"),
+    ("2026-04-19T04:56:00Z", 35.0481, 36.3466, "voice_call", "out", "3101-20983", 47, None),
+    ("2026-04-28T15:10:00Z", 35.0785, 36.3196, "sms", "out", "3104-21878", 0, "جيب السيارة التانية"),
+    ("2026-05-06T20:37:00Z", 35.0607, 36.3655, "voice_call", "in", "3107-22715", 138, None),
+    ("2026-05-14T08:03:00Z", 35.0420, 36.3290, "sms", "in", "3104-21876", 0, "بكرا الصبح بكير"),
+    ("2026-05-20T23:44:00Z", 35.0839, 36.3634, "voice_call", "out", "3103-21504", 76, None),
 ]
 
 # --- Satellite: 4 captures of civilian sites with cars detected; synthetic images (tools/draw_area_search_images.py)
@@ -129,16 +144,18 @@ def adint_items(template: dict) -> list[dict]:
 
 def cellular_items(sms_template: dict, call_template: dict) -> list[dict]:
     out = []
-    for n, (when, lat, lon, kind, direction, msisdn, imsi, cell, seconds, text) in enumerate(CELLULAR, 1):
+    for n, (when, lat, lon, kind, direction, cell, seconds, text) in enumerate(CELLULAR, 1):
+        rng = random.Random(f"cellular-{n}")
+        target, other = device(rng), device(rng)
         template = sms_template if kind == "sms" else call_template
         item = base(template, new_id(f"cellular-{n}"), when, lat, lon)
         target_role, other_role = ("from", "to") if direction == "out" else ("to", "from")
         item["call_direction"] = direction
         item["parties"] = [
-            {"id": "1", "role": target_role, "identifiers": [{"type": t, "value": TARGET[t]} for t in ("msisdn", "imsi", "imei")],
+            {"id": "1", "role": target_role, "identifiers": [{"type": t, "value": target[t]} for t in ("msisdn", "imsi", "imei")],
              "target_indication": "True"},
-            {"id": "2", "role": other_role, "identifiers": [{"type": "msisdn", "value": msisdn}, {"type": "imsi", "value": imsi}]
-             + ([{"type": "imei", "value": OTHER_IMEI[msisdn]}] if msisdn in OTHER_IMEI else []), "target_indication": "False"},
+            {"id": "2", "role": other_role, "identifiers": [{"type": t, "value": other[t]} for t in ("msisdn", "imsi")]
+             + ([{"type": "imei", "value": other["imei"]}] if rng.random() < 0.5 else []), "target_indication": "False"},
         ]
         cgi_template, geo_template = (template.get("locations") or [{}, {}])[:2]
         cgi = copy.deepcopy(cgi_template)
