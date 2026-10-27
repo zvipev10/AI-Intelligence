@@ -47,7 +47,9 @@ class LambdaProfileTests(unittest.TestCase):
         cls.previous_app = getattr(app_server.Handler, "app", None)
         app_server.Handler.app = app_server.App(app_server.load_settings())
         # The profile's own records (local_items) are tested on their own (test_local_records_and_area_search).
-        cls.local_items = app_server.Handler.app.profile.pop("local_items", None)
+        # LAMBDA reads them from i360 since 27 Oct 2026; the local-records feature is still tested with the demo file.
+        assert "local_items" not in app_server.Handler.app.profile
+        cls.local_items = "demo_data/lambda-area-search.json"
         app_server.Handler.quiet = True
         cls.app_server = app_server
         cls.app = start(ThreadingHTTPServer(("127.0.0.1", 0), app_server.Handler))

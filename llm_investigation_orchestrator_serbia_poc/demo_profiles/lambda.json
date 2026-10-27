@@ -40,9 +40,7 @@
   ]
  },
  "dataset_version": "i360",
- "_local_items": "The app's own records, not in i360 (polygon area search demo): tools/make_area_search_data.py writes them.",
- "local_items": "demo_data/lambda-area-search.json",
- "_area_search": "The polygon Search data in area default time window: the app's own records (March to May 2026) only, not the i360 ones (July 2026 on).",
+ "_area_search": "The polygon Search data in area default time window: the area-search demo records (March to May 2026, made by tools/make_area_search_data.py and ingested into i360 on 27 Oct 2026), not the other i360 ones (July 2026 on).",
  "area_search": {"start_time": "2026-03-01T00:00:00Z", "end_time": "2026-06-30T23:59:59Z"},
  "chat_labels": {
   "_comment": "Words for i360 index fields that no layer column shows, sent to the i360 chat as labels with every question",
@@ -58,6 +56,15 @@
     "source_applications": [
      "EO optical (fictional)"
     ],
+    "facet_filters": [
+     {
+      "group": "coverage",
+      "values": [
+       "0a7237a7-7f99-41a4-a095-a415559e5ebc"
+      ]
+     }
+    ],
+    "_coverage": "coverage test 170526: the 10 July images plus one copy of each area-search image (i360 ingested those 3 times; the other 2 runs are in coverage dbf11418-...)",
     "recent_days": 365,
     "limit": 300,
     "layer": "Satellite",

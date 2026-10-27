@@ -9,7 +9,8 @@ from hl.mapping import load_mapping
 
 ROOT = Path(__file__).resolve().parent.parent
 PROFILE = json.loads((ROOT / "demo_profiles" / "lambda.json").read_text(encoding="utf-8"))
-LOCAL = json.loads((ROOT / PROFILE["local_items"]).read_text(encoding="utf-8"))
+# The area-search demo records; LAMBDA now reads their i360 copies, the app's local-records feature still takes this file.
+LOCAL = json.loads((ROOT / "demo_data" / "lambda-area-search.json").read_text(encoding="utf-8"))
 # The area of the real ADINT data around and west of Masyaf, where the local records are.
 AREA = [[36.250, 35.022], [36.365, 35.022], [36.372, 35.070], [36.365, 35.124], [36.250, 35.124], [36.245, 35.070], [36.286, 35.060]]
 
