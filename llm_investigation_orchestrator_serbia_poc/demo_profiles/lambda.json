@@ -79,8 +79,10 @@
    },
    {
     "source_applications": [
-     "ADINT"
+     "ADINT",
+     "ad-location"
     ],
+    "_sources": "ad-location: the app's synthetic ADINT records (area search demo), ingested into i360 on 27 Oct 2026",
     "recent_days": 365,
     "limit": 300,
     "layer": "ADINT",
@@ -432,10 +434,19 @@
      "7af352a1-c553-11f1-bdfe-f995e81cf0f9",
      "7ae8cb45-c553-11f1-bdfe-f1c57be2503b",
      "7b54fa64-c553-11f1-b33f-03af902abe97",
-     "7b604515-c553-11f1-b33f-41d959897855"
+     "7b604515-c553-11f1-b33f-41d959897855",
+     "e149bf5d-d1f7-11f1-91f7-51a265d6927f",
+     "e1eda072-d1f7-11f1-9922-192ad74bb665",
+     "e1ca6111-d1f7-11f1-91f7-9538bf07a843",
+     "e15b728f-d1f7-11f1-9922-b308b0f733a7",
+     "e1ba5b7e-d1f7-11f1-91f7-85d1fb01a03f",
+     "e1ec40e0-d1f7-11f1-9922-795d96aa3e8f",
+     "e1c90180-d1f7-11f1-91f7-8b91981f8ac7",
+     "e1ed2b41-d1f7-11f1-9922-d7f39d4fbf84",
+     "e1c77adf-d1f7-11f1-91f7-a9b346f108e0"
     ],
     "recent_days": 365,
-    "limit": 300,
+    "limit": 320,
     "fields": [
      "item_id",
      "event_time",
@@ -453,7 +464,7 @@
      "locations",
      "text"
     ],
-    "_comment": "voice_call and sms that were in coverage Demo tali; i360 moved them to coverage test 170526 (0a7237a7-...) on 27 Oct 2026, so include_ids keeps exactly those 300; about half carry a GPS point",
+    "_comment": "voice_call and sms that were in coverage Demo tali; i360 moved them to coverage test 170526 (0a7237a7-...) on 27 Oct 2026, so include_ids keeps exactly those 300, plus the app's 9 synthetic area-search calls and SMS ingested on 27 Oct 2026; about half carry a GPS point",
     "labels": {
      "item_type": "SESSION TYPE",
      "call_direction": "DIRECTION",
