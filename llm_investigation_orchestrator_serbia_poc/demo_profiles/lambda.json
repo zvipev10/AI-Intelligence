@@ -40,6 +40,10 @@
   ]
  },
  "dataset_version": "i360",
+ "_local_items": "The app's own records, not in i360 (polygon area search demo): tools/make_area_search_data.py writes them.",
+ "local_items": "demo_data/lambda-area-search.json",
+ "_area_search": "The polygon Search data in area default time window: the app's own records (March to May 2026) only, not the i360 ones (July 2026 on).",
+ "area_search": {"start_time": "2026-03-01T00:00:00Z", "end_time": "2026-06-30T23:59:59Z"},
  "chat_labels": {
   "_comment": "Words for i360 index fields that no layer column shows, sent to the i360 chat as labels with every question",
   "related_objects.id": ["linked record", "linked to record", "רשומה מקושרת"]

@@ -574,6 +574,7 @@ let pendingMemoryCommentAction = null;
 let memoryReturnFocus = null;
 const polygonActionMenu = document.getElementById("polygonActionMenu");
 const collectionRequestModal = document.getElementById("collectionRequestModal");
+const areaSearchStatus = document.getElementById("areaSearchStatus");
 const collectionRequestForm = document.getElementById("collectionRequestForm");
 const collectionRequestTarget = document.getElementById("collectionRequestTarget");
 const collectionRequestTypes = document.getElementById("collectionRequestTypes");
@@ -1310,12 +1311,39 @@ function openPolygonActionMenu(polygon) {
   pendingPolygonAction = polygon;
   const minimumMargin = 8;
   const menuWidth = 213;
-  const menuHeight = 82;
+  const menuHeight = 122;
   const x = Math.min(Math.max(polygon.position?.x ?? window.innerWidth / 2, minimumMargin), window.innerWidth - menuWidth - minimumMargin);
   const y = Math.min(Math.max(polygon.position?.y ?? window.innerHeight / 2, minimumMargin), window.innerHeight - menuHeight - minimumMargin);
   polygonActionMenu.style.left = `${x}px`;
   polygonActionMenu.style.top = `${y}px`;
   polygonActionMenu.hidden = false;
+}
+
+function showAreaSearchStatus(text, hideAfterMs = 0) {
+  clearTimeout(showAreaSearchStatus.timer);
+  areaSearchStatus.textContent = text;
+  areaSearchStatus.hidden = !text;
+  if (text && hideAfterMs) showAreaSearchStatus.timer = setTimeout(() => { areaSearchStatus.hidden = true; }, hideAfterMs);
+}
+
+// Every layer with records inside the area opens filtered to them, as its own records. The time window is the
+// profile's "area_search" one, not asked: on LAMBDA it keeps the search to the scenario's own records.
+async function runAreaSearch(polygon) {
+  if (!polygon?.coordinates) return;
+  const defaults = state.areaSearchDefaults || {};
+  const range = Object.fromEntries(Object.entries({ start_time: defaults.start_time, end_time: defaults.end_time }).filter(([, value]) => value));
+  showAreaSearchStatus(activeLocaleText("מחפש נתונים באזור…", "Searching the area…"));
+  try {
+    const response = await fetch("/api/area-search", { method: "POST", headers: { "Content-Type": "application/json; charset=utf-8" }, body: JSON.stringify({ polygon: polygon.coordinates, locale: currentLocale(), ...range }) });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(result.message || result.error || activeLocaleText("החיפוש נכשל", "The search failed"));
+    const layers = result.layers || [];
+    if (!layers.length) { showAreaSearchStatus(activeLocaleText("לא נמצאו רשומות באזור", "No records inside the area"), 4000); return; }
+    showAreaSearchStatus("");
+    for (const layer of layers) await openCatalogLayer(resolveCatalogLayerId(layer.layer_id), { filters: { event_ids: layer.event_ids, ...range } });
+  } catch (error) {
+    showAreaSearchStatus(error.message || activeLocaleText("החיפוש נכשל", "The search failed"), 6000);
+  }
 }
 
 function openCollectionRequestDialog(target, trigger = document.activeElement) {
@@ -5456,6 +5484,11 @@ document.getElementById("polygonRequestCollection")?.addEventListener("click", (
   closePolygonActionMenu();
   if (polygon) openCollectionRequestDialog({ type: "polygon", coordinates: polygon.coordinates }, document.getElementById("polygonDrawButton"));
 });
+document.getElementById("polygonAreaSearch")?.addEventListener("click", () => {
+  const polygon = pendingPolygonAction;
+  closePolygonActionMenu();
+  if (polygon) void runAreaSearch(polygon);
+});
 document.getElementById("collectionRequestClose")?.addEventListener("click", closeCollectionRequestDialog);
 document.getElementById("collectionRequestCancel")?.addEventListener("click", closeCollectionRequestDialog);
 collectionRequestModal?.addEventListener("click", event => { if (event.target === collectionRequestModal) closeCollectionRequestDialog(); });
@@ -5697,6 +5730,7 @@ async function boot() {
   let runtimeStatus = null;
   try {
     runtimeStatus = await fetch(buildLocaleApiUrl("/api/status"), { cache: "no-store" }).then(response => response.json());
+    state.areaSearchDefaults = runtimeStatus.area_search || {};
     Object.keys(LOCATIONS).forEach(key => delete LOCATIONS[key]);
     if (runtimeStatus.locations_url) {
       const runtimeLocations = await fetch(runtimeStatus.locations_url, { cache: "no-store" }).then(response => response.json());

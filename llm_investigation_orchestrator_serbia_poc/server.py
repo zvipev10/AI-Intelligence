@@ -56,6 +56,9 @@ STATIC_FILES = {
     "/home": "home.html", "/home.html": "home.html",  # the launcher, opened after sign-in
 }
 STATIC_DIRS = ("/vendor/", "/assets/")
+# The media of the app's own records (profile "local_items"), served only to signed-in users.
+LOCAL_FILES = ROOT / "demo_data" / "area-search"
+LOCAL_FILE_PATTERN = re.compile(r"^[A-Za-z0-9_-]{1,80}\.(?:png|jpg|jpeg)$")
 
 
 def load_profile(settings: Settings) -> dict[str, Any]:
@@ -221,7 +224,7 @@ class App:
         def build() -> Snapshot:
             reader = ItemReader(self.client(token), self.mapping, self.profile.get("items_query") or {},
                                 self.settings.snapshot_max_rows, self.settings.items_per_type)
-            items = reader.items()
+            items = reader.items() + reader.local_items(self.local_data())
             entities = reader.entities()
             locations = reader.locations()
             reviews = self.state(token).load_reviews()
@@ -232,6 +235,17 @@ class App:
             return Snapshot(items=items, entities=entities, locations=locations, reviews=reviews,
                             fetched_at=time.time(), truncated=reader.truncated, warnings=reader.warnings)
         return self.snapshots.get(token, build, refresh=refresh)
+
+    def local_data(self) -> dict[str, Any]:
+        """The scenario's own records (profile "local_items": a JSON file under the app folder), or none."""
+        name = str(self.profile.get("local_items") or "")
+        if not name:
+            return {}
+        try:
+            return json.loads((ROOT / name).read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            print(f"local items not loaded from {name}: {exc}", flush=True)
+            return {}
 
     def approve_i360_telecom(self, token: str, entity_type: str, entity_id: str) -> None:
         """Set the status of the person's derived MSISDN / IMSI entries (details.device_msisdn,
@@ -515,6 +529,7 @@ class Handler(BaseHTTPRequestHandler):
                 "build": app.settings.build,
                 "locale": locale,
                 "backend": "i360",
+                "area_search": app.profile.get("area_search") or {},
                 "dataset_url": f"/api/dataset/events?lang={locale}",
                 "locations_url": f"/api/dataset/locations?lang={locale}",
             }, cookie=cookie)
@@ -601,6 +616,13 @@ class Handler(BaseHTTPRequestHandler):
                 raise HlError(415, "unsupported_media", "Only image and video attachments are served")
             self._send(200, payload, content_type)
             return
+        if path.startswith("/api/local-files/"):
+            name = unquote(path[len("/api/local-files/"):])
+            if not LOCAL_FILE_PATTERN.fullmatch(name) or not (LOCAL_FILES / name).is_file():
+                self.send_json(404, {"error": "not_found"})
+                return
+            self._send(200, (LOCAL_FILES / name).read_bytes(), mimetypes.guess_type(name)[0] or "application/octet-stream")
+            return
         if path.startswith("/api/records/") and path.endswith("/files"):
             self.send_json(200, self.record_files(token, unquote(path[len("/api/records/"):-len("/files")])))
             return
@@ -655,12 +677,24 @@ class Handler(BaseHTTPRequestHandler):
         """Files of one record, with signed URLs the browser can load directly from HL API."""
         data = self.app.dataset(token, "he")
         row = next((r for r in data.events if record_id in {r.get("event_id"), r.get("record_id"), r.get("i360_item_id")}), None)
+        if row and row.get("record_origin") == "local":
+            return {"item_id": row.get("i360_item_id"), "files": self.local_record_files(row)}
         # A record the chat showed may be outside the snapshot: its id is then the i360 item id itself.
         item_id = (row.get("i360_item_id") if row else None) or record_id
         response = self.app.client(token).item_files(item_id, signed_urls=True)
         if isinstance(response, dict):
             response["files"] = normalize_record_files(response.get("files"), self.app.settings.hl_api_public_origin)
         return response
+
+    def local_record_files(self, row: dict[str, Any]) -> list[dict[str, Any]]:
+        """The media file of one of the app's own records, served by the app (see /api/local-files/)."""
+        name = str(row.get("i360.media.primary_file_name") or "")
+        content_type = str(row.get("i360.media.primary_file_content_type") or "") or mimetypes.guess_type(name)[0] or ""
+        if not LOCAL_FILE_PATTERN.fullmatch(name) or not (LOCAL_FILES / name).is_file():
+            return []
+        url = f"/api/local-files/{quote(name)}"
+        return [{"file_id": str(row.get("i360.media.primary_file_id") or name), "name": name, "content_type": content_type,
+                 "role": "media", "raw_type": "image", "url": url, "thumbnail_url": url}]
 
     # -- chat ------------------------------------------------------------------------
     def chat_ask(self, token: str, request: dict[str, Any]) -> None:
@@ -973,6 +1007,13 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json(200, app.report_facts(token, investigation_id, subject_id))
             else:
                 self.send_json(200, app.report_block(token, investigation_id, str(request.get("block") or ""), subject_id))
+            return
+        if path == "/api/area-search":
+            request = self.read_json(200_000)
+            locale = normalize_locale(str(request.get("locale") or "en"))
+            data = app.dataset(token, locale)
+            self.send_json(200, {"layers": analysis.area_search(data, request.get("polygon"), request.get("start_time"),
+                                                                  request.get("end_time"), app.known_sources(locale))})
             return
         if path == "/api/collection-request":
             request = self.read_json(200_000)

@@ -1,0 +1,3807 @@
+{
+ "_comment": "The app's own records (not in i360) for the polygon area search demo; written by tools/make_area_search_data.py.",
+ "layers": {
+  "ADINT": [
+   {
+    "item_id": "68fdf5ae-b361-583c-ae50-4d7596cf2732",
+    "item_type": "location_update",
+    "sub_type": "location_location_technical",
+    "name": null,
+    "event_time": "2026-03-04T06:12:00Z",
+    "end_time": "2026-03-04T06:12:00Z",
+    "source_application": "ADINT",
+    "synopsis": null,
+    "summary": null,
+    "language": "ar",
+    "text": {},
+    "related_objects": null,
+    "text_available_via_get": true,
+    "parent_ids": [],
+    "location": {
+     "point": {
+      "lat": 35.1106,
+      "lon": 36.325
+     },
+     "city": null,
+     "country": null,
+     "address": null,
+     "street": null,
+     "description": null,
+     "accuracy": "gps"
+    },
+    "secrecy_holder_status": "VALID",
+    "media": {
+     "kind": "none",
+     "has_thumbnail": false,
+     "primary_file_id": null,
+     "thumbnail_file_id": null,
+     "file_count": 0,
+     "primary_file_name": null,
+     "primary_file_content_type": null
+    },
+    "content_size": null,
+    "parent": null,
+    "children": null,
+    "details": null,
+    "tags": [
+     {
+      "type": "event",
+      "value": true,
+      "source": "system"
+     },
+     {
+      "type": "duplication_counter",
+      "value": 0,
+      "source": "system"
+     },
+     {
+      "type": "flag",
+      "value": "HasContent",
+      "source": "system"
+     }
+    ],
+    "flags": [
+     "HasContent"
+    ],
+    "locations": [
+     {
+      "point": {
+       "lat": 35.1106,
+       "lon": 36.325
+      },
+      "geography": "POINT (36.325 35.1106)",
+      "type": "geo",
+      "accuracy": "gps",
+      "from_time": "2026-03-04T06:12:00Z",
+      "to_time": null,
+      "party_id": null,
+      "address": null,
+      "mcc": null,
+      "mnc": null,
+      "lac": null,
+      "ci": null,
+      "eci": null,
+      "tac": null,
+      "antenna_radius": null,
+      "beam_width": null,
+      "beam_center": null,
+      "cell_type": null,
+      "count": null,
+      "source": null,
+      "origin": null,
+      "value": null
+     }
+    ],
+    "fe_correlation_ids": [
+     "ADINT_OBS-21-001"
+    ],
+    "additional_info": [
+     {
+      "accuracy_m": 20
+     }
+    ],
+    "user_agents_data": [
+     {
+      "device_name": "dc01e342-01a2-52ba-907f-390935f91c58",
+      "device_brand": "Xiaomi",
+      "device_model": "Redmi Note 12",
+      "device_information_class": null,
+      "operating_system_name": "Android",
+      "operating_system_version": null,
+      "operating_system_class": null,
+      "language_code": "ar",
+      "language": null,
+      "name": null,
+      "version": null,
+      "ua_class": null,
+      "value": null,
+      "layout_engine_name": null,
+      "layout_engine_version": null,
+      "layout_engine_class": null,
+      "party_id": null
+     }
+    ],
+    "ip": {
+     "ip_sessions": [
+      {
+       "source_ip": "198.51.100.14",
+       "source_port": 5,
+       "destination_ip": "ip",
+       "destination_port": 0,
+       "reverse_dns_source_ip": null,
+       "reverse_dns_destination_ip": null,
+       "protocol": "protocol",
+       "protocol_attributes": [],
+       "transport_type": null,
+       "ip_version": null,
+       "session_type": null,
+       "session_id": null,
+       "server_name": null,
+       "user_agent": null,
+       "encrypted": null,
+       "uploaded_bytes": null,
+       "downloaded_bytes": null,
+       "uploaded_packets": null,
+       "downloaded_packets": null,
+       "source_radius": null,
+       "destination_radius": null,
+       "start_time": null,
+       "end_time": null
+      }
+     ],
+     "application_attributes": [],
+     "classification_group": null,
+     "transport_type": null,
+     "uploaded_bytes": null,
+     "downloaded_bytes": null,
+     "uploaded_packets": null,
+     "downloaded_packets": null,
+     "undecoded": null
+    },
+    "context": []
+   },
+   {
+    "item_id": "c6f203f1-0551-5455-8a18-f9d6003937dc",
+    "item_type": "location_update",
+    "sub_type": "location_location_technical",
+    "name": null,
+    "event_time": "2026-03-19T17:40:00Z",
+    "end_time": "2026-03-19T17:40:00Z",
+    "source_application": "ADINT",
+    "synopsis": null,
+    "summary": null,
+    "language": "ar",
+    "text": {},
+    "related_objects": null,
+    "text_available_via_get": true,
+    "parent_ids": [],
+    "location": {
+     "point": {
+      "lat": 35.063,
+      "lon": 36.3215
+     },
+     "city": null,
+     "country": null,
+     "address": null,
+     "street": null,
+     "description": null,
+     "accuracy": "gps"
+    },
+    "secrecy_holder_status": "VALID",
+    "media": {
+     "kind": "none",
+     "has_thumbnail": false,
+     "primary_file_id": null,
+     "thumbnail_file_id": null,
+     "file_count": 0,
+     "primary_file_name": null,
+     "primary_file_content_type": null
+    },
+    "content_size": null,
+    "parent": null,
+    "children": null,
+    "details": null,
+    "tags": [
+     {
+      "type": "event",
+      "value": true,
+      "source": "system"
+     },
+     {
+      "type": "duplication_counter",
+      "value": 0,
+      "source": "system"
+     },
+     {
+      "type": "flag",
+      "value": "HasContent",
+      "source": "system"
+     }
+    ],
+    "flags": [
+     "HasContent"
+    ],
+    "locations": [
+     {
+      "point": {
+       "lat": 35.063,
+       "lon": 36.3215
+      },
+      "geography": "POINT (36.3215 35.063)",
+      "type": "geo",
+      "accuracy": "gps",
+      "from_time": "2026-03-19T17:40:00Z",
+      "to_time": null,
+      "party_id": null,
+      "address": null,
+      "mcc": null,
+      "mnc": null,
+      "lac": null,
+      "ci": null,
+      "eci": null,
+      "tac": null,
+      "antenna_radius": null,
+      "beam_width": null,
+      "beam_center": null,
+      "cell_type": null,
+      "count": null,
+      "source": null,
+      "origin": null,
+      "value": null
+     }
+    ],
+    "fe_correlation_ids": [
+     "ADINT_OBS-21-002"
+    ],
+    "additional_info": [
+     {
+      "accuracy_m": 35
+     }
+    ],
+    "user_agents_data": [
+     {
+      "device_name": "7d9213d2-e009-56b7-b85a-7916d1dbfc1f",
+      "device_brand": "Oppo",
+      "device_model": "A78",
+      "device_information_class": null,
+      "operating_system_name": "Android",
+      "operating_system_version": null,
+      "operating_system_class": null,
+      "language_code": "ar",
+      "language": null,
+      "name": null,
+      "version": null,
+      "ua_class": null,
+      "value": null,
+      "layout_engine_name": null,
+      "layout_engine_version": null,
+      "layout_engine_class": null,
+      "party_id": null
+     }
+    ],
+    "ip": {
+     "ip_sessions": [
+      {
+       "source_ip": "198.51.100.37",
+       "source_port": 5,
+       "destination_ip": "ip",
+       "destination_port": 0,
+       "reverse_dns_source_ip": null,
+       "reverse_dns_destination_ip": null,
+       "protocol": "protocol",
+       "protocol_attributes": [],
+       "transport_type": null,
+       "ip_version": null,
+       "session_type": null,
+       "session_id": null,
+       "server_name": null,
+       "user_agent": null,
+       "encrypted": null,
+       "uploaded_bytes": null,
+       "downloaded_bytes": null,
+       "uploaded_packets": null,
+       "downloaded_packets": null,
+       "source_radius": null,
+       "destination_radius": null,
+       "start_time": null,
+       "end_time": null
+      }
+     ],
+     "application_attributes": [],
+     "classification_group": null,
+     "transport_type": null,
+     "uploaded_bytes": null,
+     "downloaded_bytes": null,
+     "uploaded_packets": null,
+     "downloaded_packets": null,
+     "undecoded": null
+    },
+    "context": []
+   },
+   {
+    "item_id": "d8d5acc1-9256-59ba-83e9-af1adb0e9524",
+    "item_type": "location_update",
+    "sub_type": "location_location_technical",
+    "name": null,
+    "event_time": "2026-04-07T09:05:00Z",
+    "end_time": "2026-04-07T09:05:00Z",
+    "source_application": "ADINT",
+    "synopsis": null,
+    "summary": null,
+    "language": "fa",
+    "text": {},
+    "related_objects": null,
+    "text_available_via_get": true,
+    "parent_ids": [],
+    "location": {
+     "point": {
+      "lat": 35.0576,
+      "lon": 36.3345
+     },
+     "city": null,
+     "country": null,
+     "address": null,
+     "street": null,
+     "description": null,
+     "accuracy": "gps"
+    },
+    "secrecy_holder_status": "VALID",
+    "media": {
+     "kind": "none",
+     "has_thumbnail": false,
+     "primary_file_id": null,
+     "thumbnail_file_id": null,
+     "file_count": 0,
+     "primary_file_name": null,
+     "primary_file_content_type": null
+    },
+    "content_size": null,
+    "parent": null,
+    "children": null,
+    "details": null,
+    "tags": [
+     {
+      "type": "event",
+      "value": true,
+      "source": "system"
+     },
+     {
+      "type": "duplication_counter",
+      "value": 0,
+      "source": "system"
+     },
+     {
+      "type": "flag",
+      "value": "HasContent",
+      "source": "system"
+     }
+    ],
+    "flags": [
+     "HasContent"
+    ],
+    "locations": [
+     {
+      "point": {
+       "lat": 35.0576,
+       "lon": 36.3345
+      },
+      "geography": "POINT (36.3345 35.0576)",
+      "type": "geo",
+      "accuracy": "gps",
+      "from_time": "2026-04-07T09:05:00Z",
+      "to_time": null,
+      "party_id": null,
+      "address": null,
+      "mcc": null,
+      "mnc": null,
+      "lac": null,
+      "ci": null,
+      "eci": null,
+      "tac": null,
+      "antenna_radius": null,
+      "beam_width": null,
+      "beam_center": null,
+      "cell_type": null,
+      "count": null,
+      "source": null,
+      "origin": null,
+      "value": null
+     }
+    ],
+    "fe_correlation_ids": [
+     "ADINT_OBS-21-003"
+    ],
+    "additional_info": [
+     {
+      "accuracy_m": 15
+     }
+    ],
+    "user_agents_data": [
+     {
+      "device_name": "bbd936a7-54a3-5c29-a94c-2bb67dc595ec",
+      "device_brand": "Samsung",
+      "device_model": "Galaxy A54",
+      "device_information_class": null,
+      "operating_system_name": "Android",
+      "operating_system_version": null,
+      "operating_system_class": null,
+      "language_code": "fa",
+      "language": null,
+      "name": null,
+      "version": null,
+      "ua_class": null,
+      "value": null,
+      "layout_engine_name": null,
+      "layout_engine_version": null,
+      "layout_engine_class": null,
+      "party_id": null
+     }
+    ],
+    "ip": {
+     "ip_sessions": [
+      {
+       "source_ip": "198.51.100.52",
+       "source_port": 5,
+       "destination_ip": "ip",
+       "destination_port": 0,
+       "reverse_dns_source_ip": null,
+       "reverse_dns_destination_ip": null,
+       "protocol": "protocol",
+       "protocol_attributes": [],
+       "transport_type": null,
+       "ip_version": null,
+       "session_type": null,
+       "session_id": null,
+       "server_name": null,
+       "user_agent": null,
+       "encrypted": null,
+       "uploaded_bytes": null,
+       "downloaded_bytes": null,
+       "uploaded_packets": null,
+       "downloaded_packets": null,
+       "source_radius": null,
+       "destination_radius": null,
+       "start_time": null,
+       "end_time": null
+      }
+     ],
+     "application_attributes": [],
+     "classification_group": null,
+     "transport_type": null,
+     "uploaded_bytes": null,
+     "downloaded_bytes": null,
+     "uploaded_packets": null,
+     "downloaded_packets": null,
+     "undecoded": null
+    },
+    "context": []
+   },
+   {
+    "item_id": "cf135843-6b47-519e-bb19-d3a09084c979",
+    "item_type": "location_update",
+    "sub_type": "location_location_technical",
+    "name": null,
+    "event_time": "2026-04-22T21:18:00Z",
+    "end_time": "2026-04-22T21:18:00Z",
+    "source_application": "ADINT",
+    "synopsis": null,
+    "summary": null,
+    "language": "ar",
+    "text": {},
+    "related_objects": null,
+    "text_available_via_get": true,
+    "parent_ids": [],
+    "location": {
+     "point": {
+      "lat": 35.0926,
+      "lon": 36.2888
+     },
+     "city": null,
+     "country": null,
+     "address": null,
+     "street": null,
+     "description": null,
+     "accuracy": "gps"
+    },
+    "secrecy_holder_status": "VALID",
+    "media": {
+     "kind": "none",
+     "has_thumbnail": false,
+     "primary_file_id": null,
+     "thumbnail_file_id": null,
+     "file_count": 0,
+     "primary_file_name": null,
+     "primary_file_content_type": null
+    },
+    "content_size": null,
+    "parent": null,
+    "children": null,
+    "details": null,
+    "tags": [
+     {
+      "type": "event",
+      "value": true,
+      "source": "system"
+     },
+     {
+      "type": "duplication_counter",
+      "value": 0,
+      "source": "system"
+     },
+     {
+      "type": "flag",
+      "value": "HasContent",
+      "source": "system"
+     }
+    ],
+    "flags": [
+     "HasContent"
+    ],
+    "locations": [
+     {
+      "point": {
+       "lat": 35.0926,
+       "lon": 36.2888
+      },
+      "geography": "POINT (36.2888 35.0926)",
+      "type": "geo",
+      "accuracy": "gps",
+      "from_time": "2026-04-22T21:18:00Z",
+      "to_time": null,
+      "party_id": null,
+      "address": null,
+      "mcc": null,
+      "mnc": null,
+      "lac": null,
+      "ci": null,
+      "eci": null,
+      "tac": null,
+      "antenna_radius": null,
+      "beam_width": null,
+      "beam_center": null,
+      "cell_type": null,
+      "count": null,
+      "source": null,
+      "origin": null,
+      "value": null
+     }
+    ],
+    "fe_correlation_ids": [
+     "ADINT_OBS-21-004"
+    ],
+    "additional_info": [
+     {
+      "accuracy_m": 60
+     }
+    ],
+    "user_agents_data": [
+     {
+      "device_name": "14026674-9635-5a87-befc-847ed6507c9d",
+      "device_brand": "Tecno",
+      "device_model": "Spark 10",
+      "device_information_class": null,
+      "operating_system_name": "Android",
+      "operating_system_version": null,
+      "operating_system_class": null,
+      "language_code": "ar",
+      "language": null,
+      "name": null,
+      "version": null,
+      "ua_class": null,
+      "value": null,
+      "layout_engine_name": null,
+      "layout_engine_version": null,
+      "layout_engine_class": null,
+      "party_id": null
+     }
+    ],
+    "ip": {
+     "ip_sessions": [
+      {
+       "source_ip": "198.51.100.68",
+       "source_port": 5,
+       "destination_ip": "ip",
+       "destination_port": 0,
+       "reverse_dns_source_ip": null,
+       "reverse_dns_destination_ip": null,
+       "protocol": "protocol",
+       "protocol_attributes": [],
+       "transport_type": null,
+       "ip_version": null,
+       "session_type": null,
+       "session_id": null,
+       "server_name": null,
+       "user_agent": null,
+       "encrypted": null,
+       "uploaded_bytes": null,
+       "downloaded_bytes": null,
+       "uploaded_packets": null,
+       "downloaded_packets": null,
+       "source_radius": null,
+       "destination_radius": null,
+       "start_time": null,
+       "end_time": null
+      }
+     ],
+     "application_attributes": [],
+     "classification_group": null,
+     "transport_type": null,
+     "uploaded_bytes": null,
+     "downloaded_bytes": null,
+     "uploaded_packets": null,
+     "downloaded_packets": null,
+     "undecoded": null
+    },
+    "context": []
+   },
+   {
+    "item_id": "b46d97a2-2a43-5f8c-ae0b-9588cde766a5",
+    "item_type": "location_update",
+    "sub_type": "location_location_technical",
+    "name": null,
+    "event_time": "2026-05-03T05:47:00Z",
+    "end_time": "2026-05-03T05:47:00Z",
+    "source_application": "ADINT",
+    "synopsis": null,
+    "summary": null,
+    "language": "en",
+    "text": {},
+    "related_objects": null,
+    "text_available_via_get": true,
+    "parent_ids": [],
+    "location": {
+     "point": {
+      "lat": 35.0366,
+      "lon": 36.2819
+     },
+     "city": null,
+     "country": null,
+     "address": null,
+     "street": null,
+     "description": null,
+     "accuracy": "gps"
+    },
+    "secrecy_holder_status": "VALID",
+    "media": {
+     "kind": "none",
+     "has_thumbnail": false,
+     "primary_file_id": null,
+     "thumbnail_file_id": null,
+     "file_count": 0,
+     "primary_file_name": null,
+     "primary_file_content_type": null
+    },
+    "content_size": null,
+    "parent": null,
+    "children": null,
+    "details": null,
+    "tags": [
+     {
+      "type": "event",
+      "value": true,
+      "source": "system"
+     },
+     {
+      "type": "duplication_counter",
+      "value": 0,
+      "source": "system"
+     },
+     {
+      "type": "flag",
+      "value": "HasContent",
+      "source": "system"
+     }
+    ],
+    "flags": [
+     "HasContent"
+    ],
+    "locations": [
+     {
+      "point": {
+       "lat": 35.0366,
+       "lon": 36.2819
+      },
+      "geography": "POINT (36.2819 35.0366)",
+      "type": "geo",
+      "accuracy": "gps",
+      "from_time": "2026-05-03T05:47:00Z",
+      "to_time": null,
+      "party_id": null,
+      "address": null,
+      "mcc": null,
+      "mnc": null,
+      "lac": null,
+      "ci": null,
+      "eci": null,
+      "tac": null,
+      "antenna_radius": null,
+      "beam_width": null,
+      "beam_center": null,
+      "cell_type": null,
+      "count": null,
+      "source": null,
+      "origin": null,
+      "value": null
+     }
+    ],
+    "fe_correlation_ids": [
+     "ADINT_OBS-21-005"
+    ],
+    "additional_info": [
+     {
+      "accuracy_m": 10
+     }
+    ],
+    "user_agents_data": [
+     {
+      "device_name": "4491d33f-3c81-5239-9c9d-03488aa80826",
+      "device_brand": "Apple",
+      "device_model": "iPhone 13",
+      "device_information_class": null,
+      "operating_system_name": "iOS",
+      "operating_system_version": null,
+      "operating_system_class": null,
+      "language_code": "en",
+      "language": null,
+      "name": null,
+      "version": null,
+      "ua_class": null,
+      "value": null,
+      "layout_engine_name": null,
+      "layout_engine_version": null,
+      "layout_engine_class": null,
+      "party_id": null
+     }
+    ],
+    "ip": {
+     "ip_sessions": [
+      {
+       "source_ip": "198.51.100.91",
+       "source_port": 5,
+       "destination_ip": "ip",
+       "destination_port": 0,
+       "reverse_dns_source_ip": null,
+       "reverse_dns_destination_ip": null,
+       "protocol": "protocol",
+       "protocol_attributes": [],
+       "transport_type": null,
+       "ip_version": null,
+       "session_type": null,
+       "session_id": null,
+       "server_name": null,
+       "user_agent": null,
+       "encrypted": null,
+       "uploaded_bytes": null,
+       "downloaded_bytes": null,
+       "uploaded_packets": null,
+       "downloaded_packets": null,
+       "source_radius": null,
+       "destination_radius": null,
+       "start_time": null,
+       "end_time": null
+      }
+     ],
+     "application_attributes": [],
+     "classification_group": null,
+     "transport_type": null,
+     "uploaded_bytes": null,
+     "downloaded_bytes": null,
+     "uploaded_packets": null,
+     "downloaded_packets": null,
+     "undecoded": null
+    },
+    "context": []
+   },
+   {
+    "item_id": "90aac3ff-31ed-58c6-804a-b1c99830256a",
+    "item_type": "location_update",
+    "sub_type": "location_location_technical",
+    "name": null,
+    "event_time": "2026-05-11T13:26:00Z",
+    "end_time": "2026-05-11T13:26:00Z",
+    "source_application": "ADINT",
+    "synopsis": null,
+    "summary": null,
+    "language": "fa",
+    "text": {},
+    "related_objects": null,
+    "text_available_via_get": true,
+    "parent_ids": [],
+    "location": {
+     "point": {
+      "lat": 35.0874,
+      "lon": 36.3086
+     },
+     "city": null,
+     "country": null,
+     "address": null,
+     "street": null,
+     "description": null,
+     "accuracy": "gps"
+    },
+    "secrecy_holder_status": "VALID",
+    "media": {
+     "kind": "none",
+     "has_thumbnail": false,
+     "primary_file_id": null,
+     "thumbnail_file_id": null,
+     "file_count": 0,
+     "primary_file_name": null,
+     "primary_file_content_type": null
+    },
+    "content_size": null,
+    "parent": null,
+    "children": null,
+    "details": null,
+    "tags": [
+     {
+      "type": "event",
+      "value": true,
+      "source": "system"
+     },
+     {
+      "type": "duplication_counter",
+      "value": 0,
+      "source": "system"
+     },
+     {
+      "type": "flag",
+      "value": "HasContent",
+      "source": "system"
+     }
+    ],
+    "flags": [
+     "HasContent"
+    ],
+    "locations": [
+     {
+      "point": {
+       "lat": 35.0874,
+       "lon": 36.3086
+      },
+      "geography": "POINT (36.3086 35.0874)",
+      "type": "geo",
+      "accuracy": "gps",
+      "from_time": "2026-05-11T13:26:00Z",
+      "to_time": null,
+      "party_id": null,
+      "address": null,
+      "mcc": null,
+      "mnc": null,
+      "lac": null,
+      "ci": null,
+      "eci": null,
+      "tac": null,
+      "antenna_radius": null,
+      "beam_width": null,
+      "beam_center": null,
+      "cell_type": null,
+      "count": null,
+      "source": null,
+      "origin": null,
+      "value": null
+     }
+    ],
+    "fe_correlation_ids": [
+     "ADINT_OBS-21-006"
+    ],
+    "additional_info": [
+     {
+      "accuracy_m": 45
+     }
+    ],
+    "user_agents_data": [
+     {
+      "device_name": "c2abdda1-13ea-5e44-b2c5-8f601a331c11",
+      "device_brand": "Infinix",
+      "device_model": "Hot 30",
+      "device_information_class": null,
+      "operating_system_name": "Android",
+      "operating_system_version": null,
+      "operating_system_class": null,
+      "language_code": "fa",
+      "language": null,
+      "name": null,
+      "version": null,
+      "ua_class": null,
+      "value": null,
+      "layout_engine_name": null,
+      "layout_engine_version": null,
+      "layout_engine_class": null,
+      "party_id": null
+     }
+    ],
+    "ip": {
+     "ip_sessions": [
+      {
+       "source_ip": "198.51.100.103",
+       "source_port": 5,
+       "destination_ip": "ip",
+       "destination_port": 0,
+       "reverse_dns_source_ip": null,
+       "reverse_dns_destination_ip": null,
+       "protocol": "protocol",
+       "protocol_attributes": [],
+       "transport_type": null,
+       "ip_version": null,
+       "session_type": null,
+       "session_id": null,
+       "server_name": null,
+       "user_agent": null,
+       "encrypted": null,
+       "uploaded_bytes": null,
+       "downloaded_bytes": null,
+       "uploaded_packets": null,
+       "downloaded_packets": null,
+       "source_radius": null,
+       "destination_radius": null,
+       "start_time": null,
+       "end_time": null
+      }
+     ],
+     "application_attributes": [],
+     "classification_group": null,
+     "transport_type": null,
+     "uploaded_bytes": null,
+     "downloaded_bytes": null,
+     "uploaded_packets": null,
+     "downloaded_packets": null,
+     "undecoded": null
+    },
+    "context": []
+   },
+   {
+    "item_id": "b7e57866-c9b3-5537-a924-95d9649ee018",
+    "item_type": "location_update",
+    "sub_type": "location_location_technical",
+    "name": null,
+    "event_time": "2026-05-18T19:02:00Z",
+    "end_time": "2026-05-18T19:02:00Z",
+    "source_application": "ADINT",
+    "synopsis": null,
+    "summary": null,
+    "language": "ar",
+    "text": {},
+    "related_objects": null,
+    "text_available_via_get": true,
+    "parent_ids": [],
+    "location": {
+     "point": {
+      "lat": 35.0765,
+      "lon": 36.332
+     },
+     "city": null,
+     "country": null,
+     "address": null,
+     "street": null,
+     "description": null,
+     "accuracy": "gps"
+    },
+    "secrecy_holder_status": "VALID",
+    "media": {
+     "kind": "none",
+     "has_thumbnail": false,
+     "primary_file_id": null,
+     "thumbnail_file_id": null,
+     "file_count": 0,
+     "primary_file_name": null,
+     "primary_file_content_type": null
+    },
+    "content_size": null,
+    "parent": null,
+    "children": null,
+    "details": null,
+    "tags": [
+     {
+      "type": "event",
+      "value": true,
+      "source": "system"
+     },
+     {
+      "type": "duplication_counter",
+      "value": 0,
+      "source": "system"
+     },
+     {
+      "type": "flag",
+      "value": "HasContent",
+      "source": "system"
+     }
+    ],
+    "flags": [
+     "HasContent"
+    ],
+    "locations": [
+     {
+      "point": {
+       "lat": 35.0765,
+       "lon": 36.332
+      },
+      "geography": "POINT (36.332 35.0765)",
+      "type": "geo",
+      "accuracy": "gps",
+      "from_time": "2026-05-18T19:02:00Z",
+      "to_time": null,
+      "party_id": null,
+      "address": null,
+      "mcc": null,
+      "mnc": null,
+      "lac": null,
+      "ci": null,
+      "eci": null,
+      "tac": null,
+      "antenna_radius": null,
+      "beam_width": null,
+      "beam_center": null,
+      "cell_type": null,
+      "count": null,
+      "source": null,
+      "origin": null,
+      "value": null
+     }
+    ],
+    "fe_correlation_ids": [
+     "ADINT_OBS-21-007"
+    ],
+    "additional_info": [
+     {
+      "accuracy_m": 80
+     }
+    ],
+    "user_agents_data": [
+     {
+      "device_name": "cf1c7418-7900-5da9-8d1a-4da9dd1e55e4",
+      "device_brand": "Nokia",
+      "device_model": "G21",
+      "device_information_class": null,
+      "operating_system_name": "Android",
+      "operating_system_version": null,
+      "operating_system_class": null,
+      "language_code": "ar",
+      "language": null,
+      "name": null,
+      "version": null,
+      "ua_class": null,
+      "value": null,
+      "layout_engine_name": null,
+      "layout_engine_version": null,
+      "layout_engine_class": null,
+      "party_id": null
+     }
+    ],
+    "ip": {
+     "ip_sessions": [
+      {
+       "source_ip": "198.51.100.120",
+       "source_port": 5,
+       "destination_ip": "ip",
+       "destination_port": 0,
+       "reverse_dns_source_ip": null,
+       "reverse_dns_destination_ip": null,
+       "protocol": "protocol",
+       "protocol_attributes": [],
+       "transport_type": null,
+       "ip_version": null,
+       "session_type": null,
+       "session_id": null,
+       "server_name": null,
+       "user_agent": null,
+       "encrypted": null,
+       "uploaded_bytes": null,
+       "downloaded_bytes": null,
+       "uploaded_packets": null,
+       "downloaded_packets": null,
+       "source_radius": null,
+       "destination_radius": null,
+       "start_time": null,
+       "end_time": null
+      }
+     ],
+     "application_attributes": [],
+     "classification_group": null,
+     "transport_type": null,
+     "uploaded_bytes": null,
+     "downloaded_bytes": null,
+     "uploaded_packets": null,
+     "downloaded_packets": null,
+     "undecoded": null
+    },
+    "context": []
+   }
+  ],
+  "Cellular Locations": [
+   {
+    "item_id": "5cd67f62-d8d1-59f8-81e7-f8bc79c42129",
+    "item_type": "voice_call",
+    "sub_type": "phone_call_voice",
+    "name": null,
+    "event_time": "2026-03-02T07:31:00Z",
+    "end_time": "2026-03-02T07:32:34Z",
+    "source_application": null,
+    "synopsis": null,
+    "summary": null,
+    "language": null,
+    "text": {},
+    "related_objects": null,
+    "text_available_via_get": true,
+    "parent_ids": [],
+    "location": {
+     "point": {
+      "lat": 35.1,
+      "lon": 36.3082
+     },
+     "city": null,
+     "country": null,
+     "address": null,
+     "street": null,
+     "description": null,
+     "accuracy": "gps"
+    },
+    "secrecy_holder_status": "VALID",
+    "media": {
+     "kind": "none",
+     "has_thumbnail": false,
+     "primary_file_id": null,
+     "thumbnail_file_id": null,
+     "file_count": 0,
+     "primary_file_name": null,
+     "primary_file_content_type": null
+    },
+    "content_size": 0,
+    "parent": null,
+    "children": null,
+    "details": null,
+    "tags": [
+     {
+      "type": "has_secrecy_holder_processed",
+      "value": "false",
+      "source": "system"
+     },
+     {
+      "type": "flag",
+      "value": "identifiersMismatching",
+      "source": "system"
+     },
+     {
+      "type": "flag",
+      "value": "identifiersMismatching",
+      "source": "system"
+     },
+     {
+      "type": "duplication_counter",
+      "value": 0,
+      "source": "system"
+     }
+    ],
+    "flags": [
+     "identifiersMismatching",
+     "identifiersMismatching"
+    ],
+    "duration_ms": 94000.0,
+    "call_direction": "out",
+    "parties": [
+     {
+      "id": "1",
+      "role": "from",
+      "identifiers": [
+       {
+        "type": "msisdn",
+        "value": "963985432300"
+       },
+       {
+        "type": "imsi",
+        "value": "417014540454367"
+       },
+       {
+        "type": "imei",
+        "value": "352099005046665"
+       }
+      ],
+      "target_indication": "True"
+     },
+     {
+      "id": "2",
+      "role": "to",
+      "identifiers": [
+       {
+        "type": "msisdn",
+        "value": "963962664417"
+       },
+       {
+        "type": "imsi",
+        "value": "417018100434495"
+       }
+      ],
+      "target_indication": "False"
+     }
+    ],
+    "locations": [
+     {
+      "point": null,
+      "geography": null,
+      "type": "etsi_cgi",
+      "accuracy": "cellular",
+      "from_time": "2026-03-02T07:31:00Z",
+      "to_time": "2026-03-02T07:31:00Z",
+      "party_id": "1",
+      "address": null,
+      "mcc": null,
+      "mnc": null,
+      "lac": null,
+      "ci": null,
+      "eci": null,
+      "tac": null,
+      "antenna_radius": null,
+      "beam_width": null,
+      "beam_center": null,
+      "cell_type": null,
+      "count": 1,
+      "source": null,
+      "origin": null,
+      "value": "3104-21877"
+     },
+     {
+      "point": {
+       "lat": 35.1,
+       "lon": 36.3082
+      },
+      "geography": "POINT (36.3082 35.1)",
+      "type": "geo",
+      "accuracy": "gps",
+      "from_time": "2026-03-02T07:31:00Z",
+      "to_time": "2026-03-02T07:31:00Z",
+      "party_id": "1",
+      "address": null,
+      "mcc": null,
+      "mnc": null,
+      "lac": null,
+      "ci": null,
+      "eci": null,
+      "tac": null,
+      "antenna_radius": null,
+      "beam_width": null,
+      "beam_center": null,
+      "cell_type": null,
+      "count": 1,
+      "source": null,
+      "origin": null,
+      "value": "N350600.00 E0361829.52"
+     }
+    ],
+    "fe_correlation_ids": [
+     "B1E5C7A8A92356838A5166E4FE2428B2B1E5C7A8A92356838A5166E4FE2428B2"
+    ],
+    "asset_identifier": "2345671288",
+    "context": [],
+    "li": {
+     "liid": "f1a50da7-4f99-4037-b3fe-b1715e0c2e8d",
+     "cin": null,
+     "cid": null,
+     "foreign_liid": null,
+     "neid": null,
+     "operator_id": null,
+     "operator_name": null,
+     "event_reason": null,
+     "cc_begin": null,
+     "cc_end": null,
+     "integeregrity_failed": null,
+     "iri_begin_message_count": null,
+     "iri_continue_message_count": null,
+     "iri_end_message_count": null
+    },
+    "telephony": {
+     "caller_id": null,
+     "dialed_number": null,
+     "cc_start_time": "2026-03-02T07:31:00Z",
+     "cc_end_time": "2026-03-02T07:32:34Z",
+     "cc_duration": 94000.0,
+     "iri_start_time": "2026-03-02T07:31:00Z",
+     "iri_end_time": "2026-03-02T07:32:34Z",
+     "iri_duration": 94000.0,
+     "mcc": null,
+     "mnc": null,
+     "network_name": null,
+     "network_technology": null
+    },
+    "phone_call": {
+     "release_reason": "Normal call clearing"
+    }
+   },
+   {
+    "item_id": "52b12fc0-7781-51d8-9cca-cb83ea69e8e1",
+    "item_type": "sms",
+    "sub_type": "sms_sms",
+    "name": null,
+    "event_time": "2026-03-14T22:05:00Z",
+    "end_time": "2026-03-14T22:05:00Z",
+    "source_application": null,
+    "synopsis": null,
+    "summary": null,
+    "language": "Arabic",
+    "text": {},
+    "related_objects": null,
+    "text_available_via_get": true,
+    "parent_ids": [],
+    "location": {
+     "point": {
+      "lat": 35.0338,
+      "lon": 36.2963
+     },
+     "city": null,
+     "country": null,
+     "address": null,
+     "street": null,
+     "description": null,
+     "accuracy": "gps"
+    },
+    "secrecy_holder_status": "VALID",
+    "media": {
+     "kind": "none",
+     "has_thumbnail": false,
+     "primary_file_id": null,
+     "thumbnail_file_id": null,
+     "file_count": 0,
+     "primary_file_name": null,
+     "primary_file_content_type": null
+    },
+    "content_size": 1260,
+    "parent": null,
+    "children": null,
+    "details": null,
+    "tags": [
+     {
+      "type": "has_secrecy_holder_processed",
+      "value": "false",
+      "source": "system"
+     },
+     {
+      "type": "flag",
+      "value": "identifiersMismatching",
+      "source": "system"
+     },
+     {
+      "type": "language",
+      "value": "Arabic",
+      "source": "text_analytics"
+     },
+     {
+      "type": "duplication_counter",
+      "value": 0,
+      "source": "system"
+     },
+     {
+      "type": "flag",
+      "value": "HasContent",
+      "source": "system"
+     }
+    ],
+    "flags": [
+     "identifiersMismatching",
+     "HasContent"
+    ],
+    "call_direction": "out",
+    "parties": [
+     {
+      "id": "1",
+      "role": "from",
+      "identifiers": [
+       {
+        "type": "msisdn",
+        "value": "963986615174"
+       },
+       {
+        "type": "imsi",
+        "value": "417018199568482"
+       },
+       {
+        "type": "imei",
+        "value": "358742107134616"
+       }
+      ],
+      "target_indication": "True"
+     },
+     {
+      "id": "2",
+      "role": "to",
+      "identifiers": [
+       {
+        "type": "msisdn",
+        "value": "963989719575"
+       },
+       {
+        "type": "imsi",
+        "value": "417011584433257"
+       },
+       {
+        "type": "imei",
+        "value": "353294703891764"
+       }
+      ],
+      "target_indication": "False"
+     }
+    ],
+    "locations": [
+     {
+      "point": null,
+      "geography": null,
+      "type": "etsi_cgi",
+      "accuracy": "cellular",
+      "from_time": "2026-03-14T22:05:00Z",
+      "to_time": "2026-03-14T22:05:00Z",
+      "party_id": "1",
+      "address": null,
+      "mcc": null,
+      "mnc": null,
+      "lac": null,
+      "ci": null,
+      "eci": null,
+      "tac": null,
+      "antenna_radius": null,
+      "beam_width": null,
+      "beam_center": null,
+      "cell_type": null,
+      "count": 1,
+      "source": null,
+      "origin": null,
+      "value": "3102-21290"
+     },
+     {
+      "point": {
+       "lat": 35.0338,
+       "lon": 36.2963
+      },
+      "geography": "POINT (36.2963 35.0338)",
+      "type": "geo",
+      "accuracy": "gps",
+      "from_time": "2026-03-14T22:05:00Z",
+      "to_time": "2026-03-14T22:05:00Z",
+      "party_id": "1",
+      "address": null,
+      "mcc": null,
+      "mnc": null,
+      "lac": null,
+      "ci": null,
+      "eci": null,
+      "tac": null,
+      "antenna_radius": null,
+      "beam_width": null,
+      "beam_center": null,
+      "cell_type": null,
+      "count": 1,
+      "source": null,
+      "origin": null,
+      "value": "N350201.68 E0361746.68"
+     }
+    ],
+    "messages": [
+     {
+      "text": "وصلنا عند المفرق",
+      "type": "message"
+     }
+    ],
+    "fe_correlation_ids": [
+     "AFD6545AE3B750ABADF08F87E2F78BA1AFD6545AE3B750ABADF08F87E2F78BA1"
+    ],
+    "asset_identifier": "2345671288",
+    "context": [],
+    "li": {
+     "liid": "f1a50da7-4f99-4037-b3fe-b1715e0c2e8d",
+     "cin": null,
+     "cid": null,
+     "foreign_liid": null,
+     "neid": null,
+     "operator_id": null,
+     "operator_name": null,
+     "event_reason": null,
+     "cc_begin": null,
+     "cc_end": null,
+     "integeregrity_failed": null,
+     "iri_begin_message_count": null,
+     "iri_continue_message_count": null,
+     "iri_end_message_count": null
+    },
+    "telephony": {
+     "caller_id": null,
+     "dialed_number": null,
+     "cc_start_time": "2026-03-14T22:05:00Z",
+     "cc_end_time": "2026-03-14T22:05:00Z",
+     "cc_duration": 0.0,
+     "iri_start_time": "2026-03-14T22:05:00Z",
+     "iri_end_time": "2026-03-14T22:05:00Z",
+     "iri_duration": 0.0,
+     "mcc": null,
+     "mnc": null,
+     "network_name": null,
+     "network_technology": null
+    },
+    "sms": {
+     "smsc": "963940000500",
+     "number_of_parts": 1,
+     "parts": [
+      {
+       "key": "1",
+       "value": "وصلنا عند المفرق"
+      }
+     ],
+     "message_indication": [],
+     "alphabet": null,
+     "command_type": null,
+     "dcs_value": null,
+     "failure_cause": null,
+     "folder": null,
+     "message_class": null,
+     "message_reference": null,
+     "sms_protocol": null,
+     "technical_status": null,
+     "transfer_status": null,
+     "validity_period": null,
+     "validity_period_format": null,
+     "data_discarded": null
+    }
+   },
+   {
+    "item_id": "8159886d-1348-570e-a70e-b602a15d4689",
+    "item_type": "voice_call",
+    "sub_type": "phone_call_voice",
+    "name": null,
+    "event_time": "2026-03-27T11:48:00Z",
+    "end_time": "2026-03-27T11:51:32Z",
+    "source_application": null,
+    "synopsis": null,
+    "summary": null,
+    "language": null,
+    "text": {},
+    "related_objects": null,
+    "text_available_via_get": true,
+    "parent_ids": [],
+    "location": {
+     "point": {
+      "lat": 35.0937,
+      "lon": 36.2638
+     },
+     "city": null,
+     "country": null,
+     "address": null,
+     "street": null,
+     "description": null,
+     "accuracy": "gps"
+    },
+    "secrecy_holder_status": "VALID",
+    "media": {
+     "kind": "none",
+     "has_thumbnail": false,
+     "primary_file_id": null,
+     "thumbnail_file_id": null,
+     "file_count": 0,
+     "primary_file_name": null,
+     "primary_file_content_type": null
+    },
+    "content_size": 0,
+    "parent": null,
+    "children": null,
+    "details": null,
+    "tags": [
+     {
+      "type": "has_secrecy_holder_processed",
+      "value": "false",
+      "source": "system"
+     },
+     {
+      "type": "flag",
+      "value": "identifiersMismatching",
+      "source": "system"
+     },
+     {
+      "type": "flag",
+      "value": "identifiersMismatching",
+      "source": "system"
+     },
+     {
+      "type": "duplication_counter",
+      "value": 0,
+      "source": "system"
+     }
+    ],
+    "flags": [
+     "identifiersMismatching",
+     "identifiersMismatching"
+    ],
+    "duration_ms": 212000.0,
+    "call_direction": "in",
+    "parties": [
+     {
+      "id": "1",
+      "role": "to",
+      "identifiers": [
+       {
+        "type": "msisdn",
+        "value": "963996581024"
+       },
+       {
+        "type": "imsi",
+        "value": "417017997072044"
+       },
+       {
+        "type": "imei",
+        "value": "356938104417481"
+       }
+      ],
+      "target_indication": "True"
+     },
+     {
+      "id": "2",
+      "role": "from",
+      "identifiers": [
+       {
+        "type": "msisdn",
+        "value": "963915779479"
+       },
+       {
+        "type": "imsi",
+        "value": "417010804881432"
+       },
+       {
+        "type": "imei",
+        "value": "352099003856503"
+       }
+      ],
+      "target_indication": "False"
+     }
+    ],
+    "locations": [
+     {
+      "point": null,
+      "geography": null,
+      "type": "etsi_cgi",
+      "accuracy": "cellular",
+      "from_time": "2026-03-27T11:48:00Z",
+      "to_time": "2026-03-27T11:48:00Z",
+      "party_id": "1",
+      "address": null,
+      "mcc": null,
+      "mnc": null,
+      "lac": null,
+      "ci": null,
+      "eci": null,
+      "tac": null,
+      "antenna_radius": null,
+      "beam_width": null,
+      "beam_center": null,
+      "cell_type": null,
+      "count": 1,
+      "source": null,
+      "origin": null,
+      "value": "3105-22410"
+     },
+     {
+      "point": {
+       "lat": 35.0937,
+       "lon": 36.2638
+      },
+      "geography": "POINT (36.2638 35.0937)",
+      "type": "geo",
+      "accuracy": "gps",
+      "from_time": "2026-03-27T11:48:00Z",
+      "to_time": "2026-03-27T11:48:00Z",
+      "party_id": "1",
+      "address": null,
+      "mcc": null,
+      "mnc": null,
+      "lac": null,
+      "ci": null,
+      "eci": null,
+      "tac": null,
+      "antenna_radius": null,
+      "beam_width": null,
+      "beam_center": null,
+      "cell_type": null,
+      "count": 1,
+      "source": null,
+      "origin": null,
+      "value": "N350537.32 E0361549.68"
+     }
+    ],
+    "fe_correlation_ids": [
+     "9B596DF216F55C6CA1F3A7409886863B9B596DF216F55C6CA1F3A7409886863B"
+    ],
+    "asset_identifier": "2345671288",
+    "context": [],
+    "li": {
+     "liid": "f1a50da7-4f99-4037-b3fe-b1715e0c2e8d",
+     "cin": null,
+     "cid": null,
+     "foreign_liid": null,
+     "neid": null,
+     "operator_id": null,
+     "operator_name": null,
+     "event_reason": null,
+     "cc_begin": null,
+     "cc_end": null,
+     "integeregrity_failed": null,
+     "iri_begin_message_count": null,
+     "iri_continue_message_count": null,
+     "iri_end_message_count": null
+    },
+    "telephony": {
+     "caller_id": null,
+     "dialed_number": null,
+     "cc_start_time": "2026-03-27T11:48:00Z",
+     "cc_end_time": "2026-03-27T11:51:32Z",
+     "cc_duration": 212000.0,
+     "iri_start_time": "2026-03-27T11:48:00Z",
+     "iri_end_time": "2026-03-27T11:51:32Z",
+     "iri_duration": 212000.0,
+     "mcc": null,
+     "mnc": null,
+     "network_name": null,
+     "network_technology": null
+    },
+    "phone_call": {
+     "release_reason": "Normal call clearing"
+    }
+   },
+   {
+    "item_id": "e7104754-12d7-5128-b918-38f1fd74daeb",
+    "item_type": "sms",
+    "sub_type": "sms_sms",
+    "name": null,
+    "event_time": "2026-04-09T18:22:00Z",
+    "end_time": "2026-04-09T18:22:00Z",
+    "source_application": null,
+    "synopsis": null,
+    "summary": null,
+    "language": "Arabic",
+    "text": {},
+    "related_objects": null,
+    "text_available_via_get": true,
+    "parent_ids": [],
+    "location": {
+     "point": {
+      "lat": 35.1075,
+      "lon": 36.3368
+     },
+     "city": null,
+     "country": null,
+     "address": null,
+     "street": null,
+     "description": null,
+     "accuracy": "gps"
+    },
+    "secrecy_holder_status": "VALID",
+    "media": {
+     "kind": "none",
+     "has_thumbnail": false,
+     "primary_file_id": null,
+     "thumbnail_file_id": null,
+     "file_count": 0,
+     "primary_file_name": null,
+     "primary_file_content_type": null
+    },
+    "content_size": 1220,
+    "parent": null,
+    "children": null,
+    "details": null,
+    "tags": [
+     {
+      "type": "has_secrecy_holder_processed",
+      "value": "false",
+      "source": "system"
+     },
+     {
+      "type": "flag",
+      "value": "identifiersMismatching",
+      "source": "system"
+     },
+     {
+      "type": "language",
+      "value": "Arabic",
+      "source": "text_analytics"
+     },
+     {
+      "type": "duplication_counter",
+      "value": 0,
+      "source": "system"
+     },
+     {
+      "type": "flag",
+      "value": "HasContent",
+      "source": "system"
+     }
+    ],
+    "flags": [
+     "identifiersMismatching",
+     "HasContent"
+    ],
+    "call_direction": "in",
+    "parties": [
+     {
+      "id": "1",
+      "role": "to",
+      "identifiers": [
+       {
+        "type": "msisdn",
+        "value": "963992904397"
+       },
+       {
+        "type": "imsi",
+        "value": "417012328135834"
+       },
+       {
+        "type": "imei",
+        "value": "358742103952367"
+       }
+      ],
+      "target_indication": "True"
+     },
+     {
+      "id": "2",
+      "role": "from",
+      "identifiers": [
+       {
+        "type": "msisdn",
+        "value": "963975847790"
+       },
+       {
+        "type": "imsi",
+        "value": "417012374368451"
+       }
+      ],
+      "target_indication": "False"
+     }
+    ],
+    "locations": [
+     {
+      "point": null,
+      "geography": null,
+      "type": "etsi_cgi",
+      "accuracy": "cellular",
+      "from_time": "2026-04-09T18:22:00Z",
+      "to_time": "2026-04-09T18:22:00Z",
+      "party_id": "1",
+      "address": null,
+      "mcc": null,
+      "mnc": null,
+      "lac": null,
+      "ci": null,
+      "eci": null,
+      "tac": null,
+      "antenna_radius": null,
+      "beam_width": null,
+      "beam_center": null,
+      "cell_type": null,
+      "count": 1,
+      "source": null,
+      "origin": null,
+      "value": "3102-21291"
+     },
+     {
+      "point": {
+       "lat": 35.1075,
+       "lon": 36.3368
+      },
+      "geography": "POINT (36.3368 35.1075)",
+      "type": "geo",
+      "accuracy": "gps",
+      "from_time": "2026-04-09T18:22:00Z",
+      "to_time": "2026-04-09T18:22:00Z",
+      "party_id": "1",
+      "address": null,
+      "mcc": null,
+      "mnc": null,
+      "lac": null,
+      "ci": null,
+      "eci": null,
+      "tac": null,
+      "antenna_radius": null,
+      "beam_width": null,
+      "beam_center": null,
+      "cell_type": null,
+      "count": 1,
+      "source": null,
+      "origin": null,
+      "value": "N350627.00 E0362012.48"
+     }
+    ],
+    "messages": [
+     {
+      "text": "الطريق فاضي هلق",
+      "type": "message"
+     }
+    ],
+    "fe_correlation_ids": [
+     "A2FE6EB8CC7750B3859B6B005EAE0833A2FE6EB8CC7750B3859B6B005EAE0833"
+    ],
+    "asset_identifier": "2345671288",
+    "context": [],
+    "li": {
+     "liid": "f1a50da7-4f99-4037-b3fe-b1715e0c2e8d",
+     "cin": null,
+     "cid": null,
+     "foreign_liid": null,
+     "neid": null,
+     "operator_id": null,
+     "operator_name": null,
+     "event_reason": null,
+     "cc_begin": null,
+     "cc_end": null,
+     "integeregrity_failed": null,
+     "iri_begin_message_count": null,
+     "iri_continue_message_count": null,
+     "iri_end_message_count": null
+    },
+    "telephony": {
+     "caller_id": null,
+     "dialed_number": null,
+     "cc_start_time": "2026-04-09T18:22:00Z",
+     "cc_end_time": "2026-04-09T18:22:00Z",
+     "cc_duration": 0.0,
+     "iri_start_time": "2026-04-09T18:22:00Z",
+     "iri_end_time": "2026-04-09T18:22:00Z",
+     "iri_duration": 0.0,
+     "mcc": null,
+     "mnc": null,
+     "network_name": null,
+     "network_technology": null
+    },
+    "sms": {
+     "smsc": "963940000500",
+     "number_of_parts": 1,
+     "parts": [
+      {
+       "key": "1",
+       "value": "الطريق فاضي هلق"
+      }
+     ],
+     "message_indication": [],
+     "alphabet": null,
+     "command_type": null,
+     "dcs_value": null,
+     "failure_cause": null,
+     "folder": null,
+     "message_class": null,
+     "message_reference": null,
+     "sms_protocol": null,
+     "technical_status": null,
+     "transfer_status": null,
+     "validity_period": null,
+     "validity_period_format": null,
+     "data_discarded": null
+    }
+   },
+   {
+    "item_id": "34fe3735-677c-5b84-8e05-5d4147b40cc4",
+    "item_type": "voice_call",
+    "sub_type": "phone_call_voice",
+    "name": null,
+    "event_time": "2026-04-19T04:56:00Z",
+    "end_time": "2026-04-19T04:56:47Z",
+    "source_application": null,
+    "synopsis": null,
+    "summary": null,
+    "language": null,
+    "text": {},
+    "related_objects": null,
+    "text_available_via_get": true,
+    "parent_ids": [],
+    "location": {
+     "point": {
+      "lat": 35.0799,
+      "lon": 36.271
+     },
+     "city": null,
+     "country": null,
+     "address": null,
+     "street": null,
+     "description": null,
+     "accuracy": "gps"
+    },
+    "secrecy_holder_status": "VALID",
+    "media": {
+     "kind": "none",
+     "has_thumbnail": false,
+     "primary_file_id": null,
+     "thumbnail_file_id": null,
+     "file_count": 0,
+     "primary_file_name": null,
+     "primary_file_content_type": null
+    },
+    "content_size": 0,
+    "parent": null,
+    "children": null,
+    "details": null,
+    "tags": [
+     {
+      "type": "has_secrecy_holder_processed",
+      "value": "false",
+      "source": "system"
+     },
+     {
+      "type": "flag",
+      "value": "identifiersMismatching",
+      "source": "system"
+     },
+     {
+      "type": "flag",
+      "value": "identifiersMismatching",
+      "source": "system"
+     },
+     {
+      "type": "duplication_counter",
+      "value": 0,
+      "source": "system"
+     }
+    ],
+    "flags": [
+     "identifiersMismatching",
+     "identifiersMismatching"
+    ],
+    "duration_ms": 47000.0,
+    "call_direction": "out",
+    "parties": [
+     {
+      "id": "1",
+      "role": "from",
+      "identifiers": [
+       {
+        "type": "msisdn",
+        "value": "963910327688"
+       },
+       {
+        "type": "imsi",
+        "value": "417014078043940"
+       },
+       {
+        "type": "imei",
+        "value": "352099009470754"
+       }
+      ],
+      "target_indication": "True"
+     },
+     {
+      "id": "2",
+      "role": "to",
+      "identifiers": [
+       {
+        "type": "msisdn",
+        "value": "963989339196"
+       },
+       {
+        "type": "imsi",
+        "value": "417014506201989"
+       }
+      ],
+      "target_indication": "False"
+     }
+    ],
+    "locations": [
+     {
+      "point": null,
+      "geography": null,
+      "type": "etsi_cgi",
+      "accuracy": "cellular",
+      "from_time": "2026-04-19T04:56:00Z",
+      "to_time": "2026-04-19T04:56:00Z",
+      "party_id": "1",
+      "address": null,
+      "mcc": null,
+      "mnc": null,
+      "lac": null,
+      "ci": null,
+      "eci": null,
+      "tac": null,
+      "antenna_radius": null,
+      "beam_width": null,
+      "beam_center": null,
+      "cell_type": null,
+      "count": 1,
+      "source": null,
+      "origin": null,
+      "value": "3101-20983"
+     },
+     {
+      "point": {
+       "lat": 35.0799,
+       "lon": 36.271
+      },
+      "geography": "POINT (36.271 35.0799)",
+      "type": "geo",
+      "accuracy": "gps",
+      "from_time": "2026-04-19T04:56:00Z",
+      "to_time": "2026-04-19T04:56:00Z",
+      "party_id": "1",
+      "address": null,
+      "mcc": null,
+      "mnc": null,
+      "lac": null,
+      "ci": null,
+      "eci": null,
+      "tac": null,
+      "antenna_radius": null,
+      "beam_width": null,
+      "beam_center": null,
+      "cell_type": null,
+      "count": 1,
+      "source": null,
+      "origin": null,
+      "value": "N350447.64 E0361615.60"
+     }
+    ],
+    "fe_correlation_ids": [
+     "AB2C6A048E0E511EADB6A7A25A50B623AB2C6A048E0E511EADB6A7A25A50B623"
+    ],
+    "asset_identifier": "2345671288",
+    "context": [],
+    "li": {
+     "liid": "f1a50da7-4f99-4037-b3fe-b1715e0c2e8d",
+     "cin": null,
+     "cid": null,
+     "foreign_liid": null,
+     "neid": null,
+     "operator_id": null,
+     "operator_name": null,
+     "event_reason": null,
+     "cc_begin": null,
+     "cc_end": null,
+     "integeregrity_failed": null,
+     "iri_begin_message_count": null,
+     "iri_continue_message_count": null,
+     "iri_end_message_count": null
+    },
+    "telephony": {
+     "caller_id": null,
+     "dialed_number": null,
+     "cc_start_time": "2026-04-19T04:56:00Z",
+     "cc_end_time": "2026-04-19T04:56:47Z",
+     "cc_duration": 47000.0,
+     "iri_start_time": "2026-04-19T04:56:00Z",
+     "iri_end_time": "2026-04-19T04:56:47Z",
+     "iri_duration": 47000.0,
+     "mcc": null,
+     "mnc": null,
+     "network_name": null,
+     "network_technology": null
+    },
+    "phone_call": {
+     "release_reason": "Normal call clearing"
+    }
+   },
+   {
+    "item_id": "44a4dc03-6d06-5e95-b641-a2c5e17d582b",
+    "item_type": "sms",
+    "sub_type": "sms_sms",
+    "name": null,
+    "event_time": "2026-04-28T15:10:00Z",
+    "end_time": "2026-04-28T15:10:00Z",
+    "source_application": null,
+    "synopsis": null,
+    "summary": null,
+    "language": "Arabic",
+    "text": {},
+    "related_objects": null,
+    "text_available_via_get": true,
+    "parent_ids": [],
+    "location": {
+     "point": {
+      "lat": 35.0609,
+      "lon": 36.2838
+     },
+     "city": null,
+     "country": null,
+     "address": null,
+     "street": null,
+     "description": null,
+     "accuracy": "gps"
+    },
+    "secrecy_holder_status": "VALID",
+    "media": {
+     "kind": "none",
+     "has_thumbnail": false,
+     "primary_file_id": null,
+     "thumbnail_file_id": null,
+     "file_count": 0,
+     "primary_file_name": null,
+     "primary_file_content_type": null
+    },
+    "content_size": 1380,
+    "parent": null,
+    "children": null,
+    "details": null,
+    "tags": [
+     {
+      "type": "has_secrecy_holder_processed",
+      "value": "false",
+      "source": "system"
+     },
+     {
+      "type": "flag",
+      "value": "identifiersMismatching",
+      "source": "system"
+     },
+     {
+      "type": "language",
+      "value": "Arabic",
+      "source": "text_analytics"
+     },
+     {
+      "type": "duplication_counter",
+      "value": 0,
+      "source": "system"
+     },
+     {
+      "type": "flag",
+      "value": "HasContent",
+      "source": "system"
+     }
+    ],
+    "flags": [
+     "identifiersMismatching",
+     "HasContent"
+    ],
+    "call_direction": "out",
+    "parties": [
+     {
+      "id": "1",
+      "role": "from",
+      "identifiers": [
+       {
+        "type": "msisdn",
+        "value": "963979626029"
+       },
+       {
+        "type": "imsi",
+        "value": "417012707665630"
+       },
+       {
+        "type": "imei",
+        "value": "356938101029370"
+       }
+      ],
+      "target_indication": "True"
+     },
+     {
+      "id": "2",
+      "role": "to",
+      "identifiers": [
+       {
+        "type": "msisdn",
+        "value": "963957386842"
+       },
+       {
+        "type": "imsi",
+        "value": "417010661136142"
+       },
+       {
+        "type": "imei",
+        "value": "352099005561267"
+       }
+      ],
+      "target_indication": "False"
+     }
+    ],
+    "locations": [
+     {
+      "point": null,
+      "geography": null,
+      "type": "etsi_cgi",
+      "accuracy": "cellular",
+      "from_time": "2026-04-28T15:10:00Z",
+      "to_time": "2026-04-28T15:10:00Z",
+      "party_id": "1",
+      "address": null,
+      "mcc": null,
+      "mnc": null,
+      "lac": null,
+      "ci": null,
+      "eci": null,
+      "tac": null,
+      "antenna_radius": null,
+      "beam_width": null,
+      "beam_center": null,
+      "cell_type": null,
+      "count": 1,
+      "source": null,
+      "origin": null,
+      "value": "3104-21878"
+     },
+     {
+      "point": {
+       "lat": 35.0609,
+       "lon": 36.2838
+      },
+      "geography": "POINT (36.2838 35.0609)",
+      "type": "geo",
+      "accuracy": "gps",
+      "from_time": "2026-04-28T15:10:00Z",
+      "to_time": "2026-04-28T15:10:00Z",
+      "party_id": "1",
+      "address": null,
+      "mcc": null,
+      "mnc": null,
+      "lac": null,
+      "ci": null,
+      "eci": null,
+      "tac": null,
+      "antenna_radius": null,
+      "beam_width": null,
+      "beam_center": null,
+      "cell_type": null,
+      "count": 1,
+      "source": null,
+      "origin": null,
+      "value": "N350339.24 E0361701.68"
+     }
+    ],
+    "messages": [
+     {
+      "text": "جيب السيارة التانية",
+      "type": "message"
+     }
+    ],
+    "fe_correlation_ids": [
+     "3D5C0E83FDC154009A316586E7F8C68A3D5C0E83FDC154009A316586E7F8C68A"
+    ],
+    "asset_identifier": "2345671288",
+    "context": [],
+    "li": {
+     "liid": "f1a50da7-4f99-4037-b3fe-b1715e0c2e8d",
+     "cin": null,
+     "cid": null,
+     "foreign_liid": null,
+     "neid": null,
+     "operator_id": null,
+     "operator_name": null,
+     "event_reason": null,
+     "cc_begin": null,
+     "cc_end": null,
+     "integeregrity_failed": null,
+     "iri_begin_message_count": null,
+     "iri_continue_message_count": null,
+     "iri_end_message_count": null
+    },
+    "telephony": {
+     "caller_id": null,
+     "dialed_number": null,
+     "cc_start_time": "2026-04-28T15:10:00Z",
+     "cc_end_time": "2026-04-28T15:10:00Z",
+     "cc_duration": 0.0,
+     "iri_start_time": "2026-04-28T15:10:00Z",
+     "iri_end_time": "2026-04-28T15:10:00Z",
+     "iri_duration": 0.0,
+     "mcc": null,
+     "mnc": null,
+     "network_name": null,
+     "network_technology": null
+    },
+    "sms": {
+     "smsc": "963940000500",
+     "number_of_parts": 1,
+     "parts": [
+      {
+       "key": "1",
+       "value": "جيب السيارة التانية"
+      }
+     ],
+     "message_indication": [],
+     "alphabet": null,
+     "command_type": null,
+     "dcs_value": null,
+     "failure_cause": null,
+     "folder": null,
+     "message_class": null,
+     "message_reference": null,
+     "sms_protocol": null,
+     "technical_status": null,
+     "transfer_status": null,
+     "validity_period": null,
+     "validity_period_format": null,
+     "data_discarded": null
+    }
+   },
+   {
+    "item_id": "d7db2fae-f1d3-5679-953d-521b22942cce",
+    "item_type": "voice_call",
+    "sub_type": "phone_call_voice",
+    "name": null,
+    "event_time": "2026-05-06T20:37:00Z",
+    "end_time": "2026-05-06T20:39:18Z",
+    "source_application": null,
+    "synopsis": null,
+    "summary": null,
+    "language": null,
+    "text": {},
+    "related_objects": null,
+    "text_available_via_get": true,
+    "parent_ids": [],
+    "location": {
+     "point": {
+      "lat": 35.0814,
+      "lon": 36.3222
+     },
+     "city": null,
+     "country": null,
+     "address": null,
+     "street": null,
+     "description": null,
+     "accuracy": "gps"
+    },
+    "secrecy_holder_status": "VALID",
+    "media": {
+     "kind": "none",
+     "has_thumbnail": false,
+     "primary_file_id": null,
+     "thumbnail_file_id": null,
+     "file_count": 0,
+     "primary_file_name": null,
+     "primary_file_content_type": null
+    },
+    "content_size": 0,
+    "parent": null,
+    "children": null,
+    "details": null,
+    "tags": [
+     {
+      "type": "has_secrecy_holder_processed",
+      "value": "false",
+      "source": "system"
+     },
+     {
+      "type": "flag",
+      "value": "identifiersMismatching",
+      "source": "system"
+     },
+     {
+      "type": "flag",
+      "value": "identifiersMismatching",
+      "source": "system"
+     },
+     {
+      "type": "duplication_counter",
+      "value": 0,
+      "source": "system"
+     }
+    ],
+    "flags": [
+     "identifiersMismatching",
+     "identifiersMismatching"
+    ],
+    "duration_ms": 138000.0,
+    "call_direction": "in",
+    "parties": [
+     {
+      "id": "1",
+      "role": "to",
+      "identifiers": [
+       {
+        "type": "msisdn",
+        "value": "963934652772"
+       },
+       {
+        "type": "imsi",
+        "value": "417014121024872"
+       },
+       {
+        "type": "imei",
+        "value": "861536031925937"
+       }
+      ],
+      "target_indication": "True"
+     },
+     {
+      "id": "2",
+      "role": "from",
+      "identifiers": [
+       {
+        "type": "msisdn",
+        "value": "963958788674"
+       },
+       {
+        "type": "imsi",
+        "value": "417011532816676"
+       }
+      ],
+      "target_indication": "False"
+     }
+    ],
+    "locations": [
+     {
+      "point": null,
+      "geography": null,
+      "type": "etsi_cgi",
+      "accuracy": "cellular",
+      "from_time": "2026-05-06T20:37:00Z",
+      "to_time": "2026-05-06T20:37:00Z",
+      "party_id": "1",
+      "address": null,
+      "mcc": null,
+      "mnc": null,
+      "lac": null,
+      "ci": null,
+      "eci": null,
+      "tac": null,
+      "antenna_radius": null,
+      "beam_width": null,
+      "beam_center": null,
+      "cell_type": null,
+      "count": 1,
+      "source": null,
+      "origin": null,
+      "value": "3107-22715"
+     },
+     {
+      "point": {
+       "lat": 35.0814,
+       "lon": 36.3222
+      },
+      "geography": "POINT (36.3222 35.0814)",
+      "type": "geo",
+      "accuracy": "gps",
+      "from_time": "2026-05-06T20:37:00Z",
+      "to_time": "2026-05-06T20:37:00Z",
+      "party_id": "1",
+      "address": null,
+      "mcc": null,
+      "mnc": null,
+      "lac": null,
+      "ci": null,
+      "eci": null,
+      "tac": null,
+      "antenna_radius": null,
+      "beam_width": null,
+      "beam_center": null,
+      "cell_type": null,
+      "count": 1,
+      "source": null,
+      "origin": null,
+      "value": "N350453.04 E0361919.92"
+     }
+    ],
+    "fe_correlation_ids": [
+     "3A510E1098F95B2EAA248D73913C79343A510E1098F95B2EAA248D73913C7934"
+    ],
+    "asset_identifier": "2345671288",
+    "context": [],
+    "li": {
+     "liid": "f1a50da7-4f99-4037-b3fe-b1715e0c2e8d",
+     "cin": null,
+     "cid": null,
+     "foreign_liid": null,
+     "neid": null,
+     "operator_id": null,
+     "operator_name": null,
+     "event_reason": null,
+     "cc_begin": null,
+     "cc_end": null,
+     "integeregrity_failed": null,
+     "iri_begin_message_count": null,
+     "iri_continue_message_count": null,
+     "iri_end_message_count": null
+    },
+    "telephony": {
+     "caller_id": null,
+     "dialed_number": null,
+     "cc_start_time": "2026-05-06T20:37:00Z",
+     "cc_end_time": "2026-05-06T20:39:18Z",
+     "cc_duration": 138000.0,
+     "iri_start_time": "2026-05-06T20:37:00Z",
+     "iri_end_time": "2026-05-06T20:39:18Z",
+     "iri_duration": 138000.0,
+     "mcc": null,
+     "mnc": null,
+     "network_name": null,
+     "network_technology": null
+    },
+    "phone_call": {
+     "release_reason": "Normal call clearing"
+    }
+   },
+   {
+    "item_id": "f481b3af-2cd7-5fcb-aee7-36fa3cd6aae2",
+    "item_type": "sms",
+    "sub_type": "sms_sms",
+    "name": null,
+    "event_time": "2026-05-14T08:03:00Z",
+    "end_time": "2026-05-14T08:03:00Z",
+    "source_application": null,
+    "synopsis": null,
+    "summary": null,
+    "language": "Arabic",
+    "text": {},
+    "related_objects": null,
+    "text_available_via_get": true,
+    "parent_ids": [],
+    "location": {
+     "point": {
+      "lat": 35.1121,
+      "lon": 36.3106
+     },
+     "city": null,
+     "country": null,
+     "address": null,
+     "street": null,
+     "description": null,
+     "accuracy": "gps"
+    },
+    "secrecy_holder_status": "VALID",
+    "media": {
+     "kind": "none",
+     "has_thumbnail": false,
+     "primary_file_id": null,
+     "thumbnail_file_id": null,
+     "file_count": 0,
+     "primary_file_name": null,
+     "primary_file_content_type": null
+    },
+    "content_size": 1220,
+    "parent": null,
+    "children": null,
+    "details": null,
+    "tags": [
+     {
+      "type": "has_secrecy_holder_processed",
+      "value": "false",
+      "source": "system"
+     },
+     {
+      "type": "flag",
+      "value": "identifiersMismatching",
+      "source": "system"
+     },
+     {
+      "type": "language",
+      "value": "Arabic",
+      "source": "text_analytics"
+     },
+     {
+      "type": "duplication_counter",
+      "value": 0,
+      "source": "system"
+     },
+     {
+      "type": "flag",
+      "value": "HasContent",
+      "source": "system"
+     }
+    ],
+    "flags": [
+     "identifiersMismatching",
+     "HasContent"
+    ],
+    "call_direction": "in",
+    "parties": [
+     {
+      "id": "1",
+      "role": "to",
+      "identifiers": [
+       {
+        "type": "msisdn",
+        "value": "963952500238"
+       },
+       {
+        "type": "imsi",
+        "value": "417019048828632"
+       },
+       {
+        "type": "imei",
+        "value": "358742100646970"
+       }
+      ],
+      "target_indication": "True"
+     },
+     {
+      "id": "2",
+      "role": "from",
+      "identifiers": [
+       {
+        "type": "msisdn",
+        "value": "963940249432"
+       },
+       {
+        "type": "imsi",
+        "value": "417019448412793"
+       },
+       {
+        "type": "imei",
+        "value": "352099000819835"
+       }
+      ],
+      "target_indication": "False"
+     }
+    ],
+    "locations": [
+     {
+      "point": null,
+      "geography": null,
+      "type": "etsi_cgi",
+      "accuracy": "cellular",
+      "from_time": "2026-05-14T08:03:00Z",
+      "to_time": "2026-05-14T08:03:00Z",
+      "party_id": "1",
+      "address": null,
+      "mcc": null,
+      "mnc": null,
+      "lac": null,
+      "ci": null,
+      "eci": null,
+      "tac": null,
+      "antenna_radius": null,
+      "beam_width": null,
+      "beam_center": null,
+      "cell_type": null,
+      "count": 1,
+      "source": null,
+      "origin": null,
+      "value": "3104-21876"
+     },
+     {
+      "point": {
+       "lat": 35.1121,
+       "lon": 36.3106
+      },
+      "geography": "POINT (36.3106 35.1121)",
+      "type": "geo",
+      "accuracy": "gps",
+      "from_time": "2026-05-14T08:03:00Z",
+      "to_time": "2026-05-14T08:03:00Z",
+      "party_id": "1",
+      "address": null,
+      "mcc": null,
+      "mnc": null,
+      "lac": null,
+      "ci": null,
+      "eci": null,
+      "tac": null,
+      "antenna_radius": null,
+      "beam_width": null,
+      "beam_center": null,
+      "cell_type": null,
+      "count": 1,
+      "source": null,
+      "origin": null,
+      "value": "N350643.56 E0361838.16"
+     }
+    ],
+    "messages": [
+     {
+      "text": "بكرا الصبح بكير",
+      "type": "message"
+     }
+    ],
+    "fe_correlation_ids": [
+     "2055B9ECF1155DA2B5688F2BA9B275F82055B9ECF1155DA2B5688F2BA9B275F8"
+    ],
+    "asset_identifier": "2345671288",
+    "context": [],
+    "li": {
+     "liid": "f1a50da7-4f99-4037-b3fe-b1715e0c2e8d",
+     "cin": null,
+     "cid": null,
+     "foreign_liid": null,
+     "neid": null,
+     "operator_id": null,
+     "operator_name": null,
+     "event_reason": null,
+     "cc_begin": null,
+     "cc_end": null,
+     "integeregrity_failed": null,
+     "iri_begin_message_count": null,
+     "iri_continue_message_count": null,
+     "iri_end_message_count": null
+    },
+    "telephony": {
+     "caller_id": null,
+     "dialed_number": null,
+     "cc_start_time": "2026-05-14T08:03:00Z",
+     "cc_end_time": "2026-05-14T08:03:00Z",
+     "cc_duration": 0.0,
+     "iri_start_time": "2026-05-14T08:03:00Z",
+     "iri_end_time": "2026-05-14T08:03:00Z",
+     "iri_duration": 0.0,
+     "mcc": null,
+     "mnc": null,
+     "network_name": null,
+     "network_technology": null
+    },
+    "sms": {
+     "smsc": "963940000500",
+     "number_of_parts": 1,
+     "parts": [
+      {
+       "key": "1",
+       "value": "بكرا الصبح بكير"
+      }
+     ],
+     "message_indication": [],
+     "alphabet": null,
+     "command_type": null,
+     "dcs_value": null,
+     "failure_cause": null,
+     "folder": null,
+     "message_class": null,
+     "message_reference": null,
+     "sms_protocol": null,
+     "technical_status": null,
+     "transfer_status": null,
+     "validity_period": null,
+     "validity_period_format": null,
+     "data_discarded": null
+    }
+   },
+   {
+    "item_id": "cb99adbc-0779-5c65-8128-47b4c82ecf9e",
+    "item_type": "voice_call",
+    "sub_type": "phone_call_voice",
+    "name": null,
+    "event_time": "2026-05-20T23:44:00Z",
+    "end_time": "2026-05-20T23:45:16Z",
+    "source_application": null,
+    "synopsis": null,
+    "summary": null,
+    "language": null,
+    "text": {},
+    "related_objects": null,
+    "text_available_via_get": true,
+    "parent_ids": [],
+    "location": {
+     "point": {
+      "lat": 35.0688,
+      "lon": 36.2617
+     },
+     "city": null,
+     "country": null,
+     "address": null,
+     "street": null,
+     "description": null,
+     "accuracy": "gps"
+    },
+    "secrecy_holder_status": "VALID",
+    "media": {
+     "kind": "none",
+     "has_thumbnail": false,
+     "primary_file_id": null,
+     "thumbnail_file_id": null,
+     "file_count": 0,
+     "primary_file_name": null,
+     "primary_file_content_type": null
+    },
+    "content_size": 0,
+    "parent": null,
+    "children": null,
+    "details": null,
+    "tags": [
+     {
+      "type": "has_secrecy_holder_processed",
+      "value": "false",
+      "source": "system"
+     },
+     {
+      "type": "flag",
+      "value": "identifiersMismatching",
+      "source": "system"
+     },
+     {
+      "type": "flag",
+      "value": "identifiersMismatching",
+      "source": "system"
+     },
+     {
+      "type": "duplication_counter",
+      "value": 0,
+      "source": "system"
+     }
+    ],
+    "flags": [
+     "identifiersMismatching",
+     "identifiersMismatching"
+    ],
+    "duration_ms": 76000.0,
+    "call_direction": "out",
+    "parties": [
+     {
+      "id": "1",
+      "role": "from",
+      "identifiers": [
+       {
+        "type": "msisdn",
+        "value": "963920352638"
+       },
+       {
+        "type": "imsi",
+        "value": "417010744303423"
+       },
+       {
+        "type": "imei",
+        "value": "358742106861151"
+       }
+      ],
+      "target_indication": "True"
+     },
+     {
+      "id": "2",
+      "role": "to",
+      "identifiers": [
+       {
+        "type": "msisdn",
+        "value": "963988301462"
+       },
+       {
+        "type": "imsi",
+        "value": "417017043001504"
+       }
+      ],
+      "target_indication": "False"
+     }
+    ],
+    "locations": [
+     {
+      "point": null,
+      "geography": null,
+      "type": "etsi_cgi",
+      "accuracy": "cellular",
+      "from_time": "2026-05-20T23:44:00Z",
+      "to_time": "2026-05-20T23:44:00Z",
+      "party_id": "1",
+      "address": null,
+      "mcc": null,
+      "mnc": null,
+      "lac": null,
+      "ci": null,
+      "eci": null,
+      "tac": null,
+      "antenna_radius": null,
+      "beam_width": null,
+      "beam_center": null,
+      "cell_type": null,
+      "count": 1,
+      "source": null,
+      "origin": null,
+      "value": "3103-21504"
+     },
+     {
+      "point": {
+       "lat": 35.0688,
+       "lon": 36.2617
+      },
+      "geography": "POINT (36.2617 35.0688)",
+      "type": "geo",
+      "accuracy": "gps",
+      "from_time": "2026-05-20T23:44:00Z",
+      "to_time": "2026-05-20T23:44:00Z",
+      "party_id": "1",
+      "address": null,
+      "mcc": null,
+      "mnc": null,
+      "lac": null,
+      "ci": null,
+      "eci": null,
+      "tac": null,
+      "antenna_radius": null,
+      "beam_width": null,
+      "beam_center": null,
+      "cell_type": null,
+      "count": 1,
+      "source": null,
+      "origin": null,
+      "value": "N350407.68 E0361542.12"
+     }
+    ],
+    "fe_correlation_ids": [
+     "8E41CB0847CC5A2CA6B742A6DB2C8E8D8E41CB0847CC5A2CA6B742A6DB2C8E8D"
+    ],
+    "asset_identifier": "2345671288",
+    "context": [],
+    "li": {
+     "liid": "f1a50da7-4f99-4037-b3fe-b1715e0c2e8d",
+     "cin": null,
+     "cid": null,
+     "foreign_liid": null,
+     "neid": null,
+     "operator_id": null,
+     "operator_name": null,
+     "event_reason": null,
+     "cc_begin": null,
+     "cc_end": null,
+     "integeregrity_failed": null,
+     "iri_begin_message_count": null,
+     "iri_continue_message_count": null,
+     "iri_end_message_count": null
+    },
+    "telephony": {
+     "caller_id": null,
+     "dialed_number": null,
+     "cc_start_time": "2026-05-20T23:44:00Z",
+     "cc_end_time": "2026-05-20T23:45:16Z",
+     "cc_duration": 76000.0,
+     "iri_start_time": "2026-05-20T23:44:00Z",
+     "iri_end_time": "2026-05-20T23:45:16Z",
+     "iri_duration": 76000.0,
+     "mcc": null,
+     "mnc": null,
+     "network_name": null,
+     "network_technology": null
+    },
+    "phone_call": {
+     "release_reason": "Normal call clearing"
+    }
+   }
+  ],
+  "Satellite": [
+   {
+    "item_id": "9a238aa6-79d4-5199-af8e-f62202affdbf",
+    "item_type": "image",
+    "sub_type": "file_image",
+    "name": null,
+    "event_time": "2026-03-09T07:12:00Z",
+    "end_time": "2026-03-09T07:12:00Z",
+    "source_application": "EO optical (fictional)",
+    "synopsis": null,
+    "summary": null,
+    "language": null,
+    "text": {},
+    "related_objects": null,
+    "text_available_via_get": true,
+    "parent_ids": [],
+    "location": {
+     "point": {
+      "lat": 35.0631,
+      "lon": 36.2945
+     },
+     "city": null,
+     "country": null,
+     "address": null,
+     "street": null,
+     "description": null,
+     "accuracy": "gps"
+    },
+    "secrecy_holder_status": "VALID",
+    "media": {
+     "kind": "image",
+     "has_thumbnail": true,
+     "primary_file_id": "9001000000001",
+     "thumbnail_file_id": "9001000000001",
+     "file_count": 1,
+     "primary_file_name": "sat-area-a.png",
+     "primary_file_content_type": "image/png"
+    },
+    "content_size": 642697,
+    "parent": null,
+    "children": null,
+    "details": null,
+    "insights": [
+     {
+      "type": "analytics_insight",
+      "source": "text_analytics",
+      "annotation_id": 90000001,
+      "editable": false,
+      "read_only": false,
+      "value": "Two large warehouses with a nearly full staff car park; steady civilian traffic on the access road.",
+      "party_id": null,
+      "party_position": null,
+      "author": null,
+      "created_at": null,
+      "modified_at": null,
+      "tagged_users": [],
+      "reply_to_annotation_id": null
+     }
+    ],
+    "tags": [
+     {
+      "type": "event",
+      "value": true,
+      "source": "system"
+     },
+     {
+      "type": "flag",
+      "value": "HasContent",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "building",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "building",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "parking lot",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "car",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "car",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "car",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "car",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "car",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "car",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "car",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "car",
+      "source": "system"
+     },
+     {
+      "type": "duplication_counter",
+      "value": 0,
+      "source": "system"
+     }
+    ],
+    "flags": [
+     "HasContent"
+    ],
+    "locations": [
+     {
+      "point": {
+       "lat": 35.0631,
+       "lon": 36.2945
+      },
+      "geography": "POINT (36.2945 35.0631)",
+      "type": "geo",
+      "accuracy": "gps",
+      "from_time": "2026-03-09T07:12:00Z",
+      "to_time": null,
+      "party_id": null,
+      "address": null,
+      "mcc": null,
+      "mnc": null,
+      "lac": null,
+      "ci": null,
+      "eci": null,
+      "tac": null,
+      "antenna_radius": null,
+      "beam_width": null,
+      "beam_center": null,
+      "cell_type": null,
+      "count": null,
+      "source": null,
+      "origin": null,
+      "value": null
+     }
+    ],
+    "fe_correlation_ids": [
+     "a3741fe1-7ec1-5dd7-ab23-616b7ee0bdee"
+    ],
+    "additional_info": [
+     {
+      "off_nadir_deg": 6.4,
+      "sun_elevation_deg": 38.1,
+      "gsd_m": 0.3,
+      "footprint_radius_km": 0.12,
+      "cloud_cover_pct": 3,
+      "classification": "Logistics park",
+      "detected_objects": "2x large warehouse, ~40x car in staff car park, 6x car on access road"
+     }
+    ],
+    "context": []
+   },
+   {
+    "item_id": "854fdeab-e592-5625-a4c1-ff4adb005b25",
+    "item_type": "image",
+    "sub_type": "file_image",
+    "name": null,
+    "event_time": "2026-04-02T07:09:00Z",
+    "end_time": "2026-04-02T07:09:00Z",
+    "source_application": "EO optical (fictional)",
+    "synopsis": null,
+    "summary": null,
+    "language": null,
+    "text": {},
+    "related_objects": null,
+    "text_available_via_get": true,
+    "parent_ids": [],
+    "location": {
+     "point": {
+      "lat": 35.0513,
+      "lon": 36.2875
+     },
+     "city": null,
+     "country": null,
+     "address": null,
+     "street": null,
+     "description": null,
+     "accuracy": "gps"
+    },
+    "secrecy_holder_status": "VALID",
+    "media": {
+     "kind": "image",
+     "has_thumbnail": true,
+     "primary_file_id": "9001000000002",
+     "thumbnail_file_id": "9001000000002",
+     "file_count": 1,
+     "primary_file_name": "sat-area-b.png",
+     "primary_file_content_type": "image/png"
+    },
+    "content_size": 679235,
+    "parent": null,
+    "children": null,
+    "details": null,
+    "insights": [
+     {
+      "type": "analytics_insight",
+      "source": "text_analytics",
+      "annotation_id": 90000002,
+      "editable": false,
+      "read_only": false,
+      "value": "Concrete frame of a large building going up; earthworks with two excavators and a mixer on site.",
+      "party_id": null,
+      "party_position": null,
+      "author": null,
+      "created_at": null,
+      "modified_at": null,
+      "tagged_users": [],
+      "reply_to_annotation_id": null
+     }
+    ],
+    "tags": [
+     {
+      "type": "event",
+      "value": true,
+      "source": "system"
+     },
+     {
+      "type": "flag",
+      "value": "HasContent",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "building",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "crane",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "excavator",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "excavator",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "truck",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "truck",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "truck",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "car",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "car",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "car",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "car",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "car",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "car",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "car",
+      "source": "system"
+     },
+     {
+      "type": "duplication_counter",
+      "value": 0,
+      "source": "system"
+     }
+    ],
+    "flags": [
+     "HasContent"
+    ],
+    "locations": [
+     {
+      "point": {
+       "lat": 35.0513,
+       "lon": 36.2875
+      },
+      "geography": "POINT (36.2875 35.0513)",
+      "type": "geo",
+      "accuracy": "gps",
+      "from_time": "2026-04-02T07:09:00Z",
+      "to_time": null,
+      "party_id": null,
+      "address": null,
+      "mcc": null,
+      "mnc": null,
+      "lac": null,
+      "ci": null,
+      "eci": null,
+      "tac": null,
+      "antenna_radius": null,
+      "beam_width": null,
+      "beam_center": null,
+      "cell_type": null,
+      "count": null,
+      "source": null,
+      "origin": null,
+      "value": null
+     }
+    ],
+    "fe_correlation_ids": [
+     "ad0292da-f330-5109-8091-c121f48af54c"
+    ],
+    "additional_info": [
+     {
+      "off_nadir_deg": 3.9,
+      "sun_elevation_deg": 47.6,
+      "gsd_m": 0.3,
+      "footprint_radius_km": 0.12,
+      "cloud_cover_pct": 8,
+      "classification": "Construction site",
+      "detected_objects": "1x large building under construction, 1x tower crane, 2x excavator, 2x dump truck, 1x concrete mixer, 7x car"
+     }
+    ],
+    "context": []
+   },
+   {
+    "item_id": "55d94311-597b-53a7-b6a5-3f329c97a82f",
+    "item_type": "image",
+    "sub_type": "file_image",
+    "name": null,
+    "event_time": "2026-04-25T07:15:00Z",
+    "end_time": "2026-04-25T07:15:00Z",
+    "source_application": "EO optical (fictional)",
+    "synopsis": null,
+    "summary": null,
+    "language": null,
+    "text": {},
+    "related_objects": null,
+    "text_available_via_get": true,
+    "parent_ids": [],
+    "location": {
+     "point": {
+      "lat": 35.0684,
+      "lon": 36.3473
+     },
+     "city": null,
+     "country": null,
+     "address": null,
+     "street": null,
+     "description": null,
+     "accuracy": "gps"
+    },
+    "secrecy_holder_status": "VALID",
+    "media": {
+     "kind": "image",
+     "has_thumbnail": true,
+     "primary_file_id": "9001000000003",
+     "thumbnail_file_id": "9001000000003",
+     "file_count": 1,
+     "primary_file_name": "sat-area-c.png",
+     "primary_file_content_type": "image/png"
+    },
+    "content_size": 579077,
+    "parent": null,
+    "children": null,
+    "details": null,
+    "insights": [
+     {
+      "type": "analytics_insight",
+      "source": "text_analytics",
+      "annotation_id": 90000003,
+      "editable": false,
+      "read_only": false,
+      "value": "Factory beside the main road with four silos; trucks loading in the yard and cars passing on the road.",
+      "party_id": null,
+      "party_position": null,
+      "author": null,
+      "created_at": null,
+      "modified_at": null,
+      "tagged_users": [],
+      "reply_to_annotation_id": null
+     }
+    ],
+    "tags": [
+     {
+      "type": "event",
+      "value": true,
+      "source": "system"
+     },
+     {
+      "type": "flag",
+      "value": "HasContent",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "building",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "building",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "silo",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "truck",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "truck",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "truck",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "truck",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "car",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "car",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "car",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "car",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "car",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "car",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "car",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "car",
+      "source": "system"
+     },
+     {
+      "type": "duplication_counter",
+      "value": 0,
+      "source": "system"
+     }
+    ],
+    "flags": [
+     "HasContent"
+    ],
+    "locations": [
+     {
+      "point": {
+       "lat": 35.0684,
+       "lon": 36.3473
+      },
+      "geography": "POINT (36.3473 35.0684)",
+      "type": "geo",
+      "accuracy": "gps",
+      "from_time": "2026-04-25T07:15:00Z",
+      "to_time": null,
+      "party_id": null,
+      "address": null,
+      "mcc": null,
+      "mnc": null,
+      "lac": null,
+      "ci": null,
+      "eci": null,
+      "tac": null,
+      "antenna_radius": null,
+      "beam_width": null,
+      "beam_center": null,
+      "cell_type": null,
+      "count": null,
+      "source": null,
+      "origin": null,
+      "value": null
+     }
+    ],
+    "fe_correlation_ids": [
+     "2630aefb-c323-525d-9a74-78b87b2afbc0"
+    ],
+    "additional_info": [
+     {
+      "off_nadir_deg": 5.1,
+      "sun_elevation_deg": 55.2,
+      "gsd_m": 0.3,
+      "footprint_radius_km": 0.12,
+      "cloud_cover_pct": 2,
+      "classification": "Factory",
+      "detected_objects": "1x large factory hall, 4x storage silo, 4x truck in yard, ~20x car parked, 8x car on road"
+     }
+    ],
+    "context": []
+   },
+   {
+    "item_id": "559b0afb-5860-5eb7-818f-73fe97d0fedd",
+    "item_type": "image",
+    "sub_type": "file_image",
+    "name": null,
+    "event_time": "2026-05-16T07:21:00Z",
+    "end_time": "2026-05-16T07:21:00Z",
+    "source_application": "EO optical (fictional)",
+    "synopsis": null,
+    "summary": null,
+    "language": null,
+    "text": {},
+    "related_objects": null,
+    "text_available_via_get": true,
+    "parent_ids": [],
+    "location": {
+     "point": {
+      "lat": 35.0465,
+      "lon": 36.3163
+     },
+     "city": null,
+     "country": null,
+     "address": null,
+     "street": null,
+     "description": null,
+     "accuracy": "gps"
+    },
+    "secrecy_holder_status": "VALID",
+    "media": {
+     "kind": "image",
+     "has_thumbnail": true,
+     "primary_file_id": "9001000000004",
+     "thumbnail_file_id": "9001000000004",
+     "file_count": 1,
+     "primary_file_name": "sat-area-d.png",
+     "primary_file_content_type": "image/png"
+    },
+    "content_size": 734365,
+    "parent": null,
+    "children": null,
+    "details": null,
+    "insights": [
+     {
+      "type": "analytics_insight",
+      "source": "text_analytics",
+      "annotation_id": 90000004,
+      "editable": false,
+      "read_only": false,
+      "value": "Plant-hire depot with rows of yellow machinery, containers and a customer car park.",
+      "party_id": null,
+      "party_position": null,
+      "author": null,
+      "created_at": null,
+      "modified_at": null,
+      "tagged_users": [],
+      "reply_to_annotation_id": null
+     }
+    ],
+    "tags": [
+     {
+      "type": "event",
+      "value": true,
+      "source": "system"
+     },
+     {
+      "type": "flag",
+      "value": "HasContent",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "building",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "excavator",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "excavator",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "excavator",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "excavator",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "truck",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "truck",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "truck",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "container",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "car",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "car",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "car",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "car",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "car",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "car",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "car",
+      "source": "system"
+     },
+     {
+      "type": "object_recognition",
+      "value": "car",
+      "source": "system"
+     },
+     {
+      "type": "duplication_counter",
+      "value": 0,
+      "source": "system"
+     }
+    ],
+    "flags": [
+     "HasContent"
+    ],
+    "locations": [
+     {
+      "point": {
+       "lat": 35.0465,
+       "lon": 36.3163
+      },
+      "geography": "POINT (36.3163 35.0465)",
+      "type": "geo",
+      "accuracy": "gps",
+      "from_time": "2026-05-16T07:21:00Z",
+      "to_time": null,
+      "party_id": null,
+      "address": null,
+      "mcc": null,
+      "mnc": null,
+      "lac": null,
+      "ci": null,
+      "eci": null,
+      "tac": null,
+      "antenna_radius": null,
+      "beam_width": null,
+      "beam_center": null,
+      "cell_type": null,
+      "count": null,
+      "source": null,
+      "origin": null,
+      "value": null
+     }
+    ],
+    "fe_correlation_ids": [
+     "2f33f376-7504-5c2e-ad09-999630edb66a"
+    ],
+    "additional_info": [
+     {
+      "off_nadir_deg": 4.6,
+      "sun_elevation_deg": 61.8,
+      "gsd_m": 0.3,
+      "footprint_radius_km": 0.12,
+      "cloud_cover_pct": 6,
+      "classification": "Plant hire depot",
+      "detected_objects": "1x hangar, 4x excavator, 3x dump truck, 3x concrete mixer, 6x shipping container, ~25x car"
+     }
+    ],
+    "context": []
+   }
+  ]
+ }
+}

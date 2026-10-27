@@ -46,6 +46,8 @@ class LambdaProfileTests(unittest.TestCase):
         from http.server import ThreadingHTTPServer
         cls.previous_app = getattr(app_server.Handler, "app", None)
         app_server.Handler.app = app_server.App(app_server.load_settings())
+        # The profile's own records (local_items) are tested on their own (test_local_records_and_area_search).
+        cls.local_items = app_server.Handler.app.profile.pop("local_items", None)
         app_server.Handler.quiet = True
         cls.app_server = app_server
         cls.app = start(ThreadingHTTPServer(("127.0.0.1", 0), app_server.Handler))
@@ -126,6 +128,36 @@ class LambdaProfileTests(unittest.TestCase):
         self.assertEqual(200, status, body)
         points = {row["event_id"]: (float(row["latitude"]), float(row["longitude"])) for row in body["rows"]}
         self.assertEqual({"SAT-1": (35.0806, 36.2963), "SAT-2": (35.07, 36.30)}, points)
+
+
+    def test_local_records_and_area_search(self):
+        app = self.app_server.Handler.app
+        app.profile["local_items"] = self.local_items
+        try:
+            browser = self.browser()
+            self.assertEqual(200, browser.call("POST", "/api/refresh", {})[0])
+            status, body = browser.call("GET", "/api/status")
+            window = body["area_search"]
+            self.assertEqual("2026-03-01T00:00:00Z", window["start_time"])
+            area = [[36.250, 35.022], [36.365, 35.022], [36.372, 35.070], [36.365, 35.124], [36.250, 35.124], [36.245, 35.070]]
+            status, body = browser.call("POST", "/api/area-search", {"polygon": area, "locale": "en", **window})
+            self.assertEqual(200, status, body)
+            found = {layer["layer_id"]: layer["count"] for layer in body["layers"]}
+            # SAT-1 / SAT-2 are i360 records inside the area but from the last month: outside the window.
+            self.assertEqual({"events:ADINT": 7, "events:Cellular Locations": 9, "events:Satellite": 4}, found)
+            satellite = next(layer for layer in body["layers"] if layer["layer_id"] == "events:Satellite")
+            status, body = browser.call("GET", f"/api/records/{satellite['event_ids'][0]}/files")
+            self.assertEqual(200, status, body)
+            url = body["files"][0]["url"]
+            self.assertTrue(url.startswith("/api/local-files/sat-area-"), url)
+            status, image = browser.call("GET", url, raw=True)
+            self.assertEqual((200, bytes([137]) + b"PNG"), (status, image[:4]))
+            self.assertEqual(404, browser.call("GET", "/api/local-files/..%2Flambda-area-search.json")[0])
+            status, body = browser.call("POST", "/api/area-search", {"polygon": area, "locale": "en"})
+            self.assertIn("SAT-1", [i for layer in body["layers"] for i in layer["event_ids"]])
+        finally:
+            app.profile.pop("local_items", None)
+            self.browser().call("POST", "/api/refresh", {})
 
 
 if __name__ == "__main__":
