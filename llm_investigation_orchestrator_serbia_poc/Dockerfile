@@ -34,7 +34,7 @@ COPY hl/ hl/
 COPY mapping/ mapping/
 COPY demo_profiles/ demo_profiles/
 COPY index.html app.js styles.css polygon_draw.js demo_bootstrap.js chat.js chat.css help.html \
-     investigation-user-flow.html system-capabilities-guide.html ./
+     investigation-user-flow.html system-capabilities-guide.html home.html ./
 COPY vendor/ vendor/
 COPY assets/ assets/
 USER 10001
