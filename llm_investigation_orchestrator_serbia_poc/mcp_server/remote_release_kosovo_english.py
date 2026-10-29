@@ -12,6 +12,7 @@ def main():
     parser=argparse.ArgumentParser()
     parser.add_argument("--key",type=Path,required=True)
     parser.add_argument("--build-root",type=Path,required=True)
+    parser.add_argument("--resume-failed",action="store_true",help="Resume a failed migration only after restored baseline source is verified")
     args=parser.parse_args()
     commit=local_commit()
     derived={}
@@ -27,7 +28,7 @@ def main():
     try:
         pointer=get_json(client,"cat /opt/demo-runtime/control/deployed-release.json")
         baseline=get_json(client,"cat "+shlex.quote(pointer["release_manifest"]))
-        status=get_json(client,"curl -fsS http://127.0.0.1:8769/api/status")
+        status=get_json(client,"cat /opt/demo-runtime/control/current.json" if args.resume_failed else "curl -fsS http://127.0.0.1:8769/api/status")
         if status["scenario_id"]!="kosovo" or status["dataset_version"]!="v2.1":raise ValueError("Expected original Kosovo runtime; inspect state before migration")
         manifest=build_manifest(baseline,commit)
         staging=upload(client,manifest,commit)
@@ -40,7 +41,7 @@ def main():
                 sftp.put(str(file),destination)
                 hashes[name]=hashlib.sha256(file.read_bytes()).hexdigest()
         finally:sftp.close()
-        payload={"staging":staging,"manifest":manifest,"baseline":baseline,"pointer":pointer,"commit":commit,"hashes":hashes}
+        payload={"staging":staging,"manifest":manifest,"baseline":baseline,"pointer":pointer,"commit":commit,"hashes":hashes,"resume_failed":args.resume_failed}
         script=REMOTE_SCRIPT.replace("PAYLOAD",repr(json.dumps(payload)))
         code,out,err=run(client,"cd /opt/serbia-poc-ui && /home/ubuntu/.hermes/hermes-agent/venv/bin/python - <<'PY'\n"+script+"\nPY",timeout=900,check=False)
         print(out,flush=True)
@@ -62,7 +63,7 @@ operator=Activator()
 new_state=root/'state/kosovo/v2.1-en1'
 previous=json.loads(operator.current.read_text())
 if previous['scenario_id']!='kosovo' or previous['dataset_version']!='v2.1':raise RuntimeError('Unexpected prior identity')
-if new_state.exists():raise RuntimeError('New namespace already exists; refuse overwrite')
+if new_state.exists() and not p['resume_failed']:raise RuntimeError('New namespace already exists; refuse overwrite')
 state_size=sum(f.stat().st_size for f in (root/'state/kosovo/v2.1').rglob('*') if f.is_file())
 if shutil.disk_usage(root).free < state_size * 2 + 512 * 1024 * 1024:raise RuntimeError('Insufficient disk space for migration and recovery')
 for name,expected in p['hashes'].items():
@@ -75,10 +76,20 @@ backup.parent.mkdir(parents=True,exist_ok=True)
 with (control/'activation.lock').open('a') as lock:
     fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
     operator.verify_release(Path(p['pointer']['release_manifest']))
+    if p['resume_failed']:
+        transition=json.loads(operator.journal.read_text())
+        if not (control/'maintenance.json').exists() or transition['previous']['dataset_version']!='v2.1' or transition['target']['dataset_version']!='v2.1-en1':raise RuntimeError('Not a recognized failed English migration')
+        active_env=dict(line.split('=',1) for line in (root/'active.env').read_text().splitlines() if '=' in line and not line.startswith('#'))
+        if active_env.get('INTELLIGENCE_POC_DATASET_VERSION')!='v2.1':raise RuntimeError('Previous runtime selection was not restored')
+        if new_state.exists():
+            retained=root/'state/kosovo'/('v2.1-en1-failed-'+time.strftime('%Y%m%dT%H%M%SZ'))
+            if retained.exists():raise RuntimeError('Recovery archive already exists')
+            new_state.rename(retained)
     target={'scenario_id':'kosovo','dataset_version':'v2.1-en1','activation_generation':uuid.uuid4().hex}
     atomic_json(operator.journal,{'phase':'draining','previous':previous,'target':target})
     atomic_json(control/'maintenance.json',{'target':'kosovo','release':p['commit']})
-    try:operator.drain(120)
+    try:
+        if not p["resume_failed"]:operator.drain(120)
     except Exception:
         operator.journal.unlink(missing_ok=True);(control/'maintenance.json').unlink(missing_ok=True);raise
     operator.services('stop')

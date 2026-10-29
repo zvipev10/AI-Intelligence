@@ -25,7 +25,7 @@ class EnglishDatasetTests(unittest.TestCase):
     def test_english_profile_does_not_retranslate_records(self):
         import subprocess, sys, tempfile, os
         with tempfile.TemporaryDirectory() as state:
-            code = "import server; from unittest.mock import patch; " + "p=patch.object(server, 'translate_plain', side_effect=AssertionError('English package must not be retranslated')); p.start(); " + "assert len(server.load_ui_events('en')) == 14833"
+            code = "import server; from unittest.mock import patch; " + "p=patch.object(server, 'translate_plain', side_effect=AssertionError('English package must not be retranslated')); p.start(); " + "assert len(server.load_ui_events('en')) == 14833; assert server.dataset_row_count('en') == 14833"
             result=subprocess.run([sys.executable,'-c',code],cwd=ROOT,env={**os.environ,'INTELLIGENCE_POC_SCENARIO':'kosovo','INTELLIGENCE_POC_STATE_ROOT':state},capture_output=True,text=True,timeout=30)
             self.assertEqual(result.returncode,0,result.stderr)
     def test_semantic_classification_parity(self):

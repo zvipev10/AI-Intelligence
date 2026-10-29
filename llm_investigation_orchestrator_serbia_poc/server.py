@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import http.client
 import csv
+from functools import lru_cache
 import hashlib
 import json
 import mimetypes
@@ -467,6 +468,20 @@ def apply_graph_entity_links(events: list[dict[str, Any]], locale: str = "he") -
                 item for item in event["observed_record_links"]
                 if not ((key := (item.get("link_id"), item.get("record_id"))) in seen or seen.add(key))
             ]
+
+
+@lru_cache(maxsize=8)
+def _dataset_row_count(path: str, size: int, modified_ns: int) -> int:
+    with Path(path).open(encoding="utf-8-sig", newline="") as stream:
+        return sum(1 for _ in csv.DictReader(stream))
+
+
+def dataset_row_count(locale: str = "he") -> int:
+    path, _, _ = localized_dataset_paths(locale)
+    if not path.exists():
+        return 0
+    stat = path.stat()
+    return _dataset_row_count(str(path), stat.st_size, stat.st_mtime_ns)
 
 
 def load_ui_events(locale: str = "he") -> list[dict[str, Any]]:
@@ -5400,7 +5415,7 @@ class Handler(SimpleHTTPRequestHandler):
                 "dataset_version": DATASET_VERSION,
                 "dataset_url": dataset_url,
                 "locations_url": locations_url,
-                "dataset_rows": len(load_ui_events(locale)),
+                "dataset_rows": dataset_row_count(locale),
             })
             return
         if path.path == "/api/links":
