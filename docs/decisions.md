@@ -611,3 +611,7 @@ Impact: Syria profile 36 selects immutable dataset `cellular-records-v13`. Call 
 ### 2026-10-29 — Port symbology independently of the local demo
 
 Decision: merge the renderer and English Kosovo work into main, but integrate only mil-sym-ts into feature/i360-only, as explicitly requested. Preserve i360 login, HL API mappings, saved work and English-only UI. Military symbols require structured source fields; no classification is inferred from the Satellite/ADINT layer labels. Main's local Kosovo data, migration/index code and VM release tools do not belong in the i360 integration.
+
+### 2026-10-29 — Collection family is provenance, not symbol eligibility
+
+User correction: remove the source-family allowlist in both branches. Supported structured object classes determine observation symbols; source family supplies only an optional badge. Do not default unknown sources to UAV or infer ownership from source/entity association. This supersedes the earlier collection-family restriction.
