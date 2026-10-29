@@ -7,4 +7,4 @@ Parity: 14,833 records, unchanged IDs/non-Hebrew values, matching numeric facts,
 
 Known baseline: four object-viewer static-contract tests fail identically on the base commit (dedicated cellular viewer, grid/open controls, people workspace, supported entity/evidence types). They are not introduced by this change. Browser/media verification explicitly skipped at user request. Automated SVG generation does not prove browser layout.
 
-Release checks pending: live identity, served English responses/assets, source hashes and real semantic search. Child #94 remains open until merged and release criteria satisfied; parent #93 remains open for final acceptance.
+Release checks passed: live identity, served English responses/assets, source hashes and real semantic search (50 matches). One added regression verifies the English profile never invokes legacy row translation; see checkpoint-002.md for the readiness retry. Child #94 remains open until merged and release criteria satisfied; parent #93 remains open for final acceptance.
