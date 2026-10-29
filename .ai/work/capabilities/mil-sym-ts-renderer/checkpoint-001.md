@@ -1,2 +1,4 @@
 # Implementation checkpoint
 Renderer, English package, profile, translation/search/evidence parity, migration helper and operational documentation are ready. All working changes belong to this scope; no unrelated files staged. See qa-review.md for actual checks and baseline limitations. Next: publish PR #92 and deploy with Kosovo retained active. Source dataset and previous state remain intact for rollback.
+
+Deployment follow-up: first readiness attempt exposed repeated legacy translation of already-English rows on the constrained VM. Skip that translation for the English-only profile (local load 1.034s to 0.253s); add a regression check that rejects any translation call. Readiness requests allow 30 seconds to avoid overlapping retries under startup load; the migration reloads the installed operator policy before activation. Seventeen dataset/scenario checks plus the new focused regression pass. Live release remains pending.

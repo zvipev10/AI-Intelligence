@@ -166,11 +166,11 @@ class Activator:
         last = None
         while time.monotonic() < deadline:
             try:
-                with urlopen("http://127.0.0.1:8769/api/status", timeout=5) as response:
+                with urlopen("http://127.0.0.1:8769/api/status", timeout=30) as response:
                     status = json.load(response)
                 if any(status.get(k) != v for k, v in identity.items() if k in {"scenario_id", "dataset_version", "activation_generation"}):
                     raise RuntimeError("Runtime identity mismatch")
-                with urlopen("http://127.0.0.1:8769/api/layers?locale=en", timeout=10) as response:
+                with urlopen("http://127.0.0.1:8769/api/layers?locale=en", timeout=30) as response:
                     layers = json.load(response)["layers"]
                 if not layers or (status["demo_profile"]["empty_dataset"] and any(layer["count"] for layer in layers)):
                     raise RuntimeError("Scenario catalog readiness failed")
@@ -198,7 +198,7 @@ class Activator:
     def drain(self, timeout):
         deadline = time.monotonic() + timeout
         while time.monotonic() < deadline:
-            with urlopen("http://127.0.0.1:8769/api/status", timeout=5) as response:
+            with urlopen("http://127.0.0.1:8769/api/status", timeout=30) as response:
                 status = json.load(response)
             queue = status.get("agent_queue")
             if queue is not None and queue["running"] == 0 and queue["queued"] == 0 and status.get("background_workers", 0) == 0 and status.get("active_api_requests", 0) == 0:

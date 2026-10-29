@@ -119,6 +119,9 @@ with (control/'activation.lock').open('a') as lock:
         for scenario in ['kosovo','syria']:
             profile=load_profile(ui,scenario,verify=True);load_profile(mcp,scenario,verify=True);operator.verify_search_cache(profile)
         operator.verify_release(release/'release-manifest.json')
+        # Use the installed readiness policy, including bounded slow-VM request timeouts.
+        import importlib, activate_demo
+        operator=importlib.reload(activate_demo).Activator()
         operator.select(target);operator.services('start');operator.health(target,timeout=240)
         atomic_json(operator.current,target)
         atomic_json(control/'deployed-release.json',{'app_commit':p['commit'],'release_manifest':str(release/'release-manifest.json')})

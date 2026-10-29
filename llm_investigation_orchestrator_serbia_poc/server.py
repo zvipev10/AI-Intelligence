@@ -480,7 +480,7 @@ def load_ui_events(locale: str = "he") -> list[dict[str, Any]]:
     attach_package(events, events_path)
     apply_graph_entity_links(events, locale)
     for event in events:
-        if locale == "en":
+        if locale == "en" and not (DEMO.enabled and DEMO.profile.get("locale") == "en"):
             event["source_type"] = translate_plain(event.get("source_type", ""))
             event["source_reliability"] = translate_plain(event.get("source_reliability", ""))
             event["source_reliability_label"] = translate_plain(event.get("source_reliability_label", ""))
