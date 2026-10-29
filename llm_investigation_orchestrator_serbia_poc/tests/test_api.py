@@ -86,6 +86,14 @@ class ApiTests(unittest.TestCase):
         self.assertEqual((200, "ok"), (status, body["status"]))
         self.assertEqual(before, len(self.estate.calls))
 
+    def test_symbol_assets_are_served_and_packaged(self):
+        browser = Browser(self.base)
+        for path in ["/mil_sym_adapter.js", "/vendor/mil-sym-ts/C5Ren.umd.js"]:
+            status, body = browser.call("GET", path, raw=True)
+            self.assertEqual(status, 200)
+            self.assertGreater(len(body), 100)
+        self.assertIn("mil_sym_adapter.js", (ROOT / "Dockerfile").read_text())
+
     def test_static_files_are_allowlisted(self):
         browser = Browser(self.base)
         self.assertEqual(200, browser.call("GET", "/", raw=True)[0])

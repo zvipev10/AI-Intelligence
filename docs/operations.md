@@ -104,3 +104,9 @@ the `.cjs` tests to the pipeline.
 | `entity type ... is not readable here` in warnings | the mapping names a reference type this estate does not have |
 | Saving fails with 404 on `AII_*` | the types were not provisioned, or not granted to the user's profile |
 | `truncated: true` | more items than `APP_SNAPSHOT_MAX_ROWS` |
+
+## Symbol checks
+
+The Docker build runs `test_mil_sym_adapter.cjs` with the other UI suites; it checks all 44 symbol/affiliation catalog variants, fallback and own-coordinate descriptors. For actual SVG generation, install the development-only `canvas` module outside the runtime image, set `MILSYM_CANVAS_MODULE` to its module directory and run `node test_mil_sym_adapter.cjs --render`. Runtime browsers need no added npm service. Vendor version, license and upstream integrity are recorded in `vendor/mil-sym-ts/README.md`.
+
+This integration changes Git source only. Release to LAMBDA still requires the existing micro-apps/skipper procedure.

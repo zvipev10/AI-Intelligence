@@ -15,7 +15,7 @@ const context={state:{mapReady:true,markers:[],map:{fitBounds(){}}},LOCATIONS:{}
  maplibregl:{Marker,Popup:class{setHTML(){return this;}},LngLatBounds:Bounds},document:{createElement:el},
  activeLocaleText:(he,en)=>en,currentLocale:()=>'en',currentLocaleTag:()=>'en-US',escapeHtml:s=>String(s),
  clearMarkers(){},visibleLayers:()=>[layer],itemsForLayerPresentation:()=>rows,isCellularCallRecord:()=>false,
- milStdOrganizationDescriptors:()=>[],renderMilStdDescriptors(){},renderInvestigationOverlays(){},renderPolygonOverlays(){},coalesceEvidenceDescriptors:d=>d,confidenceLabel:String,milStdMarkerElement:el,milStdPopupHtml:()=>"",targetQuantityLabel:String};
+ milStdObservationDescriptor:()=>null,milStdOrganizationDescriptors:()=>[],renderMilStdDescriptors(){},renderInvestigationOverlays(){},renderPolygonOverlays(){},coalesceEvidenceDescriptors:d=>d,confidenceLabel:String,milStdMarkerElement:el,milStdPopupHtml:()=>"",targetQuantityLabel:String};
 vm.createContext(context);
 for(const name of ['eventOwnPoint','renderMap']){
  const start=source.indexOf(`function ${name}(`);const end=source.indexOf('\nfunction ',start+1);

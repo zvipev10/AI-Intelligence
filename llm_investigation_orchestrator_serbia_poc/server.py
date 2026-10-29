@@ -43,6 +43,7 @@ MAX_BODY = 2_000_000
 
 STATIC_FILES = {
     "/": "index.html", "/index.html": "index.html", "/app.js": "app.js", "/styles.css": "styles.css",
+    "/mil_sym_adapter.js": "mil_sym_adapter.js",
     "/polygon_draw.js": "polygon_draw.js", "/demo_bootstrap.js": "demo_bootstrap.js",
     "/help.html": "help.html", "/investigation-user-flow.html": "investigation-user-flow.html",
     "/system-capabilities-guide.html": "system-capabilities-guide.html",
