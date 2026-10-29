@@ -132,3 +132,22 @@ Saved-question and recorded-run files belong to the selected runtime state direc
 Include `polygon_draw.js` with the UI bundle, and update the app/bootstrap/style cache versions when shipping changes. UI-only changes do not require rebuilding a compatible dataset index. Removing a record does: publish a new dataset/profile version, rebuild the Python-engine index offline and retain the prior package/state for rollback.
 
 After release, verify `/api/status` identity and maintenance state, then refresh the browser. Open Cellular Calls and confirm Timeline is selected, the current call count matches the profile, and the Location cell has only the base location label and coordinates—never a call-summary phrase. Select a call and confirm its complete summary appears in the item viewer beside the list. Check audio playback and that switching view releases the viewer. On Map, draw three vertices and click the first to close; verify the shape remains without an agent request or result change. Start another polygon and cancel with Escape; the completed shape must remain. Check Street/Satellite switching and control placement above an open results table.
+
+## One-time Kosovo English upgrade
+
+For the original Kosovo `v2.1` to `v2.1-en1` transition, use the maintained migration wrapper instead of the source-only release command. From the application directory, on a clean committed checkout:
+
+```sh
+python build_demo_index.py kosovo --output .demo-build/kosovo-en-index --engine python
+python build_demo_index.py syria --output .demo-build/syria-index-v12 --engine python
+python evidence_catalog.py --events data/kosovo_english_v1/events.csv --output-dir .demo-build/kosovo-en-evidence --dataset-version v2.1-en1
+python mcp_server/remote_release_kosovo_english.py --key <private-key> --build-root .demo-build
+```
+
+The helper verifies staged hashes and free space, locks activation, drains and stops writers, backs up overwritten source and the old Syria cache, and copies the original Kosovo state into a new namespace. It refuses to overwrite an existing new namespace. Only dataset identity metadata is rebound; saved text remains unchanged. It installs both rebuilt caches and the English evidence catalog, verifies both source roots and role readiness, then commits release identity and reopens admission. Failure restores source/cache and selects the preserved original state; a failed recovery stays in maintenance. Private backups and derived indexes must not enter Git. After a failed attempt inspect the retained namespace before retrying; do not delete it blindly.
+
+Gateway readiness allows 240 seconds on the constrained VM, with individual UI readiness requests bounded at 30 seconds. Release validation reads fresh `/api/status` after activation, because the activation result can contain a status collected before maintenance clears. Verify English event/location/layer responses, expected counts, a real semantic search and served adapter/vendor assets. Standard browser acceptance remains recommended unless explicitly waived for the release.
+
+`node test_mil_sym_adapter.cjs --render` validates actual generated SVGs using the native `canvas` test dependency installed under `.demo-build/render-check/`. Canvas is a development check only, not a production dependency.
+
+If this wrapper restored source but readiness recovery timed out, `--resume-failed` requires the original release hashes, a matching failed-transition journal, maintenance enabled and the original dataset selection. Under the activation lock it retains the failed namespace with a timestamp suffix, then retries from preserved original state. It never overwrites or deletes the failed state. Status polling uses a cached CSV row count keyed by file metadata, without enrichment or translation.

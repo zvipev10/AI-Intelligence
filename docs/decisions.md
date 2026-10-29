@@ -559,3 +559,17 @@ Decision: move the fifteen-petrol-units call to (34.9837599416126, 35.8893277774
 Rationale: the two calls now have distinct user-supplied positions. Dedicated locations preserve the route waypoint and avoid incorrectly moving both calls together.
 
 Impact: Syria profile 36 selects immutable dataset `cellular-records-v13`. Call content, identifiers, timestamps, participants and media remain unchanged.
+
+### 2026-10-29 — Official point symbols and English Kosovo projection
+
+Decision: vendor the official mil-sym-ts 2.10.8 browser renderer and publish an immutable English Kosovo package.
+
+Context: the user requested library symbols instead of custom glyphs and an English-only Kosovo dataset.
+
+Rationale: catalog-validated point symbols avoid unsupported military detail; a complete projection ensures UI and agent tools see the same language while preserving IDs and evidence. Local assets avoid a runtime CDN dependency.
+
+Alternatives considered: custom glyphs; multi-point convoy graphics without sufficient geometry; translating only UI labels; mutating the original dataset in place.
+
+Impact: one shared renderer, retained scenario affiliations, unknown observation ownership, English profile locale, new dataset namespace and rebuilt offline indexes for both profiles. Original data/state remain recovery points; saved prose is not translated.
+
+Follow-ups: manual visual acceptance was waived for this release; retain the gallery for later review.

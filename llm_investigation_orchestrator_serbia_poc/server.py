@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import http.client
 import csv
+from functools import lru_cache
 import hashlib
 import json
 import mimetypes
@@ -91,6 +92,8 @@ def bounded_prompt_cache_key(value: Any) -> str:
 
 
 def normalize_locale(value: Any) -> str:
+    if DEMO.enabled and DEMO.profile.get("locale") == "en":
+        return "en"
     locale = str(value or "").strip().lower()
     return locale if locale in {"he", "en"} else "he"
 
@@ -467,6 +470,20 @@ def apply_graph_entity_links(events: list[dict[str, Any]], locale: str = "he") -
             ]
 
 
+@lru_cache(maxsize=8)
+def _dataset_row_count(path: str, size: int, modified_ns: int) -> int:
+    with Path(path).open(encoding="utf-8-sig", newline="") as stream:
+        return sum(1 for _ in csv.DictReader(stream))
+
+
+def dataset_row_count(locale: str = "he") -> int:
+    path, _, _ = localized_dataset_paths(locale)
+    if not path.exists():
+        return 0
+    stat = path.stat()
+    return _dataset_row_count(str(path), stat.st_size, stat.st_mtime_ns)
+
+
 def load_ui_events(locale: str = "he") -> list[dict[str, Any]]:
     events_path, _, entities_path = localized_dataset_paths(locale)
     locale = normalize_locale(locale)
@@ -478,7 +495,7 @@ def load_ui_events(locale: str = "he") -> list[dict[str, Any]]:
     attach_package(events, events_path)
     apply_graph_entity_links(events, locale)
     for event in events:
-        if locale == "en":
+        if locale == "en" and not (DEMO.enabled and DEMO.profile.get("locale") == "en"):
             event["source_type"] = translate_plain(event.get("source_type", ""))
             event["source_reliability"] = translate_plain(event.get("source_reliability", ""))
             event["source_reliability_label"] = translate_plain(event.get("source_reliability_label", ""))
@@ -5398,7 +5415,7 @@ class Handler(SimpleHTTPRequestHandler):
                 "dataset_version": DATASET_VERSION,
                 "dataset_url": dataset_url,
                 "locations_url": locations_url,
-                "dataset_rows": len(load_ui_events(locale)),
+                "dataset_rows": dataset_row_count(locale),
             })
             return
         if path.path == "/api/links":

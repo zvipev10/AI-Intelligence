@@ -36,3 +36,6 @@ environments-configuration/
 *.zip
 deploy_serbia_ui_*/
 backups/
+
+# Offline build artifacts and native test dependencies
+llm_investigation_orchestrator_serbia_poc/.demo-build/

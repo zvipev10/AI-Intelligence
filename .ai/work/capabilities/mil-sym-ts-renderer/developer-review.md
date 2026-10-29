@@ -1,0 +1,2 @@
+# Developer review
+Implementation authorized by user after mapping review. Technical recommendation: vendor the official browser build and Apache license; implement a small SIDC adapter with bounded rendering cache. Validate every registry entry with library MSLookup and rendered SVG. Convoy representation must use the supported catalog rather than invented SIDCs. Do not infer armor subtype, unit echelon, or ownership from generic reports. Keep source badges separate from the military symbol. No independent human technical approval claimed.

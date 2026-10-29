@@ -8,7 +8,7 @@ The bilingual Hebrew/English intelligence workspace has one shared codebase and 
 
 | Package | Current profile / dataset | Content |
 |---|---|---|
-| Kosovo | profile 1 / `v2.1` | 14,833 records, including 24 simulated cellular calls; preserved investigations and agent state |
+| Kosovo | profile 2 / `v2.1-en1` | 14,833 English-only records, including 24 simulated cellular calls; preserved record identities and scenario state |
 | Syria | profile 36 / `cellular-records-v13` | 726 records: 2 CCTV, 2 Satellite, 120 ADINT, 300 IPDR, 300 Cellular Geolocations, 2 Cellular Calls; 404 locations, 13 entities and 21 catalog definitions |
 
 Deployment identity must be checked through `/api/status`; this is an installed-package inventory, not a live status assertion. Syria's initial camera is Damascus (longitude 36.2765, latitude 33.5138), zoom 11. The fictional convoy sites are elsewhere; opening results can fit the map to their geometry. Installed profiles, not this document, are authoritative for future versions.
@@ -96,3 +96,7 @@ cellular-records-v8/profile31 distinguishes the device identifier from a subscri
 ### IPDR acquisition metadata
 
 The replacement 300-row `IPDR-expanded.csv` in `syria_cellular_records_v12` is described by `ipdr-package.json`. Package `IPDRPKG-HOSHENTEL-99A1C07734D2` is anchored to the preserved supplied-source checksum. Four source-supplied IMEIs remain populated; no deterministic IMEI/MAC enrichment is added. `ip_out` values remain untouched and its meaning is marked undocumented; the proposed enriched NAT-flow package's semantics are not assumed for this file. Acquisition/case metadata is unavailable and remains unknown.
+
+## English Kosovo package
+
+`data/kosovo_english_v1/` is a complete English projection of the retained `serbian_intelligence_v2_1` source. Record, entity and location IDs, coordinates, timestamps and numeric identifiers are preserved. Source labels, summaries, object classes, locations and transcripts are English. `build_kosovo_english.py` and its curated terms reproduce the package and reject residual Hebrew. The generated evidence catalog has 4,509 source observations/reports and 785 fused rows (5,294 total), with identical evidence IDs to a fresh catalog built from the original source. The Brnjak version-2 manifest binds the same scenario to `v2.1-en1`; version 1 remains for the original package. Syria data is unchanged. Historic saved analyst text and agent memories are preserved, not translated.

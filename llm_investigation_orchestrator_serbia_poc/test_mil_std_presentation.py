@@ -33,14 +33,15 @@ class MilStdPresentationContractTests(unittest.TestCase):
             self.assertIn(f'"{entity_id}": {{ affiliation: "hostile"', registry)
         self.assertNotIn('affiliation: "neutral"', registry)
         self.assertIn(".milstd-marker.hostile", CSS)
-        self.assertIn(".milstd-marker.hostile .milstd-frame", CSS)
+        self.assertNotIn(".milstd-marker.hostile .milstd-frame", CSS)
+        self.assertIn("milstd-svg", CSS)
 
     def test_four_uav_classes_have_bilingual_mappings(self):
         registry = APP.split("const MIL_STD_UAV_OBJECTS", 1)[1].split("});", 1)[0]
         for code in ("armored-vehicle", "logistics-truck", "vehicle-convoy", "helicopter"):
             self.assertIn(f'code: "{code}"', registry)
-        self.assertIn('event.collection_family !== "airborne_isr_video_exploitation"', APP)
-        self.assertIn('MIL_STD_ORGANIZATIONS[event.entity_id]?.affiliation || "unknown"', APP)
+        self.assertIn('["airborne_isr_video_exploitation", "cctv_video", "satellite_imagery"]', APP)
+        self.assertIn('const entityAffiliation = "unknown"', APP)
         self.assertIn('affiliation: entityAffiliation', APP)
 
     def test_runtime_location_hydration_redraws_restored_map_layers(self):
@@ -57,7 +58,7 @@ class MilStdPresentationContractTests(unittest.TestCase):
             "function renderTimeline", 1
         )[0]
         self.assertNotIn("milStdEventDescriptor(selectedEvent)", focus_path)
-        self.assertIn('kind === "evidence" ? milStdEvidenceDescriptor(selectedEvent) : null', focus_path)
+        self.assertIn('kind === "evidence" ? milStdEvidenceDescriptor(selectedEvent) : kind === "record" ? milStdObservationDescriptor(selectedEvent) : null', focus_path)
         self.assertIn("milStdMarkerElement(descriptor)", focus_path)
         self.assertIn("state.focusedEventMarker = new maplibregl.Marker", focus_path)
         self.assertIn("focused-map-selection-marker", CSS)
@@ -67,7 +68,7 @@ class MilStdPresentationContractTests(unittest.TestCase):
         event_branch = map_path.split('if (layer.kind === "events")', 1)[1].split('} else if (layer.kind === "locations")', 1)[0]
         self.assertIn("addLocationCount", event_branch)
         self.assertNotIn("milStdEventDescriptor", event_branch)
-        self.assertNotIn("milStdDescriptors.push", event_branch)
+        self.assertIn("milStdObservationDescriptor(event)", event_branch)
 
     def test_military_markers_preserve_maplibre_absolute_positioning(self):
         marker_rule = CSS.split(".milstd-marker {", 1)[1].split("}", 1)[0]

@@ -163,28 +163,29 @@ const EVENT_ID_PATTERN = /\b(?:REC-(?:V2-)?\d{6}|LOC-(?:V2-)?\d{3})\b/g;
 
 const MIL_STD_VERSION = "MIL-STD-2525E Change 1";
 const MIL_STD_ORGANIZATIONS = Object.freeze({
-  "ENT-SAF-2BRIGADE": { affiliation: "friendly", icon: "II" },
-  "ENT-SAF-21-INF": { affiliation: "friendly", icon: "●" },
-  "ENT-SAF-22-INF": { affiliation: "friendly", icon: "●" },
-  "ENT-SAF-27-MECH": { affiliation: "friendly", icon: "↗" },
-  "ENT-SAF-28-MECH": { affiliation: "friendly", icon: "↗" },
-  "ENT-SAF-210-ENG": { affiliation: "friendly", icon: "E" },
-  "ENT-SAF-3BRIGADE": { affiliation: "friendly", icon: "II" },
-  "ENT-KFOR-RCE": { affiliation: "hostile", icon: "HQ" },
-  "ENT-KFOR-KTRBN": { affiliation: "hostile", icon: "●" },
-  "ENT-KFOR-MSU": { affiliation: "hostile", icon: "●" },
-  "ENT-KFOR-AVIATION": { affiliation: "hostile", icon: "✈" },
-  "ENT-NATO-RESERVE": { affiliation: "hostile", icon: "●" }
+  "ENT-SAF-2BRIGADE": { affiliation: "friendly", symbolKey: "brigade" },
+  "ENT-SAF-21-INF": { affiliation: "friendly", symbolKey: "infantry" },
+  "ENT-SAF-22-INF": { affiliation: "friendly", symbolKey: "infantry" },
+  "ENT-SAF-27-MECH": { affiliation: "friendly", symbolKey: "mechanized-infantry" },
+  "ENT-SAF-28-MECH": { affiliation: "friendly", symbolKey: "mechanized-infantry" },
+  "ENT-SAF-210-ENG": { affiliation: "friendly", symbolKey: "engineer" },
+  "ENT-SAF-3BRIGADE": { affiliation: "friendly", symbolKey: "brigade" },
+  "ENT-KFOR-RCE": { affiliation: "hostile", symbolKey: "headquarters" },
+  "ENT-KFOR-KTRBN": { affiliation: "hostile", symbolKey: "unit" },
+  "ENT-KFOR-MSU": { affiliation: "hostile", symbolKey: "unit" },
+  "ENT-KFOR-AVIATION": { affiliation: "hostile", symbolKey: "aviation" },
+  "ENT-NATO-RESERVE": { affiliation: "hostile", symbolKey: "unit" }
 });
 const MIL_STD_UAV_OBJECTS = Object.freeze({
-  "רכב משוריין": { code: "armored-vehicle", icon: "▰", he: "רכב משוריין", en: "Armored vehicle" },
-  "Armored vehicle": { code: "armored-vehicle", icon: "▰", he: "רכב משוריין", en: "Armored vehicle" },
-  "משאית לוגיסטית": { code: "logistics-truck", icon: "▱", he: "משאית לוגיסטית", en: "Logistics truck" },
-  "Logistics truck": { code: "logistics-truck", icon: "▱", he: "משאית לוגיסטית", en: "Logistics truck" },
-  "שיירת כלי רכב": { code: "vehicle-convoy", icon: "•••", he: "שיירת כלי רכב", en: "Vehicle convoy" },
-  "Vehicle convoy": { code: "vehicle-convoy", icon: "•••", he: "שיירת כלי רכב", en: "Vehicle convoy" },
-  "מסוק": { code: "helicopter", icon: "⌁", he: "מסוק", en: "Helicopter" },
-  "Helicopter": { code: "helicopter", icon: "⌁", he: "מסוק", en: "Helicopter" }
+  "רכב משוריין": { code: "armored-vehicle", he: "רכב משוריין", en: "Armored vehicle" },
+  "Armored vehicle": { code: "armored-vehicle", he: "רכב משוריין", en: "Armored vehicle" },
+  "משאית לוגיסטית": { code: "logistics-truck", he: "משאית לוגיסטית", en: "Logistics truck" },
+  "Logistics truck": { code: "logistics-truck", he: "משאית לוגיסטית", en: "Logistics truck" },
+  "שיירת כלי רכב": { code: "vehicle-convoy", he: "שיירת כלי רכב", en: "Vehicle convoy" },
+  "Vehicle convoy": { code: "vehicle-convoy", he: "שיירת כלי רכב", en: "Vehicle convoy" },
+  "מסוק": { code: "helicopter", he: "מסוק", en: "Helicopter" },
+  "military vehicle convoy": { code: "vehicle-convoy", he: "שיירת כלי רכב", en: "Vehicle convoy" },
+  "Helicopter": { code: "helicopter", he: "מסוק", en: "Helicopter" }
 });
 
 function milStdConfidence(value) {
@@ -217,17 +218,17 @@ function milStdOrganizationDescriptors(layer) {
       status: location.assessment_status || "reported",
       confidence: milStdConfidence(location.confidence || entity.confidence),
       affiliation: mapping.affiliation,
-      icon: mapping.icon,
+      symbolKey: mapping.symbolKey,
       symbolCode: `organization:${entity.entity_id}`
     }));
   });
 }
 
 function milStdObservationDescriptor(event) {
-  if (event.collection_family !== "airborne_isr_video_exploitation") return null;
+  if (!["airborne_isr_video_exploitation", "cctv_video", "satellite_imagery"].includes(event.collection_family)) return null;
   const mapping = MIL_STD_UAV_OBJECTS[event.object_class || event.observed_object_class];
   if (!mapping || !event.location_id) return null;
-  const entityAffiliation = MIL_STD_ORGANIZATIONS[event.entity_id]?.affiliation || "unknown";
+  const entityAffiliation = "unknown"; // Observation association does not establish ownership.
   return {
     kind: "record",
     id: event.record_id || event.event_id,
@@ -239,7 +240,8 @@ function milStdObservationDescriptor(event) {
     status: "observed",
     confidence: milStdConfidence(event.identification_confidence || event.certainty_level),
     affiliation: entityAffiliation,
-    icon: mapping.icon,
+    symbolKey: mapping.code,
+    sourceBadge: event.collection_family === "cctv_video" ? "CCTV" : event.collection_family === "satellite_imagery" ? "Satellite" : "UAV",
     symbolCode: `observation:${mapping.code}`
   };
 }
@@ -258,7 +260,7 @@ function milStdEntityEventDescriptor(event) {
     status: "reported",
     confidence: milStdConfidence(event.certainty_level),
     affiliation: mapping.affiliation,
-    icon: mapping.icon,
+    symbolKey: mapping.symbolKey,
     symbolCode: `organization-report:${event.entity_id}`
   };
 }
@@ -284,7 +286,7 @@ function milStdEvidenceDescriptor(evidence) {
     status: evidence.evidence_status === "fused" ? "assessed" : evidence.evidence_status,
     confidence: milStdConfidence(evidence.confidence),
     affiliation: organization?.affiliation || "unknown",
-    icon: object?.icon || organization?.icon || "E",
+    symbolKey: object?.code || organization?.symbolKey || null,
     symbolCode: `evidence:${evidence.claim_type || "claim"}`
   };
 }
@@ -298,7 +300,7 @@ function coalesceEvidenceDescriptors(descriptors, maximum = 400) {
       passthrough.push(descriptor);
       return;
     }
-    const key = [descriptor.locationId, descriptor.symbolCode, descriptor.icon, descriptor.affiliation].join("|");
+    const key = [descriptor.locationId, descriptor.symbolCode, descriptor.symbolKey, descriptor.affiliation].join("|");
     const current = groups.get(key);
     if (!current) {
       groups.set(key, { ...descriptor, evidenceIds: [...descriptor.evidenceIds], groupedObjects: 1 });
@@ -328,7 +330,12 @@ function milStdMarkerElement(descriptor) {
     element.setAttribute("aria-haspopup", "dialog");
   }
   element.setAttribute("aria-label", `${descriptor.name}, ${milStdClaimLabel(descriptor.status)}, ${descriptor.count} ${activeLocaleText("רשומות", "records")}`);
-  element.innerHTML = `<span class="milstd-frame"><span class="milstd-icon" aria-hidden="true">${escapeHtml(descriptor.icon)}</span></span><span class="milstd-status">${escapeHtml(milStdClaimLabel(descriptor.status))}</span>${descriptor.count > 1 ? `<span class="milstd-count">${descriptor.count.toLocaleString(currentLocaleTag())}</span>` : ""}`;
+  const rendered = window.MilitarySymbols?.render(descriptor.symbolKey, descriptor.affiliation);
+  element.classList.toggle("milstd-fallback", !rendered);
+  if (rendered) element.dataset.sidc = rendered.sidc;
+  const symbol = rendered ? `<img class="milstd-svg" src="${rendered.uri}" alt="" aria-hidden="true">` : `<span class="milstd-fallback-dot" aria-hidden="true"></span>`;
+  const badge = [descriptor.symbolKey === "vehicle-convoy" ? activeLocaleText("שיירה", "Convoy") : descriptor.symbolKey === "aviation" ? activeLocaleText("תעופה", "Aviation") : descriptor.symbolKey === "logistics-truck" ? activeLocaleText("משאית לוגיסטית", "Logistics truck") : "", descriptor.sourceBadge || ""].filter(Boolean).join(" · ");
+  element.innerHTML = `${symbol}${badge ? `<span class="milstd-source">${escapeHtml(badge)}</span>` : ""}<span class="milstd-status">${escapeHtml(milStdClaimLabel(descriptor.status))}</span>${descriptor.count > 1 ? `<span class="milstd-count">${descriptor.count.toLocaleString(currentLocaleTag())}</span>` : ""}`;
   return element;
 }
 
@@ -473,6 +480,7 @@ function normalizeLocale(value) {
 }
 
 const INITIAL_LOCALE = normalizeLocale((() => {
+  if (window.DEMO_RUNTIME?.demo_profile?.locale) return window.DEMO_RUNTIME.demo_profile.locale;
   const requested = requestedLocaleFromUrl();
   if (requested) return requested;
   try {
@@ -7091,6 +7099,8 @@ function renderMap() {
       items.forEach((event, index) => {
         if (isCellularCallRecord(event) && addCellularCallMapPresentation(event, layer, index, bounds)) return;
         if (!event.location_id) return;
+        const symbol = milStdObservationDescriptor(event);
+        if (symbol) { milStdDescriptors.push(symbol); return; }
         const current = grouped.get(event.location_id) || { count: 0, first: null };
         current.count += 1;
         current.first ||= event;
@@ -7381,7 +7391,7 @@ function toggleMapItem(layerId, kind, itemId) {
       zoom: Math.max(Number(state.map.getZoom?.() || 0), kind === "location" ? 12 : 13),
       duration: 450
     });
-    const descriptor = kind === "evidence" ? milStdEvidenceDescriptor(selectedEvent) : null;
+    const descriptor = kind === "evidence" ? milStdEvidenceDescriptor(selectedEvent) : kind === "record" ? milStdObservationDescriptor(selectedEvent) : null;
     const markerElement = descriptor ? milStdMarkerElement(descriptor) : document.createElement("div");
     if (!descriptor) {
       markerElement.className = "map-marker focused-map-marker";

@@ -21,6 +21,12 @@ OBJECT_CLASS_CONCEPTS = {
 }
 
 
+ENGLISH_OBJECT_CLASSES = {
+    "שיירת כלי רכב": "Vehicle convoy", "רכב משוריין": "Armored vehicle",
+    "מחסום דרכים": "Roadblock", "עמדת תצפית": "Observation post",
+    "מסוק": "Helicopter", "משאית לוגיסטית": "Logistics truck", "עבודות הנדסיות": "Engineering works",
+}
+
 def normalize_evidence_event(event: dict[str, Any]) -> dict[str, Any]:
     """Resolve a missing object class with the existing semantic concept model.
 
@@ -34,7 +40,7 @@ def normalize_evidence_event(event: dict[str, Any]) -> dict[str, Any]:
         normalized["object_class"] = existing
         normalized["object_class_resolution"] = {
             "method": "structured_source",
-            "semantic_concept": OBJECT_CLASS_CONCEPTS.get(existing),
+            "semantic_concept": OBJECT_CLASS_CONCEPTS.get(existing) or next((OBJECT_CLASS_CONCEPTS[he] for he, en in ENGLISH_OBJECT_CLASSES.items() if en == existing), None),
             "score": 1.0,
         }
         return normalized
@@ -55,6 +61,8 @@ def normalize_evidence_event(event: dict[str, Any]) -> dict[str, Any]:
         return normalized
 
     object_class, concept, weight = matches[0]
+    if not any("\u0590" <= char <= "\u05ff" for char in summary):
+        object_class = ENGLISH_OBJECT_CLASSES[object_class]
     normalized["object_class"] = object_class
     normalized["object_class_resolution"] = {
         "method": "shared_semantic_concept",
