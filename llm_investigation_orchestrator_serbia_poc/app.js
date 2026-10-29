@@ -225,7 +225,6 @@ function milStdOrganizationDescriptors(layer) {
 }
 
 function milStdObservationDescriptor(event) {
-  if (!["airborne_isr_video_exploitation", "cctv_video", "satellite_imagery"].includes(event.collection_family)) return null;
   const mapping = MIL_STD_UAV_OBJECTS[event.object_class || event.observed_object_class];
   if (!mapping || !event.location_id) return null;
   const entityAffiliation = "unknown"; // Observation association does not establish ownership.
@@ -241,7 +240,7 @@ function milStdObservationDescriptor(event) {
     confidence: milStdConfidence(event.identification_confidence || event.certainty_level),
     affiliation: entityAffiliation,
     symbolKey: mapping.code,
-    sourceBadge: event.collection_family === "cctv_video" ? "CCTV" : event.collection_family === "satellite_imagery" ? "Satellite" : "UAV",
+    sourceBadge: event.collection_family === "cctv_video" ? "CCTV" : event.collection_family === "satellite_imagery" ? "Satellite" : event.collection_family === "airborne_isr_video_exploitation" ? "UAV" : "",
     symbolCode: `observation:${mapping.code}`
   };
 }

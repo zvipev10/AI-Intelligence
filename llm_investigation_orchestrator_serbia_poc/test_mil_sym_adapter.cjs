@@ -30,17 +30,21 @@ for (const family of ["airborne_isr_video_exploitation", "cctv_video", "satellit
  const event = {collection_family:family,object_class:"military vehicle convoy",location_id:"site",record_id:"REC-1",entity_id:"ENT-KFOR-RCE"};
  const d=sandbox.milStdObservationDescriptor(event);
  assert.equal(d.symbolKey,"vehicle-convoy");assert.equal(d.affiliation,"unknown");assert.equal(d.id,"REC-1");
+ assert.equal(d.sourceBadge, {airborne_isr_video_exploitation:"UAV",cctv_video:"CCTV",satellite_imagery:"Satellite"}[family]);
  assert.equal(sandbox.milStdObservationDescriptor({...event,location_id:""}),null);
 }
-for (const family of ["adint","ipdr","supplied_cellular_record","scenario_cellular_call_collection"]) {
- assert.equal(sandbox.milStdObservationDescriptor({collection_family:family,object_class:"Vehicle convoy",location_id:"site"}),null);
+for (const family of ["adint","ipdr","supplied_cellular_record","scenario_cellular_call_collection","future_sensor","",undefined]) {
+ const d=sandbox.milStdObservationDescriptor({collection_family:family,object_class:"Vehicle convoy",location_id:"site",record_id:"REC-2"});
+ assert.equal(d.symbolKey,"vehicle-convoy");assert.equal(d.affiliation,"unknown");assert.equal(d.sourceBadge,"");
+ assert.equal(sandbox.milStdObservationDescriptor({collection_family:family,location_id:"site"}),null);
+ assert.equal(sandbox.milStdObservationDescriptor({collection_family:family,object_class:"Unclassified",location_id:"site"}),null);
 }
 const makeEvidence=(object_class)=>sandbox.milStdEvidenceDescriptor({evidence_id:object_class,location_ids:["site"],subject_entity_ids:[],object_class,source_record_ids:[],confidence:"high"});
 const grouped=sandbox.coalesceEvidenceDescriptors([makeEvidence("Vehicle convoy"),makeEvidence("Armored vehicle")]);
 assert.equal(grouped.length,2,"different symbols at one location must not be merged");
 const org=sandbox.milStdOrganizationDescriptors({items:[{entity_id:"ENT-SAF-2BRIGADE",top_locations:[{location_id:"site",presence_claim:true}]}]});
 assert.equal(org[0].symbolKey,"brigade");assert.equal(org[0].affiliation,"friendly");
-console.log("PASS: 44 catalog mappings, affiliation/echelon/HQ, source boundaries, provenance, fallback, distinct evidence grouping");
+console.log("PASS: 44 catalog mappings, affiliation/echelon/HQ, source-independent classification, provenance, fallback, distinct evidence grouping");
 
 if (process.argv.includes("--render")) {
   const {createCanvas} = require("./.demo-build/render-check/node_modules/canvas");

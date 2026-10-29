@@ -40,7 +40,7 @@ class MilStdPresentationContractTests(unittest.TestCase):
         registry = APP.split("const MIL_STD_UAV_OBJECTS", 1)[1].split("});", 1)[0]
         for code in ("armored-vehicle", "logistics-truck", "vehicle-convoy", "helicopter"):
             self.assertIn(f'code: "{code}"', registry)
-        self.assertIn('["airborne_isr_video_exploitation", "cctv_video", "satellite_imagery"]', APP)
+        self.assertNotIn('].includes(event.collection_family)) return null', APP)
         self.assertIn('const entityAffiliation = "unknown"', APP)
         self.assertIn('affiliation: entityAffiliation', APP)
 
