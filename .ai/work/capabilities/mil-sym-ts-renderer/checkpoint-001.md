@@ -1,0 +1,2 @@
+# Implementation checkpoint
+Renderer, English package, profile, translation/search/evidence parity, migration helper and operational documentation are ready. All working changes belong to this scope; no unrelated files staged. See qa-review.md for actual checks and baseline limitations. Next: publish PR #92 and deploy with Kosovo retained active. Source dataset and previous state remain intact for rollback.

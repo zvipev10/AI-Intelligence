@@ -44,6 +44,7 @@ FILES = [
     "index.html",
     "app.js",
     "polygon_draw.js",
+    "mil_sym_adapter.js",
     "styles.css",
     "help.html",
     "investigation-user-flow.html",

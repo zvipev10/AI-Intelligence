@@ -1,4 +1,6 @@
 # Status
-Phase: implementation. Owner: Codex. Mapping reviewed by user; proceed authorized.
-Next: validate library catalog, implement adapter and tests.
-Parent/child issue: pending creation. No unrelated dirty files at start. Production Kosovo v2.1 remains unchanged during development.
+Phase: release validation. Owner: Codex. Implementation and automated checks complete; publish and deploy next.
+Authorization: user approved the mapping, requested steps 1–4 and English-only Kosovo, and explicitly waived browser verification.
+Parent: #93. Child: #94 (implementation/release, in progress). Draft PR: #92.
+Blockers: none. Next artifact: deployment checkpoint and final handoff. No merge authorization in this release request.
+Latest change: complete English dataset, semantic/evidence parity and controlled dataset migration added to renderer scope.

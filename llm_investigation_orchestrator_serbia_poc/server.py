@@ -91,6 +91,8 @@ def bounded_prompt_cache_key(value: Any) -> str:
 
 
 def normalize_locale(value: Any) -> str:
+    if DEMO.enabled and DEMO.profile.get("locale") == "en":
+        return "en"
     locale = str(value or "").strip().lower()
     return locale if locale in {"he", "en"} else "he"
 

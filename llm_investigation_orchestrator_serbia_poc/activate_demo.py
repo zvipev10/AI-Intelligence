@@ -161,7 +161,7 @@ class Activator:
         temporary_root_config.chmod(0o600)
         os.replace(temporary_root_config, root_config_path)
 
-    def health(self, identity, timeout=90):
+    def health(self, identity, timeout=240):
         deadline = time.monotonic() + timeout
         last = None
         while time.monotonic() < deadline:

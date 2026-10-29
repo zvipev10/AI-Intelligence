@@ -57,6 +57,19 @@ def build_manifest(baseline: dict, commit: str) -> dict:
             result[section][name] = sha256(path)
         if not result[section]:
             raise ValueError(f"baseline lacks {section}")
+    for name in ("mil_sym_adapter.js", "vendor/mil-sym-ts/C5Ren.umd.js", "vendor/mil-sym-ts/LICENSE", "vendor/mil-sym-ts/README.md"):
+        result["files"][name] = sha256(LOCAL_ROOT / name)
+    for scenario in ("kosovo", "syria"):
+        from demo_runtime import load_profile
+        profile = load_profile(LOCAL_ROOT, scenario, verify=True)
+        for name in ["demo_profiles/" + scenario + ".json", *profile["files"].values()]:
+            for section in ("files", "mcp_files"):
+                result[section][name] = sha256(LOCAL_ROOT / name)
+    for name in ("demo_runtime.py", "activate_demo.py", "polygon_draw.js", "scenario_manifests/brnjak-engineering-assessment-v2.json"):
+        result["files"][name] = sha256(LOCAL_ROOT / name)
+    for name in ("mcp_server/evidence_semantics.py", "mcp_server/fusion_tools.py", "mcp_server/semantic_index.py"):
+        for section in ("files", "mcp_files"):
+            result[section][name] = sha256(LOCAL_ROOT / name)
     return result
 
 
@@ -157,8 +170,8 @@ def main() -> int:
             staging = upload(client, manifest, commit)
             backup, manifest_path = install(client, staging, manifest, commit)
         verify_hashes(client, manifest, commit, manifest_path)
-        _, activation, _ = run(client, f"/home/ubuntu/.hermes/hermes-agent/venv/bin/python {UI_ROOT}/activate_demo.py {args.scenario} --release {shlex.quote(manifest_path)}", timeout=240)
-        status = json.loads(activation)
+        _, activation, _ = run(client, f"/home/ubuntu/.hermes/hermes-agent/venv/bin/python {UI_ROOT}/activate_demo.py {args.scenario} --release {shlex.quote(manifest_path)}", timeout=650)
+        status = get_json(client, "curl -fsS http://127.0.0.1:8769/api/status")
         if status.get('scenario_id') != args.scenario or status.get('maintenance'):
             raise RuntimeError(f"activation did not leave {args.scenario} active")
         update_pointer(client, commit, manifest_path)

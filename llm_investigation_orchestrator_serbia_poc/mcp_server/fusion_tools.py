@@ -64,10 +64,10 @@ def _reported_count_range(event: dict[str, Any]) -> tuple[int | None, int | None
         count = int(value)
         return count, count
     text = _text(event.get("event_summary"))
-    range_match = re.search(r"בין\s+(\d+)\s+ל[-־]?(\d+)", text)
+    range_match = re.search(r"(?:בין|between)\s+(\d+)\s+(?:ל[-־]?|to\s+)(\d+)", text)
     if range_match:
         return int(range_match.group(1)), int(range_match.group(2))
-    approximate = re.search(r"כ[-־]?\s*(\d+)", text)
+    approximate = re.search(r"(?:כ[-־]?|approximately)\s*(\d+)", text)
     if approximate:
         count = int(approximate.group(1))
         return max(0, count - 1), count + 1

@@ -29,7 +29,7 @@ class Profiles(unittest.TestCase):
             profile = load_profile(ROOT, "kosovo")
             with self.assertRaisesRegex(RuntimeError, "offline search cache"):
                 operator.verify_search_cache(profile)
-            cache = root / "state/kosovo/v2.1/semantic_index/semantic_event_index_hybrid_embedding.pkl"
+            cache = root / "state/kosovo" / profile["dataset_version"] / "semantic_index/semantic_event_index_hybrid_embedding.pkl"
             cache.parent.mkdir(parents=True)
             cache.write_bytes(b"trusted-test-cache")
             manifest = {}
@@ -65,7 +65,8 @@ class Profiles(unittest.TestCase):
         with patch.dict(os.environ, {"INTELLIGENCE_POC_SCENARIO": "syria"}):
             syria = DemoRuntime(ROOT)
         self.assertNotEqual(kosovo.state, syria.state)
-        self.assertEqual(kosovo.profile["sources"]["en"], syria.profile["sources"]["en"][:-5])
+        self.assertEqual(kosovo.profile["locale"], "en")
+        self.assertEqual(len(kosovo.profile["sources"]["en"]), 12)
         self.assertNotEqual(kosovo.generation, syria.generation)
 
     def test_invalid_selection_never_falls_back(self):
@@ -74,7 +75,7 @@ class Profiles(unittest.TestCase):
                 load_profile(ROOT, scenario)
 
     def test_syria_mcp_has_no_kosovo_records(self):
-        result = subprocess.run([sys.executable, "-c", "import mcp_server.server as s; assert len(s.EVENTS)==725; assert len(s.LOCATIONS)==402; assert all(e['event_id'].startswith('REC-SYR-') for e in s.EVENTS)"], cwd=ROOT, env={**os.environ, "INTELLIGENCE_POC_SCENARIO": "syria"}, capture_output=True, timeout=30)
+        result = subprocess.run([sys.executable, "-c", "import mcp_server.server as s; assert len(s.EVENTS)==726; assert len(s.LOCATIONS)==404; assert all(e['event_id'].startswith('REC-SYR-') for e in s.EVENTS)"], cwd=ROOT, env={**os.environ, "INTELLIGENCE_POC_SCENARIO": "syria"}, capture_output=True, timeout=30)
         self.assertEqual(result.returncode, 0, result.stderr.decode())
 
 
@@ -136,7 +137,7 @@ class SyriaHTTP(unittest.TestCase):
     def test_syria_layer_catalog_and_map(self):
         with urlopen(self.url + "/api/status") as response: status = json.load(response)
         self.assertEqual(status["scenario_id"], "syria")
-        self.assertEqual(status["dataset_rows"], 725)
+        self.assertEqual(status["dataset_rows"], 726)
         self.assertEqual(status["demo_profile"]["map"]["center"], [36.2765, 33.5138])
         self.assertEqual(status["demo_profile"]["map"]["zoom"], 11)
         for locale in ["en", "he"]:

@@ -71,7 +71,7 @@ Hebrew and English remain separate runtime contexts within the selected scenario
 - Legacy untagged/shared workstream records are treated as Hebrew-owned fallback data.
 - English persisted presentation/evidence/workstream fields reject Hebrew characters before write.
 
-Hebrew remains the compatibility default for omitted locale values. New English flows must pass explicit locale and must not fall back to Hebrew data.
+Profiles may force a locale: Kosovo profile 2 sets `locale: en`, honored by initial UI bootstrap and server locale normalization, including requests for Hebrew. Its base dataset is English so MCP consumers also receive English source fields. Other profiles retain compatibility defaults. New English flows must not fall back to Hebrew data.
 
 ## Unified staged playback
 
@@ -201,3 +201,11 @@ The checksum-anchored acquisition package appears once in the general `evidence:
 The runtime builds deterministic, versioned field-equality links from immutable records, entities, locations and evidence packages. A link records its approved rule, both object/field endpoints, the matched string value and source-record provenance; it does not add a property to either endpoint. Only an explicit rule registry may create links. It excludes blank call Side B fields, IPDR `ip_out`, and unqualified IP coincidence. The first raw-to-raw rule links an ADINT record's non-empty `ip` to an IPDR record's non-empty `ip_public`; session time does not gate the match. Both raw IDs are provenance for that link; it is an observed correlation, not a device, person, location or activity claim.
 
 Derivation rules consume links rather than source files directly. The subscriber-identity rule follows an entity's known IMEI only through cellular `target_imei` links, groups non-empty MSISDN/IMSI tuples, and returns a candidate only for a unique most-supported pair with at least two distinct records. A candidate is not an entity-field mutation. Analyst approval is a scenario/dataset-scoped derivation review that overlays the approved claim only at presentation time. Raw records and versioned entity files remain unchanged.
+
+## Military symbol renderer
+
+`mil_sym_adapter.js` wraps the locally vendored official `@armyc2.c5isr.renderer/mil-sym-ts-web` 2.10.8 UMD bundle (Apache-2.0). The adapter checks catalog identity and single-point support before rendering MIL-STD-2525E Change 1 SVGs, with a bounded 128-entry cache. It emits data-URI images within existing accessible record buttons; unsupported/catalog/render failures use an ordinary dot. No server renderer or CDN dependency is introduced. Vendor provenance and exact SIDCs are maintained beside the bundle and in the adapter registry.
+
+Organization affiliation comes from existing mappings. Structured UAV/CCTV/Satellite observations remain unknown affiliation. Convoy uses a generic vehicle plus a label because the convoy graphic requires two points; aviation and logistics use generic unit/utility-vehicle symbols without inventing subtype or mobility. Coalescing includes location, symbol code, object class and affiliation so distinct claims are not collapsed.
+
+English object synonyms in semantic index version `semantic-event-index-v12-english-object-parity`, evidence inference and numeric parsing preserve retrieval and fusion parity across the retained source and English projection. Both scenario caches must be rebuilt offline for this index version.
