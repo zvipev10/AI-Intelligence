@@ -98,3 +98,9 @@ scenario; run a second deployment for the other.
 AI agents and chat, saved and recorded questions, workstreams, playback, the evidence catalog,
 target bank and assessments. User file upload is not possible (HL API has no upload), and the
 app is not told about changes as they happen (it rebuilds the snapshot on refresh or expiry).
+
+## Military point symbols
+
+The browser loads the pinned official mil-sym-ts 2.10.8 UMD bundle and `mil_sym_adapter.js` before app startup. Catalog-validated MIL-STD-2525E Change 1 SVGs replace custom glyphs. The adapter caches at most 128 renders; failures use ordinary dots. Existing organization mappings retain their affiliations. Supported structured UAV/CCTV/Satellite observations remain unknown affiliation and carry source labels. Generic vehicle/utility/unit symbols plus labels represent convoy/logistics/aviation without inventing unsupported detail.
+
+Records may use a canonical location or their own valid coordinates. Rendering requires an explicit supported collection family and object class from the i360 row mapping; source/layer name alone does not imply military content. The LAMBDA profile and ingestion mapping are unchanged. Server static allowlisting and Docker packaging include the adapter and vendor assets. No local demo datasets, VM services or AI tools are introduced.

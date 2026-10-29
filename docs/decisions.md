@@ -607,3 +607,7 @@ Decision: move the fifteen-petrol-units call to (34.9837599416126, 35.8893277774
 Rationale: the two calls now have distinct user-supplied positions. Dedicated locations preserve the route waypoint and avoid incorrectly moving both calls together.
 
 Impact: Syria profile 36 selects immutable dataset `cellular-records-v13`. Call content, identifiers, timestamps, participants and media remain unchanged.
+
+### 2026-10-29 — Port symbology independently of the local demo
+
+Decision: merge the renderer and English Kosovo work into main, but integrate only mil-sym-ts into feature/i360-only, as explicitly requested. Preserve i360 login, HL API mappings, saved work and English-only UI. Military symbols require structured source fields; no classification is inferred from the Satellite/ADINT layer labels. Main's local Kosovo data, migration/index code and VM release tools do not belong in the i360 integration.

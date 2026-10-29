@@ -448,27 +448,7 @@ select option, select optgroup { background: var(--panel); color: var(--ink); }
 .cellular-call-map-endpoint-b { background: #a87525; box-shadow: 0 2px 12px rgba(0,0,0,.52), 0 0 0 5px rgba(210,168,76,.16); }
 .cellular-call-map-endpoint-b:hover, .cellular-call-map-endpoint-b:focus-visible { box-shadow: 0 3px 15px rgba(0,0,0,.58), 0 0 0 6px rgba(210,168,76,.24); }
 .cellular-call-map-popup code { color: var(--muted); font-size: 10px; }
-.milstd-marker { position: absolute; width: 42px; height: 42px; padding: 0; border: 0; background: transparent; color: #ffd166; cursor: pointer; overflow: visible; filter: drop-shadow(0 2px 4px rgba(0,0,0,.65)); }
-.milstd-marker:hover, .milstd-marker:focus-visible { z-index: 4; transform: scale(1.12); outline: none; }
 .focused-map-selection-marker { z-index: 5; }
-.milstd-frame { position: absolute; inset: 8px 3px; display: grid; place-items: center; border: 3px solid currentColor; background: rgba(20,26,34,.9); }
-.milstd-marker.friendly { color: #80caff; }
-.milstd-marker.neutral { color: #7fe09a; }
-.milstd-marker.hostile { color: #ff6b6b; }
-.milstd-marker.hostile .milstd-frame { inset: 7px; transform: rotate(45deg); }
-.milstd-marker.hostile .milstd-icon { transform: rotate(-45deg); }
-.milstd-marker.unknown { color: #ffd166; }
-.milstd-marker.unknown .milstd-frame { inset: 7px; transform: rotate(45deg); }
-.milstd-marker.unknown .milstd-icon { transform: rotate(-45deg); }
-.milstd-marker.status-reported::before { content: ""; position: absolute; inset: 1px; border: 1px dashed currentColor; border-radius: 50%; opacity: .8; }
-.milstd-marker.confidence-low::after { content: "?"; position: absolute; inset-inline-start: -2px; top: -2px; width: 14px; height: 14px; display: grid; place-items: center; border: 1px solid currentColor; border-radius: 50%; background: #171d25; color: currentColor; font-size: 9px; font-weight: 900; }
-.milstd-icon { color: currentColor; font-family: Arial, sans-serif; font-size: 11px; font-weight: 900; line-height: 1; }
-.milstd-status { position: absolute; top: 34px; left: 50%; padding: 1px 3px; border-radius: 2px; background: rgba(17,22,29,.92); color: #fff; font-size: 7px; font-weight: 800; line-height: 1.1; white-space: nowrap; transform: translateX(-50%); }
-.milstd-count { position: absolute; inset-inline-end: -7px; top: -5px; min-width: 17px; height: 17px; padding: 0 3px; display: grid; place-items: center; border: 1px solid #fff; border-radius: 9px; background: #171d25; color: #fff; font-size: 8px; font-weight: 900; }
-.milstd-popup { min-width: 230px; }
-.milstd-popup .milstd-version { color: var(--muted); font-size: 9px; font-weight: 800; letter-spacing: .04em; }
-.milstd-popup time { color: var(--muted); font-size: 10px; }
-.milstd-popup .object-viewer-open { margin-top: 4px; align-self: flex-start; }
 .object-viewer-evidence { margin-top: 18px; }
 .object-viewer-evidence h3 { margin: 0 0 10px; font-size: 14px; }
 .object-viewer-evidence ul { margin: 0; padding: 0; display: grid; gap: 8px; list-style: none; }
@@ -936,3 +916,22 @@ body.auth-required > :not(#loginScreen):not(.bootstrap-notice) { visibility: hid
 .bootstrap-notice { position: fixed; bottom: 0; left: 0; right: 0; z-index: 100001; padding: 8px; text-align: center; background: #132b41; color: #fff; visibility: visible; }
 .bootstrap-notice[hidden] { display: none; }
 .object-viewer-media-missing { margin: 0; padding: 14px; border: 1px dashed var(--line); border-radius: 8px; color: var(--muted); text-align: center; font-size: 12px; }
+
+.milstd-marker { position: absolute; width: 42px; height: 42px; padding: 0; border: 0; background: transparent; color: #ffd166; cursor: pointer; overflow: visible; filter: drop-shadow(0 2px 4px rgba(0,0,0,.65)); }
+.milstd-marker:hover, .milstd-marker:focus-visible { z-index: 4; filter: drop-shadow(0 0 4px white); }
+.milstd-marker.friendly { color: #80caff; }
+.milstd-marker.neutral { color: #7fe09a; }
+.milstd-marker.hostile { color: #ff6b6b; }
+.milstd-marker.unknown { color: #ffd166; }
+.milstd-marker.status-reported::before { content: ""; position: absolute; inset: 1px; border: 1px dashed currentColor; border-radius: 50%; opacity: .8; }
+.milstd-marker.confidence-low::after { content: "?"; position: absolute; inset-inline-start: -2px; top: -2px; width: 14px; height: 14px; display: grid; place-items: center; border: 1px solid currentColor; border-radius: 50%; background: #171d25; color: currentColor; font-size: 9px; font-weight: 900; }
+.milstd-status { position: absolute; top: 34px; left: 50%; padding: 1px 3px; border-radius: 2px; background: rgba(17,22,29,.92); color: #fff; font-size: 7px; font-weight: 800; line-height: 1.1; white-space: nowrap; transform: translateX(-50%); }
+.milstd-count { position: absolute; inset-inline-end: -7px; top: -5px; min-width: 17px; height: 17px; padding: 0 3px; display: grid; place-items: center; border: 1px solid #fff; border-radius: 9px; background: #171d25; color: #fff; font-size: 8px; font-weight: 900; }
+.milstd-popup { min-width: 230px; }
+.milstd-popup .milstd-version { color: var(--muted); font-size: 9px; font-weight: 800; letter-spacing: .04em; }
+.milstd-popup time { color: var(--muted); font-size: 10px; }
+.milstd-popup .object-viewer-open { margin-top: 4px; align-self: flex-start; }
+.milstd-svg { position: absolute; inset: 1px; width: 40px; height: 40px; object-fit: contain; }
+.milstd-source { position: absolute; bottom: 43px; left: 50%; transform: translateX(-50%); padding: 2px 4px; border-radius: 3px; background: #171d25; color: #fff; font-size: 9px; white-space: nowrap; }
+.milstd-fallback-dot { position: absolute; inset: 13px; border: 2px solid white; border-radius: 50%; background: #667788; }
+.milstd-marker:focus-visible { outline: 2px solid white; outline-offset: 4px; }

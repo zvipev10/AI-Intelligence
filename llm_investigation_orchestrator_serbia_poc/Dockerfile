@@ -33,7 +33,7 @@ COPY server.py analysis.py catalog_filters.py link_graph.py ./
 COPY hl/ hl/
 COPY mapping/ mapping/
 COPY demo_profiles/ demo_profiles/
-COPY index.html app.js styles.css polygon_draw.js demo_bootstrap.js help.html \
+COPY index.html app.js styles.css polygon_draw.js mil_sym_adapter.js demo_bootstrap.js help.html \
      investigation-user-flow.html system-capabilities-guide.html ./
 COPY vendor/ vendor/
 COPY assets/ assets/
