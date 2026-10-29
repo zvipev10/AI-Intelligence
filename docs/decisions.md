@@ -573,3 +573,7 @@ Alternatives considered: custom glyphs; multi-point convoy graphics without suff
 Impact: one shared renderer, retained scenario affiliations, unknown observation ownership, English profile locale, new dataset namespace and rebuilt offline indexes for both profiles. Original data/state remain recovery points; saved prose is not translated.
 
 Follow-ups: manual visual acceptance was waived for this release; retain the gallery for later review.
+
+### 2026-10-29 — Collection family is provenance, not symbol eligibility
+
+User correction: remove the source-family allowlist in both branches. Supported structured object classes determine observation symbols; source family supplies only an optional badge. Do not default unknown sources to UAV or infer ownership from source/entity association. This supersedes the earlier collection-family restriction.

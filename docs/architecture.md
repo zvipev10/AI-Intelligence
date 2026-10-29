@@ -209,3 +209,5 @@ Derivation rules consume links rather than source files directly. The subscriber
 Organization affiliation comes from existing mappings. Structured UAV/CCTV/Satellite observations remain unknown affiliation. Convoy uses a generic vehicle plus a label because the convoy graphic requires two points; aviation and logistics use generic unit/utility-vehicle symbols without inventing subtype or mobility. Coalescing includes location, symbol code, object class and affiliation so distinct claims are not collapsed.
 
 English object synonyms in semantic index version `semantic-event-index-v12-english-object-parity`, evidence inference and numeric parsing preserve retrieval and fusion parity across the retained source and English projection. Both scenario caches must be rebuilt offline for this index version.
+
+Military observation symbols are selected by supported object class, regardless of collection_family. Recognized collection families only add an optional UAV/CCTV/Satellite badge; unknown or missing families add no badge. Missing or unsupported object classes keep ordinary markers, and observation affiliation remains unknown.
